@@ -1,0 +1,3589 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 023d33a99c44d6f20a3618682994a885
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c44dbc1c123f8df02dc268edf7f053b
++ info   终端用户界面：经求解的窗格布局、交互式表单、实时表格与仪表
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 17c59dff3ea9b2bd01ff260629b09b41
++     _Ultimatum_ 绘制终端用户界面的方式，与布局引擎绘制窗口的方式相同：一棵由**窗格**组成的树根据终端的大小求解为若干矩形，每个窗格绘制到自己的矩形中，而一个事件循环（即**表单**）在用户输入、终端改变大小或后台任务改变窗格所显示的内容时重新求解并重新绘制。
++     它不分发光标和屏幕，而是交给每个窗格一个限定在其矩形内的 `Extent`，它既是可供绘制的 `Board`，又是一个 `Stdio`，因此窗格主体中一个单纯的 `Out.println` 只会落在该窗格之内，不会落到别处。
+
+@ 0 6 0 12bd6734e5c79a2a01fdf93ef12e4f6d
++     布局用一个小型 DSL 构建：`panel` 用于内容，`editor` 和 `menu` 用于输入字段，`gauge` 用于进度显示，`tabular` 用于实时表格，`scrolling` 用于视口，而 `stack`、`strip` 和 `grid` 按权重和边界（`Tui.Sizing`）在它们之间分配空间。
++     `conduct` 以交互方式运行结果，可以是在备用屏幕上的 `Tui.Occupancy.Fullscreen`，也可以是在光标处作为一个块、保留回滚内容的 `Tui.Occupancy.Inline`；`layout` 把一个静态块打印一次；`paint` 合成到任意 `Board` 上。
+
+% 2 1 0 1e82735915ece1e919d6cfd81c4a0a76
+
+% 3 1 0 196326fbab20ebab0bde80a3400a59f9
+
+% 4 1 0 0a5303cf69783e8f185025cbb8f34426
+
+% 5 1 0 19c97ec36382448f0745a59afb7b9110
+
+% 6 1 0 0cfd02ee423bc7e70f99a0da9d231a5a
+
+% 7 1 0 1340353aa013e7bf15e5deeff93257d7
+
+% 8 1 0 0874ab0bd73b1bfd173fc9ea5b4c4ef0
+
+% 10 1 0 113faf96ca35cc550f5adefa8966e4fa
+
+% 11 1 0 16be82890f120ed11b79f0ae09076408
+
+% 0 1 0 1673bea0b6c5b3841d2909936af04fbe
+
+% 0 1 0 1a0bcacee451c5e90e51cf43870b5f54
+
+% 0 1 0 0a7efdd276a7ddf1133a077d1e7590ca
+
+% 0 1 0 01ba8ad0cf674c630d998e6bd4bac18e
+
+% 0 1 0 001cc10748a14d3708bbca5d868d31a8
+
+% 1 1 0 01ee048194dad20f1bd15ce2f90934da
+
+@ 0 6 0 1bd32a8b26fe2d4811185c0baa6f02e2
++     Tab 在各字段之间切换输入焦点，Escape 或 Ctrl-C 结束表单，其他所有事件都交给拥有输入焦点的字段。
++     布局是*响应式*的：`Fixture` 在每次求解时报告其当前内容所需的大小，因此折行到第二行的编辑器会把它的兄弟窗格往下推，数据发生变化的表格会重新协商它的列，而在表单运行期间被追加内容的 `Tui.Panes` 容器会重新铺排。
++     从后台任务赋值的 `Tui.Reading` 单元，会使显示它的仪表重新绘制。
+
+@ 0 1 0 1de2fe73f95716591738009185e87bf4
++     这个库有三个组件，应用程序只取它需要的那些：
+
+@ 0 20 0 1592af2784f5dfbf1aaf67d3cc0b40f9
++     - `ultimatum.core`：布局模型（`Tui.Pane`、`Tui.Panes`、`Tui.Sizing`、`Tui.Arrangement`、`Tui.Frame`、`Tui.Placement`、`Tui.Region`），DSL（`panel`、`editor`、`menu`、`scrolling`、`stack`、`strip`、`grid`、`border`），驱动器（`conduct`、`layout`、`paint`、`Form`），绘制面（`Extent`、`FlowExtent`、`Tui.Block`、`Tui.Screen`），控件（`Fixture`、`Focus`、`EditorField`、`MenuField`、`ScrollFixture`），动画时钟 `Tui.Tick`，以及内联渲染方针 `Tui.Block.Anchoring`、`Tui.Block.Growth` 和 `Tui.Block.Shrink` 及其选择包。
++     - 同样在 `ultimatum.core` 中的还有各种仪表：旋转指示器、进度条、计量条、迷你图、计数器、计时器和步骤指示器，它们按所显示状态的*类型*选定（`Tui.Fraction`、`Tui.Reckoning`、`Tui.Standing`、`Duration`、`Tui.Countdown`、`Tui.Transfer`、`Tui.Meter`、`Sequence[Double]`、`Sequence[Tui.Step]`，以及它们中任何一个的 `Tui.Captioned` 或 `Optional` 形式），保存在一个 `Tui.Reading` 单元中，在布局中用 `gauge` 显示，在一个代码块执行期间用 `whilst` 显示在光标处，或用 `gaugeLine`/`gaugeRows` 显示为一帧文本。设计由作用域内的 `Gaugeable` given 选定，颜色由 `GaugePalette` 选定，字符集由 `Gauging` 选定，每一项都是独立的导入；它依赖 `aviation` 和 `quantitative` 来表示时长和字节数量，这就是它是一个单独组件的原因。
++     - `ultimatum.tables`：`TableFixture` 和 `tabular`，即作为实时窗格的 escritoire `Tabulation`，它在每种宽度下都重新排布自己的列；它是单独的组件，这样就不会把 `escritoire` 强加给核心组件的每个用户。
+
+@ 0 9 0 06001907c25b6ce204d1e3225ad691d6
++     选择包按名称导入，因为 `import ultimatum.*`（或 `import soundness.*`）不会导入 given：`inlineAnchoring`、`inlineGrowth` 和 `inlineShrink` 选定内联块在大小改变时的行为（每一项在其枚举的伴生对象中都有默认值，因此无需导入任何东西）；`spinners`、`bars`、`meters`、`sparklines`、`counters`、`standings`、`processions`、`timers`、`captions`、`gaugeGlyphs`、`informationPrefixes` 和 `palettes` 选定仪表的设计、说明文字的位置、字形、字节前缀和颜色。
++     仪表还需要作用域内有一个 `Text is Measurable`（`textMetrics.uniformMetric` 或 `textMetrics.eastAsianScriptsMetric`），因为设计是按其所绘内容的宽度来排布的。
+
+@ 0 7 0 1b81dda389b47ac202900d09c69f431a
++     一切都导出到 `soundness` 总括包，选择包与总括包自身的选择包合并；`border` 是总括包目前唯一不转发的 DSL 构造器，因此要以 `ultimatum.border` 访问它。
++     交互式驱动器在 profanity 的 `interactive` 会话中运行，因此需要一个 `Monitor`（来自 `supervise`）和一个 `Probate`；内存中的绘制面（`Tui.Screen(width, height)`、`Tui.Block(width, height)`、`FlowExtent`）只需要一个 `Stdio`，布局就是这样在没有终端的情况下进行测试的。
+
+% 0 1 0 196eaad2753cd949199c26013077cf9f
+
+% 0 1 0 067cd11d0006ecee162d8be44d1c6485
+
+% 0 1 0 1d107025109ca66e10473c64a2cd7a75
+
+% 0 1 0 1afe30850c2215f402410113e7deb78d
+
+% 0 1 0 0f8c3e6e30c933a91a675b26a56b7d87
+
+% 0 1 0 10ac72a2062bf416009e29b5732e957e
+
+@ 0 1 0 0a833ca0805f9e7105bbe9f66e24d110
++ entry .conduct   以交互方式运行窗格布局，全屏或内联，直到用户退出
+
+% 1 1 0 018a2724085acfd9005b7977e310b783
+
+@ 0 8 0 0cd32d5b8eedae8c1ac6a402878bfcb0
++       `conduct(mode)(pane)` 在外围 `interactive` 会话的终端上驱动一个 `Form`：它求解布局，绘制每个窗格，然后循环处理终端的事件，直到 Escape 或 Ctrl-C（或 Ctrl-D）将其结束。
++       Tab 在可聚焦的控件（`editor`、`menu`、`scrolling`）之间切换输入焦点，这些控件按同一性跟踪，因此在它之前插入一个窗格时，输入焦点仍会保留；其他任何按键都交给拥有输入焦点的控件；`Terminal.Info.WindowSize` 按新的大小重新铺排布局；而 `Terminal.Info.Redraw`（由 `Tui.Panes` 的变更、`Tui.Reading` 的更新、`TableFixture#refresh` 或一次动画滴答放到事件队列上）触发重新绘制。
+
+@ 0 8 0 120a1006da7a412f01e78962143c5159
++       `Tui.Occupancy.Fullscreen`（默认值）在会话期间接管备用屏幕缓冲区，并在退出时恢复它；它占满终端的高度，除了在拥有输入焦点的编辑器中之外都隐藏光标，并且只重新绘制发生了变化的单元格，因此一帧没有变化时什么也不写。
++       `Tui.Occupancy.Inline` 在光标处绘制一个块，其大小为内容所需的高度，保持回滚内容完好，并在表单结束时把光标留在块下方的新行上；它因大小改变而进行的重新绘制被节流到每秒大约十次，并在安静 50 ms 后才进行去抖，因此拖动窗口时必须停顿下来，块才会重新绘制，而输入仍然是即时的。
+
+% 2 1 0 0785169fc9ffcb92145bea208f53fb81
+
+% 3 1 0 0395cba786e27698111a762af2ccc752
+
+% 4 1 0 0c5aa15e741e34e212edc5e09153732d
+
+% 5 1 0 0dbfd685db474b800618c6e02e2cb6d6
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0ac34298f3d746150409391e415998a7
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 2 1 0 18389ddb7fb61a821555acbd5b0e1353
+
+% 0 1 0 14e7fb61e3e492861f4130510de42834
+
+% 0 1 0 1d9095e047939bc61ea92c5b31e39fae
+
+% 0 1 0 08105f0722565a2a1bd9723100abf92e
+
+% 0 1 0 1ba40ceb1342387514ad87f14bd9c413
+
+% 0 1 0 18b7e44d8425cfa61ab84dc7f94b8096
+
+% 0 1 0 16b077e10f20365c0b4d0183050cb575
+
+% 0 1 0 0ccc75def49af22c1708998a7fc9a701
+
+% 0 1 0 17ac9c75a6f095af07fda8954cabb0ae
+
+% 1 1 0 11f9a8b70a8b8b6204a59d96689e057b
+
+@ 0 6 0 15143f3073780ee90b117fef5f8b72d3
++       它需要一个 `Terminal`（来自 `interactive`）、一个 `Monitor`（来自 `supervise`）、一个供延迟重绘任务使用的 `Probate`，以及 `Tui.Block.Anchoring`、`Tui.Block.Growth` 和 `Tui.Block.Shrink` 方针，每一项在其伴生对象中都有默认值，可以通过从 `inlineAnchoring`、`inlineGrowth` 或 `inlineShrink` 导入一个 given 来覆盖。
++       带有动画仪表的布局会按其任一控件所要求的最短周期设置一个计时器；由静态窗格组成的布局不设置计时器，完全由事件驱动。
+
+@ 0 3 0 07541d1205e835911500772b1408abe6
++       入口点之所以命名为 `conduct` 而不是 `form`，是因为在 `soundness` 总括包中，telekinesis 的 HTML 表单渲染器占用了 `form`；它所驱动的类保留了 `Form` 这个名称。
+
+% 1 1 0 17736bc0bc355ea8154952cd6d5d42b0
+
+% 1 1 0 10cc164b94e0bdcd0e263a3399e284c4
+
+% 0 1 0 13ad3a6c2e9e3c900f04ff60337cdb87
+
+@ 0 7 0 03971732f44171d417df670b7f4c179f
++ entry .layout   在光标处把窗格布局作为静态块打印一次
++     `layout(pane)` 把窗格树求解并绘制到会话终端上的一个 `Tui.Block` 中，把它呈现为一个高度为其内容所需高度的块，并把光标留在它下方的新行上：这是没有事件循环的一次性渲染，用于报告或摘要，它绘制出来后就像其他任何输出一样被滚动过去。
++     它需要一个 `Terminal` 和三个内联方针（`Tui.Block.Anchoring`、`Tui.Block.Growth`、`Tui.Block.Shrink`），它们的默认值来自各自的伴生对象。
+
+% 2 1 0 03bf19cbba92161b069b1d53c7c6223d
+
+% 3 1 0 0fd6cb2b3323e62d091e14fd12815fa5
+
+% 4 1 0 0d92e0ff32b994f309b9793521dab85a
+
+% 5 1 0 1e6d161e7ffeffbb0d2bc7ce82301954
+
+% 6 1 0 11ab5dc4c5a3d2c7000ea5d239982ea7
+
+% 7 1 0 1f3df0636ae22c3f0f7f474c3ecdda0d
+
+% 8 1 0 16a4cee1b6f91401043722a1a9aefdea
+
+% 10 1 0 1becf91ded1943311e579a7a866b92db
+
+% 11 1 0 016cdd333952bce314ebd5c66fad69f8
+
+% 0 1 0 0fb5c184e2c1782a05dbce15ea8c9519
+
+% 0 1 0 040244bb0a60e96e02c072f97d726db1
+
+% 1 1 0 11570bd2d4c7ac6c0b64c30c92eb6a77
+
+@ 0 2 0 11bc39f058f810851d30824e7fffa994
++     布局中可聚焦的控件在绘制时不带输入焦点，因为永远不会有东西接收输入；`conduct` 是与之对应的交互式版本。
+
+@ 0 8 0 0637f75f91f009d31de10ee4874fb029
++ entry .paint   根据一个 `Board` 把窗格树求解一次，并把每个叶子绘制到它的矩形中
++     `paint(root, pane)` 是单独的绘制步骤，没有终端会话，也没有事件循环：窗格被投影为一个 `Tui.Frame`，根据根的宽度求解（对于 `Tui.Block`，还根据内容测得的高度；对于其他任何绘制板，则根据绘制板的高度），每个叶子的内容或控件被渲染到其矩形上的一个 `FlowExtent` 中，随后被合成到根上，根再被刷新。
++     布局就是这样被渲染到内存中的绘制面以供测试，或者完全不经缓冲地渲染到 `TerminalBoard` 上。
+
+% 2 1 0 04b0750656bd88130b981b639e809993
+
+% 3 1 0 15b527b1730bc2a51ff6e08161b05f50
+
+% 0 1 0 02980daa0e4f917809bd58682f0b8fa3
+
+% 0 1 0 0f5d98382800035502504cecad4348b4
+
+% 0 1 0 17ef11780066796207e68316f085507a
+
+% 0 1 0 0d6d5da48cff2eda0a841c8cdb41e3a0
+
+% 1 1 0 11446712566174c51b4e40c9e259e5d7
+
+@ 0 3 0 14277eaf1400ee9e063e718cb6c0d900
++     用作根的 `FlowExtent` 本身就是一个 `Board`，它的 `render` 把合成后的网格读回为纯文本，每行对应一行。
++     以这种方式绘制的 `Fixture` 会被赋予 `focused = false`。
+
+@ 0 7 0 02eff6076fe8d39802d0a2c3e2cad76b
++ entry .panel   一个叶子窗格，其内容被绘制到它求解出的矩形中
++     `panel(fraction, minWidth, maxWidth, minHeight, maxHeight)(content)` 是基本的构建单元：一个 `Tui.Pane.Leaf`，它的 `content` 在布局求解完成、窗格的矩形已知之后运行，上下文中有该矩形的 `Extent`。
++     `Extent` 是一个 `Board`（`move`、`put`、`clear`），也是一个 `Stdio`，因此主体中的 `Out.print` 会写入该面板；文本在面板的宽度处折行，在超出高度时滚动，就像一个小型终端，永远不会渗入相邻的窗格。
+
+% 2 1 0 0bc4bf48b61a6f6f19479bc9c22c86f6
+
+% 3 1 0 08fabb4164430cd51c40a3c7369028c7
+
+% 0 1 0 046275e2ba7ceb11161d4a0fd3dfb98c
+
+% 0 1 0 1847a7e23a812d960ff51d6179fcbe06
+
+% 0 1 0 1b32c9bdab84911902a807303bb310d2
+
+% 0 1 0 1e53e8404dff96e11c5411f3d3ec0991
+
+% 0 1 0 0e4b7ea78ead79320be4600efea8cb63
+
+% 1 1 0 1cd0e5cda4d838111f690f30d65b7efb
+
+@ 0 4 0 071e8a271c70edf602e4d8b0c44db40b
++     `fraction` 是父窗格分配空间时该面板的权重（默认值 `1.0` 表示均等的份额）；边界在任一轴上固定它，因此 `minHeight = 1, maxHeight = 1` 是一个永不增长的单行，`minWidth = 20, maxWidth = 20` 是一个固定宽度的列。
++     面板不能获得输入焦点；`editor` 和 `menu` 是接收输入的叶子。
+
+@ 0 9 0 1dbaa4b37300405812737366af0db775
++ entry .editor   一个可聚焦的行编辑器窗格，其高度随文本折行而增长
++     `editor(initial, fraction, minWidth, maxWidth, minHeight, maxHeight)` 是一个 `Tui.Pane.Widget`，承载一个基于 profanity `LineEditor` 的 `EditorField`。
++     该字段由共享的 `Interaction[Text, LineEditor]` 绘制，在拥有输入焦点时显示硬件光标，否则隐藏它，并把它的值在上次被给定的宽度下折行所占的行数报告为它的固有高度，因此超出一行的编辑器会把它下方的窗格往下推。
++     它的值从 `EditorField` 读回，这就是为什么之后需要该文本的表单要自己构建该字段，并把它包装在 `Tui.Pane.Widget` 中。
+
+% 2 1 0 05c4d57f68e117d71b2b3d9e7c10583d
+
+% 3 1 0 1a07805cc1647cc81e67ec033d2d510f
+
+% 0 1 0 0e2d7d82f79ad20b17360282ad43bda3
+
+% 0 1 0 015c85c62543de3f1132164315902536
+
+% 0 1 0 073a8d4104bf163e05396de915667402
+
+% 0 1 0 0529288912fc5be71c741a4a646f41c5
+
+% 0 1 0 1ee3ee6561bc392404466406d0a05a1f
+
+% 1 1 0 1f4ebc6d8fbd7c4b00d1964472650cff
+
+@ 0 2 0 05092c96f6c9a0c61a4480e2cb4f958d
++     `LineEditor(mode = LineEditor.Mode.Multiline(_ => false))` 给出一个多行框，在其中 Enter 插入换行符，Up 和 Down 在各行之间移动。
+
+@ 0 7 0 11ab84bdf012576f031935383a79df99
++ entry .menu   一个可聚焦的选择菜单窗格，每个选项占一行
++     `menu(options, current, fraction, minWidth, maxWidth, minHeight, maxHeight)` 是一个 `Tui.Pane.Widget`，承载一个基于 profanity `SelectMenu` 的 `MenuField`：`options` 是任意 `Showable` 值，`current` 是最初选中的那个。
++     Up 和 Down 移动选择；菜单拥有输入焦点时，选中的选项标记为 `>`，没有输入焦点时标记为 `·`，因此选择总是可见的，拥有输入焦点的菜单也能被区分出来。
++     在菜单中，硬件光标保持隐藏。
++     它的固有高度是选项的数量。
+
+% 2 1 0 091b07b158c90ddc124606c9516ceecf
+
+% 3 1 0 1154805c71da90860653a0c997cf4502
+
+% 0 1 0 1381b2c7f5363d6713bfe8559ddbd400
+
+% 0 1 0 1a4bb66e24abea8b0c9d06ae8ae5a19b
+
+% 1 1 0 104324f4929a1bd30dfb73bee2ec0ecc
+
+@ 0 6 0 17425d659935c63e19405bcd9291e132
++ entry .scrolling   基于 `ScrollFixture` 的视口窗格，拥有输入焦点时用 Up 和 Down 滚动
++     `scrolling(fixture)` 是一个 `Tui.Pane.Widget`，带有默认的 `Tui.Sizing`，基于调用方已经构建好的 `ScrollFixture`：参数是控件而不是它的内容，因此调用方保留着句柄，可以在表单运行期间对它调用 `scroll`、`toBottom` 和 `refresh`。
++     布局分配的无论什么矩形都成为视口，内容更高时，滚动条出现在它最右边的一列。
+
+% 2 1 0 06bf6686dc35bf9700a632d2376a12b1
+
+% 3 1 0 1c48d5c0dc5897a60a8c903563417844
+
+% 0 1 0 06fa0303f7ccdfce1177331db21d75ab
+
+% 0 1 0 1eb62e375a21304a00ad9914352b95c4
+
+% 1 1 0 185497b53ca0cc690ad8afaf00dfe319
+
+@ 0 6 0 12b1a98f6103e46916e5a89bee7b0f37
++ entry .strip   把空间在并排的窗格之间分配，分配的是宽度
++     `strip(panes*)` 把它的子窗格在一行上从左到右放置，每个子窗格与条带同高，宽度由其 `Tui.Sizing` 赢得：宽度按 `fraction` 分配，最小值超过其份额的子窗格固定为该最小值，其余的重新分配，受最大值限制的子窗格同样如此。
++     `strip(panes: Tui.Panes)` 是基于实时容器的同样划分，它的子窗格可以在表单运行期间被追加或移除。
+
+% 2 1 0 1bfd6f5d9af1d3e509cc68a2c6741ca7
+
+% 3 1 0 0b2556fb80bd870a1057517fb9d5eb09
+
+% 0 1 0 12a18985f62c731e1874ee1d99406d8d
+
+% 0 1 0 13a287f7bd9184631d94daba96d7d081
+
+% 1 1 0 02c214dfd8d6ae6102033cf6d8cc8fc7
+
+@ 0 1 0 1a78e2bb44d99edb1d1faeb731df7855
++     这个名称就是它所构建的 `Tui.Arrangement.Strip`；`stack` 是与之对应的纵向版本。
+
+@ 0 7 0 1fb9cec00fe646931216e4361123b4cc
++ entry .stack   把空间在上下排列的窗格之间分配，分配的是高度
++     `stack(panes*)` 把它的子窗格从上到下放置，每个子窗格与栈同宽，高度按与 `strip` 相同的规则由其 `Tui.Sizing` 赢得：按 `fraction` 分配，任何子窗格若会越过它的最小值或最大值，就固定在该值上。
++     `stack(panes: Tui.Panes)` 是基于实时容器的同样划分。
++     在栈的顶部和底部各放一个有界的单行面板（`minHeight = 1, maxHeight = 1`），就能固定标题栏和状态栏，而中间部分占据其余空间。
+
+% 2 1 0 0d73e0c7aa2b5e2c1c48d8faafa6dc80
+
+% 3 1 0 06f3f95f0d337bb9054c6fd36cff8512
+
+% 0 1 0 063a73e28378f11b0541d017b959d6de
+
+% 0 1 0 0a7135b94d57d82b13ee2b1e25003b63
+
+% 1 1 0 10ba6e8ba15bafa50da02827fa0a38e0
+
+@ 0 1 0 0c91ee964c3d2bdb0c8a69abfab10432
++     这个名称就是它所构建的 `Tui.Arrangement.Stack`。
+
+@ 0 7 0 1b12998ddd3df5ff0374737faf8f551f
++ entry .grid   把窗格按行优先的顺序排入对齐的列中，可选地带有间隙
++     `grid(columns, gap)(panes*)` 把它的子窗格排布在 `columns` 列中，每行从左到右填满后才开始下一行。
++     列宽在所有行之间协商：一列的宽度是它最宽的成员所需的宽度，因此单元格像在表格中那样对齐；每行的高度是它最高的成员的最小值，因此网格的高度固定为各行高度之和。
++     `gap` 在各列之间和各行之间留出那么多个空白单元格。
++     不完整的最后一行保持其各列的宽度。
+
+% 2 1 0 0a8ab2451ac5425c1ebf0caf45a7f32d
+
+% 3 1 0 1f3598d7d525d61d0c2e92d33e89be5f
+
+% 0 1 0 133ab9020e404f84181272f030138880
+
+% 0 1 0 125bcc0add6447b5063edc2b1b436409
+
+% 0 1 0 1743090528a9222a0f41b61fd2427051
+
+% 0 1 0 12b439a534b028f113246aef683c661b
+
+% 0 1 0 0b26787b28496a140a88ad357fcd0010
+
+% 1 1 0 0987a8e0ab808c891e589e6c66710974
+
+@ 0 1 0 0818a8abced8d43a0b9be7ebe3e866df
++     这个名称就是它所构建的 `Tui.Arrangement.Grid`。
+
+@ 0 9 0 0181746e1b54c4100e9deb210a3dd7f2
++ entry .border   用制表符边框包围一个窗格，边框画在要求的那几条边上
++     `border(style, top, right, bottom, left)(child)` 用以 `BorderStyle`（默认为 `BorderStyle.light`）绘制的线条包围 `child`：每条要求的边都是一个单元格宽的面板，其线条根据它求解出的大小重新生成，因此一条边总是恰好跨越被包围的区域，并在布局改变大小时重新绘制线条，而角只在两条要求的边相交之处绘制。
++     因此，不完整的边框就是一条普通的线：`border(top = false, left = false, right = false)` 用一条没有角的单线给标题加下划线。
++     边框在它所绘制的每条边上保留一行或一列，求解器会把它加到子窗格的最小大小上。
+
+% 2 1 0 0e9dcf19e165c79c0bd4d51a267f43e1
+
+% 0 1 0 08cc4a1ea40a8d0205a0e8cd4108e700
+
+% 1 1 0 19e4c87ce8ec532b04a5fd28e5354b51
+
+% 0 1 0 0a4649aa9e7ab28d1af31137035dd46f
+
+% 0 1 0 1eb6b18bfd75249c12b2e9f5c0a8322d
+
+% 1 1 0 12205f1c5d6596fc06673b3d769d2fc8
+
+% 0 1 0 09168b537deed7720e491704d018738f
+
+% 0 1 0 030e7a0f47e8d51a0ab9c20b2e1ef05f
+
+% 1 1 0 16f69db37b25aa0014a2f506c2102793
+
+% 0 1 0 13fda5bb73e6bafc0598ecb9505dc073
+
+% 0 1 0 148483f1e518e1700c2684a2172e2c75
+
+% 1 1 0 153d29a45c7c12e91805c9d63659fe55
+
+% 0 1 0 1468759cb546847e027ed587bcf844f8
+
+% 0 1 0 01f5ea257f419480016b3a378331c497
+
+% 1 1 0 0239dfd8cc0968161a59a58a59d58c2c
+
+% 0 1 0 143c9f4785281bda0741a046fdf4abeb
+
+% 1 1 0 155d7d71dc0c1f110e76f60a6da2e141
+
+% 0 1 0 04d903416f0586961aa3fe7bfaea45e2
+
+% 1 1 0 146b1ae80d0f23a9157f5cd0108e3ec9
+
+% 0 1 0 174c6d3b988b0860194134639eb9a054
+
+% 0 1 0 14b31537000be47b1dfcad1538a8fc4f
+
+% 0 1 0 1fb9370342fb11a41a39b06aa58539dd
+
+% 0 1 0 1c6404cf04dd08b71994da9012159da1
+
+% 1 1 0 0c440507d2017fa3171483b0fd9dda37
+
+% 2 1 0 1951d5441b99154a1c8a5c60e49eedd3
+
+@ 0 2 0 16e8d1699f263ca803002ee5b2ef0f80
++     `border` 没有被 `soundness` 总括包转发，因此要写成 `ultimatum.border`（或用 `import ultimatum.border` 导入）。
+
+@ 0 7 0 0201ec10d995a8311eb52a5b3dc96337
++ entry .dirtyCells   哪些叶子必须重新绘制：移动过、改变过大小或发生过变化的那些
++     `dirtyCells(previous, current, changed)` 按位置比较上次求解和本次求解的叶子矩形，并返回矩形不同的那些索引（超出前一个序列的索引是新的，因此是脏的），连同 `changed` 中的索引，即已知其内容在这一帧发生了变化的那些。
++     矩形和内容都没有变化的叶子被省略，在屏幕上保持原样：这是全屏表单无闪烁重绘的基础。
+
+% 2 1 0 0e068361d7a9e2b81fbce834fd622ef0
+
+% 3 1 0 0f0dd7523477e2df1efdf6141a24b006
+
+% 0 1 0 10a4e1d76680a67b0cf571f5d10bcb30
+
+% 0 1 0 036af3ef217c25e01fb3d10aa80da74b
+
+% 0 1 0 0e86c5633934e0e41f07a3e246b88df0
+
+% 0 1 0 0be5777595c259760f1b39ba3bb97dc5
+
+% 1 1 0 1d8e71ab31ae4c9d189bd5bfd7a46263
+
+@ 0 1 0 011b0148d66fcc0804f1c8a8093450c5
++ entry .Tui   ultimatum 终端界面词汇的命名空间，首先是它的布局模型
+
+% 1 1 0 11128c8e75482cac116f00c7c94de39d
+
+@ 0 5 0 1f1d3db73b6b99cb03ebca42dd02b8cd
++       用来描述、求解和放置布局的每个类型都在这里：由 `panel`、`strip`、`stack` 和 `grid` 构建的承载内容的 `Pane` 树，运行中的表单会重新铺排的 `Panes` 容器，窗格为求解而投影成的纯粹的 `Frame`，以及求解所产生的由 `Region` 组成的 `Placement`。
++       它们之所以是嵌套的，是因为每个名称如果单独出现，所宣称的含义都会比 ultimatum 赋予它的宽泛得多。
+
+@ 0 1 0 1035549326095b1515c8ac9c3a2582df
++   entry .Pane   承载内容的布局树：带内容的叶子、部件或划分
+
+% 1 1 0 0aaa09da4968769b04de73e1986b462b
+
+@ 0 7 0 16ddd09b4820aacc196cb9414ba3eb29
++         `Pane` 是 DSL 所构建、驱动器所消费的东西。
++         它是一个有三种形状的枚举。
++         `Leaf(sizing, content)` 是一个面板（`panel`）：一个 `Sizing`，以及一个从求解出的 `Extent^` 到 `Unit` 的函数，在矩形已知后运行。
++         `Widget(sizing, fixture)` 承载一个实时的 `Fixture`（`editor`、`menu`、`scrolling`、`gauge`、`tabular`），它保持自己的状态，报告自己的固有大小，并且可以获得输入焦点。
++         `Branch(sizing, arrangement, panes)` 沿着一个 `Arrangement`（`stack`、`strip`、`grid`），把它的空间分给一个 `Panes` 容器的各个子窗格。
+
+@ 0 5 0 181ae3bd74c7b3b71cec0bddadeed052
++         窗格树是纯粹的：叶子的内容是其 `Extent` 的纯函数，而 `Extent` 本身就是它所绘制的 `Board` 和 `Stdio`，因此窗格可以被自由地收集和遍历。
++         这棵树用 `#frame` 投影为一个 `Frame` 以供求解，并用 `#leaves` 以相同的顺序遍历其叶子，因此求解出的 `Placement` 的单元格与叶子一一配对。
+
+% 2 1 0 0410b7e666055ec20b0c16a48edab63d
+
+% 3 1 0 009b27bd09baf8fd10aace074ba8cade
+
+% 0 1 0 17dfdae0d0fcc5b71d80fa20888fd075
+
+% 0 1 0 045cece27e104e6d11dea5875ebc82ff
+
+% 0 1 0 1f00ce0f4c5f53841be49bfd922b94ce
+
+% 0 1 0 0adf3940a89348181677af2e1b9ec3aa
+
+% 1 1 0 011a6195e74067170618c4cebed9038a
+
+% 0 1 0 00fabfcb45d296091d729c764d5d04d8
+
+% 1 1 0 06b84ee8942a7cb408a00ca616edf14f
+
+% 0 1 0 17917b676b6e5c2403873dcb6921c33e
+
+% 0 1 0 1e22484e796276ce06d2c1995bb95014
+
+@ 0 13 0 1b6f00afbae4065c19d7dfef02c61163
++     entry #sizing   这个窗格在其父窗格中如何确定大小：它的权重和边界
++     entry #frame   丢弃了内容的纯布局结构，供求解器使用
++         `Leaf` 或 `Widget` 仅凭其声明的 `Sizing` 成为一个 `Frame.Cell`；`Branch` 成为基于其容器*当前*内容的 `Frame.Split`，因此被变更的 `Panes` 会重新求解。
++         运行中的 `Form` 不直接使用这一投影：它把每个部件的最小值提高到其内容在上次所占宽度下测得的大小，增长的内容就是这样推动布局的其余部分的。
++     entry #leaves   按帧顺序排列的叶子窗格：在条带中从左到右，在栈中从上到下
++         `Leaf` 或 `Widget` 自身就是唯一的叶子；`Branch` 给出其各子窗格的叶子的连接。
++         这个顺序与 `#frame` 求解得到的 `Placement` 的单元格相一致。
++     entry #weight   这个窗格以新的 `fraction` 重新加权后的副本，用作划分的子窗格
++         内容、控件或子窗格与原窗格共享；只有 `Sizing` 的权重改变。
+
+@ 0 1 0 0ed15efc9a757ce31a3b276bfcdb2536
++   entry .Panes   一个可变的、有序的子窗格容器，运行中的表单会据此重新铺排
+
+% 1 1 0 0867f78043193ce805e517f53208d44e
+
+@ 0 9 0 13553f9b88e0d6e60576157b45042e68
++         `Panes(initial*)` 保存 `stack(panes)` 或 `strip(panes)` 划分的子窗格。
++         持有这个引用，就能在表单运行期间改变布局：`#append`、`#prepend`、`#insert`、`#insertBefore`、`#insertAfter` 和 `#remove` 修改容器，表单在下次重新推导它的树时会取得这一变化，而一旦容器被绑定到运行中的表单，变更还会唤醒事件循环，因此从后台任务添加的窗格会立即出现。
++         每次变更都是一次原子的比较并设置转换，因此来自多个任务的并发变更不会丢失任何东西。
++         窗格按同一性比较，因此 `insertBefore` 和 `remove` 所查找的是同一个窗格值。
+
+% 2 1 0 1737282803a83ba21c94a914e29f8b46
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 082a9f3cfab727410762ce19bdc413da
++           label 只有一行的日志
+
+% 1 1 0 1c4aae9ea8045aea17f3b7255e67678c
+
+% 2 1 0 0ecae94a4010d0ba05e3ebe0d2791d42
+
+% 3 1 0 0a8d60732a09a53b006e668ced8b48dd
+
+% 0 1 0 1c00b9665b1168c00aec307abb75d03d
+
+% 1 1 0 07797f1e3a3cf40905ff24ee05abee2a
+
+@ 0 1 0 11a596e84e9caca012c99ce2bcdfcee6
++           label 表单运行期间追加的一行
+
+% 1 1 0 04a62b96311ce04309d3af1cd18fe1ab
+
+% 2 1 0 0251b4f05cb1626c0c2a7488e1616664
+
+% 3 1 0 1eb0ad15c59ef11715d495dc0561e80b
+
+% 0 1 0 185b51ebe17e775600f0d66e12d6c762
+
+% 0 1 0 0a14548ec11a499c1429eec1716d4b2a
+
+% 1 1 0 02605daf964b1330078ad3ad7a60641a
+
+@ 0 1 0 077a35919c1aaf1a1e40ba76c245cd4c
++           label 插入到另一行之前的一行
+
+% 1 1 0 149e76a25d62788a1d61e62d2f38cd1d
+
+% 2 1 0 05230c92cb5b76d9158a795ad9e6889c
+
+% 3 1 0 1f687a66b16364200040f9149b11c844
+
+% 0 1 0 1e0de061d9b901800eec0a7ec71ac4dc
+
+% 0 1 0 094404337bb5936818c06569157a523b
+
+% 0 1 0 1af9f05933f8b44710a01786c8c4e05c
+
+% 0 1 0 0ab6e090ce8f312005282b92ca99e57e
+
+% 1 1 0 04563da1dae670da191cdf52ad54c424
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 2 0 1f78747dc3300a741e61f34d76723799
++         这个容器不是能力：窗格是纯粹的，而它唯一带有副作用的字段，即重绘回调，是由运行它的表单安装的。
+
+% 1 1 0 007992b459bc58801b7e2bfce1660a69
+
+% 0 1 0 18d3742c6261eb640880fa54f51b3686
+
+% 0 1 0 14596ec586ee8be21112c08312af442f
+
+@ 0 9 0 029daa69c000bc5d038eb3935f75b9dd
++     entry #contents   当前的子窗格，按顺序，作为一个 `Sequence`
++     entry #size   子窗格的数量
++     entry #apply   位于某个从零开始的索引处的子窗格
++     entry #append   在末尾添加一个窗格
++     entry #prepend   在开头添加一个窗格
++     entry #insert   在某个位置插入一个窗格，位置被限制在容器的范围内
++     entry #insertBefore   按同一性，在一个参照窗格之前紧挨着插入一个窗格；参照窗格不存在时追加
++     entry #insertAfter   按同一性，在一个参照窗格之后紧挨着插入一个窗格；参照窗格不存在时追加
++     entry #remove   按同一性移除一个窗格（如果存在）
+
+@ 0 1 0 1a4ca137f0ca61e20e41191a2243b4e2
++   entry .Sizing   窗格在其父窗格中如何确定大小：一个分数权重和每个轴上的边界
+
+% 1 1 0 0bb14397ba9140e50ccfdd89d19d2d48
+
+@ 0 9 0 0cb9b642be5bd5a5070a47372ddd9e3d
++         `Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)` 由每个窗格携带，由求解器读取。
++         `fraction` 是窗格在其父窗格的划分轴上的相对权重（权重为 2、3 和 4 的兄弟窗格分别占据其 2/9、3/9 和 4/9，按最大余数法取整，使各大小之和恰好等于空间），而边界是每个轴上由内容驱动的限制：一个子窗格的公平份额如果会落在它在划分轴上的边界之外，就固定在该边界上并从按分数分配的池中移除，其余子窗格重新分配剩下的空间。
++         `Unset` 的最大值表示无界。
++         每个 DSL 构造器都以具名参数的形式接收这五个值，因此只有手工构建 `Pane.Widget` 时才要写出 `Sizing`。
+
+% 2 1 0 1ae0bf4d83a5c6e411822582415aeba0
+
+% 3 1 0 11fdd7764f78d0ca1dec3f0f70e6e969
+
+% 0 1 0 04a09215e10e48080528c1146349d1bb
+
+% 0 1 0 0850c0f4d6fee4d7009ec2988cc78aad
+
+% 1 1 0 1fa33f95cc9411ce1375ec1d4dce1682
+
+@ 0 5 0 0bbb96757bf7cfee1fe36903e5a2d4e0
++     entry #fraction   在父窗格的划分轴上的相对权重；默认为 `1.0`
++     entry #minWidth   可以给予窗格的最小宽度；默认为 `0`
++     entry #maxWidth   可以给予窗格的最大宽度，或者 `Unset` 表示没有限制
++     entry #minHeight   可以给予窗格的最小高度；默认为 `0`
++     entry #maxHeight   可以给予窗格的最大高度，或者 `Unset` 表示没有限制
+
+@ 0 8 0 03dc6e50a49416f80ab7654953815866
++   entry .Arrangement   划分如何排列它的子窗格：堆叠、成条带或成网格
++       `Pane.Branch` 或 `Frame.Split` 所携带的值，以构建它的构造器命名，使值和调用读起来一样。
++       `Stack` 把子窗格上下排列，分配高度；`Strip` 把它们并排放置，分配宽度；`Grid(columns, gap)` 把它们按行优先的顺序排入 `columns` 列，列宽在所有行之间协商，各列和各行之间有 `gap` 个空白单元格。
++       `Frame#measure` 接收一个 `Arrangement` 来指明要测量哪个轴：`Strip` 测量宽度，其他任何值测量高度。
+
+@ 0 8 0 19609f9a8d811f3c16ab87af4664cd53
++   entry .Occupancy   交互式布局占据终端的多少空间：内联或全屏
++       `conduct` 和 `Form` 运行时所处的模式。
++       `Fullscreen` 通过备用屏幕缓冲区接管终端（退出时恢复），占满它的固定高度，并且只重新绘制发生了变化的单元格。
++       `Inline` 在光标处绘制一个高度可变、大小与内容相符的块，不使用备用缓冲区，因此终端的回滚内容保持完好，表单结束后块仍留在屏幕上，光标位于它下方的新行上。
++       这个枚举曾经命名为 `Mode`；它被重命名，是为了不与 `soundness` 总括包中 aperture 的 `Mode` 冲突。
+
+@ 0 1 0 19919e7d77e225c712c9804e6f71d559
++   entry .Frame   求解器所处理的纯布局树：带有大小设定的单元格和划分
+
+% 1 1 0 14029745429ebf921c11711aeb6723c7
+
+@ 0 10 0 168d705309f88a9d0e266260404586ab
++         `Frame` 是丢弃了内容的 `Pane`：叶子或部件对应 `Cell(sizing)`，分支对应 `Split(sizing, arrangement, children)`。
++         根据根 `Region` 求解分为两遍。
++         `#measure` 自底向上：求出每个节点在一个轴上的最小值和最大值，其中划分沿其自身轴的最小值被强制提高到其子节点最小值之和（容器不能比它的内容更小），最大值被降低到子节点最大值之和（任何无界的子节点都使这个和无界），而在另一个轴上，最小值是子节点最小值中最大的那个，最大值是子节点最大值中最小的那个。
++         `#arrange` 自顶向下：每个子节点成为一条弹性轨道（以测得的最小值为下限，以它的分数为权重，以测得的最大值为上限），空间按分数分配，任何碰到边界的子节点固定在那里，然后递归。
+
+% 2 1 0 0518574e5cffb856044f1ad9c80befdc
+
+% 3 1 0 1b9d95da3bb8093c0c97a9c88601c148
+
+% 0 1 0 14b6e6b3aca10e8a0764b607ba9ae434
+
+% 0 1 0 03bbbd538a7c41c319dff9334a4380d4
+
+% 0 1 0 16463fddef2a5e2c1fd94a5c272d4792
+
+% 0 1 0 176776c5fb730d26132b57520a366359
+
+% 0 1 0 0e0626896c1f67df1346d71c6aba17c8
+
+% 1 1 0 059d85d28865d5060649512e07d5a682
+
+@ 0 3 0 1bbfcad2007f1877176d4b3c24492aa5
++         网格在其各列上用同样的轨道求解器求解（每一列由其成员的限制折叠而成，以其成员中最大的分数为权重），而它的各行按每行中最高的最小值确定大小，并被限制在网格的矩形之内。
+
+% 1 1 0 0204e931a826d7e10cd02b5e450e1a90
+
+% 0 1 0 0184a1b5f920f6e315f2a62c0798aae6
+
+% 1 1 0 07cea60814c33c881e78e8c9439e1a79
+
+@ 0 10 0 1c3bc4f0abe8f1b60c1bfd072a4476af
++     entry #sizing   节点自身的 `Sizing`
++     entry #measure   这个帧沿一个轴解析出的最小值和最大值，作为 `Limits`
++         `measure(Arrangement.Strip)` 测量宽度；其他任何排列方式测量高度。
++         单元格的限制就是它自身大小设定的限制；划分则按轴和划分的排列方式的要求汇总其子节点的限制。
++     entry #arrange   根据一个矩形求解这个帧，产生一棵 `Placement` 树
++         单元格占据整个矩形。
++         划分按分数和边界把矩形的宽度（`Strip`）或高度（其他任何值）分给它的子节点，每个子节点在交叉轴上获得完整的范围，然后递归；网格把每个子节点放在其协商出的列和按内容确定大小的行中。
+
+@ 0 1 0 10c3a2f5ba55245504340ba2888d3eaf
++   entry .Placement   求解布局的结果：一棵与帧树相对应的矩形树
+
+% 1 1 0 0dad83ee869d4db70280280149c695f1
+
+@ 0 5 0 0a3a0b65a29442ed1b53eaf757805697
++         `Cell(rect)` 是求解出的叶子，`Split(rect, children)` 是求解出的划分；`#cells` 按帧顺序列出叶子矩形，这也是 `Pane#leaves` 的顺序，因此两者可以拉链式组合，使每个叶子与它的矩形配对。
++     entry #region   这个节点被给予的矩形
++     entry #cells   按帧顺序排列的叶子矩形：在条带中从左到右，在栈中从上到下
+
+@ 0 1 0 0c179d99a3d91d1e081e4d9ce3867d14
++   entry .Limits   一个帧沿一个轴解析出的最小大小和最大大小
+
+% 1 1 0 0583de112f5c982f1eea90b185f936aa
+
+@ 0 4 0 1f58e8f3c1fefe3906d64f8c8bb14f13
++         由 `Frame#measure` 返回。
++         `min` 是单元格数，`max` 是一个 `Optional[Int]`，当帧在该轴上无界时它是 `Unset`。
++     entry #min   可以给予这个帧的最小大小
++     entry #max   这个帧可以占据的最大大小，或者 `Unset` 表示无界
+
+@ 0 1 0 087b1540665ec2970fe4ebededaed77d
++   entry .Region   绘制面内的一个矩形区域，采用从零开始、原点在顶部的坐标
+
+% 1 1 0 0cb50ff7ad5e0d461e291052087193da
+
+@ 0 4 0 084a534faaa258d315d305d7c93bd93b
++         `Region(left, top, width, height)`：`left` 和 `top` 是相对于外围绘制面左上角的偏移量，`width` 和 `height` 是单元格数。
++         这些是求解器自己的数值，因此它们是普通的 `Int`，而不是 `Ordinal`；定位光标的 `Board` 方法接收序数（`Prim`、`Sec`、`n.z`）。
+
+% 2 1 0 070346405a9d5b2b164663101b83c7a1
+
+% 3 1 0 046ff39859490d641bc0d4ae3c927251
+
+% 0 1 0 10cdbd2e231ac10a06f35eeffaa95812
+
+% 0 1 0 0fcfa12e3828289914d967c19a41da33
+
+% 0 1 0 1683faf79eff90801be4f87f7979ca65
+
+% 0 1 0 170df4c625e48f450cfe0961e870655f
+
+% 0 1 0 02e22e65d886d8b715cefe21aeef0a3f
+
+% 1 1 0 01c586ff03cadda30e57f162a59bb709
+
+@ 0 7 0 161800d765a9aed51298955d913d995d
++     entry #left   左边缘所在的从零开始的列
++     entry #top   上边缘所在的从零开始的行
++     entry #width   以单元格计的宽度
++     entry #height   以单元格计的高度
++     entry #right   紧挨在右边缘之外的列：`left + width`
++     entry #bottom   紧挨在下边缘之外的行：`top + height`
++     entry #contains   一个从零开始的列和行是否落在矩形之内
+
+@ 0 1 0 03c582c7ca8658ae11897ddc0634b914
++   entry .Block   内联模式的根绘制板：一个通过绝对寻址呈现在光标处的块
+
+% 1 1 0 06946d2f7bc5c2cc114b756a6d94c000
+
+@ 0 7 0 06cf7326b7fff2ec1c420d79dade2f33
++         `conduct(Tui.Occupancy.Inline)` 和 `layout` 所绘制的根。
++         面板合成到它的字符网格中，`#flush` 用一次写入呈现该网格，每行位于一个绝对的屏幕行上，因此重绘总是落在同一位置，永不漂移：相对的、跟踪光标的呈现方式会在大小改变使屏幕上已有的行重新排布的那一刻失去这一性质。
++         几何形状稳定时的再次呈现，会与上次呈现所绘内容的快照作比较，只覆写发生了变化的单元格；完全相同的一帧什么也不输出。
+
+@ 0 10 0 0c4ec76a587e25bb03cb077b7287deff
++         块的行为由三个方针决定，它们在构建根时从上下文中读取。
++         `Anchoring` 说明块位于何处：在默认的 `TopAfterResize` 下，它在启动时停靠在底部，出现在 shell 命令的下方，在第一次改变大小时，它尝试根据终端对光标查询的回复恢复自己的位置，如果不行，就回退为把自己固定在顶部的几行并清除屏幕。
++         `Growth` 说明停靠在底部时更高的一帧会怎样（把屏幕滚入回滚内容，或原地向上增长）；`Shrink` 说明更矮的一帧会怎样（重新停靠在底部，或保持顶行不动）。
++         每一项在其伴生对象中都有默认值，可以通过从 `inlineAnchoring`、`inlineGrowth` 或 `inlineShrink` 进行一次导入来覆盖。
+
+% 2 1 0 0ee845e6bfef3dd51ed4952a327f27b1
+
+% 3 1 0 116fc0223a37fca9044028eaefc6f4d8
+
+% 4 1 0 0199197324d42871148d91c565706e07
+
+% 0 1 0 1732ebe4c1d034be041642b5a29eabac
+
+% 0 1 0 0cafeed3ac3acc16172476287c96fe29
+
+% 1 1 0 157c4e0ddf4b1fc70e0717d6fdcf581b
+
+% 0 1 0 0ed9ca72542ad92c0cbb8001949c6ba7
+
+% 0 1 0 0ba5bf82e70422060a818a87ac3ea3e4
+
+% 0 1 0 0591490434165f291a64dc9ca6d4a739
+
+% 1 1 0 09f9c649380cba401420a1d9cc7df095
+
+@ 0 7 0 16d55ea3a732081f1cf4ba0b3611e00e
++         `Block(terminal)` 实时读取终端的列数和行数，因此大小的改变会反映在下一帧上，并且它会保留终端；`Block(width, height)` 是基于作用域内 `Stdio` 的固定大小的根，用于测试。
++         过大的块会被限制在终端的高度之内。
++         网格成员 `width`、`height`、`move`、`put`、`clear`、`clearLine`、`invalidate`（它把下一次呈现标记为一次完整的、因大小改变而进行的重绘；表单驱动器在每个 `WindowSize` 事件时调用它）和 `render` 与其他绘制面共享。
+
+% 0 1 0 19d22d73ad31b5ce11c6cff6dee19108
+
+% 0 1 0 0f6a189916eb9abb1efb323661d736ef
+
+% 0 1 0 1228864c99e5ceb31513b734cfa63015
+
+% 0 1 0 161336832af1637317ac5b96b5a7db61
+
+@ 0 35 0 0d13d6508402f0521332d40f148acacf
++     entry .apply   基于终端并实时读取的根，或基于 `Stdio` 的固定大小的根
++         `Block(terminal)` 从上下文中获取三个内联方针以及终端的 `Stdio`、`knownColumns` 和 `knownRows`，每一帧都重新读取；它的结果捕获了终端。
++         `Block(width, height)` 从上下文中获取一个 `Stdio` 和这些方针，是一个固定大小的全新的根。
++     entry #anchor   暂存终端对因大小改变而发出的光标查询的回复，供下一次因大小改变而进行的呈现使用
++         `anchor(row, column)` 记录终端在因大小改变而重新排布屏幕之后，把停驻的光标留在了何处（从一开始的屏幕坐标）。
++         `invalidate` 之后的下一次呈现用它来计算旧块的残留现在从哪里开始（它同时为重新排布的终端和截断的终端建模，前者会重新折行每一行，后者在原地裁剪，并信任能预测出回复中的列的那个模型），从那里开始清除并重新停靠，因此块上方的回滚内容得以保留。
++         与两个模型都不相符的回复，或者没有回复，会回退为方针所规定的完全清除。
++         无论是否被使用，锚点都会被那次呈现消耗掉。
++         `Form` 自己完成这些衔接工作。
++     entry #width   实时宽度，来自终端，每一帧都重新读取
++     entry #reframe   把网格调整为测得的块高度，并限制在终端的行数之内
++         `reframe(width, height)` 在每一帧被合成之前重新分配网格并将其清空；驱动器以内容测得的高度调用它。
++     entry #cursor   记录硬件光标是否应当可见，由 `flush` 应用
++     entry #reset   忘掉所记录的关于屏幕上内容的一切，使下一帧成为第一帧
++         在调用方自己清除屏幕之后，这使得下一次呈现在当前光标处渲染，就好像什么都没有绘制过一样，而不是相对于先前的块或停靠在先前的块上。
++     entry #showCaret   记录插入符在块内的单元格；`flush` 把硬件光标放在那里
++     entry #flush   用一次写入呈现网格：几何形状不变时是一次差异更新，否则是一次完整的重绘
++         在 `Anchoring.Flow` 下，块相对于光标绘制；在其他所有锚定方式下，它以绝对方式寻址。
++         完整的重绘按方针的规定进行停靠、增长、收缩和清除，把每行修剪到其内容（终端的擦除已经清除了其余部分），使大小改变时的重新排布可以预测，在任何输出了颜色的行之后重置样式，使任何东西都不会渗出，并把光标停驻在插入符的单元格上（无论是否隐藏），以便之后的大小改变可以询问块去了哪里。
++     entry #finish   把光标落到块下方的新行上，并重新显示它
++         在表单结束时调用，使随后的输出接在渲染出的块之后继续，就像一个已提交的提示符那样。
++         在 `Anchoring.Fullscreen` 下，它还会离开备用屏幕缓冲区，恢复之前在那里的内容。
+
+@ 0 1 0 0ed1ca8f610045f6145fd9d809ec46da
++     entry .Anchoring   内联块位于屏幕上的何处，以及它在终端改变大小时做什么
+
+% 1 1 0 07b7f02c7bebca940be5f8a89ebdbfd7
+
+@ 0 13 0 0306abc9164dfb6200af20450ece9de5
++           由 `Block`、`conduct` 和 `layout` 从上下文中读取。
++           默认值 `TopAfterResize`（即伴生对象中的 `.default`）开始时停靠在底部（块以内联方式出现在 shell 命令下方），在第一次改变大小时，如果可以，就根据终端对光标的回复恢复块的位置，否则一次性地、永久地切换为固定在顶部的几行并清除屏幕，因为当终端变高时，停靠在底部的块会留下空隙并遗留一个残影，而锚定在顶部的块只是在原地被覆写。
++           `BottomDocked` 从不切换：它在每次改变大小时清除底部的一条区域并重新停靠。
++           `TopAnchored` 从第一帧起就固定在第 1 行到块高度那一行。
++           `Fullscreen` 接管备用屏幕缓冲区，锚定在顶部，并在 `finish` 时恢复之前的屏幕。
++           `Flow` 相对于光标渲染，随先前的输出流动，从不停靠在边缘：增长时屏幕自然滚动，收缩时清除下方空出的行。
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1e6cb2ead3153d3906ece60d0d7db913
+
+% 1 1 0 1d6c45fb62d3f88d15041126f768f4c7
+
+% 2 1 0 12264c640f2e7be80fd646af1f682129
+
+% 1 1 0 088d1310814fe1431e2e0e57bca525e6
+
+% 2 1 0 0d391b2aed728f401f383d4545e00868
+
+% 3 1 0 1a7a1cf3ed8826cd08d898a57c9fae75
+
+% 0 1 0 0448d4717d7f88d91e4e10200e0b8b9a
+
+% 0 1 0 1a821daafb947e9d1be9511bc63988b8
+
+% 1 1 0 0f516e269e6e31e6135b548a517bbf20
+
+% 2 1 0 05cd98728bc7ee23149a754179ffec12
+
+% 0 1 0 118d5fb36c6fcb66085d54812c8cbb01
+
+% 1 1 0 174278baf7baee9b1975b6e9306744bd
+
+% 2 1 0 09fdf72d1029d95915844b5dabc42155
+
+% 3 1 0 18722e8f711476f316bcc4c07eb12fc0
+
+% 0 1 0 0419cf817cc0f1bb0da05948b01fb270
+
+% 0 1 0 19e70989a17d03ad089b9f4da7a9e5d5
+
+% 1 1 0 1dcb96774454a28c1ab656541c18c874
+
+% 2 1 0 005772bba645331412a72aea98de0f7d
+
+% 0 1 0 0373dd1dd47c338b175a2dba91444bbd
+
+% 1 1 0 143e062b5eb1154e18b2d53e8d6f660f
+
+% 2 1 0 02d2a4335d188de31fb367a86dcc309f
+
+% 3 1 0 02bdaac5da1ebb5e192711a6affc5ac2
+
+% 0 1 0 1de2b77d2ad15aef0993309998167437
+
+% 0 1 0 0d9a154ce69541e71aaa93e50adaef3b
+
+% 1 1 0 0a301b52e657303816b5f76c5c0fc478
+
+% 2 1 0 1cb4d2cc1b1ce1490b395c3d1dac6c2f
+
+% 0 1 0 1374ecbc55b19519191d5560d0a01fb3
+
+% 1 1 0 1dac9da60cf07e9c08189ba230886073
+
+% 2 1 0 032a2b6c845d3bcf0ea6b97b9903bd01
+
+% 3 1 0 1908a0b36fdb624f07642d213d46f58f
+
+% 0 1 0 10590730e8d0e07e02788b0abd330cd1
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 1 1 0 110dbe0df3ce97af1d8f7853eb1178f9
+
+% 0 1 0 131a9b20610baf8c0b54a42fc8a1cf60
+
+% 0 1 0 004928075d160b8f004927aa263cf594
+
+@ 0 2 0 02ea80af5c7019931eda83e362d62710
++       entry .default   没有导入任何 given 时位于隐式作用域中的 given：`TopAfterResize`
++     entry .Growth   停靠在底部的内联块在一帧比上一帧更高时做什么
+
+% 1 1 0 1fc75fe9ea6835d907b3bdc0ce67db3b
+
+@ 0 5 0 08e0a4f63c90bc360dc743c01bc6e459
++           默认值 `ScrollIntoScrollback`（`.default`）把屏幕向上滚动多出的行数，把上方的内容推入回滚内容，因此块保持停靠在底部，它上方的任何东西都不会被覆写。
++           `ClampToScreen` 原地向上增长，覆写上方的行，不触及回滚内容。
++           从 `inlineGrowth` 按名称导入；在构建时由 `Block` 读取。
+
+% 0 1 0 051610ef4f47cb5504ddbbb20f3be74b
+
+@ 0 2 0 01c525a57e2582731c1732941fa31f61
++       entry .default   没有导入任何 given 时位于隐式作用域中的 given：`ScrollIntoScrollback`
++     entry .Shrink   内联块在一帧比上一帧更矮时做什么
+
+% 1 1 0 0ac542a05dcdf53c07061a2b8a2e8590
+
+@ 0 6 0 1d764d96578056df1f785028b736ed54
++           默认值 `RedockBottom`（`.default`）把块向下移动以保持停靠在底部，并清除它在上方空出的行。
++           `KeepTop` 把顶行保持在较高的块开始的位置，并清除其下方的内容，因此块保持不动，空出的空间成为它下方的空白屏幕，`finish` 会把光标留在紧挨块的下方，而不是在空出的行之后。
++           从 `inlineShrink` 按名称导入；在构建时由 `Block` 读取。
+
+% 0 1 0 07d47ea2d241ff4d1af640b07d0ae070
+
+@ 0 2 0 1e705f74213696d006b693367304428f
++       entry .default   没有导入任何 given 时位于隐式作用域中的 given：`RedockBottom`
++   entry .Screen   全屏模式的根绘制板：一个通过与屏幕比较差异来呈现的缓冲网格
+
+% 1 1 0 052df05cace0080901a523729b1cd6ef
+
+@ 0 8 0 15f55af7f3ee7b8109939907bed51967
++         `conduct(Tui.Occupancy.Fullscreen)` 在备用屏幕缓冲区内所绘制的根。
++         面板合成到它的字符网格中，`#flush` 通过把网格与上次呈现所绘内容的快照作比较来呈现，只覆写受损的连续片段：未改变的单元格不做任何操作，完全相同的一帧什么也不输出。
++         每次呈现都是一次写入，因此不完整的帧永远不会闪现，因大小改变而进行的大小探测也不会在一帧中间穿插进来。
++         第一次呈现，以及 `invalidate` 之后的任何呈现（大小改变时，终端已经重新排布了屏幕上的所有内容），都会把每一行重绘在其绝对位置上。
+
+% 2 1 0 02287aeabc0a08351987ceb13ad4760e
+
+% 3 1 0 0432b0bf6b65300509ca77a950a16c7d
+
+% 4 1 0 1659f7c7b7dc9faf07b3d13bc00adee7
+
+% 0 1 0 1ce0195c5427d7f51a6fd8506f33d08a
+
+% 1 1 0 137e533c63c2e63503714997455d2c07
+
+% 0 1 0 1ba48d211e0eafa21ca0e5e7b6aea7e0
+
+% 0 1 0 015459d16b41e4351d86351982b244a1
+
+% 0 1 0 14e7e60f83c81f5d0595b5e13f921254
+
+% 0 1 0 005faff356c651b40fb74b2cb6e0b629
+
+% 0 1 0 125e0ed8a1b8174e13eff53d69b86d57
+
+% 0 1 0 0daee7da8868bef31a1e2758c83b5907
+
+% 1 1 0 07165e524e9666200f7c8103d0fa4c59
+
+@ 0 4 0 02e67f4e26506d371794f593017a84ff
++         `Screen(terminal)` 实时读取终端的大小，并保留终端；`Screen(width, height)` 是基于作用域内 `Stdio` 的固定大小的根。
++         网格成员 `move`、`put`、`clear`、`clearLine`、`invalidate` 和 `render` 与其他绘制面共享。
+
+% 0 1 0 1d65fae41f855ee6152ed33454440398
+
+% 0 1 0 1c92c29be27d3a231e2de686a4526826
+
+@ 0 13 0 168d1a8977c57b7e1418ded57ec7e67d
++     entry .apply   基于终端并实时读取的根，或基于 `Stdio` 的固定大小的根
++         `Screen(terminal)` 获取终端的 `Stdio`、`knownColumns` 和 `knownRows`，并捕获终端；`Screen(width, height)` 获取一个 `Stdio`，是一个固定大小的全新的根。
++     entry #width   实时的终端宽度，供求解器使用
++     entry #height   实时的终端高度，供求解器使用
++     entry #reframe   使网格重新适应实时的终端大小，如果大小改变了，就清空网格并使快照失效
++         由驱动器在每次求解之前调用，因此网格和终端只会在大小改变的过程中不一致。
++     entry #cursor   记录硬件光标是否应当可见，由 `flush` 应用
++     entry #showCaret   记录插入符的单元格；`flush` 把硬件光标放在那里
++     entry #flush   用一次写入呈现网格：只呈现发生了变化的连续片段，或者在 `invalidate` 之后呈现每一行
++     entry #finish   退出时重新显示硬件光标；备用屏幕的包装器会恢复屏幕
+
+@ 0 1 0 0699c6a054f940fc16d0f593a2b22780
++   entry .Bar   比例如何绘制：一个填充的条、一个移动的标记、一串圆点，或一个单纯的数字
+
+% 1 1 0 0edfa7b36031cfe90a51f2d6dd01d977
+
+@ 0 7 0 08e888ef4f9c7f5e166b3e3a6f4675c8
++         `Bar` 是 `bars` 中每种设计背后的引擎，以 `Fraction` 为键。
++         它的四个分支涵盖了整个目录：`Filled(glyphs, columns, gradient)` 是一个使用 `Bar.Glyphs` 字形集从左边开始填充的条，`Marker(track, marker, columns)` 是一个沿轨道移动、身后不留填充的头部，`Segmented(pip, hollow, gap, pips)` 是一串分立的圆点，而 `Numeric` 只有百分比。
++         每一种都通过 `#gaugeable` 成为一个 `Fraction is Gaugeable`，`bars` 中的 given 就是这样声明的，因此自定义的条只需一个表达式：
+
+% 2 1 0 15d4fd4c6ea0212412e54a5858ed41c8
+
+% 3 1 0 11df1b98ca6995b3090c67ee955c83d8
+
+% 4 1 0 09e3deead22661360b58bd0b547576f9
+
+% 5 1 0 0731aa95d2b4bd2d0d1d5da8e5253e33
+
+% 0 1 0 0e19b918fddb2cf30ef8644c88999e7c
+
+% 0 1 0 15d6626f17f1969f02ffe34b03728653
+
+% 0 1 0 000ef00ff4a44cd403f92a6905ba878f
+
+% 1 1 0 04562a2c4c1c190f105aa9399a8a247f
+
+@ 0 9 0 002252d1f38b612909d3e7d51356e4c3
++         退化在这里实现一次，而不是在每种设计中各实现一次。
++         条会根据给定的任意宽度重新量化；`Filled` 条在少于八个单元格时去掉两端的端帽，因为那时它们会占去条的五分之一；每种形状在少于四个单元格时都会退化为右对齐的百分比，在一个单元格时退化为单个阴影字形（`░▒▓█`，在 ASCII 下为 `.:*#`）。
++         单元格的计算是精确的：满单元格、至多一个边界单元格和空单元格之和总是等于宽度，因此条在填充过程中永远不会改变宽度。
++         没有 `Fraction` 可绘制时，条会让一个亮起的窗口沿着轨道来回扫动（`#sweep`），因为空的条会宣称“没有进展”，而真实情况是“没有测量”。
+
+% 1 1 0 1e7679b53026277d1c5029716212de67
+
+% 1 1 0 1a4115958b3f3d2200fbbd8ba402ec05
+
+@ 0 1 0 06e190c46644327a13a05af2bb39c406
++     entry .Glyphs   绘制填充条所用的字符：满单元格、它的部分宽度、空单元格、端帽和尖端
+
+% 1 1 0 00a540254e3b4c051d6e1903859e35df
+
+@ 0 33 0 155267237b8759ee0e8016fa46358025
++           `Bar.Glyphs(full, partials, empty, leftCap, rightCap, tip)`。
++           `partials` 是边界单元格的各个中间宽度，按升序排列，不包括 `full`：提供它们，条才能以一个单元格的若干分之一而不是整个单元格前进（`bars.smoothBar` 使用七个八分之一宽度递增的方块 `▏▎▍▌▋▊▉`），而空的 `partials` 给出一个逐单元格步进的条。
++           `empty` 为空格时，轨道显示为背景色；其他任何字形都以轨道颜色绘制。
++           `tip` 与部分宽度是不同的概念：它在每个中间值处替换最后一个被填充的单元格，即经典的 `[===>    ]`，并以调色板的 `leadingEdge` 绘制，而部分宽度采用填充的颜色。
++       entry #full   被填充的单元格的字形
++       entry #partials   边界单元格的各个中间宽度，按升序排列；对于逐单元格的条为空
++       entry #empty   未填充的单元格的字形；空格会把轨道显示为背景
++       entry #leftCap   条之前的字形（如果有）；少于八个单元格时去掉
++       entry #rightCap   条之后的字形（如果有）；少于八个单元格时去掉
++       entry #tip   标记填充所到之处的字形，在每个中间值处都出现
++     entry .defaultColumns   每个条偏好的宽度：40 个单元格
++         `Filled` 或 `Marker` 条作为其 `columns` 报告的值；布局可以给弹性的条更多宽度。
++     entry #columnCount   这个条偏好的宽度
++         对于 `Filled` 或 `Marker` 是其 `columns`；对于 `Segmented` 是 `pips` 加上它们之间的间隙；对于 `Numeric` 是四个单元格。
++     entry #gaugeable   在作用域内的 `Gauging` 下，作为 `Fraction is Gaugeable` 的这个条
++         这种设计是弹性的，占一行，最小宽度为一个单元格，偏好宽度为 `columnCount`；它在值缺失时的渲染是 `#sweep`。
++         `bars` 中的每个 given 都是这样的一个。
++     entry #sweep   不确定状态的渲染：一个沿着轨道来回移动的亮起的窗口
++         窗口占宽度的五分之一，它的位置是关于滴答索引的三角波，因此它会折返，而不是跳回起点。
++         对于为 `Unset` 的 `Optional[Fraction]`，`Gaugeable.optional` 绘制的就是它。
++     entry #draw   针对一个比例、恰好以给定宽度绘制的这个条的一行
++         纯粹的渲染，应用了向百分比和向阴影的退化：`bars.smoothBar` 在 `Fraction(0.42)` 处，三个单元格时绘制 `42%`，一个单元格时绘制 `█`。
++   entry .CaptionLayout   说明文字相对于它所标注的仪表位于何处，以及两者放不下时哪一方让步
+
+% 1 1 0 09df92aac1f13ba4104811f4829bf47f
+
+@ 0 7 0 1172a8cc4d6af8da186428af6baa1498
++         `CaptionLayout(gap, trailing, elide)`：仪表与标注之间的空格数，标注跟在仪表之后还是位于其之前，以及长标注是被缩短还是挤压仪表。
++         缩略是正确的优先选择，因为画了一半的条会误报它所测量的东西，而缩短的标注只是更简洁而已：说明文字最多可以占据一行的一半，超过之后才开始占用仪表的单元格。
++         伴生对象的 `.default` 是一个空格、在后、缩略；`captions` 包中有其他选择，按名称导入。
++         `Captioned` 状态采用作用域内的布局。
+
+% 2 1 0 074af038dabff15b03ef8703c1aeeb52
+
+% 3 1 0 113b39d49fcf4f730f71a9d2c54b9db9
+
+% 4 1 0 02acb85f4d0f7583045a16cc8fde0f64
+
+% 5 1 0 0c3ae101be7b010900bb80a5599e476a
+
+% 0 1 0 0d31e5eba885838b16cd7091d542598d
+
+% 0 1 0 08e91e05e8fa00770fe14144683a81db
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 0301dcfedadb14d60d0c96239b815a49
+
+% 0 1 0 108fcb8f5d0cc4ab1fc2de120be85769
+
+% 1 1 0 1fa147efc4d86c5f0ebec0c4a4903802
+
+% 1 1 0 190aa7a045276ec8121df50f705a1f6a
+
+% 0 1 0 0b6c0491936a98671fab87f40daf0e35
+
+@ 0 12 0 1e28ef58366ab4700d16b2e7f47ec36c
++     entry .default   无需导入的布局：标注跟在仪表之后，相隔一个空格，过长时缩略
++         一个伴生对象中的 given，位于隐式作用域中；任何 `import captions.…` 的优先级都高于它。
++     entry #gap   仪表与其标注之间的空格数
++     entry #trailing   标注是跟在仪表之后（`true`）还是位于其之前
++     entry #elide   长标注是被缩短还是挤压仪表
++     entry #gaugeWidth   在一行的宽度之内，仪表在说明文字旁边获得多少个单元格
++         说明文字的配额是它测得的宽度，缩略时上限为一行的一半；仪表获得剩余部分减去间隙，最多达到它的偏好宽度。
++     entry #compose   由绘制好的仪表及其说明文字组成的一行，用填充补足到行宽
++         说明文字用省略号缩短到剩余的空间，以调色板的 `caption` 角色着色，并按 `trailing` 的规定放在仪表之前或之后。
++   entry .Captioned   旁边带有标注的任意状态：`⠹ resolving dependencies`、`████░░ copying`
+
+% 1 1 0 0b8bf5feb80f00e70e39c5841401ce20
+
+@ 0 5 0 022a5032a5ab179516e2c142e6f3d839
++         `Captioned(status, caption)` 用一个 `Text` 标注包装任意类型的状态。
++         它的设计派生自底层状态在作用域内的任何设计，标注由作用域内的 `CaptionLayout` 放置，因此它是结构性的，而不是一种风格选择，也无需导入：带说明文字的 `Fraction` 绘制的条或旋转指示器与单纯的 `Fraction` 相同，并继承其动画周期。
+
+% 2 1 0 177e770d323734bf03440bc2dfb9a5f4
+
+% 3 1 0 1cefc70352252f56072b89b848f909c2
+
+% 4 1 0 03cc37c00d3aff040892fc543dd673ad
+
+% 5 1 0 1e9bf658845d80d41358d35ca5452606
+
+% 0 1 0 10003c48af06ac3418eff942b990f033
+
+% 0 1 0 163083c562c227e61d6f5852b78a3a92
+
+% 0 1 0 0ea3a308b377139a1907578fcd57d46e
+
+% 1 1 0 1cbdf79e125c092501bee2f1c35037d4
+
+@ 0 1 0 1cd53912d4ac457d121f1c2394738ff0
++         只有第一行带有说明文字；多行的设计在其下方保持自己的形状。
+
+% 0 1 0 167d4e7764db56ca1232cfa9c9ddb28c
+
+% 1 1 0 194f4f64ef2e6e54185988f9d644c684
+
+@ 0 7 0 01ce2953dbc19d2d0957915cbdbe04b5
++     entry .gaugeable   根据作用域内的 `T is Gaugeable` 和 `CaptionLayout` 派生出 `Captioned[T] is Gaugeable`
++         位于隐式作用域中：仪表以 `CaptionLayout#gaugeWidth` 留给它的宽度绘制，因此窄的带说明文字的条既缩略其标注，又使其条退化（八个单元格时，`Captioned(Fraction(0.5), t"copying")` 是 `50% cop…`）。
++     entry #status   被标注的状态
++     entry #caption   标注
++   entry .Checklist   一串步骤如何绘制：`Rows`、`Breadcrumb`、`Beads`、`Numbered` 或 `Ribbon`
+
+% 1 1 0 1abbc54a1d3f61cc103ed9412f2b40e5
+
+@ 0 9 0 0bfca40519a24fa01635713b66a3b041
++         `processions` 中各 given 背后的引擎，以 `Sequence[Step]` 为键。
++         `Rows` 每个步骤占一行，每行以其状态标记，正在运行的步骤的标记带有动画（`✓ resolve` / `⠋ compile` / `· publish`）；其余的都放在一行上：`Breadcrumb` 用 `›` 连接各步骤名称，`Beads` 是每个步骤一颗珠子、用一条线连接起来的链（`●━◐━○`，固定为 `2n - 1` 个单元格），`Numbered` 是正在运行的步骤的名称加上一个 `[2/3]` 位置，而 `Ribbon` 是由彩色段组成的 powerline，它需要打过补丁的字体，因此从不作为默认值。
++         由于这些设计的高度不同，`Sequence[Step]` 没有默认设计：这个选择决定了仪表占据布局的多少空间。
+
+@ 0 3 0 094baee1a77946a31d3cf0bda2a74a1c
++         每种渲染在 `gaugeGlyphs.asciiGlyphs` 下都有 ASCII 形式（`+`、`x`、`!`、`-`、`.`，标记则为 `-\|/`），每个步骤的颜色来自 `GaugePalette#colorOf`。
+
+% 0 1 0 139440c4bf0e970d174aa4954c595a6b
+
+% 1 1 0 18efa02173ce51dd04e69fac5ee44c6c
+
+% 0 1 0 1f5cebb111c2ed661fd3cb13817e36de
+
+@ 0 6 0 0e0999da8003819b0ca516a8298303e8
++     entry #gaugeable   在作用域内的 `Gauging` 下，作为 `Sequence[Step] is Gaugeable` 的这种设计
++         `Rows` 和 `Beads` 声明 80 ms 的周期，因为它们为正在运行的步骤添加动画；其他的没有周期。
++         最小宽度是三个单元格；`Rows` 的高度与序列相同（至少一行），其余的占一行。
++     entry #draw   一串步骤在某个滴答和宽度下的各行
++   entry .Dial   有界读数如何绘制：`Battery`、`Thermometer`、`Needle`、`Bullet`、`Column` 或 `Ascii`
+
+% 1 1 0 06f56847e00764e719eaae6308c7f33d
+
+@ 0 9 0 18ae59a6f6dae4f517f8da683c8506c5
++         `meters` 中各 given 背后的引擎，以 `Meter` 为键。
++         计量值不是进度（它既可以上升，也可以下降），因此这些设计标出刻度尺，并通过 `GaugePalette#severity`，按读数在刻度尺上的位置为它着色。
++         `Battery` 是带有端帽的单元格，末端有一个电极凸起，随着它*耗尽*而变红；`Thermometer` 是一个从底部读起的五行柱，下方有一个液泡；`Needle` 是沿着有标记的刻度尺移动的一个刻痕，身后不留填充；`Bullet` 是位于定性轨道之上的一个量度，轨道上的阴影带表示什么算低、中和高；`Column` 是单个单元格，其方块高度就是读数；而 `Ascii` 是 `[####----]` 形式。
++         它们的高度和宽度都不同，这就是 `Meter` 没有默认设计的原因。
+
+% 2 1 0 00defaf0cb49aa240bf21b8d4ea82b4c
+
+% 3 1 0 024dc2dc9b6acd4b0ccc71d6acac1c72
+
+% 4 1 0 0a1bbd97496b4db31a6af25a56164061
+
+% 5 1 0 01bc83c203590be5109dc5907f151cfd
+
+% 0 1 0 0d31bc912609ba730dc0385edc60acdd
+
+% 0 1 0 1e477936f365dfbf1baea0f1ab5734ba
+
+% 0 1 0 0294add2957e7f6d0438ab6bc4e56d83
+
+% 1 1 0 15b614cd1f6a21ee0bc6b5c274f6e0dc
+
+% 2 1 0 0a072fefd655391905d7c91832dddf5f
+
+% 0 1 0 0d723694115c6c08020a3192530d0779
+
+@ 0 6 0 1a6b771d3962b7740375765efcafac35
++     entry #columnCount   这种设计偏好的宽度：电池为 8，指针为 12，子弹图为 20，柱为 1
++     entry #rowCount   这种设计所占的行数：温度计为五行，其他为一行
++     entry #gaugeable   在作用域内的 `Gauging` 下，作为 `Meter is Gaugeable` 的这种设计
++         `Column` 和 `Thermometer` 没有弹性，保持在一个单元格；其他的会伸展。
++     entry #draw   一个计量值在某个宽度下的各行
++   entry .Facet   复合仪表行中的一个水平部分，带有一个放弃它的顺序
+
+% 1 1 0 16ab2e05628774041b167fd51776a9cf
+
+@ 0 6 0 193942ecf4b0af7a050edae942f61eb7
++         复合行（传输的数字、速率和估计时间；说明文字、条和百分比）由 `Facet` 排布而成。
++         每个部分有一个 `shed` 优先级（行放不下时，值最高的最先被去掉）、一个最小宽度、它是否是吸收剩余空间的那唯一一个弹性部分，以及一个从它被给予的宽度到其 `Teletype` 的纯粹的 `render`。
++         `.fixed` 和 `.flexible` 创建它们，`.solve` 排布它们。
+
+% 2 1 0 00178589a35b3d0c1e31ecf7ccf0f048
+
+% 3 1 0 16d5be852082d6eb0dafcd80bc1da77e
+
+% 4 1 0 13422c6d5cc9d9b11c668b7ab1204171
+
+% 5 1 0 12814ffe6f0cd4ed0501654bce10536f
+
+% 0 1 0 00a975ed550b78581dd358589c48f77f
+
+% 0 1 0 041bb982379ae1af0d898be4bd6d521b
+
+% 0 1 0 05f7209300e79f6d0c047b521eac6b14
+
+% 0 1 0 0db7c31d32e639c717ef1e2cab87ec1d
+
+% 0 1 0 0ce16e5bcfb9280e1e64afd767761238
+
+% 0 1 0 02bbe308e29344ff18bd22f97fa1eec6
+
+% 0 1 0 16a20f6c2d0e778a05a09443decbcfb5
+
+% 0 1 0 124cb423934f3fc91ad49007a17b900b
+
+% 0 1 0 0022a191116180fd0afb17d792b8caae
+
+% 0 1 0 09a9a0d8d3220cba1a4e3e819ff02faf
+
+% 0 1 0 0c78ea895c2653830b21bd175e618e81
+
+% 0 1 0 0443a9d569ee25fe0992c49cb0c19c2a
+
+% 1 1 0 0e7a67b6068d36b31da0d76ba5f1d6fd
+
+@ 0 20 0 0e3ec5a404fee94a13dc7947cc1b0490
++         这是表格的列协商思想（一个声明的最小值、一个可去掉的部分、一个弹性的剩余部分），但没有搜索：仪表的各部分有精确的宽度，从不重新排布，因此一遍贪心处理就是精确的，而低于所有最小值时，结果是空格。
++     entry .fixed   宽度由其自身内容固定的部分，带有一个舍弃优先级
++         `Facet.fixed(shed, content)` 在作用域内的 `Gauging` 下测量内容。
++         `shed` 最高的最先被去掉。
++     entry .flexible   吸收剩余宽度、永不被舍弃的那唯一一个部分
++         `Facet.flexible(minWidth)(render)`：`render` 被交给最小值加上剩余空间。
++         一行中至多应有一个部分是弹性的；它永不被舍弃，因为去掉了仪表的行不值得绘制。
++     entry .solve   把各部分排布成恰好一个宽度，按舍弃顺序去掉部分，直到其余的放得下
++         `Facet.solve(facets, width, gap = 1)` 用 `gap` 个空格连接保留下来的部分。
++         `shed` 相同时保持源代码中的顺序，因此一行每次都以相同的方式退化，而不会在边界处于两种排布之间闪烁。
++         由构造保证是全函数：低于所有最小值时，结果是 `width` 个空格。
++     entry #shed   这个部分被放弃的难易程度；值最高的最先被放弃
++     entry #minWidth   这个部分需要的单元格数
++     entry #flexible   这个部分是否获取剩余空间并且永不被舍弃
++     entry #render   这个部分的内容，作为它实际获得的宽度的纯函数
++   entry .Gradient   基于 sRGB 的 N 个色标的颜色渐变，在 `[0, 1]` 中的某个位置取样
+
+% 1 1 0 08ee6a9d6f44cdaa1d9ae1e48bf06af0
+
+@ 0 5 0 11b1200b352dd7451a91b276610bcf74
++         `Gradient(stop1, stop2, …)` 根据均匀分布的色标构建渐变，`gradient(0.3)` 在该位置两侧的两个色标之间，在 sRGB 中逐通道插值。
++         重复的色标会使渐变的那一部分变平，`GaugePalette#severity` 就是这样在开始上升之前，在整个下半部分保持一种颜色的。
++         只有一个色标的渐变在任何位置都返回该色标，空的渐变返回黑色。
+
+% 2 1 0 179b59ab10b577311ceac39caa1d5f22
+
+% 3 1 0 0dcaefb7ede1f8ee0cc39d904bd199f9
+
+% 0 1 0 1c416b40673e481f1fa15fc3049aa3ee
+
+% 0 1 0 1bf344dd64eeaa631dcf9369e8fa9d9f
+
+% 1 1 0 0c8e537eaa5b4a3c093dcebd71b1b0f8
+
+% 0 1 0 15df57cdb1ab326b1b95a25f9efb6e30
+
+@ 0 4 0 1bdf2bde02cd0a910eaedc0c1648a35f
++     entry .apply   由色标构成的渐变，以可变参数列表的形式给出
++     entry #stops   色标，按从位置 0 到位置 1 的顺序排列
++     entry #apply   某个位置的颜色，位置被限制在 `[0, 1]` 之内
++   entry .Inlay   在光标处实时绘制的仪表，没有表单，也没有布局
+
+% 1 1 0 18c444be444851760bf43c8bf2947f02
+
+@ 0 7 0 0e51a70ca5849b8915f29c1d195636e6
++         命令行工具只有一件事要报告时所需要的形态。
++         `Inlay(reading)`（可选地带有固定的 `width`）用 `#start` 启动，用 `#finish` 结束；`whilst` 把这一对调用包裹在一个代码块周围。
++         每一帧都在上一帧之上原地重绘，每一行都擦除到行尾，因此更短的一帧不会留下残留，块在结束时被擦除。
++         动画是一个后台任务，它按设计自身的周期休眠；没有周期的设计只绘制一次，此后只在它的 `Reading` 改变时才绘制。
++         它需要一个 `Stdio`、一个 `Monitor` 和一个 `Probate`。
+
+@ 0 3 0 0235ad387ffe4c7f00d381d03a21039c
++         帧在一个互斥锁下串行化，因为动画任务和更新读数的任务都会绘制；在某个线程上调用 `#finish` 能可靠地停止该任务，并抑制任何仍在进行中的帧，因此擦除之后不会再写入任何内容。
+
+% 1 1 0 09abd8177fcc1d141e7731962e3d5107
+
+@ 0 3 0 01d9d1dc4d66e65a0677fa9296e8dde9
++     entry #start   绘制第一帧，如果设计带有动画，则按其周期开始重绘
++     entry #finish   停止动画，擦除块，并把光标留在开始时的位置
++   entry .Magnitude   仪表旁数字的紧凑呈现：时长、计数、百分比、字节大小
+
+% 1 1 0 1163165ffa0840be17e6199910609fe0
+
+@ 0 3 0 00e9c24f9a89ceee1709913f2e91c3eb
++         在每个单元格都要争夺的地方，全精度的数字会挤掉进度条。
++         这些是计数器、计时器和传输设计共用的书写器：每一个都让其字段保持狭窄，并且在重要的地方，随着值的变化保持宽度稳定。
+
+% 2 1 0 0f89ab56f7f3491d13beeaf12f204dda
+
+% 3 1 0 0b45b117b9c447db04d88d1a5d2e3309
+
+% 0 1 0 1b1b250e5f3d89681b909732d161ac03
+
+% 0 1 0 0669014c5f6d306700b2f1da85d4c0c2
+
+% 0 1 0 1305b3e4c4aa8a6f1535ea3e9dafc8d0
+
+% 0 1 0 191e18b5396f94a50090a30c73b068b8
+
+% 0 1 0 10d06bedc77e3a021abddc9316eb3770
+
+% 1 1 0 1d59b3810e063635145ca12679776e9d
+
+@ 0 15 0 1b937a5a463fce8312322f9572796edc
++     entry .interval   以秒为单位的时长，用其两个最大的有用单位表示：`41s`、`2m41s`、`1h04m`、`3d02h`
++         从不超过两个单位，也从不以零值单位开头，因此字段保持狭窄，并在超过一分钟后不再抖动。
++         负的时长读作 `0s`。
++     entry .count   一个计数，一旦不再能一眼看清就加以缩写：`947`、`1.2k`、`15k`、`3.4M`
++         低于一个单位的十倍时保留一位小数，高于时不保留小数，因此字段至多占四个单元格；后缀是 `k`、`M` 和 `G`。
++     entry .percentage   一个比例，写成三个单元格宽的百分比：`  0%` 到 `100%`
++         右对齐，因此进度条的数字在填充过程中从不移动。
++     entry .bytes   一个字节数，使用使数字大于一的最大词头：`947 B`、`4.01 MiB`、`1.20 GB`
++         `bytes(value, binary)`：`binary` 选择以 1024 为基的词头（`KiB`、`MiB`、…）而不是以 1000 为基的词头（`kB`、`MB`、…）。
++         两者在不同约定下描述同一个量，因此设计要说明它指的是哪一个。
++         小于十时保留三位有效数字，否则取整数单位。
++     entry .rate   一个传输速率，使用与 `bytes` 相同的词头，带有 `/s`
++   entry .Meter   有界刻度上的一个读数：电池的电量、温度、平均负载
+
+% 1 1 0 07b9b740313af2a30fc525fcaafbc22c
+
+@ 0 6 0 1e98b482b30668e40db694b35de4a6cd
++         `Meter(value, minimum, maximum)`，或者在单位刻度上的 `Meter(value)`。
++         它与 `Fraction` 不同，因为边界是数据的一部分（计量条显示一个值位于边界之间的何处，设计可以标出刻度），也因为计量条不是进度：它既可以上升，也可以下降。
++         它没有默认设计；要按名称导入 `meters` 中的某个 given（`batteryMeter`、`thermometerMeter`、`needleMeter`、`bulletMeter`、`columnMeter`、`asciiMeter`）。
+
+% 2 1 0 1f8d3a768f31072714c8c27d45d726f9
+
+% 3 1 0 008b55cd96626f54141aa9191d8341cc
+
+% 4 1 0 178e77f900a7329f1b1d9d65db4f8048
+
+% 5 1 0 1bb04b96195a2b6002ccc1814e0b70be
+
+% 0 1 0 1d07e9fba39e2ae811184b158cd37438
+
+% 0 1 0 197b470cbfab017709a37d2d4e6050e5
+
+% 0 1 0 009d153875831d2d0b46537cba2fa5b6
+
+% 1 1 0 101ae6ec2b94c2651e32e7e7689a6e78
+
+% 2 1 0 12a291420863008e16e7bcff2e6b8d57
+
+% 0 1 0 109e99cc4456c13811c3ef1fba61eaf8
+
+@ 0 8 0 11d1662e239132e31c0f177da74e7731
++     entry .apply   `Meter(value)`：从 0 到 1 的刻度上的一个读数
++     entry #value   读数
++     entry #minimum   刻度的底端
++     entry #maximum   刻度的顶端
++     entry #fraction   读数在边界之间所处的位置，作为一个 `Fraction`
++         刻度没有跨度时为零；否则为 `(value - minimum)/(maximum - minimum)`，并加以限制。
++   entry .Reading   保存仪表当前状态的可变单元；对它赋值会重绘仪表
+
+% 1 1 0 04074401e0bbf6cc13c5aea76b8ad5cb
+
+@ 0 5 0 0e1f84de99fb4b9200e2524c86c92e2f
++         `Reading(initial)` 是 `gauge`、`whilst` 和 `Inlay` 所接受的东西：一个可以从任何任务更新其状态的单元。
++         `reading()` 读取它，`reading() = status` 发布一个新值，并唤醒正在运行的表单或嵌入仪表，使仪表立即重绘，而 `#amend` 以原子方式变换它。
++         状态本身是普通数据，因此持有读数的窗格树保持纯粹。
+
+% 2 1 0 132e8a156cf8e2ce1ef0b0a42e029d6c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 1 1 0 1c42636a507cbf0f1903c90f073389c7
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 16da2cdfc38fa5c116d6b949524bee2c
+
+% 3 1 0 0787b8625dbca1e508b18198d340d282
+
+% 4 1 0 1abc9892d5fee73411d1871b7fcfc917
+
+% 0 1 0 027d20adb989e8da0e77008eaf8f9dd0
+
+% 0 1 0 0fac867ab3d0469c1414402ea83c2d2c
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 00f32367fa4ed0af03489a430aa117ca
+
+% 0 1 0 000ef4a4e2cc43811ec583233c5941f6
+
+% 0 1 0 1887ac0629f83f630409077b809dd235
+
+% 0 1 0 0112f59f245f19ce1b3f7f47487b6786
+
+% 0 1 0 1dca6e57d72fab190cfa8eb5ec6f0c71
+
+% 0 1 0 118bd14286f5a5f2018018dea2fa309e
+
+% 1 1 0 0f4ec4ffc5ef577e1feb9edf7982819e
+
+@ 0 3 0 1c1227758a562c420ed59150c4cb7ddb
++         读数的状态类型在创建读数时就已固定，因此一个尚不知道总量的作业以 `Reading(Fraction.indeterminate)` 开始，其类型为 `Reading[Optional[Fraction]]`，之后再赋予一个 `Fraction`。
+
+% 0 1 0 093ab09dd22ea9291c9c02292b302270
+
+% 1 1 0 00a49e2edbc53695035de8292c555db1
+
+@ 0 11 0 01e8ba90917056181d73bc35d2620f7f
++     entry #apply   当前状态
++         跨线程可见：在一个任务上赋的值，就是下一次在另一个任务上绘制时画出的值。
++     entry #update   `reading() = status`：发布一个新状态并唤醒仪表
++         赋值语法，与 `apply` 成对。
++         在读数被绑定到正在运行的表单或嵌入仪表之前，唤醒不起作用，因此读数可以在显示之前被更新。
++     entry #amend   以原子方式变换状态，作为一次比较并设置
++         `reading.amend(_ + 1)` 把函数应用于当前状态并发布结果；两个任务同时修改时，两次修改都会生效。
++         在竞争下函数可能被重新执行，因此它必须是纯函数。
++   entry .Reckoning   已完成的工作量与一个可能尚未知道的总量之比：`17/120`，或 `17`
+
+% 1 1 0 0063c0e6ff18cbcb1443cc690fa79a31
+
+@ 0 4 0 0d0c896008203e081776c40c25454127
++         `Reckoning(done, total = Unset)`：计数器所显示的状态，也是大多数作业实际手头有的状态。
++         其伴生对象的默认设计是 `counters.plainCounter`，它写出 `done/total`，在总量仍在确定期间则只写 `done`；其他 `counters` given 对它加以填充、用文字拼写、缩放或写成百分比。
+
+% 2 1 0 042a1a7edae4fe8b04d9578775b7290a
+
+% 3 1 0 0b3e3dcb8cfaab4b0b18644dba851f60
+
+% 4 1 0 10eb8d8fcd78f4d5186eda7e1a0123a6
+
+% 5 1 0 1951d61bab8f37060d72b583f8923ab2
+
+% 0 1 0 0d6b1bd79926a7941f5e0d45bbd48ed6
+
+% 0 1 0 0c9d0399dcc1bccc00cce59a509ae87a
+
+% 0 1 0 01eafd43d001abd21bcfd4892d5ceef4
+
+% 1 1 0 05573d095a3f3bbf1ffbbfb785c68a01
+
+% 2 1 0 0a3bd74c94a60151135f1ddaffb17247
+
+@ 0 1 0 06be852a12c77c751cd3588cc68b8943
++     entry .Counter   计数的书写方式：`Plain`、`Padded`、`Words`、`Percentage` 或 `Scaled`
+
+% 1 1 0 0a27c4f4b86665d8028e90edcbd7e452
+
+@ 0 16 0 02f6089f5e8d9bf30c4b18d9c123907d
++           `Reckoning` 的 `counters` given 背后的引擎。
++           `Plain` 是 `17/120`，`Words` 是 `17 of 120`，`Percentage` 是该比例的 `Magnitude.percentage`（没有总量时为 `  ?%`），`Scaled` 是缩写的数字 `1.2k/8.4k`，而 `Padded` 把分子按总量的位数右对齐（`  7/120`，然后是 `117/120`），使字段在递增计数时不会抖动——这正是一个在变化时仍可读的数字与一个不可读的数字之间的区别。
++       entry #write   以这种样式写成文本的计数
++       entry #gaugeable   作为 `Reckoning is Gaugeable` 的这种样式，非弹性，占一行
++           对数字来说太窄时，设计会舍去开头的字符而不是末尾的字符，因此分子（会变化的部分）保留得最久。
++     entry .gaugeable   默认设计 `counters.plainCounter`：`17/120` 不是一个样式问题
++     entry #done   已完成的工作量
++     entry #total   总量，尚不知道时为 `Unset`
++     entry #fraction   作为 `Fraction` 的 `done/total`，总量未知时为 `Unset`
++     entry #remaining   `total - done`，从不为负，总量未知时为 `Unset`
++   entry .Sparkline   一系列样本的绘制方式：`Blocks`、`Tall`、`Dots` 或 `Ascii`
+
+% 1 1 0 1f794716369c9de00f7d734e52e050bd
+
+@ 0 5 0 099f741b1b65d3671139a6703b1e6ba9
++         以 `Sequence[Double]` 为键的 `sparklines` given 背后的引擎。
++         `Blocks` 在一行中给出八个级别（`▁▂▃▄▅▆▇█`），`Tall` 叠放两行，得到十六个级别，而 `Dots`（`⣀⠤⠒⠉`）和 `Ascii`（`_.-^`）以分辨率换取更窄的字符集。
++         由于这一选择决定了垂直分辨率，从而决定了读者能在数据中看到什么，`Sequence[Double]` 没有默认设计。
+
+@ 0 5 0 0529ea7c3beb4a7d001fd17cfd03a615
++         除非 `#scaled` 固定了下限和上限，样本按其自身的范围缩放；比其序列更窄的迷你图由 `.decimate` 进行*抽取*（每个单元格显示它所覆盖的样本中的最大值），而从不截断，因为截断后的迷你图看起来像整个序列，实际上只显示最早的样本。
++         每个单元格按其高度通过 `GaugePalette#lengthwise` 着色。
+
+% 2 1 0 1b55f1ab66c5d9ba179b08eff95a2081
+
+% 3 1 0 018108a3721b38d51565dee20b17632c
+
+% 4 1 0 0db5bd1abc5c58c61d6b60bf78237cce
+
+% 5 1 0 1760302318e8e27b01d8ee3be36fb543
+
+% 0 1 0 1fdd18588dcfd45c1198ef5276bdaf19
+
+% 0 1 0 113661122ab51d1100495f2ef22cab42
+
+% 0 1 0 053aa269f2188a0e0a1d804000a04998
+
+% 0 1 0 02c903e73623ea510b0911f1129fa345
+
+% 0 1 0 14d8b6f6973885240f1cbfbb10fa6c15
+
+% 1 1 0 0212d2769fb24e2100ca4e4a1f901489
+
+% 0 1 0 01c6f246bf2f10210e1dddc31279e52c
+
+@ 0 16 0 0904cae4b46ec24d18e9705ed9ec9e2e
++     entry .decimate   取每一组的最大值，把序列缩减到恰好一个宽度
++         `Sparkline.decimate(samples, width)` 在样本已经放得下时原样返回；否则 `width` 个单元格中的每一个覆盖一个连续的组并保留其峰值，因此形状中的尖峰得以保留，而截断会丢失它们。
++     entry #rowCount   `Tall` 为两行，否则为一行
++     entry #gaugeable   作为 `Sequence[Double] is Gaugeable` 的这个设计，按给定的样本缩放
++         首选宽度是每个样本一个单元格；它是弹性的，因此可以被给予更多宽度。
++     entry #scaled   同一个设计，但刻度固定在一个下限和一个上限
++         `Sparkline.Blocks.scaled(0.0, 100.0)` 是一个 `Sequence[Double] is Gaugeable`，其最低的字形是下限，最高的是上限，任一端为 `Unset` 时该端保持自适应。
++         固定的刻度是一个呈现上的决定，而不是数据的一部分：每一帧都重新缩放自身的迷你图会让一个稳定的信号看起来杂乱无章。
++     entry #draw   给定宽度下某个序列的各行，带有可选的边界
++         如果设计的字形在作用域内的 `Gaugeable.Glyphs` 下不被允许，它会回退到 ASCII 梯级，而不是什么都不画，此时 `Tall` 收缩为一行。
++   entry .Spinner   一次显示一帧的循环帧序列，带有面向狭窄或纯文本终端的回退链
+
+% 1 1 0 08e26c2b9bd9c5c006a67bc75fa8e5f0
+
+@ 0 7 0 17f5b6754ce50aa510a07ca4055cd6bd
++         `Spinner(frames, interval, columns, repertoire, narrower)`：各帧、帧之间的毫秒数、每一帧的宽度（它们必须一致，否则这一行会在动画时错位）、能够呈现它的最保守的 `Gaugeable.Glyphs`，以及这个设计放不下或不被允许时要回退到的设计。
++         正是这条链让一个 emoji 设计能够降级为一个 BMP 设计，让一个宽的跑马灯降级为一个旋转的单元格，而无需调用者选择另一个设计。
++         `.each` 根据写成一个字符串的单单元格帧构建一个旋转指示器。
+
+@ 0 4 0 0b94f55af593ac461340f4aa0a799847
++         旋转指示器像进度条一样以 `Fraction` 为键，但忽略其值：它表明工作仍在进行，而不是表明进行到了哪里；在根本没有值时它也照样绘制，这使它成为不确定工作所要导入的设计。
++         `spinners` 包中有约四十个，而自己的一个只需一个表达式：
+
+% 2 1 0 068ca55e95a9e3cf122be8f000d77947
+
+% 3 1 0 0dc0c39f4b2d4e6a0fa5e75a62e4e4de
+
+% 4 1 0 0d5f8a8a828fb562020f4931cee1258a
+
+% 5 1 0 1159613003f5eb43009a6c738df5967c
+
+% 0 1 0 0eafb3c6469a48241c80fb5a5a0a5c95
+
+% 0 1 0 134f238d43522c040947356afe8c9bcb
+
+% 1 1 0 15d0696adc59829f0860c5053eb2be56
+
+% 1 1 0 1252abeb232f8d940cdaae08147328fb
+
+% 1 1 0 12c839a85826ef9e12e0e35818977dbd
+
+@ 0 21 0 1d460778c856f3fa1a43fa351e2a8aa1
++     entry .each   根据写成一个字符串、按码点拆分的单单元格帧构建的旋转指示器
++         `Spinner.each(t"⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", interval = 80, repertoire = Unicode, narrower = Unset)`。
++         按码点而不是按 `Char` 拆分，使一个星界平面上的帧（一个 emoji 钟面）保持为一帧。
++         本身是多码点簇或宽于一个单元格的帧，要作为 `Sequence[Text]` 显式地传给构造器。
++     entry #frames   各帧，按循环顺序排列
++     entry #interval   帧之间的毫秒数，设计将其报告为自己的 `period`
++     entry #columns   每一帧的宽度
++     entry #repertoire   能够绘制这个设计的最保守的 `Gaugeable.Glyphs`
++     entry #narrower   这个设计放不下或不被允许时要回退到的设计
++     entry #fit   回退链中第一个放得下某个宽度且被允许的设计（如果有的话）
++         `fit(width, gauging)`：如果这个旋转指示器的 `columns` 放得下且其 `repertoire` 被允许，就是它本身，否则是 `narrower` 的答案，在链的末尾则为 `Unset`，此时这一行为空白。
++     entry #leastColumns   链中最窄的宽度，也就是告诉布局这个仪表所需要的宽度
++     entry #gaugeable   在作用域内的 `Gauging` 下，作为 `Fraction is Gaugeable` 的这个旋转指示器
++         非弹性，占一行，以 `interval` 作为动画周期，无论比例存在还是为 `Unset`，帧都相同。
++         帧是 `frames(tick.index % count)`，因此测试用 `Tick.at(index*interval, interval)` 选取一帧；字形以调色板的 `fill` 角色绘制。
++   entry .Standing   一个工作单元的结果，或尚无结果：`Pending`、`Running`、`Succeeded`、`Failed`、`Warned`、`Skipped`
+
+% 1 1 0 008115f5d998778c003747095e7344c2
+
+@ 0 7 0 137342a68116416f1c2c5c28fc4731e1
++         一套词汇同时服务于单单元格的状态标记、清单中的 `Step`，以及调色板中的颜色查找（`GaugePalette#colorOf`）。
++         作为一种独立的状态，`Standing` 通过一个 `Standing.Marks` 设计绘制为单个字形：伴生对象的默认值是 `standings.tickStanding`（`✓ ✗ ! ‑ ⠋ ·`），`standings` 包中有更粗的、方形的、ASCII 的和文字的形式，按名称导入。
++         每个设计都用其*字形*而不仅仅用颜色来承载结果，因此它在单色终端、重定向的流以及分不清红绿的读者面前依然有效。
+
+% 2 1 0 0ea0d3e4ff8f6f290eb5e464f38efccd
+
+% 3 1 0 1da6df9b10a9f01d1d8e4e2b7492cf13
+
+% 4 1 0 12eb1016ed96ba2705dd8f9a06ba8394
+
+% 5 1 0 163a20b606f774601c9a3a91fdbf001f
+
+% 4 1 0 06a54cfc5098859c1eaa78ea3e8d3da7
+
+% 0 1 0 0aadf526ac58f343072b8f60daa3723a
+
+% 0 1 0 04b0dcb8a5944aaf051a80da0ac88a80
+
+% 1 1 0 1fff4426b27f3517018b264ca7765b48
+
+% 0 1 0 0581733b89d2ec090e9c08d000baec68
+
+% 1 1 0 1a52c0d008e492d601a849c8eacd8dc8
+
+@ 0 1 0 1d7d115b662b501b1649c2b3e9a02644
++     entry .Marks   一个设计为六种结果使用的六个字形，带有回退链
+
+% 1 1 0 0c0fb0f3f4cba167160bc7d946f5300b
+
+@ 0 5 0 0615b0d442520b460f8212870e32ef17
++           `Standing.Marks(succeeded, failed, warned, skipped, running, pending, columns = 1, repertoire = Unicode, narrower = Unset)`：每种结果的字形、它们全部的宽度、能够绘制它们的最保守的 `Gaugeable.Glyphs`，以及它们放不下或不被允许时要回退到的设计。
++           `standings` 中的每个 given 都是一个通过 `#gaugeable` 变成设计的 `Marks`。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 03b45b5d43cdfcd607270508ac3355c1
+
+% 0 1 0 0f5c904d89789ea2139351f6bb7fc15d
+
+% 0 1 0 0350355b14a7691710eb5bb7e49b62cf
+
+% 0 1 0 04b212bf4fe5ea291b35c3e8ed18788c
+
+% 0 1 0 0097c2fafddc3e1d123fbee29cfcda73
+
+% 1 1 0 0f4036804c63eaaa1b98306fa919a35c
+
+@ 0 22 0 1168b64ba0e884920cfe58ed40f5b10c
++       entry #succeeded   `Standing.Succeeded` 的字形
++       entry #failed   `Standing.Failed` 的字形
++       entry #warned   `Standing.Warned` 的字形
++       entry #skipped   `Standing.Skipped` 的字形
++       entry #running   `Standing.Running` 的字形
++       entry #pending   `Standing.Pending` 的字形
++       entry #columns   这一组中每个字形的宽度
++       entry #repertoire   能够绘制这些标记的最保守的 `Gaugeable.Glyphs`
++       entry #narrower   这些标记放不下或不被允许时要回退到的标记
++       entry #apply   某种结果的字形
++       entry #fit   回退链中第一组放得下某个宽度且被允许的标记（如果有的话）
++       entry #leastColumns   链中最窄的宽度
++       entry #draw   一种结果，作为着色的字形，填充到某个宽度
++           颜色是该结果的 `GaugePalette#colorOf`；如果链中没有任何标记放得下该宽度，则得到空白的一行。
++       entry #gaugeable   作为 `Standing is Gaugeable` 的这些标记，非弹性，占一行
++     entry .gaugeable   默认设计 `standings.tickStanding`：几乎通用的勾和叉
++   entry .Step   多阶段过程中一个命名的阶段，带有其结果和一条可选的注释
++       `Step(name, standing, detail = Unset)`。
++       一系列步骤就是一个普通的 `Sequence[Step]`，`processions` given 把它绘制为清单、面包屑、一串珠子、编号的位置或一条色带。
++       `detail`（一个错误、一个制品、一段时长）被携带着，供有空间在步骤旁显示它的设计使用。
+
+% 2 1 0 098c287d607fc276151e4d93b288987a
+
+% 3 1 0 06b18ab5c53d824100e2c4e12d747b92
+
+% 4 1 0 0b6d323e89fc46c4159ccd6f341adbda
+
+% 5 1 0 01db1c660086921b045aa730ce15c3c3
+
+% 0 1 0 0fc0f8011e32aeb91712efd63719521a
+
+% 2 1 0 1789f0ccb02223c10bf4e4311eab360f
+
+% 3 1 0 181c5fd1d66cc4fc15eb9528703f5e85
+
+% 4 1 0 1cbc29854fa55f221818e96688043a39
+
+% 5 1 0 06396fd59c0498c21f1763dda2266fd2
+
+% 6 1 0 0c0d7d5f38561c5319f0ed31f8f8dc14
+
+% 0 1 0 1ffbaa68a376af8512eba550e03e7511
+
+% 1 1 0 094556e0b77af3e7095617a71b559382
+
+@ 0 1 0 0de86780d38bc2c80c660808f9ba9878
++   entry .Stopwatch   时长的书写方式：`Compact`（`2m41s`）或 `Digital`（`02:41`）
+
+% 1 1 0 0833363f41521f4d1c19dda3c18c6c07
+
+@ 0 7 0 0ce613b357e5c7b21bbd86d6b3c7f7ff
++         `timers` given 背后的引擎。
++         `Compact` 通过 `Magnitude.interval` 给出承载信息的两个最大单位；`Digital` 给出钟面样式，即 `mm:ss`，只在有小时时才增加小时字段，它更宽，但在跨过一分钟时不会改变形状。
++         同样的两个设计既服务于经过的时间（一个 `aviation.Duration`，通过 `#elapsed`），也服务于 `Countdown`（通过 `#countdown`），但作为不同的 given：这两种类型之所以不同，正是为了让倒计时能在即将耗尽时变红，而经过的时间保持平静。
+
+% 2 1 0 132da504f6aace1d02173909f9c2dc3b
+
+% 3 1 0 1b14aa373b01e70a01e1d270294bde63
+
+% 4 1 0 1962956e629d107716077704c43caaae
+
+% 5 1 0 0245ac2e3e4ca2721426a47429fba51f
+
+% 0 1 0 1140d368e87831e40d0f7d2270fb6dc5
+
+% 0 1 0 0c1435e1d549a34a1f895ac94a8d67aa
+
+% 0 1 0 17fc335deac8ef011c5472e941fe4163
+
+% 1 1 0 07c77372a98e4129006d4d2e4f0cb682
+
+@ 0 3 0 176e42966219bc35144fd91b4dd0e622
++         两种计时器都没有动画：它只在其读数变化时才变化。
++         对数字来说太窄时，计时器会舍去开头的字符，因此保留下来的是秒数，也就是正在变动的部分。
+
+% 1 1 0 0b4b5c816b471d5c02167db9b74e6b64
+
+% 0 1 0 0e7100d9e9a82fdf12a52c6c68489c3e
+
+@ 0 9 0 1edb8b443bdd9e311c5433b75a5f4d94
++     entry #write   以这种样式写成文本的、以秒为单位的时长
++     entry #columns   写出的时长所占的单元格数
++     entry #elapsed   作为 `Duration is Gaugeable` 的这种样式，以调色板的 `muted` 角色绘制
++         经过的时间是参考信息，而不是警告。
++         非弹性，占一行。
++     entry #countdown   作为 `Countdown is Gaugeable` 的这种样式，可选择在时间耗尽时变红
++         `countdown(urgent)`：带 `urgent` 时，数字按在最后一分钟内反向读取的 `GaugePalette#severity` 着色，因此它会经过警告色，并在接近零时变红；不带时，它以 `caption` 角色绘制。
++   entry .Transfer   已移动的字节数与要移动的字节数之比，以及所用的时间
+
+% 1 1 0 17b21f7718ef5ab81f02818aa0f8ad2f
+
+@ 0 8 0 1f8924956c30f7f9118a8de3a7dea8de
++         `Transfer(moved, total = Unset, elapsed = 0.0*Second)`，其中 `moved` 和 `total` 是 `Quantity[Bytes[1]]`。
++         速率和估计值是*派生*出来的（`#rate`、`#estimate`），从不存储，因此调用者无法交给设计一个不一致的三元组——这是手写传输显示中最常见的缺陷，即百分比与预计剩余时间互相矛盾。
++         它没有默认设计：是否显示速率、是否显示估计值、以 `MB` 还是 `MiB` 计数，是三个编辑上的决定，因此要按名称导入 `counters` 中的某个 given（`transferCounter`、`rateTransferCounter`、`terseTransferCounter`、`decimalTransferCounter`）。
+
+% 2 1 0 04aa56f239ecf7bb178bcfb08499c9df
+
+% 3 1 0 053382761dfbf7fa08350b5a4dd8ab49
+
+% 4 1 0 09d7a532ece658351c40ff7cf07bf12b
+
+% 5 1 0 0fc3f934e1e5b4e11060a17ab0e52ae9
+
+% 0 1 0 1a6e2c1615620e2b0f9e0ef5e595ccd1
+
+% 0 1 0 1516124a1b2d35620f1cee2ff70027b3
+
+% 0 1 0 1d2c95d08fafb4a3186d45d1a792dfbb
+
+% 0 1 0 181555c0d39c5d6f0129d59e91ee5206
+
+% 1 1 0 049eb087a1bb43700a53cddf2bf3d0b2
+
+% 2 1 0 1f8f93a0105f671e17ecd5c3712479ec
+
+% 0 1 0 1aae6532c45703f104f033bab8e26690
+
+@ 0 9 0 163c57d19103cca50eab20f9cd238f43
++     entry #moved   到目前为止已移动的字节数
++     entry #total   要移动的字节数，未知时为 `Unset`
++     entry #elapsed   到目前为止所用的时间
++     entry #rate   到目前为止每秒的字节数；还没有经过任何时间时为零
++     entry #fraction   作为 `Fraction` 的 `moved/total`，总量未知时为 `Unset`
++     entry #estimate   按目前的速率，剩余部分应当需要多长时间
++         尚未移动任何内容时（此时任何估计都是编造）或总量未知时为 `Unset`。
++   entry .Tick   每次绘制时交给仪表设计的动画时钟读数
+
+% 1 1 0 042db64bb0dbe58a0170a092ace72283
+
+@ 0 7 0 1bcf4fd35430a6e300b439f1e338120d
++         `Tick(index, elapsed)`：`index` 计算自仪表启动以来经过的完整动画周期数（即旋转指示器用来索引其字形循环的帧号），`elapsed` 是自启动以来单调递增的毫秒数。
++         把读数传进来，而不是让设计自己读取时钟，使每个设计都保持为其状态和滴答的纯函数，因此测试通过交给它一个字面量 `Tick` 来驱动它，而不必等待。
++         `gaugeLine` 和 `gaugeRows` 接受一个滴答（默认为 `Tick.zero`），而 `Gaugeable` 的 `rows(status, tick, width)` 就是使用它的地方。
+
+% 2 1 0 0f4d3269245065d90037a01823bfe4ee
+
+% 3 1 0 099db236bb28638d122453ccebf93410
+
+% 0 1 0 1e99d21a7c7241720b5d6ed8a549079f
+
+% 1 1 0 074dead17811bfd80469fe5930d404d3
+
+% 1 1 0 03377ec89c1bca04052d18165d9652a1
+
+% 0 1 0 03bf0ecfa165bb7b05ed5751faf109e7
+
+% 0 1 0 032ded5991e91f810684f41981ef9db4
+
+% 0 1 0 100c940a11599bf61a4058d2240f76c0
+
+% 0 1 0 16e684a6e8dab9c00207b9e075626c56
+
+% 1 1 0 0c09cd6ee5892698105b950ae7c93022
+
+% 0 1 0 15aba871ca3e909b09b6389a090d8fdb
+
+% 0 1 0 052b543b8cf11e47144b79fc0e993de6
+
+@ 0 9 0 187ee03673dc546617ebb6ccb9d33917
++     entry .zero   开始时的读数：索引为 0，没有经过任何时间
++     entry .at   某个周期下一段经过时间的读数：`Tick(elapsed/period, elapsed)`
++         `Tick.at(elapsed, period)`；周期为零或更小时，索引为 0。
++     entry #index   自仪表启动以来经过的完整动画周期数：帧号
++     entry #elapsed   自仪表启动以来单调递增的毫秒数
++     entry #phase   读数在当前周期中所处的位置，作为 `[0, 1)` 中的一个比例
++         `phase(period)` 是 `(elapsed % period)/period`，当设计想要连续的扫动而不是离散的帧时使用的刻度盘；周期为零或更小时为 `0.0`。
++   entry .Fraction   `[0, 1]` 中的一个比例，加以限制：进度条或旋转指示器所绘制的状态
+
+% 1 1 0 1d3a702c5a9978fe15d07c9d4f58e010
+
+@ 0 5 0 097f34d4cdc0ac071dd5c8c0409b0865
++         `Fraction` 是在此导出的不透明类型 `ultimatum.internal.Fraction`：一个限制在 `[0, 1]` 中的 `Double`（`NaN` 读作零），它与 `Double` 不同，使进度条的设计可以以它为键，而不必占用程序中的每一个 `Double`。
++         `Fraction(0.42)` 创建一个，`Fraction.of(done, total)` 做除法，而扩展方法 `value`、`percentage` 和 `complete` 把它读回来。
+
+@ 0 6 0 0e6b88e7be2433961d9c1ba130c1ef5a
++         其伴生对象提供默认设计 `bars.smoothBar`，因此 `Fraction` 无需导入就绘制为平滑的八分之一块进度条；任何其他进度条或任何旋转指示器都要按名称从 `bars` 或 `spinners` 导入。
++         旋转指示器也以 `Fraction` 为键并忽略其值，因此导入一个旋转指示器来代替进度条，就是显示不确定工作的方式；而一个作用域中有两个 `Fraction` 的设计会相互冲突，因此想要两者兼有的布局要把其中一个绑定为局部 given。
+
+% 2 1 0 069a3206bfcdad171eeb80f8552ff512
+
+% 3 1 0 1c3354d546ad502e0dc768441759a0a7
+
+% 4 1 0 1729281358e5d0220845e22bb159b0d3
+
+% 5 1 0 1de70e38b2334e2715929994f3a55b43
+
+% 0 1 0 192b471bdb22be2b0b7dad3a6059e8c9
+
+% 0 1 0 1f718e26b6103a2b056bdbb22df163f1
+
+% 0 1 0 10fd299ba95c41300a276399f0dc8838
+
+% 1 1 0 03e099c67635268d1daaf40ee09e2cbc
+
+@ 0 4 0 101b10a570e824721f148761a84c8a76
++         可能未知的进度是 `Optional[Fraction]`，以 `Fraction.indeterminate` 表示未知；`Gaugeable.optional` 把任何 `Fraction` 设计提升到它上面，当值为 `Unset` 时进度条会来回扫动，因此一个起初无法度量、后来得知总量的作业永远不必改变类型。
+
+% 1 1 0 1ade0582b9814b1a1cfc56e79370da19
+
+% 1 1 0 193ed3f9111f06690331bca72c1a0103
+
+% 0 1 0 06a9fd0e4491259805066b5c445d20be
+
+@ 0 1 0 112d73375bf7853d08c93cbce2353079
++   entry .Countdown   剩余时间，在零处加以限制：倒计时器所绘制的状态
+
+% 1 1 0 0522a5e5ab43f5d3090b8b90a49dafd8
+
+@ 0 6 0 0c89eaf8caa516cb112f3359be5cf1bf
++         `Countdown` 是在此导出的不透明类型 `ultimatum.internal.Countdown`：一个在零处加以限制的 `aviation.Duration`，因此已经过去的截止时间读作 `0s`，而不是一个负的区间。
++         `Countdown(5.0*Minute)` 创建一个，扩展方法 `duration` 把它读回来。
++         经过的时间是普通的 `Duration`；倒计时之所以保有自己的类型，只是为了让两者能用不同的设计并排放置，也为了让倒计时能在即将耗尽时变红（`timers.urgentCountdown`）。
+
+@ 0 3 0 144e1c70e41d8eb20f6be7d5bb9d4231
++         其伴生对象提供默认设计 `timers.compactCountdown`，它写出承载信息的两个最大单位（`2m41s`）；`timers.digitalCountdown` 则给出钟面样式。
+
+% 2 1 0 06cd087a5f979c300b3b9e1f95722ce9
+
+% 3 1 0 07fbecd93518de550f986ef82942dbd5
+
+% 4 1 0 0511639be37d1c411457e36676227ade
+
+% 5 1 0 1d8a93fc6813b80906a209bb79a088b8
+
+% 0 1 0 1f5bf61529b73f5c0b919cd2a9a4eccb
+
+% 0 1 0 01d8d43b1d46931d1bd56d5c1f2e1916
+
+% 1 1 0 1f14183281196b080019adcd9b379563
+
+% 1 1 0 0d44bbec60a307551e064652e37f74e4
+
+% 0 1 0 021a5e905970de33099274d63b91cef3
+
+@ 0 1 0 0f6bd823d71d68330250623f3c9d26b5
++ entry .BorderStyle   `border` 绘制时使用的六个字形：两条线和四个角
+
+% 1 1 0 0d8ba3e1ad20841318f07bd609d7c779
+
+@ 0 6 0 0224e113e12b9c161544656f49b535f5
++       `BorderStyle` 指定一条水平线、一条垂直线，以及左上角、右上角、左下角和右下角，每个都是 `Text`。
++       边通过重复其线条来填充其矩形，因此一种样式适用于任何尺寸，而角只在两条被请求的边相交处才绘制。
++       伴生对象中以值的形式提供了五种样式，`.apply` 根据 tessellate 的制表符表构建一种样式，使任何线条粗细都有协调的角。
+
+% 2 1 0 10649425d59a8cf50e3e26a5c2b38635
+
+% 3 1 0 00b4fb4488ea29240067b1d74612cd1a
+
+% 0 1 0 077b5776829efee81e00a3ae94d67907
+
+% 0 1 0 0ed8e943b263d1821a3cf76dc65f3c41
+
+% 0 1 0 19556cddd197968e106e3fc4cc5d61f5
+
+% 0 1 0 18bc08167e1a0e6816a85331762a4c8b
+
+% 0 1 0 1a630de01dfbbf6e1115ee32cf97afe1
+
+% 1 1 0 04c7d33ccbe8f76d138585145796d53f
+
+% 0 1 0 0e4be615d7e17b8c079cd4700cfd593d
+
+@ 0 16 0 028ea91df037a201120d048b3dbbd0ea
++   entry .apply   根据 tessellate 的 `LineCharset` 和 `BoxLine` 粗细查得的样式
++       `BorderStyle(charset, line)` 按在该处相交的各边的粗细从字符集中读取每个字形（水平线是左右两侧为 `line`，左上角是右侧和下方为 `line`，依此类推），因此角总是与线条相匹配。
++       `BorderStyle(LineCharset.Default, BoxLine.Thin)` 就是 `.light`。
++   entry .light   细单线，方角；默认样式
++   entry .rounded   细单线，圆角
++   entry .heavy   粗单线，方角
++   entry .double   双线
++   entry .ascii   `-`、`|` 和 `+`，用于没有制表字形的终端
++   entry #horizontal   水平线所重复的字形
++   entry #vertical   垂直线所重复的字形
++   entry #topLeft   左上角
++   entry #topRight   右上角
++   entry #bottomLeft   左下角
++   entry #bottomRight   右下角
+
+@ 0 1 0 0de265001a176b2d12645f550f5bfc2a
++ entry .Extent   限定在一个矩形内的虚拟终端：面板绘制所用的 `Board` 和 `Stdio`
+
+% 1 1 0 1acf58e0cee43e41023bddbb7ca17ea5
+
+@ 0 7 0 0c58b7fd78bd09251278738aa2c499ac
++       `Extent` 是 `panel` 主体在上下文中接收到的东西。
++       它是一个 `Board`，因此部件用 `move` 定位、用 `put` 写入；它也是一个 `Stdio`，因此主体中直接调用的 `Out.println` 会流入该矩形；由于它是 `Stdio`，面板主体中的区域会遮蔽作用域内任何面向整个终端的 `Stdio`，正是这一点让面板的输出留在面板之内，而不是出现在整个屏幕上。
++       `#region` 是它在父表面中所覆盖的矩形。
++       `FlowExtent` 是标准实现。
+
+% 2 1 0 1b9750cde8c8733910ee04f2ce0fb583
+
+% 3 1 0 07c5b9699fceb17919e2c74d31a9da28
+
+% 0 1 0 1062e02a7826554201e7aa0f8ead2e7a
+
+% 0 1 0 04153cb39ecfa9ad106165951a3df50e
+
+% 0 1 0 013715638b90438a076e6669a5e4fb8d
+
+% 0 1 0 022bd994dd5228a508c5b2f3bf1a908b
+
+% 1 1 0 1b31bd006181247508b3fc0d6f139b73
+
+% 0 1 0 19996d5842834970054ab3baa13820f0
+
+% 0 1 0 1b4cfed05af24c901c13180f07af101d
+
+@ 0 1 0 16ba944d1a3f54a2096ee5ceb496212f
++   entry #region   这个区域在其父表面中所覆盖的矩形
+
+@ 0 1 0 0f8f3b0a4dd3b0da1079ccc7d3f8f07a
++ entry .FlowExtent   限定在父表面的一个矩形内、由字符网格支持的 `Board`
+
+% 1 1 0 145ead71965f1a7b15c22ecd60e5b241
+
+@ 0 9 0 018e4816281f3c2409127ab3f6cfceff
++       `FlowExtent(parent, rect)` 是驱动程序交给每个叶子的 `Extent`：写入的内容在矩形内流动和换行（按显示列计数，因此一个宽的 CJK 字形占两个单元格，并整体换行而不是跨越边缘），换行符移到下一行的开头，最后一行填满后网格向上滚动，而 `#flush` 通过父表面自身的 `move` 和 `put`，一次一行地把网格合成到父表面上，因此定位总是通过 `Board` 接口来表达，而从不作为内联的转义序列。
++       区域不会刷新父表面：驱动程序在每个面板都合成之后把根呈现一次，因此一帧是完整地输出的。
+
+% 2 1 0 01fa3efb738148cb022e5fc01ff039ac
+
+% 3 1 0 036a0307354d60c90fa2dc04f0d78b52
+
+% 5 1 0 0bfe46d524cfa1481730cb774412cfeb
+
+% 0 1 0 117bd90e6872787907b3441483dd8198
+
+% 0 1 0 0fc42835ba2cc52e15562b0fa84c8eb6
+
+% 0 1 0 0c6b2017e2c2ac0a12682c2d60888955
+
+% 0 1 0 05d8676755aaef121f8db70ffe062558
+
+% 0 1 0 1711e3288234cd3319cb8b2ee3f6cc44
+
+% 1 1 0 13c42e0eb3d5fb5e00bc7d067181a490
+
+@ 0 5 0 043325a39e6b221217c6fbca7aeebeb5
++       它与各个根共有的、由网格支持的成员——`width`、`height`、`move`、`put`（用于 `Text` 或 `Teletype`，因此颜色得以保留）、`clear`、`clearLine`、`invalidate` 和 `render`（它把网格读回为纯文本，各行以换行符连接）——都继承自公共表面。
++       基于 `TerminalBoard` 的 `FlowExtent` 是测试绘制并用 `render` 读回的根。
+
+% 0 1 0 164afff63db19fe512538df0e65393b8
+
+% 0 1 0 0ffd6c24b285d6bf0aec16a57e5c2132
+
+@ 0 9 0 08a3e7347c9ca35100993122f490fe6a
++   entry #region   这个区域在其父表面中所覆盖的矩形
++   entry #cursor   通过父表面显示或隐藏硬件光标
++   entry #showCaret   把插入点留在区域局部的某个单元格，并转换为父表面的坐标
++   entry #flush   在矩形的偏移处，一次一行地把网格合成到父表面上
++   entry #termcap   区域作为 `Stdio` 所报告的 `Termcap`：ANSI、真彩色、矩形的宽度
++   entry #out   作为 `Stdio` 的区域的标准输出流：静默，因为呈现经由 `flush` 进行
++   entry #err   作为 `Stdio` 的区域的标准错误流：静默
++   entry #in   作为 `Stdio` 的区域的标准输入流：静默
++   entry #print   `Stdio` 的写入：通过与 `put` 相同的光标模型对文本进行排布
+
+@ 0 1 0 1bb6c24f718ac71803373f3ef34bf81d
++ entry .inlineAnchoring   内联块的五种锚定方针，每一种都是要按名称导入的 given
+
+% 1 1 0 08ef48503b55cdbc1d4263fdc6805d49
+
+@ 0 3 0 0b4d8eb1c20e164f055f5c6a5b2e5c63
++       没有导入任何内容时，适用 `Tui.Block.Anchoring.default`（`TopAfterResize`）；这里的某一个会为作用域内的 `Tui.Block`、`conduct(Tui.Occupancy.Inline)` 或 `layout` 调用替换它。
++       `import soundness.*` 不会引入它们。
+
+% 2 1 0 19fde5c6dbb2b6fd01a1b85365b05b23
+
+% 3 1 0 16c90b3b23d94ac614e7dff4e2029590
+
+% 0 1 0 04c39a9a295d81bc1facfa379626422b
+
+% 1 1 0 110a3596a4746c8d08773407c9c38894
+
+@ 0 5 0 1e7998308c44a80a048138e5742f7b79
++   entry .bottomDockedAnchoring   `Tui.Block.Anchoring.BottomDocked`：始终停靠在底部，每次调整大小时都重新停靠
++   entry .topAnchoring   `Tui.Block.Anchoring.TopAnchored`：从第一帧起就固定在顶部的几行
++   entry .topAfterResizeAnchoring   `Tui.Block.Anchoring.TopAfterResize`：先停靠在底部，第一次调整大小后锚定在顶部
++   entry .fullscreenAnchoring   `Tui.Block.Anchoring.Fullscreen`：备用屏幕缓冲区，锚定在顶部
++   entry .flowAnchoring   `Tui.Block.Anchoring.Flow`：相对于光标绘制，随先前的输出一起流动
+
+@ 0 1 0 043283c3588c4e5a080d09d1e9bd29e1
++ entry .inlineGrowth   停靠在底部的内联块的两种增长方针，每一种都是要按名称导入的 given
+
+% 1 1 0 1ea476d028607044095cbd2e8e7c2d3d
+
+@ 0 1 0 04af7338505b314803db1be5fcab6a77
++       没有导入任何内容时，适用 `Tui.Block.Growth.default`（`ScrollIntoScrollback`）。
+
+% 2 1 0 0f700731d295b87c031ca9da9097b546
+
+% 3 1 0 197f9241af6b0c2b02631c76bb63b098
+
+% 0 1 0 04c873a4b78218ad0276c6d04428f1ad
+
+% 1 1 0 153218ce597e20b00296536c99126f47
+
+@ 0 2 0 19bf378873ea97c705891fbba8dde3ad
++   entry .scrollbackGrowth   `Tui.Block.Growth.ScrollIntoScrollback`：把屏幕向上滚动，把行推入回滚缓冲区
++   entry .clampedGrowth   `Tui.Block.Growth.ClampToScreen`：原地向上增长，覆盖上方的行
+
+@ 0 1 0 0cb3e5ba542aa7c7032e02bddc48a35d
++ entry .inlineShrink   内联块的两种收缩方针，每一种都是要按名称导入的 given
+
+% 1 1 0 1ab65159d4bce9ec1cfe495ea750fabd
+
+@ 0 1 0 12ca69005ebb475319cb7571a1c48870
++       没有导入任何内容时，适用 `Tui.Block.Shrink.default`（`RedockBottom`）。
+
+% 2 1 0 0403182dfb0751b313768d111ba0f856
+
+% 3 1 0 1c6d6bb7b94c8c5d1b2f8984de7de1ca
+
+% 0 1 0 1f849964bdb26149138e22406eb51602
+
+% 1 1 0 07b316e11f08f9cb18653f578eb0b5c0
+
+@ 0 2 0 13aaee498164c85906f6830625a5dbf9
++   entry .redockBottomShrink   `Tui.Block.Shrink.RedockBottom`：重新停靠在底部，清除上方空出的行
++   entry .keepTopShrink   `Tui.Block.Shrink.KeepTop`：保持顶行不动，清除其下方的内容
+
+@ 0 1 0 14ac8da3570f7eb003d837b4dd690cc1
++ entry .Fixture   布局可以承载的活动元素：它保有状态、呈现自身并报告自己的大小
+
+% 1 1 0 0cabaea0c9d2f7270106d18f091f8005
+
+@ 0 9 0 1532b72df81d357f0f28e5029c66c47d
++       `Fixture` 是 `Tui.Pane.Widget` 所携带的东西。
++       它拥有自己的可变状态，把自身呈现到驱动程序交给它的任何 `Board` 上（因此驱动程序可以在重新布局时把它移到新的矩形），并通过 `#measure` 报告其当前内容所需要的固有大小，这是响应式布局用来扩大或缩小窗格的钩子：运行中的 `Form` 把每个部件的最小宽度和高度提高到它在上次所占宽度下测得的值。
++       `#period` 是动画约定：想要按时钟重绘的控件说明重绘的频率，表单在所有活动控件中按最短的周期设置一个定时器，而当每个控件都是静态的时，则不设置任何定时器。
+
+@ 0 4 0 0db611c0e45df80915392e2c61ede88c
++       控件不一定接受输入：仪表就不接受，因此它不参与 Tab 循环。
++       `Focus` 在此之上增加了输入处理，`EditorField`、`MenuField` 和 `ScrollFixture` 是核心中的可聚焦控件；`TableFixture` 和仪表控件仅用于显示。
+
+% 2 1 0 0293a6322ad51c610a214c5494d6cfc0
+
+% 3 1 0 12ebe58b9bc5fd0a0e8b53ddf9269b55
+
+% 0 1 0 049731e4fcc8816c0d9c5e5fba4d1ec2
+
+% 0 1 0 052363aebbc3f0890167e1c3b213f305
+
+% 0 1 0 05be13ce760b81ff1e103d66f5e9ba64
+
+% 0 1 0 17965718d3f36e711537b81c71d38c4e
+
+% 0 1 0 1533b8d459ac832400a5b71096d90e9d
+
+% 0 1 0 1009f4545a60928f1c6bc78404bea628
+
+% 0 1 0 0b36ac04414ee458042935f810ade98b
+
+% 1 1 0 0785a8a8f14cfe3d03f890692f470181
+
+% 0 1 0 1762a092bcab7bee166132ef199fec3c
+
+% 1 1 0 11a4642fa4ddb70c027ca73affaaa4c7
+
+% 1 1 0 0f028e1335c6aea21ce33fafbaf620dc
+
+@ 0 12 0 0f35af69f4af003f174e7f4a8514a29d
++   entry #render   把控件绘制到一个画板上，并告知它当前是否拥有输入焦点
++       `render(canvas, focused)`：画布是控件求解出的矩形上的 `FlowExtent`，因此绘制相对于其左上角进行，并被裁剪到其大小。
++       由 `paint` 驱动的宿主传入 `focused = false`。
++   entry #measure   在给定宽度下，控件当前内容所需要的最小宽度和高度
++       `measure(width)` 返回 `(minWidth, minHeight)`；表单对每一项取它与窗格声明的 `Tui.Sizing` 界限中较大的一个。
++       不声明固有大小的控件返回 `(0, 1)`，并接受尺寸设定给它的任何矩形。
++   entry #period   距离控件想要再次重绘还有多少毫秒，如果只在变化时重绘则为 `Unset`
++       旋转指示器返回其帧间隔；进度条、编辑器或表格返回 `Unset`。
++       带有周期的控件在每一帧都会重绘，无论它的其他方面是否有所变化，因为它的外观取决于时钟。
+
+@ 0 1 0 0b6598c853f6487207d27f26a493596c
++ entry .Focus   接受输入的控件：可聚焦的那一类，用 Tab 循环切换
+
+% 1 1 0 18108bab8182820e101ba75aece95a60
+
+@ 0 6 0 1a8eee4037fb3cd60f049a1ffd614292
++       `Focus` 用 `#handle` 扩展了 `Fixture`，`#handle` 把一个终端事件折叠进控件的状态。
++       `Form` 按叶子顺序保存可聚焦控件，在按下 Tab 时在它们之间移动输入焦点（按身份跟踪，因此插入窗格后依然有效），把除 Tab、Escape 和 Ctrl-C 之外的每个按键发送给拥有输入焦点的控件，并重绘失去输入焦点的窗格和获得输入焦点的窗格。
++       `EditorField`、`MenuField` 和 `ScrollFixture` 实现了它。
+
+% 1 1 0 1a72fa307000d3c1066696e2c284764f
+
+% 0 1 0 1f732180aac1a7f50992a740fa048bec
+
+% 0 1 0 15bd1dbf03a297fa078f2321e36347d1
+
+@ 0 1 0 1ced99773338b101107e046bded4f2ce
++   entry #handle   把一个终端事件折叠进控件的状态
+
+@ 0 1 0 12bbebadf79b571c197fd1d927386bb6
++ entry .EditorField   包装 `LineEditor` 的可聚焦控件，其高度与换行后的文本相同
+
+% 1 1 0 1beff7875062ab5c0b449b5a56ad6ec0
+
+@ 0 5 0 060c14fdb8632404023378b9ab2cb6a9
++       `editor` 所构建的控件。
++       它持有一个 profanity `LineEditor`，通过同样负责定位插入点的共享 `Interaction[Text, LineEditor]` 绘制它，只在拥有输入焦点时显示硬件光标，并把其值在上次给定的宽度下换行后所占的行数报告为自己的高度，因此增长到超过一行的编辑器会把布局的其余部分向下推。
++       `#value` 是当前文本。
+
+% 2 1 0 041f39d7578b5b2a1381d07ba1710dea
+
+% 3 1 0 1a89a1ac1670474c08b260890623dab4
+
+% 0 1 0 1046b596a2b40c5916d3c98548226cef
+
+% 0 1 0 067c4cc0e8db4eef0cc9f25c8bab3daa
+
+% 0 1 0 1e6db95a6f46ab221a08996a312d10d5
+
+% 0 1 0 18fea88f9b390038130c179d0630f3a4
+
+% 0 1 0 09cf9183a16dae7f04e35a61d7626296
+
+% 1 1 0 0fb03975465241f71be1ce542e0719a2
+
+% 0 1 0 0785cf6aa62c325507e78d65c7458333
+
+@ 0 4 0 063a8a4eece61a790bf42c6c26eaa756
++   entry #value   编辑器的当前文本
++   entry #render   绘制编辑器及其插入点；硬件光标只在拥有输入焦点时显示
++   entry #handle   把一个按键或其他事件应用于行编辑器
++   entry #measure   `(0, rows)`：没有最小宽度，值的每一个换行后的行占一行
+
+@ 0 1 0 0bcea1bdfd85d9591284dec3d9ddeb02
++ entry .MenuField   包装 `SelectMenu` 的可聚焦控件，每个选项占一行
+
+% 1 1 0 11cb2d29397722fe0b11590bf37fde89
+
+@ 0 4 0 03fe29b6a78cd69513ee515eabef5eee
++       `menu` 所构建的控件，基于由 `Showable` 项组成的 profanity `SelectMenu`。
++       Up 和 Down 移动选择；菜单拥有输入焦点时，被选中的选项标记为 ` > `，否则标记为 ` · `，其他每个选项缩进三个单元格，并且硬件光标保持隐藏，因为菜单没有插入点。
++       `#value` 是被选中的项。
+
+% 2 1 0 0f13a847c0f35c7b0c4c8f98d0cd5ad6
+
+% 3 1 0 144e9b83fd853c7f0adcbb12d79520c2
+
+% 0 1 0 1a6b2c74a2411dc20bea43f16006cf4a
+
+% 0 1 0 0d4eebd321e6a9d813289393c4ce63e9
+
+% 0 1 0 0f9973ec7799163107873de02c6b8f30
+
+% 1 1 0 0fe7d512c47eba2817cbef4cb7cc2f01
+
+% 0 1 0 0e0e0d63ab3e9fb70ba18a4c18b6b944
+
+@ 0 4 0 00e738aea948ce2b03af765f53c7192e
++   entry #value   当前被选中的项
++   entry #render   绘制各选项并标出所选项，拥有输入焦点时用指针，没有时用圆点
++   entry #handle   把一个按键应用于选择菜单
++   entry #measure   `(0, options)`：没有最小宽度，每个选项占一行
+
+@ 0 1 0 0b76c244beb5d10c0694ca1e66a0f0d4
++ entry .ScrollFixture   内容高于其空间时的视口，带有滚动条和位置
+
+% 1 1 0 0910099cbb2f11a90e64299933d32d94
+
+@ 0 8 0 1f361d6f6f24da98186ac79710410364
++       `ScrollFixture(track, thumb)(content)` 显示 `content`（一个按名传递的 `Teletype` 行列表，每次呈现时重新读取，因此不断增长的日志会在增长时被看到）中由其滚动位置选定的窗口，并且只要内容高于视口，就在其最右边的一列绘制滚动条：由 `track` 字形（默认为细的垂直线）组成的滑轨，加上一个 `thumb`（粗的那种），其高度与可见比例成正比，其位置与滚动偏移成正比。
++       内容放得下时，不绘制滚动条，并使用整个宽度；内容被裁剪到剩余宽度，因此长行永远不会换行到滚动条中。
+
+@ 0 5 0 1c330b2b1706274401eafc42645d0a08
++       位置要么是_停靠在底部_（初始状态），此时视口随着内容的增长跟随内容的末尾（实时日志跟随其尾部），要么是一个明确的偏移，在追加内容时保持不动。
++       向下滚动到底部会重新停靠。
++       在表单下，控件拥有输入焦点时，Up 和 Down 键会滚动；由 `paint` 驱动的宿主直接调用 `#scroll`。
+
+% 2 1 0 1f9098a236a3c75a04ee8daca5c58a6c
+
+% 3 1 0 0195e6f39fc8b02410042cc5d9f88269
+
+% 0 1 0 059d0df59c33b36a18f48d4e3e4bef20
+
+% 0 1 0 07f57686d9f9dcb60bad7910ff50746a
+
+% 0 1 0 1ecee6c40700eed21358db387b41f2e1
+
+% 0 1 0 01ce4f8966749e4b195c512ab4bdb07f
+
+% 0 1 0 1ace6a469a41cbf716789828e7788d8b
+
+% 0 1 0 160f1d7a8ef1e70b027784427e316c5b
+
+% 1 1 0 0de9832c9f0d842111505979b2acc431
+
+@ 0 2 0 14c23f0401dbdcbf0ab43dc21d8cc6b7
++       控件在其整个生命周期中持有内容提供者，因此在承载它的表单运行期间，提供者必须保持有效。
+
+% 0 1 0 09b93a06980c7ad70b48541160e1e13e
+
+@ 0 11 0 11eeeafd785e837602776764da149146
++   entry .apply   基于按名传递的内容的视口，带有滚动条的滑轨字形和滑块字形
++       `ScrollFixture(track = BorderStyle.light.vertical, thumb = BorderStyle.heavy.vertical)(content)`。
++   entry #refresh   内容改变之后，唤醒正在运行的表单以重新呈现
++   entry #atBottom   视口是否停靠在底部、跟随增长
++   entry #toBottom   把视口重新停靠到底部并唤醒表单
++   entry #scroll   把视口移动若干行，负数表示向上；到达底部时重新停靠
++       从停靠状态向上滚动时，首先把当前的底部偏移具体化；请求被限制在上次呈现时的内容长度和视口高度之内。
++   entry #handle   `Keypress.Up` 向上滚动一行，`Keypress.Down` 向下滚动一行；其他事件被忽略
++   entry #measure   `(0, 1)`：没有固有大小；尺寸设定给出的任何矩形都成为视口
++   entry #render   绘制可见的行窗口，并在行溢出时在最后一列绘制滚动条
+
+@ 0 1 0 1dcbbe0fc19443da1f4a2e90bbe54b2d
++ entry .Form   交互式驱动程序：在窗格树上重新求解、重绘并路由事件
+
+% 1 1 0 0711198c6c1346141a6853136d1f6806
+
+@ 0 10 0 0cf8aa86a7474dd9079fcad1b49a26dc
++       `Form` 是 `conduct` 所构建并运行的东西；直接使用它，可以在自己选择的根上驱动布局，比如测试中的内存 `FlowExtent` 或 `Tui.Screen`，配合手工构造的事件迭代器。
++       `Form(root, mode, pane, wake, throttle, debounce, scheduleWake)` 接受要在其上绘制的 `Board`、`Occupancy`、窗格树、一个把 `Terminal.Info.Redraw` 放入事件队列的 `wake` 回调（绑定到每个 `Tui.Panes` 和 `Fixture` 中，使后台的变化能触发重绘）、以毫秒为单位的调整大小的 `throttle` 和 `debounce`，以及 `scheduleWake`，它安排在一段延迟后进行一次延期唤醒——防抖后的调整大小重绘和动画滴答都使用它。
++       然后 `#run` 在一个事件迭代器上循环，直到迭代器耗尽或用户退出。
+
+% 2 1 0 0b8e875e4a0d6a5d07be88ad6e9e1b90
+
+% 3 1 0 14cb21c20490f9ed161e21d5690b5ec0
+
+% 5 1 0 156938af3c5e5c441244b7bfe2953b45
+
+% 0 1 0 17eed76066dc4a691b090f7ab604c151
+
+% 0 1 0 1a0e1f183913db6919b50f7341d09bb7
+
+% 0 1 0 1612f001e1380c3e09577629a0748de8
+
+% 0 1 0 130a9f06106426830e5cb2b21e03c338
+
+% 0 1 0 1fedc5c486b3f1710f3abc25346f75ce
+
+% 0 1 0 08a8e8c4d480adce06bb096170ae45fd
+
+% 0 1 0 0c58abbdcf634b3c021fc795003ae90d
+
+% 0 1 0 1669fd597994d0b60100b93cf2622d31
+
+% 1 1 0 0b6fccb0332a9f7a01db573a2f361698
+
+@ 0 12 0 12bcb4b4e9a6d12118b347f8c2afdb1c
++       每一帧都根据窗格树的活动容器重新推导窗格树，因此在表单运行期间追加或插入的窗格会被拾取，布局会重新平铺；每个部件的最小值会被提高到其内容测得的大小。
++       在全屏模式下，一帧只重绘 `dirtyCells` 所指出的叶子（外加每个带动画的控件），当叶子数量改变或几何信息过时时会先清除屏幕；内联模式则重新测量块的高度，并把它整体重新呈现。
++       `WindowSize` 事件把几何信息标记为过时，并借助防抖进行合并，直到拖动暂停，在此期间按键会更新其部件，但不会呈现；内联根还会收到光标位置的应答，以便恢复块的位置。
++       表单是一个有状态的独占能力：它归运行它的那一次调用所有，保存在局部变量中或作为 `Form^` 传递，捕获它的闭包不能调用 `run`。
+
+% 0 1 0 1a7051045865fe92166e040bc90dc3ec
+
+% 1 1 0 1789e81b51fb61280984977d5418fe31
+
+% 1 1 0 05aa09c2d0551880139838aa69a6244e
+
+% 0 1 0 02e2be968e90c3d00113f59f45695040
+
+@ 0 15 0 0a78e67762aff84c1c4ac7521901d6ea
++   entry .apply   基于一个画板、模式和窗格树的全新表单，带有可选的唤醒和计时参数
++       `Form(root, mode, pane, wake = () => (), throttle = 0, debounce = 0, scheduleWake = _ => ())` 返回一个保留其根和唤醒回调的 `Form^`。
++       `conduct` 把终端的事件队列作为 `wake` 传入，把一个先 `snooze` 再重绘的任务作为 `scheduleWake` 传入，并把 `100`/`50` 作为内联模式的节流和防抖参数。
++   entry #run   在一个终端事件迭代器上驱动表单，直到迭代器耗尽或用户退出
++       `run(events)` 绘制第一帧，然后对每个事件：Tab 把输入焦点移到下一个可聚焦控件并重绘两者；Escape、Ctrl-C 或 Ctrl-D 结束循环；`Interrupt.Winch` 和 `Terminal.Info.WindowSize` 启动一次合并的调整大小重绘；`Terminal.Info.CursorPosition` 被暂存为调整大小的锚点；`Terminal.Info.Redraw` 进行重绘（或者在调整大小仍未完成时重新安排其唤醒）；任何其他 `Interrupt` 被忽略；任何其他事件交给拥有输入焦点的控件的 `handle`，随后重绘其窗格。
++       循环结束时，`Tui.Block` 会被 `finish`。
++       这些事件是一个 murmuration `Iterator`，因此手写的事件源是带有 `advance()` 和 `current` 的 `new Iterator[Terminal.Event]`，或者是 `list.iterator`。
+
+@ 0 1 0 16e300d466943efd03c637e241e74743
++ entry .TableFixture   作为窗格的实时 escritoire 表格，在每种宽度下都重新排布
+
+% 1 1 0 1c996487c15eecf4095e237362b63995
+
+@ 0 9 0 0c5dff554e5f08eb0f9a911bad7b50ed
++       `TableFixture(content)` 承载一个传名的 `Tabulation[Teletype]`（任意 `Scaffold` 的 `tabulate(rows)`，或列表的 `tabulation`），并在每次测量时重新读取它，因此下一帧显示的就是变化后的数据。
++       每次 `#measure` 都按布局给出的宽度排布表格，各列按 escritoire 引擎的决定重新协商：折行段落列、收缩，或把列折叠到其阈值以下，与静态的 `grid(width)` 完全一样；`#render` 重放那次测量所确定的各行。
++       控件不能抛出错误，因此在任何列排布都无法满足的宽度下，它会溢出渲染（escritoire 的 `ignoreAttenuation`），而不是失败。
++       更改底层数据后调用 `#refresh`，以唤醒表单并重新渲染。
+
+@ 0 2 0 101f5f93189c66cd1f2b48919e299a9a
++       构建时，作用域内需要有一个 `Table.Style`、一个 `Text is Measurable` 和一个 `Hyphenation`，这与静态表格所需的三者相同。
++       `tabular` 把它包装在一个窗格中。
+
+% 2 1 0 15e8c281514a31541d809f4d1e02e179
+
+% 3 1 0 17ecd4f3a205c9ae016975d49f32a14a
+
+% 0 1 0 11b628b0270ddbfc11b42c8a525812cb
+
+% 0 1 0 1d45cd473a7dec810bd056e3b2944fed
+
+% 1 1 0 11a56a05d75d73021b434c073a37505d
+
+% 0 1 0 0dcf1d3608ac0f24057d06062d370bb8
+
+% 0 1 0 0761580ce4d9b16e17cb90acf518f7f0
+
+% 0 1 0 0c123ab090efb5840456c52457f0fa5f
+
+% 0 1 0 17d31d2aa0b45b8f19cc5268cb167277
+
+% 0 1 0 117339c376183add14c3a968ac4a3728
+
+% 0 1 0 192704409991a8d208c44108f3ad128f
+
+% 0 1 0 107aaa1fb2c1b6121d56ec615080a0c8
+
+% 0 1 0 1663b5853941c06007b5c4dd1221a8bc
+
+% 1 1 0 15d2c8815dfe7cd606bc83c2f3973087
+
+@ 0 2 0 1f91d4ffac8928f4199e01733717f0ce
++       控件在其整个生命周期内持有内容提供者，因此在宿主表单运行期间，提供者必须保持有效。
++       它不接受输入，因此 Tab 会跳过它。
+
+% 0 1 0 086bba8cc123a3f41d490a4dd8bb63c0
+
+% 1 1 0 01d40f3c2ac95ef505b0fe2cc91c0442
+
+@ 0 8 0 1a987d67fe513ea41facefef8e803084
++   entry .apply   基于传名表格内容的控件，作用域内需有样式、度量和断字规则
++       `TableFixture(content: => Tabulation[Teletype])(using Table.Style, Text is Measurable, Hyphenation)`。
++   entry #refresh   在数据变化后唤醒运行中的表单，使其重新测量并重新渲染
++   entry #measure   按某一宽度排布表格，并返回其渲染宽度和行数
++       `(widest line, lines)`：按显示宽度计最宽的渲染行，以及包括分隔线和标题在内的行数。
++   entry #render   绘制上次测量产生的各行，画布宽度不同时重新排布
+
+@ 0 6 0 1ba928a1062a0f151890a5bf09e30bce
++ entry .tabular   承载实时表格的窗格，内容为传名的 `Tabulation[Teletype]`
++     `tabular(content)` 是一个基于 `TableFixture`、带默认 `Tui.Sizing` 的 `Tui.Pane.Widget`：表格在每一帧都按布局给它的宽度重新排布，其数据每次都会重新读取。
++     它需要作用域内有一个 `Table.Style`、一个 `Text is Measurable` 和一个 `Hyphenation`。
++     样式在构建窗格时就已固定，因此采用不同样式的表格是不同的窗格：
+
+% 2 1 0 13b8a6a70b9ff2831575ad6b2c4f2dc3
+
+% 0 1 0 0768b91f2f9e1e580d2727e83a9ebadd
+
+% 1 1 0 172cab6f2a4ffce403e987c02c862518
+
+% 2 1 0 195953a25d95ac0204b91586afd6dafd
+
+% 0 1 0 1c1ff4cb33f8a66210aa7968bd88b5bd
+
+% 1 1 0 19ca5a9e838511f116b69f73d6af7842
+
+% 2 1 0 0846dcb1d3dd91060201b5811ef6ab35
+
+% 3 1 0 01115469590b10bf0bf32547cedcf09a
+
+% 4 1 0 1bdd6870e03124810afa2f5d624c3ac4
+
+% 0 1 0 1b5e2acb17b6a4a7011ab3ea9d4d2653
+
+% 0 1 0 0f111611fadbbede10aeea401d7034cf
+
+% 0 1 0 0adf4288a5f045c9162d8c59e293833f
+
+% 0 1 0 0d353b461731a4c21bcc7762b8a0a5c5
+
+% 0 1 0 1f1d1d9e4b63de511ebf61b082b7120c
+
+% 0 1 0 10310a0c98b9fc8e0d0382f8b99f0408
+
+% 0 1 0 16903c1febc7681b1d11c2446beca138
+
+% 1 1 0 1e547c7940c3d0fc00c1867d56cfd4b4
+
+% 2 1 0 03190e1ab945c16b12df01069433f2b0
+
+% 0 1 0 005e222dbd25f2d2051a12a129516222
+
+% 1 1 0 1856f8a84fc317e004532c52c65cbabd
+
+% 2 1 0 015428b8d03557270e49a14988f94e47
+
+% 3 1 0 0f756b12a06cc7b213e404958b8511d3
+
+% 4 1 0 1c7351222cc7bcd2133c398523e93051
+
+% 0 1 0 00202afa892b2a1e06d7ef57b59a8a9d
+
+% 0 1 0 066bc1f05ab2752a10901c68c469ebe0
+
+% 0 1 0 0bcd24d9729af07809bb6098309d9d2f
+
+% 0 1 0 048fe72477085b0e1bada98b5f9a5cd6
+
+% 0 1 0 1677c97cab3a949d1ea093d929b0c91d
+
+% 0 1 0 0e1c65210a03d75d033207b3b37908bc
+
+% 0 1 0 0caa90cd98c12d9d186dbaf386eb01e0
+
+% 1 1 0 1b34135a220272b4128dd7fc08cf0190
+
+% 2 1 0 0b28646e1f55514401b03a1c14f6ce46
+
+% 0 1 0 0b5fdb31655f2f7108f211cd61dcb179
+
+% 1 1 0 1934dd1f529a30c20efac079e480f19e
+
+% 2 1 0 19c8820b4fa22066126cd586f5f350fe
+
+% 3 1 0 0e8172713755cae700fbc4d51fa8ae18
+
+% 4 1 0 11f1b4c7cc8a17241d4d3e0f1d7b7e6e
+
+% 0 1 0 12dba4febf55315a1df890552e5d8581
+
+% 0 1 0 09486863abc371171a4040508fd26f8d
+
+% 0 1 0 0fbfb1e4ba6b5dc301a52489f0478cc6
+
+% 0 1 0 1a0eddf5b3283868062334d53ca09113
+
+% 1 1 0 14ede3c43254412a1f63fa08e94d7682
+
+% 2 1 0 198fe7e5be4aa9110f8d97df7b11530e
+
+@ 0 4 0 049559dfcbc09f6e0921c94e99882193
++     在运行中的表单里，表格是一个只用于显示的控件：它从不获得输入焦点，数据的变化会在 `TableFixture#refresh` 之后显示，或在因其他任何原因进行的下一次重绘时显示。
++     要调用 `refresh`，请自行构建 `TableFixture`，并把它包装在 `Tui.Pane.Widget` 中。
+
+@ 0 1 0 0892e68aec5b33110fa21879437057cf
++ entry .Gaugeable   把状态类型绘制为终端仪表的设计：进度条、旋转指示器、计量条、检查清单
+
+% 1 1 0 1afc93d44a7d35bd07f0c82432c0cf78
+
+@ 0 7 0 1609a6bb36d870941e1c203d64ce282c
++       `Gaugeable` 是每种仪表背后的类型类。
++       状态类型的实例说明：该类型的值在给定宽度和动画 `Tui.Tick` 下如何绘制，它最窄能窄到多少仍然有用（`#minWidth`），它希望有多宽（`#columns`），它占多少行（`#height`），它是否拉伸以填满所给的空间（`#elastic`），以及无论状态如何，它多久需要重绘一次（`#period`）。
++       渲染是纯的：状态、滴答和宽度映射为带样式的 `Teletype` 行，因此设计不捕获任何东西，可以放在窗格树中，并且可以通过用字面量 `Tui.Tick` 调用 `#rows` 来测试。
+
+@ 0 7 0 15d1e0b8877882a41eb18604ffac31a8
++       关键在于状态的*类型*。
++       `Tui.Fraction`、`Tui.Reckoning`、`Tui.Standing`、`Duration`、`Tui.Countdown` 和 `Tui.Captioned` 在其伴生对象中有默认设计；`Tui.Transfer`、`Tui.Meter`、`Sequence[Double]` 和 `Sequence[Tui.Step]` 有意没有默认设计，因为它们的候选设计在高度或数字的含义上各不相同。
++       其他任何设计都通过从选择包（`bars`、`spinners`、`meters`、`sparklines`、`counters`、`standings`、`processions` 或 `timers`）中按名称导入一个 given 来选定，应用程序代码保持不变。
+
+% 2 1 0 0bace66e8030983209343b7a1efc0078
+
+% 3 1 0 149b3e675b537c781dd7827bb799c7bb
+
+% 4 1 0 086168e279786858024ee54f78ffb4df
+
+% 5 1 0 0b8ffdbce1e8bd721d59ecd67129e6e2
+
+% 0 1 0 14ca1592f63c56200552db502cf5400b
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0c3528584881b24e0c2133fb5f6d1706
+
+% 0 1 0 0ca765ec723804a1186221e1d488275e
+
+% 1 1 0 1283a0ce2aa28cfe1ec6fb1353397046
+
+@ 0 5 0 055c11f2492af25500e117dd2db7b0cb
++       每个设计 given 都接受一个 `Gauging`，即召唤该 given 处作用域内的调色板、字符集和文本度量，因此外观由用户在构建仪表的那一行的导入决定，而不是由之后绘制它的代码决定。
++       每个设计在每种宽度下都*恰好*渲染所给的宽度，随着变窄而降级（进度条在四个单元格时变为百分比，在一个单元格时变为单一色块），而不是溢出。
+
+@ 0 3 0 17fb3246e59d00f90c449116a41dbd10
++       任何状态都可以是 `Optional`：`.optional` 把 `T` 的设计提升为 `Optional[T]` 的设计，在值为 `Unset` 时绘制 `#absent`，因此总量尚未知道的作业与总量已知的作业使用同一类型。
+
+% 0 1 0 06f1dd6aeed758300a6bef0ca8809c43
+
+% 1 1 0 18bceafd28fea0b31acce0a7660cbf30
+
+% 1 1 0 134291a8b5c9bafd061c1003b2d900c5
+
+% 0 1 0 08390a6bef0583e01fca241e929a2e23
+
+% 0 1 0 012e5bcf7d92fce60cbc7f03863bcfcd
+
+@ 0 8 0 1bdd2a8371eaa99214a1d5acb4144a82
++   entry .optional   把某个状态的设计提升为同一状态的 `Optional` 形式
++       一个 given，它从作用域内任意 `T is Gaugeable` 派生出 `Optional[T] is Gaugeable`。
++       `Mandatable` 约束确定必选类型，因此这一提升只适用于真正的可选值，从不与确定值的实例竞争，这使得两者都在作用域内时 `Tui.Captioned(Tui.Fraction(0.5), …)` 仍无歧义。
++       提升后的设计在值存在时绘制确定值设计的 `#rows`，在值为 `Unset` 时绘制其 `#absent` 行；它报告的 `#period` 是内部设计的周期或 80 ms，因为即使确定值设计从不动画，缺失值也可能需要扫动。
+
+% 2 1 0 15985c7f994a4d841ab4c210ae5d6ad2
+
+% 3 1 0 055e7661697e2dbf16cd682bc6827112
+
+% 4 1 0 034f7a46ffd8bfab1788c33f06bb5769
+
+% 5 1 0 0e744e37b24f9d2706f5d1aba2794016
+
+% 0 1 0 1ca57f5bfe33a53907055d154f645f46
+
+% 0 1 0 0a7e0d7ac04f1b3a16548629746faf3c
+
+% 1 1 0 1dffe22dd303615c028e13e78fa90dc6
+
+@ 0 1 0 0f8144dcf609a02e1268382a160f3347
++   entry .Glyphs   设计在字符使用上可以有多大胆：`Ascii`、`Unicode`、`Braille` 或 `Emoji`
+
+% 1 1 0 1274915a356a33270beda6f0e0a8a067
+
+@ 0 8 0 071aed0a477388dc01ac4fb8ca7d248b
++         一个字符集，以 `Gaugeable.Glyphs` given 的形式保存在作用域中，并通过 `Gauging#permits` 查询。
++         各字符集层层嵌套：`Unicode` 允许 BMP 中的制表符和方块字形，`Braille` 另外允许盲文图案，`Emoji` 另外允许占两个单元格的 emoji；`Ascii` 只允许七位输出。
++         伴生对象的 `.default` 是 `Unicode`，每个现代终端都支持它；其他字符集从 `gaugeGlyphs` 按名称导入，并一次性降级或提升整个目录，因为每个设计都带有 ASCII 渲染，每个特殊设计都指定了一个更窄的回退。
+
+@ 0 6 0 12d5ee4caf7da79d04b47af7ae2b65d2
++         `Emoji` 与 `Unicode` 分开，因为 emoji 是唯一占两个单元格的字形，而把它们渲染为一个单元格的终端会使用到它们的每一行错位。
++     entry .default   无需导入的字符集：`Unicode`，包含制表符和方块字形，不含 emoji
++         伴生对象中的 given，因此无需导入即在隐式作用域中；任何 `import gaugeGlyphs.…` 都优先于它。
++   entry .Fixture   把纯设计绑定到实时 `Reading` 和表单的重绘机制
+
+% 1 1 0 11150f36a2e9b65a000dd576c4887d48
+
+@ 0 14 0 0e509915549bac040e66f6761229ecda
++         仪表借以成为布局可承载的窗格的适配器，由 `gauge` 构建，很少直接点名：`Gaugeable.Fixture(reading)` 在调用处召唤该状态的设计，因此它绘制时所用的调色板、字形和度量都是调用者的。
++         它有自己的单调时钟，因此系统时钟被调整时旋转指示器不会跳变，在不同时刻启动的两个旋转指示器也保持各自独立的相位。
++         控件不是 `Focus`，因此 Tab 会跳过它。
++     entry #measure   设计在某一宽度下的首选列数及其行数
++         报告的宽度是设计针对当前状态的 `columns`，求解器把它当作最小值；如果布局有余地，弹性设计会得到更多。
++     entry #render   把当前状态的各行绘制到所给的画布中
++         画布比设计的 `minWidth` 窄时什么也不绘制，而不是绘制残缺的内容；超出画布高度的行会被裁剪。
++     entry #period   设计的动画周期，以便表单为其所有仪表只设置一个计时器
++   entry .Row   恰好占一行的设计的基类
+
+% 1 1 0 0a203c6a6b815d57072ae8fc53c85e90
+
+@ 0 31 0 0ba323f245cfd17f1750de315a7f727c
++         几乎每个设计都只有一行。
++         `Row[status]` 把 `Self` 固定为该状态，只要求提供 `#row`，并把它包装为单元素列表作为 `rows`。
++     entry #row   在某一宽度和滴答下的单独一行
++     entry #rows   `row`，作为单元素列表
++   entry #period   无论状态如何，设计每隔多少毫秒需要重绘一次
++       对于只在状态变化时才变化的设计（进度条、计数器、计时器），为 `Unset`。
++       旋转指示器返回其帧间隔；检查清单为其正在运行的步骤的标记返回 80 ms。
++       受驱动的布局取屏幕上各仪表中最短的周期，为它们全体只运行一个计时器，没有任何动画时则不运行计时器。
++   entry #minWidth   设计能渲染出有意义内容的最窄宽度
++       宽度不足时，驱动器什么也不绘制，而不是绘制残缺的内容。
++       进度条为一个单元格（单一色块），检查清单为三个，旋转指示器为其最窄回退的宽度。
++   entry #columns   设计希望的宽度
++       进度条的首选宽度（`Tui.Bar.defaultColumns`，40 个单元格）；对于旋转指示器、状态字形或计数器，恰好是它所占的宽度。
++       默认为 `minWidth`。
++   entry #height   设计在某一宽度下所占的行数
++       进度条或旋转指示器为一行，检查清单每个步骤一行，温度计为五行。
++       正是这一点使仪表能够推动布局的其余部分。
++   entry #elastic   设计是占用所提供的全部宽度，还是保持在 `columns`
++       进度条为 `true`；旋转指示器、状态字形、计数器或计时器为 `false`，`gauge` 把它们固定在自身宽度，因此它们不会横跨整个终端。
++   entry #rows   针对某个滴答，以恰好某一宽度渲染状态
++       在当前度量下，每一行都恰好是 `width` 个单元格，共有恰好 `height(status, width)` 行。
++       滴答是动画时钟的读数；测试用 `Tui.Tick.zero` 或 `Tui.Tick.at(elapsed, period)` 驱动设计。
++   entry #absent   完全没有状态（`Optional` 的 `Unset`）时如何绘制
++       “未测量”与“没有进展”是不同的说法，因此进度条在这里扫动而不是保持空白，旋转指示器则绘制它的帧。
++       默认是一个空白行，这适合没有值就无话可说的设计。
++       `.optional` 会调用它。
++   entry #absentColumns   没有可测量的状态时要求的宽度
++       默认为一个单元格；进度条要求其通常的宽度，让扫动有移动的空间。
+
+@ 0 1 0 0bf100bfc290614e04649ca5726797c1
++ entry .Gauging   设计所捕获的渲染上下文：其调色板、字符集和文本度量
+
+% 1 1 0 0154c2f2404bfa6f166ad235349576f5
+
+@ 0 5 0 0227fd1651f7b9a40197a8a0cfaf3060
++       每个设计 given 都接受一个 `Gauging`，它由 `.assembled` 从三个可分别导入的 given（一个 `GaugePalette`、一个 `Gaugeable.Glyphs` 和一个 `Text is Measurable`）组装而成，因此调用者可以覆盖任何一个维度（颜色、字符、宽度度量），而无需指明另外两个。
++       设计在召唤其 given 的地方捕获它，因此用户在构建仪表那一行的导入决定其外观。
+
+% 2 1 0 1b2d4f0b0ba4a95a1be06804181daef3
+
+% 3 1 0 120df3d231e28e5309beae6daa019cca
+
+% 4 1 0 0b4f5106bf0f0f2c060480ec64660ee0
+
+% 0 1 0 0d93f14da8ad30d10b5cee0e3efb7e1c
+
+% 0 1 0 1ac745b4027189c51cd20ad7842a542f
+
+% 0 1 0 093d62a6977a9af216c495431bcaaff7
+
+% 0 1 0 1aa2788e6ebb54a607cadb97cf3f6b64
+
+% 0 1 0 023a867dbc0353f31e3f612cbd09e632
+
+% 1 1 0 1944270219c75cc21d08295e4c44982e
+
+@ 0 3 0 04e1c5cbff1273431b06a92e9f27d9ec
++       设计从不直接写出转义序列：每种颜色都经过 `#tint` 或 `#wash`，每个宽度都经过 `#cells`，正是这一点使同一个设计在任何调色板、字符集和度量下都是正确的。
+
+% 1 1 0 18c51bbdc2cf42e31ab99bb1403486d3
+
+% 1 1 0 01785c92f3e3943b1e45183408cca2eb
+
+@ 0 19 0 106359cab645e8d81773752bc0084b85
++   entry .assembled   从作用域内的调色板、字形和度量构建 `Gauging` 的 given
++       无需导入即在隐式作用域中。
++       它需要一个 `GaugePalette`（除非从 `palettes` 导入了一个，否则为伴生对象中根据作用域内 `Termcap` 得出的 `adaptive` given）、一个 `Gaugeable.Glyphs`（默认为 `Unicode`）和一个 `Text is Measurable`（按名称导入，例如 `textMetrics.uniformMetric` 或 `textMetrics.eastAsianScripts`）。
++   entry #palette   用于绘制的颜色
++   entry #glyphs   设计可以使用的字符集
++   entry #metric   如何以单元格为单位测量文本的宽度
++   entry #tint   用调色板中的颜色为片段的前景着色
++       `tint(color)(text)` 把 `Teletype` 包装在 `Fg(color)` 中。
++       让每种颜色都经过这里，意味着设计自己不写任何转义序列。
++   entry #wash   为片段的背景着色
++       `wash(color)(text)` 把 `Teletype` 包装在 `Bg(color)` 中；轨道以空格绘制的进度条就是这样把轨道显示为背景的。
++   entry #permits   在作用域内的字符集下，所需的字符集是否可用
++       各字符集层层嵌套：`Ascii` 总是允许的，只要作用域不是 `Ascii` 就允许 `Unicode`，`Braille` 在 `Braille` 或 `Emoji` 下允许，`Emoji` 只在 `Emoji` 下允许。
++       设计通过它来挑选可用的最佳渲染，或沿着其回退链走下去。
++   entry #cells   在作用域内的度量下，文本以单元格计的显示宽度
+
+@ 0 1 0 185f5bf36f8397be1ea9d0f5a807dda1
++ entry .GaugePalette   仪表绘制所用的颜色，按角色而非色相命名
+
+% 1 1 0 1df63aee941142be09c3da4ac334673e
+
+@ 0 5 0 131bd8d13a0ece29179ada5bb49aacca
++       `GaugePalette` 按各颜色所扮演的角色为其命名（`#track`、`#fill`、`#leadingEdge`、`#caption`、`#muted`、`#success`、`#warning` 和 `#danger`，以及来自 `Palette` 的 `background` 和 `foreground`），因此一个设计可在任何调色板下渲染，一个调色板也可服务于所有设计。
++       `palettes` 包中提供了十个，按名称导入；不导入时，`.adaptive` 根据终端报告的信息挑选一个。
+
+% 2 1 0 0ce9a37491c50c6d0f2ccf37921e1d0c
+
+% 3 1 0 0717f93c3aad26cf08576f14262d4639
+
+% 4 1 0 0dfe63d9d8a81bad0b350c9071b8d5a8
+
+% 0 1 0 0aaf8c3802af88d912b19b13cb39196f
+
+% 0 1 0 1c63c5952c09a744007fd74dbb386d6e
+
+% 1 1 0 0890f7e6d607e7370c9af7f5f8dea9ec
+
+@ 0 4 0 124dd255804b7c101f8e35994aef5765
++       从这些角色派生出两个渐变：`#lengthwise` 是沿进度条长度插值的填充色，`#severity` 是作为读数值的函数的填充色，电池或负载计量条使用的就是后者。
++       自定义的调色板实现八种角色颜色（以及来自 `Palette` 的两种），并可以覆盖任一渐变。
+
+@ 0 2 0 15369e0e98be3b870e5cdee226c4bd80
++       它是一个真正的特质，而不是 `Palette` 的结构细化，因为结构成员选择要经过运行时反射，而 Scala Native 没有运行时反射。
+
+% 0 1 0 1b2606b9fa167112032d58c70e891e5b
+
+% 0 1 0 1f2a6ce2a5b360fb13a705c242f13706
+
+@ 0 34 0 1226b410c17bbb471ef9abc0a9f3aeeb
++   entry .adaptive   无需导入的调色板，根据终端的色深选定
++       伴生对象中的 given，需要作用域内有一个 `Termcap`：报告不支持颜色或只有八种索引颜色的终端得到 `palettes.monochromeGaugePalette`，十六色或 4 级色立方得到 `palettes.ansiSixteenGaugePalette`，6 级色立方或真彩色得到 `palettes.slateGaugePalette`。
++       任何 `import palettes.…` 都优先于它，因为词法作用域中的 given 胜过伴生对象中的 given；指名调色板的调用者已经表明自己了解所用终端的能力。
++   entry #Form   每种角色颜色所采用的颜色形式：`Srgb`
++   entry #track   进度条未填充的部分、空心的点、指针移动所沿的导轨
++   entry #fill   进度条已填充的部分，以及旋转指示器的字形
++   entry #leadingEdge   箭头进度条的尖端、标记的头部，以及正在运行的步骤
++       比 `#fill` 更亮，因此即使在静止的截图中，进度条看起来也在前进。
++       平滑进度条中部分填充的边界单元格用 `#fill` 绘制（在渐变设计中则用其位置处的 `#lengthwise`），以便与其左侧的完整单元格相配；只有 `Tui.Bar.Glyphs#tip` 才使用这种颜色。
++   entry #caption   标注、说明文字和数字
++   entry #muted   存在但不喧宾夺主：已完成的步骤、已用时间、单位、速率
++   entry #success   成功的步骤，以及严重程度渐变中平静的一端
++   entry #warning   带警告的步骤，以及严重程度渐变的中段
++   entry #danger   失败的步骤，以及严重程度渐变的另一端
++   entry #lengthwise   沿进度条长度插值的填充色，以 `Gradient` 表示
++       位置 0 是左边缘，1 是右边缘。
++       只有渐变设计（`bars.gradientBar`、迷你图的单元格、单个单元格的色块）才会查询它；默认是从 `#fill` 到 `#leadingEdge` 的两段渐变。
++   entry #severity   作为读数值的函数的填充色，从 `success` 经 `warning` 到 `danger`
++       在下半段保持为 `#success`，然后经 `#warning` 攀升到 `#danger`：`Tui.Gradient(success, success, warning, danger)`。
++       电池反向读取它，因为电池随着电量耗尽而变红；紧迫的倒计时在其最后一分钟读取它。
++   entry #steps   条带每一段的背景色，沿长度方向的渐变均匀分布
++       `steps(count)` 在 `count` 个等距位置上对 `#lengthwise` 取样，供 `processions.ribbonProcession` 使用。
++   entry #colorOf   绘制 `Standing` 所用的颜色
++       `Succeeded` 为 `#success`，`Failed` 为 `#danger`，`Warned` 为 `#warning`，`Skipped` 为 `#muted`，`Pending` 为 `#track`，`Running` 为 `#leadingEdge`。
+
+@ 0 1 0 0693140f2eaf2bff1323ebf1316d9560
++ entry .gauge   承载实时仪表的窗格，由作用域内针对读数状态类型的设计绘制
+
+% 1 1 0 1d5516d97dea4489010146b0d1fed660
+
+@ 0 7 0 1f05cf3d7343720f041e611e4bdfb01e
++       `gauge(reading)` 为 `Tui.Reading` 构建一个 `Tui.Pane.Widget`，使用调用处针对其状态类型的 `Gaugeable` given，因此用哪个设计由调用者在那一行的导入决定。
++       仪表在每次求解时报告其设计的固有大小：弹性设计（进度条）填满所给的空间，非弹性设计（旋转指示器、状态字形、计数器）固定在自身宽度，多行设计（检查清单）使布局按其步骤数增高。
++       有动画的设计按其 `period` 驱动表单的帧时钟。
++       仪表不接受输入，因此 Tab 会跳过它。
+
+% 2 1 0 066fa15ecddb0a751d97cd5abf411ca2
+
+% 3 1 0 05ae9c643ad94eb80b5d3e1e5639d30c
+
+% 4 1 0 1df211103ddfa4c408fd269665f91036
+
+% 5 1 0 033c3414ecb2ba6e0352fce81b879bfd
+
+% 6 1 0 04edf1fda0da371205c1413dd4db3898
+
+% 7 1 0 117a6d81fecbb24510bc8eac880d0fa5
+
+% 0 1 0 116679807abbd52b0aa072ad7975a6c2
+
+% 2 1 0 1a24bb4b6a9cb42416e0ffcd52911c48
+
+% 3 1 0 1ae28a4acd4e028c0fb96d9d6c293ea9
+
+% 4 1 0 06567ad9213e0f1e0716110a73edfe93
+
+% 5 1 0 069c86d24a343e671316ee64bdae4e87
+
+% 6 1 0 0835f0790b16b933104bf545b653ae98
+
+% 0 1 0 13bf9d40ff87884a03c9ca641a1458bd
+
+% 1 1 0 101fcba41fa2a1840967509e847121af
+
+@ 0 3 0 19055fe2831df3581a467ba775a69e21
++       可选参数 `fraction`、`minWidth`、`maxWidth`、`minHeight` 和 `maxHeight` 是窗格的 `Tui.Sizing`，与其他任何窗格一样；`minWidth` 会被提高到设计自身的最小值，对于非弹性设计则忽略 `maxWidth`。
+
+% 1 1 0 020065c4e3f943c710ceb36e697d0e24
+
+% 1 1 0 1855c6eef14e5799128fbb5d8ac99da8
+
+% 0 1 0 0eeeac7e3103157904c84b6c28b7e4f0
+
+@ 0 5 0 1d823836b1cc372b00985b0c3d4536b1
++ entry .gaugeRows   状态在某一宽度和滴答下的一帧，以带样式的行表示
++     纯粹的入口，供自行绘制的调用者使用：`gaugeRows(status, width)` 是作用域内该状态类型的 `Gaugeable` 设计的 `rows`，除非给出滴答，否则在 `Tui.Tick.zero` 下渲染。
++     多行设计（检查清单、温度计、高迷你图）每行返回一个 `Teletype`。
+
+% 2 1 0 12885dbe7cc3a8421ca6306a662094b8
+
+% 3 1 0 14649de41f96644c08b91aa5c648d5e4
+
+% 4 1 0 18be90c9bb4e49951d2c1564034d03e9
+
+% 5 1 0 191c0267894dca370a38b980553ca81d
+
+% 0 1 0 046cc325f10fd5be0745fd89e28ae489
+
+% 0 1 0 0ec14a20c5c507cd1095b8d68ef0fa9d
+
+% 0 1 0 11eaab39189e583516c943559226aef7
+
+% 0 1 0 198063ea866204720a1b629af3631fec
+
+% 1 1 0 010b16c194b926e70985eb1d59dbbcd3
+
+@ 0 5 0 1a825b23ffe249da125d7e12f7668de7
++ entry .gaugeLine   状态在某一宽度和滴答下的一帧，以单独一行表示
++     进度条、旋转指示器、计数器或计时器渲染成的就是它。
++     多行设计在这里只产生第一行；`gaugeRows` 给出全部各行。
++     仪表总是需要一个宽度（不知道自己有多宽的进度条是无法渲染的），因此状态本身没有 `Teletypeable`，这就是打印状态的方式。
+
+% 2 1 0 0f026cdeba6dbee41e6a67f846243f98
+
+% 3 1 0 1c274db5e915bf2205a82d817ba06dc2
+
+% 4 1 0 006f91392ce7a0da0e9c1a591657395f
+
+% 5 1 0 1c3b9d454b345cb71f3b955eda8b9d5e
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 0 1 0 0bd56d40404a7dad010836adcc21e4e5
+
+% 0 1 0 00c4751b8d61316a144481b138d0d4bd
+
+% 0 1 0 1bf329f104ac759606a992d1331a3d73
+
+% 1 1 0 17ab8aab7382caf30e28afab66f7e29a
+
+@ 0 2 0 0e9aee622601067013d4fab49a3c0463
++     自行重绘的调用者传入滴答：`gaugeLine(status, width, Tick.at(elapsedMillis, period))` 挑选旋转指示器在那一时刻的帧。
+
+@ 0 1 0 13b4cf1b82cfceee1d457d258d9dea8b
++ entry .whilst   在一个代码块执行期间在光标处显示仪表，然后将其擦除
+
+% 1 1 0 0bb4d2fac34bff4a115a8b449de05528
+
+@ 0 6 0 00a2ff5859030df7147cb75309b4e951
++       独立使用的途径，无需表单，也无需布局：`whilst(reading)(block)` 基于读数启动一个 `Tui.Inlay`，对代码块求值，并在 `finally` 中擦除仪表，让光标停在干净的一行上。
++       每个设计都可以不加修改地在这里使用。
++       动画在一个后台任务中运行，按设计的周期原地重绘；没有周期的设计只绘制一次，此后只在读数变化时重绘。
++       它需要作用域内有一个 `Stdio`、一个 `Monitor` 和一个 `Probate`，因此要在 `supervise` 中调用。
+
+% 2 1 0 19c443c848185a311e284da0d5ea3c55
+
+% 3 1 0 17415d5286ecdf6008bcda6e03c01afe
+
+% 4 1 0 14aa30172dbea2e812252b4ef2c652cd
+
+% 5 1 0 19cd67ff02ac49771c23f110de8d768c
+
+% 6 1 0 12592a6896a6a5be13be05414d656194
+
+% 7 1 0 1d4abcbf51d27b111acb2ac75677bab7
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 0 1 0 13ff61138be3936d127304ebe9dc454a
+
+% 2 1 0 1f149945917694880c930e5e3d25329d
+
+% 0 1 0 0579325f7ed23aac0589794f9da03d3d
+
+% 0 1 0 1e259990a91efa4e1a337c01b876d469
+
+% 1 1 0 1a6d6524db068d3d00d1a2c9a313aada
+
+@ 0 2 0 1ff8537bfc79bdad165f7f4dbcc23384
++       可选的 `width` 固定仪表的宽度；否则使用终端的宽度，取自 `Stdio` 的 termcap。
+
+% 0 1 0 162d89324f9c66770826bca8bac04569
+
+% 1 1 0 06e536700bcc0bcf0ec7e81f223c746d
+
+@ 0 1 0 128310e493a32ab10027f6d005630304
++ entry .internal   不透明状态类型 `Fraction` 和 `Countdown` 及其伴生对象
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 1e29a878e66f8f3601d005c2fa5532af
++       不供直接使用：这个对象之所以存在，是为了让不透明类型有一个抽象不会泄漏的稳定归宿（顶层不透明类型会被提升到一个合成的包装器中，从它推断出的类型变量会拓宽为其底层表示）。
++       两者都导出到 `ultimatum` 包，并在 `ultimatum.Fraction` 和 `ultimatum.Countdown` 下说明。
++       两者都以 `caps.Pure` 为界，因此状态是数据，可以赋值给 `Tui.Reading`，而不会遭到捕获检查器的反对。
++   entry .Fraction   `[0, 1]` 中的比例，超出时截取；参见 `ultimatum.Fraction`
+
+% 1 1 0 11c8f7ac708b85df07b1a3dd1646cfd1
+
+@ 0 17 0 0210069a0e3a90821ba82e7c91947556
++         不透明类型 `Tui.Fraction <: Matchable & caps.Pure`，基于 `Double`，其伴生对象带有构造器、默认设计和读取用的扩展方法。
++         它在 `ultimatum` 包下的页面有完整说明。
++     entry .apply   `Fraction(value)`：截取到 `[0, 1]` 的值，`NaN` 视为零
++     entry .of   `Fraction.of(done, total)`：`done/total`，总量不为正时为零
++     entry .indeterminate   总量未知的进行中工作：`Unset`，类型为 `Optional[Fraction]`
++         进度是 `Optional[Tui.Fraction]`，而不是一个单独的“忙碌”类型，因此一开始无法测量、后来才得知总量的作业不会中途改变类型，而每个设计都决定两种渲染。
++     entry .gaugeable   默认设计：`bars.smoothBar`，即平滑的八分之一方块进度条
++         每个候选进度条都只有一行，表达的意思也相同，因此在这里设默认值是安全的，而对计量条或步骤指示器则不然。
++         `Optional[Tui.Fraction]` 不需要单独的默认值：`Gaugeable.optional` 会提升这一个，而进度条的缺失渲染会扫动。
++     entry .value   以 `[0, 1]` 中的 `Double` 表示的比例
++     entry .percentage   以整数百分比表示的比例，截断取整
++     entry .complete   比例是否为 1
++   entry .Countdown   剩余时间，最小截取为零；参见 `ultimatum.Countdown`
+
+% 1 1 0 126670747cd3ed650887fc25fb6ca85e
+
+@ 0 5 0 00274478bace923c078e003d51a2dd9b
++         不透明类型 `Tui.Countdown <: caps.Pure`，基于 `aviation.Duration`。
++         它在 `ultimatum` 包下的页面有完整说明。
++     entry .apply   `Countdown(duration)`：该时长，为负时为零
++     entry .gaugeable   默认设计：`timers.compactCountdown`
++     entry .duration   以 `Duration` 表示的剩余时间
+
+@ 0 1 0 0bbd135d0c0d572d049fa227fc30b8ba
++ entry .bars   十八种用于 `Fraction` 的确定进度条，每种都是按名称导入的 given
+
+% 1 1 0 005b88c81bf435be0f8b12be26315b5e
+
+@ 0 7 0 087d48b479dd176b09da26d9294ddc14
++       用哪个进度条绘制 `Tui.Fraction`，由作用域内的 `Tui.Fraction is Gaugeable` given 决定。
++       不导入时，伴生对象提供 `smoothBar`；按名称导入其中一个会替换它，此外什么都不变；`import bars.*` 一个也不会导入，因为通配符不导入 given。
++       每个设计都是一个 `Tui.Bar` 值，因此宽度协商、亚单元格量化、在八个单元格以下去掉两端端帽，以及在四个单元格时退化为百分比、在一个单元格时退化为单一色块，都是它们共有的。
+
+% 2 1 0 097df21fd9e43202128675a0df3c13a8
+
+% 0 1 0 1657a1b998d8db4a1a90a6834761b7bf
+
+% 1 1 0 086d324dd8612bf705af956e408b3b0d
+
+% 2 1 0 14a89e61b848f5c517bed307565926c9
+
+% 3 1 0 0f305db097de6fcd0b7de2cfacfe4ada
+
+% 4 1 0 0b1673c205caafce070403d67aa90b55
+
+% 0 1 0 0d810a45936cd8150a42c8ced13483ae
+
+% 0 1 0 1e40f7c649afeec41196c4862e1d8f79
+
+% 1 1 0 1acc8aa0e719ecec1f8a6adeefd71fbb
+
+% 2 1 0 1791058e438653f316713d87a8bbb1a7
+
+% 0 1 0 16c2999c547ba3cd1e33caacd2d16d6a
+
+% 0 1 0 1f97873c9a929b2818e4f4610c70e949
+
+% 0 1 0 13c1dfd1060bc6d00a02b30ec8841ffa
+
+% 1 1 0 19573c7d9d7a7e030925ed9bd4382404
+
+% 2 1 0 13c7bcbe7fa3a75b0d16c0b07c091200
+
+% 0 1 0 0779f09c1a29c80b17b24f15a259445f
+
+% 0 1 0 0fd8d5b0396f989b1e7cdca9b3417bdb
+
+% 0 1 0 1f5fb0bcff2bc5dc0b0f36d757075bde
+
+% 1 1 0 0af1941851a8013f149259c841dcbca4
+
+% 2 1 0 09f06c496d9b11b718cf46eeda018ad0
+
+% 0 1 0 14a66505edcd9c3106630afff932bd1c
+
+% 0 1 0 190da1be8e89cb0e0d71930e0a3e32ab
+
+% 0 1 0 16dc56e011887e3f00f5f8e4972e0b4f
+
+% 1 1 0 08ccce438509c62b082061b255a68b0f
+
+% 2 1 0 005816ff1cd289e00e2a9f8c26b25899
+
+% 0 1 0 0b77d4fcba2c0d74015944708bb96025
+
+% 0 1 0 08052e88d1d40aa2142a5928e543d960
+
+% 0 1 0 01e6d138b75d1e6f0529a548b7636de1
+
+% 1 1 0 1aac469895e89d9311f918f9578e0364
+
+% 2 1 0 1a1bc04d8c01043e0497b7bc34bfee62
+
+% 0 1 0 1da63a5fb3da2b461c27278fa8f71e72
+
+% 0 1 0 14dc968a9a871f991dc9732f4d46436a
+
+% 1 1 0 1bf100acd5ef6c5e14ec0f2aae6ee0be
+
+% 2 1 0 1b0638b2b15f72d10a2801aa93bb097d
+
+@ 0 3 0 03f1a130b0d1e09916b8c095bf5941d5
++       进度条是弹性的，因此在布局中它占用所提供的宽度；它要求的宽度是 `Tui.Bar.defaultColumns`（40）。
++       同一作用域中的两个 `Tui.Fraction` 设计会冲突，进度条和旋转指示器也会冲突，因此同时需要两者的布局要把其中一个绑定为局部 given。
+
+% 0 1 0 11faa5aecb0a2bd3118746ab54cc72a4
+
+% 1 1 0 025292f76b499cfe1d113b25f1b4cc67
+
+@ 0 36 0 006c2ce4992823b10c5b59a25ee3078f
++   entry .smoothBar   默认：完整方块加上八分之一宽度的边界单元格，`█████▌    `
++       边界单元格是 `▏▎▍▌▋▊▉` 之一，因此进度条的边缘每次前进八分之一个单元格；轨道是一个空格，以调色板的 `track` 显示为背景。
++   entry .blockBar   `░` 轨道上的完整方块，逐个单元格前进：`████░░░░`
++   entry .shadedBar   空格轨道上的完整方块，边界单元格为 `░▒▓`
++   entry .risingBar   边界单元格是升高而不是加宽：`▁▂▃▄▅▆▇`，然后是 `█`
++       对同一比例的另一种读法，进度条较短时应使用它。
++   entry .fineBar   带 `╸` 边界的粗线 `━`，轨道是同样粗细、轨道颜色的线
++   entry .dotBar   `·` 轨道上的 `●`，逐个单元格前进
++   entry .railBar   带 `╸` 边界的粗线 `━`，轨道是细线 `─`
++   entry .squareBar   `□` 轨道上的 `■`，逐个单元格前进
++   entry .brailleBar   逐点填充的盲文单元格，`⣀` 轨道上的 `⣿`
++       它的边界单元格有七级（`⡀⡄⡆⡇⣇⣧⣷`），与平滑进度条一样，但属于盲文字符集。
++   entry .capsuleBar   夹在 `▕` 和 `▏` 端帽之间的平滑进度条，轨道为 `░`
++       端帽标出范围，因此宽列中部分填充的进度条仍然读作某个整体的比例；列变窄时，它们是最先舍弃的单元格。
++   entry .asciiBar   `[####----]`：七位字符，带端帽
++       在八个单元格以下，端帽去掉，但仍然填充：六个单元格时为 `###---`。
++   entry .equalsBar   `[====    ]`：七位字符，带端帽，轨道为空格
++   entry .arrowheadBar   经典的 `[===>    ]`，尖端位于填充部分的头部
++       箭头是 `Tui.Bar.Glyphs#tip` 而不是部分填充：它在每个中间值处标出填充所到的位置，用调色板的 `leadingEdge` 绘制，只在进度条为空或为满时不出现。
++   entry .gradientBar   平滑进度条，每个单元格按其在进度条上的位置着色
++       填充色逐个单元格取自 `GaugePalette#lengthwise`，因此进度条沿其长度呈现渐变，而不是单一的平涂颜色。
++   entry .segmentedBar   二十个点，`▰` 为亮、`▱` 为空心，点之间没有间隙
++       比平滑进度条粗略，但一眼即可看清，而且可以计数。
++       在较窄的列中会绘制较少的点，而不是裁剪。
++   entry .pipBar   十个点，`●` 为亮、`○` 为空心，以空格分隔
++   entry .markerBar   沿 `─` 导轨移动的 `◆` 头部，其后不填充任何东西
++       表示一个位置而不是一个数量，用于来回拖动的东西。
++   entry .percentageBar   只有数字，右对齐：`  7%`、`100%`
++       用于没有空间容纳其他东西的列，也是其他所有进度条在四个单元格以下所退化成的设计。
++       它的首选宽度是四个单元格。
+
+@ 0 1 0 07a62e063d4bd06605dbf233c877db84
++ entry .spinners   约四十种用于 `Fraction` 的不确定活动指示器，每种都是按名称导入的 given
+
+% 1 1 0 0f21b32eb61201c00153854e697bd9ee
+
+@ 0 5 0 0ca0d349e7b40bb50ce0c3036750eaaa
++       旋转指示器与进度条一样以 `Tui.Fraction` 为键，但忽略其值：它表明工作仍在进行，而不是进行到了哪里，无论比例存在还是为 `Unset`，它都绘制自己的帧。
++       按名称导入一个旋转指示器，会替换作用域内每个 `Tui.Fraction` 仪表的进度条；没有默认的旋转指示器，因为 `Tui.Fraction` 的默认设计是进度条，同时需要进度条和旋转指示器的布局要把其中一个绑定为局部 given：
+
+% 2 1 0 1c5854bfac9bb49b0319df70675566e3
+
+% 3 1 0 0ec62120624563871b685e4c2a0ca073
+
+% 4 1 0 051dbdf60c35d3b100da384cff9b84d5
+
+% 5 1 0 00e1aa43c339a6be01b15a2d8cbb401a
+
+% 0 1 0 12db1374f413ce78174ae24e4972ef2a
+
+% 0 1 0 042376f2482d677b03af063e7c78bffb
+
+% 0 1 0 09bada559167165d1dc48bf940ddfce5
+
+% 0 1 0 11ae7ac3b006514516bfb26c98fc1750
+
+% 1 1 0 0667931f4394486a19706643346b0de1
+
+@ 0 6 0 1fa156770f768d7710b165438a8812b6
++       每个设计都指明能绘制它的最保守的 `Gaugeable.Glyphs`，在它较宽或较特殊时，还指明回退到什么，因此在 `gaugeGlyphs.asciiGlyphs` 下以及在窄列中，整个目录作为一个整体降级，而无需调用者选择另一个设计：在终端没有表明会渲染 emoji 的地方，emoji 设计变为其 BMP 同类，多单元格的跑马灯在一列宽时变为单个旋转的单元格，而在 ASCII 下，每个旋转指示器都输出七位字符。
+
+% 2 1 0 1f7d2d333001556a12c7cf8a956cab62
+
+% 3 1 0 160eeaa986d51d090d3d8e9f6b49f7c0
+
+@ 0 1 0 1850925f408853e50ca9ba026bea2766
++         label 盲文点，逐帧显示：每 80 ms 一帧
+
+% 1 1 0 18e14a6f8c0d471b023ecd979e36d690
+
+% 2 1 0 177290b4ff982a6d077517168b3bf15d
+
+% 3 1 0 1917f5ec403f28ad1d0c607491323d14
+
+% 4 1 0 0cd3fc6e2e135f5e083218a6bc7a172a
+
+% 5 1 0 15090f1797e8fc84057cedf3d5cb235c
+
+% 0 1 0 149f74621d2850af09c1131e89f1a421
+
+% 0 1 0 08b16797ef2874030a853586f9a507bc
+
+% 0 1 0 13db4ff533d1fc5d01935055e9b76de2
+
+% 1 1 0 1f9dd30c8500a0011f11f713f380de3a
+
+@ 0 1 0 12f284bb6057fc630665b26debfaaf6a
++         label 六个单元格的跑马灯，处于完整宽度
+
+% 1 1 0 0e5a7e7f5362b7571d36d131cf944e9f
+
+% 2 1 0 1335196a8e5e23e50adfb7b33e6a21ed
+
+% 3 1 0 1035c38fc6fb540601f085fddadb2bd1
+
+% 0 1 0 058590d6f8022ef210f39638006eceb0
+
+% 1 1 0 17e7c9b589334bea1944025b76bb09e0
+
+@ 0 1 0 12b499d592c375740a412a8e2328d62e
++         label 同一跑马灯在一个单元格宽的列中回退到线条旋转指示器
+
+% 1 1 0 09c12ba15fefae971e7e019d14e6eba2
+
+% 2 1 0 0b6801964637a56e0c3cfe7f7e2bec9c
+
+% 3 1 0 1baa14f5b41b4c2812863876e42fcf1f
+
+% 0 1 0 08cd5b3b5324fb4e028dae8a7f153a7d
+
+% 1 1 0 1ddfcd7f8213e53e181f6c93eda01037
+
+@ 0 1 0 0a80f5fdd8c6fa860161f812f0bd0f04
++         label 允许 emoji 时显示月相，不允许时显示圆圈
+
+% 1 1 0 13d699404b43cee0156d3416bc9e1be7
+
+% 2 1 0 1043f74948ebc0bc0f34d71c38facda0
+
+% 2 1 0 00b379f4f8d44563104aa402597eeb2a
+
+% 0 1 0 0753fec3fa7ca14b1f8a224d108164ae
+
+% 0 1 0 164056af0cae5fea03385850fe1a71ee
+
+% 2 1 0 0dc5364c20e5895713acb86c4d9adc08
+
+% 2 1 0 1716c04a1f15df7304deaa1d8e5768ca
+
+% 0 1 0 0bc196be6d829be01a1de0e12189fdf7
+
+% 1 1 0 19f4712784ecc78911091342dff5438c
+
+% 2 1 0 126cba15beab5e1a14bdc425d55e892f
+
+@ 0 2 0 00f98db62fcf0b590592b02bfa53afe4
++       每个旋转指示器的周期就是它的帧间隔，受驱动的布局以屏幕上各仪表中最短的周期运行一个计时器。
+
+% 0 1 0 0d5ff53524e16c890102d2c1b001eb5b
+
+% 1 1 0 1440ebe87e71b5931478bd180a40d669
+
+% 0 1 0 19aaeb4c072f66bf0f5716730ce57441
+
+@ 0 56 0 1c2a03e2de9506250c6096af0c90425e
++   entry .lineSpinner   ASCII 线条 `-\|/`，130 ms：大多数回退链的终点
++   entry .crossStarSpinner   `+x*`，ASCII，120 ms
++   entry .dqpbSpinner   `dqpb`，一个旋转的字母，ASCII，100 ms
++   entry .bounceSpinner   `.oO°Oo.`，一个胀大又缩小的球，ASCII，120 ms
++   entry .balloonSpinner   ` .oO@* `，一个充气后爆开的气球，ASCII，140 ms
++   entry .brailleDotsSpinner   `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`，标准的盲文点，80 ms
++       现有最密集的单单元格动画，也是大多数终端显示得最好的一种。
++       在 ASCII 下回退到 `lineSpinner`。
++   entry .brailleSnakeSpinner   `⣾⣽⣻⢿⡿⣟⣯⣷`，一个空隙绕着满格盲文单元格转圈，80 ms
++   entry .brailleWaveSpinner   `⠁⠂⠄⡀⢀⠠⠐⠈`，单个点绕单元格转圈，90 ms
++   entry .brailleGrowSpinner   `⠋⠙⠚⠞⠖⠦⠴⠲⠳⠓`，盲文点增多又减少，80 ms
++   entry .brailleRingSpinner   `⣸⢹⠻⠟⡏⣇⣦⣴`，六个点组成的环，一个两点的空隙绕着它转圈，80 ms
++   entry .arcSpinner   `◜◠◝◞◡◟`，一段弧转圈，100 ms
++   entry .circleQuadrantSpinner   `◴◷◶◵`，一个象限转圈，120 ms
++       也是不允许 emoji 时 `clockSpinner` 的回退。
++   entry .circleHalfSpinner   `◐◓◑◒`，一个半圆旋转，120 ms
++       也是 `earthSpinner` 的回退。
++   entry .circlePulseSpinner   `◌○◎◉●◉◎○`，一个圆填满又清空，120 ms
++       也是 `moonPhaseSpinner` 的回退。
++   entry .squareCornerSpinner   `◰◳◲◱`，方形的一个象限转圈，120 ms
++   entry .triangleSpinner   `◢◣◤◥`，一个三角形旋转，120 ms
++   entry .pipeSpinner   `┤┘┴└├┌┬┐`，一个制表符拐角旋转，100 ms
++   entry .boxSpinner   `▖▘▝▗`，一个象限方块转圈，120 ms
++   entry .arrowSpinner   `←↖↑↗→↘↓↙`，一个箭头转过各个方位，100 ms
++   entry .arrowDoubleSpinner   `⇐⇖⇑⇗⇒⇘⇓⇙`，一个双线箭头旋转，100 ms
++   entry .starSpinner   `✶✸✹✺✹✷`，一颗闪烁的星，70 ms
++   entry .hamburgerSpinner   `☱☲☴`，卦象线条变换，100 ms
++   entry .noiseSpinner   `▓▒░`，明暗循环，100 ms
++       表示墨量而不是形状，因此读起来像在用力。
++   entry .pulseSpinner   `█▓▒░▒▓`，一个单元格在满与浅之间脉动，100 ms
++   entry .growingBarSpinner   `▏▎▍▌▋▊▉█▉▊▋▌▍▎`，一个单元格变宽又变窄，90 ms
++   entry .growingBlockSpinner   `▁▃▄▅▆▇█▇▆▅▄▃`，一个单元格升高又降低，90 ms
++   entry .layerSpinner   `-=≡`，线条层层叠加，ASCII，150 ms
++   entry .toggleSpinner   `⊶⊷`，两种状态，250 ms
++       切换式指示器很慢，只有两种状态，用于表示仍然存活而非正在工作的东西。
++   entry .toggleSquareSpinner   `▫▪`，一个方块来回切换，250 ms
++   entry .toggleRoundSpinner   `⦾⦿`，一个圆来回切换，250 ms
++   entry .hourglassThinSpinner   `⧖⧗`，一个 BMP 沙漏翻转，500 ms
++       两种表示“正在等待”而不是“正在工作”的单单元格设计之一；也是 `hourglassSpinner` 的回退。
++   entry .pointsSpinner   `∙∙∙`，其上有一个 `●` 移动，三个单元格，125 ms
++       在窄于三个单元格的列中回退到 `lineSpinner`。
++   entry .dotsScrollSpinner   `.  `、`.. `、`...`：点逐渐累积，三个单元格，ASCII，200 ms
++   entry .binarySpinner   六个单元格的变化二进制数字，ASCII，80 ms
++   entry .bouncingBarSpinner   从 `[=   ]` 到 `[====]` 再返回，六个单元格，ASCII，80 ms
++   entry .bouncingBallSpinner   `( ●    )`，一个在括号之间弹跳的球，八个单元格，80 ms
++   entry .aestheticSpinner   `▰▰▰▱▱▱▱`，七个点先填满再清空，120 ms
++   entry .shuttleSpinner   `▸▹▹▹▹`，一个实心箭头沿五个空心箭头移动，120 ms
++   entry .clockSpinner   emoji 钟面 `🕛🕐🕑…`，两个单元格，100 ms
++       只在 `gaugeGlyphs.emojiGlyphs` 下可用；否则为 `circleQuadrantSpinner`。
++   entry .moonPhaseSpinner   emoji 月相 `🌑🌒🌓🌔🌕🌖🌗🌘`，两个单元格，80 ms
++       只在 `gaugeGlyphs.emojiGlyphs` 下可用；否则为 `circlePulseSpinner`。
++   entry .earthSpinner   旋转的 emoji 地球 `🌍🌎🌏`，两个单元格，180 ms
++       只在 `gaugeGlyphs.emojiGlyphs` 下可用；否则为 `circleHalfSpinner`。
++   entry .hourglassSpinner   emoji 沙漏 `⏳⌛`，两个单元格，500 ms
++       只在 `gaugeGlyphs.emojiGlyphs` 下可用；否则为 `hourglassThinSpinner`。
+
+@ 0 1 0 13a1c15e0eb591430a0906e2e6cb0ea1
++ entry .meters   六种用于 `Meter` 的设计，每种都是按名称导入的 given；没有默认设计
+
+% 1 1 0 165615bbbfc84d6519157a2eb649e625
+
+@ 0 5 0 0c293cd1cba2bd7a10ec115d1efe2f6d
++       计量条是有界刻度上的读数，可降可升，因此这些设计会标出刻度，并通过 `GaugePalette#severity` 按读数在刻度上的位置为其着色。
++       `Tui.Meter` 没有默认设计：电池、温度计和子弹图不能相互替代，其中两种甚至高度都不同，因此总是要按名称导入一种。
+
+% 2 1 0 080cbcba8312e8d5173869433c8d84e8
+
+% 3 1 0 05223f38d2bfc490155fa5bb4205a7a8
+
+% 4 1 0 0e7eecda00be229e052630ec6ed9940f
+
+% 5 1 0 027247b54779e0330b9ac0d3aefea6e6
+
+% 0 1 0 0c3d4a42e9b8661f17d104f804853f8d
+
+% 0 1 0 1e6d90ba5013d5e31df521ea77437b97
+
+% 1 1 0 12a4ee9b947e26bd124085e2ef25baf3
+
+% 0 1 0 09753e2801fe4aa71a7b3699caaf995f
+
+% 0 1 0 047a06b1afd395e70695f5c49777937c
+
+@ 0 14 0 0b4db5f92145acb01d427842b068bc4e
++   entry .batteryMeter   带端子凸起的封顶单元格，`▐███░░░░▌╸`，随着电量耗尽而变红
++       首选八个单元格；在 ASCII 下为 `[####----]`。
++       严重程度渐变被反向读取，因为电池在电量低时才处于危险状态。
++   entry .thermometerMeter   一个自下而上读取的五行柱，下方有球泡 `◍`
++       一个单元格宽，非弹性；最上面一个已填充的单元格是部分方块，因此读数平滑移动，而不是每次移动五分之一。
++   entry .needleMeter   沿两端有标记的 `─` 刻度移动的刻线 `┃`
++       首选十二个单元格。
++       表示范围上的一个位置，并不暗示其后的空间已被填充。
++   entry .bulletMeter   定性轨道上的度量，轨道以 `░▒▓` 色带标出低、中、高
++       首选二十个单元格；色带使读数无需图例即可解读。
++   entry .columnMeter   单个单元格，其方块高度 `▁`…`█` 就是读数
++       一个单元格宽，非弹性：`Tui.Meter(0.5)` 是 `▅`。
++   entry .asciiMeter   `[####----]`，七位字符，填充按严重程度着色
+
+@ 0 1 0 1d6580723545a0301e5fc532bef014cf
++ entry .sparklines   四种用于 `Sequence[Double]` 的设计，每种都是按名称导入的 given；没有默认设计
+
+% 1 1 0 029b52e51f714edf1add21efb492eb64
+
+@ 0 6 0 08a425b87f2d981e1289295e03696d24
++       一串样本绘制成的微型图表，每个样本一个单元格，按所给样本的范围（或通过 `Tui.Sparkline#scaled` 按固定边界）缩放。
++       迷你图没有默认设计，因为这一选择决定了垂直分辨率（八级还是四级，一行还是两行），而这会改变读者能从数据中看到什么。
++       比其序列窄的迷你图会被抽稀，保留每组的峰值，而绝不截断。
+
+% 2 1 0 0d5684d19e7ea4e8161190589efd4f62
+
+% 3 1 0 08e868d78170448c031197c4ca195286
+
+% 4 1 0 10c6dc5ceceb2322139631b64dcdd4e8
+
+% 5 1 0 06e56e064c02b87017f50e3a77e6badc
+
+% 0 1 0 14824d480bfc87120d522425eb86b830
+
+% 0 1 0 189efb33babf56390df2270c3cfa168e
+
+% 1 1 0 0ccfc330f5945b7c156c1121b82dbbb3
+
+% 0 1 0 133e8c524f26b9d803a7b893ce9befb1
+
+@ 0 7 0 000646dd3280b13a19b02b77604a962b
++   entry .blockSparkline   一行八级，`▁▂▃▄▅▆▇█`
++   entry .tallSparkline   两行十六级：上一行表示范围的上半部分，下一行表示下半部分
++       能分辨出单行会抹平的细节；在 `gaugeGlyphs.asciiGlyphs` 下合并为一行 ASCII。
++   entry .dotSparkline   四级盲文点，`⣀⠤⠒⠉`
++   entry .asciiSparkline   四级七位字符，`_.-^`
++       也是其他所有迷你图在 `gaugeGlyphs.asciiGlyphs` 下的回退。
+
+@ 0 1 0 1ef584805acf99e60347efdf981c43ab
++ entry .counters   用数字而不是图形：五种用于 `Reckoning` 的计数器和四种用于 `Transfer` 的报告
+
+% 1 1 0 0bbd2b2fe13332b20294b9948ae6f4ca
+
+@ 0 4 0 1fe5eee3388fbba117ce34c3bb3e2257
++       每种都是按名称导入的 given。
++       `Tui.Reckoning` 有默认设计（`plainCounter`，因为 `17/120` 不是风格问题）；`Tui.Transfer` 有意没有，因为选择一种报告，也就是选择是否显示速率和预计时间，以及按 `MiB` 还是 `MB` 计数。
+
+% 2 1 0 045e84f8e3e88d3b0540eb4dd985e6f9
+
+% 3 1 0 029e8d95245533001c6f19d9cbae5feb
+
+% 4 1 0 0a85d931d9f480710f94c2ee3753ef06
+
+% 5 1 0 0d5213ff904e56250043b34b05b6cc1d
+
+% 0 1 0 1c6f1e55f1a788150cb3ded7b3461f98
+
+% 0 1 0 0c96be5905a34fae0e529f933324f3e6
+
+% 0 1 0 128737e06de60ac81d2782d6be6b9ae3
+
+% 0 1 0 0ce6f5d2e4eab7b41ba644e720c89bfc
+
+% 1 1 0 03ce787d9abd223b084dfa511b1a7af6
+
+@ 0 3 0 122283bb3783f55c050ec3449d38a083
++       传输报告是一行 `Tui.Facet`（已传输量/总量、速率和预计时间），按读者最不需要的顺序依次舍弃：宽度较窄时，最先去掉预计时间，然后是速率，只留下数字。
+
+% 0 1 0 0d3dd8a93c1c566d1e6e46d8cdbb4cdb
+
+% 0 1 0 0c9e3fb6910057a61b1b8c2c90924aac
+
+% 0 1 0 03aa5ac48d2e395b0a9191e2de2c6f0b
+
+@ 0 4 0 134d37886ea167ab1c31269bbb4b7209
++   entry .plainCounter   `17/120`，总量未知时为 `17`：默认设计
++   entry .paddedCounter   `  7/120`：分子按总量的位数右对齐
++       计数增加时，字段不会抖动，这正是数字在变化时能否被读清的区别。
+
+% 0 1 0 0cecaecad6735b2a1cd92d911c9939d5
+
+@ 0 10 0 05b2e7bde804b94e1322d46f30d02e88
++   entry .scaledCounter   `1.2k/8.4k`：两个数字都通过 `Magnitude.count` 缩写
++   entry .percentageCounter   根据计数的比例得出的 `  7%`…`100%`，没有总量时为 `  ?%`
++   entry .transferCounter   使用二进制前缀的数字、速率和预计时间：`14.2 MiB/512 MiB 3.09 MiB/s 2m41s left`
++       二进制前缀（`KiB`、`MiB`）是以磁盘或线路上的块计数的任何东西的惯例。
++   entry .rateTransferCounter   使用二进制前缀的数字和速率，不含预计时间
++   entry .terseTransferCounter   只有数字，使用二进制前缀
++   entry .decimalTransferCounter   使用十进制前缀的数字、速率和预计时间：`4.20 MB`
++       十进制前缀（`kB`、`MB`）是硬盘制造商和网络运营商使用的惯例。
+
+@ 0 1 0 0c8b6ae0079c965f026acb5aaf34bd06
++ entry .standings   五种用于 `Standing` 的单单元格（或单词）标记，每种都是按名称导入的 given
+
+% 1 1 0 1b1c3f791f355e971ccc13c59086bdd3
+
+@ 0 4 0 150d410ea7f725e018effc175bdd2507
++       不导入时，`Tui.Standing` 的伴生对象提供 `tickStanding`。
++       每个设计都用*字形*而不仅仅用颜色来表达状态，因此在单色终端、被重定向的流和无法分辨红绿的读者面前仍然有效；而在 `gaugeGlyphs.asciiGlyphs` 下，每个 Unicode 设计都回退到 `asciiStanding`。
+
+% 2 1 0 1d64a07f6a81da1407bcf19018b1c8a1
+
+% 3 1 0 0aea770b4a3e2c15071ccc681deed76a
+
+% 4 1 0 128d8fe971f008431f64f25c4aaa9b12
+
+% 5 1 0 15719c389821547605ba7275229ac6f6
+
+% 0 1 0 0d470aab782dfb46155e6b2968a1adb5
+
+% 0 1 0 093e39ba2e3407ab137be26d78a5d374
+
+% 0 1 0 00055daea45eedf01b1b1ec41dea9d44
+
+% 1 1 0 0151db73d5d8d71100adc2d868d1b0b7
+
+% 1 1 0 185bd312f63eac8509724f4e320cff06
+
+@ 0 1 0 174a8ec22401dff31423ed273fc81624
++   entry .tickStanding   `✓ ✗ ! ‑ ⠋ ·`，分别表示成功、失败、警告、跳过、运行中和待处理：默认设计
+
+% 0 1 0 00e752d495f2e0f9010dc9aa33e4f98b
+
+% 0 1 0 06166afa0146f4811c6823f7a05613c7
+
+@ 0 3 0 017fc4fb663b2400124275d12005d622
++   entry .asciiStanding   `+ x ! - * .`：七位字符，也是其他所有设计的回退
++   entry .wordStanding   `  ok`、`FAIL`、`warn`、`skip`、` run`、`   …`：每个四个单元格，因此一列能够对齐
++       用单词而不是字形，用于供人阅读而不是观看的记录。
+
+@ 0 1 0 1f5b9367739f8a5401f58d74883b8820
++ entry .processions   针对一串步骤（`Sequence[Step]`）的五种设计，每个都是要按名称导入的 given
+
+% 1 1 0 0026173be49f92630cd13e4ec45035be
+
+@ 0 5 0 02948c7f9e3e76e10a6b6e9a0ac63b36
++       一串步骤没有默认设计，因为这些设计的高度各不相同——清单每个步骤占一行，其余的都只占一行——而选择其中之一就决定了仪表在布局中占多少空间，这不是库应该悄悄替人做出的决定。
++       每个步骤的标记和颜色，来自单格状态字形所用的同一套 `Tui.Standing` 词汇。
+
+% 2 1 0 0f610f5ac9ef0bee07b561a6ec4246e3
+
+% 3 1 0 15dae1cebf371a631dbd86c8892535d1
+
+@ 0 1 0 0fc574ed4712af180939fdd02095836f
++         label 清单：每个步骤一行，运行中的步骤带动画
+
+% 1 1 0 1e83309a0de8c9f301a558b779f41d57
+
+% 2 1 0 09530243c4782c8a19698a6838507da3
+
+% 3 1 0 05d8517887429b7206515827e5097686
+
+% 4 1 0 1833b676bb15302c131792451544c188
+
+% 0 1 0 13356f40d58d0ffe19656c501f9d4b9a
+
+% 0 1 0 157aed0e0bc7609e12f134772203221d
+
+% 0 1 0 1b4390dd11c1f2bb117bc6bda952c412
+
+% 0 1 0 0a27d5817c47303a1a07543c39aa9933
+
+% 0 1 0 1e16eec799e013600ff05af7addcd76c
+
+% 2 1 0 026b6bd1edca94221e45e2b6210fc87f
+
+% 0 1 0 1b643aa3913deebe0ab401ba05f79013
+
+% 0 1 0 1d4e8a7114100bec1b61960dd06835ab
+
+% 1 1 0 0a26bdf1d52908d20b5a7b3c2cb2c927
+
+@ 0 1 0 1459f4139b7585cb1af2f825ac288837
++         label 编号位置：运行中步骤的名称以及已开始的步骤数
+
+% 1 1 0 0cc9a122dd0fcd4f1c69e09c19b47ee0
+
+% 2 1 0 13126270e91a69a91c21c8b8ee2e3275
+
+% 0 1 0 033adafe4059db5600fef4de938077ec
+
+% 0 1 0 03d7e4858f8378d207bec54609e85801
+
+% 1 1 0 0c829f1dc7498bd10d52f452d8aecb06
+
+@ 0 1 0 12fde82754f77fbf13702db7a75b948d
++         label 珠子：每个步骤一颗，以线条连接
+
+% 1 1 0 00066d125e5c2a3515f65041e9e03013
+
+% 2 1 0 17e808d82e300be11a51d87f0bef5ba3
+
+% 0 1 0 19da9b7832e4c47719c248a163079d46
+
+% 0 1 0 14097ea9a74baf6e01e51618d5e28f98
+
+% 1 1 0 099ad96f47f08ad514af69cbf94b04e6
+
+@ 0 1 0 0d7ef3041af8a9de14b82a4abc5d5603
++         label 面包屑：所有步骤的名称排在一行上
+
+% 1 1 0 1a8c98f2346f0b9b13b8876efcb3fc6b
+
+% 2 1 0 045f2bce7e9276dd0e2be8260ad5ec30
+
+% 0 1 0 1d06c3933189a87f02ae15d25063b647
+
+% 0 1 0 0ff775e802f05adb0bdb94154a5f8b74
+
+% 1 1 0 16e8530f7c2a970d0279dcf3b3039c3b
+
+% 2 1 0 13592d858f3cc84d0c7a3562e5aa676e
+
+% 0 1 0 0a7254f64ec4efed1fb72531ca260da7
+
+% 0 1 0 103cb07bcae7e68308eeeb411f599a3d
+
+% 1 1 0 138fa2868788b445167de3f226ac3a05
+
+@ 0 12 0 0ad3d3ad0404e97c1503a5b4974aec09
++   entry .checklistProcession   每个步骤一行，按结果标记为 `✓ ✗ ! ‑ ·`，运行中步骤的标记会旋转
++       至少三个单元格，高度与序列相同；它 80 毫秒的周期使运行中步骤的盲文标记动起来（在 ASCII 下为 `-\|/`）。
++       成功和跳过的步骤会淡化为调色板的 `muted`。
++   entry .breadcrumbProcession   各步骤名称排在一行上，以 `›` 连接，待处理的步骤淡化为轨道颜色
++   entry .beadProcession   每个步骤一颗珠子组成的链（`○` 待处理，`◐` 运行中，`●` 完成），以 `━` 连接
++       对于 `n` 个步骤固定为 `2n - 1` 个单元格；以 80 毫秒为周期动画。
++   entry .numberedProcession   `[2/3] compile`：已开始的步骤数，以及运行中步骤的名称
++   entry .ribbonProcession   由彩色分段组成的 powerline 色带，每个步骤一段
++       背景颜色来自 `GaugePalette#steps`。
++       没有打过补丁的字体时，它会渲染为豆腐块，而没有任何 `Termcap` 能说明是否安装了这样的字体，因此它需要选择启用，从不作为默认值。
+
+@ 0 1 0 03777adae00d0f5e11936ca4aa0aa56d
++ entry .palettes   十种用于仪表的调色板，每个都是要按名称导入的 given
+
+% 1 1 0 18a86e47c3b5ac1b07b63633047c818e
+
+@ 0 7 0 09ea097f7b3cb4c60385072506ed1111
++       仪表用哪些颜色绘制，与它使用哪种设计是完全独立的两个维度，因此替换其中任何一个都只需一个导入，而且互不干扰。
++       没有导入时，`GaugePalette.adaptive` 根据终端报告的色深选择 `monochromeGaugePalette`、`ansiSixteenGaugePalette` 或 `slateGaugePalette`；指名其中一个，就表示断言使用者了解自己的终端会怎样做。
++       成员都以 `GaugePalette` 为后缀，因为这个代码块会与总括包中来自 `iridescence` 的 `palettes` 代码块合并，所以每个名称在整个 `soundness` 中都必须互不相同。
+
+% 2 1 0 045ad0b5f1d10e0410305ad5ccd503bf
+
+% 0 1 0 10fc86018433a5c30b78d2a2021716ec
+
+% 1 1 0 0b6296309e6c69dc02e496f1fe5ecf63
+
+% 2 1 0 142dd38aee684b1f0a1c4f97892e15bb
+
+% 3 1 0 1bcb9de2b1dc0a260ea3b904ec00d689
+
+% 2 1 0 1ec453803418086b0b7dff51a0b1f10c
+
+% 0 1 0 125ba28d1951b8251232272e6438d7d2
+
+% 1 1 0 16164c68ae19eed40d4e7fedcdf88b03
+
+% 0 1 0 0f59dd327a504e06035704637e1c36d2
+
+% 1 1 0 1e8073018cb1880f1a84838033e029bc
+
+% 2 1 0 0089459303a58f4f008f957072358f71
+
+% 0 1 0 02d648f3813d910504f4728f3f677ec5
+
+% 1 1 0 1685148a807bab6517ab0e14e27258e1
+
+% 0 1 0 1a0956e12c4e8ea001219f8da9570ea6
+
+% 1 1 0 02094e092bf4544e155758d141bb3d78
+
+% 2 1 0 1e121ec0cee180f01aa88a17e9cdd1b8
+
+% 0 1 0 152056ea1fe75f4106f76310332e5454
+
+% 1 1 0 150769687e4adbb2138be066a9958a5a
+
+% 1 1 0 021bb4adcca8565817503ee1d3e79ddb
+
+% 2 1 0 148f2b6cce900c950270b1816eecbdc2
+
+% 1 1 0 0ede3f2f9626f18a0534269a4f8a3658
+
+@ 0 18 0 12b2a8a0d65e44850b8665c7c9b07429
++   entry .monochromeGaugePalette   无色相：终端的两种颜色以及它们之间的半色调
++       唯一在单色终端上确实正确的调色板，也是仪表输出可能被当作文本读取时应选用的调色板；对于报告无颜色或八种颜色的终端，它是自适应的默认值。
++   entry .ansiSixteenGaugePalette   只使用十六色终端实际拥有的颜色
++       每种颜色都是该终端的标准值，因此即使用 256 色立方体近似，也会落在它能显示的色调上，而不是落在两种色调之间；对于十六色终端，它是自适应的默认值。
++   entry .solarizedDarkGaugePalette   Solarized 深色，带有蓝色填充和青色前沿
++   entry .solarizedLightGaugePalette   Solarized 浅色，以奶油色为背景
++   entry .emberGaugePalette   本家调色板：深棕色底上的橙色填充，Soundness 进度条一贯的样子
++   entry .oceanicGaugePalette   冷色调的蓝绿色，对比度低，适合会在屏幕上停留数小时的仪表
++   entry .verdantGaugePalette   深绿色底上的各种绿色
++   entry .plumGaugePalette   深梅色底上的各种紫罗兰色
++   entry .slateGaugePalette   冷灰色加一种蓝色强调色：填充是屏幕上唯一的饱和色
++       目光只落在进度上；对于真彩色或 256 色终端，它是自适应的默认值。
++   entry .signalGaugePalette   成功、警告和危险三种颜色之间的区分度最大，适合一眼读完的 CI 日志
+
+@ 0 1 0 03828bf4dc5fa8fc04ea72b755c9dd3c
++ entry .timers   写出来的时长：两种针对经过时间的设计，三种针对 `Countdown` 的设计
+
+% 1 1 0 1b9b9ae7c5f30f0e19db66bc3386e096
+
+@ 0 5 0 10ba0fe32fb374e90c76e50f167a16f0
++       经过时间是 `aviation.Duration`；`Tui.Countdown` 有自己的类型，这样两者可以并排以不同的设计显示，倒计时也能在快要结束时表现出紧迫感。
++       `Tui.Countdown` 的伴生对象默认使用 `compactCountdown`；`Duration` 在这里没有默认设计，因此须按名称导入 `compactElapsed` 或 `digitalElapsed` 之一。
++       两者都不会动画：计时器只在其读数变化时才变化。
+
+% 2 1 0 14afd8d8912613b31c0b6a8c40e2e173
+
+% 3 1 0 1448f125b491c4660c58ace88f14ecbd
+
+% 4 1 0 1e92b611644a44390c483a8f8e3d760b
+
+% 5 1 0 10d21daffc1e6af4149f9ff36d8bad23
+
+% 0 1 0 19b009fcb59596ea123504e733e47fec
+
+% 0 1 0 0d1dc550fc334f3712dc551e8f169854
+
+% 0 1 0 052d5a4bdc75b13d18afbeb8dd481aed
+
+% 0 1 0 02b52007a77e58d7001eb65a429592f9
+
+% 1 1 0 13203f2003148a7c0e2ded766c2a6095
+
+% 0 1 0 158a7ff34def9d69078a1ba990538649
+
+% 0 1 0 01e1223cde26ef16109cd33fbd0a5394
+
+@ 0 8 0 19ebba89d181605503430832ccf3cff8
++   entry .compactElapsed   经过时间，以两个最大的有用单位表示：`41s`、`2m41s`、`1h04m`
++   entry .digitalElapsed   经过时间，以钟面形式表示：`00:41`、`02:41`、`1:01:01`
++       比紧凑形式更宽，但在跨过一分钟时不会改变形状。
++   entry .compactCountdown   剩余时间，写作 `2m41s`，使用说明文字的颜色：默认设计
++   entry .digitalCountdown   剩余时间，以钟面形式表示，`02:41`
++   entry .urgentCountdown   剩余时间，写作 `2m41s`，在最后一分钟内沿严重程度渐变逐渐变红
++       不到一分钟时，倒计时才开始变得要紧；更长的时间都停留在渐变平静的一端。
+
+@ 0 1 0 10abad87710da63714ff484c6e7411dc
++ entry .captions   标注相对于它所标注的仪表的位置，每个都是要按名称导入的 given
+
+% 1 1 0 038a9ec466d006631a975695a862f170
+
+@ 0 3 0 151693441c2fa7321df1c7fc4f7d98c2
++       用于 `Tui.Captioned` 状态的 `Tui.CaptionLayout`，与使用哪种设计、由哪个调色板着色都正交。
++       没有导入时，`Tui.CaptionLayout` 的伴生对象提供尾随布局。
+
+% 2 1 0 08b9ba78f645cf0905eb351df2d16c14
+
+% 3 1 0 1f0655f519296b900b46ab16536320ff
+
+% 4 1 0 1f363d13e21c833804d7e05665727cec
+
+% 5 1 0 09f9e1528fa7957c17247bed3289f2ce
+
+% 0 1 0 010d52d11402583a0b9f7736b2580211
+
+% 0 1 0 152cdfdbc50d6a2208a11ca8ffe99856
+
+% 0 1 0 0feeb40d1f683b1b0f73598786009b8b
+
+% 1 1 0 03756df2d398c3ca1554e4d83c85b627
+
+% 0 1 0 06fb284be9ab09520ebf0f266ed76f31
+
+% 0 1 0 1edc25f487e9579d1da32ec76270c58b
+
+@ 0 5 0 12b558b62f72dfa5132e2640e987113a
++   entry .trailingCaption   标注跟在仪表之后，相隔一个空格，过长时省略：默认布局
++   entry .leadingCaption   标注位于仪表之前，相隔一个空格，过长时省略
++   entry .spacedCaption   标注跟在仪表之后，相隔两个空格
++   entry .truncatedCaption   从不缩短标注，即使这样会使仪表得到的空间少于它所需的
++       用于确切文本比旁边的进度条更重要的说明文字。
+
+@ 0 1 0 149dc7ee69398a3c03ba4d293a0f0e8c
++ entry .gaugeGlyphs   各种设计可以使用哪些字符，每个都是要按名称导入的 given
+
+% 1 1 0 1b62b9b00dc69aeb0bb2501ffda6da2f
+
+@ 0 5 0 0ff9518bc1fb5c630453821cc82ff9d0
++       一个 `Gaugeable.Glyphs` 字符集。
++       导入其中一个会一次性降级或升级整个目录，而不必为每个仪表选择不同的设计：每种设计都有 ASCII 渲染，每种偏好特殊字形的设计都声明了要回退到什么。
++       没有导入时，伴生对象的默认值是 `Unicode`。
+
+% 2 1 0 07695045e03b253e106546814e34d3e9
+
+% 0 1 0 0c22ba6d0a62a47a12fbbe4c8f30d91d
+
+% 1 1 0 1b83dd50030db11c09144ea4d4ef7849
+
+% 2 1 0 09bc38ef730b486e072db4200422ecd5
+
+% 3 1 0 1b176fa3c3d6c6f017a66d700701bff1
+
+% 4 1 0 111e34b588477cf40aac6e6d2f4cae36
+
+% 5 1 0 0c1511cb7859b7fb02cb4cd5b55ad823
+
+% 0 1 0 0b7bef4cdf34432a0c9da9e0dd8ca2ee
+
+% 0 1 0 075b0e430c05a9821c9f1f789bba2214
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 1196d466c50e4cad0b14edcc86618345
+
+% 0 1 0 001de95965a65d1e091a389d8c8621cf
+
+% 0 1 0 178b7df98d6877570e674419088c11a0
+
+% 1 1 0 024c126223ba0fc503f6eb4e21343a11
+
+% 2 1 0 1c844f724e6056f60b6d94a91a284e6e
+
+% 1 1 0 0bd4a9f3361e82831e072dfe0ee1caaf
+
+@ 0 8 0 1a17919bffe657a6110f0d082215f4fa
++   entry .asciiGlyphs   仅七位输出：在日志捕获、CI 记录或字体未知的终端中都是安全的
++       每种设计都有 ASCII 渲染，因此什么都不会消失：进度条变成 `[###---]`，旋转指示器变成 `-\|/`，结果变成 `+ x ! - * .`，迷你图变成 `_.-^`。
++   entry .unicodeGlyphs   制表符和块字形：默认值，在现代终端上普遍可用
++   entry .brailleGlyphs   另外还有盲文字符，它把两到四个样本塞进一个单元格，但需要包含它的字体
++   entry .emojiGlyphs   另外还有表情符号，它们占两个单元格宽，需要终端也认为如此
++       启用 `spinners.clockSpinner`、`moonPhaseSpinner`、`earthSpinner` 和 `hourglassSpinner`；没有它时，每一个都绘制其 BMP 中的同类字形。
+
+@ 0 1 0 1982c4a31b8e4e231fa2b4073daf69de
++ entry .informationPrefixes   字节量在显示时如何缩放：二进制词头或十进制词头，每个都是要按名称导入的 given
+
+% 1 1 0 08728dea74a1332f09b7548b61ad1517
+
+@ 0 4 0 119bd5022ff9ed7f1b6900f94bfd88d5
++       用于通过 `quantitative` 渲染 `Quantity[Bytes[1]]` 的 `Prefixes on Bytes[1]`。
++       两者都不是默认值：`1.5 MB` 和 `1.43 MiB` 是以不同约定写出的同一个量，哪个正确取决于所测量的是什么，因此由调用方选择。
+
+% 2 1 0 15c962ad683b64351e8c2ce366100669
+
+% 3 1 0 05354efc998e53d31fce6e6595b9e280
+
+% 0 1 0 022ed46580994fac105ffa1cfad9fcf1
+
+% 0 1 0 0de39c14e263991c06f1df9527551f4b
+
+% 1 1 0 09a1872f8a9c54800ea452304c39c3a9
+
+% 0 1 0 188bf39b3a3fc8601d30513fdd9dc255
+
+% 0 1 0 058cc8a44175062e059942f079697acc
+
+@ 0 2 0 17c1640d4db1439e03c0774c3f2c98c8
++   entry .binaryBytes   以 1024 为基数的词头 `Ki`、`Mi`、`Gi`、`Ti`：磁盘或线路上数据块的约定
++   entry .decimalBytes   以 1000 为基数的词头 `k`、`M`、`G`、`T`：硬盘制造商和网络运营商的约定

@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 4 1 0 15e6a895458bd2d6147acefbbfe52eef
+
+% 4 1 0 01433c0f4787890615aaec8a85cd9611
+
+% 4 1 0 0122d02c7f95aad1136f263bc9575658
+
+@ 0 6 0 1c74390e481d23371a212d68849cc0ca
++     它需要该平面的 `CreateParents` 和 `OverwritePreexisting` 方针（从 `filesystemOptions` 中按名称导入）、一个 `Tactic[Io.Error]` 和一个 `Tactic[Tar.Error]`。
++     模式通过 `unix:mode` 属性设置，在不支持该属性的地方则悄无声息地保留文件系统的默认值。
++     要解包一个大到无法作为 `Tarfile` 保存的归档，可以迭代 `Tarfile.read` 或 `open[Tar]` 代码块，每次用一个条目构建一个 `Tarfile`。

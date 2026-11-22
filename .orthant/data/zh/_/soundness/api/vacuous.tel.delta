@@ -1,0 +1,595 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0706085bebe1c98807dce18244ccff80
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d43a64c1a2f730d11073077cd535c3e
++ info   无需包装的缺失值：`Optional`、`Unset`，以及消费它们的组合子
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 127fada871b6951209725c9cd98dedfb
++     _Vacuous_ 把可能缺失的值表示为 `Optional[value]`，它恰好就是联合类型 `Unset | value`：存在的值就是值本身，不需要分配或拆开 `Some`，而缺失则是唯一的哨兵值 `Unset`。
++     与 `null` 不同，缺失在类型中可见，不会被意外解引用；与 `Option` 不同，可选性是*扁平*的——联合类型会吸收重复的成员，因此 `Optional[Optional[Int]]` 与 `Optional[Int]` 是同一个类型，而像 `Some(None)` 这样“存在的缺失”根本无法写出。
+
+% 2 1 0 1696b11c151b1d07095889b92fd3e36c
+
+% 3 1 0 0f1d73d8431aa6e70685a680754c6b93
+
+% 5 1 0 09e723e51317da1a12c313158255c4bb
+
+% 1 1 0 0fc73d1592aeb98a0816c106166da67f
+
+% 0 1 0 02ae34b08665da771eb933bb7e7d0cfc
+
+% 0 1 0 1d779d3648026b2804962c0f82507f95
+
+% 0 1 0 18047cf2012f34a9165b98bd44f2be2e
+
+% 0 1 0 0a57ed76b535b82405c90cfdbfea28d5
+
+% 0 1 0 17c665027c78dcf303f8e59f1604342d
+
+% 1 1 0 13234b1eff6504dd170db26a8b744bc7
+
+@ 0 9 0 062d7f3a38cac862146cedfe67b77943
++     这些组合子读起来就像它们所回答的问题。
++     `or` 提供回退值；`let` 变换存在的值并让 `Unset` 原样通过，在 `Option` 需要 `map` 和 `flatMap` 两者的地方都能胜任；`lay` 同时接受回退值和变换，因此返回普通的值；`present` 和 `absent` 直接发问；`mask` 丢弃不满足谓词的存在值；`assume` 和 `presume` 要求必须有值，分别通过抛出 `Optional.Error` 或回退到该类型的 `Default` 实现。
++     反过来，`unless`、`puncture` 和 `only` 按条件把任何值变为可选，而 `optional`/`option`/`javaOptional` 在与使用 `Option` 或 `java.util.Optional` 的代码交界处进行转换。
+
+@ 0 4 0 1b45ec2358d3616210f5bda93271c2f2
++     `Optional` 刻意不是单子：它没有 `flatMap`，也不能对它使用 `for` 推导式。
++     缺失在其出现的地方处理——靠近获得该值的地方——而不是包装起来带过整个程序，让之后的每一步都不得不迁就它。
+
+@ 0 9 0 1ded330ed6df580e068587d180fbbef2
++     扁平表示有一个代价，由编译器强制执行。
++     吸收之所以成立，是因为联合类型的两个成员都已知，而对于*抽象*类型并非如此：一个之后被实例化为本身已是可选类型的 `value`，会把本应区分的两种缺失合并起来。
++     因此这些组合子要求一个 `Optionality` 证明，证明其接收者的类型确实是 `Optional`（对普通的 `Text` 调用 `let` 是编译错误 _the type Text is not an `Optional`_），而对于抽象的 `value` 接受 `Optional[value]` 的泛型方法，要在签名中要求 `value: Concrete`。
++     `Distinct` 和 `Mandatable` 是另外两个类型层面的事实：一个类型不是某个联合类型的成员，以及一个存在值所具有的非可选类型。
+
+@ 0 3 0 0685b4409bf0c80601f0d88d860b391b
++     使用 `Option` 时每一步都要包装，结果可能是 `Some(None)`；使用 `Optional` 时，存在的值就是它本身，`let` 从不嵌套，而回退值在提出问题的地方就把问题了结：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 08fe819a6e2aebe30624e78931dfb6f9
+
+% 1 1 0 0f8f6f5776eb461a078e69d3290a8cc8
+
+% 0 1 0 0f8299b11ead136f154f73be68e00d99
+
+% 0 1 0 1a28dd72cee4dd9e1352a4892c7e0381
+
+% 0 1 0 0959ba81820bd8641e5ff330437e6d43
+
+% 0 1 0 0f9d9e3ac544c2a1116c8d1aae36a5de
+
+% 1 1 0 18c67fe897c5a8f20ca55e8b4b769272
+
+% 0 1 0 181741a316dd330109027e39c9be6112
+
+% 0 1 0 12babffaf6418d861ddb7d45170ed243
+
+% 0 1 0 07e4d399d6af781a040973cdfdd6e5e4
+
+% 0 1 0 00ccfc13e068262b0671209eaad560d8
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 09ce040e31379aa806bcfe8ff09b3e26
++     每个可能什么也找不到的集合访问器——在未证明为 `Populated` 的列表上的 `head`、`Map` 上的 `at`、`Sequence` 上的下标——都返回 `Optional`，因此这里的组合子就是消费集合结果的常规方式。
+
+@ 0 6 0 0bbbe87ad454015307898ff8bd0d731b
++     这个库只有一个源码集 `vacuous.core`，可编译到 JVM、Scala.js 和 Scala Native，一切都导出到 `soundness` 总括包。
++     它仅有的 given 都在伴生对象中（`Default` 为具有明显零值的类型提供的实例；由宏支持的 `Concrete`、`Distinct`、`Mandatable` 和 `Optionality` 证明），因此无需导入即可解析。
++     `Unsafe` 能力令牌也位于这里，在提供它的 contingency 的 `unsafely` 之下。
+
+% 0 1 0 175aa1e37ddd2f8e0f205fbc28fe837e
+
+% 0 1 0 17b184332d68ddbd0ea0c7793d372402
+
+% 0 1 0 04b7fe4eeb61a72b0069899a791d11dd
+
+% 0 1 0 1bd9060f4226978912e72179cbe1526f
+
+% 0 1 0 0adb5bed2b9a74420680f8c1be1f8562
+
+% 0 1 0 0994a53cda02c88c1d64c8b550b69882
+
+@ 0 1 0 008824c8be783c4e0fd27a19676a176f
++ entry .Optional   可能缺失的值，即扁平联合类型 `Unset | value`
+
+% 1 1 0 1a370a89e56ba4c91b322f33f41a1b4c
+
+@ 0 6 0 1a2dd6ccd9cf379e0f016bafd4a21c75
++       `Optional[value]` 是类型别名 `Unset | value`。
++       存在的值以其本身被存储、传递和读取；缺失则是 `Unset`。
++       由于联合类型会吸收重复的成员，`Optional[Optional[Int]]` 就是 `Optional[Int]`，因此可选性从不嵌套，也不存在含糊的“存在的缺失”。
++       所以持有一个 `Optional[Text]` 并不比持有一个 `Text` 多花任何代价，这正是这一设计的全部理由：`Option` 会为每个存在的值分配一个 `Some`。
+
+% 2 1 0 0aa9b5d506726a8a1da8e784d1b126d3
+
+% 3 1 0 019ccde94295e0f71576611a97d53df8
+
+% 0 1 0 0fd0c2aa4bf08bc112ea7bddb8a6cbfe
+
+% 0 1 0 0770ebee5149d3901254a32e3f09a2f5
+
+% 0 1 0 1a646051fd1ea16912c834c28bd2c5ea
+
+% 0 1 0 055a83a8a11c5c6d10d35412564d020e
+
+% 0 1 0 132d55f8ee76ac8913e4cc2c57b01fc5
+
+% 1 1 0 16f7ee77fab21e040cd481dbcd9904b6
+
+@ 0 6 0 01451626afe62e090f5ec27386799eb2
++       组合子——`or`、`let`、`lay`、`present`、`absent`、`mask`、`assume`、`presume`、`option`、`javaOptional`、`letGiven`、`layGiven`——都是包级别的扩展方法，每个都由一个 `Optionality` 证明守护，证明接收者的类型是 `Optional`；`Optional.check[value]` 显式地进行同样的检查。
++       该对象有 `.apply`，它把可为 null 的 Java 结果转换为 `Optional`，还有两个 `CanEqual` given，使任何值都能在严格相等下与 `Unset` 比较。
+
+@ 0 11 0 102ade784d06dce319ce660f07b60b87
++       有两个关于捕获检查的事实对使用者很重要。
++       联合类型中的*冻结数组*——比如返回 `Optional[Data]` 的方法——一旦该方法同时接受一个能力参数（一个 `Loggable`，或 `logs Event` 语法糖），就会在每个调用处被新鲜化为只读捕获，而这样的结果随后就无法进入 `safely` 或类型变量；可行的形状是一个返回 `Optional[Data]` 且不带能力的方法，由一个负责记录日志的 `inline` 外壳来调用，并且外壳应当测试 `present`，而不是对这些字节使用 `let`，因为针对它们的 lambda 会再次将它们新鲜化。
++       而能力的 `Optional`（`Optional[Handle^]`）应当用第一个分支为 `case Unset =>` 的 `match` 来分支，而不是通过 `| Null` 哨兵值和流类型推断，后者会丢失分离检查器对已消费值的跟踪。
+
+% 0 1 0 0e987195d2e6f41b1acfb781d9d7a59c
+
+% 0 1 0 154dbda59e8f4ebc1dd25f29402e5a96
+
+% 0 1 0 049564bfa1ff3328011c14af770fd337
+
+% 0 1 0 1a13a359d9eb562a1d0546da0a4c4a93
+
+% 0 1 0 0915f937c35f32e3109f1e21fc8a7d86
+
+@ 0 16 0 0fa6169b25776ccd1647fc2f5f6b2ba5
++   entry .Unset   唯一的缺失值；它的类型是不透明的 `Unset`
++       `Unset` 既是不透明类型 `Unset <: Matchable & caps.Pure`，也是该类型唯一的值。
++       其底层表示是 `null`，因此存在的值从不装箱，缺失也没有任何代价，但这个类型是不透明的：`Unset` 不是 `Null` 的子类型，因此 `nn` 不会去掉它，而 `Unset | value` 在 given 解析中的规范化是可预测的。
++       它是纯的，因此只要 `value` 是纯的，`Optional[value]` 就是纯的。
++       这个名称也在包级别导出，因此只用 `import soundness.*` 就能访问 `Unset`。
++   entry .unsetEquality   `CanEqual[value, Unset]`：任何值都可以与 `Unset` 比较
++       在严格相等下，对于自身没有 `CanEqual` 的 `value`，`optional == Unset` 本来会被拒绝；这个 given 和 `.equalityUnset` 允许以任一顺序进行这种比较，`absent` 和 `present` 正是编译成这种比较。
++   entry .equalityUnset   `CanEqual[Unset, value]`：`Unset` 可以与任何值比较
++   entry .apply   把可为 null 的值转换为 `Optional`：`Optional(javaResult)`
++       当 `value` 为 `null` 时，`Optional(value)` 是 `Unset`，否则是 `value`。
++       它是处理 Java API 可为 null 的结果的入口：
+
+% 2 1 0 11035a1fed60cb4700fb59230d9db1ee
+
+% 3 1 0 08aa7682181e7c2b05c7babda83ffb9e
+
+% 0 1 0 08d2cf01bd8261fc1185d3d1d0f7df81
+
+% 1 1 0 0a32625e39e1c5451e78b7a4c87915c1
+
+@ 0 9 0 11e6f5e4079e99eb053a83d8d2f13a46
++   entry .check   编译时检查一个类型是否为 `Optional`
++       如果 `Unset` 是 `value` 的子类型，`Optional.check[value]` 展开为空，否则以错误 `↯/s.20.3` _the type `value` is not an `Optional`_ 编译失败。
++       这正是 `Optionality` given 所做的事，公开出来供想要直接断言这一性质的代码使用。
++   entry .Error   值缺失时由 `assume` 抛出
++       错误 `↯/s.20.4`：_the value was not set_。
++       由 `assume` 抛出，它需要作用域中有一个 `CanThrow[Optional.Error]`（`import unsafeExceptions.canThrowAny`，或外层的 `unsafely`），正是因为它是对存在性未经检查的断言。
+
+@ 0 6 0 03cf1029fb28ed7609c39196defdc2f1
++ entry .Unset   唯一的缺失值，从 `Optional.Unset` 导出
++     每个 `Optional` 在缺失时所持有的值，以及该值的类型。
++     它就是 `Optional.Unset`，在包级别导出，使 `Unset` 读起来像一个关键字。
++     用 `== Unset` 比较（`Optional` 中的 `CanEqual` given 允许这样做），用 `case Unset =>` 匹配，并且用不带类型参数的 `Unset` 构造缺失的 `Optional[Text]`，因为 `Unset` 符合每个 `Optional`。
+
+@ 0 7 0 1194b804a4d1c4631be3884c014a992f
++ entry .or   存在时为该值，否则为回退值
++     当值存在时，`optional.or(fallback)` 是该值，否则是 `fallback`；回退值按名传递，只在需要时求值。
++     它的结果是普通的 `value`，因此 `or` 通常是一串 `let` 的最后一步。
++     它是一个宏：一个属于 `optimizable` 块的接收者会被改写，使回退值直接提供给该块，不产生中间的 `Optional`；而类型不是 `Optional` 的接收者会导致编译错误（465，_the type `T` is not an `Optional`_）。
+
+% 2 1 0 154890cbcddceb5d196141977e50fdc3
+
+% 3 1 0 05eab28529bd897c1c9565b417580f5d
+
+% 5 1 0 06b28d25c8cbf90f002480cd4a39b3b8
+
+% 0 1 0 11b8ab6c837786d40ff8bb792f475633
+
+% 1 1 0 1d9140308c08930708285f5e46f104c9
+
+@ 0 4 0 1c2a4e61c4b6f5550fc7e05945355a70
++ entry .let   变换存在的值；让 `Unset` 原样通过
++     `optional.let(lambda)` 对存在的值应用 `lambda`，对缺失的值则产生 `Unset`。
++     由于可选性是扁平的，本身返回 `Optional` 的 `lambda` 不会增加一层——在 `Option` 需要 `map` 和 `flatMap` 两者的地方，`let` 都能胜任：
+
+% 2 1 0 00063737a05f887d0acd5bb349cb7c59
+
+% 3 1 0 19b4aace648a99451a134943dfa2e5ad
+
+% 0 1 0 1f75af68868fa268023b184b82e9513e
+
+% 1 1 0 1db41a627153b12d0d9332747339e72d
+
+% 0 1 0 098208b9b5ab3c2f1c227c37cc2d87db
+
+% 0 1 0 1cc370ff7219bf7107782233fbb35873
+
+% 1 1 0 05747d045de6cddf1bb236cbfdc42888
+
+@ 0 2 0 0bbb0a396d3b5d2216822ad0f528619b
++     需要接收者类型的 `Optionality` 证明，它对任何 `Optional` 都处于隐式作用域中。
+
+@ 0 4 0 04ddc1c208ff19a20479c1368cec815f
++ entry .lay   缺失时的回退值和存在时的函数，得到普通的值
++     当值存在时，`optional.lay(alternative)(lambda)` 是 `lambda(value)`，否则是 `alternative`（按名传递），因此它返回普通的 `value2`，而不是 `Optional`。
++     它是一步完成的 `let` 加 `or`，并且是内联的。
+
+% 2 1 0 0229422133a20cd500369026d490e3fa
+
+% 3 1 0 1e122defefc895530144e0560223dcd7
+
+% 5 1 0 077e6267c6fb42d00aaa28e83d8a72ee
+
+% 0 1 0 0a218052f5cc87070f9aebd566abe03e
+
+% 1 1 0 1b1a10b10a00522c19e76ee0753fb13d
+
+@ 0 4 0 00776338fed22a190d1b23873d82db51
++ entry .letGiven   把存在的值作为上下文值提供的 `let`
++     `optional.letGiven(block)` 以存在的值作为 `given` 来求值 `block`，对缺失的值则产生 `Unset`。
++     适用于其主体召唤该值（`Tactic`、`Classloader`、会话）而非直接指名它的块。
+
+@ 0 3 0 0a93b2cf6652a9741ceaed751fe44f93
++ entry .layGiven   把存在的值作为上下文值提供的 `lay`
++     `optional.layGiven(alternative)(block)` 在值存在时以该值作为 `given` 来求值 `block`，缺失时求值 `alternative`（按名传递），返回普通的值。
+
+@ 0 3 0 148e42899a89f8a305e2c3b226436242
++ entry .present   值是否存在
++     `optional.present` 就是内联的 `optional != Unset`。
++     它要求一个 `Optionality` 证明，因此只能对属于 `Optional` 的类型发问。
+
+@ 0 2 0 01600db13bc49ede0acb84589cc9eb5b
++ entry .absent   值是否为 `Unset`
++     `optional.absent` 就是内联的 `optional == Unset`。
+
+@ 0 4 0 121c748e6bef61ce0be47d43371c9c1b
++ entry .mask   丢弃满足谓词的存在值
++     当值存在且 `predicate` 对它成立时，`optional.mask(predicate)` 是 `Unset`，否则是原样不变的接收者。
++     其含义是“遮掉”：谓词指明的是要*去除*的东西。
+
+% 2 1 0 1736acea32562a280f0dba98eb6630c3
+
+% 3 1 0 1ef33fa2fa2b91a107adc64658df0e5e
+
+% 5 1 0 02c2e904bba882e309fed38ef1bf2e05
+
+% 0 1 0 1b015851dd7a433d10f3eefc8049ed00
+
+% 1 1 0 0203b8ec6e26c7f30ae76202bb52ea19
+
+@ 0 6 0 157d717b1bb0d3e7158bfa3efb12b1ca
++ entry .assume   该值，或在缺失时抛出 `Optional.Error`
++     `optional.assume` 断言值存在。
++     这是一个未经检查的断言，因此需要作用域中有一个 `CanThrow[Optional.Error]`——`import unsafeExceptions.canThrowAny`，或外层的 `unsafely`——并在断言错误时抛出错误 `↯/s.20.4` _the value was not set_。
++     在代码能够说明缺失意味着什么的地方，应优先使用 `or`、`lay` 或匹配。
+
+% 2 1 0 0bc6ff54b90c1eaf11bec9b00b60b177
+
+% 3 1 0 18af29e89a27b9e114c7b25ce71b36a5
+
+% 0 1 0 0e561fef8d61f71209e71e56fc02c68d
+
+% 2 1 0 0cfdfa664d0e752a0795ff937076fea0
+
+% 0 1 0 182ede9beda3f112152c8e76a8c04214
+
+% 1 1 0 05fd47d94d23204e05061422fe667204
+
+@ 0 4 0 1073a1592680d8381125e9545c6b75b6
++ entry .presume   该值，或在缺失时为该类型的 `Default`
++     对于具有 `Default` 实例的 `value`，`optional.presume` 就是 `optional.or(default)`：空文本、零、空列表。
++     没有 `Default` 的类型无法 presume，这是编译错误，而不是运行时的意外。
+
+% 2 1 0 01d6f47bb02c0f0f0d9215cff7e65386
+
+% 3 1 0 154c77a74fa292b301f9ba544823c30d
+
+% 5 1 0 1f190016da824a440c81166f24f599e6
+
+% 0 1 0 1699d8db09c995cc0b631868c525cee1
+
+% 1 1 0 0ae2ad924494b6a11e7b5f630e3a75de
+
+@ 0 4 0 0ba7ef6999aff7621b8d5130c0afa8c6
++ entry .option   作为 `Option` 的值，用于与使用 `Option` 的代码交界处
++     `optional.option` 是 `Some(value)` 或 `None`。
++     这种转换用于程序的边缘——返回或接受 `Option` 的库——而 `optional` 会转换回来；Soundness 程序的内部只使用 `Optional`。
+
+@ 0 3 0 1f4545426cec296c1349dbbd76479d36
++ entry .javaOptional   作为 `java.util.Optional` 的值，用于 Java API
++     `optional.javaOptional` 是 `java.util.Optional.of(value)` 或 `java.util.Optional.empty`；`java.util.Optional` 上的 `optional` 会转换回来。
+
+@ 0 5 0 0bf0ed8a9b2534a21bbef101d3d4fa15
++ entry .optional   把 `Option` 或 `java.util.Optional` 转为 `Optional`
++     有两个扩展方法同名：`option.optional` 对 `Some` 是其中的值，对 `None` 是 `Unset`，`javaOptional.optional` 对 `java.util.Optional` 也是如此。
++     二者都是向内的边界转换；`option` 和 `javaOptional` 则是向外的转换。
+
+% 2 1 0 05a1b8613ed372f712ae1ef7ebb1afe6
+
+% 3 1 0 1caf706b2470b8b304465848c900e576
+
+% 0 1 0 0918ac854f2391ed1e4a76fb228686dc
+
+% 0 1 0 0bf25de79db43ae50b418d3edcb99c5d
+
+% 1 1 0 049707706f6a5c821f762df5bcee71a9
+
+@ 0 4 0 1e7aba6988ce53ed1486824b526081f0
++ entry .unless   把值变为可选：谓词成立时为 `Unset`
++     如果 `predicate(value)` 成立（或者在接受 `Boolean` 的重载中，条件为真），`value.unless(predicate)` 是 `Unset`，否则是 `value`。
++     条件指明的是要*丢弃*的情形。
+
+% 2 1 0 01d5c7ba1a66cdca05a842925f138f27
+
+% 3 1 0 03a786a26e45b308071163558961beef
+
+% 0 1 0 1c0cff94d43c0b190a4aaf040c3e9411
+
+% 0 1 0 1341a6fe1f5d5fc3045f14fa06d38179
+
+% 0 1 0 0592a38b0a91d56e189db32a1f2224d3
+
+% 1 1 0 1253b03de9931645109f3b27cfc94311
+
+@ 0 3 0 0c32b022741488c81ce4b20a7a4ea465
++ entry .puncture   把值变为可选：等于某个特定值时为 `Unset`
++     当 `value == point` 时，`value.puncture(point)` 是 `Unset`，否则是 `value`，用于 API 用来表示缺失的哨兵值——空文本、`-1`、`0`：
+
+% 2 1 0 11c15f8f013817721c638f0403f299a6
+
+% 3 1 0 1a28160f4838bba8197b8b1d5732b16c
+
+% 0 1 0 0ba500c57ef7f1290b4a4e487c162a92
+
+% 1 1 0 1b01e82e5989ff581cc9db37b537e073
+
+@ 0 5 0 1e95a246740642da08b5a2d3ae60ac10
++ entry .only   仅在偏函数有定义处保留一个值，并应用该偏函数
++     当偏函数在 `value` 处有定义时，`value.only { case pattern => result }` 是 `result`，否则是 `Unset`：在一次匹配中同时完成过滤和变换。
++     偏函数可能捕获一个能力（抛出错误的提取器会捕获其 `Tactic`），因此它被当作捕获值接受。
+
+% 2 1 0 140a74f5448aba1d1aa1a61ef5aa7451
+
+% 3 1 0 06c9e65c5af499c00e7c2ee928902616
+
+% 0 1 0 1c52ea8c8e3416080e601a2b16a65de6
+
+% 1 1 0 1e21451aa471fcd70ca0144919301faa
+
+@ 0 4 0 0b0a05015b8447331c6c1b019ac197e0
++ entry .per   仅当可选的第二个参数存在时，才对值应用函数
++     当 `optional` 存在时，`value.per(optional)(lambda)` 是 `lambda(value, present)`，缺失时是原样不变的 `value`：这是把可选设置应用到构建器上的形状，`element.per(start)(_.start = _)`。
+
+@ 0 7 0 07858f8200bad89d09a2dee715e48971
++ entry .compact   由 `Optional` 组成的集合或迭代器中存在的元素
++     `collection.compact` 丢弃每个 `Unset`，并以集合自身的形状重建，产生存在的值：`List[Optional[Text]]` 压缩为 `List[Text]`，`Set` 压缩为 `Set`。
++     它适用于任何 `Traversable` 集合；`murmuration` `Iterator[Optional[value]]^` 上的重载会消费该迭代器，产生一个在前进时丢弃缺失元素的 `Iterator[value]^`。
++     结果的类型是去掉了可选性的元素类型。
+
+% 2 1 0 185a04424ea9be0b070cae84281630b4
+
+% 3 1 0 16381a3ed6938788075798393d530006
+
+% 0 1 0 02e3dec0b60b162617c4b60051f091aa
+
+% 1 1 0 01d93752c2b9d65f0d10fc41cd7f6193
+
+@ 0 4 0 17c73ca90c208f651caa579a7d44a06c
++ entry .entire   每个元素都存在时为整个集合，否则为 `Unset`
++     `collection.entire` 是全有或全无：当没有元素是 `Unset` 时，它是由所有元素组成、保持集合自身形状的集合的 `Optional`，只要有任何一个是 `Unset`，它就是 `Unset`。
++     只扫描一次存在性，答案记录在结果的类型中，而 `compact` 会悄悄丢掉空缺。
+
+@ 0 3 0 0cb8dbc1a27ef7751cc182c7a861d41f
++ entry .default   召唤出的某个类型的 `Default` 值：`default[Text]` 是 `t""`
++     `default[value]` 就是 `summon[Default[value]]()`，即一个类型回退到的值。
++     `presume` 对缺失的 `Optional` 使用同一个实例。
+
+@ 0 7 0 1209bf6be3af628f1fb4b9170b9954dd
++ entry .optimizable   标记一个块，`or` 可以直接向它提供回退值
++     `optimizable[value] { default => body }` 从一个接收回退值的 lambda 构建 `Optional[value]`，它起初被应用于 `Unset`。
++     当结果立即被 `or(fallback)` 消费时，`or` 宏会改写这次应用，改为把 `fallback` 传给该 lambda，从而不构建中间的 `Optional`：concordance 的带下标 `apply` 使用它，使 `xs(index).or(fallback)` 在读取槽位时手里就有回退值。
++     这是库代码；一般程序很少需要它。
+
+@ 0 5 0 0a5273359fc9400013b4813c173aa269
++ entry .invite   如果作用域中有某个类型的实例则为该实例，否则为 `Unset`
++     `invite[entity]` 是一个 `transparent inline` 召唤，当有类型为 `entity` 的 given 可用时产生它，否则产生 `Unset`，而在同样情况下 `summon` 会编译失败。
++     适用于可选的能力——日志记录器、诊断上下文——方法在其存在时使用它，不存在时就不用。
+
+@ 0 1 0 0ebad75d57717f1b19a47e91868c68d7
++ entry .Default   一个类型回退到的值，由 `presume` 和 `default` 使用
+
+% 1 1 0 1518a7c7e5d1b73412d931cbeaf981a3
+
+@ 0 5 0 1c6052c6b9f801b80e595c54cbae0b0f
++       `Default[value]` 是一个按名传递的 thunk，即 `() => value`，因此计算代价高昂的默认值只在使用之处才计算。
++       伴生对象中为具有明显零值的类型——`Int`、`Long`、`Text`、`String`、`List`、`Set`、`Sequence`——以及任何具有 `ValueOf` 的单例类型提供了实例；一个类型通过定义一个实例来声明自己的默认值：
+
+% 2 1 0 0f05661f94fee13c0a2cbc956b3f2ffd
+
+% 3 1 0 056ac322345efad8105cf09d74a45d04
+
+% 0 1 0 1bbc976b14be7b890cead1b7da3c29cd
+
+% 0 1 0 160a122ff13371911c494fcd5593b217
+
+% 0 1 0 1c52fbca1fc1cfc3181dfa9f787e8f20
+
+% 0 1 0 186a3210d268bb5b184ded45f18c051f
+
+% 0 1 0 1fbb9c2dbb616d711da7ef2d1c0ad58e
+
+% 1 1 0 10bbb8eb1b45fbc818455a6180b759af
+
+@ 0 3 0 0ad25d6b8193b2df14f07a69b2e34a7d
++       `Default` 是协变且纯的（直接是 `scala.caps.Pure`，因为它是参数化的，而不是通过 `Self` 成员选择的），并且是 `Findable`，即 beneficence 用来标记其值由上下文提供的类型的标记。
+
+% 0 1 0 1ea1a6e4fb34bf8218bbad81936b4555
+
+% 0 1 0 14dbd22273c2a9b01e4e9abb10f7d318
+
+@ 0 12 0 1557f9e3884cde691e7d4dffbc7202f6
++   entry .apply   由按名传递的值构造 `Default`：`Default(Volume(0))`
++       参数是一个纯的按名 thunk（`-> value`），每次使用时求值。
++   entry .int   `Default[Int]`：`0`
++   entry .default   `Default[Long]`：`0L`
++       `Long` 的 given，命名为 `default` 而不是 `long`。
++   entry .singleton   任何具有 `ValueOf` 的单例类型的 `Default[value]`：即其值
++   entry .text   `Default[Text]`：空文本
++   entry .string   `Default[String]`：空字符串
++   entry .list   `Default[List[element]]`：`Nil`
++   entry .set   `Default[Set[element]]`：空集合
++   entry .sequence   `Default[Sequence[element]]`：空序列
++   entry #apply   默认值，每次调用时计算
+
+@ 0 1 0 1eab32917668c48816287297f81c8081
++ entry .Optionality   一个类型是 `Optional` 的证明，每个组合子都需要它
+
+% 1 1 0 030b4530c4f5f87f1f62e1360a033bfb
+
+@ 0 7 0 073fa5a5291a854e054942429f33cb67
++       `Optionality[value]` 是一个密封标记，它唯一的 given `.default` 是一个宏，当 `Unset` 是 `value` 的子类型时成功，否则以错误 `↯/s.20.3` _the type `value` is not an `Optional`_ 失败。
++       扩展方法 `or`、`let`、`lay`、`present`、`absent`、`mask`、`assume`、`presume`、`option`、`javaOptional`、`letGiven` 和 `layGiven` 都接受一个 `Optionality[optional.type]`，因此它们只在静态类型容许 `Unset` 的接收者上解析；普通的 `Text` 没有 `let`。
++       这项检查在运行时没有任何代价：given 就是一个转换为该标记的 `null`。
+
+% 2 1 0 19ac4ceff8741bad115428bcb938fc6e
+
+% 3 1 0 083b2524432479001a0c89f381080d8e
+
+% 0 1 0 0384f0978648ccf918ed6f4f3607eb74
+
+% 0 1 0 1c6ab6eac2e6e08a1752d9639c41c0dc
+
+% 1 1 0 05185c5b4ae4262b0324b24234697f34
+
+@ 0 1 0 18459422c3530d770ca70bb54ffeac9c
++   entry .default   宏 given：当 `Unset <: value` 时为 `Optionality[value]`
+
+@ 0 1 0 14b5154eec352ac10c9fcde3b3f66beb
++ entry .Concrete   一个类型是确定的而非抽象的证明
+
+% 1 1 0 11451237575b31a515ebf41608ddab0c
+
+@ 0 6 0 1bf9fd7f9dd3018f1034dc30c9b08bd7
++       `self is Concrete` 由内联 given `.concrete` 产生，这个宏在 `self` 不是抽象类型时成功，否则以错误 `↯/s.20.5` _type `self` is abstract_ 失败。
++       接受 `Optional[value]` 的泛型方法要求 `value: Concrete`，因为扁平联合类型只有在两个成员都已知时才没有歧义——抽象的 `value` 之后可能被实例化为本身已是可选的类型，从而把本应区分的两种缺失合并起来：
+
+% 2 1 0 066dab495e5b784703a90341fe220c85
+
+% 3 1 0 1f37dfaf14e979d00282b768d9aa205e
+
+% 0 1 0 08fd9ead4cf8754b167c88b6c1f8ac99
+
+% 0 1 0 14c5e020376d66d20570efe0e9b12620
+
+% 0 1 0 160dc59c15a49fd10c1b1065f6140182
+
+% 1 1 0 098380b7ddab547219f26657ef8e8f00
+
+@ 0 6 0 1a330372f6bd74df02527fb5a0dfafe4
++       在 `inline` 方法内部，检查推迟到展开处进行，那里的类型参数是具体的，因此 `inline def f[value: Concrete]` 可以编译，而对它的每次调用都会被检查。
++       `Concrete.apply[self]()` 手动构造一个实例，供已经自行确立这一事实的宏使用。
++   entry .concrete   宏 given：当类型不是抽象类型时为 `typeRef is Concrete`
++   entry .apply   通过断言得到的实例：`Concrete[self]()`
+
+@ 0 1 0 0818cde795ab805b026c92e517cb0b78
++ entry .Distinct   一个类型不是某个联合类型成员的证明：`self is Distinct from union`
+
+% 1 1 0 0fd95e598f3fffe30cdb0b4351510303
+
+@ 0 8 0 07587628a9e86c970ed74de238f24d2d
++       `typeRef is Distinct from otherType` 由内联 given `.distinct` 产生，这个宏首先要求 `typeRef` 是 `Concrete`（否则报错误 `↯/s.20.5`），然后在 `typeRef` 是 `otherType` 的子类型时以错误 `↯/s.20.2` _type `typeRef` cannot be proven distinct from `otherType`_ 失败。
++       正是这项检查使 `Unset` 不会进入值类型，它也使 API 能够无歧义地接受“一个或多个”：caduceus 的 `many[entity: Distinct from List[Any]](value: entity | List[entity])` 之所以能区分单个元素和由它们组成的列表，只是因为已经证明 `entity` 本身不是列表。
+
+% 2 1 0 1f5a0faad1e35dd01ada893c97157c65
+
+% 3 1 0 1dbfca172c73bcbe13ddc3aaf9147de4
+
+% 0 1 0 0d2c76436f2d93311fd8b53ae68b92d9
+
+% 0 1 0 17e1c637d7a9092511d3de023989900f
+
+% 0 1 0 0f68ebce9226a3d61613366643f92336
+
+% 1 1 0 16aa7662aefe7d9a0f884b697f5c3311
+
+@ 0 4 0 023b7678e77bd8680e7a6569c92e6af9
++       `Distinct` 扩展自 `Original`，因此另一个类型是它的 `Origin`，用 `from` 指名。
++       `Distinct.apply[self, origin]()` 通过断言构造一个实例。
++   entry .distinct   宏 given：除非 `typeRef <: otherType`，否则为 `typeRef is Distinct from otherType`
++   entry .apply   通过断言得到的实例：`Distinct[self, origin]()`
+
+@ 0 1 0 144310bd7fcb6e97119074f91e4f6d53
++ entry .Mandatable   存在值所具有的非可选类型：`self is Mandatable to result`
+
+% 1 1 0 1455b280f42ceaf419eeabf90b124c27
+
+@ 0 10 0 04563374e927d67916f22af487f29f87
++       `typeRef is Mandatable` 由透明内联 given `.mandatable` 产生，这个宏从联合类型中去掉每个 `Unset`，并把剩下的部分记录为它的 `#Result`：`Optional[Text] is Mandatable to Text`。
++       不含 `Unset` 的类型会以错误 `↯/s.20.1` _the value is not an `Optional`_ 失败。
++       派生代码用它来找出可选字段要编码或渲染的类型——breviloquence 的 CBOR 编码器和派生的 `Inspectable` 都接受 `[inner <: value, value >: Unset.type: Mandatable to inner]`。
++   entry .mandatable   宏 given：`typeRef is Mandatable to result`，其中去掉了 `Unset`
++   entry .apply   通过断言得到的实例：`Mandatable[self, result]()`
++   entry #Result   去掉了可选性的类型；`Self` 的子类型
+
+@ 0 1 0 0c19e489ea590a080b3feb85cbcb19c2
++ entry .Extractor   以 `Optional` 作答的模式提取器
+
+% 1 1 0 1533a26ba143ecc507cab56923676c94
+
+@ 0 4 0 0bec58486b20617a1a510b66e5d17665
++       用于 `case Name(value) =>` 模式的对象的特质：实现返回 `Optional[extraction]` 的 `#extract`，`#unapply` 就会由它派生，成为模式匹配器所要求的 `Option`。
++       `Uuid` 和 phoenicia 的 `Otf` 都是 `Extractor[Text, …]`，因此 `case Uuid(uuid) =>` 会匹配能被解析为 UUID 的文本。
+
+% 2 1 0 11539e8998e5fa4c1a3a74685ee00e37
+
+% 3 1 0 164498c934028bf80f2f6cffc123edd1
+
+% 0 1 0 017de0490f44109109293f73b9b3aed9
+
+% 0 1 0 16f618a05cc8c0ee0c43a8a089b5d211
+
+% 0 1 0 1debc5e66369178d1357370fc9604759
+
+% 0 1 0 0e64903546a6e847148126ef33687292
+
+% 0 1 0 0d8078fa6934c44f0d12cb4d1071bb21
+
+% 1 1 0 0e7c902307a4aecd01d431a42f4ff77c
+
+@ 0 2 0 0537c8408a5f56d505e55f566d7170c1
++   entry #extract   提取结果，若被匹配值不匹配则为 `Unset`
++   entry #unapply   `extract(value).option`，供模式匹配器使用
+
+@ 0 10 0 02309896c3e7571c1331a4fd2bf89762
++ entry .Unsafe   守护绕过安全保证的操作的能力令牌
++     执行未经检查操作的方法——解析编译器已经验证过的字面量，或者其各部分已由宏检查过的插值——接受一个 `(using Unsafe)` 参数，并命名为 `unsafe…`；调用者通过 contingency 的 `unsafely` 块提供该令牌，或者显式传递 `Unsafe`。
++     `Unsafe` 既是密封特质，也是它唯一的对象值。
++     它是一个真实的值而不是 `erased` 值，因为 Scala.js 后端无法编译对擦除参数的闭包，但 `using erased Unsafe` 参数仍会在其调用处把它擦除。
++     这个令牌是一个可以用 grep 查找的声明，仅限于需要它的操作；方法只应在其自身主体确实依赖某个未经证明的性质时才接受它。
+
+@ 0 1 0 13b90761e2e31ff818eab13349c483a5
++ entry .internal   证明和经过优化的 `or` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 9 0 19db3199a65be2b40583cbc14a2e1f3a
++       不供直接使用。
++       `check[value]` 是 `Optionality` 和 `Optional.check` 的宏；`concrete`、`distinct` 和 `mandatable` 产生 `Concrete`、`Distinct` 和 `Mandatable` 证明；`optimizeOr` 是 `or` 背后的宏，它改写 `optimizable` 接收者，使回退值直接提供给它。
++   entry .check   `Optionality[value]` 宏：当 `Unset <: value` 时成功，否则报错误 `↯/s.20.3`
++   entry .concrete   `typeRef is Concrete` 宏：对抽象类型以错误 `↯/s.20.5` 失败
++   entry .distinct   `typeRef is Distinct from union` 宏：对子类型以错误 `↯/s.20.2` 失败
++   entry .mandatable   `typeRef is Mandatable` 宏：去掉 `Unset`，若没有 `Unset` 则报错误 `↯/s.20.1`
++   entry .optimizeOr   `or` 背后的宏：把回退值内联到 `optimizable` 接收者中

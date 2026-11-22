@@ -1,0 +1,132 @@
+orthant 2 language
+
+@ 0 1 0 0347f2f17bafdb50062aa78671957587
++ # Soundness 测试标准
+
+@ 0 4 0 180093f96fd176021b81726097449021
++ 本文档规定 Soundness 各库中测试的编写和组织方式。
++ 测试使用 [Probably](https://github.com/propensive/probably/)。
++ 它是对 `syntax.md`（空白和格式）和 `benchmarking.md`（性能测量）的补充。
++ 示例取自 `lib/*/src/test/*.scala`。
+
+@ 0 1 0 128121213fd1bbc803c5506b0f37a470
++ ## 1. 位置与命名
+
+@ 0 2 0 124fa5e2f4941d520e30c1d16e903188
++ 测试位于模块的 `src/test` 目录中。
++ 测试对象扩展 `Suite` 并实现 `run()`：
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 18044bee7505f5bf1ce827a4102a630d
+
+% 0 1 0 05b21312d4476d490bedde74e2206bb2
+
+% 1 1 0 176ab5997d1a33eb01209ac7d07807b2
+
+@ 0 4 0 06149e7724a0030112a6316081df5f95
++ 套件的标题是一个 `Message`，指名被测模块。
++ 标题之前是套件的 id，这是一个字符串字面量，选择时通过它来指称该套件：`fume run logging`。
++ id 指名模块的用途，而不是模块本身。
++ 保持简短，除非需要两个词，否则只用一个词：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0a63bb414baca57611071104030a64c7
++ column  套件
+
+% 0 1 0 1116ac56b72335f408c3022657ba1d16
+
+@ 0 4 0 0b42b0e9944df0d81aa65b66c02c18eb
++ column  示例
++ row  模块的套件  模块的用途  用 `logging` 而非 `eucalyptus`；用 `html` 而非 `honeycomb`
++ row  某一领域的套件，位于 `<module>.<Area>Tests.scala`  模块的 id 加上该领域  `json-parser`、`json-records`
++ row  仅凭标题声明的套件  由标题派生；这是回退办法，而非约定  `eucalyptus-tests`
+
+% 1 1 0 19131d8fbd3b873c1ff62a940a6261bf
+
+@ 0 2 0 0501f2d48853cec007dba1f2bde88f36
++ 在 `run()` 之外为套件声明测试的方法，以同一个 id 指名该套件：`(using Testable of "logging")`。
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. 结构
+
+@ 0 2 0 0f8bd52461a72d8e1915ccb9e902b2c4
++ 用 `suite` 将相关测试分组，用 `test` 编写每个单独的测试，两者都接受一个 `Message`：
+
+% 2 1 0 144d93b1cccb8a680fe040b3ab5d5c48
+
+% 0 1 0 08d8de7dbf1cc98c049469de2e9093da
+
+% 0 1 0 0197b8799e87450007239635f36ada27
+
+% 0 1 0 07dd18d8e9cc763a0b80c686049aa059
+
+% 0 1 0 14ec7224cc90e62c14f570d31d599f84
+
+% 1 1 0 0a11c3e11d36e44607d976454a563117
+
+@ 0 3 0 14ae5fdc7767086913c23013f0c4366e
++ `test` 块求值为被检查的值；其后的 `assert`（或 `check`）说明该值必须满足什么。
++ 每个测试只保留一个逻辑断言，这样失败时就能准确指出坏掉的是什么。
+
+@ 0 1 0 173d5eecb643b08607fe9647174bede1
++ ## 3. 测试名称
+
+@ 0 3 0 10c5c51761cebeb3112f0f6a88d0d5d8
++ 测试名称是一个简短的描述性 `m"..."` 短语，**少于 70 个字符**，陈述被验证的属性，而不是被调用的方法。
++ 优先使用 `m"a malformed pointer fails to parse"` 而不是 `m"test parse"`。
+
+@ 0 1 0 17187bfaa3a48f95101f451f63dc7fc8
++ ## 4. 断言
+
+@ 0 2 0 0c7a58f97e3ff6d91fc47657120852e2
++ 断言以流式风格编写，谓词应用于块的结果：
+
+% 2 1 0 0322f92bdd85cf66122c7a47c4405425
+
+% 0 1 0 109cb27fc4219ebc0253866de87830ed
+
+% 0 1 0 06afe6fa56576f9c040c3a5e785e977b
+
+% 0 1 0 0c43bc8b58ae90dd00f2f33b9c7eb612
+
+% 1 1 0 14c66cf341f6d87f0507548f432f9f89
+
+@ 0 2 0 094e9caa128f18a418baba832f717d25
++ 用 `_ == expected` 与期望值比较；较宽松的检查使用谓词。
++ 不要抛出异常，也不要使用标准库的 `require`/`assert`。
+
+@ 0 1 0 1b6a6722be2eafb20c9dbafbaaec5898
++ ## 5. 错误策略
+
+@ 0 3 0 0a3e882742e9a6c110d4517f32f1d2f0
++ 演练可能失败的代码的测试要显式选择一种错误策略，通常是导入 `strategies.throwUnsafely`，这样意外的失败会表现为失败的测试，而不是被吞掉的错误：
+
+% 2 1 0 06b6f0785ac9e27200a98f376348778b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 199604dd69404d1c072e5c78d6e478c1
++ 要测试失败*确实*发生，应捕获它并对其原因作断言，而不是任其传播。
+
+@ 0 1 0 0b7bb768997e6f391ef13cb91e531c71
++ ## 6. 编译时测试
+
+@ 0 4 0 0bb78481e4b927c717d8d59ab7ae96a3
++ 要断言代码会被编译器*拒绝*，即不可能状态确实无法写出，请使用 [Larceny](https://github.com/propensive/larceny/)，它把编译错误捕获为测试可以检查的值。
++ 文档中标有 `// does not compile` 的示例应当有一个对应的 Larceny 测试。
+
+@ 0 1 0 0f0b43066f3a0ee80a85f91378ec5c13
++ ## 7. 测试什么
+
+@ 0 4 0 07f06ddba67f12f819f5e00fad6c73aa
++ 测试用户所依赖的行为：每个公开操作的结果、边界情形（空、缺失、最大），以及应当抛出的失败。
++ 测试无效的构造无法通过编译。
++ 不要直接测试私有的内部实现；通过公开接口去触及它们。

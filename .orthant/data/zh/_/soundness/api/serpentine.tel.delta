@@ -1,0 +1,766 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a5003698bdf947015429cf31614beab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1854dc56a4f524d40e1e78ade0b23865
++ info   以带类型的值表示路径：绝对路径和相对路径，绑定到某个平台，用 `/` 组合，并在代码编译时检查
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0012544f100419ad06cecc93181ccc08
++     _Serpentine_ 是 Soundness 中所有层级结构共享的路径代数：文件系统路径、类路径、URL 路径、JSON 指针、Git 引用和归档条目，都是某个**平面**上的 `Path` 或 `Relative`。
++     它关心的是路径的*形状*，而不是磁盘上的文件；读写文件是 galilei 的事，平台平面本身（`Linux`、`MacOs`、`Posix`、`Windows`、`Local`）和 `p"…"` 插值器也位于 galilei 中。
+
+@ 0 3 0 1b94ad61501188d513c95edc88bfbc14
++     绝对路径是 `Path`：一个根（以平面自身记法写成的纯文本）和一个由名称组成的下行部分，按叶子在前的顺序保存。
++     相对路径是 `Relative`：若干向上的步数，然后是一个下行部分。
++     两者都带有三个类型成员，每个都通过一个中缀别名读取：
+
+@ 0 6 0 120805e84ba915bc00ce3482478ee1ce
++     - `on`——`Plane`，即路径所遵循规则的文件系统或层级结构，因此 `Path on Linux` 和 `Path on Windows` 是不同的类型；
++     - `of`——`Topic`，当编译器知道路径的名称时，它是这些名称组成的元组，最内层在前：`% / "home" / "work"` 是一个 `Path of ("work", "home")`；
++     - `under`——`Limit`：对 `Path` 而言是其根的类型（`%.type`、`Drive`）；对 `Relative` 而言是它向上的步数。
+
+% 2 1 0 182d4eda5d2fa20a1f5cedb10b046ae6
+
+% 3 1 0 0989b38e45c59c02134c3c742a212bdf
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 15972a4c8eefcbd70a48607212199108
+
+% 0 1 0 1b810bbdc91eab500838686c6ac0a5fa
+
+% 0 1 0 06079cf28a213a810f7c27348a037b8e
+
+% 0 1 0 139079f3da8a99f009e278a040c963a1
+
+% 0 1 0 19a17d8121a71f71084b3a53a77fae6f
+
+% 0 1 0 0815b4f4e433ff7e0553305b6d540cec
+
+% 1 1 0 135e6eeda54bf8ed098522a97622f78e
+
+@ 0 5 0 1f5418f77a39533b04a7e84e62297886
++     用 `/` 构建的路径在 `on` 绑定它之前是平台中立的，绑定时会检查每个名称；基于已有平面的值构建的路径（`Drive('C') / "Windows"`）会留在该平面上，每添加一个名称就检查一个。
++     名称是字面量时，检查以及 `+`、`toward` 和 `conjunction` 的运算都在代码编译时进行；名称是运行时文本时，作用域中必须有 `Tactic[Name.Error]`。
+
+@ 0 6 0 12b59574cb76d420098c4c53ae6042f5
++     类型类描述平面提供的内容：`Filesystem`（它的分隔符，以及表示自身和父级的名称）、`Radical` 和 `Eradicable`（根类型如何写成文本并读回）、`Admissible` 和 `Navigable`（哪些值可以作为它上面的名称，以及如何作为名称），以及 `Submissible` 和 `Compliant`（它接受哪些根，以及接受哪些其他平面的相对路径）。
++     新的层级结构就是一个在伴生对象中带有这些 given 的类型，再加上一个扩展 `Root` 的根对象。
+
+@ 0 2 0 0d5c110762f1196403d565b2b10b682e
++     只有一个源集 `serpentine.core`，可编译到所有平台。
++     所有内容都导出到 `soundness` 总括包，包括 `%`、`^` 和 `?`。
+
+% 0 1 0 0e8047d521777b99077effbf694a3175
+
+% 0 1 0 04f853940c55340d0d029d2ffa440b1e
+
+% 0 1 0 09ec07978e4baafd17c1d82eecad0757
+
+% 0 1 0 0c650e8452c62e1a0accbe229bf5d402
+
+% 0 1 0 048b35d7d8b9d360036b37a4f35dfdd8
+
+% 0 1 0 1045fc9e5fdb85dd195c6103114cbefa
+
+@ 0 6 0 04bf831483bf1d1a02b06b6f50f4ea24
++ entry .%   POSIX 路径的根，绝对路径从它出发用 `/` 向下延伸
++     即对象 `Path.%`，已导出到包中：`% / "home" / "work"` 是一个绝对路径，在 `on` 绑定它之前是平台中立的（`(% / "home").on[Linux]`）。
++     它的类型用作以 `/` 为根的路径的 `Limit`，因此 `Path on Linux under %.type` 是一个已知从根开始的 Linux 路径。
++     galilei 的平面 `Linux`、`MacOs` 和 `Posix` 为 `%.type` 提供 `Radical` 和 `Eradicable` 实例，因此它读写为 `/`。
+
+@ 0 4 0 0213e61908c68ce808bec20b68b1eaa2
++ entry .^   相对路径中向上的一步：`? / ^ / "sibling"`
++     即对象 `Relative.^`，已导出到包中。
++     它只能作为 `?` 或另一个上行步骤的子项出现：`? / ^ / ^` 向上两级，是一个 `Ascent under 2`，其后的名称开始下行部分。
+
+@ 0 4 0 09d44dc0c60faa4b1f026dc082faec98
++ entry .?   当前位置：自相对路径，相对路径由它构建
++     即对象 `Relative.?`，已导出到包中：没有上行部分也没有下行部分的 `Relative`，编码为文件系统表示自身的名称（`.`）。
++     相对路径由它用 `/` 构建，先是向上的步骤（`^`），然后是名称：`? / ^ / "more"`。
+
+@ 0 1 0 07aef0d81400b65c0efdd2609a2c63de
++ entry .Path   绝对路径：一个根和一个由名称组成的下行部分，以平面、名称和根为类型
+
+% 1 1 0 033cf08166ff8b2310dc7229109c91bf
+
+@ 0 6 0 0daba183bfd552d70cf60d244eb68656
++       `Path` 是一个 case class，由 `#root`——以平面自身记法写成的根文本，如 `/` 或 `C:\`——和由名称组成的 `#descent` 构成，名称按**叶子在前**的顺序保存，因此 `% / "home" / "work"` 是 `Path(t"/", t"work", t"home")`。
++       它的类型成员说明关于它已知的信息：它所在的 `Plane`（`Path on Linux`），由其名称组成、最内层在前的 `#Topic` 元组（`Path of ("work", "home")`），以及 `Limit`，即其根的类型（`Path under %.type`）。
++       每一项都是可选的：一个裸的 `Path` 仍然是路径。
+
+% 2 1 0 162491459b66211311abc271dbd19c75
+
+% 3 1 0 14c711d04a6676651f19b5b2dedaa7a9
+
+% 4 1 0 06c3bed29f04c9fc1153d6306a5f0e25
+
+% 0 1 0 017834ebf6b357cf19e89c331f252c03
+
+% 0 1 0 1893a5989b9dfa60107ffc4c361b4c5b
+
+% 0 1 0 1b3f24b98336a75904398fdc378f363a
+
+% 0 1 0 0397928f1d07d808096c9480f024df79
+
+% 0 1 0 1955fec886f91ca70263f4a65f33106b
+
+% 0 1 0 13637f235f7491d4035e6d17e713ba4e
+
+% 1 1 0 05da08b4b260bf0a0536343a6832bc30
+
+@ 0 6 0 08f0baba2976c6710f875371e3e88456
++       `Topic` 已知的 `Path of …` 会隐式转换为某个平面上的同一路径（`.convert`），同时检查其名称，因此可以在需要 `Path on Linux` 的地方传入字面量路径。
++       只有指明平面时（`as[Path on Linux]`），文本才能解码为路径，因为平面决定分隔符和规则；根由平面的 `Eradicable` 读取，它会通过作用域中的 `Tactic[Path.Error]` 抛出原因为 `InvalidRoot` 的 `Path.Error`。
++       末尾的分隔符会被忽略。
+
+@ 0 2 0 0c8d9dfc63f3c67b0371a0ad5281d23f
++       路径用 `/:` 提取器进行匹配，先剥离根，然后从顶部开始逐个剥离名称（`.quotient`）：
+
+% 2 1 0 19a8a1968cd2726a1cc6386cc6bce161
+
+% 3 1 0 0ad277ff346653c71f4b79ea8491acd0
+
+% 4 1 0 14cc75a1d693f6a7053867aa89918470
+
+% 0 1 0 034a10215028ed5a15a2276bb8d00269
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 1f955b49403cbe55005f80413066151b
+
+% 0 1 0 0a7b48a393e0b0fa0651957d5d47ad02
+
+% 1 1 0 122806593bb734ac0d388993ab0387e5
+
+@ 0 5 0 0066766d1082b17f1eca9a91fa356685
++       一个陷阱：类型在调用处被细化的名称——`dir / t"$name.txt"`，或基于 lambda 参数构建的路径——会产生一个 `Topic`，某些作用于普通 `Path on Linux` 的 given 无法与之匹配。
++       可以将路径绑定到类型标注为 `Path on Linux` 的 `val`，在基于稳定值组合之后立即调用 `on[Linux]`，或者从文本构建它：`t"${dir.encode}/$name".as[Path on Linux]`。
+
+% 0 1 0 071ac52b966c6f9e14c27faad588af58
+
+% 0 1 0 0de900039da9cc5e1f50d327750a7570
+
+% 1 1 0 0e40812e568acdac1741b4841a0df671
+
+% 1 1 0 0396be11179880af07444a35117520e3
+
+@ 0 10 0 02864fce25dc5879061d678bc706db64
++   entry .%   POSIX 路径的根，以 `%` 导出到包中
++       一个扩展 `Path(t"/")` 的对象，其 `Topic` 为空，其 `Limit` 是它自身的类型。
++       `% / "name"` 是每个 POSIX 路径的开端；它被导出到 `serpentine` 和 `soundness` 总括包，因此可以直接书写。
++   entry .apply   由根文本和名称（叶子在前）构建的路径，并选定平面和类型
++       `Path(t"/", t"capulet", t"verona")` 是 case class 的构造器，先是根文本，然后是名称，最深的在前，它等于 `% / "verona" / "capulet"`。
++       重载 `Path[filesystem, root, topic](root, descent: List[Text])` 创建一个三个类型成员都已设置的路径，不做任何检查：它是各种操作以及平面自身解码器的构建基础。
+
+% 2 1 0 1666dc8148a7abf211481248089fd804
+
+% 3 1 0 1acf4f887b9c7f2c0c34147976532266
+
+% 0 1 0 179589beb967c3d208bcebdb3af0cbf8
+
+% 1 1 0 1a20deb1836ccd4c1f83ce4a9b56e8c6
+
+@ 0 37 0 02e613732ede5d6610ea9011d80e81e3
++   entry .unplatformed   一个已知主题和根但没有平面的路径，不做检查
++       `Path.unplatformed[root, topic](root, descent*)`：当子项在父路径的平面上不可接纳时，`/` 构建的就是它，因此结果在 `on` 绑定平面之前没有 `Plane`。
++   entry .decodable   从文本读取 `Path on filesystem`，使用平面的分隔符和根
++       需要平面的 `Filesystem`，以及其根类型的 `Radical` 和 `Eradicable`。
++       根由 `Eradicable` 读取，其余部分按分隔符拆分，丢弃末尾的空名称，并对每个名称去转义。
++       该实例保留了 `Eradicable`，连同它所接收的 `Tactic[Path.Error]`：根不可能格式错误的平面（zip 归档、web）给出的解码器不需要战术。
++   entry .decodable2   从文本读取 `Path on filesystem under root`，保留根类型
++       与 `.decodable` 相同，用于同时指明根的目标类型，例如 `/:` 模式匹配所需的 `Path on Linux under %.type`。
++   entry .instantiable   从文本创建 `Path on filesystem`，用于接受任意路径类型的 API
++       即 `Instantiable across Paths from Text` given：返回由调用者选择路径类型的库（`entry[Path on Linux]()`）通过它解码路径，要求与 `.decodable` 相同。
++   entry .trustedInstantiable   从已知有效的路径文本创建 `Path on filesystem`
++       即 `Instantiable across Paths from Paths.Trusted` given：来自文件系统本身的路径数据不可能格式错误，因此解码在它自己的 `unsafely` 下运行，调用者不需要 `Tactic[Path.Error]`。
++       它需要平面的 `Filesystem`、其根的 `Radical`，以及一个接收战术的 `Eradicable`。
++   entry .encodable   以平面的记法将路径渲染为文本：先是根，然后是用其分隔符连接的名称
++       需要平面的 `Filesystem`；每个名称由 `Filesystem#escape` 转义。
++       Windows 路径 `Drive('D') / "Globe"` 编码为 `D:\Globe`。
++   entry .showable   将路径显示为其编码文本，适用于任何位于带 `Filesystem` 的平面上的路径
++   entry .communicable   将路径渲染为消息，即其编码文本
++   entry .inspectable   任意路径（无论有无平面）的调试渲染：`/verona/capulet`
++       总是可用，因为它不需要 `Filesystem`：根按存储的样子显示，其中已带有平面的记法，名称用 `/` 连接，不做转义。
++       `(% / "verona" / "capulet").inspect` 是 `t"/verona/capulet"`。
++   entry .nominable   路径的名称，用于为事物命名的 API：它的叶子，若没有叶子则为其根文本
++   entry .generic   任何位于带 `Filesystem` 的平面上的路径，作为 `Abstractable across Paths to Text`
++       它让 serpentine 路径可以传给任何接受任意类型路径的 API（如 `Classpath.Directory(path)`）：它抽象为其编码文本。
++   entry .convert   将名称已知的路径隐式转换为某个平面上的同一路径
++       即 `Conversion[Path of topic under root, Path of topic on filesystem under root]`，通过 `#on` 实现，因此名称在代码编译时依据目标平面进行检查：
+
+% 2 1 0 0e98e0ae8125504c005f6f8b8da67ead
+
+% 3 1 0 1733164bf221aece15012639b5bde178
+
+% 0 1 0 0205218d689aefb307ba246f5bc362d0
+
+% 0 1 0 06f0e42cf9696c780a98f320307abbf7
+
+% 1 1 0 043ccd697bd514be11440521f345e897
+
+@ 0 11 0 06edcb8f5cedf3f8067d0c099bb5ab76
++   entry .quotient   路径的 `/:` 提取器：先是根，然后是作为名称或 `Relative` 的其余部分
++       没有名称的路径不匹配。
++       只有一个名称的路径匹配为 `root /: name`，有多个名称的匹配为 `root /: relative`，其中的 `Relative` 可以再用 `/:` 匹配，每次剥离顶部的名称。
++       根用平面的 `Eradicable` 解码，因此匹配需要路径的 `Limit` 已知（`Path on Linux under %.type`），对于可能格式错误的根还需要 `Tactic[Path.Error]`。
++   entry .conjunction   两个路径最深的公共祖先，尽可能在代码编译时计算
++       任意 `Path` 上的扩展方法。
++       当两个路径的名称都已知且共享一个根时，结果的名称在其类型中：`(% / "home" / "work" / "data").conjunction(% / "home" / "more")` 是一个 `Path of Mono["home"]`。
++       否则在运行时计算。
++       结果是 `Optional` 的，以应对根不同的两个路径。
+
+% 2 1 0 1dd92d00062dc77311a7be2d1c9d6fd0
+
+% 3 1 0 127877e45d4e6f3215b566420ba83b8c
+
+% 0 1 0 1582d143c71aa41512a6f6e3697877c5
+
+% 0 1 0 1a8138b200d8e5dc0b5e03c1c91bb944
+
+% 0 1 0 03a3b4ed3dd62281166ccb2687dab3ae
+
+% 1 1 0 0a03ab30893b7d39060c82cd0c2543d0
+
+@ 0 5 0 074be9867a69a7f80ee36591819c3cd9
++   entry .toward   从一个路径到另一个路径的相对路径，尽可能在代码编译时计算
++       任意 `Path` 上的扩展方法：`a.toward(b)` 是加到 `a` 上得到 `b` 的 `Relative`——从 `a` 向上到两个路径的 `conjunction`，再向下到 `b`。
++       相对路径保留目标的平面，当每个名称都已知时，其上行部分和名称都在其类型中。
++       结果是 `Optional` 的。
+
+% 2 1 0 148400eb402567e40f2ee253a49aec00
+
+% 3 1 0 1ffe07c69905eedf0929e2696cce25bf
+
+% 0 1 0 1aa802faa144fc9e13b7030c681c8c4a
+
+% 0 1 0 0506e70fa1956c641b71ed9887ded4a3
+
+% 0 1 0 1ee2812664dba7d403f85307dceaaa5a
+
+% 0 1 0 05434dc40b7abc400d152f114cc800ec
+
+% 1 1 0 11b3ab24124c3c60087894b876cbe3b9
+
+@ 0 1 0 131508bf83ae8cc404de0d3aabe73989
++   entry .Error   路径无法读取或解析时抛出：根或名称无效，或者根不同
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 06175fbfefd0e0c60b48222a6301a77f
++         错误 `↯/s.70.1`：_the path `path` was invalid because `reason`_，若路径已知则会给出路径。
++         `#reason` 是一个 `Path.Error.Reason`：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 09285e4f9fa3eb9707218ee7b2310512
+
+@ 0 1 0 1b4febce0b03d89f01c6f47edad49109
++         row  `InvalidRoot`  2  _the root is not valid_  开头与平面的根不同的文本，例如 Linux 上的 `C:`
+
+% 0 1 0 085b7ba5ac8ecda71e4fbe96bfc0fc5d
+
+% 0 1 0 0ea275c53574e9e41d111261dadf9c42
+
+% 1 1 0 11362977fd60dd600121d0d6fcc71418
+
+@ 0 3 0 120b355e3952e5940467114212e795d9
++         当文本被解码为路径时，它由平面的 `Eradicable` 抛出，也由 `Path#resolve` 抛出。
++         名称在被*添加*到路径时违反平面规则，属于 `Name.Error`，而不是这个错误。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 13db34982658c5cd18dfa07704806b28
+
+% 1 1 0 0fa776a024c8f3851138a5a062382aec
+
+@ 0 5 0 070d4d887def551d0230d9fbee493f1c
++     entry .apply   由原因（以 `_.InvalidRoot` 的形式选择）和路径文本（若已知）构建的路径错误
++         `Path.Error(_.InvalidRoot, t"C:")`：原因是 `Reason` 伴生对象的一个函数，因此平面的 `Eradicable` 写作 `abort(Path.Error(_.InvalidRoot))`。
++         与构造任何错误一样，需要作用域中有 `Diagnostics`。
++     entry .Reason   路径无效的原因：`RootParent`、`InvalidRoot`、`DifferentRoots` 或 `InvalidName`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 14 0 19732c7c10ca72ba193fedc9e7339f53
++           一个有四个编号分支的枚举，编号是错误代码的第二部分。
++           它的伴生对象有一个匿名的 `Communicable` given，将每个分支渲染为一条消息，例如 _the root is not valid_。
++       entry #number   原因的编号，`1` 到 `4`
++     entry #reason   路径无效的原因
++     entry #path   路径的文本，若未知则为 `Unset`
++   entry #root   根，以平面记法写成的文本：`/`、`C:\`、`refs/`
++   entry #descent   路径的名称，叶子在前
++       `(% / "home" / "work").descent` 是 `t"work"`、`t"home"`；`encode` 会将它们反转。
++       由按自上而下顺序读取的名称重建路径时，必须先将它们反转。
++   entry #Topic   当编译器知道路径的名称时，由这些名称组成的元组，最内层在前
++       `% / "verona" / "capulet"` 是一个 `Path of ("capulet", "verona")`，通过中缀别名 `of` 读取。
++       来自运行时文本的名称贡献其单例类型，名称完全未知的路径则具有上界 `Tuple`。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0ba42635d19052360a77709b3c79c215
++         label 根
+
+% 1 1 0 118520bcf90aceb41666ddc798e91b32
+
+% 2 1 0 0fe9a3ef9c80762d1c9747c9c0348d58
+
+% 0 1 0 127bf120d1aefef616eabe54ca77d355
+
+% 1 1 0 027a109f9f0798e6158aee07311ba9f5
+
+@ 0 1 0 1eaecc6822ae1b220456280983061c4a
++         label 一个名称
+
+% 1 1 0 08d512572a7ec6db1ffe6ef4d61293b7
+
+% 2 1 0 12c2b9143670b41f02c956cc440ec7a3
+
+% 0 1 0 134930ed3dc2ee7407fdefa0b1dac378
+
+% 1 1 0 0a4b9afbb718adf90bc5b099a6106aeb
+
+@ 0 1 0 04a50461923f19371d32f796df2e808f
++         label 两个名称，最内层在前
+
+% 1 1 0 00ae6c77bec5a84f00691433f3359478
+
+% 2 1 0 0e5fc590f1fc5b581fc8c319553f585d
+
+% 0 1 0 11f5159d171faab80e8488bd36c424a6
+
+% 1 1 0 057be8d89673bb181f0527cf35e8f990
+
+@ 0 1 0 033153c46653db8d05edadb6a95efd8c
++         label 绑定到平面
+
+% 1 1 0 1255a1a32eac1b141b9a0e6c271962c3
+
+% 2 1 0 072c0497a66b27f61aaa1715861566e0
+
+% 0 1 0 15bb5fff20544bcf0d2ba9d211d71ee3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 14 0 0a143f9e22933dcc0df8bf5729e1b8e7
++   entry #name  路径的叶子名称，若没有名称则为其根文本
++   entry #nil   路径是否没有名称：只有根
++   entry #knownElementTypes   `Topic` 是否为已知元组，即使其中某些名称是运行时的值
++   entry #knownElements   `Topic` 中的每个名称是否都是编译器已知的字面量
++       `(% / "verona" / "capulet").knownElements` 为 `true`；名称来自变量的路径，或类型标注为 `Path on Linux` 的路径，为 `false`。
++   entry #depth   路径有多少个名称，在 `Topic` 已知时由其计算
++   entry #on   将此路径绑定到某个平面，依据其规则检查每个名称
++       `path.on[Linux]` 用每个名称的 `Admissible on Linux` 实例检查它——字面量在编译时检查，运行时文本则通过 `Tactic[Name.Error]` 检查——并检查根：其类型在该平面上是 `Submissible` 的，或者能用平面的 `Eradicable` 解码，或者该平面只有唯一的根。
++       已经位于该平面上的路径原样返回。
++       其他平面的根会导致编译错误，因此 `(Drive('C') / "verona").on[Linux]` 无法编译，而 Linux 上的路径可以自由转换到 `MacOs`。
+
+% 2 1 0 14e67ab9d72005021f9f9aa73f7f9e03
+
+% 3 1 0 04914ced739f290e05e2c2eddcfcd3c2
+
+% 0 1 0 17be1d44694286c31a369282acd671a7
+
+% 0 1 0 059f86de68af76010ba06097b67caba0
+
+% 1 1 0 0954f73d4e03ab511833589a7c50a050
+
+@ 0 6 0 13bfbf0f04ae72461856ca01246a1d01
++   entry #/   此路径的子路径：多一个名称，若路径有平面则依据平面检查
++       子项可以是字符串字面量、`Text`、`Name`，或任何带有 `Navigable` 实例的值（`Uuid`、JSON 指针上的 `Ordinal`）。
++       若子项在路径的平面上是 `Admissible` 的，结果留在该平面上，并检查名称——字面量在编译时检查，运行时文本通过 `Tactic[Name.Error]` 检查。
++       否则结果是平台中立的，子项的单例类型被添加到 `Topic` 中。
+
+% 2 1 0 03e5461c96dbcea311c89cab79ddd088
+
+% 3 1 0 1f1e8f6c7a0df7770b670f21083e8cf1
+
+% 4 1 0 1ff31e64731cc6f3054abd7332d33681
+
+% 6 1 0 0577569b3b6fcb420092ea11ad7a7b15
+
+% 0 1 0 0424ffc58a2f0e160c5379b408aca939
+
+% 0 1 0 1f6ecdb00049cc9904e9b6d80ad96e2f
+
+% 1 1 0 0fcb98e38e070ddd1f42818ecdc8358f
+
+@ 0 11 0 175c7756ef5d307d0af042d9d8bf5161
++   entry #peer   此路径的同级路径：其叶子被替换为另一个名称
++       对 `% / "verona" / "capulet"` 调用 `path.peer("montague")` 得到 `% / "verona" / "montague"`。
++       该名称必须在路径的平面上是 `Admissible` 的。
++       它读取 `Topic`，因此在 `Topic` 为抽象的路径上会退化；此时应从 `#parent` 构建同级路径。
++   entry #parent   上一级的路径，若为根则为 `Unset`
++       在 `Topic` 已知时据其确定类型，因此 `Path of ("capulet", "verona")` 的父路径是 `Path of Mono["verona"]`，而根的父路径在静态上是 `Unset`。
++   entry #ancestors   此路径的每个祖先，最近的在前，直到根
++   entry #+   应用了一个相对路径后的此路径：先向上走完其上行部分，再向下走过其名称
++       `(% / "home" / "work" / "data") + (? / ^ / "more")` 是 `% / "home" / "work" / "more"`，结果的 `Topic` 由两者共同计算。
+
+% 2 1 0 1d5dd983dc8910150e5800ef85c2ce9d
+
+% 3 1 0 1c2627eab91bc248191f5149bb34b055
+
+% 0 1 0 1e6a56925ebe53ea028bf7f980051074
+
+% 0 1 0 02bbc7493a0ad1f213e0bd4704dd0b4b
+
+% 1 1 0 1fd80a816bb9ff9814e5a0e232b372b8
+
+@ 0 4 0 145413de8a3c337b11d86f6a185d9bf2
++   entry #resolve   相对于此路径解析的文本：绝对路径即其自身，相对路径则从此处出发
++       `base.resolve(text)` 将文本解码为 `Path on Plane`，若失败则解码为 `Relative on Plane` 并加到此路径上；两者都不是的文本会抛出原因为 `InvalidRoot` 的 `Path.Error`。
++       需要平面的路径解码器和相对路径解码器，以及 `Tactic[Path.Error]`。
+
+% 2 1 0 0bf999b7b9ff58e8105d6d26560aacb5
+
+% 3 1 0 1c0806ebdcb166d41ac6b20e97a53bb8
+
+% 4 1 0 046075a6bd4ce3b40c20183f312959e2
+
+% 0 1 0 05058a38821ae5300350ee5efb2f5cf0
+
+% 0 1 0 0f433df0d351b3b60db5cf9aee461859
+
+% 0 1 0 0f9fd5cb3e73e7071362f3f50ecba0bb
+
+% 1 1 0 1b4ee5fcc4c4cb85186d382c01491f40
+
+@ 0 11 0 1d84c598dc048c9d06879f1d0a903fc4
++   entry #precedes   此路径是否为另一路径的祖先，或与之相同
++       `(% / "verona" / "capulet").precedes(% / "verona" / "capulet" / "juliet")` 为 `true`；两者的根必须相同。
++   entry #relative   此路径的名称作为没有上行部分的 `Relative`，如同从其根出发
++   entry #shift   移除了最顶部若干名称的此路径：`(% / "a" / "b" / "c").shift(1)` 是 `% / "b" / "c"`
++   entry #graft   不同根上的相同名称
++       `path.graft(root)` 需要新根在路径平面上的 `Radical`，用于将根写成文本；结果的 `Limit` 是新根的单例类型。
++   entry #sameRoot   两个路径是否共享一个根，在只有唯一根的平面上静态为 `true`
++   entry #rename   叶子按其旧名称的函数重命名后的此路径，若为根则为 `Unset`
++       代码块以上下文值 `Text aka "prior"` 的形式接收旧名称，用 `prior` 读取：
+
+% 2 1 0 12a7cace3c039248081c922decfb95cc
+
+% 3 1 0 0f16f780e7fc737115d752213ad787e7
+
+% 4 1 0 168ea6f7e197f3670b1fc1cd5a399635
+
+% 0 1 0 108c51767bb087c3132519c45bf4ac49
+
+% 0 1 0 1d738162ee6e2b5006bc59454db927fe
+
+% 1 1 0 040436392959c9001865f44683af1057
+
+@ 0 5 0 0e7764a11065a2871b75a4143e7651fc
++   entry #unsafeChild   由运行时文本构建、完全不做检查的子路径，用于已验证过的名称
++       `path.unsafeChild(name)(using Unsafe)` 添加名称时不查询平面的规则；擦除的 `Unsafe` 令牌标记了调用处。
++       在已知名称有效——例如从目录列表中读取的名称——且不希望承担检查的开销或战术时使用，或者在路径的 `Topic` 为抽象、无法使用 `/` 时使用。
+
+@ 0 1 0 1c9fe17da192af1207d3b38f24e25a90
++ entry .Relative   相对路径：若干向上的步数，然后是由名称组成的下行部分，以平面为类型
+
+% 1 1 0 1464745c5ddecee60b7adac75a2298c0
+
+@ 0 5 0 1aec97924d9755321ee826001eaf9871
++       `Relative` 是一个 case class，由 `#ascent`（向上的步数）和由名称组成的 `#descent` 构成，名称按叶子在前的顺序保存。
++       它从 `?` 开始用 `/` 构建，每向上一步用一个 `^`，然后是名称；它的类型携带平面（`on`）、由其名称组成的 `#Topic`（`of`），以及作为字面量 `#Limit` 的上行步数（`under`），因此 `? / ^ / "more"` 是一个 `Relative of Mono["more"] under 1`。
+
+% 2 1 0 18c69ab67e5560880ca6440306f512ce
+
+% 3 1 0 16cca5a3c2d4701215289081a668298f
+
+% 0 1 0 0855b38cb7e53a161332214f53cc8bb9
+
+% 0 1 0 0f636bc802dc9829139a40feea5febd5
+
+% 0 1 0 1d1286e56a9090e006df6c25114fbc75
+
+% 0 1 0 190211cdc2daaac0056236958c1ef5f4
+
+% 1 1 0 0c8746b5537c062d09f01ca9f1d74b5c
+
+@ 0 4 0 0b6db716d5aac47a07bf8a0ff9263fe7
++       相对路径由 `Path#toward` 产生，用 `Path#+` 应用，并使用其平面表示自身、父级的名称和分隔符进行编码和解码，因此 `? / ^ / "verona"` 在 Linux 上是 `../verona`，在 Windows 上是 `..\verona`。
++       与路径一样，只有指明平面时它才能从文本解码。
+
+% 0 1 0 1a6dc83ab60658d70f43c37d5902f3c2
+
+% 0 1 0 034ff7979ce68ea00c325f774e1fea26
+
+% 0 1 0 1f8d9024e45c82d8073ae035cb7af1e0
+
+@ 0 42 0 1464fd9c93cbb4bc0fa1176dfad19130
++   entry .^   向上的一步，写在 `?` 或另一步之后：`? / ^ / ^`
++       以 `^` 导出到包中。
++       它本身不携带任何值：`Ascent#/` 接受它并将上行步数加一。
++   entry .?   当前位置，即空的 `Relative`，相对路径由它构建
++       以 `?` 导出到包中。
++       它是步数为零的 `Ascent`，因此 `?` 编码为平面表示自身的名称 `.`，而 `? / ^` 向上一级。
++   entry .apply   由上行步数和名称（叶子在前）构建的相对路径，并选定平面和类型
++       `Relative(1, List(t"verona"))` 是 case class 的构造器，等于 `? / ^ / "verona"`。
++       重载 `Relative[filesystem, topic, limit](ascent, descent*)` 设置三个类型成员，不做任何检查。
++   entry .decodable   从文本读取 `Relative on filesystem`，使用平面表示自身、父级的名称和分隔符
++       等于表示自身的名称的文本即为 `?`；否则按分隔符拆分，丢弃末尾的空名称和开头表示自身的名称，开头表示父级的名称计为上行步数，其余作为下行部分。
++       它不抛出任何错误。
++   entry .encodable   以平面的记法渲染相对路径：Linux 上为 `../verona`，Windows 上为 `..\verona`
++       自相对路径即表示自身的名称（`.`），有上行步数但没有名称的路径则是重复的父级名称（`../..`）。
++   entry .showable   将相对路径显示为其编码文本，适用于位于带 `Filesystem` 的平面上的相对路径
++   entry .inspectable   任意相对路径的调试渲染，采用 POSIX 记法：`../../verona` 或 `.`
++       总是可用，无论有无平面：向上的每一步是 `..`，名称用 `/` 连接，自相对路径是 `.`。
++   entry .conversion   将名称已知的相对路径隐式转换为某个平面上的同一路径
++       通过 `#on` 实现，因此名称依据目标平面进行检查。
++   entry .quotient   相对路径的 `/:` 提取器：先是其顶部名称，然后是其余部分
++       有两个名称的相对路径匹配为 `name /: name`，有更多名称的匹配为 `name /: relative`，因此用 `/:` 匹配的路径可以逐个名称拆开。
++       少于两个名称的相对路径不匹配。
++   entry #ascent   路径在下行之前向上走的步数
++   entry #descent   路径的名称，叶子在前
++   entry #Topic   当编译器知道路径的名称时，由这些名称组成的元组，最内层在前
++   entry #Limit   路径的上行步数，在已知时为字面量类型
++   entry #delta   路径深度的变化：名称数减去上行步数
++   entry #name   叶子名称，若路径没有名称则为 `Unset`
++   entry #self   这是否为自相对路径，即没有上行步数也没有名称
++   entry #rename   叶子按其旧名称（以 `prior` 读取）的函数重命名后的此路径
++   entry #on   将此相对路径绑定到某个平面，依据其规则检查每个名称
++       已经位于某个平面上、且该平面在目标平面上是 `Compliant` 的相对路径（例如 tar 归档中的 Linux 路径）无需检查即可转换；否则每个名称都由其在目标平面上的 `Admissible` 实例检查。
++   entry #unqualified   忘掉平面后的此相对路径
++   entry #parent   上一级的路径：丢弃其叶子，若没有名称则多向上一步
++   entry #/   此相对路径的子路径：多一个名称，若有平面则依据平面检查
+
+@ 0 1 0 0288eae16d540bb00d4072b4c7fd1438
++ entry .Ascent   只由向上的步骤组成的相对路径，接受 `^` 作为子项
+
+% 1 1 0 1f5a2e4ed5792f2811e4ce5e0bc542b2
+
+@ 0 6 0 1d79f6c4ff76f7d009e868c4b4bedee7
++       `?` 是步数为零的 `Ascent`，`? / ^ / ^` 是一个 `Ascent under 2`：一个没有名称的 `Relative`，其 `/` 既接受名称也接受 `^`。
++       它的类型以字面量携带上行步数，因此越过根向上的相对路径可以在书写之处被发现。
++   entry #ascent0   向上的步数，即构造器接收的值
++   entry #Topic   总是 `EmptyTuple`：上行路径没有名称
++   entry #/   再向上一步，写作 `/ ^`
+
+@ 0 5 0 0a545f98b6984556095f6e2b97707711
++ entry .Root   根对象的基类：一个没有名称、根文本固定的 `Path`
++     `abstract class Root(name: Text)`：扩展它来为新的层级结构提供根，`Classpath`（`Root(t"")`）、`JsonPointer` 和 galilei 的 `Drive`（`Root(t"C:\")`）都是这样做的。
++     两个根在根文本相等时相等，根的 `Topic` 是 `EmptyTuple`，因此在它上面用 `/` 即开始一个路径。
+
+% 2 1 0 1a863a7b4c4f08b81712c306195ad2a3
+
+% 3 1 0 0b2efdb8b70b1de21130c30004b92a9d
+
+% 0 1 0 0ca6af8d139f097a1de91963129f4af0
+
+% 0 1 0 185f7336e8b56bce16d2a927196031bd
+
+% 1 1 0 042cf9e15d7ded6e0b8dd6719a0f268e
+
+@ 0 1 0 1195abd46d0b8d5219191844fc93123e
++ entry .Filesystem   平面的记法：它的名称、分隔符、表示自身和父级的名称，以及转义方式
+
+% 1 1 0 1fd9430c3718d84d1c54c7c19b7da81d
+
+@ 0 4 0 1a52e7c8249c238e084d63348340a5ec
++       使一个类型成为可以在其上书写路径的平面的类型类。
++       它的实例位于平面的伴生对象中，因此无需导入即可找到：`Linux` 有 `/`、`.` 和 `..`；`Windows` 有 `\`；类路径、tar 归档和 Git 树都有各自的实例。
++       `Path` 或 `Relative` 的每次编码和解码都需要它。
+
+% 2 1 0 1517ed41080488f114ef1316063d1e02
+
+% 3 1 0 07193c7dfc5500f009c963d4d6725c1e
+
+% 0 1 0 0835eddf6596999c09e89bde128d395f
+
+% 0 1 0 1092830e37aaeff319769be6845aab46
+
+% 1 1 0 0dd582a1ed0b206b037f7ba6006b245c
+
+@ 0 10 0 0e250eaf1d0d5b890fbd582ceb7c25e5
++       `#UniqueRoot` 表示平面只有一个根（`Linux`）还是有多个根（`Windows`，每个驱动器一个根）：在只有唯一根的平面上，两个路径总是共享一个根，因此 `Path#sameRoot` 静态为 `true`，`on` 也无需检查根。
++   entry #UniqueRoot   若平面上每个路径都有相同的根则为 `true`，以字面量类型表示
++   entry #name   平面的名称，用于消息：`Linux`、`Windows`、`Java classpath`
++   entry #separator   名称之间的文本：`/` 或 `\`
++   entry #self   相对路径中表示当前位置的名称：`.`
++   entry #parent   相对路径中表示向上一步的名称：`..`
++   entry #escape   为编码而转义名称，默认保持原样
++   entry #unescape   对解码出的名称撤销 `#escape`，默认保持原样
+
+@ 0 1 0 098ca898042866f00bf5630eafa24a47
++ entry .Radical   根类型如何写成文本：根的路径代数中纯的那一半
+
+% 1 1 0 0e90919c2b8854d202505358655d1dc0
+
+@ 0 4 0 036d501c5dce82081bdf8aa994b45599
++       `root is Radical on plane` 将根值编码为 `Path` 的 `#root` 所保存的文本：Linux 上的 `%` 编码为 `/`，Windows 上的 `Drive` 编码为 `C:\`。
++       它不会失败，因此不接收战术。
++       它负责读取的另一半是 `Eradicable`；平面的根类型在平面的伴生对象中同时拥有两者，而 `Path.decodable` 需要这一对。
+
+% 2 1 0 18cd9151906aa68b1076df7712d3610a
+
+% 3 1 0 021e2ac0723f17420dd410b562fad29f
+
+% 0 1 0 095247fc632352960956554e3cded602
+
+% 1 1 0 119c0583ab58690e0a02bef511c50bd8
+
+% 1 1 0 02ae28316356080a06da22fa09ed14df
+
+@ 0 1 0 0868b01a5bdcda8e1e3ec4fba8081921
++   entry #encode   根，以平面记法写成的文本
+
+@ 0 1 0 002b5dabe8fc53770949756fbf0671ed
++ entry .Eradicable   如何从文本读取根，以及根占用了多少文本
+
+% 1 1 0 02a0a5d3525a163f0126dfefb9d69829
+
+@ 0 6 0 1f0b12a0f6e9de0f02511646e5d4e307
++       `root is Eradicable on plane` 读取路径文本开头的根——Linux 上是 `/`，Windows 上是 `C:\`——并说明它占用了多少个字符，以便将其余部分拆分为名称。
++       两个方法都不声明错误：可能格式错误的根，其实例在 given 的签名中接收一个 `Tactic[Path.Error]` 并捕获它，抛出原因 `InvalidRoot`；不可能格式错误的根（zip 归档、搜索路径、web）则有一个纯的实例，因此依据它解码的路径不需要战术。
+
+% 2 1 0 145eead4859f5e670ef6a3d0ffa5a91d
+
+% 3 1 0 0b5a22ca5eb59a1003072d890dfc38d5
+
+% 4 1 0 0b37816d25ef51b40319f35b788d843c
+
+% 0 1 0 14fdd1fdee5c8a35082cb15781445137
+
+% 0 1 0 01584d94b28d0f8205c976a8cbc1d1ea
+
+% 0 1 0 126ceb660b072a6e1900bd180a464d88
+
+% 1 1 0 1642a726d8c1c5960712d17764ca6263
+
+@ 0 2 0 05e384dfa9ac85cb1e55c43b02bb5fc8
++       它是 `Radical` 负责读取的那一半，与之分开是为了让纯的渲染永远不携带能力。
+
+% 1 1 0 0e41d01bdc3e246603d0df265d2964fd
+
+@ 0 2 0 0a9d87d500692ca8062ce82235ac0436
++   entry #decode   文本开头的根，或通过其战术抛出的平面的 `Path.Error`
++   entry #length   根占用了文本中的多少个字符
+
+@ 0 1 0 0cb4aa65ca76945507003f27fb9df919
++ entry .Submissible   平面接受哪些根类型，在用 `on` 将路径绑定到平面时检查
+
+% 1 1 0 183e24033ce71339105c4548f6a5744b
+
+@ 0 4 0 0da3b61b837f7d851fc8d1ebf324f922
++       `root is Submissible on plane` 允许以 `root` 为根的路径在检查其根文本之后，用 `Path#on` 绑定到 `plane`：`%.type` 在 `Linux` 和 `MacOs` 上是可提交的，`Drive` 在 `Windows` 上是可提交的，因此 `(% / "verona").on[Windows]` 无法编译。
++   entry #check   检查根的文本，通过实例所捕获的战术抛出错误
+
+@ 0 5 0 0d3bcb8d73210d760e113f8fd34a8b3b
++ entry .Compliant   一个平面的相对路径在另一个平面上有效，因此无需检查即可转换
++     `source is Compliant on target` 让 `Relative#on[target]` 原样接受 `source` 上的相对路径，而不检查其名称：`Relative on Linux` 所指的都是 tar 归档中的有效条目，因此 `Linux is Compliant on Tar`。
++     该类型类没有方法：它的存在本身就是证明。
+
+@ 0 1 0 0decd7c4707d6f9309379fb6b1e31944
++ entry .Admissible   哪些值可以作为平面上的名称，以及每个值必须通过的检查
+
+% 1 1 0 072663e8bffd833412fe99e6d0ca8731
+
+@ 0 5 0 131845a8071e9a6d0d7f7a27e48432c7
++       `value is Admissible on plane` 在文本即将成为 `plane` 上某个路径中的名称时对其进行检查，即在 `Path#/`、`Path#peer` 和 `on` 添加名称时。
++       字符串字面量在编译时依据平面的 `Nominative` 规则检查（`.admissible`），因此 Linux 上的 `% / "fo/o"` 无法编译；运行时 `Text` 在被添加时检查，通过作用域中的 `Tactic[Name.Error]` 抛出 `Name.Error`（`.text`），除非它已经是该平面的 `Name`。
+
+% 2 1 0 0fbde207e578f044038c3df99a00e128
+
+% 3 1 0 001373361393c5c10cbd9691536d597c
+
+% 4 1 0 17e7d171749c9baf181d6e56cebd265f
+
+% 6 1 0 1b844dc1a3a20ccb025047d0a153f4c9
+
+% 0 1 0 07979b4fe825cf8d0f7648298daeeb2a
+
+% 0 1 0 019596169fcdedca06e63922d5ad235d
+
+% 1 1 0 04b7ad4a1c0e7f2e07894b1a7bbe63c9
+
+@ 0 3 0 063814da22c4d38f1fb1edb8e581bb60
++       新的名称种类在其自身的伴生对象中获得实例，用 `.apply` 创建；对于每个值都有效的类型，则用 `.unchecked` 创建（galilei 正是这样为每个操作系统平面上的 `Uuid` 提供实例的）。
+
+% 0 1 0 074867e18dfde7241dccaaacc1662542
+
+@ 0 7 0 0b61aca69875c28c08228d0bdda4aced
++   entry .unchecked   接受所有值的实例，用于不可能无效的名称类型
++   entry .apply   由检查函数构建的实例，若文本不是有效名称则抛出错误
++   entry .text   通过 `Tactic[Name.Error]`，依据平面的规则检查运行时 `Text`
++       该平面的 `Name` 无需检查，也不需要战术；任何其他文本在被添加到路径时都作为 `Name` 进行检查，违反规则时抛出 `Name.Error`。
++   entry .admissible   在代码编译时依据平面的 `Nominative` 规则检查字符串字面量
++   entry #check   检查名称的文本，若不可接纳则抛出错误
+
+@ 0 1 0 00dca6e9ec60f6ae00b98fe524ffbbf9
++ entry .Navigable   值如何成为路径中的名称：它的文本
+
+% 1 1 0 1dd7520adcd3b2460b6095d65d5dd31a
+
+@ 0 3 0 0d0a2af2f33a45a70e83464e369621d6
++       `value is Navigable on plane` 将路径的子项转换为其名称的文本。
++       字符串字面量、`Text` 和 `Name` 在每个平面上都是可导航的；其他库会添加各自的实例，例如 JSON 指针上的 `Ordinal`，或每个操作系统平面上的 `Uuid`。
+
+% 2 1 0 187a24c30cc49d810cf3d9120e85c1d0
+
+% 3 1 0 1f896b41ccd3cd630a5d10827e0c114d
+
+% 4 1 0 19052c4e2c82a5db115e5b6862de49d3
+
+% 0 1 0 1d2e309ce03d18e91684d6243e7b1a80
+
+% 0 1 0 17ac0523a3834e9d0e5e499ed6cbeaa2
+
+% 1 1 0 1259eeb17809a92f15bdd330c9164f1b
+
+@ 0 4 0 0ed4cfb16a025cc100554049d1b0c559
++   entry .label   字符串字面量即它所拼写的名称
++   entry .text   `Text` 即它所保存的名称
++   entry .name   该平面的 `Name` 即它所保存的名称
++   entry #follow   子值所代表的名称的文本
+
+@ 0 1 0 092af76f285077ea0d74f6560544c901
++ entry .Case   文件系统如何对待名称的大小写：区分大小写、折叠为小写或大写，或保留大小写
+
+% 1 1 0 0a784cd97f505a3602711b5d3f128aa5
+
+@ 0 4 0 13a3ec13d63d49251a3f3776879e3f5b
++       一个有四个分支的枚举。
++       `Sensitive` 精确比较名称，并保留书写时的样子；`Preserving` 保留书写时的样子，但比较时不区分大小写，macOS 和 Windows 就是如此；`Lower` 和 `Upper` 将每个名称折叠为一种大小写，比较时不区分大小写。
+
+% 2 1 0 04b356f194f451e710edc5f6ba56ff07
+
+% 3 1 0 12370bdddf71cfb30a08edd750830219
+
+% 0 1 0 1d43b40e8211def914a9a540b06c28b7
+
+% 0 1 0 0e087d98f79e8142021d7fb3a564dd4a
+
+% 1 1 0 05287531f85648df198471f6e855dbc8
+
+@ 0 3 0 1bcf30fd17d83f9c0fbb33fbfe8dbf8b
++   entry #apply   文件系统所存储的名称：`Lower` 和 `Upper` 会折叠，其他情况保持不变
++   entry #equal   在此大小写规则下，两个名称或两个名称列表是否相同
++   entry #hash   由名称组成的下行部分的哈希，与 `#equal` 一致
+
+@ 0 1 0 0e60a349eb746eca1ed001b437f22490
++ entry .internal   `Path.toward` 和 `Path.conjunction` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 02fb6661123bb12a19d473fecda7fff7
++       不供直接使用：该对象保存编译时的路径运算，`Path` 伴生对象中的扩展方法 `toward` 和 `conjunction` 会拼接它们。
++   entry .toward   `Path.toward` 背后的宏：两个路径之间的相对路径，尽可能静态计算
++   entry .conjunction   `Path.conjunction` 背后的宏：两个路径的公共祖先，尽可能静态计算

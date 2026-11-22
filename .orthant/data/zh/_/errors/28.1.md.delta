@@ -1,0 +1,67 @@
+orthant 2 language
+
+% 0 1 0 198aa3faa12e2e761cb023cb9d4a5cef
+
+@ 0 2 0 030797335e8d9d7d02a2715426f1ccbd
++ 当 Metamorphose 无法根据所提供的参数构造排列时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0a94406b24bce47a0381f762ceac278f
++ Metamorphose 中的排列由基于某个位置基数的索引序列构建。
++ 各个错误变体标出了索引与所请求的基数或输入长度不一致的四种情形。
++ 消息为 `could not construct permutation because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0b3f97083d8a1963130135e3160f9373
+
+@ 0 1 0 1a9a0e4ccd21d4991a2058fc2b632351
++ 某个位置值大于或等于其基数。
+
+@ 0 1 0 03dd3deeab25705915d1f7d59a51084e
++ **示例。** `[↯/s.28.1.1] could not construct permutation because the value 5 is too large for its positional base 4`
+
+@ 0 2 0 05f46dc375c086111c22512a77caeaa7
++ **解决方法。** 减小违规的值，或增大排列的基数。
+
+% 0 1 0 17fc650e96b3ae1b1bca1c204c58cdd8
+
+@ 0 2 0 0f0f402afc4ad03a1c4a27682a6d6a44
++ 同一个索引出现在两个不同的位置上，这会把两个输入映射到同一个输出。
+
+@ 0 1 0 11fda1658bf3f93616190c44b439500a
++ **示例。** `[↯/s.28.1.2] could not construct permutation because the index 3 was duplicated at 5`
+
+@ 0 2 0 00db5178b8ed9ecb0ca6e5ceba1005b0
++ **解决方法。** 每个索引必须恰好出现一次；请对输入去重。
+
+% 0 1 0 173f80531bb013c802b9bae4702fc1ec
+
+@ 0 1 0 0f23ac038550155d0709099e25b0fd38
++ 某个索引超出了有效范围 `0..max`。
+
+@ 0 1 0 1ebd90d2c32422bb1d0fab750d79a3a9
++ **示例。** `[↯/s.28.1.3] could not construct permutation because the index appears, but every index should be in the range 0-7`
+
+@ 0 1 0 051e421c749fa91b0f95796d284105e6
++ **解决方法。** 只使用不超过排列大小的索引。
+
+% 0 1 0 042fd2209e8d923a089cd2d6af43cd87
+
+@ 0 1 0 1f5150416f18860b0dff6b2a059a49a2
++ 输入的元素少于排列所需的数目。
+
+@ 0 1 0 1f47a002eebcb4c813080e7c6b23d153
++ **示例。** `[↯/s.28.1.4] could not construct permutation because the input, of size 3, is too short for the permutation of size 5`
+
+@ 0 2 0 1f1be192a01323fd043a59ec9762b82c
++ **解决方法。** 提供一个长度至少等于排列大小的输入，或构建一个更小的排列。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 09657371824b40a900f30ac879cbd7af
++ - 源代码：`lib/metamorphose/src/core/metamorphose.Permutation.scala`

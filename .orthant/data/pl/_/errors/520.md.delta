@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 13dbfbcad5228fdc18c72755039015eb
++ # `SN-520` – Nie można dopasowywać do deklaracji doctype (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 2 0 120530ebcba650a7040f736124472bc2
++ Dopasowywanie wzorców HTML w Honeycomb nie zgłasza już tego błędu: gdy Soundness przyjął kody bolt,
++ nic w źródłach go nie zgłaszało, więc nie otrzymał żadnego.

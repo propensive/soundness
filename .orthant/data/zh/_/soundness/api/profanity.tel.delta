@@ -1,0 +1,1173 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e011ea158cf197909bd07fd93e181a5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 075285b0bbf2513f083b127035e7f4f0
++ info   原始模式终端会话：作为有类型事件的按键和终端报告、行编辑和菜单
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 17a11c26eec487471037eccbbdbe8f9d
++     _Profanity_ 是交互式终端程序的输入端。
++     终端把一切——按键、尺寸变化、焦点变化、粘贴、它的背景色——都作为转义序列报告在标准输入上，而且只在原始模式下如此，而无论程序以何种方式退出，原始模式都必须再次关闭。
++     Profanity 把原始模式会话限定在一个代码块中，把输入解码为有类型的 `Terminal.Event`，并在事件流之上构建行编辑和菜单。
+
+@ 0 4 0 13c10f0f39147cd409678dd164cd957c
++     会话由 `interactive` 建立。
++     在会话中，`Terminal` 是一个上下文能力：它的 `Terminal#eventIterator` 产出事件，它的 `Terminal#stdio` 以终端的真实宽度和色深向屏幕写入，而捕获检查把它限定在代码块中，因为原始模式和标准输入会在代码块结束时被拆除。
+
+% 2 1 0 13959f646b55088d012f6e4d7bedcfa2
+
+% 3 1 0 1ac916edf41b973b1876ef86cebea8f6
+
+% 4 1 0 144e400af5b690c1026fc33bd4081058
+
+% 5 1 0 16b5fe680128a0721f2c6d78efd6998b
+
+% 0 1 0 0f78d076a2e1731e0b86593735a0f7a8
+
+% 0 1 0 19cd01961f0ca871033869efd334646a
+
+% 0 1 0 07c68d15da07179906837500c206b2b4
+
+% 0 1 0 044b0703a247bc140f10eeec8560f8cc
+
+% 0 1 0 0ac9a58fd2fa62eb05ce2a7347cfbd2e
+
+% 1 1 0 065cf98ea66657bf1d123006a33f8ec4
+
+@ 0 6 0 1ab1fac5768018051dbf7875cbe71d3a
++     `Terminal.Event` 是四套词汇的并集：clavichord 的 `Keypress`（一个字符、一个具名编辑键、一个功能键，或其中任何一个与 `Shift`、`Alt`、`Ctrl` 或 `Meta` 同时按下）、来自终端的 `Terminal.Info` 报告、`Interrupt`（一个 POSIX 信号，如 `WINCH`）以及 `WindowsSignal`。
++     解码由 `Keyboard.Standard` 完成，涵盖传统和 VT 按键序列、修饰键参数、kitty 键盘协议的 CSI-u 形式、括号粘贴、焦点报告、光标位置和尺寸报告，以及背景色应答。
+
+@ 0 6 0 0a1e61fbc02331161b72f8e7549d16c7
++     可选的终端模式——括号粘贴、焦点报告、鼠标跟踪、备用屏幕、kitty 键盘协议——是 `terminalFeatures` 包中的 `Terminal.Feature`。
++     `interactive` 在会话开始时打开作用域中的每一个模式，在会话结束时再关闭它们，因此程序通过**按名称**导入其 given 来选择模式：`import pkg.*` 不会导入 given。
++     `keyboards` 包同样存放着程序可以从中选择的解码器。
+
+@ 0 5 0 0d8a5cea46392c860fee414453520f79
++     事件流之上有两个部件，每个都是一个纯状态机（输入一个事件，输出一个新状态），由渲染它的 `Interaction` 驱动：用于一行或多行文本的 `LineEditor`，以及用于在若干选项中选择的 `SelectMenu`。
++     两者都通过 `Board` 绘制，因此同一个部件可以在光标处内联渲染（`InlineBoard`）、横跨整个终端渲染（`TerminalBoard`），或在更大布局的一个面板中渲染。
+
+% 2 1 0 0635333a64a7584d10291e8b766a0b8b
+
+% 3 1 0 0901e1cbdeb5fd810434c40e6ab5a8ba
+
+% 4 1 0 08c7ddf91030909e063fea62c33ee343
+
+% 5 1 0 1f5e13c3e2667b501e3397c56b4acfb2
+
+% 0 1 0 145b8ff511bb47c1052048e226809213
+
+% 0 1 0 14a8e5cea526d0a70fde2d89956d4de2
+
+% 0 1 0 1e11ac88b364ed100165a0f926810ee3
+
+% 1 1 0 18d6b8e2cf3e400805af134574ba2bf8
+
+@ 0 4 0 0ef6eb59310bb480053fb2fe50179498
++     信号通过会话所运行的 `Console` 到达会话：尺寸变化或恢复运行会被转换为事件，而启动器测得的尺寸（如果有的话）会被直接记录下来。
++     `Signal` 携带 `Interrupt` 或 `WindowsSignal`，以及其发送者附加的任何内容。
+
+@ 0 6 0 1f3c99b6cf79a09515240c3638d2d9f5
++     `interactive` 需要一个 `Console`——由 exoskeleton 的 `cli` 代码块提供，无论程序是独立运行还是在 ethereal 守护进程下运行——以及一个 `Monitor`、一个 `Probate`、一个 `Environment` 和一个 `Tactic[Terminal.Error]`。
++     这个库只有一个源码集 `profanity.core`，用于 JVM：会话通过运行 `stty` 设置原始模式。
++     一切都导出到 `soundness` 总括包，`keyboards` 和 `terminalFeatures` 这两个选择包与总括包自身的同名包合并。
+
+% 0 1 0 1e9daf8658f616a205c5a8814277d05f
+
+% 0 1 0 164a924f19667e0d1aeb87c70c2e0f46
+
+% 0 1 0 1992f2fed2cbfca508a83aabf3c8c62e
+
+% 0 1 0 0c217fa01a5dd684076bdf79351898fb
+
+% 0 1 0 1fb5f0ff4464cc3808339230f20795f9
+
+% 0 1 0 1a7f9eee164def8c05f4b12ebb2fba4f
+
+% 0 1 0 1797ecdbacccb8871a70287d860932f0
+
+@ 0 1 0 0309ae6e8c7cb468021728a23e63ec89
++ entry .interactive   以原始模式终端会话运行一个代码块，上下文中有一个 `Terminal`
+
+% 1 1 0 12e1d72fb4598cc805100ff75a769424
+
+@ 0 4 0 0e2079088f8b6cbd144d3c8ed9ae0e8d
++       `interactive(block)` 创建一个 `Terminal`，把终端置于原始模式，应用作用域中的每个 `Terminal.Feature`，并以该终端作为上下文值求值代码块；代码块结束时，无论以何种方式结束，它都会按相反顺序关闭这些特性，关闭标准输入，停止事件流，并等待输入泵结束。
+
+% 2 1 0 1c95ecbc2ab2279d19c5296f5568e13c
+
+% 3 1 0 08399ea6e14d5e590b7b7790f51c2b58
+
+% 4 1 0 0e3108e323ac46d70319b22dcf3ee7cf
+
+% 0 1 0 1738c4feca27eb6517464ff992a96ccc
+
+% 2 1 0 18927299611a0e0003109cff53fce4d9
+
+% 3 1 0 084f34c8b617cf3e066def97a3204148
+
+% 0 1 0 0e3c7987cac67a1a159cdc68c5e4ca42
+
+% 0 1 0 0efb4d4e49657e700d6ec92362948b6b
+
+% 0 1 0 0afc87a990fda19b1b592a2ace02e9fa
+
+% 1 1 0 1eb1b2abdbe0e3bd146c6335fed94fde
+
+@ 0 8 0 0c54b43613e33b1e04017093322d8a6b
++       当 `Console` 的标准流就是进程自身的标准流时，用 `stty intr undef -echo icanon raw opost` 设置原始模式；在守护进程下，其流从启动器转发而来，启动器已经设置好客户端的终端，因此什么也不运行。
++       原始模式关闭了终端驱动程序对 `Ctrl`+`C` 的处理，因此它以按键 `Keypress.Ctrl('C')` 而不是信号的形式到达。
++       原始模式一打开，会话就向终端询问其尺寸（`Terminal.reportSize`），因为 shell 默认不导出 `LINES` 和 `COLUMNS`；在应答到达之前，终端被假定为 80×24。
+
+@ 0 4 0 16296aad8732697f012eba0e90e578e1
++       它需要一个 `Console`、一个 `Monitor` 和一个 `Probate`（输入泵是一个守护任务）、一个 `Environment`（用于 `TERMINAL_BG`、`LINES` 和 `COLUMNS`）、一个 `Every[Terminal.Feature]`（未导入任何特性时为空），以及一个 `Tactic[Terminal.Error]`，当标准输入不是终端而导致 `stty` 失败时抛出。
+
+@ 0 3 0 1e04850df658c5d70c0643427b6a17b7
++       `Terminal` 是一个独占能力，捕获检查把它限定在代码块中：它不能被返回，不能被返回的闭包捕获，也不能藏进外层变量，因为它所代表的会话在代码块结束时就已结束。
+
+% 2 1 0 16db94b19a9b51270671efdf02f36f1a
+
+% 3 1 0 057463f463e273d212387068931f4771
+
+% 0 1 0 0b0f9e790a5ed17315d4a13383744d99
+
+% 0 1 0 09f4a7c7864fa0aa1d3617bc1372ac5d
+
+% 0 1 0 195ddc35616aa424028011286c89fc8a
+
+% 1 1 0 19d6ada385792aa518f4b6a9daf54307
+
+% 1 1 0 172b562cf38b82161af832dd8568d304
+
+% 0 1 0 06d7546c86dd8f8b0c343fe04ef2c488
+
+% 0 1 0 1a3f84fbf06c3fc31f8e5121189dd32c
+
+@ 0 7 0 0bed0163028dd0430c6536ada9d49057
++ entry .terminalStdio   作用域中的 `Terminal` 所提供的标准流，作为一个 `Stdio`
++     一个顶层 given，它在上下文中有 `Terminal` 的任何地方都让 `Terminal#stdio` 成为 `Stdio`，因此 `interactive` 代码块中的 `Out.println` 通过会话的流写入，其 termcap 报告支持 ANSI、真彩色以及终端的实时宽度。
++     它是唯一的规范实例而不是一种选择，因此它是包顶层的一个具名 given。
++     它由总括包导出，又因为 `import soundness.*` 不会导入 given，所以在需要它的地方要按名称导入：`import soundness.terminalStdio`。
+
+@ 0 1 0 0852c7454f8244550dcbbb7b027195cf
++ entry .Terminal   一个活动的原始模式终端会话：它的事件流、尺寸和输出流
+
+% 1 1 0 10dec3ecf76792a0066b9e6818885cb5
+
+@ 0 5 0 1e0d81053e94f06802dfdc0d996f9d7e
++       `Terminal` 是 `interactive` 借出给其代码块的能力。
++       它保存会话的状态：一个输入泵守护任务从标准输入解码出的 `Terminal.Event` 流、终端最近一次报告的尺寸、它的背景是亮色还是暗色，以及用于向它写入的 `Stdio`。
++       它是一个 `Interactivity[Terminal.Event]`，因此部件 `LineEditor` 和 `SelectMenu` 直接从它获取事件。
+
+% 2 1 0 07ab49492d70810b1bf4a7bc599bdd9d
+
+% 3 1 0 0c6394ca69db1139063e7d4e54a42cec
+
+% 4 1 0 15af882cbaf8ca1e0134ae5a6769b5b5
+
+% 5 1 0 14cce234f0d0b67b03e4d5191d1b7e7a
+
+% 0 1 0 04d77058a8531fb107e950ed8ad069e3
+
+% 1 1 0 15fc3aab607b025713da021e32502f3b
+
+% 0 1 0 1572f797828cdc0e0932c7affab5a461
+
+% 0 1 0 0e20f430687bde8d132708f2b68d92ef
+
+% 0 1 0 0a0f9bf770ee14ee19daf999875ec813
+
+% 1 1 0 0b4749ec995d363b0790d20389f92a0d
+
+@ 0 5 0 05d3f96179acefd009fca24773980abd
++       尺寸首先来自 `Console` 的 termcap——在守护进程下，由启动器测量客户端的终端——然后来自 `LINES` 和 `COLUMNS`，并随每次尺寸报告和每个尺寸变化信号更新；尺寸未知时，`#knownColumns` 和 `#knownRows` 回退为 80×24。
++       `#mode` 从环境变量 `TERMINAL_BG` 读取，并由 `terminalFeatures.backgroundColorFeature` 所请求的应答更新。
+
+@ 0 5 0 14bed44cbe2faa8e02c2e452495c8d3a
++       尺寸变化会被完整处理：收到 `WINCH`（或 `CONT`）时，会话查询光标位置，如果信号没有携带新尺寸，还会查询尺寸。
++       事件流会立即收到 `Interrupt`，然后是一个 `Terminal.Info.WindowSize`（如果信号携带了尺寸就立即收到，否则在终端应答时收到），以及一个 `Terminal.Info.CursorPosition`，告诉内联渲染器重排把它的块移到了哪里。
+
+@ 0 2 0 144afd5c111de12d05b78cb59fedf890
++       `Terminal` 只能由 `interactive` 创建，也由它拆除；它是一个独占能力，因此不能比那个代码块活得更久。
+
+% 1 1 0 0cb4c9904eece3411239e8ddf77282ff
+
+% 0 1 0 09b462d82f78e8031aef48ee58c4df88
+
+% 1 1 0 04b9c35e9cb62b9001eb70d93f69e5ed
+
+% 0 1 0 10b1715f22a1535905ff3793a0bde2e1
+
+@ 0 12 0 1a77d356721ff24a04a282273b9e3b93
++   entry .reportSize   请求终端报告其尺寸的转义序列
++       保存光标，把它尽可能向右、向下移动，询问其位置，再恢复它：`\e7\e[4095C\e[4095B\e[6n\e8`。
++       终端的应答是一个来自右下角的光标位置报告，被解码为 `Terminal.Info.WindowSize`。
++       `interactive` 在会话开始时发送它，`terminalFeatures.terminalSizeFeature` 则是它作为特性的形式。
++   entry .anchorQuery   询问光标位置的转义序列：`\e[6n`
++       尺寸变化时，它在尺寸探测之前发送，这样内联渲染器就能知道终端的重排把其光标所在的单元格移到了哪里。
++       它的应答与尺寸探测的应答形式相同；会话根据发送二者的顺序来区分它们，并把这一个报告为 `Terminal.Info.CursorPosition`。
++   entry .Error   标准输入未连接到终端时抛出
+
+% 1 1 0 119d8e695a3e36221161efa635866739
+
+@ 0 4 0 0444f5b599fbf2a50d88d641f0149ee9
++         错误 `↯/s.95.2`：_STDIN is not attached to a TTY_。
++         当 `stty` 无法把终端置于原始模式时由 `interactive` 抛出，程序的输入是管道或文件时就会如此。
++   entry .Feature   由一对转义序列打开和关闭的终端模式
+
+% 1 1 0 0ddb5b68a4c923ed0f525b7f8295cab3
+
+@ 0 7 0 05598ed316945ded0b59c8249f258b5f
++         `Feature` 由一个 `#enable` 序列和一个 `#disable` 序列组成：括号粘贴、焦点报告、鼠标跟踪、备用屏幕、kitty 键盘协议。
++         标准的特性是 `terminalFeatures` 包中的 given，`interactive` 把作用域中的每一个作为 `Every[Terminal.Feature]` 召唤出来，在会话开始时逐一打开，在会话结束时关闭，以嵌套方式进行，使最后打开的最先关闭。
++         一次性查询，例如查询背景色或尺寸，其 `#disable` 为空。
+
+% 2 1 0 1662851680272ceb1401e3a06399365c
+
+% 3 1 0 13be9312c8bd094805a121dce373b8e1
+
+% 0 1 0 1dfc23811e46fff304eaf60957f87a63
+
+% 0 1 0 0bef6af9d3208dd60481bd78503e77dd
+
+% 1 1 0 1b6e6ef5de64f8f213ffed2806794a09
+
+@ 0 1 0 06468e20a8989d99003156463c355f62
++         也可以用 `#apply` 在会话中围绕一个代码块应用某个特性。
+
+% 0 1 0 188087308212848c139ffefd2492f848
+
+@ 0 5 0 0544507f22b49e4618b8d148144f4e07
++     entry #enable   打开该模式的转义序列
++     entry #disable   关闭该模式的转义序列；一次性查询则为空
++     entry #apply   在该模式打开的情况下运行代码块，之后无论代码块如何结束都将其关闭
++         需要上下文中有一个 `Terminal`，序列通过它的 `Stdio` 写出，因此特性只能在 `interactive` 会话内应用。
+
+% 2 1 0 1c29d21e3e243642166f16e649ab935a
+
+% 3 1 0 1a7117e86a4ce5e71da1ea0bec7cdf28
+
+% 4 1 0 1f4e6fb60a80dfc51c2718fe889e7d6f
+
+% 5 1 0 1db464497bdaa9321ff6a8eb205ebb49
+
+% 0 1 0 1a01abec6ff4315917ce134873ae30c3
+
+% 0 1 0 166c0eb9a13a78090f3230ee01a4475d
+
+% 1 1 0 1bf8368c424abbd9175b488323233a98
+
+@ 0 1 0 0d94f30fd94a83711ebb183ac315559f
++   entry .Info   来自终端的报告：它的尺寸、光标、背景、焦点或一次粘贴
+
+% 1 1 0 083c20bae5397cff078a1c4c44a46226
+
+@ 0 1 0 0fa6f2bb267798831773239be93defb2
++         终端发送的非按键事件，由 `Keyboard.Standard` 解码：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 150d1427efb3e0c60c391e76a697ca2a
++         column  分支
++         column  报告
++         column  发送时机
++         row  `WindowSize(rows, columns)`  终端的尺寸；`Terminal` 先记录它再传递下去  作为对 `Terminal.reportSize` 的应答：会话开始时、尺寸变化后，或用于 `terminalFeatures.terminalSizeFeature`
++         row  `CursorPosition(row, column)`  光标所在位置，采用从一开始的屏幕坐标  作为对 `Terminal.anchorQuery` 的应答，或作为带 `?` 前缀的 DECXCPR 报告
++         row  `BgColor(red, green, blue)`  背景色，各分量为十六位；`Terminal` 据此更新其 `#mode`  作为对 `terminalFeatures.backgroundColorFeature` 所发查询的应答
++         row  `LoseFocus`, `GainFocus`  焦点变化  使用 `terminalFeatures.focusReportingFeature` 时
++         row  `Paste(text)`  一次括号粘贴的全部内容，而不是每个字符一个按键  使用 `terminalFeatures.bracketedPasteFeature` 时
++         row  `Redraw`  重绘请求  从不由终端发送：应用程序在后台任务改变了显示内容后，把它放到事件流上以唤醒事件循环
+
+% 1 1 0 1ee5272832958f0b15f90eb4e1d94475
+
+% 2 1 0 002fa8b633dd6fc7190701b80c862d93
+
+% 3 1 0 195338b73e3796210ed8fc86336f1a02
+
+% 4 1 0 1554ecc07fd3136915c463dc51c77a77
+
+% 5 1 0 06eab14e0fbc215e02fc5dcaf079a1ad
+
+% 0 1 0 1d4dcd99b8af1dd10ff1d2b1d138b99b
+
+% 0 1 0 030e8a728ce283b309e53cbfb3c7203f
+
+% 0 1 0 0ade5055e51a1f271358653557b2e6c7
+
+% 0 1 0 087fc6764020dba6197d3ec666a27263
+
+% 0 1 0 0979a79bfb7ac53313e997f0ac2285bb
+
+% 1 1 0 109583d4d07d756f1ee876f768dd2f59
+
+@ 0 46 0 0d30209a278fae42140ff6cf3269d977
++   entry .Event   终端会话产出的每种事件：按键、报告或信号
++       并集 `Keypress | Terminal.Info | Interrupt | WindowsSignal`。
++       `Keypress` 属于 clavichord，这样浏览器驱动就能指名一个按键而无需依赖终端库；采用并集而非密封特质，是因为另一个模块中的类型不能扩展这里的密封特质。
++       对它的匹配仍会检查穷尽性。
++   entry #in   会话的标准输入流
++   entry #out   会话的标准输出流
++   entry #err   会话的标准错误流
++   entry #keyboard   把输入转换为事件的 `Keyboard.Standard` 解码器
++       它的 `Keyboard.Lookahead` 查询实时输入：一个单独的转义字符如果紧接着还有更多输入，就开始一个序列；如果其后输入静默十毫秒，就是 `Escape` 键。
++   entry #mode   终端的背景是亮色还是暗色（如果已知）
++       一个 `Optional[Brightness]`，在会话开始时从环境变量 `TERMINAL_BG` 读取（以 `rrrr/gggg/bbbb` 十六进制分量的形式），并在终端应答 `terminalFeatures.backgroundColorFeature` 发出的查询时更新。
++       它也可以被赋值。
++   entry #rows   终端的高度（行数），如果已知
++       随每次尺寸报告和尺寸变化信号更新，并可在会话中赋值：`terminal.rows = 10`。
++   entry #columns   终端的宽度（列数），如果已知
++       随每次尺寸报告和尺寸变化信号更新，并可在会话中赋值：`terminal.columns = 40`。
++   entry #knownColumns   终端的宽度，未知时为 80
++       这种保守的回退是有意为之：按比实际更窄的终端绘制无害，而假定更宽的终端则会使绝对寻址的输出散乱。
++   entry #knownRows   终端的高度，未知时为 24
++   entry #cap   会话的 termcap：ANSI、真彩色以及终端的实时宽度
++   entry #stdio   会话的标准流，以 `#cap` 作为其 termcap
++       用于向终端写入的 `Stdio`，带有 `Console` 的流和一个宽度跟随终端的 termcap。
++       `terminalStdio` 使它在有 `Terminal` 的任何地方成为作用域中的 `Stdio`。
++   entry #events   输入泵和信号处理函数放置事件的中继
++       一个 `Relay[Terminal.Event]`。
++       应用程序可以把自己的事件放到上面——例如 `Terminal.Info.Redraw`，用于唤醒事件循环——而 `interactive` 在会话结束时停止它，这会结束它上面的每个迭代器。
++   entry #eventIterator   会话事件的迭代器，按到达顺序排列
++       每次调用都重新排空共享的事件队列，因此两个迭代器分享这些事件，而不是各自看到全部事件。
++       会话的输入结束时，迭代器耗尽。
++   entry #pumpInput   读取标准输入并将其解码为事件的守护任务
++       它随会话启动，从 `Console` 的输入读取字符，用 `#keyboard` 解码，记录任何尺寸或背景色报告，并把每个事件放到 `#events` 上。
++       无论它如何结束——会话关闭标准输入、输入结束或解码失败——它都会停止事件流，因此遍历事件的循环会看到结束，而不是永远阻塞。
++       `interactive` 在拆除时等待它结束。
+
+@ 0 1 0 0996e5a991f1c1951a52116e23ec4338
++ entry .Console   终端会话所运行的控制台：它的标准流和一个信号陷阱
+
+% 1 1 0 0e8f4815f76c87cd1bc4f3e8164565d4
+
+@ 0 4 0 0a78aa30119ca0ab1b7568681a26f79c
++       `interactive` 需要一个 `Console`：会话读写的标准流，以及一种接收信号通知的方式。
++       Exoskeleton 的 `Cli`（由 `cli` 代码块提供）就是一个 `Console`，无论程序是直接运行，还是作为 ethereal 守护进程的客户端运行，后者的流和信号由启动器转发。
+
+@ 0 2 0 0ccaadd819b4a6dd0afdcd34560856aa
++       `Console(stdio)` 在任意 `Stdio` 之上创建一个控制台，它的 `#trap` 忽略所有处理函数，用于不需要信号的会话。
+
+% 1 1 0 061178b17e7e1fa002e3d993a27c4867
+
+% 1 1 0 1ebc344845fda1ea1f1895cf1332adf5
+
+@ 0 6 0 04b4d460d2cc5f711eecc4c3fafe89ca
++   entry .apply   基于给定标准流的控制台，不接收任何信号
++   entry #stdio   控制台的标准流
++   entry #trap   为控制台接收的信号注册一个处理函数
++       一个 `PartialFunction[Signal, SignalResponse]`。
++       `Terminal` 为 `WINCH` 和 `CONT` 注册一个处理函数以跟踪尺寸变化，并把其他每个信号都转换为事件。
++       由 `Console(stdio)` 创建的控制台会丢弃该处理函数。
+
+@ 0 1 0 0f157c5f7872c2060db70a2857fe4739
++ entry .Keyboard   把终端发送的字符解码为其所表示的按键的解码器
+
+% 1 1 0 1b0c8f47d5de743d06092de8644d4242
+
+@ 0 3 0 0f1e93b51f9be53203426e3cdbe553ae
++       `Keyboard` 把惰性的输入 `Chain[Char]` 转换为其 `#Keypress` 类型的 `Chain`。
++       `Keyboard.Standard` 是 `Terminal` 使用的解码器，`keyboards` 包把它与两个简单的解码器一起作为按名称导入的 given 存放。
+
+% 2 1 0 18b7d3dec8be11f50b52fd61ee074863
+
+% 3 1 0 0437536c1a6f7e01194d8d71f234f187
+
+% 0 1 0 1dc91c1c82b76a521835669693a19273
+
+% 0 1 0 012d9074d8d6d1411ee6485dc9779315
+
+% 1 1 0 1ed91ad83572d9030d327c43ce7706b2
+
+@ 0 2 0 0230ac03bac617d708c57e7d07deafb7
++       伴生对象中的辅助方法是构成 `Keyboard.Standard` 的部件，它们是公开的，供相关编码的解码器使用。
+
+% 0 1 0 176793f42160888c057b771c2ae61f78
+
+% 0 1 0 19ba5e7336e3f41802300af8614dd72b
+
+@ 0 13 0 1e0b3c110db068b51d8840ab5afaf94d
++   entry .modified   用传统修饰键数字所指定的修饰键包裹一个键
++       `Keyboard.modified(digit, key)` 把 `\e[1;5A` 这类序列中的数字读作一加上一个位掩码，并像 `applyModifiers` 那样包裹该键：`'5'` 是 `Ctrl`，因此 `\e[1;5A` 是 `Ctrl(Up)`。
++   entry .applyModifiers   用位掩码所指定的修饰键包裹一个键：shift 1，alt 2，ctrl 4，meta 8
++       修饰键按这个顺序由内向外嵌套，因此位掩码 5 得到 `Ctrl(Shift(key))`。
++       该位掩码是 kitty 协议的修饰键值减一。
++   entry .csiu   把 kitty 协议 CSI-u 序列的参数解码为一个按键
++       接受 `\e[` 与末尾的 `u` 之间的字符，其形式为 `codepoint[:shifted[:base]][;modifiers[:event]][;text]`。
++       码点 13、9、27 以及 8 或 127 分别是 `Enter`、`Tab`、`Escape` 和 `Backspace`，它们可以带任何修饰键；其他任何码点都是一个字符，带控制修饰键时成为 `Ctrl` 按键，带 shift 修饰键时转为大写。
+
+% 2 1 0 0607d080365045d31aed9609bafeba74
+
+% 3 1 0 1895057223eaa74602e07cf332911aca
+
+% 0 1 0 034c7970fc5bfaba16bbc206534b1414
+
+% 1 1 0 0b2081761869486b1375a9b4f1a896a6
+
+@ 0 3 0 037370087472460e15600cb151c99622
++   entry .ctrlChar   一个字符的 `Ctrl` 按键，如果它没有控制形式，则为普通字符
++       字母（大小写均可）以及 `@`、`[`、`\`、`]`、`^` 和 `_` 有控制形式。
++   entry .navigation   光标序列的末尾字母所指定的编辑键：`A` 是 `Up`，`H` 是 `Home`
+
+% 1 1 0 02d41d1392980dbc04159da76bcb8fe2
+
+@ 0 2 0 115b5a4e9e1d5b220d622cedeb1273ac
++       column  字母
++       column  键
+
+% 0 1 0 052d72c9eb6079c11f45aa6d9bf7d101
+
+% 0 1 0 049c2d81143aaac812afb8179d15539d
+
+% 0 1 0 0f73ce9940dae9e3140f3640ac9c4060
+
+% 0 1 0 0f5bdfc032edb2580d586cb9686111eb
+
+% 0 1 0 04a24469606fc47b0d2b03a26cd633bd
+
+% 0 1 0 15181381a27bdbef15175cce0232ad82
+
+@ 1 1 0 16f04aab4469b5290b20fceeac7bbc5f
++       row  其他任何字母  `Escape`
+
+% 2 1 0 02ffc9699d56e167033fad8bca35d517
+
+@ 0 1 0 135351a5b475b1910a9ad64ed935ed33
++   entry .vt   VT 序列 `\e[n~` 中的数字所指定的编辑键：`2` 是 `Insert`，`5` 是 `PageUp`
+
+% 1 1 0 17cc387dae1df775150813c331ad8bcf
+
+@ 0 2 0 1f5c8ef75d7c565e0c181cf5385caf70
++       column  数字
++       column  键
+
+% 0 1 0 1bf7b813c81d980d0d2c302d09fb1ddc
+
+% 0 1 0 12d9d8bdd9c2ceee17d133c20b945db6
+
+% 0 1 0 1c4089c700b9a1d6109f6060f7bda07f
+
+% 0 1 0 0f226e59c961569410ec8231edabbd65
+
+% 0 1 0 121f32173d2c620b0afb9d8743070237
+
+% 0 1 0 157f1e84a8442c180a24b20d5be62f90
+
+@ 1 1 0 023419fde3d35de50a874d522aa76a31
++       row  其他任何数字  `Escape`
+
+% 2 1 0 09900549704e9a010ece5cba2f0ef73c
+
+@ 0 1 0 00361b5f5b1626a21d0d539a6f3ba5ef
++   entry .Lookahead   判断一个转义字符是开始一个序列还是 `Escape` 键
+
+% 1 1 0 10d7033490515aaf0b91ec3d7607f81b
+
+@ 0 3 0 0aafed3ce62ce5bd030131811dffc26d
++         Escape 键与转义序列的开头是同一个字符；区分二者要看后面是否紧跟着更多输入。
++         `#sequenceFollows` 接收转义字符之后的剩余输入，并回答它是否属于一个序列。
+
+@ 0 9 0 0106194fffa8e2bc14a2725ad933d21c
++         终端一次写出整个序列，因此在活动终端上，已缓冲的输入可以立即作出判断，只有输入静默时才会短暂等待被拆分到多个数据包中的序列的其余部分（SSH 连接可能会这样拆分），然后才把转义字符报告为该键。
++         `.tty` 就是这种方针；`.immediate` 位于伴生对象中，因而处于隐式作用域中，它用于已经完整的输入。
++     entry .immediate   用于完整的输入，例如测试或重放：只要后面还有内容，就跟着一个序列
++         未给出其他 `Keyboard.Lookahead` 时，`Keyboard.Standard()` 所使用的就是它。
++         它检查剩余输入是否为空，这在活动终端上会阻塞到下一次按键；在那里请使用 `.tty`。
+
+% 2 1 0 110746a89674e3cf00c954caec2a25ee
+
+% 3 1 0 15a25404323507ce084a53684d5faec1
+
+% 0 1 0 0c7c60507c046b7904a42667bb21e473
+
+% 1 1 0 08569ea59181e7651c3b1195b4d32ee7
+
+@ 0 6 0 124d241463d6041d02c8b33bb5ff7bfb
++     entry .tty   用于活动终端：已缓冲的输入立即作出判断，静默时最多等待到一个期限
++         `Keyboard.Lookahead.tty(stdio, deadline)` 询问 `Stdio` 输入是否就绪，每毫秒轮询一次，最多 `deadline` 毫秒（默认为十）。
++         `Terminal` 自己的键盘就使用它。
++     entry #sequenceFollows   转义字符之后的输入是否延续一个转义序列
++   entry .Standard   针对终端所发送内容的解码器：按键、修饰键、CSI-u、粘贴和报告
+
+% 1 1 0 06c2e47a6a7454c90113ff77d7309d13
+
+@ 0 3 0 08e04b17d5ae18570877b93f0fce98b7
++         `Keyboard.Standard()` 解码为 `clavichord.Keypress | Terminal.Info`，并使用上下文中的一个 `Keyboard.Lookahead` 来区分 `Escape` 键与序列的开头（除非作用域中有其他的，否则为 `Keyboard.Lookahead.immediate`）。
++         它读取：
+
+@ 0 13 0 0c4f60500bd1e59c1638522cfb38e67e
++         - 控制字符：退格（`\b` 或 DEL）、制表符、作为 `Enter` 的换行或回车，以及作为其字母的 `Ctrl` 的其他 C0 代码；
++         - `\eO` 后跟一个字母，作为 `FunctionKey`；
++         - 光标和 VT 编辑序列（`\e[A`、`\e[3~`），带有传统修饰键数字（`\e[1;5A`、`\e[3;2~`）；
++         - kitty 键盘协议序列 `\e[…u`，经由 `Keyboard.csiu`；
++         - 括号粘贴 `\e[200~…\e[201~`，作为一个 `Terminal.Info.Paste`；
++         - 光标位置报告，作为 `Terminal.Info.WindowSize`（普通形式，`Terminal` 在应答 `Terminal.anchorQuery` 时会重新归类它）或 `Terminal.Info.CursorPosition`（带 `?` 前缀的形式）；
++         - 焦点报告，作为 `Terminal.Info.LoseFocus` 和 `Terminal.Info.GainFocus`；
++         - 对 OSC 11 背景色查询的应答，作为 `Terminal.Info.BgColor`；
++         - 其他任何 CSI 序列作为 `EscapeSeq`，其他每个字符作为 `CharKey`。
+
+@ 0 1 0 087f3001cdd27f8512e7a8089276d2eb
++         格式错误的报告会被丢弃，解码在其后继续。
+
+% 2 1 0 0c70687d4acc7bb61e0b2625deee3796
+
+% 3 1 0 1ded1784043a624a07ac6754e4a41432
+
+% 0 1 0 18d71a0ed0d668360785cd3b9721819e
+
+% 0 1 0 1430913a6c87b4ab04c1a4e04329737a
+
+% 0 1 0 17eae69e948e45881f09a0559e28ffdd
+
+% 0 1 0 00793140f5ffde9213eace31bb6ba9b9
+
+% 1 1 0 15935775b9e2eff90c93c1da5093cbf7
+
+% 0 1 0 0e79edfce2aebceb154e2927a83fc41b
+
+@ 0 5 0 06bacf42b9b8f7b50039d91ca2e1f6bb
++     entry #process   把惰性的输入字符流解码为按键和报告
++         两个方向都是惰性的：每个事件在其所需的字符到达时解码，因此活动终端的输入可以边输入边处理。
++   entry #Keypress   键盘解码得到的事件类型
++   entry #process   把惰性的输入字符流解码为惰性的事件流
+
+@ 0 1 0 0e8abec7b038b7241615ca2df541155b
++ entry .keyboards   键盘解码器，每个都是一个按名称导入的 given
+
+% 1 1 0 17976d276aa3442301a761958dcdf0cb
+
+@ 0 2 0 0071e1cd25993eaa012be82c510f0f3d
++       `Keyboard` given 决定如何解码输入字符。
++       `import soundness.*` 不会引入其中任何一个，因为 `import pkg.*` 不会导入 given；要按名称导入一个。
+
+% 2 1 0 0c53e23c2528284c14a015ee97abb674
+
+% 3 1 0 100530f0e2957fc31fb72fc0861ce682
+
+% 0 1 0 114dc1f47291e7e5064f13f081def73d
+
+% 1 1 0 05f3be14ad8e9ecd10f5742003d940ba
+
+@ 0 2 0 1b108cd3dc1c32fc0fdfe0a1b68da507
++       `Terminal` 总是用它自己的 `Keyboard.Standard` 解码；这些 given 供自行处理输入的代码使用。
+
+% 1 1 0 0bbcdc83277672a203554c50289d8522
+
+@ 0 6 0 135f34b6eca76fcf0543219716a2b593
++   entry .rawKeyboard   不经解码地把每个字符作为 `Char` 传递
++   entry .numericKeyboard   不经解码地把每个字符作为其 `Int` 代码传递
++   entry .standardKeyboard   完整的解码器 `Keyboard.Standard`，作为 given
++       需要作用域中有一个 `Monitor` 和一个 `Probate`，并使用隐式作用域中的 `Keyboard.Lookahead.immediate`，它适合完整的输入；活动终端需要 `Keyboard.Lookahead.tty`，正如 `Terminal` 自己的键盘那样。
+
+@ 0 1 0 071160c77c955d25001a4c6d870db64a
++ entry .terminalFeatures   标准终端模式，每个都是一个按名称导入的 given
+
+% 1 1 0 014db85f9f9f7b1012c6c69f9182551b
+
+@ 0 3 0 1ede905708c60b591c1e2d7aea1112fb
++       每个 given 都是一个 `Terminal.Feature`，由 `interactive` 在会话开始时打开、在会话结束时关闭。
++       会话只拥有其 given 在作用域中的那些模式，又因为 `import pkg.*` 不会导入 given，每个都要按名称导入：
+
+% 2 1 0 0907aa7040a16537125dcdfc93e296c7
+
+% 3 1 0 03829d7a73e91ff41bdb2d112fc7e298
+
+% 4 1 0 1f0df74bf7c106ff02a55efd6c742490
+
+% 0 1 0 17aa6d6e6b9836bd0f85df4722138035
+
+% 2 1 0 086a1f60a82d9c040c081831242253e2
+
+% 3 1 0 0d890ca2bc14a9b712798ef1ca9887a1
+
+% 0 1 0 166215a91eb5446018f23a5c8da1e7bd
+
+% 0 1 0 01a2363d77382f5e19a49a3da210e73f
+
+% 1 1 0 02ebb8e3f37587c31ae6ee912d98e7f8
+
+@ 0 1 0 1408318ab0a7e8ef15b3e8b5cfe5ff07
++       逐个加入模式，最能看清其效果：
+
+% 2 1 0 184f77d80f294aef198fc6590626ba75
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0a7ced9514274eac1e33f8ef804a3bf7
++         label 没有特性：只有按键和尺寸报告
+
+% 1 1 0 0cecffa1ca2cab1e1e776735962ff545
+
+% 1 1 0 12b571dbd8abd8df02ddb11c616f449f
+
+% 2 1 0 05d0e701db1305d6195ecaef11b1110c
+
+% 1 1 0 0f2f95fafee7064c1028b0ca9c73de3f
+
+@ 0 1 0 055f53a7619877341d3fe6ce64500fd4
++         label 括号粘贴：一次粘贴就是一个事件
+
+% 1 1 0 04369d9f0eb0a9370625c724a96bac2f
+
+% 0 1 0 196d526d45b002dc0175b7415df8690c
+
+% 2 1 0 0e781546a4c75ad5094e6877106f9d14
+
+% 3 1 0 18747a2679e85c3d1d4339b74b5de10b
+
+% 0 1 0 09b8747e9ab0804604f21dde2cdbd12d
+
+% 1 1 0 066c8ca290fb553d1fd64a88e64d849a
+
+@ 0 1 0 081b40456d77c0dc1b106b2520264287
++         label 再加上 kitty 协议：带修饰键的按键可以区分
+
+% 1 1 0 1e4610532fcb47970273b6cc86d48ede
+
+% 2 1 0 1629071840454b0b012cb59b918cece6
+
+% 2 1 0 1b057c3d58e446ac1b7ba15d4347cb6e
+
+% 3 1 0 19b28004eabc26ea0eebf9f84d368bbc
+
+% 0 1 0 1decbe48982e543605c09a65623ab4c9
+
+% 1 1 0 0824c39cc24ee2250220010b7efc3809
+
+@ 0 1 0 0a0646cd26afed360d723f0866faed20
++         label 再加上备用屏幕：回滚内容不受触动
+
+% 1 1 0 0f02e44788c8c7891b9ecb2cc9238ef8
+
+% 2 1 0 066804919c941a5c18656cd0926a384f
+
+% 0 1 0 01c25d61576e3e0b05bb3e278ef61455
+
+% 2 1 0 150b9a8cb5d4a8021e33a893c51fd1dd
+
+% 3 1 0 042252a070cc157707f1c235ebbb7195
+
+% 1 1 0 06b8c37fdd9c19bf1155ddf62b4d2139
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 11982b576565c8031005ba1d875343de
+
+% 1 1 0 0aa730172cd70865085dbc59e87dcf54
+
+@ 0 23 0 0d90e2adf22724310b34f7bccc96d35c
++   entry .bracketedPasteFeature   括号粘贴：一次粘贴作为一个 `Terminal.Info.Paste` 到达
++       `\e[?2004h` 打开，`\e[?2004l` 关闭。
++       没有它，粘贴的文本与键入无法区分，粘贴的换行就是一个 `Enter`。
++   entry .focusReportingFeature   焦点报告：`Terminal.Info.GainFocus` 和 `LoseFocus` 事件
++       `\e[?1004h` 打开，`\e[?1004l` 关闭。
++   entry .mouseTrackingFeature   SGR 形式的鼠标跟踪：按钮按下作为转义序列
++       `\e[?1000h\e[?1006h` 打开，`\e[?1006l\e[?1000l` 关闭。
++       这些报告不会被解码为鼠标事件：它们作为 `Keypress.EscapeSeq` 到达。
++   entry .alternateScreenFeature   备用屏幕缓冲区，它不触动回滚内容
++       `\e[?1049h` 打开，`\e[?1049l` 关闭：全屏界面在一个单独的屏幕上绘制，会话结束时终端先前的内容会恢复。
++   entry .kittyKeyboardFeature   kitty 键盘协议：以 CSI-u 表示的无歧义按键和修饰键
++       `\e[>1u` 压入该协议的消歧标志，`\e[<u` 将其弹出。
++       有了它，`Shift`+`Enter`、`Ctrl`+`I` 与 `Tab`，或 `Escape` 与 `Alt` 组合都会被分别报告，并由 `Keyboard.csiu` 解码。
++       不实现该协议的终端会忽略这两个序列。
++   entry .backgroundColorFeature   对背景色的一次性查询，其应答为 `Terminal.Info.BgColor`
++       会话开始时发送 `\e]11;?\e\`，结束时什么也不发送。
++       应答会更新 `Terminal#mode`，因此程序可以选择亮色或暗色。
++   entry .terminalSizeFeature   对尺寸的一次性查询，其应答为 `Terminal.Info.WindowSize`
++       会话开始时发送 `Terminal.reportSize`，结束时什么也不发送。
++       在真实终端上，`interactive` 已经发送过一次，因此这主要对基于转发流的会话有意义。
+
+@ 0 1 0 1fd0b663cde207c5051b8cce42340188
++ entry .Board   部件在其上绘制的表面：可移动的光标、可放置的文本，以及一个尺寸
+
+% 1 1 0 0582ae0fd35ff7380c3e3e4661545b89
+
+@ 0 5 0 197287e6542dfb5918d3896664a5ca50
++       每个渲染器都通过 `Board` 绘制，只用 `#move` 定位，从不打印转义码，因此同一份部件代码可以在光标处内联绘制（`InlineBoard`）、横跨整个终端绘制（`TerminalBoard`），或绘制到更大布局中的一个裁剪区域。
++       坐标相对于表面本身，是从零开始的 `Ordinal`，列在行之前。
+
+% 2 1 0 1867c204d5d7d08a011d26cb1e89f52f
+
+% 3 1 0 17c82bd92ffe3d47171cb4712aec4bed
+
+% 0 1 0 18218bad2333e1351e44660cae822966
+
+% 1 1 0 1cc3c59f74370ac40e555eca740cc2ef
+
+% 1 1 0 1a522806f89ce98d1f8f5a8976df4550
+
+% 0 1 0 1ed53f4994ecb4d01a275670378cc368
+
+% 0 1 0 0b27c8f9843c5d9b075b1642760da878
+
+% 1 1 0 0b6e9de382337661191c19ae6d56179e
+
+@ 0 3 0 1e0e5bdcd1eaf43017fc9ffdb71406e6
++       board 是一个有状态的独占能力：绘制会改变它，因此每个绘制操作都是一个 `update` 方法，只能通过独占引用（`Board^`）调用。
+
+@ 0 3 0 12d7401210b80e3d15a48e8287804e5d
++       上下文中有 `Terminal` 时，伴生对象中的 `.inlineBoard` 在其上提供一个 `InlineBoard`；面板在更近的作用域中提供自己的 board，它具有优先权，这正是在面板内请求的 `LineEditor` 在面板之内绘制的原因。
+
+% 0 1 0 1fa5cfe46a4dfdb409b087fc8bca3c96
+
+% 0 1 0 0ecbfac8155d43b517dc51498fb914ee
+
+% 1 1 0 1f58a98c4d79926e0f1cf0138cc889ab
+
+@ 0 14 0 13ce4f86b1fe980d058114dcdd627456
++   entry .inlineBoard   上下文中有 `Terminal` 时，位于其光标处的 `InlineBoard`
++       位于隐式作用域中，因此在 `interactive` 代码块中请求的部件无需导入任何东西就能在提示符处原地绘制。
++   entry #width   表面的宽度，以单元格计
++   entry #height   表面的高度，以单元格计
++   entry #move   把光标移到一个单元格，先列后行
++   entry #put   在光标处写入文本或带样式的 `Teletype` 文本，并使光标前进
++   entry #clear   擦除整个表面
++   entry #clearLine   从光标处起擦除当前行
++   entry #cursor   显示或隐藏硬件光标
++   entry #showCaret   一帧绘制完成后，把可见光标留在某个单元格上
++       带缓冲的表面在写出一帧时可能会移动光标，因此显示插入符的部件在 `#flush` 之后再放置它。
++   entry #flush   提交一帧；对不带缓冲的表面不做任何事
+
+@ 0 1 0 16ed0a10f57cc9bf0a98ec63587b627f
++ entry .InlineBoard   位于终端光标处的 `Board`，以相对移动绘制，因而停留在提示符处
+
+% 1 1 0 02159f8d6722e786057c115d0c6029ec
+
+@ 0 6 0 003614f39f5870340ee49c584b7ee936
++       `InlineBoard` 在开始时光标所在的位置原地绘制部件：第 0 行就是那一行，第 0 列是其左边缘，每次 `#move` 都变为相对的垂直移动加上绝对的列，因此部件在自身之上重绘，而不是在屏幕顶部重绘，其上方的回滚内容也不受影响。
++       它自己跟踪光标，把换行或在 `#width` 处的自动换行算作移到下一行。
++       对 `Teletype` 调用 `put` 会写出其纯文本。
+
+@ 0 2 0 139391b6245c91dd090329a344f99c8e
++       上下文中有 `Terminal` 时，`Board.inlineBoard` 在其上提供一个 `InlineBoard`，因此这就是 `LineEditor` 和 `SelectMenu` 在 `interactive` 代码块中使用的 board。
+
+% 1 1 0 0b55dcaa6d404c8f0e888e95698e406e
+
+@ 0 3 0 11a238e9fd5284f014cc0c0c9b7f35a6
++   entry .apply   终端之上的内联 board，采用其已知的宽度和高度
++   entry #width   文本自动换行的宽度
++   entry #height   创建 board 时的高度
+
+@ 0 1 0 1ea0d64cfff98f5301f8d508b849155d
++ entry .TerminalBoard   覆盖整个终端的 `Board`，采用绝对定位和实时尺寸
+
+% 1 1 0 1832dcbf09ea10be0928782517a6ed6a
+
+@ 0 4 0 1fd711507009d68913e0e6760b5ec40b
++       每次 `#move` 都是一个绝对光标位置，因此这个 board 就是整个屏幕，正如备用屏幕上的全屏界面所需要的。
++       它不保留自己的光标，而是让终端在写入文本时推进光标，并在被询问时读取尺寸，因此它会跟随尺寸变化。
+
+% 2 1 0 1d053290f1d6064d1940bc831afbaf38
+
+% 3 1 0 01c49fc1791dc4e1004b951a045e9b58
+
+% 4 1 0 163f9260d6c60cbd1ab953664a91e4b8
+
+% 0 1 0 0652cc050e61baed0c2f7e6e1431f80f
+
+% 2 1 0 05465710a51529e30a24bde743994057
+
+% 0 1 0 0837ef0d6355ba37132cf4f0cb7e6125
+
+% 1 1 0 14fbde570416c9f70cef36866eea9377
+
+% 1 1 0 0983d2351bf49d1706cdabbb70c52d57
+
+% 0 1 0 1250e54b7e07460611ee8b05ada48733
+
+% 1 1 0 1ba16f6d97d73e5f196737ea4542f83e
+
+@ 0 2 0 182d448ee9fdb01011ba00a6ab020ef7
++       这个 board 捕获其终端只是为了读取尺寸，因此它的捕获集是 `{terminal.rd, caps.any}`：传给构造器的尺寸 thunk 只能读取。
+
+% 1 1 0 1b940104a0ee32ec0e94f8f10b095a19
+
+@ 0 5 0 043e0e69884a226a1e9513727b5c6138
++   entry .apply   基于终端、尺寸实时变化的 board，或基于作用域中 `Stdio`、尺寸固定的 board
++       `TerminalBoard(terminal)` 每次被询问尺寸时都读取 `Terminal#knownColumns` 和 `Terminal#knownRows`，并通过终端的 `Stdio` 写入。
++       `TerminalBoard(width, height)` 的尺寸固定，并通过上下文中的 `Stdio` 写入。
+
+@ 0 1 0 0724d0c32def007418c8695093dafba5
++ entry .Interaction   部件如何被绘制和应答：渲染每个状态，并决定什么会提交它
+
+% 1 1 0 09accfbd037519d61d64f6d386e62adf
+
+@ 0 6 0 0f8d42be70515a2211a3b1950d94e2d5
++       `Interaction[answer, question]` 在一个事件流上驱动一个部件——一个 `question`，如 `LineEditor` 或 `SelectMenu`：它用 `#render` 渲染每个状态，把每个事件传给部件以产生下一个状态，并在某个事件提交（`#submits`，默认为 `Enter`）或取消（`Escape`、`Ctrl`+`C`、`Ctrl`+`D`，或事件结束）时停止。
++       答案是最终状态的 `#result`，如果部件被取消则为 `Unset`。
+
+@ 0 3 0 158873453b87673a055504d0d2f52497
++       伴生对象的 `.selectMenu` 和 `.lineEditor` 通过作用域中的 `Board` 渲染，因此对任一部件调用 `ask` 都无需导入任何东西。
++       自己编写的交互可以用不同的方式渲染，或者根本不渲染，这样就可以在没有终端的情况下测试部件的逻辑：
+
+% 2 1 0 0da29299c3974aee15952f7b61ce3920
+
+% 3 1 0 126ddbe3bf35a4b11026e4b0f9efd3df
+
+% 0 1 0 01be35fb0ea4c8180c34d3c75423a06f
+
+% 0 1 0 1ae53966b870af3c186e913c6e1d0601
+
+% 0 1 0 0eae9e837c4b71ad01f5b1527869a5ff
+
+% 0 1 0 08b7918f11201fe917ee2715957c66a1
+
+% 0 1 0 1fb321f3747b28a60ff7c8cab0d4223a
+
+% 1 1 0 0a20bb47a7baa1b617c98e9d9b3e464b
+
+@ 0 2 0 0217429ebe9c011b0e819a2f7d2c6b85
++       `#react` 让交互在部件看到某个事件之前，针对该事件改变状态，就像补全器在 `Tab` 上所做的那样。
+
+% 1 1 0 0d1e4cc4b89a3bc814abe124ff9c9f3e
+
+% 2 1 0 1a94b6f590dbf8960569a00b6001abd2
+
+% 1 1 0 180e3a43a36feca102ca7a2ff6b4d012
+
+@ 0 17 0 0bbcdff2196ed77d103c551ca9345b7f
++   entry .selectMenu   在作用域中的 `Board` 上绘制 `SelectMenu`，每行一个选项，当前选项处有 `>`
++       菜单显示期间隐藏光标，每次变化时重绘整个菜单——把比 board 宽的选项按其折行所占的行数计算——并在菜单得到应答时清除它并恢复光标。
++       选项需要一个 `Showable`。
++   entry .lineEditor   在作用域中的 `Board` 上绘制 `LineEditor` 及其插入符，对宽文本自动换行
++       每帧重绘编辑器的文本，并把插入符放在 `LineEditor.cursorPosition` 所指的位置，计入嵌入的换行、自动换行和宽字符；按编辑器的 `LineEditor.Mode` 的决定提交，并在得到应答时移到文本下方的新行。
++   entry #before   在绘制第一个状态之前调用一次；默认不做任何事
++   entry #render   绘制一个状态，并给出在它之前绘制的状态（如果有）
++   entry #after   部件得到应答或被取消后调用一次；默认不做任何事
++   entry #result   最终状态给出的答案
++   entry #submits   某个事件在部件的当前状态下是否提交它；默认为 `Enter`
++   entry #react   在部件看到某个事件之前，针对该事件改变状态；默认不做任何事
++       对每个既不提交也不取消的事件调用。
++       在 `Tab` 上补全单词的交互会重写它：
+
+% 2 1 0 151bfda1a71d32b102d9b1b9edeeca5f
+
+% 3 1 0 152fdbabf72c475f16b516da9b665d90
+
+% 0 1 0 01b427046b5026bf01e90f5055197d74
+
+% 0 1 0 055f56b446b51c5516e2d4e67fd9db3b
+
+% 0 1 0 0f1f59121454a4490feb8f26aafd83a3
+
+% 0 1 0 106e020933e2fc9e11e96ed6e2d05d93
+
+% 0 1 0 13bc67b33db2c35d0b6bc44c6d4b096a
+
+% 0 1 0 026c9eb78e66effe0b712b01a03d6416
+
+% 0 1 0 05c271110039865617d20bd62709fbd2
+
+% 1 1 0 1f2255570d66def50021a8e0f2b82b83
+
+@ 0 6 0 0945d9ab80a6a00f055bb70a0a05576c
++   entry #recur   事件循环：渲染，读取一个事件，然后提交、取消或继续
++       通常不直接调用：`#apply` 在 `#before` 之后调用它。
++   entry #apply   从一个初始状态开始，在事件迭代器上运行部件，直到得到答案或 `Unset`
++       `interaction(events, state)(step)`，其中 `step` 根据一个状态和一个事件产生下一个状态——对 `Question` 来说是 `_(_)`，它的 `apply` 正是这一步。
++       先调用 `#before`，运行循环，再调用 `#after`。
+
+@ 0 1 0 1f5e9ffdf829ba71196bf3cba100785c
++ entry .Interactivity   供部件读取的事件来源，例如 `Terminal`
+
+% 1 1 0 1ea5b2bc434e82fe000b21fc9fec2f2b
+
+@ 0 5 0 0d9bed7685d9ea3506665aa38b7bab96
++       `LineEditor#ask` 和 `SelectMenu#ask` 从上下文中的 `Interactivity[Terminal.Event]` 获取事件，在 `interactive` 代码块中它就是 `Terminal` 本身。
++       它们把一个基于自己所读迭代器的 `Interactivity` 交给自己的后续代码，因此在后续代码中请求的部件会在第一个部件停下的地方继续，而不会丢失已预读的事件。
+
+% 1 1 0 119682e38a2e91201401d9c350cf1154
+
+@ 0 2 0 00d7b1abb3fbacbd029b1d87a27bab4e
++   entry .apply   交出一个已在读取中的迭代器的 `Interactivity`
++   entry #eventIterator   要读取的事件迭代器
+
+@ 0 1 0 08e10609f9ef8dbb1664b146db2d63a4
++ entry .Question   作为状态机的部件：输入一个事件，输出下一个状态
+
+% 1 1 0 1120c35809eb32af14df6807c4511d5f
+
+@ 0 3 0 050d0f40c25ea90d0388a66dc882b7e8
++       `LineEditor` 和 `SelectMenu` 都是 `Question`。
++       question 的 `#apply` 接受一个 `Terminal.Event` 并给出下一个状态；`Interaction` 绘制这些状态，并决定何时某个状态就是答案。
+
+% 1 1 0 1e0e4f863f5ce74417249308511dcd64
+
+% 2 1 0 17c2a764c101a56d0cacf4dedda1ee68
+
+% 1 1 0 10cd3e864d2963c01629ef382e9626c5
+
+@ 0 1 0 1f4710808e9695f11c83addbad5ffdef
++   entry .Error   用户取消部件而不是应答它时抛出
+
+% 1 1 0 17823a08b638480008873c0df93f6e07
+
+@ 0 4 0 07ec2885cf2d7e72029faac8b59dc849
++         错误 `↯/s.95.1`：_the user dismissed an interaction_。
++         当用户在提交之前按下 `Escape`、`Ctrl`+`C` 或 `Ctrl`+`D`，或者输入结束时，由 `LineEditor#ask` 和 `SelectMenu#ask` 抛出。
++   entry #apply   一个事件之后的下一个状态
+
+@ 0 1 0 0cb4a8858e2e8cd910c0fad765eaeae0
++ entry .LineEditor   带光标的一行或多行可编辑文本：一个被询问其文本的部件
+
+% 1 1 0 0d6399a46509e3190b2c6dd86afc1595
+
+@ 0 6 0 17d4d44a411a84521e08fcf9a5d8b3d4
++       `LineEditor` 是文本字段的状态：它的 `#value` 以及光标在其中的 `#position`。
++       每次按键都产生一个新的编辑器，支持常用的编辑键：字符在光标处插入；`Backspace` 和 `Delete` 删除光标两侧的字符；`Left`、`Right`、`Home` 和 `End` 移动光标；`Ctrl` 加 `Left` 或 `Right` 按单词移动；`Ctrl`+`W` 删除光标前的单词，`Ctrl`+`U` 删除光标前的全部内容。
+
+% 2 1 0 084dae7347c0f523066d09c6dd14a563
+
+% 3 1 0 06113737b9e3d6270d4f41e235a4b1f9
+
+% 4 1 0 0260a3f452ded9cc00f98f86df31fe86
+
+% 5 1 0 05fa9160169ce7f500bf722c64334b3a
+
+% 0 1 0 12c31b1adb2569eb17427d5ae8fe9a27
+
+% 0 1 0 010fb786143f22a21822068e05bca3ed
+
+% 1 1 0 0c5803354ece202e0d3396c350685312
+
+@ 0 3 0 0c84fd206c3496650380b2fe3aa7b18b
++       `#ask` 在终端中运行编辑器，在光标处（或在作用域中的 `Board` 中）内联绘制它，并把提交的文本传给其后续代码；取消它会抛出 `Question.Error`。
+
+@ 0 4 0 1e7cccd48c1f9f790c39e717123980e6
++       在 `LineEditor.Mode.Multiline` 中，方向键以及 `Home` 和 `End` 在行间和行内移动，一个针对文本的谓词决定 `Enter` 是提交还是插入换行；`Shift`+`Enter` 总是提交，它需要 `terminalFeatures.kittyKeyboardFeature` 才能被终端报告。
+
+% 2 1 0 00b324318bd8641f0c987ed26a4c14ee
+
+% 3 1 0 13596aaf83a523680ed6ff5b37383b74
+
+% 0 1 0 0d3979cd3b3fd79503dafe6cfbbd1990
+
+% 1 1 0 1ba6bb8b0900aaa105bb2d4b7b4d8075
+
+% 1 1 0 1c546554db94d10915e30cd985fba155
+
+% 2 1 0 17b64895f535d7d31b5b29fcec423444
+
+% 1 1 0 10a2f3c06b4f9bef0f4a15711247245e
+
+@ 0 1 0 127a1bb31252a56a197c4e7f9a8570f1
++   entry .Mode   `Enter` 是提交编辑器还是插入换行
+
+% 1 1 0 119925f1dafc9664180d164a65f70084
+
+@ 0 10 0 1785a5e150db799e1037d732c86a6596
++         `SingleLine`（默认）：`Enter` 提交。
++         `Multiline(submit)`：如果 `submit` 对目前的文本成立，`Enter` 就提交，否则插入换行；`Shift`+`Enter` 总是提交；`Up` 和 `Down` 在行间移动，`Home` 和 `End` 移到当前行的两端。
++   entry .cursorPosition   在按给定宽度排版的文本中，某个字符偏移量所在的行和列
++       `LineEditor.cursorPosition(text, position, columns)` 像单元格网格那样排版文本：按字素簇排版，像 `中` 这样的宽字符占两个单元格，组合标记不占单元格，会超出宽度的字素簇折到下一行，遇到每个换行符时移到下一行。
++       对于不含换行符的纯文本，它就是 `position/columns` 和 `position%columns`。
+
+% 2 1 0 0b64c66dd6814e8111ffb6a0033eb342
+
+% 3 1 0 13a20c6d37771fae1b68a34ded60afb6
+
+% 0 1 0 0c5d83779c04c3890ab59e009856dd01
+
+% 0 1 0 0fc7e931cd458cef156b75de0395e53a
+
+% 1 1 0 0a776937b66396da02c1dfeb738a93c9
+
+@ 0 14 0 07c331ad99619d9a1e1aea3229610080
++   entry #value   正在编辑的文本
++   entry #position0   传给构造器的光标偏移量，`Unset` 表示文本末尾
++   entry #mode   `Enter` 是提交还是插入换行，作为一个 `LineEditor.Mode`
++   entry #position   光标在文本中的偏移量
++   entry #submitsOn   根据其 `LineEditor.Mode`，某个事件是否提交这个编辑器
++   entry #apply   一次按键之后的编辑器
++       编辑器不处理的按键，或会把光标移出范围的按键，会让编辑器保持原样。
++   entry #ask   在终端中运行编辑器，并把提交的文本传给后续代码
++       需要一个 `Interactivity[Terminal.Event]`（在 `interactive` 代码块中即 `Terminal`）、一个 `Interaction[Text, LineEditor]`（伴生对象的 `Interaction.lineEditor`，在作用域中的 `Board` 上绘制）以及一个 `Tactic[Question.Error]`，编辑器被取消时抛出。
++       后续代码的结果就是 `ask` 的结果；在后续代码中，下一个部件读取同样的事件。
+
+@ 0 1 0 0577df0118dec185177767207f1338ad
++ entry .SelectMenu   在若干选项中的选择，用方向键移动：一个被询问其选择的部件
+
+% 1 1 0 096dcf4dba8ad5760a67e32bc443b377
+
+@ 0 3 0 09e1aee0ba2aceb209fc7b257804a385
++       `SelectMenu` 是菜单的状态：它的 `#options` 以及 `#current` 选项。
++       `Up` 和 `Down` 每次移动一项，到两端停止，`Home` 和 `End` 移到第一项和最后一项。
+
+% 2 1 0 1b3a520b214aec641879689f3ffe502a
+
+% 3 1 0 08e27f5b2cea7e9206f22d088a2c2481
+
+% 4 1 0 0a824ae9c497324d190c657385a560da
+
+% 5 1 0 0356e0f79c360642006950cc6b595a5e
+
+% 0 1 0 1cf6703c08df86830e3cc0450de2a097
+
+% 0 1 0 059c96c042d06bb416a0a03680a5eeb9
+
+% 1 1 0 1d9c463aa871532908407b8d3c928989
+
+@ 0 3 0 03fdf38e1a5c321a0d08dc0bf7a2ba95
++       `#ask` 在光标处（或在作用域中的 `Board` 中）内联绘制菜单，每行一个选项，当前选项前有 `>`，并把用 `Enter` 选中的选项传给其后续代码；取消它会抛出 `Question.Error`。
+
+% 1 1 0 056900c4ccb6df440a79d48e4f70b2fa
+
+% 2 1 0 052bfdfafcf934e9009229f15204288c
+
+% 1 1 0 1e14671f23bdc210108670a3d0f75191
+
+@ 0 8 0 1dbbe05ad228c93f0046c9e57d3c2c18
++   entry #options   选项，按显示顺序排列
++   entry #current   菜单当前所在的选项
++   entry #apply   一次按键之后的菜单
++   entry #ask   在终端中运行菜单，并把选中的选项传给后续代码
++       需要一个 `Interactivity[Terminal.Event]`（在 `interactive` 代码块中即 `Terminal`）、一个 `Interaction[item, SelectMenu[item]]`（伴生对象的 `Interaction.selectMenu`，它需要选项是 `Showable` 的）以及一个 `Tactic[Question.Error]`，菜单被取消时抛出。
+
+@ 0 1 0 01d1dda4495a666f10dcd5aed8eebf87
++ entry .Signal   投递给程序的信号，带有其发送者附加的终端尺寸或期限
+
+% 1 1 0 06ac24334d59fef21c0e7ba1e9e805c8
+
+@ 0 5 0 0bbbb4b2c6a73bfc11370d832b662000
++       POSIX 信号本身不携带任何内容，但转发信号的启动器可以附加内容：ethereal 客户端发送 `WINCH` 和 `CONT` 时附带终端的尺寸，因为套接字另一端的守护进程无法测量它；发送 Windows 关闭、注销或关机事件时，则附带系统在强行结束进程之前所允许的时间。
++       在进程自身上引发的信号不携带任何内容。
+
+@ 0 1 0 15361c8345cfe7a21f5905ce2974da69
++       `Console#trap` 的处理函数接收 `Signal`：
+
+% 2 1 0 09a48295363ab02a15e761e8532f16eb
+
+% 3 1 0 1bec0156b47eaeb811cba29d27e6fcc8
+
+% 0 1 0 12f594ab8ad330df0de41f485e959753
+
+% 0 1 0 034f380523efd52812255bf23af255f7
+
+% 0 1 0 0794bb28e3bfb1d302c6274434b31e5e
+
+% 0 1 0 1e15d4b74e7ec4a70a266f5518e8eab3
+
+% 1 1 0 028842c54b157298038042b75c8393d3
+
+@ 0 1 0 182a64a91ef194281c03ec2dde5fe29d
++       信号显示为它的短名称：`WINCH`、`CTRL_LOGOFF`。
+
+% 1 1 0 1a359dd4a3ce0c4f1cd3164aba499f98
+
+% 1 1 0 0bb33998f4b8c8d31adb874fa6d50f04
+
+% 0 1 0 006c10eff367ede31dfbc661ab814e13
+
+@ 0 6 0 0988537e27b0fad90b6a644471f5e42f
++   entry .showable   把信号显示为它的短名称，如 `WINCH` 或 `CTRL_CLOSE`
++   entry #interrupt   信号本身：一个 `Interrupt`（POSIX 信号）或一个 `WindowsSignal`
++   entry #columns   终端的宽度，如果发送者附加了它
++   entry #rows   终端的高度，如果发送者附加了它
++   entry #deadline   系统结束进程之前的时间，如果发送者附加了它
++   entry #size   终端的尺寸 `(columns, rows)`，如果发送者附加了这两者
+
+@ 0 4 0 185ed17237b17e9b02a993bdfe784151
++ entry .SignalResponse   信号处理函数如何应答：`Accept`、`Reject` 或 `Defer`
++     `Accept` 表示处理函数已经处理了该信号；`Reject` 表示没有处理，因此适用该信号的默认动作（没有处理函数可分派的启动器应答 `Reject`）；`Defer` 表示稍后再处理。
+
+@ 0 1 0 0f9b23b4b64bdc8b10f0e9acce3132ff
++ entry .Interrupt   一个 POSIX 信号，从 `HUP` 到 `SYS`，带有其名称和编号
+
+% 1 1 0 08e57d8d952bcbc81883306d7842e46e
+
+@ 0 5 0 18550079aa82ac76189de483de470107
++       作为枚举的三十个 POSIX 信号：`Hup`、`Int`、`Quit`、`Ill`、`Trap`、`Abrt`、`Bus`、`Fpe`、`Kill`、`Usr1`、`Segv`、`Usr2`、`Pipe`、`Alrm`、`Term`、`Chld`、`Cont`、`Stop`、`Tstp`、`Ttin`、`Ttou`、`Urg`、`Xcpu`、`Xfsz`、`Vtalrm`、`Prof`、`Winch`、`Io`、`Pwr` 和 `Sys`。
++       它也是一个 `Terminal.Event`：`Terminal` 把其控制台收到的每个信号都放到它的事件流上。
++       `UnixSignal` 是它的另一个名称。
+
+% 2 1 0 1804ff33f44202d208d726f1663cb5e6
+
+% 3 1 0 15f8c5b8d74fb64b04aa8be03552d9a8
+
+% 0 1 0 002c8860b98773e1109d4b739a37849d
+
+% 0 1 0 13baac11c7a5de701bfe7745cf50bbc8
+
+% 0 1 0 1fefab2981e900401573ede8d9f637c0
+
+% 1 1 0 1e7e7390b384e89108bad3971434ecf3
+
+% 2 1 0 02b63df9647a452c1fc5c25d1a3e0b9c
+
+% 1 1 0 03563d8bb0f8107800c8b841155ee565
+
+@ 0 10 0 08c203520ccfd1c60afca2174bf7125d
++   entry .decoder   从短名称解码信号，大小写均可：`WINCH` 或 `winch`
++       即不带 `SIG` 前缀的名称。
++       不是信号名称的名称会抛出 `IllegalArgumentException`，而不是通过战术抛出错误。
++   entry .encodable   把信号编码为它的短名称 `WINCH`
++   entry .showable   把信号显示为它的短名称 `WINCH`
++   entry #shortName   不带前缀的大写名称：`WINCH`
++   entry #name   完整名称：`SIGWINCH`
++   entry #id   信号的编号，采用 Linux 的编号方式：`HUP` 为 1，`TERM` 为 15，`CHLD` 为 17
++       按枚举的顺序从 1 开始编号，跳过 16。
++       这些编号是 Linux 的；macOS 和各 BSD 从 `URG` 起的信号编号不同。
+
+@ 0 4 0 07b99606a919ba11046d8dd6c7bdeb98
++ entry .UnixSignal   `Interrupt` 的另一个名称，即 POSIX 信号
++     它既是类型别名，也是其伴生对象，因此 `UnixSignal.Winch` 和 `case _: UnixSignal` 的用法与 `Interrupt` 相同。
++     这个枚举命名为 `Interrupt`，是因为 `Signal` 是带有载荷的已投递信号。
+
+@ 0 1 0 115d3fa70edcdc4b0ce662a82afba73e
++ entry .WindowsSignal   Windows 控制台控制事件：`Ctrl`+`C`、`Ctrl`+`Break`、关闭、注销、关机
+
+% 1 1 0 02d68d199cd9a00a1c0fddd03ab29202
+
+@ 0 4 0 170400dc570458951bf0b06c8b30a22f
++       Windows 控制台代替 POSIX 信号投递的五种事件：`CtrlC`、`CtrlBreak`、`Close`、`Logoff` 和 `Shutdown`。
++       启动器会转发它们，`Close`、`Logoff` 或 `Shutdown` 的 `Signal` 携带系统结束进程之前的期限。
++       它也是一个 `Terminal.Event`。
+
+% 2 1 0 075c2f26394227af143d464efd0f6bd3
+
+% 3 1 0 01435168c86222611760bf218596eba0
+
+% 0 1 0 1148c66a9d42d9cc0f470b2365acdbb7
+
+% 1 1 0 1d85deb4c2288eae090b62bf08016e7b
+
+% 2 1 0 1ef48cf20355f91318a45c2056895769
+
+% 1 1 0 15e0ccc792956eb50d6ce129340f5c23
+
+@ 0 6 0 05d0a6a3134f2c4314776d78583c2f01
++   entry .decoder   从短名称解码事件，如 `CTRL_C` 或 `CTRL_LOGOFF`
++       大小写均可。
++       不是事件名称的名称会抛出 `IllegalArgumentException`，而不是通过战术抛出错误。
++   entry .encodable   把事件编码为它的短名称，如 `CTRL_BREAK`
++   entry .showable   把事件显示为它的短名称，如 `CTRL_BREAK`
++   entry #shortName   启动器使用的名称：`CTRL_C`、`CTRL_BREAK`、`CTRL_CLOSE`、`CTRL_LOGOFF`、`CTRL_SHUTDOWN`
+
+@ 0 1 0 1be0788a1a2439961bec2f4d21c38c26
++ entry .CtrlChar   把 C0 控制字符匹配为 `Ctrl` 由之生成它的字母或符号
+
+% 1 1 0 0e03e46aa23011f108056d06c30718a3
+
+@ 0 4 0 12bbacd16e9f813217aef56ef8af875e
++       一个提取器：`case CtrlChar(letter)` 匹配其代码加 64 后为 `@`、大写字母，或 `[`、`\`、`]`、`^` 和 `_` 之一的字符，并以单例联合类型绑定该字符。
++       `Keyboard.Standard` 用它把 `\u0003` 解码为 `Keypress.Ctrl('C')`。
+
+% 2 1 0 0a4cc21e842310c408396a9654f2f1cc
+
+% 3 1 0 0808407a509a3bea12f8e47e55a3ad59
+
+% 0 1 0 0c7b2bac9ecfdb5a1ff036c3369ba934
+
+% 0 1 0 16748a97ee3d96941a90e706c8f7d688
+
+% 0 1 0 12b2a32cd0515b4e109999417f4b9924
+
+% 1 1 0 0796b821681ee9500c21c7ef02f39a52
+
+@ 0 1 0 1643f46ea1c7eed41331a27fbe1bf53b
++   entry .unapply   控制字符的字母或符号，对其他任何字符则为 `None`

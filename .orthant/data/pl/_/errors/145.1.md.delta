@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 1 0 0c3ffda4d2c6b04f1d71aad99d548eb0
++ # `↯/s.145.1` – `DebuggerError`
+
+@ 0 3 0 0aaebac4bd7956031ec15e782aa0a285
++ Zgłaszany, gdy nie można ustanowić sesji debugowania lub gdy maszyna wirtualna programu
++ debugowanego odpowiada na polecenie JDWP kodem błędu. Podkod to stała błędu JDWP zwrócona przez
++ maszynę wirtualną albo wartość ujemna w przypadku błędu lokalnego dla debugera (nieudanego
++ uzgadniania lub utraconego połączenia).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 04132eb24be763d508ec665ddcb33a7a
++ Vivisection komunikuje się z JVM programu debugowanego za pomocą protokołu Java Debug Wire
++ Protocol. Ten błąd obejmuje program debugowany, który odmawia połączenia lub je zrywa,
++ uzgadnianie, które nie zostało odesłane, oraz każde polecenie odrzucone przez maszynę wirtualną
++ – niepoprawny identyfikator, wątek, który nie jest wstrzymany, maszynę wirtualną, która już
++ zakończyła działanie, i pozostałe stałe błędów JDWP.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 09c71e213ff0bbcd12abc3e503056076
+
+% 1 1 0 05a58ba55f34f5691bf2e492e7a91257
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 4 0 17f7a8bf64e9403718442c606dcab82c
++ Większość stałych błędów JDWP wskazuje, że polecenie odnosiło się do stanu, który od tego czasu
++ się zmienił – ramki, która powróciła, obiektu, który został zebrany przez odśmiecacz, lub
++ wątku, który wznowił działanie. Przed ponownym wydaniem polecenia należy ponownie odczytać
++ odpowiedni stan po ostatnim wstrzymaniu maszyny wirtualnej. Przyczyna `Disconnected` oznacza,
++ że zawiódł sam transport; należy sprawdzić, czy program debugowany nadal działa i jest
++ osiągalny.

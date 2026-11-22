@@ -1,0 +1,109 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c8aebbcc5fa8d0f1f490e0d394ed554
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18d9b8eb055272b705a4c8a7570112e5
++ info   JOSE：签名和加密的令牌、JSON 形式的密钥，以及持有者认证
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1568b6bc0a765c590a9f4dadff0fe8ec
++     _Sigillate_ 实现了 [JOSE](https://www.rfc-editor.org/rfc/rfc7515)，即 Web API 用于认证的令牌背后的那组标准（RFC 7515–7519）：`Jws`，带有签名或 MAC 的内容；`Jwe`，加密的内容；`Jwk` 和 `Jwks`，JSON 形式的密钥；以及 `Jwt`，由两者之一承载的一组声明。
++     它们构建在 enigmatic 的密钥和密码算法以及 jacinta 的 JSON 之上。
+
+@ 0 3 0 08f49886b7ea3fbf0324bdd42871d1d4
++     密钥的类型选定算法。
++     头部的 `alg` 会与密钥的密码算法所代表的算法相比较，但从不用来决定如何使用密钥，因此令牌无法通过改换标记而以其他方式被检查：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 15fecec1136068c01035a37d89ba0cd2
+
+% 0 1 0 1166258a5e9c00d8005e2019d58fd80e
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 08c6a1e2df2e49520d917eb41b8ac957
+
+% 0 1 0 0f919ae58b75716307fb565236e72019
+
+% 0 1 0 19f482543f932e1713b0c4a3d38efd16
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     该库有三个源集：
+
+@ 0 6 0 1bf58aa7ae48949108e0638f93cf1516
++     - `sigillate.core`——`Jws`、`Jwe`、`Jwk`、`Jwks`、`Jwt` 和 `Jose`，后者包含头部、错误，以及把密码算法映射到算法名称的类型类。
++     - `sigillate.http`——`Jwks.retrieve`，从所有者发布密钥集的 URL 获取该密钥集。
++     - `sigillate.server`——`bearerAuth`，作为 scintillate 中间件的持有者令牌认证，经验证的令牌以 `jwt` 的形式位于作用域内。
+
+@ 0 4 0 07c5232cdb1a6ff403991cfa173a8acf
++     一切都导出到 `soundness` 总括包中。
++     它没有自己的选择包；签名和加密需要一个 `Crypto` 提供者（`providers.javaBaseProvider`），读取私钥需要一个 `Cloak`（`cloaks.heapCloak`），验证令牌需要一个 `Clock`，而每种失败都是一个 `Jose.Error`。
+
+% 0 1 0 0afd0252650f07bc02371d49ca8ea624
+
+% 0 1 0 0afd0252650f07ae02371d49ca8ea616
+
+% 0 1 0 0afd0252650f07b402371d49ca8ea61c
+
+% 0 1 0 0afd0252650f07bd02371d49ca8ea625
+
+% 0 1 0 0d279ef8f3faed7101fb8a9080e2ef7c
+
+@ 0 1 0 17d9f76318a7b6c906ba68f88f0e1817
++ entry .Jws   JSON Web Signature：带有签名或 MAC 及其头部的内容
+
+% 1 1 0 16ae6fe5a457bae7048183941dbd92f9
+
+@ 0 4 0 08f45c7d675d50760eed1cc0c38cc92b
++       `Jws(payload, key)` 用密钥的密码算法所代表的算法签名。
++       `#verify` 对照公钥或对称密钥检查签名并给出载荷，这是取得载荷的唯一途径。
++       紧凑序列化是 `Text` 编解码器；JSON 序列化是 `#flattened`、`Jws.general` 和 `Jws.read`。
+
+@ 0 1 0 1ea449b11cb1e7810e477ec7c7cab379
++ entry .Jwe   JSON Web Encryption：用传达给接收者的密钥加密的内容
+
+% 1 1 0 0d4259bad081eca11eeb15b434744e4b
+
+@ 0 3 0 10243a5f08f9f5b300c0b7e37628aedc
++       `Jwe[content](payload, key)` 用类型参数所指定的内容密码算法加密，并通过接收者的密钥所代表的密钥管理系列传达其密钥；`#decrypt` 执行逆操作。
++       每种解密失败都是同一个错误。
+
+@ 0 1 0 1882e86fd62e8c350607debc7a10aeaa
++ entry .Jwk   JSON Web Key：以 JSON 对象表示的公钥、私钥或对称密钥
+
+% 1 1 0 12d35099084b1dc307cd7ac775a63298
+
+@ 0 3 0 047245c45fa3fc91051bd5681784f8a4
++       `Jwk(key)` 写出公钥，`Jwk(key, Divulgence)` 写出私钥或对称密钥。
++       `#publicKey`、`#privateKey` 和 `#symmetricKey` 把它读回为某个指定密码算法的密钥，`#thumbprint` 是它的 RFC 7638 指纹。
+
+@ 0 1 0 12c390603090b3b804fc2cb473c089b3
++ entry .Jwt   JSON Web Token：注册声明以及应用程序自己的声明
+
+% 1 1 0 1cd1f4f810fb48c604d6652902a5f17d
+
+@ 0 3 0 18c182f6f854eeda030f5ca22f1152c1
++       `Jwt.verify` 对照密钥检查已签名的令牌，并对照作用域内的 `Clock` 检查其有效期。
++       `#validate` 检查其签发方和受众，`#sign` 用它生成一个 `Jws`。

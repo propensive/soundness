@@ -1,0 +1,346 @@
+orthant 2 language
+
+@ 0 1 0 061e89e46176f7b71eb40e41e874c357
++ ## 光学组件
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 3 0 1a520ac0d6444f8c00d3aa448bd118dc
++ 修改[不可变]结构深处的某个值，通常意味着要手工重建它上面的每一层，嵌套的 `copy` 调用随数据深度增长。
++ [透镜](https://en.wikipedia.org/wiki/Bidirectional_transformation)代为完成这种重建。
+
+@ 0 4 0 00daa61991ad005c1f550b5d97b94def
++ `lens` 方法接受一个写成对路径的普通赋值的更新，例如 `_.opening.name = t"Act One"`，并返回新的结构。
++ `Each` 和 `Filter` 等光学组件让路径穿过集合的元素，因此一次赋值可以更新多个值。
+
+@ 0 3 0 039420d5ea2f395f1e0a5d98396896cb
++ 同样的语法也用于更新动态数据格式：[JSON](json.md)、[XML](xml.md)、[YAML](yaml.md) 和 [CBOR](cbor.md)。
++ 无论结构是 case class 还是解析得到的文档，深层更新看起来都一样。
+
+@ 0 1 0 1a8bc23bcd6435a01c292609ffb36047
++ ### 关于不可变更新
+
+@ 0 4 0 13713a18a06f8ce7112a2d22b0186f55
++ 不可变值可以安全共享，却不便修改。
++ 替换三层之下的一个字段，意味着复制三个外层值，并在途中写出每个字段的名称。
++ 函数式透镜解决了这个问题，但传统做法相当繁琐：为每个字段声明一个透镜值，用运算符组合，再用 `get` 和 `set` 应用。
++ 许多程序干脆放弃，转而使用可变状态。
+
+@ 0 3 0 1ea8a7c73be433c7137472dc8663f950
++ 在这里，透镜由类型生成，并隐藏在更新本来就会采用的语法背后：一条路径和一次赋值。
++ 正是这一点让[不可变性](../../philosophy/immutability.md)变得切实可行。
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ 所有内容都来自 `soundness` 包。
++ 第二个导入为错误选择一种[策略](errors.md#choosing-a-strategy)，第三个导入让示例能够打印结果：
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 14a8e8c04a5142900712dd4cabbec026
++ ### 更新字段
+
+@ 0 1 0 173d49d433b236a617c3ba1bd30ab7f9
++ 示例更新的是一个小结构：
+
+% 2 1 0 12d52ff077bad8eb0c030919888f7004
+
+% 0 1 0 18e69a97547fec0b16be3e00ad373594
+
+% 0 1 0 056c9a549708ab9e13a90c60ee855765
+
+% 0 1 0 10e00b2ffdfa7df4061ec3cbc6568f9d
+
+% 0 1 0 08a355cc3fcf249910f08e8af898a292
+
+% 1 1 0 16e7c977caabcc060fcb2f6b5d0352bd
+
+@ 0 2 0 1bbcb4e3729135e91ee49267351ac154
++ `lens` 把一个更新应用到值上。
++ 更新是一条以赋值结尾的路径。
++ 结果是一个新的 `Play`，其中只有第一幕的名称不同：
+
+% 2 1 0 1f1b8138385968971dcd5bdaa1daf61a
+
+% 3 1 0 0daad0ff8ad85fe80809b7c32205d0aa
+
+% 4 1 0 08425f1afc6cc77808f6f62db6ebac2c
+
+% 0 1 0 07ae937d275107df15455dec095e5ff0
+
+% 1 1 0 1b1afd143c88fa581c0a4fc0c4125491
+
+@ 0 1 0 12f5cf54dc189902140fed62eadec963
++ 原值保持不变：
+
+% 2 1 0 1346ac3646e3dacd065365ce6bbd1d30
+
+% 3 1 0 09de8c6a33b7a18912c19fb8033ba201
+
+% 4 1 0 0ba502f5fe7d7e63063a9a9192ba175e
+
+% 0 1 0 02aeddc7cfd591721e14ba9fa9e82cf8
+
+% 1 1 0 14278e77e9bbf2550294f99bf15c35a2
+
+@ 0 2 0 0b33d927579dbccc018d7d4df1210a08
++ 多个更新可以一起应用。
++ 共享前缀的更新只重建一次共享的结构：
+
+% 2 1 0 1f26c6e1793e9db30d40e2753dd00ea3
+
+% 3 1 0 0eb96d7a2249a87d1466630f5fa7e76b
+
+% 4 1 0 08c58afeb10ccc7a1d2c4dc849cd6aee
+
+% 0 1 0 0770c59bdafd55d11db1394278762469
+
+% 0 1 0 1141dbad5a708014154b83e8177b27a2
+
+% 0 1 0 05179b72b91442e41363af6aade30f95
+
+% 0 1 0 11b587b764b707bd123baa97a92f3eec
+
+% 1 1 0 09185809f62695cc061899487ad7f0b3
+
+@ 0 2 0 0fd06b7d1adfe75717a10028570f3920
++ 路径在代码编译时对照类型进行检查。
++ 不存在的字段会导致编译错误：
+
+% 2 1 0 09ed0eb84cab11a70d45624caf530547
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0ff82ef1521ab0ed17668a25ba500329
+
+% 1 1 0 0bf88182be7d41b00ccdfca2039624e2
+
+@ 0 1 0 0df530351ae1def906c5f27281eaa37d
++ ### 深入集合
+
+@ 0 1 0 1b33b408ae00b00a137cef79bebffa3a
++ 路径是一串步骤，括号中的步骤会进入集合：
+
+% 2 1 0 13de843719cc06b8064da16824ec1e28
+
+@ 0 7 0 0fd1207945ede14006610c597d86dba5
++ column  步骤
++ column  选取
++ row  字段名，如 `_.opening`  该字段
++ row  `(Prim)` 或任意序数  一个元素
++ row  `(Each)`  每个元素
++ row  `(key)`  `Map` 中某个键对应的值
++ row  `(Filter[T](predicate))`  匹配谓词的元素
+
+% 1 1 0 13bde55cf3cc6ac201c99c66caff3741
+
+@ 0 1 0 0ae76f020b7666cd1451a90f3ebbc9db
++ `Prim` 这样的序数选取一个元素：
+
+% 2 1 0 099fcb50ca5f24711b51693bf42abb44
+
+% 3 1 0 05ca514b5a4ddc9417b40049fa99fd91
+
+% 4 1 0 0ea6a4454a92301603c710ffeeabbfa5
+
+% 0 1 0 0aad29bea6111a0f1ee3cb76c76d2abf
+
+% 1 1 0 123fb1c6237df33216034e032cef53d4
+
+@ 0 1 0 024d8967f61d8a2105912a2286911d7b
++ `Each` 选取每个元素：
+
+% 2 1 0 0fdf82370d9eb5780f8b103b70c34991
+
+% 3 1 0 118d80a2c01fe842121591606db76ed1
+
+% 4 1 0 1af11da7b760b7d5044d487907338849
+
+% 0 1 0 0c6d09f84ff17a3b0a8ea511dab30ec5
+
+% 1 1 0 0eb13ececf860805015197f828896805
+
+@ 0 1 0 15b27a53612a731b1bd7a5d0a85053c4
++ `Filter` 选取满足谓词的元素：
+
+% 2 1 0 0bad82a0d574099018b530eef2abd85c
+
+% 3 1 0 12c1539d625451f01239c7c6830b41f7
+
+% 4 1 0 1f6c91fcafde3701143af99e79d6825c
+
+% 0 1 0 0e8c2f3d0d15b9900d8683bf3821f131
+
+% 0 1 0 0efc6c45ba7bf2e41a649d9da2cffde0
+
+% 1 1 0 1c33effadde30f6f1c554c33c1272279
+
+@ 0 1 0 1760ddffef428cf81873fc3c9c6413a7
++ ### 基于旧值更新
+
+@ 0 2 0 0d112d738008b5ea079762f3a849d9b6
++ 在赋值中，`prior` 是正被替换的值。
++ 因此，更新可以修改一个值，而不必将其整个替换：
+
+% 2 1 0 015d15c54b0e24d10e1595857949ffae
+
+% 3 1 0 13776523f4b707e61587dac3608c957c
+
+% 4 1 0 03633d1d0fe096c3095c5e9de446a87e
+
+% 0 1 0 12d3c78eba62680d1688e42c997c4eeb
+
+% 1 1 0 00237b56011aa79708eba6176d24f33e
+
+@ 0 1 0 16907c2794da691d0d5a805a99e459c6
++ ### 文档同样适用
+
+@ 0 2 0 1ee627eecf710b3d0341d848ff3609e3
++ 动态格式在各自的结构上定义了同样的光学组件。
++ 解析得到的文档用同样的语法更新：
+
+% 2 1 0 006dcfee6eee848b115ee09cd6fbc853
+
+% 0 1 0 05a986646a08a3110fe3504f78763cc0
+
+% 0 1 0 0df307d34435d9d5174e2d60b36d0bab
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 1788fe61149c683f1238000284fb816f
+
+% 1 1 0 1610964a685cf9ec071f2580197d50c6
+
+% 3 1 0 0aa7d2ab25309b670d85cf2dfe4fe9e5
+
+% 4 1 0 180173e6088eae161cddcbc837298c8f
+
+% 5 1 0 075b602a39322011131ffedde8431497
+
+% 0 1 0 1c4bebb57086e47215ffc32becd88550
+
+% 0 1 0 0d2a6762d2cd6e080a03093e5a44569f
+
+% 1 1 0 00632483412d9bd7137c9fa067510b1c
+
+@ 0 4 0 1d799e458363fd330c0efb707555cebe
++ `conversions` 导入让普通的可编码值（例如 `Text`、`Int` 或 case class）可以在 `=` 右侧代替该格式自己的值。
++ 每种格式导出自己的转换。
++ 它的光学组件要么从 `optics` 导入，要么无需导入即可在其伴生对象中找到：
+
+% 2 1 0 0c6d70362a4e6be801f0c48d6d60a780
+
+@ 0 9 0 14e94225ab8a6e6613e56cf0fe4b2995
++ column  格式
++ column  转换
++ column  光学组件
++ row  JSON  `conversions.encodableToJson`  `optics.jsonLens`、`jsonOrdinalOptical`、`jsonEachOptical`、`jsonFilterOptical`
++ row  TEL  `conversions.encodableToTel`  `optics.telLens`、`telOrdinalOptical`、`telEachOptical`
++ row  [XML](xml.md)  无：它位于 `Xml` 伴生对象中  `optics.xmlLens`、`xmlOrdinalOptical`、`xmlEachOptical`
++ row  YAML  `conversions.encodableToYaml`  在 `Yaml` 伴生对象中
++ row  CBOR  `conversions.encodableToCbor`  在 `Cbor` 伴生对象中
++ row  Protobuf  `conversions.encodableToProtobuf`  在 `Protobuf` 伴生对象中，按字段编号
+
+% 1 1 0 1fef5a339a31cb8a0e2ef17d3bb5f1dc
+
+@ 0 2 0 10774350c45678ea1f4f4cf618da2bf4
++ 因此，`Xml` 透镜赋值可以直接接受普通的可编码值，完全无需导入转换。
+
+@ 0 1 0 0c786f6bd6a0d61f1132ee1fff34a5d5
++ ### 作为值的透镜
+
+@ 0 2 0 1af23bf8104ea4ec043d8a28c8953c52
++ 在语法之下，透镜是一个普通的值：一个 getter 和一个 setter。
++ 在访问本身就是抽象的场合，它可以被召唤、传递和组合：
+
+% 2 1 0 0140ccafd6b39e36134dca1cc4d8da0f
+
+% 0 1 0 075157f245f6133d104f6ed8e5d1a13c
+
+% 1 1 0 0845ce9d303ae286038cefcdcd770023
+
+% 3 1 0 0625e2216b0aeaa11774ae723ac6181b
+
+% 4 1 0 13d4abd3ff40959411f5e875f3d327e8
+
+% 5 1 0 1327961b52f0aa9e0599a597b8a50255
+
+% 0 1 0 0434ff50258c75f0120e7de520ba1b4c
+
+% 1 1 0 0bda8a287c90555d19bbd725068a3c51
+
+@ 0 4 0 0d9692c829c54a4a10f1b83756d5a6c1
++ 两个透镜可以 `compose` 为一个，因此路径可以由分别持有的部分组装而成：一个指向字段的透镜，加上一个深入该字段内容的透镜，合成一个一直深入到底的透镜。
++ 如果整条路径在一处就已知，上面的语法表达得更直接。
+
+@ 0 1 0 199b8abde45b42550aa2d77aa0917d5b
++ ### 命名路径而不遍历
+
+@ 0 3 0 0bbb3445fec34c261ff5ac64ecf910f0
++ 用来书写更新的路径语法，也可以命名一个位置而不去访问它。
++ `Specific` 把路径映射到值。
++ 派生的[类型类]正是这样在单个字段上被覆盖，而不是针对整个类型：
+
+% 2 1 0 017134a7cf0279ef0d981a3cdcd1f7e0
+
+% 3 1 0 1992d6daa2b8f6f112c8a71566d2f22b
+
+% 4 1 0 197c53706844274c150b30a9d3973097
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0fee4c49cadb6c650eb4ea9106fabe19
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 0 1 0 19d0b88f53b3b85511bf5510ea5b8614
+
+% 0 1 0 14e134f289e218050506a5ca40ad1525
+
+% 0 1 0 14eedb47a4777ec703a042d85aad210c
+
+% 0 1 0 113b859219f033d4003d01bc90bbb2d1
+
+% 1 1 0 1966aca1ed7bb0df0366321d0ae89251
+
+@ 0 4 0 1e0ffc887d33906404fc31165c735405
++ 路径在代码编译时对照类型的结构进行检查，因此拼错的字段会导致编译错误。
++ 每个值的类型也必须与其所指字段相符。
++ 结果是一个从每条路径到其值的普通映射，[派生]在访问每个字段时会查阅它：
+
+% 2 1 0 170b49aa161165f7105d932753e85651
+
+% 3 1 0 1133734b0117500e09380b91f1ff32fb
+
+% 4 1 0 13d181904eeb6f831fcb1f1a9a5922c1
+
+% 0 1 0 1a3f351509e3443b10fb9a512411613d
+
+% 1 1 0 165f1101e5b0ca3919c1ac1045ade052
+
+@ 0 3 0 1eb1ee10cd56e4160c2ac416af423c47
++ [JSON](json.md) 的逐字段编码器覆盖就建立在这一机制之上。
++ 该机制并非编解码器专用：任何在派生时查阅 `Specific` 的类型类都可以用同样的方式覆盖。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 8 0 1f5a2bc689903d50096c96702ed53b67
++ - [JSON](json.md)、[XML](xml.md)、[YAML](yaml.md)、[CBOR](cbor.md)、[TEL](tel.md) 和 [Protobuf](protobuf.md) 描述了用同样的透镜语法更新的文档。
++ - [目录](catalogs.md)使用同样的字段路径按位置查找值。
++ - [集合](collections.md)描述了 `Prim` 这样的序数。
++ - [派生](derivation.md)解释了类型类实例如何由类型的结构生成。
++ - [不可变性](../../philosophy/immutability.md)解释了为什么值不会被就地修改。
++ - [注解](annotations.md)找到带注解的字段，并提供指向它的透镜。

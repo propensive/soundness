@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 1 0 0cfc4a9bc903f11c0101382a26fbb8f5
++ # `↯/s.129.1` – `Mathml.Error`
+
+@ 0 1 0 1fee3343235803d10685d0e77ee4be5f
++ Zgłaszany, gdy treści MathML nie da się odczytać jako typowanych elementów modelowanych przez
++ Archimedes.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 0633750a761f3241003f20d7d1304da7
++ Archimedes reprezentuje MathML jako typowane elementy, więc elementu ani atrybutu spoza
++ modelowanego podzbioru nie da się skonstruować ani sparsować.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Kod
++ column  Przyczyna
++ column  Komunikat
+
+% 0 1 0 13ac95b1c996ab3c12d3b37909f8699e
+
+% 0 1 0 1a3b6f1cf211d1660dd8db0a377544b2
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 0f81866afbb2c1c008c7f501250b126a
++ Należy sprawdzić element względem specyfikacji MathML oraz tego, co modeluje Archimedes.
++ Prezentacyjny MathML jest obsługiwany pełniej niż MathML treściowy.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0eb869781ddc9e8311864db28efb685c
++ - Źródło: `lib/archimedes/src/core/archimedes.Mathml.scala`

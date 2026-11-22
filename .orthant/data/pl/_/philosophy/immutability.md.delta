@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 1 0 142b83973858fed20ac3d5dd48e1d050
++ # Niemutowalność
+
+@ 0 7 0 1a230fbebbefcfc11cb6e74407e2fa77
++ Wartości Soundness są niemutowalne: raz skonstruowana wartość nigdy się nie zmienia, a każda
++ operacja, która by ją zmieniła, zwraca zamiast tego nową wartość. Eliminuje to całe kategorie
++ błędów – niespodzianki związane z aliasowaniem, wyścigi danych i zmiany odczuwane na odległość
++ – i sprawia, że wartość można bezpiecznie i swobodnie współdzielić między wątkami i zasięgami
++ bez kopiowania obronnego. O niemutowalnej wartości łatwiej też rozumować, ponieważ jej
++ znaczenie jest ustalone w chwili jej utworzenia i nie może go unieważnić kod działający
++ gdzieś indziej.
+
+@ 0 1 0 1e0bda0e5956cc2a0160c5289eda389e
++ ## Aktualizacja bez mutacji
+
+@ 0 5 0 19c178493ef357260f6607f371b646a3
++ Zarzut wobec niemutowalności jest zawsze ten sam: zmiana jednego pola głęboko w strukturze
++ oznacza odbudowę każdej warstwy nad nim. To prawda, ale jest to problem składni, a nie
++ semantyki – więc Soundness rozwiązuje go składnią. [Soczewka](../en/modules/optics.md)
++ przyjmuje aktualizację zapisaną jako zwykłe przypisanie do ścieżki i wykonuje odbudowę:
+
+% 2 1 0 039650cfae1264e0142553c689d387d7
+
+% 3 1 0 08ae8ed4d750f6d819fee9b799a0b21f
+
+% 4 1 0 1a33d307a99ae5c200c0d68df273d96a
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0a826de8ae4effd70e125f0b28f9b284
+
+% 0 1 0 020debf66e114ca6012828b10dd75205
+
+% 0 1 0 1ddf7b1759804b76189e14b087fb4351
+
+% 1 1 0 0a25eed5e86dcbb60fb30cc25599e3dd
+
+@ 0 3 0 132225dace18f3d6065f7ff46994ba04
++ Wynikiem jest nowy `Play`; oryginał pozostaje nietknięty, a każda inna referencja do niego
++ nadal widzi to, co widziała. Kilka aktualizacji stosuje się razem, a te, które mają wspólny
++ prefiks, odbudowują wspólną strukturę raz, a nie po razie dla każdej:
+
+% 2 1 0 0006f04d01654bc807968e629c6a0ab2
+
+% 3 1 0 0520a141cac424e6004cf8aeaa19769c
+
+% 4 1 0 0e7cb712fd9893f408c7f49a214796c2
+
+% 0 1 0 0dbc24d0de27c1dc15bed3f95832083e
+
+% 0 1 0 1603281dbfae6bc0117d3db346ca9aa2
+
+% 0 1 0 0dca8f83ab9724a11181ee68ec5b7eb0
+
+% 1 1 0 1381e7b34096df27089233877df9cbe3
+
+@ 0 2 0 075dd8b4becc7c051bd0f99fac49c57e
++ Ta sama składnia sięga przez kolekcje za pomocą `Each` i `Filter`, więc „nadaj każdemu
++ aktorowi wiek trzydziestu lat” to jedno wyrażenie, a nie ręcznie napisana odbudowa.
+
+@ 0 1 0 06ded5d5266d0294059bb92bf873e4c7
++ ## Współdzielenie bez kopiowania
+
+@ 0 4 0 14eb3a16ab4f1c550ca560f1bb28f55d
++ Niemutowalna wartość nie potrzebuje kopii obronnej, ponieważ nie ma się przed czym bronić.
++ `Data` przekazane trzem wątkom jest czytane przez trzy wątki; sparsowanego dokumentu
++ przechowywanego w pamięci podręcznej nie może zmienić ten, kto go pobrał; konfiguracja
++ przekazana podsystemowi nie może wrócić zmieniona.
+
+@ 0 4 0 12b9ee915926204303c41e2af6287ff8
++ To właśnie czyni współdzielenie strukturalne bezpiecznym. Soczewka odbudowuje tylko
++ kręgosłup, po którym schodzi, a każda gałąź, której nie dotknęła, jest *tym samym obiektem* w
++ starej i nowej wartości. Niemutowalność jest więc tym, co sprawia, że odbudowa jest tania: bez
++ niej współdzielenie podstruktury między dwiema wartościami byłoby błędem.
+
+@ 0 1 0 141458cbd430e910195f01db8bccd159
++ ## Gdzie mutacja przetrwała i dlaczego
+
+@ 0 2 0 1191bb0c606344bc0772e8670b0d3eaa
++ Niemutowalność jest właściwością wartości, a nie zakazem nałożonym na maszynę. Cztery miejsca
++ w Soundness są celowo mutowalne:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 143176bf35715a5c0808a88a03934fbc
++ column  Miejsce
++ column  Mutuje
++ column  Bezpieczeństwo zapewnia
++ row  budowniczy  bufor, którego jest wyłącznym właścicielem  to, że nic nie obserwuje stanów pośrednich
++ row  jądro strumieniowe  okno na bufor  sprawdzanie przechwytywania i separacji
++ row  `Canvas`  piksele, w miejscu  zasięg bloku `open` i uprawnienie `Write`
++ row  komórka atomowa  jedno współdzielone słowo maszynowe  niepodzielne operacje
+
+% 1 1 0 0421a2960068d86c01c37043ae4af191
+
+@ 0 1 0 12093d507dade89513a1c9bc9242c9a1
++ Pierwsze trzy są ograniczone.
+
+@ 0 2 0 1568d9bbf84829b705172c26c0db28cd
++ **Budowniczy** mutuje bufor, którego jest wyłącznym właścicielem, i na końcu daje
++ niemutowalną wartość. Nic nie obserwuje stanów pośrednich, więc nic od nich nie zależy.
+
+@ 0 6 0 1e7c55cf0a26e2841392056db47c9da9
++ **Jądro strumieniowe** udostępnia mutowalne okno na bufor, i właśnie to sprawia, że działa bez
++ kopiowania. To okno należy do dokładnie jednego konsumenta, a kompilator to egzekwuje:
++ `Stream` jest zdolnością na wyłączność, więc aliasowanie go albo pozwolenie mu na ucieczkę z
++ zasięgu, który jest właścicielem jego źródła, się nie kompiluje. Mutacja jest tu dozwolona,
++ ponieważ [sprawdzanie przechwytywania i separacji](capture-checking.md) dowodzi, że nikt
++ inny nie może jej zobaczyć.
+
+@ 0 5 0 1a9da3d198e21a4c054df4a851599267
++ **`Canvas`**, uzyskiwane przez otwarcie [rastra](../en/modules/images.md) do zapisu, mutuje
++ piksele w miejscu – ponieważ generowanie dużego obrazu po jednym wywołaniu funkcji na piksel
++ to zły kształt dla algorytmu rysowania. Mutacja jest ograniczona do bloku `open` i
++ uwarunkowana uprawnieniem `Write`, a `snapshot` wykonuje niezależną kopię dla wszystkiego, co
++ musi go przeżyć.
+
+@ 0 2 0 06ebaafe3e53caeb1fa9d496674440a6
++ We wszystkich trzech wzorzec jest ten sam: mutacja jest lokalną techniką implementacyjną z
++ dowodem ograniczenia, nigdy właściwością wartości widoczną dla innych.
+
+@ 0 7 0 1f1fbcafef1a1df7010542ef28025d98
++ **Komórka atomowa** jest wyjątkiem i warto ją tak nazwać, zamiast ukrywać. `Atomic[Int]` czy
++ `Atomic.Ref[State]` celowo *nie* jest ograniczona: cały jej sens polega na tym, że dwa wątki
++ widzą jedno miejsce w pamięci, więc żadna analiza aliasowania nie może pomóc i nie jest
++ podejmowana. Ograniczenie zastępuje inna gwarancja. To miejsce jest pojedynczym słowem
++ maszynowym, a każda operacja na nim jest niepodzielna, więc nie ma stanu pośredniego, który
++ mógłby zaobserwować inny wątek. Typ nie obiecuje, że mutacja jest niewidoczna; obiecuje, że
++ nie da się jej przyłapać w połowie.
+
+@ 0 4 0 13b31f2bd144bce214efc4839123d317
++ Dlatego operacje są nazwane od tego, którą wartość zwracają. `count.ere(_ + 1)` daje wartość,
++ którą wyparła, a `count.since(_ + 1)` – wartość, którą wstawiła, więc wywołujący może
++ stwierdzić, czy to on, a nie ktoś inny, dokonał przejścia – to pytanie pojawia się dopiero
++ wtedy, gdy mutacja jest współdzielona, i na nie `var` nie potrafi odpowiedzieć:
+
+% 2 1 0 1b9690b9eb41d622187b205741018c6f
+
+% 3 1 0 12d35964dd654e6a0367a75fd50dc5c4
+
+% 4 1 0 029018b9749c1cd911adc908e177f332
+
+% 0 1 0 1673e2b6ab600dac1654a0c5e24eff3e
+
+% 1 1 0 07ca53e1605b0ff40a810b4aabcb1e78
+
+@ 0 3 0 03551aa5779a10c0154e8e0fe5f1e1ba
++ Współdzielone komórki są narzędziem niskopoziomowym, a zbiór bibliotek używa ich tam, gdzie
++ przedmiotem jest współbieżność: przy nadzorowaniu zadań, akumulowaniu błędów w zasięgu i w
++ pierścieniach przekazywania pod jądrem strumieniowym. Nie modeluje się nimi wartości.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 5 0 0a4e170cbb75bf641a8c2e8c0366a897
++ Odbudowa nie jest darmowa. Aktualizacja przez soczewkę alokuje jeden obiekt na każdy poziom,
++ po którym schodzi, więc ciasna pętla aktualizująca głęboką strukturę alokuje więcej, niż
++ alokowałaby mutacja w miejscu. Tam, gdzie ma to znaczenie – a ma znacznie rzadziej, niż
++ podpowiada intuicja, bo alokacje są młode i krótkotrwałe – odpowiedzią jest budowniczy albo
++ mutowalny region o ograniczonym zasięgu, a nie uczynienie samej wartości mutowalną.
+
+@ 0 2 0 082b3c583579f6890b9b7f5c8b3c50db
++ Ten kompromis jest celowy: zapłacić odrobiną alokacji za wyeliminowanie klasy błędów, które
++ w przeciwnym razie znajduje się dopiero na produkcji, we wtorek, pod obciążeniem.
+
+@ 0 3 0 076397851cf4950004a37b97e0f66075
++ Zobacz [stany niemożliwe](impossible-states.md), by poznać pokrewną dyscyplinę dotyczącą tego,
++ czym może być wartość, oraz [sprawdzanie przechwytywania](capture-checking.md), by dowiedzieć
++ się, jak dowodzi się bezpieczeństwa ograniczonych mutacji.

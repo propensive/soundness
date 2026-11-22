@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 0adde46597424c431f799e23e4624b32
++ # `SN-924` – układ wyrażeń `for` (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Wtyczka kompilatora Decorum, która zgłaszała ten błąd, została wydzielona z Soundness i
++ jest teraz [Consequent](https://github.com/propensive/consequent), samodzielnym narzędziem
++ sprawdzającym Consequent Style. Reguła przetrwała tam pod nowym identyfikatorem, w którym litera
++ nazywa zasadę, z której się wywodzi:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Było
++ column  Jest
+
+% 0 1 0 19101b808ad2cf741e8bcf9023048630
+
+% 0 1 0 18091c160dd5850a0f41988d2e62c8a7
+
+% 0 1 0 1f28172c670dbe5f0b3df52996aabee2
+
+% 0 1 0 06471242c045f7b5073a51c5fef2b51d
+
+% 0 1 0 0d660d59197e310a0336ae62673aab58
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

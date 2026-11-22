@@ -1,0 +1,67 @@
+orthant 2 language
+
+% 0 1 0 1a81f3e3f59aced3026bcb5f80e98a13
+
+@ 0 1 0 08111229421f98810e0e453ea6046f90
++ 当 Obligatory 无法对传入的消息解除分帧时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 1501c917a46b95cb0ded5e50ab264d6f
++ Obligatory 的分帧解析器（`ContentLength`、`LengthPrefix`、`CrLf`）把字节流读取为离散的帧。
++ 当字节不符合预期的分帧时，抛出此错误。
++ 构造器接受一个 `reason: Reason`；渲染出的消息为 `could not deframe the message because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0b0c7d4858e26aa41b097bb455560614
+
+@ 0 1 0 19bc5ef0e23eadd61a7d2f241e848304
++ 输入在读完一个完整的帧之前就结束了。
+
+@ 0 1 0 0bd2030ca60c97ae0ecac2c8afd657ae
++ **示例。** `[↯/s.112.2.1] could not deframe the message because the input ended before a complete frame could be read`
+
+@ 0 2 0 0c2db92b1ed520f90f87d98caa8856d2
++ **解决方法。** 确认生成方写出了完整的帧；检查连接是否在消息中途关闭。
+
+% 0 1 0 1fa83631eabbef6414bbff68cd70cc1a
+
+@ 0 2 0 165bb3b13a4df8100efad2800c6c73f8
++ 在分帧要求 CR-LF 之处，回车符（`\r`）后面没有跟随换行符（`\n`）。
+
+@ 0 1 0 1685d38f67cb281c120f8d57957870f5
++ **示例。** `[↯/s.112.2.2] could not deframe the message because a carriage return was not followed by a line feed`
+
+@ 0 2 0 1eda4b9838fe3be50483c82794cf5a0a
++ **解决方法。** 确认生成方使用 CR-LF 行结束符；只有 LF 或只有 CR 的输入无法通过此解析器。
+
+% 0 1 0 09dd34b04086092900b3c264234e1584
+
+@ 0 2 0 04fd9f5c5e1e6e8d0acf6c6ea3d88b8b
++ `Content-Length` 头部的值无法解析为整数。
+
+@ 0 1 0 1383eb28e26587a300536838c5238cfe
++ **示例。** `[↯/s.112.2.3] could not deframe the message because the content-length header value could not be parsed`
+
+@ 0 2 0 196ecbfa17758fdb075e3fceb94db35d
++ **解决方法。** 检查头部的字节；该值必须是一个普通的十进制整数。
+
+% 0 1 0 1d1d57245c2eba441d4c65fa7a9a954d
+
+@ 0 3 0 121246c11f14a76601a5c262d340f0bc
++ 遇到了分帧解析器无法识别的头部（只允许 `Content-Type` 和 `Content-Length`）。
+
+@ 0 1 0 102c6e42affdf75c04abda25241bb6d9
++ **示例。** `[↯/s.112.2.4] could not deframe the message because an unrecognized header was encountered`
+
+@ 0 3 0 14609cb0551f929f1dabc7284aaff823
++ **解决方法。** 在把消息交给解析器之前去掉与分帧无关的头部；或者扩展解析器以接受该头部。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0a77515cdedf6f190c821317fd832271
++ - 源代码：`lib/obligatory/src/core/obligatory.Framing.scala`

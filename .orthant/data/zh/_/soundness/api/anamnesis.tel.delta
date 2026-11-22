@@ -1,0 +1,394 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 173a69bcaca401270896697d1732abc0
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 05f655824adb1808171ecd12095a7139
++ info   一个存放驻留值和类型化关系的内存存储，其 schema 就是数据库的类型
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0e7e557ecd0be4780632fc5b5aea3ccf
++     _Anamnesis_ 是存放程序工作数据的内存数据库。
++     值只存储一次，并由类型化的引用标识，而数据库支持的关系在其类型中声明，形式是由 `A -< B` 对组成的元组（“一个 `A` 可以有多个 `B`”），因此关联两个 schema 未连接的值是编译错误，而不是无声的数据损坏。
+
+% 2 1 0 09b99983a9c3867c108c6ddebbdbb2c8
+
+% 3 1 0 1607aaca2f9284e90f94f5deda09d4b5
+
+% 4 1 0 07c25a43934a5b74020e7fe5267531a2
+
+% 0 1 0 08d3ce257fc5476103a66cb0f2f4dd63
+
+% 1 1 0 1137c88ab018ad6113f529f4c649a1f0
+
+% 2 1 0 122f051aed08cb7814427c5c5e326c34
+
+% 0 1 0 1ac433ac6e8b61120355a636411e30f0
+
+% 2 1 0 0e9955499e6efe2a07838eee4d598bde
+
+% 3 1 0 0645dbdbfe12e6d20ebca4a10cfc68db
+
+% 1 1 0 00bffd138a88850d16195d8d8c9e284a
+
+% 0 1 0 171ebf761203b6521edc24b79cb72efa
+
+% 0 1 0 104cb34c5c8134781263ae42ccebf4bf
+
+% 1 1 0 04fee055964afdc402ec4a94f573bab1
+
+@ 0 7 0 07be55869e3d6769173cc8696fbbb121
++     `Database` 通常是一个 given，因为扩展方法 `store`、`reference`、`assign`、`unassign` 和 `lookup` 从上下文中找到它。
++     存储值的引用是一个 `Ref of Box in db.type`：同时以值和数据库为类型，因此它不会与指向另一类型的引用混淆，也不能用于另一个数据库，并且它通过应用来解引用，即 `box()`。
++     存储就是*驻留*：相等的值存储两次会得到同一个引用，因此数据库中的同一性按值判定，而 `reference()` 找到已存储值的引用，若该值未被存储则抛出 `Database.Error`。
+
+@ 0 2 0 1035cbc752cd13f21d8805de59fc8212
++     查询是针对 `lookup` 所返回引用的普通 Scala 谓词，因此它像程序的其余部分一样由编译器检查。
+
+@ 0 4 0 1553ba01cbc3b0081862abb1af140122
++     该库只有一个源集 `anamnesis.core`，可编译到每个平台。
++     `Database`、关系运算符 `-<` 和 `>-`、`Entity`、`Listable`、`Referenceable`、`enumerate` 以及五个扩展方法导出到 `soundness` 总括包；`Ref` 和 `Reference` 从 `anamnesis.internal` 导出到 `anamnesis` 包。
+
+% 0 1 0 0f99f8aa80857e0812cce17c5d96784f
+
+% 0 1 0 1681f54abda60b9800c415dbccbe362b
+
+% 0 1 0 18adccb27099ba8c0a1e30beb30347b7
+
+% 0 1 0 009d87d3cdc993d416734d1d9257db1c
+
+% 0 1 0 067041910b3e1456054eba2e23747ac6
+
+% 0 1 0 16d8a0e57ec465d61441770e338898b6
+
+@ 0 1 0 1c376424694dc3c10664414c1bbf3120
++ entry .Database   存放驻留值及其之间类型化关系的内存存储
+
+% 1 1 0 048c6513a17c719a0ff347a0356c59e7
+
+@ 0 4 0 0fb01ead06e84d820cb132add84bb9c3
++       `Database of relations` 保存值，并为其 `relations` 元组中的每个 `A -< B` 保存一个从 `A` 到 `B` 的一对多关系。
++       该元组就是数据库的 `#Topic`，而每个建立关系的操作都要求提供该关系位于其中的证据（`#Has`），因此 schema 在代码编译时就得到检查。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0fb4d460c19256c40dd82bf9fae114ef
+
+% 0 1 0 1c801a52c0ae2ac31925c76c3ddc5ab4
+
+% 0 1 0 15bf7531acc310d61cb113e85f09729e
+
+% 0 1 0 184e590cf19c2d65094f9238a250a7d3
+
+% 0 1 0 1209c6996f34498f0c295bbb48ac02a1
+
+% 0 1 0 0142642a3bf77309017e015aa3a66193
+
+% 0 1 0 0294f1838225497b01999d100672835a
+
+% 0 1 0 04a03d5b03dc482901050f08508ef078
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 1a601935f459683c101f3a1d188911c9
++       数据库的方法接受类型为 `in this.type` 的引用，因此最方便的调用方式是通过包中的扩展方法（`store`、`reference`、`assign`、`unassign`、`lookup`），并把数据库作为 given。
++       引用只对分配它的数据库有意义。
+
+@ 0 3 0 13908924f3e656f30b822f643543833f
++       `#store` 由一个互斥锁保护，因此并发的存储能一致地驻留；建立关系的方法则不受保护，从多个线程修改其关系的数据库需要自行同步。
+
+% 0 1 0 04165fec4bcc6ffe0e4ae1f53680cd2b
+
+% 0 1 0 0d68e2ad632421f60cf305e4695eb7c5
+
+% 0 1 0 0c8b0839625871121e3810db82109d69
+
+@ 0 8 0 1c5f7b410c73c72e169d5e800cb0ed00
++   entry .Relation   单个关系 `left -< right` 的类型，作为数据库 schema 的一个元素
++       一个密封的标记特质，从不实例化：`left -< right` 和 `right >- left` 都表示 `Database.Relation[left, right]`，而数据库的 `#Topic` 是由它们组成的元组。
++   entry .apply   一个新的空数据库，具有其期望类型所声明的关系
++       `Database()` 是透明的，从它被标注的类型中取得关系：`given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()`。
++       它为元组的每个元素分配一张关系表。
++   entry .Error   当向一个未存储的值请求其引用时抛出
+
+% 1 1 0 15b4f5570eefab950d56a60d64d8350e
+
+@ 0 3 0 07508e9d770db2670374ad2d952b78f3
++         错误 `↯/s.26.1`：_the database operation failed because the value has not been stored in the database_。
++         当值从未被传给 `store` 时，由 `Database#ref` 和 `reference` 扩展方法抛出；它需要作用域中有一个 `Tactic[Database.Error]`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 03a17dc00326ee161d26751b9ac78943
+
+% 0 1 0 02e33c38d413e5d30009c585eb0ea1e2
+
+% 0 1 0 16a5a288d7f65593181b2583b5ae8f43
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 07771e3e230a81e60cdc4e9aaf06b01d
++     entry .Reason   数据库操作失败的原因
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 39 0 1fcc943bd76e63b016e3cb9d877b05e2
++           一个只有单个分支 `UnknownReference`（编号 1）的枚举：该值尚未存储在数据库中。
++       entry #number   原因的编号，即错误代码的第二部分
++     entry .communicable   把 `Database.Error.Reason` 描述为一条消息
++     entry #reason   操作失败的原因，作为 `Database.Error.Reason`
++   entry #Topic   数据库的关系，作为由 `Database.Relation` 组成的元组
++       由创建数据库时的类型确定：在 `Database of (A -< B, B -< C)` 中，它是 `(A -< B, B -< C)`。
++   entry #AllRelations   数据库各关系的并集，`Tuple.Union[Topic]`
++   entry #Has   某个关系位于数据库 schema 中的证据：`relation <:< AllRelations`
++       `assign`、`unassign` 和 `lookup` 所要求的上下文证据 `db.Has[left -< right]`；找不到它时，该关系不在 schema 中，调用无法编译。
++   entry #allocate   一个给定类型的新鲜引用，尚未关联到任何值
++       递增数据库的计数器并返回下一个引用，类型为 `Ref of ref in this.type`。
++       `#store` 使用它；直接分配的引用没有可供解引用的值。
++   entry #dereference   引用所指的值
++       `ref()` 与之相同，它通过 `Ref` 扩展方法、以数据库为 given 来调用。
++       已分配但从未存储的引用会因底层映射抛出的异常而失败。
++   entry #store   驻留一个值并返回其引用：新的引用，或它已有的引用
++       相等的值共享一个引用，因此存储一个值两次是无害的，而同一性按值判定。
++       `store()` 扩展方法在作用域中有数据库时调用它。
++   entry #ref   已存储值的引用，若未存储则抛出 `Database.Error`
++       需要一个 `Tactic[Database.Error]`。
++       `reference()` 扩展方法在作用域中有数据库时调用它；从别处到来的值正是借此与数据库中已有的内容相匹配，而不是被再次存储。
++   entry #assign   通过 schema 中的某个关系关联两个引用
++       `db.assign(left, right)` 把 `right` 加入通过 `left -< right` 与 `left` 相关联的 `right` 集合，而数据库的 `#Topic` 必须包含该关系。
++       通常写作 `assign` 扩展方法。
++   entry #unassign   移除两个引用之间的关系
++       `#assign` 的逆操作：`right` 从与 `left` 相关联的集合中移除，关系的反向索引也会忘掉它。
++       移除一个从未建立的关系不会改变数据库。
++   entry #lookup   通过某个关系与一个引用相关联的每个引用，作为一个 `Set`
++       `db.lookup[Shelf, Box](shelf)` 是分配给 `shelf` 的每个 `Box`；没有关联的引用给出空集。
++       `lookup` 扩展方法从引用推断左侧类型。
+
+@ 0 4 0 072e3d466b7e12311938181983a8f8fa
++ entry .-<   schema 中的一个关系：`left -< right` 表示一个 `left` 可以有多个 `right`
++     `Database.Relation[left, right]` 的中缀别名。
++     数据库的类型就是由它们组成的元组：`Database of (Cabinet -< Shelf, Shelf -< Box)` 允许柜子有搁板、搁板有盒子，此外别无其他，因此在那里 `box.assign(shelf)` 无法编译。
+
+% 2 1 0 0cfd8fc04749264a1eeb467a69f37026
+
+% 3 1 0 019d4bc23ec8d22c0f3c87475779de79
+
+% 2 1 0 0616ed6dec18e2fb07f7da6ff924c53f
+
+% 3 1 0 180e473c12b11e7a044b9a10d33ec344
+
+% 0 1 0 1deec4d78c5bb6531a3ee79162967a81
+
+% 1 1 0 13fdd3de8676e0ff1a132036d8ab1c43
+
+@ 0 4 0 1e4bc7b82e07730b16dcd4a49c899e93
++ entry .>-   从右向左书写的关系：`left >- right` 表示一个 `right` 可以有多个 `left`
++     `Database.Relation[right, left]` 的中缀别名，是 `-<` 的镜像，用于从被拥有一方读起来更通顺的 schema：`Text >- Box` 与 `Box -< Text` 是同一个关系，因此一个盒子可以有多个文本标签。
+
+@ 0 3 0 02c18be752e2e80015b51a1801a66409
++ entry .store   在作用域中的数据库里驻留一个值，返回其类型化的引用
++     任何值上的内联扩展方法，需要一个 `Database` given。
++     它返回一个 `Ref of value in db.type`；已存储的相等值给出它已有的引用。
+
+% 2 1 0 0e7add17634712f207d5d32b35bde0ad
+
+% 3 1 0 05662256fe2771371e4a8501174d54c4
+
+% 5 1 0 08b485897506959b1a053810d5be445a
+
+% 6 1 0 026f6e03382c764b168ae9d1b21297ea
+
+% 0 1 0 12f8dffd07c17d0c020913da1172bb30
+
+% 0 1 0 15213a992e7a61280c067b7a79b29091
+
+% 1 1 0 0d9439649055b6611c104a9bac428984
+
+@ 0 5 0 15a5cce95dcc483315338650bab7ead2
++ entry .reference   作用域中的数据库里已存储值的引用
++     任何值上的内联扩展方法，需要一个 `Database` given 和一个 `Tactic[Database.Error]`；若该值从未被存储，则抛出该错误（`Database.Error.Reason.UnknownReference`）。
++     `store()` 会驻留一个新值，而 `reference()` 只查找已有的值。
+
+% 2 1 0 01bb89eac71e79df004afddf7a669735
+
+% 3 1 0 0f287361d495727e062a48e7c6ce1356
+
+% 4 1 0 142294f509e503221e30ac595770601a
+
+% 2 1 0 035f7f611be6037203624c1e00f0bae8
+
+% 3 1 0 1f6d960cf6bb1b0d031cfb9d3eb3c219
+
+% 0 1 0 1b627ba2857c734a1b432b1c5660a1d1
+
+% 0 1 0 0b944b3b6c38db5805054079f125ab52
+
+% 1 1 0 0a6b01f7e496dcd508d3c4ab318517b9
+
+@ 0 4 0 1fe59f18b9fd70dd0e3f7a81cf4246ff
++ entry .assign   通过数据库类型所声明的关系，把一个引用关联到另一个引用
++     `Ref of left in db.type` 上的内联扩展方法，需要 `Database` given 和 `db.Has[left -< right]`：只有当 `Shelf -< Box` 位于 schema 中时，`shelf.assign(box)` 才能编译。
++     对同一对引用赋值两次只留下一个关系。
+
+% 2 1 0 19a8ed2f071b86310d6925b9cfca2713
+
+% 3 1 0 19e0944276bae0460a3689961e14f053
+
+% 4 1 0 03e36d9928190e0305fe0b7c24861b33
+
+% 6 1 0 003b14b26707323600849586e7323f36
+
+% 7 1 0 057c11bdd843e3100c9039b14cbc4090
+
+% 8 1 0 06efd536ef2cd7231ce209afb0b7668c
+
+% 10 1 0 0eebe84a1e64e439123f6085328f83cd
+
+% 3 1 0 0fbc3020753cf01e17344b5e6a12a351
+
+% 1 1 0 199be1fb2f7877c509453f9b165ff7fc
+
+% 0 1 0 18d73f31d9b32cbf1faa698e025f4853
+
+% 1 1 0 0572836c0dd703681f102ee9313ef51f
+
+@ 0 4 0 09c3f30f4ffe0f82106638291cf37ce8
++ entry .unassign   移除一个引用与另一个引用之间的关系
++     `Ref of left in db.type` 上的内联扩展方法，需要 `Database` given 和 `db.Has[left -< right]`；它是 `assign` 的逆操作。
++     与 `left` 相关联的其他引用不受影响。
+
+@ 0 5 0 024aec2f206bc8fd165d35de25235287
++ entry .lookup   通过某个关系与一个引用相关联的引用，作为一个 `Set`
++     `Ref of left in db.type` 上的内联扩展方法，需要 `Database` given 和 `db.Has[left -< right]`：`shelf.lookup[Box]` 是分配给该搁板的每个盒子。
++     每个结果都是一个通过应用来解引用的 `Ref`，因此查询就是针对这些值的谓词：
+
+% 2 1 0 12f26b1b00286ebc14da93154cd1345b
+
+% 3 1 0 15c35a03564697850d2ebc1d3743e0e5
+
+% 4 1 0 17ec84de9eac1046184ed9d7f4bb931b
+
+% 6 1 0 19cfa6fe2fb2e8a1174d4168dce036eb
+
+% 7 1 0 0e1b26bf1eb32944075837f3b2fe5f29
+
+% 8 1 0 1655c77c0e7ad0d80ef925be48787c5c
+
+% 10 1 0 14b42fc38411f8571681e3412fed3d55
+
+% 0 1 0 0b7553f64845c6a90dedabf579d6b9cf
+
+% 0 1 0 0c8f70da1fbd577e154e08e8108aad15
+
+% 1 1 0 1935248c46a06ae01fb9bf48feb6bde1
+
+@ 0 3 0 08ae45b3ea358b541863fd5515c0740c
++ entry .enumerate   指向某个实体类型的每个引用，按其 `Listable` 实例的列举
++     `enumerate[entity]` 要求 `entity` 是一个具有 `Listable` 实例的 `Entity`，它就是该实例的 `list` 配上一个接受一切的谓词。
+
+@ 0 6 0 0167e303a610bd4a023c028612780a6b
++ entry .Ref   指向已存储值的引用，以值和持有它的数据库为类型
++     不透明类型 `anamnesis.internal.Ref`，在此导出。
++     来自 `store` 的引用具有类型 `Ref of value in db.type`：`of` 指明值的类型，`in` 指明其数据库，因此指向 `Box` 的引用不能传到需要指向 `Shelf` 的引用的地方，也不能针对另一个数据库解引用。
++     它的底层是一个 `Int`，因此引用的持有、比较和用作键都很廉价。
+
+@ 0 1 0 0a3e51848863cb9f1cd0fe20f2961851
++     引用通过应用来解引用，即 `ref()`，并以其数据库为 given：
+
+% 2 1 0 175f41e74ec2e3ce05ae361b2ffa1d22
+
+% 3 1 0 051ae75a80f0cbbf0be99178231729bd
+
+% 5 1 0 119f3f8fb7c439541a94dced7a37e37f
+
+% 6 1 0 18f6b85c742315600e3cd11eac4cd23d
+
+% 1 1 0 05a5323c7d1c942b01bbb756c8ca6f65
+
+% 0 1 0 151c27d960aee7bd1172f36c601ffbdd
+
+% 1 1 0 0b6eb352b66b16d806a29e0920ec71ed
+
+@ 0 5 0 0900c26b7405854708f2e9d9d85d9511
++ entry .Reference   按实体的键指向某个 `Entity` 的引用
++     不透明类型 `anamnesis.internal.Reference`，在此导出。
++     `Ref` 由数据库分配，而 `Reference[entity]` 是实体自己的键（其 `Operand`），以它所指的东西为类型；`Referenceable` 的实体类型能把键解析回其实体，而引用通过键自身的编解码器编码为文本并从文本解码。
+
+@ 0 1 0 06b5e193955fa984091cb98d0c96d4fe
++ entry .Entity   具有自己的键、可由 `Reference` 引用的值
+
+% 1 1 0 19379d2e5ed3fbc411dd691becf68273
+
+@ 0 3 0 1815476f353a16b60e629bc3ea0e3f76
++       `Entity` 是 `Operable` 的：其 `Operand` 类型成员是其键的类型，而 `#ref` 就是键本身。
++       伴生的 `Referenceable` 实例按键查找实体，`Listable` 实例则列举实体，`enumerate` 使用的就是它。
+
+% 0 1 0 1c752d312f285b38156e84d6cb6e6a6c
+
+% 0 1 0 129423d3027747140717c0641bbf7764
+
+@ 0 2 0 1bbd08cc560fe3950906d48100f4c9e7
++   entry #ref         实体的键，类型为其 `Operand`
++   entry #reference   按键指向该实体的 `Reference`
+
+@ 0 1 0 1f85b61f7e7d8c370f97b55be52c4b46
++ entry .Listable   列出指向某个类型每个实体的引用的类型类
+
+% 1 1 0 1bfa0daa6d372129057201fec38cd8d2
+
+@ 0 4 0 048e3d2290ee41d010ccfdee3e52d290
++       `Entity` 类型的实例列举指向其实体中被某个谓词接受者的引用；`enumerate[entity]` 列出全部引用。
++   entry #Self   该实例列举的实体类型
++   entry #list   指向被某个谓词接受的实体的引用
+
+@ 0 1 0 11a5367e6991faba09594574125d681e
++ entry .Referenceable   由键解析出实体的类型类
+
+% 1 1 0 097d13223d7b7dcc0064a72d21eb3374
+
+@ 0 5 0 0895a58b71ee360d1eaadb5ae857c4d3
++       `Entity` 类型（其 `Operand` 是键类型）的实例找到键所指的实体；用 `()` 应用一个 `Reference[entity]` 就是通过这个实例来解析它。
++       它还通过键类型自身的编解码器为 `Reference` 提供文本编解码器。
++   entry #Self     实体类型，其 `Operand` 是该实例的键类型
++   entry #lookup   键所指的实体
+
+@ 0 1 0 1fc32e6eaf8e1075068bfa2e8bef11ed
++ entry .internal   不透明类型 `Ref` 和 `Reference`，以及它们的伴生对象和扩展方法
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 10e1f80c287accfe0a6d2f159cb029bb
++       不供直接使用：该对象持有 `Ref` 和 `Reference` 的不透明定义，它们导出到 `anamnesis` 包并在那里文档化。
++   entry .Dereferenceable   `Ref` 的上界：一个其 `Form` 为所属数据库的值
++     entry #Form   引用所属的数据库类型
++   entry .Ref   指向已存储值的引用；参见 `anamnesis.Ref`
+
+% 1 1 0 1d189c18d3455e8c0a40928fb23d6dd2
+
+@ 0 3 0 0592f3b4a19be56510ca86acca1c3956
++         不透明类型 `Ref <: Dereferenceable`，底层为 `Int`。
++     entry .apply   在数据库中分配一个新鲜引用，同 `Database#allocate`
++   entry .Reference   按键指向实体的引用；参见 `anamnesis.Reference`
+
+% 1 1 0 02b1e566ada5e72f14435e1a6e237a81
+
+@ 0 9 0 0fe03cfee3eaf2af14861d448538c21c
++         不透明类型 `Reference[+entity <: Entity]`，底层为键。
++     entry .apply        按键指向实体的引用
++     entry .encodable    对于 `Referenceable` 实体，把引用编码为其键的文本
++     entry .decodable    对于 `Referenceable` 实体，从其键的文本解码引用
++   entry .expose   `Reference` 所持有的键，作为其 `Referenceable` 实例的 `Operand`
++   entry .apply   针对其数据库解引用一个 `Ref`，或把一个 `Reference` 解析为其实体
++       两个同名的扩展方法：`Ref of value in database` 上的 `ref()` 以数据库为 given 给出值；`Reference[entity]` 上的 `reference()` 通过其 `Referenceable` 实例查找实体。

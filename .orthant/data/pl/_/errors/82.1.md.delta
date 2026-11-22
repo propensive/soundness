@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 004a189db3b8fc040486759a485ec99f
++ # `↯/s.82.1` – `Outlet.Error`
+
+@ 0 1 0 0b1e50fb8169bb1f1f7db2befe00827b
++ Zgłaszany, gdy nie można odtworzyć dźwięku na urządzeniu wyjściowym.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 0dd58583515e43331e9883628a891426
++ Wyjście (outlet) to fizyczne lub wirtualne wyjście audio. Ten błąd obejmuje urządzenie, które
++ jest niedostępne, urządzenie, które jest w użyciu, oraz urządzenie, które nie przyjmuje
++ częstotliwości próbkowania, głębi bitowej lub układu kanałów danego dźwięku.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Kod
++ column  Przyczyna
++ column  Komunikat
+
+% 0 1 0 131917d41888c93508d3b2f020d1ab2a
+
+% 0 1 0 04373e3de0a557441ec7591974ea4594
+
+% 0 1 0 19a7267ec8af97de03b031d0bfa97411
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 3 0 0cd1f40d9e8ce3c41b797ad9abb153a1
++ Należy sprawdzić, czy urządzenie jest obecne i nie jest zajęte na wyłączność przez inny proces.
++ Jeśli winna jest konfiguracja, należy przekonwertować dźwięk do formatu akceptowanego przez
++ urządzenie albo odpytać wyjście przed odtwarzaniem.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1cb78eb31e7ff2be1891b6495803e5dd
++ - Źródło: `lib/cacophony/src/core/cacophony.Outlet.scala`

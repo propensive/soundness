@@ -1,0 +1,1515 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c29e8314bc38deb1a492ca41d270c11
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 06b9c1f3ce181208186553b55bf332a8
++ info   错误处理作为调用处的选择：类型中的 `raises`，作用域中的 `Tactic`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 16c172d9410cbe6b1d68ff527a9037de
++     _Contingency_ 将可能失败的代码与“失败时如何处理”的决定分离开来。
++     可能失败的方法在其返回类型中用 `raises` 声明这一点；在方法内部，`abort` 报告一个错误并停止，`raise` 报告一个错误并继续。
++     调用者通过在作用域中放入一个**战术**——即 `Tactic[error]`——来决定错误的去向：抛出它、使结果缺失、与其他错误一起收集、以一个值替换它、将它转换为另一个错误，或者终止进程。
++     可能失败的方法从不指明采用哪一种，因此同一个方法体适用于每一种应对方式。
+
+% 2 1 0 14f206d76925f4081ab10c7f30b54896
+
+% 3 1 0 0fd79df4edd049db0bcde5796e6e3ec6
+
+% 5 1 0 0bcfe3614bd566ed0868208ed98a6e78
+
+% 6 1 0 1ebd995c1dc6248b09a42b663e360004
+
+% 0 1 0 12934c70173a0e3117b692f1f1e164d8
+
+% 0 1 0 04639a66b4d34a9918430297a177e249
+
+% 0 1 0 104fd80c26fe836e161769de130e12f3
+
+% 1 1 0 18b2f9915bed9d9c034319a361c7fcd6
+
+@ 0 6 0 1eb1f6a8a54102bd1687f0965711aeb5
++     `Connection raises PortError` 只是上下文函数类型 `Tactic[PortError] ?=> Connection` 的别名，因此 `raises` 方法就是以上下文参数接收其错误处理方针的方法，而 `abort` 就是调用该方针的东西。
++     这一要求会向外传播：`connect` 的调用者要么自己声明 `raises PortError`，要么用下面的某个处理函数解除这项义务。
++     下面是同一个会失败的调用——解码一段不是数字的文本，它会抛出 `Number.Error`——在每种处理函数下的结果：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 12632cd97ed98e1008a3c75aac31b1e0
+
+% 1 1 0 1f68a5629f7b337b104f59d8d8831a00
+
+% 2 1 0 0175c93570be7a3b1f270e7abe3c2d37
+
+% 0 1 0 1b89f21b116972d006b18b4e80ff4ab5
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 13662b8583c5baf10420d2a385c00dd0
+
+% 0 1 0 1e5d47c1f789a78810590652ba70c4ae
+
+% 1 1 0 1f2c837985d743ba0462261e10e3ef81
+
+% 2 1 0 1331ca7e407add340493f4eb8c1c94f1
+
+% 0 1 0 190e0e8c923ff5ed1323d3b6abe45991
+
+% 0 1 0 08660c7421a6e56212476952244e4d3f
+
+% 1 1 0 16a7f0d6272c7b3303967b823fe13fb6
+
+% 2 1 0 116a09f5b827304f03810e4bb5400b19
+
+% 0 1 0 0edf383ea8ab5e691afc545124cdce1d
+
+% 0 1 0 1c82ca4909d915c21c596f60b6fec3d1
+
+% 1 1 0 15ecff079ca4e74216d5833d33bd8124
+
+% 2 1 0 07d656a2f8d96d2a14a0b238b8dc610c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 19fce888477ff0201ab388293ee62f7a
+
+% 0 1 0 107746abb83845c6114f395bea9ade81
+
+% 1 1 0 015cd61b47fbccb11d3f2c78ad1ed016
+
+% 2 1 0 0491ff23cfba137a149512c9242ffe58
+
+% 0 1 0 1fdbc2b20abf9d34035734c53179b9a4
+
+% 0 1 0 1670cc54faa9f1d6135a3f177b47c570
+
+% 0 1 0 088a3562ed9bfb9b1880b5856d9b4c74
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 0c8733bdd6031bf90219f5cf9c2a5d5c
++     各个组成部分，按其回答的问题划分：
+
+@ 0 19 0 06996f5f38a09c17163cfccdcde7ff80
++     - **声明失败**：`raises`、`raise`、`abort`，以及它们背后的能力 `Tactic`/`Emit`。`Emit` 只能报告；`Tactic` 还能中止。
++     - **一次性地、广泛地选择**：`strategies` 包，其中的 given 按名称导入——`throwUnsafely` 用于原型和入口点，`throwSafely` 用于 `CanThrow` 之下，`uncheckedErrors` 和 `fatalErrors` 用于被归类为 `Unchecked` 或 `Fatal` 的错误，`mitigation` 用于具有 `Mitigable` 转换的错误。`import soundness.*` 不会引入其中任何一个，因为通配符导入从不导入 given。
++     - **为某个代码块局部地选择**：`safely`（失败时缺失）、`unsafely`（抛出，并明确表明这一点）、`throwErrors`、`attempt`（一个 `Attempt`）、`capture`（错误本身，用于测试）、`amalgamate`（一个联合类型），以及处理函数构造器 `recover`、`mitigate`、`accrue` 和 `handle`，每一个都写成匹配分支，并用 `protect` 应用到代码块上。
++     - **收集每一个失败**：`raise` 记录错误并继续，因此累积式战术——`accrue`、`track`、`validate`——会收集一次校验过程中的每一个错误；`Foci`、`focus` 和 `Pointer` 指明每个错误发生在*哪里*；`venture` 和 `guard` 防止已记录的失败连锁引发虚假的失败；`Tactic#tolerate` 在周遭战术之内丢弃某个代码块的失败。
++     - **对错误分类**：`Unchecked`（可以不经处理就抛出）、`Fatal`（以某个 `Exit` 状态结束进程）和 `Mitigable`（转换为另一个错误）。
++     - **作为值的错误**：`Attempt`、`Venture`、`Errors`、`Validation`、`Expectation.Error`。
+
+@ 0 8 0 1ffabd5b207058bf11cf7a1cab7fc25f
++     战术是一种能力。
++     `Emit`，因而每个 `Tactic`，都扩展了 `caps.Control`：它捕获安装它的代码的栈上的一个返回点，因此在另一个线程上运行的方法体（任务的方法体）不能保留它，而且战术在其作用域关闭之后绝不会被使用。
++     周遭策略是例外，而且有意是纯的：不受作用域限制的抛出不保留任何返回点。
++     每个错误都是 `Hazard`——一个纯的 `Exception`——因此任何错误都无法把能力偷带出限制它的作用域；一个 `Diagnostics` given（来自 `errorDiagnostics`）决定每个错误是否捕获堆栈跟踪，而丢弃其错误的战术会自行提供 `Diagnostics.omit`。
+
+@ 0 5 0 057e7ea4fb4e2baa02b84f7de004f633
++     该库只有一个源集 `contingency.core`，构建在 `fulminate`（提供 `Error`、`Message` 和 `Diagnostics`）和 `vacuous`（提供 `Optional`）之上，可同样编译到 JVM、Scala.js 和 Scala Native。
++     除 `raising` 和 `FatalTactic` 之外的一切都导出到 `soundness` 总括包，而 `strategies` 会与总括包自身的同名包合并。
+
+% 0 1 0 0db7ca6617f1b5c50f03c89938e496e6
+
+% 0 1 0 0d0fb1f0acde56b91ea84e6ae51a5f09
+
+% 0 1 0 0cf6b86111cd3c8f1754ea96c2ed0521
+
+% 0 1 0 1b33897eb9cbb21d0998c47e67068454
+
+% 0 1 0 1edec44af7c5113d1231da2bf0256c07
+
+% 0 1 0 09c6ab96ab155d7205f2c796bb07569a
+
+% 0 1 0 0afc6443f648f4f31ac1dc48d6a16eab
+
+@ 0 1 0 17749d17f862a3dd09939d5db9a634b5
++ entry .Tactic   报告错误并以错误中止的能力：`raises` 所要求的东西
+
+% 1 1 0 018faaeb13a43d2b125235dd9786e829
+
+@ 0 6 0 0547deb5d718ab2b124a6d184c564854
++       `Tactic[error]` 是一个额外能够 `abort` 的 `Emit[error]`：一种替换值的非正常退出。
++       `success raises error` 就是 `Tactic[error]^ ?=> success`，因此每个可能失败的方法都以上下文参数接收一个战术，`raise` 调用它的 `record`，`abort` 调用它的 `abort`。
++       各自做什么由战术决定：`ThrowTactic` 抛出，`OptionalTactic` 以 `Unset` 跳出 `safely`，`AccrueTactic` 将错误折叠进累积结果并继续执行。
+
+@ 0 5 0 1fefa74e6867333a0a36a42d3bc28c0f
++       该类型在 `error` 上是逆变的，正因如此，周遭的 `ThrowTactic[Hazard]` 才能满足 `Tactic[PortError]`。
++       战术很少需要手工构建：处理函数（`safely`、`attempt`、`recover`…）和 `strategies` 中的 given 会提供一个，而 `summon[Tactic[PortError]]` 可取得作用域中的那一个，就像方法体调用 `#tolerate` 时所做的那样。
+
+% 2 1 0 1fbea3d31ca4c7aa06c070cc29212a9f
+
+% 3 1 0 0661b7aaba966b52105492ae7011e631
+
+% 0 1 0 1f84930ae4aea00c1f6a3b791b2c9833
+
+% 0 1 0 0c9dca013944409c16b20787dc35f6cd
+
+% 1 1 0 15362b11938f09b41d5e8d4e0c55cfb4
+
+@ 0 6 0 039403fecfcc111504d5fbe96962f722
++       战术是一种 `caps.Control` 能力，是共享的而非独占的：一个战术会被向其作用域报告的一切合理地别名引用（为 `as` 召唤的编解码器所捕获的战术，与 `as` 作为证据接收的是同一个），而且抛出错误不是一种消耗性使用。
++       基于边界的战术闭包捕获了一个栈标注，因此在另一个线程上运行的方法体不能保留战术，而且在安装它的代码块返回之后不得再使用它。
+
+% 0 1 0 176b8e6712fe1a460e4c441ec26634a7
+
+% 0 1 0 13ca7be10bc5477902d50924d02379da
+
+% 1 1 0 01b891656f16d06515635eab31f7660b
+
+@ 0 29 0 0d6d113bdbe0010d0acedeb15640fd74
++   entry #abort   报告一个错误且不返回
++       替换值的退出。
++       在快速失败的战术下，错误立即逃逸；在累积式战术下，错误被折叠进来，并放弃外围的聚合作用域；在 `VentureTactic` 下，只放弃该 venture。
++   entry #certify   聚合作用域的冲刷点：如果记录过任何内容，就放弃该作用域
++       如果战术是 `#tainted`，`certify` 不返回——该作用域带着累积的错误逃逸；否则它什么也不做。
++       在每个快速失败的战术上它总是什么也不做，因为记录下的错误早已逃逸。
++       `guard` 调用它，以便在受污染的战术下跳过一个代码块，而包级别的 `certify[error]()` 对作用域中的战术调用它。
++   entry #tainted   该战术的聚合作用域中是否记录过任何错误
++       在每个快速失败的战术上如实为 `false`，因为那里的 `record` 从不返回；并且会通过 `#contramap` 转发，因此污染会跨越经过 `mitigate` 的库边界：当调用者的作用域已受污染时，库内部的 `guard` 会被跳过。
++   entry #tolerate   运行一个代码块并丢弃它抛出的任何错误：得到它的值，或 `Unset`
++       代码块的结果，或者在记录了错误或代码块中止时为 `Unset`——这一切在周遭战术之内进行，而不像 `safely` 那样安装一个新的战术。
++       默认实现捕获快速失败的战术所做的逃逸；累积式战术（`AccrueTactic`、`TrackTactic`、`VentureTactic`）还会把累积结果回滚到代码块之前的状态，因此被容忍的错误不留痕迹。
++       这是编解码器宽松地解码可选字段时的抓手：字段的解码器在解析时已绑定到周遭战术，因此战术是唯一能截获其错误的地方。
++   entry #contramap   通过把每个错误转换为本类型的错误，得到针对另一种错误类型的战术
++       `tactic.contramap(lambda)` 是一个 `Tactic[error2]^{tactic}`，它的 `record`、`abort`、`certify`、`tainted` 和 `tolerate` 都转发给 `tactic`，每个错误先经过 `lambda` 处理。
++       该 lambda 是纯的 `->` 函数：共享能力只能保留共享能力和纯值，而错误转换器也没有理由捕获其他任何东西。
++       `strategies.mitigation` 和 `mitigate` 都构建在它之上。
+
+@ 0 1 0 1f125d97233fc82f1989254bbe253775
++ entry .Emit   以副作用方式报告错误的能力，但没有中止的权力
+
+% 1 1 0 1196204b27b638fa1f68c548cc81acfa
+
+@ 0 6 0 089c975927c1af4308ff3ba0a677a405
++       `Emit[error]` 可以 `record` 一个错误，但它本身不能停止：之后控制流是否继续由实现决定。
++       `raise` 只需要一个 `Emit`；`abort` 需要完整的 `Tactic`。
++       因此 `Emit[error] ?=>` 义务比 `raises error` 更弱，而作用域中的 `Tactic` 可以解除二者中的任何一个。
++       `handle` 是提供裸发射器的构造：其处理函数的每个分支都成为一个 `Emit`，它的 `record` 就地运行该分支的主体，而受保护的代码块继续执行。
+
+@ 0 4 0 1343937308b5ebda1fbb48877ccd5d72
++       发射器是一种 `caps.Control` 能力，并且是 `Findable` 的，因此缺少发射器时，报告中会列出能够提供它的选择包。
++       它只能保留其他 `Control` 能力：传给 `.apply` 的处理函数 lambda 可以向外层战术抛出错误，但不能捕获日志记录器或流。
+
+% 0 1 0 1472945676d8a6851330835323edb1b6
+
+% 1 1 0 0618164fef58622e07f05c996286215f
+
+@ 0 15 0 13318ea6e57ea11d030abf3ff3be0d25
++   entry .apply   在发射点运行处理函数的发射器
++       `Emit(handler)`（作用域中需有 `Diagnostics`）是一个 `Emit[error]^`，它的 `record` 对错误调用 `handler` 并返回。
++       该处理函数是一个被 `consume` 的函数，只能捕获 `caps.Control` 能力——即它向其抛出错误的外层战术——因为它所成为的发射器本身就是一个已分类的能力。
++       这就是 `handle { … }.protect` 为每个所覆盖的错误类型安装的东西。
++   entry #diagnostics   通过该发射器报告的错误在构建时所用的 `Diagnostics`
++       每个 `record` 和 `abort` 都以 `Diagnostics ?=> error` 形式的 thunk 接收错误，并用它来求值，因此决定是否捕获堆栈跟踪的是战术，而不是抛出错误的代码。
++       `ThrowTactic` 会捕获一个；`OptionalTactic` 则省略，因为错误会被丢弃。
++   entry #record   报告一个错误；控制流是否继续由实现决定
++   entry #contramap   通过把每个错误转换为本类型的错误，得到针对另一种错误类型的发射器
++       `emit.contramap(lambda)` 是一个 `Emit[error2]^{emit}`，它把每次记录都经过纯的 `lambda` 转发。
+
+@ 0 1 0 11b31f146c877c2a1fb6a08307a76fe0
++ entry .strategies   广泛适用、可导入的战术：抛出、在 `CanThrow` 下抛出、非受检、致命、缓解
+
+% 1 1 0 1fd15dc087ba59c80d8fe8a9b1bb00f8
+
+@ 0 4 0 015fb98790e5ad6e1121907c2d5a2a42
++       *策略*是导入一次便广泛应用的战术，而由 `safely` 或 `recover` 安装的*战术*只作用于某个代码块；二者是同一个类型 `Tactic`。
++       这一选择从不是隐式的：`import soundness.*` 不会引入其中任何一个 given，需要按名称导入。
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 126fc90197f79c23172b7f966270cd2e
+
+% 1 1 0 165c95a0ca89e5980b082532e6addc8f
+
+@ 0 6 0 04129275819bd58b0ebc2e3fb1aef683
++       周遭策略用于程序的入口点和原型开发——预期的演进方式是先在 `throwUnsafely` 下开发原型，随着程序日趋稳固，再把重要的地方改为真正的处理，而无需修改可能失败的代码。
++       方法内局部的 `import strategies.throwUnsafely` 会为其下的每个 `abort` 遮蔽该方法自己的 `raises` 战术，这是嵌套规则在按设计工作，但在 `raises` 方法内部很容易无意中这样做。
+
+@ 0 5 0 1c5d96c5da93dc4e0fa1b942ad278dac
++       `throwUnsafely`、`uncheckedErrors` 和 `fatalErrors` 是纯值，而不是受追踪的能力：不受作用域限制的抛出（或就地终止）不保留任何返回点，而受追踪的周遭战术要么会在派生编解码器合成的 thunk 中通不过层级检查，要么会被每个经由它抛出错误的 lambda 捕获。
++       `throwSafely` 是受作用域限制的那一个，它捕获其抛出所依据的 `CanThrow` 证据。
+
+% 0 1 0 13866403ec2f0aaa0b64c5800734cdec
+
+% 1 1 0 195a1d6a59a5945c1276c661232a0d00
+
+% 1 1 0 0a4ec694e65fa82c0e6b58befef60794
+
+% 0 1 0 1f270d499f35decd1d28cde9c6caddf6
+
+@ 0 17 0 02bd2831b640d77703caafe02bbc9854
++   entry .throwUnsafely   把每个错误作为普通异常抛出，不需要任何能力
++       一个纯的 `ThrowTactic[Hazard]^{}`，因此借助逆变，它一举满足所有 `Tactic[error]`。
++       错误用 `Diagnostics.capture` 构建，因此带有堆栈跟踪。
++       适用于脚本、原型和程序的最外层；库则应当说明自己做了什么，在义务不可能触发之处改用 `unsafely`，并在旁边写明理由。
++   entry .throwSafely   抛出，但只在作用域中有 `CanThrow[error]` 能力时才行
++       `throwSafely[error]` 是一个 `ThrowTactic[error]^{canThrow}`：它的抛出方式与 `throwUnsafely` 完全相同，但需要一个（已擦除的）`CanThrow[error]` given，因此在 `saferExceptions` 下，抛出的可能性在类型中保持可见。
++       它的捕获集是 `CanThrow` 证据，一种 `caps.Control` 能力，这使它无法进入在另一个线程上运行的方法体。
++   entry .mitigation   用于任何 `Mitigable to` 某个已被处理的错误的错误的战术
++       若作用域中有 `Tactic[error]^`，且有 `error2 is Mitigable to error`，则提供一个 `Tactic[error2]^`，它用 `mitigate` 转换每个 `error2`，并将其报告给外层战术。
++       这样，底层失败抵达 API 边界时，已被转换为该边界的词汇，而无需每个调用处重复这一转换。
+
+% 2 1 0 1f88572a25d8ea5e1a4195a94a762889
+
+% 3 1 0 11f04ac3a2e468cd118f4b98a2a495a9
+
+% 4 1 0 15f68c989931cde6149f091a14e8fa07
+
+% 0 1 0 0f102db49648e11a0e3f6a1ea4365fd8
+
+% 2 1 0 1f57ac2d5a4eb09e1341f601f2861020
+
+% 3 1 0 074ef10553e995d311c078e9cab0168e
+
+% 5 1 0 1e783ca33d42741a138bd06314f97d58
+
+% 0 1 0 0ad5745f7fae3db200a4ef72d2e0d5bd
+
+% 1 1 0 1ade3741001162830bd790a9c334525b
+
+@ 0 9 0 1a7036229d8aa8191d4eda3a1b3b3550
++   entry .fatalErrors   以错误的 `Exit` 状态终止进程，用于标记为 `Fatal` 的错误
++       一个纯的 `FatalTactic[exception]^{}`，适用于任何具有 `is Fatal` given 的错误类型，该 given 指明以什么状态退出。
++       适用于初始化期间的失败，这时没有任何有意义的方式继续执行。
++   entry .uncheckedErrors   不经处理地抛出任何标记为 `Unchecked` 的错误
++       一个纯的 `UncheckedTactic[error]^{}`，适用于任何具有已擦除的 `error is Unchecked` given 的错误。
++       错误带着堆栈跟踪抛出（`Diagnostics.capture`）。
++       它让一种不值得处理其错误的类型——实践中不可能发生的失败——无需在每个位置都有处理函数即可抛出错误，同时仍然声明这些错误。
+
+% 2 1 0 15b74d1966a36bf31fb41496aa604c53
+
+% 3 1 0 0e626d9b29ad14c403c99257327e84cc
+
+% 0 1 0 1086b9000364cb00034dadd240294fa4
+
+% 0 1 0 0add340533d4735c0368964f7d9160dc
+
+% 0 1 0 1084480cb27fbc1a0970f0181a0902c7
+
+% 1 1 0 0afd7f79c0b6bf6b0720c722ca255a8f
+
+@ 0 8 0 17088a1609a1474c0697947a2d283738
++ entry .raises   `success raises error`：可能抛出 `error` 的方法的返回类型
++     一个中缀类型别名：`success raises error` 就是 `Tactic[error]^ ?=> success`，即接收错误处理战术的上下文函数。
++     用它声明的方法就是以上下文参数接收方针的方法；方法内部的 `abort` 和 `raise` 调用该战术。
++     可能以多种方式失败的方法逐一写出每种错误：`Int raises Io.Error raises Number.Error`。
++     调用这样的方法，需要作用域中为每种错误都有一个 `Tactic`——一个 `strategies` given，或外围的 `safely`、`recover`、`attempt`… 代码块——或者外围方法本身为该错误声明了 `raises`。
+
+% 2 1 0 1c597e097741d31e0c1fe8d51af03d2a
+
+% 3 1 0 1747c7468ed1d9ab0fe9d9f24eb4b7ae
+
+% 0 1 0 01d04090df03cb5d0d199e92d9b07d2f
+
+% 0 1 0 1c93cb79119f1a3505a5301adc49b918
+
+% 0 1 0 1ea99e1c7c61d6a31f9d403bd58c2cb1
+
+% 1 1 0 066ff86b16673cf704c627635e342788
+
+@ 0 4 0 1b216ddc551a275d17eb004878b9037a
++     由 `raises` 调用初始化的 `val` 得到的是结果类型，而不是上下文函数类型：战术在调用处解析。
++     方法结果为 `S raises E` 的类型类实例无法在捕获检查下写出（每个 `?=>` 都会产生一个新鲜的根）；这样的实例改为以 `using` 参数接收其 `Tactic[E]`。
+
+@ 0 6 0 18df243bedb238eb0f3a514dd891c298
++ entry .raising   `success raising (E1, E2)`：以匹配类型为元组中的每个错误写一个 `raises`
++     `result raising (Io.Error, Number.Error)` 归约为 `Tactic[Io.Error] ?=> Tactic[Number.Error] ?=> result`，非元组的 `raising E` 归约为 `Tactic[E] ?=> result`。
++     它没有导出到 `soundness` 总括包，目前也无法取代 `raises`：方法返回类型中归约为上下文函数的匹配类型，会在跨模块的使用处使编译器崩溃，因此应当写的形式是每个错误链接一次 `raises`。
+
+@ 0 4 0 1cd5c2fc5beec5440095867bd8c682e5
++ entry .mitigates   `error mitigates error2`：`error2` 可以转换为 `error` 的证据
++     `error2 is Mitigable to error` 的中缀别名，使上下文界定或 `using` 子句可以按转换的阅读方向书写。
++     参见 `Mitigable` 和 `strategies.mitigation`。
+
+@ 0 6 0 0ef89767da05facb0d894738ec02fcd8
++ entry .tracks   `result tracks focus`：在作用域中有 `Foci[focus]` 时计算的结果
++     `Foci[focus] ?=> result` 的中缀别名，写在 `raises` 之后：`Unit raises Json.Error tracks JsonPointer` 是一次把每个错误连同其发生位置一起记录下来的校验。
++     `Foci` given 总是可以解析的（`Foci.default` 丢弃一切），因此 `tracks` 方法可以在任何地方调用，只有外围的 `track` 或 `validate` 才使位置变得可观察。
+
+@ 0 7 0 05f0370e77e25eb81110b7709b5907a2
++ entry .raise   报告一个错误并继续：保留值的报告
++     `raise(error)` 对作用域中的 `Emit[error]^` 调用 `record`，并返回 `Unit`。
++     在快速失败的战术下（`throwUnsafely`、`safely`、`attempt`…），控制流永远不会返回；在累积式战术下（`accrue`、`track`、`validate`、`handle`），控制流会返回，因此代码继续执行，而外围作用域的结果最终会被丢弃，取而代之的是累积的错误。
++     错误是一个 `Diagnostics ?=> error` 形式的 thunk，用战术自己的 `Diagnostics` 构建，因此抛出错误的方法不需要自己的 `Diagnostics`。
+
+@ 0 4 0 1258ccd483edf271194c0654275f96c5
++     由于 `raise` 返回 `Unit`，必须带着一个值继续执行的方法会在其后写一个*替身*值：`raise(error) yet 0`。
++     替身值应当无关紧要——下游不应依赖它，它也不应引发更多错误——而 `venture` 和 `guard` 正是让这一点成为结构上的保证，而非一厢情愿。
+
+% 2 1 0 0ab8bdc3121f5def12b4027bf79f192e
+
+% 3 1 0 18dcbb24788dbfd6095ba2a5f5d0e95b
+
+% 0 1 0 15a62a735783d8cb16d15f125bd17f9f
+
+% 0 1 0 01db3dbed26af0ba099f0eb81fed62ea
+
+% 0 1 0 06ad3e35c48d3688160c077587e797cc
+
+% 1 1 0 1a0d087130305f2c07635742740fb981
+
+@ 0 1 0 12179839f6cd1cff0cea80634d3ba67f
++     `raise` 只要求 `Emit` 这一较弱的能力；`abort` 需要 `Tactic`。
+
+@ 0 6 0 02dbc5489818eaeb069330eb93e696d0
++ entry .abort   报告一个错误且不返回：替换值的退出
++     `abort(error)` 对作用域中的 `Tactic[error]^` 调用 `abort`，其类型为 `Nothing`，因此它可以出现在任何需要值的地方。
++     在快速失败的战术下，错误逃逸出战术的作用域；在累积式战术下，错误被折叠进来并放弃该作用域；在 `venture` 内部，只放弃该 venture。
++     错误的 thunk 用战术的 `Diagnostics` 构建。
+
+% 2 1 0 0f138f8d355f8ab605c1a17d7540fdba
+
+% 3 1 0 18dd21fdee69d3760c28b288ad6800ad
+
+% 5 1 0 0f3ac47fd07dd0a61ce50e9d8f7f2c78
+
+% 6 1 0 014c91d83ee059d40140f54e9183b26c
+
+% 0 1 0 0557f5aaad87cb1e1e5baf689ac0c33a
+
+% 0 1 0 08ae0284b44ba73e1111006aeccda1d3
+
+% 1 1 0 0045803d24a9ae921c39a1064756c1a0
+
+@ 0 5 0 1a396eac69262110160a9da666f26a9b
++ entry .certify   如果记录过任何错误，就放弃外围的聚合作用域
++     `certify[error]()` 对作用域中的战术调用 `Tactic#certify`：在快速失败的战术下什么也不做，而在累积式战术下，它是受污染的作用域带着累积的错误逃逸、而不再继续执行的那一点。
++     `guard` 是围绕代码块表达同一件事的常用方式。
+
+@ 0 7 0 0bcd0607ee5ed91e01c142dcc05b1c46
++ entry .safely   运行一个代码块并使其失败成为缺失：得到值，或 `Unset`
++     `safely(block)` 在作用域中有 `OptionalTactic` 的情况下对代码块求值，并返回 `Optional[success]`：代码块的值，或者在记录或中止第一个错误时为 `Unset`。
++     错误本身被丢弃，因此它用 `Diagnostics.omit` 构建——不捕获堆栈跟踪——`safely` 也不需要自己的 `Diagnostics`。
++     代码块抛出的异常（代码块还会接收一个 `CanThrow[Exception]`）同样会被捕获并变为 `Unset`。
+
+% 2 1 0 1bcb3991a37e5d4a020abc99027fed7c
+
+% 3 1 0 1afc6a6927e90e5506bd8408f4dcfdc7
+
+% 0 1 0 08c2df03910729681f2c08256fc67838
+
+% 0 1 0 1450564fecd135fc1f2aa5ac14ac242e
+
+% 0 1 0 0c536abca33700700e27d763e8da7e8d
+
+% 1 1 0 119a7a75607a0525083a80391b6881e1
+
+@ 0 5 0 1d6c1bb6ca30cd1d19038f332e393890
++     错误类型由代码块的要求推断；在推断需要帮助时，或者代码块唯一的义务就是正在被解除的那一个时，用 `safely[Number.Error](…)` 指明它。
++     `safely` 安装一个*新的*战术：在累积式作用域内部，代码块中记录的错误不会被折叠进外层的累积。
++     `Tactic#tolerate` 是留在周遭战术之内的替代方案。
+
+@ 0 8 0 19281a7f419543df1082e3284bc9a450
++ entry .unsafely   运行一个断言不会出错的代码块：得到值，或者抛出
++     `unsafely(block)` 在 `ThrowTactic` 下对代码块求值，因此确实发生的错误会作为普通的非受检异常抛出，并带有堆栈跟踪。
++     它解除义务却不处理它——这在程序的边界处、在已经确认值没有问题的测试中、或在刚刚证明错误不可能发生的检查旁边是合理的——并且是一个可搜索的标记，标出保证终止的地方。
++     代码块还会接收一个 `Unsafe` 令牌，因此可以在其中调用由 `(using Unsafe)` 门控的方法。
+
+% 2 1 0 1ffa3427c52badc71e70d4a3da890f80
+
+% 3 1 0 194e89d9a0167f27129a84a911682d53
+
+% 0 1 0 1d48df9f7832d35701998cc79143a6ca
+
+% 0 1 0 0365352462c38c66031bc388ff428f26
+
+% 1 1 0 1db8526fbbde3f5019025089af917360
+
+@ 0 4 0 0923b326b122d7371657135514e11b32
++     优先使用在类型中携带证明的全函数 API，其次用 `mitigate` 转换为一个具名错误，最后才是 `unsafely` 并在注释中写明理由。
++     作为细化路径类型的 `success` 类型会被 `unsafely` 的类型变量拓宽；应把受作用域限制的检查放在 API 内部，而不是围绕调用。
+
+@ 0 5 0 0aa19093dea7d5eb116d4f28497a2a6a
++ entry .throwErrors   在给定 `CanThrow[error]` 的情况下，在 `ThrowTactic` 下运行一个代码块
++     `throwErrors[error](block)` 为代码块提供一个 `ThrowTactic[error]`，因此错误会被抛出；与 `unsafely` 不同，它要求作用域中有 `CanThrow[error]` 能力，因此在 `saferExceptions` 下，抛出仍然是受检的。
++     它是 `strategies.throwSafely` 的代码块形式。
+
+@ 0 7 0 09c20991a047edad10ddc2dc70d42ba1
++ entry .capture   运行一个预期会失败的代码块，并返回它抛出的错误
++     `capture[error](block)` 用 `EitherTactic` 对代码块求值，并返回它记录或中止时的 `error`。
++     成功的代码块本身就是一种失败——测试检查的东西不对——它会以携带所产生的值的 `Expectation.Error` 中止，因此 `capture` 需要作用域中有一个 `Tactic[Expectation.Error[success]]^`（周遭的 `strategies.throwUnsafely` 即可）和一个 `Diagnostics`。
++     以被捕获类型的异常形式抛出、而非经由 raise 报告的错误也会被捕获；任何其他异常都会向外传播。
+
+% 2 1 0 1ddba8e2bb4705a7015f65b888256460
+
+% 3 1 0 1ad4a4f3c2a9efa8065a026ae73b9e96
+
+% 4 1 0 0b0e9a5fb03f9e730680e807eb705076
+
+% 5 1 0 11c28ef1b708d5d50119cfbca4486f73
+
+% 0 1 0 1db1ff8e0b2e1750193c4e09105dc141
+
+% 1 1 0 0c887c0d5125c798033b7b7b8cdca937
+
+@ 0 3 0 04faf68ff82304081d2a32d2cbb5579f
++     错误类型必须显式给出（捕获它需要 `ClassTag`），这也使测试中的 `capture` 读起来就是它的断言：代码块必须恰好以这个错误失败。
+
+@ 0 5 0 15298a5d46493293121b2ad2d30e6cdd
++ entry .attempt   运行一个代码块并返回 `Attempt`：它的值，或它失败时的错误
++     `attempt[error](block)` 用 `AttemptTactic` 对代码块求值，返回 `Attempt.Success(value)`，或者在记录或中止第一个错误时返回 `Attempt.Failure(error)`，用于必须对两种结果分别处理的代码。
++     由于错误会被保留，它需要作用域中有 `Diagnostics`。
+
+% 2 1 0 1198d50e0a8c33f81a8862e67bcbd5fb
+
+% 3 1 0 05341eacf27b1dea06c49185e9e3386f
+
+% 4 1 0 03196f37417193d1016eb68eeae29292
+
+% 0 1 0 19f203982ed9a2e20251205d541eece4
+
+% 0 1 0 10fa0b47952df627188d48b0de90c6d4
+
+% 0 1 0 0ce5be532fa5d3941e8750a6a8e51c73
+
+% 0 1 0 0e9fb34d52dabeab0e93b99d47eb5346
+
+% 1 1 0 0930d031784036991999cf0bd6b2b645
+
+@ 0 4 0 02d69efca4db787a09b5bb3654a9d0ef
++ entry .amalgamate   运行一个代码块，并以联合类型返回其值或其错误
++     `amalgamate[error](block)` 用 `AmalgamateTactic` 对代码块求值，返回 `success | error`：值，或者记录或中止的第一个错误。
++     对结果进行匹配即可将二者区分开，无需任何包装。
++     需要 `Diagnostics`。
+
+% 2 1 0 02fe06beda9f28560f346188c23481bf
+
+% 3 1 0 0983109c0a41c3e614cc00def39b3158
+
+% 4 1 0 10f3a176bb373dc51c3d358ed194c3b3
+
+% 0 1 0 0dbb4366ee70488f02730181de8f2e2a
+
+% 0 1 0 1d2a2d7837cb9ff513cfe6a39a82e7a6
+
+% 0 1 0 0e0edaef925a67e3042025ba3f0b46ac
+
+% 1 1 0 02e66939e970e2de1c52868584700f0c
+
+@ 0 6 0 19f643c35de4248e027bbe3a91c14270
++ entry .abortive   在 `HaltTactic` 下运行宏的代码块：错误变为编译错误
++     用于宏实现，作用域中需有 `Quotes`。
++     `abortive[error](block)` 提供一个 `HaltTactic[error, success]` 和 `Diagnostics.omit`，因此在代码块中记录或中止的错误会使编译停止，并以该错误的 `labelled` 消息（其 bolt 代码和文本）作为诊断信息。
++     在展开时解析字面量的宏会把解析过程包在 `abortive` 中，以便在字面量书写之处报告格式错误的字面量。
+
+@ 0 1 0 1fd2fb8d51fb0795055423dfb2e09c61
++ entry .Attempt   `attempt` 的结果：携带值的成功，或携带错误的失败
+
+% 1 1 0 1320a17fc27bfe6a1632392c69099c6b
+
+@ 0 3 0 0cc668f5efe33c2d051e90698d7df86e
++       一个有两个分支的枚举，`Success(value: result)` 和 `Failure(value: error)`，其中 `error <: Hazard`。
++       `attempt[error](block)` 是产生它的方式，而它上面的方法可以检视、变换结果，或将其重新转为一次 raise。
+
+% 2 1 0 01b4ac3d860ae96f07c7a967433d2ae7
+
+% 3 1 0 11f46bdc988eed560a80dcd328b95851
+
+% 4 1 0 0bf5338dc541561f05681bcfb2e945e3
+
+% 0 1 0 1de41422aa53ce3210b2b05184efdd75
+
+% 0 1 0 08143e761400665e0dd8e3ff8fd75e5e
+
+% 0 1 0 08e5da795198d82d12270e04be2c13b6
+
+% 0 1 0 1aae8e580a74c7871ce77690f3a833b4
+
+% 1 1 0 03d57b89b209893f17977c5c4e99db51
+
+% 1 1 0 14cfb33fc51b9f2f0d6547b674285fb0
+
+@ 0 17 0 13b6a6418c6b7bdf0e40b21ac19031b1
++   entry #failure   这是否是一个 `Failure`
++   entry #success   这是否是一个 `Success`
++   entry #map   变换 `Success` 的值；`Failure` 原样通过
++   entry #handle   通过偏函数把 `Failure` 的错误替换为另一个错误
++       `attempt.handle { case Number.Error(text, _, _) => InputError(text) }` 把这些分支应用于 `Failure` 的错误，分支未覆盖的错误保持原样，并把错误类型拓宽为 `Hazard`。
++       `Success` 保持不变。
++   entry #acknowledge   对 `Failure` 的错误执行一个副作用，并返回此 attempt
++       用于记录失败而不消耗它：如果偏函数在该错误上有定义就应用它，无论如何都原样返回 attempt。
++   entry #apply   `Success` 的值，或者以 `Failure` 的错误中止
++       `attempt()` 是 `result raises error`：它把 `Attempt` 重新变为针对作用域中战术的一次 raise，因此为检视而捕获的值可以重新汇入普通的控制流。
++   entry #recover   `Success` 的值，或者根据 `Failure` 的错误计算出的替代值
++       `attempt.recover { case error => fallback }` 在有值时就是该值，否则是对错误应用偏函数的结果；它必须覆盖可能遇到的每一个错误。
+
+@ 0 7 0 0483d68840adaebc04b8bd3020552a53
++ entry .recover   通过提供替代值来处理所选的错误，配合 `protect` 使用
++     `recover { cases }.protect(block)` 运行代码块，并为分支所覆盖的每种错误类型提供一个战术；遇到第一个被覆盖的错误时，放弃代码块，并返回匹配分支主体的值作为替代。
++     处理函数写成匹配分支，而且必须内联书写——宏在编译时读取这些分支以找出它们覆盖哪些错误类型，`protect` 正是由此得知要注入哪些战术。
++     分支未覆盖的错误不会被处理：它的 `raises` 义务照常向外传播。
+
+% 2 1 0 0052e4c5fc2bbe361ec7c6275421efdf
+
+% 3 1 0 01c2ecd62cbe44770037712a7d87b8be
+
+% 2 1 0 11af4061ad0970140a37e4be221a68f7
+
+% 0 1 0 1220731fcd70d6e41cd52ca75f1fbe53
+
+% 0 1 0 1f6182a93c56764310c68e45473a3b4c
+
+% 1 1 0 0ae166d117f374da0a24939c4c050132
+
+@ 0 7 0 1ad00071db62e57b1f6f283e43c5b3a1
++     匹配错误类型联合的分支（`case error: (Io.Error | Number.Error)`），或匹配联合类型别名的分支，会为每个成员注册一个处理函数。
++     模式必须对其错误类型是穷尽的（每个字段都是通配符或绑定的 case class 模式；可变参数字段写作 `arguments*`），否则就是编译错误：`recover` 不能只处理一个类型的一部分。
++     直接写在 `inline def` 内部的 `recover` 无法解析其战术；应把方法体委托给一个非内联的辅助方法。
++     分支主体可以向外层战术抛出错误，但不能捕获非 `Control` 的能力，例如日志记录器。
+
+@ 0 1 0 0493fa687c3fc76a143217a00ab64587
++ entry .Recovery   一个 `recover` 处理函数，等待它所保护的代码块
+
+% 1 1 0 1ac142b73fe529b10a0f662da622ac1e
+
+@ 0 4 0 0364bf7d7844c70d1f73040ceb1db1eb
++       `recover { cases }` 是一个 `Recovery[lambda]`，其类型参数以类型 lambda `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result` 记录分支所覆盖的错误类型；随后 `.protect(block)` 为每个被覆盖的类型向代码块注入一个战术。
++       该值只会以 `recover { … }.protect { … }` 的形式使用。
+
+% 0 1 0 010135e281dc4ccf19f1bca6cb6a1041
+
+@ 0 6 0 12660bd87dadd90d0418b60e4fa17370
++   entry .protect   在恢复的战术下运行代码块，用分支的值替换被覆盖的错误
++       在 `boundary` 内运行代码块：每个被注入的战术在 `record` 或 `abort` 时，对错误应用处理函数，并带着分支主体的值作为代码块的结果跳出。
++       替代值以 `Recovery.Escape` 的形式传递，因此类型错误的分支主体会在 `protect` 处成为编译错误。
++   entry .Escape   把恢复得到的值带出受保护代码块的载体
+
+% 1 1 0 15de3033e24687cc020b9b6ddaf170be
+
+@ 0 10 0 11c87fcfe4bb8c211593ebe4e8145d16
++         一个无栈异常，从构造上就是纯的，它在一次 `protect` 调用的两个帧之间以无类型引用的形式携带分支主体的值。
++         不由用户代码抛出。
++     entry .apply   包装一个值以便逃逸
++     entry #value   恢复得到的值，具有其原始类型
++     entry #fillInStackTrace   返回自身：逃逸从不记录堆栈跟踪
++   entry .EscapeTactic   `protect` 背后的战术，带着逃逸的值跳出 `boundary`
++       一个基于 `boundary.Label[result]` 的 `Tactic[Recovery.Escape[result]]`，使用 `Diagnostics.omit`：它的 `record` 和 `abort` 解开逃逸的值并跳出。
++       `protect` 为每个被覆盖的错误类型对它做一次 contramap。
++   entry #handler   匹配分支，作为从 `Exception` 出发的偏函数
+
+@ 0 7 0 12aca1d466bfd0d806d87ec99e4e491c
++ entry .mitigate   把所选的错误转换为另一个错误，再由后者传播，配合 `protect` 使用
++     `mitigate { cases }.protect(block)` 运行代码块，并为分支所覆盖的每种错误类型提供一个战术；被覆盖的错误经过其分支处理，分支返回的错误会针对*作用域中该类型的*战术抛出——因此代码块的底层失败就变成了外围方法所声明的错误。
++     每个分支主体的错误类型都必须在 `mitigate` 处的作用域中有一个 `Tactic`，否则宏会以 _There is no available handler for E_ 停止。
++     与 `recover` 一样，分支必须内联书写。
+
+% 2 1 0 0727175a0e04558316a5366ef9c3c80d
+
+% 3 1 0 131b9085ce3cbe331f011dfb1bb49e9b
+
+% 4 1 0 1fec22d11c78f71b0eefe45cad497a37
+
+% 0 1 0 0efb95b87190163f153f78929b38df77
+
+% 0 1 0 01dea307f8a723230d1eef47b5db4d2c
+
+% 0 1 0 17d2e9898e703a9d0b273ae553954af5
+
+% 0 1 0 08d2b72f78a0df861c2dac25b92d6998
+
+% 0 1 0 134c730e4949c1811e786f11e1a53293
+
+% 0 1 0 1fb44a2e09851d7e0a777a2fe84a9834
+
+% 0 1 0 0d9df0dbb90e72f30df8633733050711
+
+% 1 1 0 0410066fdddb04e306d01a0f39dcf1c1
+
+@ 0 8 0 1c31c31273383cb602bcc73085d48cf9
++     缓解可以串联：一个 `mitigate` 嵌套在另一个之中，会先把 A 变为 B，再把 B 变为 C。
++     污染会跨越缓解——内层战术的 `tainted` 转发给外层——因此受保护代码块内部的 `guard` 能看到调用者的累积。
++     分支主体在代码块的任何 `Diagnostics` 之外构建其错误，因此要么导入一个（`errorDiagnostics`），要么复用原错误的：`InputError(text)(using error.diagnostics)`。
++     与 `recover` 一样，直接位于 `inline def` 内部的 `mitigate` 找不到战术；应委托给非内联方法。
++     `strategies.mitigation` 根据 `Mitigable` 实例隐式地应用同样的转换，只要存在外层战术即可。
+
+@ 0 1 0 0aa3ebbd2bf5697b1c84cf51ebeada23
++ entry .Mitigation   一个 `mitigate` 处理函数，等待它所保护的代码块
+
+% 1 1 0 1193c176fdfc6b2d1e235108fafd9149
+
+@ 0 4 0 097ff684afc2545a18d7b6803acea8dc
++       `mitigate { cases }` 是一个 `Mitigation[lambda]`，在其类型 lambda 中记录被覆盖的错误类型；`.protect(block)` 为每个类型注入作用域中针对该分支*结果*错误类型的战术，并经由该分支做 contramap。
++       只以 `mitigate { … }.protect { … }` 的形式使用。
+
+% 1 1 0 1588bdb92872c0d20c15bd0ab1118ec9
+
+@ 0 2 0 06d7988e10f14d2519246d44c9acbd6a
++   entry .protect   运行代码块，把每个被覆盖的错误转换为其分支的结果后抛出
++   entry #handler   匹配分支，作为从 `Exception` 出发的偏函数
+
+@ 0 9 0 08000030291ecfa7068e14c7658ae2e5
++ entry .accrue   把每个所选的错误收集进一个累积的错误，配合 `protect` 使用
++     `accrue(initial)(combine) { cases }.protect(block)` 运行代码块，并为分支所覆盖的每种错误类型提供一个 `AccrueTactic`。
++     代码块抛出的每个被覆盖的错误都用 `combine` 折叠进累积结果，然后代码块继续执行；当代码块结束（或中止）时，如果累积了任何内容，累积的错误就会针对外围的 `Tactic[accrual]` 抛出，而代码块自身的结果被丢弃。
++     如果什么也没有累积，就返回代码块的值。
++     `cases` 只*指明*被覆盖的类型（它们的主体不会运行）；折叠由 `combine` 完成，它是一个纯的 `->` 函数，因为在竞争下它可能会被重新运行。
+
+% 2 1 0 1794952e16c1efa101664331802ea178
+
+% 3 1 0 0544a13dc40ca09314711fa0a63a0f8d
+
+% 4 1 0 08df1bd162afd96c0d05b78fef92c5a2
+
+% 5 1 0 056d07afdaaa679d0f7097c2b8721d94
+
+% 1 1 0 0b70e9416e8ea449082f240177fed96d
+
+% 3 1 0 0c5575e974ae0f8d1402c757d2b03f3f
+
+% 4 1 0 1dc9061b24480b131df0f5c2dd782fc3
+
+% 0 1 0 1094b69efea0a3190d69581d19e0ab3d
+
+% 0 1 0 1eca3b7eb688d11a10dd31bd83c6617c
+
+% 0 1 0 176f1182edf3d71f1acc8e1c2edc757e
+
+% 0 1 0 1afc100813f5fc1103f7f1575cd51b40
+
+% 0 1 0 162d4a480547324b189e61e83f0e1ee0
+
+% 1 1 0 06051c1d3b2c0b791cbb63f6e83c99f8
+
+% 2 1 0 0b01e0b30826d03207abd7ad4e2d0c38
+
+% 3 1 0 0e4d5bdfbf9cfc8f0cf690d4d85d01a0
+
+% 0 1 0 1c461c024c9d61d21c4fd3eba854c2ce
+
+% 1 1 0 1879c21317c3e4091697bfe3decfea19
+
+@ 0 2 0 1c2b095557436b6a12702398298ab657
++     累积类型必须是 `Hazard`，因为它会被抛出；`validate` 是与之对应的孪生构造，其累积结果作为普通值返回。
++     `track` 为每个错误添加一个焦点。
+
+@ 0 1 0 167e52e627fc09751c3dd0d4df273ec9
++ entry .Accrual   一个 `accrue` 处理函数，以及它所安装的战术
+
+% 1 1 0 18c0a90e6d4b16911ed1dea144f02d8d
+
+@ 0 4 0 13ba3088649f4d820074e1e447419fdc
++       `accrue(initial)(combine) { cases }` 是一个 `Accrual[accrual, lambda]`，持有初始累积结果、组合函数和分支；`.protect(block)` 在由所有被覆盖错误类型共享的一个 `AccrueTactic` 下运行代码块，需要作用域中有一个 `Tactic[accrual]^` 和一个 `Diagnostics`。
+
+% 0 1 0 1081758709fc4e320a1f8250a610716a
+
+@ 0 5 0 14e2065e52b5c97b0bfed4ccad2c1931
++   entry .protect   运行代码块，把每个被覆盖的错误折叠进累积结果；如有累积则将其抛出
++       如果什么也没有累积，就返回代码块的值。
++       否则——无论代码块是完成、中止还是抛出异常——都针对外围的 `Tactic[accrual]` 记录累积的错误并将其抛出，因此代码块的结果永远不会到达调用者。
++   entry .AccrueTactic   `accrue` 注入的战术：把每个错误折叠进累积结果并继续执行
+
+% 1 1 0 0a0c00939e895df919c170f3d2bc1138
+
+@ 0 18 0 016d50ca5188a90303a543b59857b75d
++         一个基于初始 `accrual` 和纯函数 `combine: (accrual, Exception) -> accrual` 的 `Tactic[error]`，并带有它用来构建错误的 `Diagnostics`。
++         `record` 把错误折叠进来并返回；`abort` 把错误折叠进来并抛出累积结果；`certify` 在累积了任何内容时抛出累积结果；`tolerate` 把累积结果回滚到其代码块之前所取的快照。
++         累积结果保存在一个原子单元中，因此该战术可以安全地在同一作用域的多个线程之间共享，但 `combine` 在竞争下可能会被重新运行，因此必须是纯的。
++     entry #diagnostics   构建错误所用的 `Diagnostics`
++     entry #record   把一个错误折叠进累积结果并返回
++     entry #abort   把一个错误折叠进来并抛出累积的错误
++     entry #certify   如果累积了任何内容，就抛出累积的错误
++     entry #tainted   累积结果是否与初始值不同
++     entry #tolerate   代码块的值，或者 `Unset`，同时把累积结果恢复到原来的状态
++     entry #accumulated   迄今为止的累积结果
++     entry #changed   累积结果是否与初始值不同
++   entry #handler   指明被覆盖错误类型的匹配分支
++   entry #initial   任何错误发生之前的累积结果
++   entry #combine   把每个错误折叠进累积结果的纯函数
+
+@ 0 7 0 0b45531c1504d83102cb367d48d813d5
++ entry .handle   以副作用方式运行所选错误的分支主体并继续执行，配合 `protect` 使用
++     `handle { cases }.protect(block)` 运行代码块，并为分支所覆盖的每种错误类型提供一个 `Emit`——而不是完整的 `Tactic`：对被覆盖错误的 `raise` 会就地运行其分支主体，然后控制流回到代码块，代码块继续执行。
++     分支主体返回 `Unit`。
++     未被覆盖的错误，或被某个分支主体重新抛出的错误，仍是外围作用域的义务。
++     由于注入的只是 `Emit`，代码块内对被覆盖错误的 `abort` 不会被 `handle` 解除。
+
+% 2 1 0 14a9ee48ea08bc2701b12cd43e0ff194
+
+% 3 1 0 14a7070720b92edc18d87156bad16991
+
+% 4 1 0 0ac22534315d337414dcb599204e78fe
+
+% 0 1 0 1a10bbbbb0c378c708a8f9ed53344840
+
+% 0 1 0 1475543ed29cc69d177baf4f125e48ac
+
+% 0 1 0 1d86ec182a4e987719f840d04deee388
+
+% 1 1 0 139c16bb929c40c21d98c1e6b00f0aef
+
+% 0 1 0 053b6813612393880b5d24e307d50129
+
+% 0 1 0 1f2f63100e76d0010528be30f255d546
+
+% 0 1 0 0e19ced31594dd7a18d7f78e13f39298
+
+% 1 1 0 049b0409301f120c03ce1e8ad5d6709a
+
+@ 0 3 0 0fa8830674d9ae951dbe0ce4a73b0277
++     分支主体会成为一个 `caps.Control` 能力的处理函数，因此它可以向外层战术抛出错误，但不能捕获非控制类的能力，例如日志记录器：应把这类工作移出分支主体。
+
+@ 0 1 0 1ae36b139b4a06341b032961d0c4052d
++ entry .Handler   一个 `handle` 处理函数，等待它所保护的代码块
+
+% 1 1 0 0f215c80b24ccc7d15f2d837c3213308
+
+@ 0 3 0 05ce6f7ab6c7e7fc008c6dc1c3a33b79
++       `handle { cases }` 是一个 `Handler[lambda]`，以基于 `Emit` 的类型 lambda 记录被覆盖的错误类型；`.protect(block)` 为每个类型注入一个以分支主体为后盾的 `Emit`，需要作用域中有 `Diagnostics`。
++       只以 `handle { … }.protect { … }` 的形式使用。
+
+% 1 1 0 1ae193ba5116a1d80b3b47064f9d4051
+
+@ 0 2 0 0a6e73ca500ef9180be4eb454306d259
++   entry .protect   运行代码块，为每个被覆盖的错误提供一个就地运行其分支主体的 `Emit`
++   entry #handler   匹配分支，作为从 `Exception` 到 `Unit` 的偏函数
+
+@ 0 9 0 10285df535afa8230f9bbf805c429a79
++ entry .track   把所选的错误连同各自抛出时的焦点收集进一个累积的错误
++     `track[focus](initial) { cases }.protect(block)` 就是带位置的 `accrue`。
++     代码块在有一个 `Foci[focus]` 以及为分支所覆盖的每种错误类型提供的 `TrackTactic` 的情况下运行；每个被覆盖的错误都连同当时的当前焦点（由 `focus` 设置）一起登记到 foci 中，然后代码块继续执行。
++     代码块结束时，如果登记了任何内容，就对这些错误进行折叠——每个分支接收该错误，并以具名上下文值的形式获得 `prior`（错误抛出时的 `Optional[focus]`）和 `accrual`（迄今为止的累积结果）——结果针对外围的 `Tactic[accrual]` 中止。
++     每个分支返回新的累积结果。
+
+% 2 1 0 03e8e660869d67471505abc15b88fcd0
+
+% 3 1 0 173bf48240a237d51897bc19898c41a4
+
+% 4 1 0 08cad3b1bce0b45e050170295dcd36f6
+
+% 1 1 0 03bb676a38e31d831d25edc7c123b1bb
+
+% 3 1 0 1662e4a3e12ddfb8182d75026847d17e
+
+% 4 1 0 195929079fcc03311d2050f7215987d6
+
+% 2 1 0 0f44c8476857a9f714c8d38fa460dfd8
+
+% 0 1 0 071df93aba1d508512f432aba636d2b1
+
+% 1 1 0 18bbbbe1f88540251683a9f53dc190ab
+
+% 0 1 0 1ad868188db630cd184317ae1fdb347f
+
+% 0 1 0 0c973042a085269f0390582134d235a1
+
+% 0 1 0 03b5db5ea2411d961fc9dbad3cee8b8a
+
+% 0 1 0 03bf304d0769445d0d36431a9c8e7269
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 0e78fb385056647705c265f104586db8
+
+% 0 1 0 08acebd71a0e221f1f2b06060f49c91a
+
+% 0 1 0 0f6836672be19d4e10d7e01edae836a4
+
+% 0 1 0 03cef629b9b235381a4f4a3f2268f40b
+
+% 1 1 0 06e4162aff93df6300b8d4f52693dfe4
+
+@ 0 4 0 1d01fa6472871c5f1330db458fe8d5ec
++     焦点类型由所遍历的结构选定——JSON 用 `JsonPointer`，XML 用路径，电子表格用单元格引用——因此位置以数据自身的词汇报告。
++     `validate` 是同样的构造，但把累积结果作为普通值返回，而不是将其抛出。
+
+@ 0 1 0 0f69a919b7c893960bdedfcb7e03ee0b
++ entry .Tracking   一个 `track` 处理函数，等待它所保护的代码块
+
+% 1 1 0 052a948f7594c45c17c582aed45ad4e3
+
+@ 0 6 0 1554bea2037082090b3bd6e6f316a846
++       `track[focus](initial) { cases }` 是一个 `Tracking[accrual, lambda, focus]`，持有初始累积结果和折叠函数；`.protect(block)` 用一个新的 `TrackFoci` 和为每个被覆盖错误类型提供的 `TrackTactic` 运行代码块，需要作用域中有一个 `Tactic[accrual]^` 和一个 `Diagnostics`。
++       只以 `track[…](…) { … }.protect { … }` 的形式使用。
++       类型为 `… raises E tracks F` 的函数*值*无法在捕获检查下写出，因此包装 `track` 的辅助方法应当是一个 `inline def`，其方法体被拼接进 `protect`。
+
+% 1 1 0 10e9a9e6ca579a010040b3208a57372f
+
+@ 0 3 0 14aafd5abfc598521f3315a35b9fb85c
++   entry .protect   运行代码块，连同焦点登记被覆盖的错误；如有登记则以折叠结果中止
++   entry #initial   任何错误发生之前的累积结果
++   entry #lambda   折叠函数：把每个错误连同其 `prior` 焦点和迄今的 `accrual` 变为新的累积结果
+
+@ 0 7 0 0afaeac2d62722c016228e753577b6ec
++ entry .validate   把所选的错误连同其焦点收集进一个值，该值被返回而不是被抛出
++     `validate[focus](initial) { cases }.protect(block)` 是以累积结果本身为结果的 `track`：代码块在有一个 `Foci[focus]` 以及为每个被覆盖错误类型提供的 `TrackTactic` 的情况下运行，代码块返回的任何东西都被丢弃；对已登记错误的折叠（每个分支的作用域中都有 `prior` 和 `accrual`）就是整个表达式的值。
++     累积结果不必是错误——收集 `Count` 或消息列表的 `validate` 只会被返回。
++     需要 `Diagnostics`。
+
+% 2 1 0 03e095e7e5114a771c554de11e045927
+
+% 3 1 0 0e0d54dbac44a07b0a7e4dc51025356f
+
+% 4 1 0 0744d373bdb384dd0cf5b51091b4ea36
+
+% 0 1 0 19bc8b99bfbe058d1cdab5d83679fca0
+
+% 0 1 0 15ce250728f2d9ff0641b8117455df5e
+
+% 0 1 0 15ecb22d868b096d0de6be9482c00368
+
+% 0 1 0 1fcc4495a781724a1aa200ff21a56a66
+
+% 1 1 0 11365a6a5cb31e0615d342d6de6634f0
+
+% 2 1 0 189567a584d0229d0779fc1d4a7556e9
+
+% 3 1 0 058faa81b3c3f34817f7451536f22a5d
+
+% 0 1 0 0a5a74c84cd16db71eedaf89e7a816fd
+
+% 1 1 0 0d504d0479efb0e6151e5782ec77c3d3
+
+@ 0 2 0 0c10b4db69323c76161a5d4002a4b519
++     嵌套的校验是完全定界的：内层的 `validate` 保留它自己的错误，外层看不到其中任何一个。
+
+@ 0 1 0 0b05aececb48c6f81a6b7423de317a69
++ entry .Validate   一个 `validate` 处理函数，等待它所保护的代码块
+
+% 1 1 0 14c6052e0adccab21de91ec015cfc0fd
+
+@ 0 5 0 1185edfedbe1163814bf95f2943525d0
++       `validate[focus](initial) { cases }` 是一个 `Validate[accrual, lambda, focus]`；`.protect (block)` 用一个新的 `TrackFoci` 和为每个被覆盖类型提供的 `TrackTactic` 运行代码块，然后返回折叠结果。
++       在辅助方法需要自己指明被覆盖类型时，可以直接构造它——`Validate[Tally, [r] =>> r raises CErrorA, Pointer](initial, cases)`。
+
+% 0 1 0 19fa298c162814b01dcd081853c2ddd0
+
+@ 0 3 0 096906e8ae6292541a8727835ce74cd9
++   entry .protect   运行代码块，连同焦点登记被覆盖的错误；返回折叠结果
++   entry #initial   任何错误发生之前的累积结果
++   entry #lambda   折叠函数：把每个错误连同其 `prior` 焦点和迄今的 `accrual` 变为新的累积结果
+
+@ 0 4 0 09ee6ba362e61ab31b00dc956ab7b2fc
++ entry .accrual   在 `track`、`validate` 或 `accrue` 的分支内，迄今为止的累积值
++     读取 `track` 或 `validate` 折叠传给每个分支的上下文值 `accrual aka "accrual"`：`case error: Number.Error => Invalid(accrual.problems :+ error.text)`。
++     在这样的分支之外，作用域中没有这个值。
+
+@ 0 7 0 1f0823580413ae8a0d0794b332cbef44
++ entry .focus   运行一个代码块，并为其中登记的每个错误标上焦点
++     `focus(transform)(block)` 对代码块求值，然后——无论它以何种方式结束——用 `transform` 产生的焦点补充作用域中的 `Foci[focus]` 在此期间登记的每个错误。
++     变换函数接收 `prior`，即已经（由内层的 `focus`）附加的 `Optional[focus]`，因此下降遍历某个结构时，位置是由内向外组合的：`focus(prior.or(Pointer.Self)(t"name"))`。
++     无作用的 `Foci.default` 什么也不登记，而 `Foci#active` 让热点循环可以完全跳过这层包装。
+
+% 2 1 0 04bdf8cb15bc0a0114d7bd764a3f2d58
+
+% 3 1 0 044b48f685c14d3010a21ca14d90c2d7
+
+% 4 1 0 0c4ecfd994876c1c0b53acfd4914fc83
+
+% 0 1 0 0d3f23b4b92f99fc1810338171151b25
+
+% 0 1 0 010df9107a2e60f21669ae47de9d3a56
+
+% 0 1 0 13b182bdcaacd02112059e595cb30b48
+
+% 0 1 0 0667df2eae4fd8a6122e99cdc96bea89
+
+% 0 1 0 025fc88130415d8a15bfee9ff5115ccc
+
+% 1 1 0 1daa46b1e710889210db396d7f211083
+
+@ 0 1 0 07852b64dec7718e1adcdf3a6c7a3919
++ entry .Foci   错误登记位置的记录：`track` 或 `validate` 收集的位置
+
+% 1 1 0 1081c30c432a58b708f975950b7133e4
+
+@ 0 6 0 125f60dddf8ce8a20eadb57339ac9b42
++       `Foci[focus]` 是 `TrackTactic` 向其报告的可变登记表：每个错误都带有一个 `Optional[focus]`，说明它在结构中的何处出现，`focus` 会在遍历回溯时填写它。
++       `TrackFoci` 是 `track` 和 `validate` 安装的记录实现；`Foci.default` 是在其他所有地方都处于隐式作用域中的无作用实现，因此声明为 `tracks focus` 的方法总能被调用，并且只有外层的 `track` 或 `validate` 才会观察到这些位置。
+
+% 1 1 0 1b598b6ab14147a30c161661f76e7ebc
+
+% 0 1 0 0d071da936b5907607d1443f539a38e9
+
+% 0 1 0 028448c59979e4301d70d866b98a4b48
+
+@ 0 19 0 0042bcb6f87958881e718af0c374cbde
++   entry .default   无作用的 `Foci`，位于隐式作用域中：什么也不登记，也不报告成功
++       它的 `active` 为 `false`，`length` 为 0，`register` 和 `supplement` 丢弃一切，`fold` 返回初始值，`success` 为 `false`（没有记录任何错误，但也没有跟踪任何东西）。
++   entry #active   是否保留登记的错误；只有 `Foci.default` 为 `false`
++       热点解码循环会检查它，以便在任何焦点都不会被观察到时，跳过逐字段的 `focus` 包装以及每次包装所分配的闭包。
++   entry #length   已登记的错误数量
++   entry #success   跟踪是否运行过且没有登记任何错误
++   entry #register   记录一个错误，暂不带焦点
++   entry #fold   把登记的错误连同各自的焦点折叠为一个累积值
++       `fold(initial)((focus, accumulation) => { case error => … })`：lambda 接收焦点和累积值，返回一个作用于错误的偏函数。
++   entry #supplement   对最后登记的 `count` 个错误的焦点应用一个变换
++       这就是 `focus` 附加位置的方式：变换接受已有的 `Optional[focus]`，返回新的焦点。
++   entry #truncate   丢弃前 `length` 个之后登记的所有错误
++       这就是 `TrackTactic#tolerate` 回滚其代码块所记录内容的方式。
++   entry #tainted   是否登记过任何错误
+
+@ 0 4 0 1a3fe2995c529af60b0affe4a6945e66
++ entry .TrackFoci   起记录作用的 `Foci`：保留每个登记的错误及其焦点
++     `track` 和 `validate` 安装的实现，带有一个存放错误的 `ArrayBuffer` 和一个存放其 `Optional[focus]` 的 `ArrayBuffer`。
++     可以把它绑定为局部 given，在没有 `track` 的情况下观察焦点（`given Foci[Pointer] = TrackFoci()`）。
+
+@ 0 1 0 001f1fe1d0eb0a9c1a1886e2dd428518
++ entry .Pointer   指向结构内部的点分路径，用作错误的焦点
+
+% 1 1 0 0c8aeb47054bce6e18b03075a43e0ac5
+
+@ 0 5 0 17fb0a832b37312a1196878034424cb9
++       最简单的焦点类型：`Pointer.Self` 是根，`Pointer.Child(parent, label)` 是向下一步。
++       `Pointer(t"a")(t"b")(t"c")` 构建一条路径，呈现为 `a.b.c`；在结构没有自己的指针类型时，`validate` 的示例就使用这种焦点类型。
++       它是 `Encodable in Text` 和 `Communicable` 的，因此会以其点分文本的形式插入到消息中。
+
+% 2 1 0 004e77c2488e8cb804f7107a253e10a0
+
+% 3 1 0 0c118fce6c81634a17d97508cbc5408d
+
+% 0 1 0 1ddb70beb21e17280994b28f4eab5804
+
+% 0 1 0 071faee78810dbfd08d0e0858b3fd1b0
+
+% 1 1 0 1c1b73a26bdaef3904ed1860d9d1e4fc
+
+@ 0 5 0 0003a391e6c2100800d4be3e9f35102e
++   entry .apply   `Pointer()` 是根；`Pointer(label)` 是根的子节点
++   entry .encodable   把指针呈现为其点分文本
++   entry .communicable   把指针呈现为由其点分文本构成的消息
++   entry #text   用 `.` 连接的各个标注；根为空
++   entry #apply   `pointer(label)`：此指针带有该标注的子节点
+
+@ 0 1 0 0297260ad8a7fd900e7a6948d0d7e75f
++ entry .TrackTactic   `track` 和 `validate` 注入的战术：把每个错误登记到焦点记录中并继续
+
+% 1 1 0 0418339ffce41d6f04a864618da06638
+
+@ 0 12 0 152453220fcb07091a0211a72ef09914
++       建立在一个 `boundary` 标注、一个初始累积值以及要登记到其中的 `Foci` 之上的 `Tactic[error]`，带有用来构建错误的 `Diagnostics`。
++       `record` 登记错误并返回；`abort` 登记错误并跳出代码块；`certify` 在焦点记录受污染时跳出；`tolerate` 把焦点记录截断回其代码块之前的状态。
++   entry #diagnostics   构建错误所用的 `Diagnostics`
++   entry #record   把错误登记到焦点记录中并返回
++   entry #finish   无操作，为保持战术的形状而保留
++   entry #certify   如果登记过任何错误，就跳出被跟踪的代码块
++   entry #tainted   焦点记录中是否有任何错误
++   entry #tolerate   代码块的值，或者 `Unset`，同时把它登记的错误从焦点记录中删除
++   entry #abort   登记错误并跳出被跟踪的代码块
+
+@ 0 1 0 1403e24f00fde1d10434f28251f986f6
++ entry .Errors   一并报告的多个错误，每个以其焦点的文本为键
+
+% 1 1 0 07172af0bc9c678f0e4233ab892a241e
+
+@ 0 3 0 0abb2576660014be112cd55e98a6f78f
++       错误 `↯/s.24.5`：_`n` accrued errors: `message` at `focus`; …_。
++       一个持有 `(Text, Error)` 对的 `Error`，用于在失败之前收集所有问题的校验。
++       它以空值构建，用 `+` 扩充，并用 `apply` 查找某个焦点的错误。
+
+% 2 1 0 1318c38d8bf7030316eb8c95216bd92e
+
+% 3 1 0 0ebd76fa7937c8d817e388181172d6ee
+
+% 4 1 0 0094536c09938dc0046b8fce0e3b8cb4
+
+% 0 1 0 112dcc59abf1dff808be4eafcba8d5b5
+
+% 0 1 0 02c5f684ea9474a5159e7a9474de69ac
+
+% 0 1 0 04a6b62292d1fa0a18bee4add70b59ff
+
+% 1 1 0 12f63cb0f171b6bf1d70046f50e1fa53
+
+@ 0 3 0 1e60f99b3f5247f914c0b494f094d092
++   entry #errors   `(focus, error)` 对，最近的在前
++   entry #+   `errors + (focus, error)`：多一对的新 `Errors`
++   entry #apply   记录在某个焦点处的错误，或者 `Unset`
+
+@ 0 1 0 04804f7fecb7097d0c949c6dce609a26
++ entry .Validation   一并报告的多条消息，每条位于一个 `Pointer` 处
+
+% 1 1 0 0695496ee5cdded51c46e257366526f7
+
+@ 0 5 0 09c791c77cc66f370e809447446bf6f8
++       错误 `↯/s.24.3`：_`n` messages: `message` at `pointer`; …_（数量较小时为 `no messages`、`one message`、`two messages`……，位于 `Pointer.Self` 的消息不显示位置）。
++       一个持有 `(Pointer, Message)` 对的 `Error`，用于遍历某个结构并累积所发现问题、而不是在第一个问题处中止的流水线。
++       以空值构建，用 `+` 扩充。
+
+% 2 1 0 0b91c606086db7c404a29a1e8f209c2f
+
+% 3 1 0 0c710824fbaf812e10d57fb0e8f7acef
+
+% 4 1 0 1084b1da26a6b67613d9d85a5818e553
+
+% 0 1 0 164828b5d89fe61a03450473813a5a6b
+
+% 0 1 0 007807ee9a12192a0382842ac9ffedba
+
+% 0 1 0 1f181463aa6d04431b1e07faa5899d09
+
+% 1 1 0 097d62a68bd2cea319d876054703a747
+
+@ 0 5 0 05ba72496a457d5e06be06330502ed31
++   entry .text   一组 `(Pointer, Message)` 对的消息：先是数量，然后是位于各自指针处的每条消息
++   entry #messages   这些对，最近的在前
++   entry #+   `validation + (pointer, message)`：多一对的新 `Validation`
++   entry #apply   记录在某个指针处的消息，或者 `Unset`
++   entry #text   该校验的消息，由 `Validation.text` 呈现
+
+@ 0 1 0 0cf39984f802143e1f480c0d90f13b27
++ entry .Expectation   `Expectation.Error` 的所在之处，在 `capture` 的代码块成功时抛出
+
+% 1 1 0 0d88eb28408e550d1980844cf0cd1796
+
+@ 0 2 0 016e3783c532f26217acf973ee51bfd7
++       `capture` 期望它的代码块失败，并返回代码块抛出的错误；`Expectation` 为这一期望命名，好让它的落空有个安身之处。
+
+% 1 1 0 1ec3e7bcd294bc7f0e2fcceec0dd752b
+
+@ 0 1 0 19121da42bbf532c0c83e38560775bf8
++   entry .Error   当代码块本应失败却成功时由 `capture` 抛出
+
+% 1 1 0 02637c5c0a822f010b50d7005df8d92d
+
+@ 0 5 0 172d6d3dd945d652094483ad929ab419
++         错误 `↯/s.24.16`：_the expression was expected to fail, but succeeded_。
++         携带代码块实际产生的值，以便测试看到返回了什么。
++         `capture` 需要作用域中有一个针对它的 `Tactic[Expectation.Error[success]]`，`strategies.throwUnsafely` 可以提供。
++     entry #result   代码块产生的值，而不是失败
+
+@ 0 8 0 0758a206c60c3829035441f389dca658
++ entry .venture   立即对代码块求值，并记住它是否记录了任何错误
++     `venture(block)` 立刻运行代码块，并在其外插入一个位于周遭 `Tactic[error]` 之前的 `VentureTactic`：它抛出的每个错误都会像在外部一样被原样记录到周遭作用域中，但结果是一个 `Venture[value]`——代码块什么也没记录时是值，记录了则是 `Failed` 标记。
++     venture 内部的 `abort` 是*定界的*：它记录自己的错误，并且只放弃这个 venture，因此相邻的各个 venture 都能贡献完整的错误集合，而之后用 `venture()` 强制求值一个失败 venture 的代码会被跳过，而不是被喂给一个占位值。
+
+% 2 1 0 04b17ddd5365e6e5071a3d47ce331050
+
+% 3 1 0 15b809c8a90c118605215829918d3d1e
+
+% 4 1 0 1bd818e6b36f51210ddc591991ccba95
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 0dd75933a3ab40501c06206ce974a13d
+
+% 0 1 0 153d3dd38d0e7ff310648120a97af1c3
+
+% 0 1 0 0d94c8e28ede36be0c5dc1e9d4d80acb
+
+% 0 1 0 16605f6aeffbcd2916a201d42851079a
+
+% 0 1 0 1fb470897531c5850cbf2bb5ec5f6315
+
+% 0 1 0 1f90964b5c93bc8417ea37ef0df9d6a2
+
+% 0 1 0 0b13bdbf1f9daae516930ba13fa49335
+
+% 0 1 0 1430ee9e126bdf36159e6ca1a99a1a97
+
+% 0 1 0 0388ca821a3c1e240dd7f6cd4bbe31b8
+
+% 0 1 0 0b87a8cb49d49f511baf90d2fa1c635e
+
+% 1 1 0 05360d887eb84a250d6f5a78dd2a1057
+
+@ 0 4 0 0395aa58e21200ac13fce251f285b52d
++     在快速失败的周遭战术（`safely`、`throwUnsafely`、`attempt`……）下，被转发的 `record` 会立即逃逸，`venture` 就是透明的立即求值：同一个代码体适用于每一种策略。
++     代码块接收一个既是其战术又是其 `Guard` 的能力（一个 `Venturer[error]`），因此可以在一个 venture 内部强制求值另一个 venture。
+
+@ 0 6 0 1a0254352afe74140d305312a1f33f1c
++ entry .guard   仅当迄今为止尚未记录任何内容时才运行代码块；否则交出该作用域
++     `guard(block)` 检查周遭 `Tactic[error]` 的 `tainted`：如果干净，代码块在作用域中有 `Guard` 能力的情况下运行（因此可以在其中强制求值 venture）；如果受污染，则通过对战术执行 certify 来跳过代码块，这会把整个聚合作用域交给它已累积的错误。
++     在代码块内强制求值一个失败的 `Venture`，也以同样的方式逃逸。
++     在快速失败的战术下，`tainted` 总是 `false`，因此 `guard` 就是恒等操作。
+
+% 2 1 0 048ff01d3b513a3f05ed2beedad1191b
+
+% 3 1 0 1dcb5b2c952e3e7815d18956ecb0a567
+
+% 4 1 0 1fe5229f95311b3916fbf759a25072d4
+
+% 0 1 0 10c8c77b85aa22b70e8fcbe0c80f9d58
+
+% 0 1 0 110cedfe59a75ec417c5cb58d99d918a
+
+% 0 1 0 18aa210f957d21911055c882a36dfcd0
+
+% 0 1 0 01062207b138b883070996e232918224
+
+% 1 1 0 147d6e8b13b7389413be03468b9e83d0
+
+@ 0 1 0 1a93b413d69367ff0003d1848054ff27
++ entry .Guard   外层跳过作用域的见证，失败的 `Venture` 可以逃逸到那里
+
+% 1 1 0 1635a265e3d93e4004ddb175fe695f1f
+
+@ 0 5 0 1dbffadebde8dbd904f9f99a703ffda1
++       提供给 `venture` 或 `guard` 代码块的一种能力：用 `venture()` 强制求值一个 `Venture` 需要它，因此只有在存在一个可放弃的词法区域时，强制求值才是可能的。
++       `escape()` 执行放弃——对于 `venture`，是让该 venture 本身失败；对于 `guard`，是对周遭战术执行 certify。
++       如果上下文中没有跳过作用域，强制求值将无法编译：那样就没有定义明确的地方可以跳转过去。
+
+% 1 1 0 07a131e6e088d3320f4bdb2cc0fc558f
+
+% 2 1 0 08ef44d50ee123ef1896dac7d0805b91
+
+@ 0 1 0 1676f04c40ec3fc81d65a28d17daae2a
++   entry #escape   放弃外层的跳过作用域；不会返回
+
+@ 0 5 0 077c2b8b1623e1b315464cfe973ce952
++ entry .Venturer   `venture` 代码块所接收的唯一能力：它的战术，同时也是它的 `Guard`
++     `Venturer[error]` 是 `Tactic[error] & Guard`：venture 的定界战术和它自己的跳过作用域见证是同一个对象，只传递一次，因为在分离检查下同一个能力不能传递两次。
++     之所以是一个具名别名，是因为带括号的捕获交集类型无法在上下文函数的位置上解析。
+
+@ 0 1 0 004feb882c50b643132309cba34c6386
++ entry .Venture   `venture` 的结果：值，或者表示已记录错误的标记
+
+% 1 1 0 1213c244c42c9f8b0717c94a344475c2
+
+@ 0 5 0 13f28ae44ad842261f7a6701b2bba135
++       `Venture[value]` 是 `value` 和 `Venture.Failed` 的不透明联合类型，因此成功的 venture 不分配任何内存——与 `Optional` 不同，它是不透明的，从而 `apply()` 只在 venture 上解析。
++       错误本身并不保存在这里：它们已在 venture 声明处被记录到周遭战术中，`Failed` 只是把值标记为不可用，这就是为什么强制求值一个失败的 venture 不会再报告任何内容。
+
+% 2 1 0 0d2979053a7d563501e008e4a76369d8
+
+% 3 1 0 136216fd9169f6840054c89e0ca4b3a6
+
+% 4 1 0 060c9956a7c91d2d16d495d7d89090e8
+
+% 0 1 0 12eb39130fc15e48164fae5ba3544192
+
+% 0 1 0 0e876a2cebad134307fe00d7cdec3a21
+
+% 0 1 0 133dbeae5dcad3e00c844657ff2d4e41
+
+% 0 1 0 080f94265a3f68c30c60d891b8e80311
+
+% 0 1 0 1c62f93bac52529a12b987a5eee6b251
+
+% 1 1 0 0cea95f61aaef48e0a95b616bd5dfcd3
+
+% 1 1 0 10c7e75784aedf7f1234dbaafc5f364e
+
+% 2 1 0 1ff83f384db8d1b905f31bf65dd5591d
+
+% 0 1 0 1cdbb09a682f0548044b9f5bed4aa04b
+
+@ 0 13 0 0552254078b9c37518e1049fd6c722e6
++   entry .Failed   记录了错误的 venture 的标记
++   entry .Type   `Venture[value]` 所代表的不透明类型 `Failed.type | value`
++   entry .apply   `Venture(value)` 是一个就绪的 venture；`venture()` 强制求值一个 venture，失败时逃逸
++       `Venture.apply(value)` 把一个值包装为就绪的 venture。
++       实例上的扩展方法 `venture()` 是其值，或者在 venture 失败时逃逸到外层的跳过作用域：它需要作用域中有一个 `Guard^`——即外层的 `venture` 或 `guard` 代码块——没有它就无法编译。
++   entry .failed   一个失败的 venture，值类型任意
++   entry .ready   venture 是否持有值而不是 `Failed`
++   entry .vouch   取出值，venture 失败时 panic
++       用于调用者已用 `ready` 检查过的 venture 的无逃逸强制求值——例如在使用任何结果之前先检查整批结果的解码器。
++       在这里遇到失败的 venture 是逻辑错误，因此它会 panic，而不是跳过。
+
+@ 0 1 0 0e3a9e7401c645d202a9dbe04248784f
++ entry .VentureTactic   `venture` 插入的战术：记录到周遭作用域中，只中止该 venture
+
+% 1 1 0 0d7a5f8726941eef0d97e406f892db00
+
+@ 0 16 0 1b81f00904d8d5951ad958e8a549dbd8
++       建立在周遭战术和 venture 的 `boundary` 标注之上的 `Tactic[error]` 和 `Guard`。
++       `record` 对错误计数并把它转发给周遭战术；`abort` 做同样的事，然后以 `Venture.failed` 跳出该 venture；`certify` 在 venture 记录过任何内容时让它失败；`tolerate` 委托给周遭战术的 `tolerate`，并恢复 venture 自己的计数；`escape` 让 venture 失败。
++       在快速失败的周遭战术下，被转发的 `record` 永远不会返回。
++   entry #diagnostics   周遭战术的 `Diagnostics`
++   entry #failed   在此 venture 求值期间是否记录了错误
++       与 `tainted` 不同，后者还反映周遭作用域的状态：先前某个 venture 的失败不应导致这个 venture 失败。
++   entry #tainted   此 venture 或周遭作用域是否记录过错误
++   entry #record   对错误计数并把它转发给周遭战术
++   entry #abort   对错误计数并转发，然后放弃该 venture
++   entry #certify   如果 venture 记录过任何内容，就放弃它
++   entry #tolerate   周遭战术的 `tolerate`，之后恢复此 venture 的计数
++   entry #escape   放弃该 venture，不再记录任何内容
+
+@ 0 1 0 03ef2525794e2b0a11570efe976ceb1d
++ entry .ThrowTactic   抛出异常的战术：`throwUnsafely`、`throwSafely`、`unsafely` 和 `throwErrors` 背后的实现
+
+% 1 1 0 1a2a13b39ca272951e1ac51f1f9bce8b
+
+@ 0 7 0 0c6e92377458843e054e41721e870220
++       一个 `Tactic[error]`，其 `record` 和 `abort` 都把错误作为非受检异常抛出，用 `Diagnostics.capture` 构建，因此会携带堆栈跟踪。
++       抛出异常的战术不捕获任何东西（`CanThrow` 被擦除），这使它成为自然的周遭策略：`.ambient` 是 `strategies.throwUnsafely` 提供的纯实例，而有作用域的形式则各自创建自己的实例。
++       它在 `error` 上是逆变的，因此一个 `ThrowTactic[Hazard]` 满足每个 `Tactic[error]`。
++       局部的 `given tactic: Tactic[Json.Error] = ThrowTactic()` 是在不导入策略的情况下为单个方法提供抛出异常战术的方式。
+
+% 1 1 0 1b78daeed640ac0a0c39b55f12fe883f
+
+@ 0 8 0 07c4c97098af8c3e1ca9baf60a564311
++   entry .ambient   `strategies.throwUnsafely` 背后的纯 `ThrowTactic[Hazard]^{}`
++       与 `unsafeExceptions.canThrowAny` 一样是纯值：无作用域的抛出不保留任何返回点，而被跟踪的周遭战术既无法满足派生所合成的 thunk，也无法满足通过它抛出错误的 lambda。
++   entry #diagnostics   `Diagnostics.capture`：抛出的错误携带其堆栈跟踪
++   entry #record   抛出错误
++   entry #abort   抛出错误
++   entry #certify   无操作：抛出的错误已经逃逸
+
+@ 0 1 0 1a505b000b1e99b009a5735f9679e41c
++ entry .OptionalTactic   `safely` 和 `dare` 安装的战术：以 `Unset` 跳出
+
+% 1 1 0 0d1b38c0c49aca2b01cc3f103f3e6281
+
+@ 0 3 0 0816807c297f6a1d0d31a8b8a272290a
++       建立在 `boundary.Label[Optional[success]]` 之上的 `Tactic[error]`：`record` 和 `abort` 都以 `Unset` 跳出代码块，错误从不被物化，因此用 `Diagnostics.omit` 构建。
+
+% 0 1 0 01ee536f18b2a2de0dc57f38520f9f24
+
+% 0 1 0 04b145155b876e350c22b5e01b7e74d9
+
+% 0 1 0 0c3a38db5cb432ac18e4bb8d72683bed
+
+@ 0 4 0 0b6d099234ce6ac80d8c3c41e18c3d24
++   entry #diagnostics   `Diagnostics.omit`：错误被丢弃，因此不捕获跟踪信息
++   entry #record   以 `Unset` 跳出代码块
++   entry #abort   以 `Unset` 跳出代码块
++   entry #certify   无操作
+
+@ 0 1 0 03beb920f013e30e0f9b97d5a6c51115
++ entry .AttemptTactic   `attempt` 安装的战术：以 `Attempt.Failure(error)` 跳出
+
+% 1 1 0 0bfb161a00d5283011b7fcf556283041
+
+@ 0 3 0 1e78f7033c3a096301f633ae56897197
++       建立在 `boundary.Label[Attempt[success, error]]` 之上的 `Tactic[error]`，带有 `attempt` 处作用域中的 `Diagnostics`：`record` 和 `abort` 以包装为 `Failure` 的错误跳出。
+
+% 1 1 0 1fce61e7932562ea055018b14be5db77
+
+% 0 1 0 083cdc4cb5b22a3f0669f28fa4cb1d3b
+
+% 0 1 0 1d783ff26a5462e90ec68793411c2117
+
+@ 0 4 0 1be5bdd2bb9c8aef09d056be076e819b
++   entry #diagnostics   `attempt` 处的 `Diagnostics` given
++   entry #record   以 `Attempt.Failure(error)` 跳出
++   entry #abort   以 `Attempt.Failure(error)` 跳出
++   entry #certify   无操作
+
+@ 0 1 0 002f86db8240b6ab04500ac3623d109c
++ entry .EitherTactic   `capture` 安装的战术：以 `Left(error)` 跳出
+
+% 1 1 0 039d7173b743c464122f9d3a0484b2d7
+
+@ 0 4 0 0d07025d9553a9a3063b0fff0f8b2a9b
++       建立在 `boundary.Label[Either[error, success]]` 之上的 `Tactic[error]`，带有作用域中的 `Diagnostics`：`record` 和 `abort` 以 `Left(error)` 跳出。
++       `capture` 解开 `Either` 以返回错误，遇到 `Right` 时则以 `Expectation.Error` 中止。
+
+% 1 1 0 193d66f43ae5d4dd1f66cce12647dec7
+
+@ 0 4 0 19973ccdee6576da1c5473b746f3126d
++   entry #diagnostics   `capture` 处的 `Diagnostics` given
++   entry #record   以 `Left(error)` 跳出
++   entry #abort   以 `Left(error)` 跳出
++   entry #certify   无操作
+
+@ 0 1 0 19046a34c83843260a73790bd00773de
++ entry .AmalgamateTactic   `amalgamate` 安装的战术：以错误本身跳出
+
+% 1 1 0 01d1aed10fe3278a097b793c04961f34
+
+@ 0 3 0 10e7f153c09518d411a08a6c8430a770
++       建立在 `boundary.Label[success | error]` 之上的 `Tactic[error]`，带有作用域中的 `Diagnostics`：`record` 和 `abort` 以裸错误跳出，调用者通过类型匹配把它与值区分开。
+
+% 0 1 0 01f988450a0c98030f1879cc034fc227
+
+% 0 1 0 157eea3f09856afe1d7ad296c26cfd67
+
+% 0 1 0 124863d3e889b56616a33460321b9997
+
+@ 0 4 0 158ca08079d565900986ffdfc7f891de
++   entry #diagnostics   `amalgamate` 处的 `Diagnostics` given
++   entry #record   以错误跳出
++   entry #abort   以错误跳出
++   entry #certify   无操作
+
+@ 0 1 0 1e0da7b742c05c6d1f05f8bef5e77551
++ entry .HaltTactic   用于宏的战术：错误会以其带标注的消息中止编译
+
+% 1 1 0 03800769e56d574a07996d936f8cdf9f
+
+@ 0 5 0 0953f1e6c2314d450a0c150ef0cc8299
++       一个接受 `Quotes` 的 `open class`，用于 `error <: Error`：`record` 和 `abort` 都以错误的 `labelled` 消息（其闪电代码和文本）调用 `halt`，因此在展开时失败的解析会作为编译错误报告。
++       `abortive` 会安装一个这样的战术；希望把错误定位到特定树上的宏可以继承它，并重写 `record`/`abort` 以传入位置。
+
+% 0 1 0 015d429060a19c101559184ee34a9e17
+
+@ 0 4 0 0eb7b3a51df7a95317f1b9a606496e91
++   entry #diagnostics   作为 given 的 `Diagnostics.omit`：编译错误不需要堆栈跟踪
++   entry #record   以错误的消息中止编译
++   entry #abort   以错误的消息中止编译
++   entry #certify   无操作
+
+@ 0 1 0 01e31ff3885c46791ce713af2b41b931
++ entry .UncheckedTactic   抛出被归类为 `Unchecked` 的错误的战术
+
+% 1 1 0 1250bd486f997ae20863dd6c866c7f33
+
+@ 0 4 0 14f2c0a242e63d21083fb82982ad1072
++       一个 `Tactic[error]`，其 `record` 和 `abort` 会抛出异常，用 `errorDiagnostics.stackTracesDiagnostics` 构建。
++       `error is Unchecked` 证据不由战术持有，而是在召唤处由 `strategies.uncheckedErrors` 检查，后者提供纯的 `.ambient` 实例。
+
+% 1 1 0 1bddd79a86316b431f29ad00ca27c633
+
+@ 0 5 0 0f8cfa2978ae35ae084c152475159830
++   entry .ambient   `strategies.uncheckedErrors` 背后的纯 `UncheckedTactic[Hazard]^{}`
++   entry #diagnostics   作为 given：会捕获堆栈跟踪
++   entry #record   抛出错误
++   entry #abort   抛出错误
++   entry #certify   无操作
+
+@ 0 1 0 1e004ddf2f2388d912693caf3d2a4f40
++ entry .FatalTactic   以错误的 `Exit` 状态终止进程的战术
+
+% 1 1 0 18ca371321e2070c1386975179728962
+
+@ 0 4 0 093bddad5ea737540405c00435612fa5
++       用于具有 `is Fatal` given 的错误类型的 `Tactic[exception]`：`record` 和 `abort` 都向 `Fatal` 实例询问错误的 `Exit` 状态，并以该状态 `terminate()` 进程。
++       `strategies.fatalErrors` 提供纯实例。
++       没有导出到 `soundness` 总括包：它通过策略访问，而不是直接按名称使用。
+
+% 1 1 0 02f559a56a5e6c410a73aa2b64917e2f
+
+@ 0 4 0 019b6744de4bcb1a1ff5bcc763d03265
++   entry #diagnostics   作为 given：会捕获堆栈跟踪
++   entry #record   以错误的状态终止进程
++   entry #abort   以错误的状态终止进程
++   entry #certify   无操作
+
+@ 0 6 0 0281222e217d154d14d53853bdd1c15a
++ entry .Unchecked   标记类型类，表示可以不经处理就抛出的错误
++     `error is Unchecked` 没有成员，因此该 given 可以是 `erased` 的：`erased given AsciiError is Unchecked`。
++     导入 `strategies.uncheckedErrors` 后，抛出非受检错误的方法可以在作用域中没有相应战术的情况下调用，错误会被抛出。
++     这种归类是作者的断言：该失败不值得在每个调用处处理，但它仍然在类型中声明。
+
+@ 0 1 0 1db3c0811a3d270405bdec0f2d03bf4f
++ entry .Fatal   表示会结束进程的错误的类型类，并说明以何种状态结束
+
+% 1 1 0 043a39dc5f7cad771e2a33abad57045a
+
+@ 0 3 0 1f25719c9f3a1c3716339fda30fb1556
++       `error is Fatal` 把错误映射为进程应以之结束的 `Exit` 状态；在 `strategies.fatalErrors` 下，抛出这样的错误会终止进程。
++       它适合初始化期间的失败，这时没有任何有意义的方式可以继续。
+
+% 2 1 0 09db1b3e91b75ea0025d053842b7816c
+
+% 3 1 0 133d1e5108fdecb808026eb1ad4ac27b
+
+% 0 1 0 0f3a03762ed0691a149daadc0a86b100
+
+% 0 1 0 19494235ba1228ac16d6233bcd7c2ef9
+
+% 0 1 0 1324ab2d48fa7a0c10f26468e9168201
+
+% 1 1 0 154f5da8ad60fa4a0493358428b0dc14
+
+% 1 1 0 0864f0065fc6589e04591b3d141fb297
+
+@ 0 2 0 1034e00395999bba1c43f4cd3a4a95de
++   entry #status   错误对应的 `Exit` 状态
++   entry #contramap   通过把另一个类型映射到此类型，得到该类型的 `Fatal`
+
+@ 0 1 0 062447cfa098c75606aa5b4a72384d4d
++ entry .Mitigable   说明一种错误类型如何变为另一种的类型类
+
+% 1 1 0 11fed3166d220645013916399324264e
+
+@ 0 6 0 078ce4be2951e4941fc3330e5cf9d4d0
++       `error2 is Mitigable to error`（中缀写法为 `error mitigates error2`）只有一个方法 `mitigate`，把 `error2` 转换为 `error`。
++       导入 `strategies.mitigation` 后，作用域中的任何 `Tactic[error]` 都会自动产生一个 `Tactic[error2]`，因此底层的失败会在声明外层错误的 API 边界处被转换，而无需每个调用处重复说明。
++       `mitigate { cases }` 是显式的、作用于代码块的形式。
+
+% 2 1 0 1f18df56e9dc578f18eca388124e93e4
+
+% 3 1 0 03a3f4af94681ac1026985ff1db86d86
+
+% 4 1 0 00e136eb1202fcef11279fcfe9fef55f
+
+% 2 1 0 1f0f3ef077a7802210c06c1387727a85
+
+% 3 1 0 053b4892d0d4fe6314aa22e9dff78289
+
+% 5 1 0 059ae6fc9a2f78fe18cde3240927c7e9
+
+% 1 1 0 0fcc91263f39f7be19c943df617d14bb
+
+@ 0 2 0 123ada056101091f16daee000a7bdb81
++       转换在抛出处的任何 `Diagnostics` 之外运行；请导入一个，或者 `(using error.diagnostics)` 来构建新错误。
+
+% 1 1 0 09f2e9c7f78846900906766b3d254b9e
+
+% 1 1 0 083e30f76a92e066000fc951afeeb300
+
+@ 0 3 0 13260272fd9e25f91855effcf477f564
++   entry #Self   转换前的错误类型
++   entry #Result   转换后的错误类型
++   entry #mitigate   把一种错误转换为另一种
+
+@ 0 4 0 162ad7a0603722350295414124697117
++ entry .lest   `optional.lest(error)`：取出值，若为 `Unset` 则以该错误中止
++     `Optional[value]` 上的扩展方法：值存在时 `optional.lest(error)` 就是该值，不存在时则针对作用域中的 `Tactic[error]^` 执行 `abort(error)`。
++     它在需要值的地方把缺失转变为一个已声明的失败。
+
+% 2 1 0 1f686aaa8196dff1027c987f7ba21276
+
+% 3 1 0 0b4782240df2c4ea1dc106894b94cfcc
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1165e13a85f42038031c5dc4e707eb86
+
+% 0 1 0 0413ba56bdea1a9703853980da370a5e
+
+% 1 1 0 0beb95f43acf40a1043dec33981662f7
+
+@ 0 4 0 10fa68800cc1bb77032de959cea697b8
++ entry .dare   `optional.dare(block)`：把一个可能失败的代码块应用于存在的值，失败时为缺失
++     `Optional[value]` 上的扩展方法：如果 optional 缺失，`optional.dare[error](value => …)` 为 `Unset`，否则为代码块的结果，代码块抛出错误时为 `Unset`——即 `let` 与 `safely` 的组合，使用同一个 `OptionalTactic`，并且不捕获堆栈跟踪。
+
+% 2 1 0 05162b58f9a73bbd09c508f197f2c874
+
+% 3 1 0 1507999d6428ef750efb48010267f00c
+
+% 0 1 0 03beb396cf5ab3071a0339d72084f0b6
+
+% 0 1 0 0a9a6e8bae2f83be02d76d59b7122465
+
+% 1 1 0 10a2b2f24a7393100b6047264fe99e26
+
+@ 0 5 0 1db1485637f185bc07056a89d0484ea0
++ entry .survive   在集合上应用可能失败的 lambda 的结果，失败的被丢弃
++     适用于任何 `Traversable by element` 接收者的扩展方法：`collection.survive[error](element => …)` 在 `safely` 下把 lambda 应用于每个元素，只保留没有抛出错误的结果，并以 `List[result]` 的形式返回。
+
+% 2 1 0 117759f4a479861202fae0fe19f26ccf
+
+% 3 1 0 01b138781118f827148067384d4279ec
+
+% 0 1 0 0083370ada7bf76c0acb13da1681912e
+
+% 1 1 0 148851b4842984dd1aa5cdd5caece142
+
+@ 0 1 0 15d1b54b5e9d54ad198851d8a14a0973
++ entry .internal   `recover`、`mitigate`、`accrue`、`handle`、`track` 和 `validate` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 20 0 0fd4d37f4a6a8fe51dd069211b533899
++       不供直接使用。
++       该对象在编译时读取处理函数的匹配分支，以找出它们覆盖了哪些错误类型，构建处理函数值所携带的类型 lambda `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result`，并把战术拼接进一个经过 `protect` 的代码块中。
++       它接受的模式有：类型模式（联合类型覆盖其每个成员）、绑定、备选模式，或者穷尽的 case class 提取器；通配符或非穷尽的模式是编译错误。
++   entry .unwrap   从项中剥除 `Inlined` 和只含单个定义的代码块
++   entry .unpack   联合类型的成员，去除别名后以列表形式给出
++   entry .track   从 `track` 处理函数构建一个 `Tracking`
++   entry .validate   从 `validate` 处理函数构建一个 `Validate`
++   entry .trackWithin   `Tracking.protect` 的代码体
++   entry .validateWithin   `Validate.protect` 的代码体
++   entry .recoverBuild   从 `recover` 处理函数构建一个 `Recovery`
++   entry .mitigateBuild   从 `mitigate` 处理函数构建一个 `Mitigation`
++   entry .accrueBuild   从 `accrue` 处理函数构建一个 `Accrual`
++   entry .handleBuild   从 `handle` 处理函数构建一个 `Handler`
++   entry .protectBody   `Handler.protect` 的代码体
++   entry .mitigateBody   `Mitigation.protect` 的代码体
++   entry .recoverBody   `Recovery.protect` 的代码体
++   entry .accrueBody   `Accrual.protect` 的代码体

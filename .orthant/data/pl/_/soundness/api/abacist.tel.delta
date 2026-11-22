@@ -1,0 +1,528 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1909987006a8a2591f638ca4e1537639
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09cad6f900faa2e70f5a57cba0852b26
++ info   wielkości o mieszanej podstawie: całkowita liczba każdej jednostki w kaskadzie, jak godziny, minuty i sekundy
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0be74d58ea8e05060e8af37d01b4064b
++     _Abacist_ przedstawia wartość liczoną w *kaskadzie* jednostek o dokładnych, lecz
++     niedziesiętnych krotnościach – godziny, minuty i sekundy; kamienie, funty i uncje; stopy i
++     cale – jako `Quanta`: całkowitą liczbę każdej jednostki, przy czym przeniesienia między
++     nimi wykonuje arytmetyka. Typ określa kaskadę: najmniejszą jednostkę jako parametr typu, a
++     większe po `in`. Jednostki są prawdziwymi jednostkami z quantitative, więc proporcje
++     między nimi są znane, a `Quanta` konwertuje się do zwykłej `Quantity` i z niej.
+
+% 1 1 0 0ba0fee1a16234d00c1a6816a5a94599
+
+% 2 1 0 18dd3941b525cf58188c7256b9e49b4c
+
+% 0 1 0 1059d9a7456919e10ce0f3320013e0d8
+
+% 0 1 0 0a3bc52ac0771df40ed6a91bd6c97a09
+
+% 0 1 0 0d96d4be8e92564b1ea487b4b81979ac
+
+% 0 1 0 0fe43f528118fca403b5a0ca993ea478
+
+% 0 1 0 0df82270baebe27805e37cf8220ce52b
+
+% 0 1 0 01df819941f809d403f00daa8f475f8e
+
+% 1 1 0 1f246bb32a606f2d0a2a0eca97a7159c
+
+@ 0 7 0 1ac03345c2cb1a381b78997f324d9d6b
++     Wartość zapisuje się od największej jednostki, tak jak się ją wypowiada, a jej składniki
++     odczytuje się, podając jednostkę. W czasie wykonania `Quanta` to pojedynczy `Long`, cała
++     wartość liczona w najmniejszej jednostce, więc arytmetyka na niej jest arytmetyką
++     całkowitoliczbową; kaskada istnieje tylko w typie, a makra odczytujące i budujące wartości
++     dzielą i mnożą przez stałe obliczane podczas kompilacji kodu. Kaskada jest sprawdzana przy
++     użyciu: każda jednostka musi mieć ten sam wymiar, a składnik literałowy musi być nieujemny
++     i mniejszy niż liczba jego jednostek składających się na następną.
+
+@ 0 2 0 06d32b37eeec5c651b9f5830036aae1a
++     `TimeSeconds` i `TimeMinutes` nazywają dwie kaskady czasu, których potrzebuje każdy. Given
++     `UnitsNames` zmienia sposób wyświetlania kaskady, tak by wzrost mógł brzmieć `5' 9"`.
+
+@ 0 5 0 198c0b88876de52606322ab084813f8f
++     Biblioteka ma jeden zbiór źródeł, `abacist.core`, dla każdej platformy i zależy od
++     quantitative w zakresie jednostek. Wszystko jest eksportowane do modułu zbiorczego
++     `soundness`. Typ `Quanta` jest zadeklarowany w `abacist.protointernal`, którego metody
++     rozszerzające stosują się do każdej `Quanta` bez importu, a makra w `abacist.internal`;
++     żaden z nich nie jest przeznaczony do bezpośredniego użytku.
+
+% 0 1 0 0aa62984af7aa65a06581db16bf55d5c
+
+% 0 1 0 0e543c29d030b7821bc25f0a633aa6fe
+
+% 0 1 0 02a4231196def5ab1962803fb6fdf1c5
+
+% 0 1 0 0e5ec0329a63b48c0314a6b56e4072d7
+
+@ 0 1 0 087498908f0a5d2f0ecb32cf3d447d78
++ entry .Quanta   wartość w kaskadzie jednostek jako całkowita liczba każdej z nich: stopy i cale, godziny i minuty
+
+% 1 1 0 0d82ba97939c6aa9037248581f804907
+
+@ 0 5 0 083864935414631e00fbb99d569b9ffd
++       `Quanta[Base] in (Unit1, Unit2, …)` to wartość liczona w kaskadzie jednostek jednego
++       wymiaru: `Base` to najmniejsza, a każda kolejna jest większa od poprzedniej. Kaskada po
++       `in` to jej `Form`, krotka jednostek lub pojedyncza jednostka, a `Quanta[Base]` bez `in`
++       to liczba samej jednostki bazowej. Każda jednostka jest jednostką quantitative w potędze
++       1, taką jak `Inches[1]` lub `Hours[1]`.
+
+% 2 1 0 114a10184386708b0edc79bc6b0af210
+
+% 3 1 0 02901fc5171f9e340105ff49f77a9984
+
+% 5 1 0 1cd644b56823a6d01f3098fc48e5df54
+
+% 0 1 0 1e60b11df2246a1d0677338c90f11dc7
+
+% 0 1 0 0130f961094702eb09d37b0c21a0b51d
+
+% 0 1 0 1c4a121a6eee4ec2046f569b5a006543
+
+% 0 1 0 0a9cfd30c71533f81d351943a3a4da09
+
+% 0 1 0 19d2e4bf5de621df1b429846352a80d2
+
+% 0 1 0 05b427a949acf75a15ef1ba5ed6d355c
+
+% 1 1 0 0f03082bfd9d7a0613f81eef6e0e3944
+
+@ 0 6 0 1632aca0ec2e40191d8a7098d07ce03d
++       `Quanta(…)` przyjmuje składniki od największego i bierze kaskadę z typu oczekiwanego,
++       więc wartość wymaga zadeklarowanego typu lub przypisania typu, takiego jak
++       `(Quanta(5, 6): Weight)`; mniej składników niż jednostek wypełnia większe jednostki
++       zerem. Składnik literałowy, który jest ujemny lub równy liczbie jego jednostek w
++       następnej większej jednostce (`Quanta(5, 12)` jako `Height`), jest błędem kompilacji;
++       największa jednostka jest nieograniczona. Jednostka innego wymiaru w kaskadzie jest
++       błędem kompilacji, podobnie jak baza niebędąca jednostką.
+
+@ 0 2 0 0d551c5fcab06c271363ee2a2218f71d
++       W czasie wykonania `Quanta` to jeden `Long`: cała wartość w jednostce bazowej, którą
++       ujawnia `long`. Dzięki temu arytmetyka sama wykonuje przeniesienia:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0f3893c0d7b6d3831eadc5b059c6ee36
++         label Dwanaście funtów i dziewięć uncji
+
+% 1 1 0 0df95470bcd4cf2914d50fe3599a6482
+
+% 2 1 0 1bd32b77f4bf4ed713a0d9ad1fc38866
+
+% 4 1 0 0fd99e3dddc154390e33c8a4bf45ae75
+
+% 0 1 0 1fb2f66c2535336d18e4e2ba5e4901bc
+
+% 0 1 0 012ed6338855b9310b1c16e16281c904
+
+% 1 1 0 0852ee9a6a54b0fb0691e97278830142
+
+@ 0 1 0 1780c7dd58ad499c1e3439bdb626b89f
++         label Dodanie siedmiu uncji przenosi się do funtów
+
+% 1 1 0 1f7642f1770896f10542e4b4fa5ace25
+
+% 2 1 0 1192790bbd9f811014f7099dc1da77ad
+
+% 4 1 0 102bdd0ef36e7223181df96604683155
+
+% 0 1 0 0dcfcfde8eda7ea30071e5c1b8984a2a
+
+% 0 1 0 1679f8ed9bd6a4f90cc83f26e0535a3a
+
+% 1 1 0 0d211dbea87fe0050638c2237971b410
+
+@ 0 1 0 0c441e3ab8cde2290f7972bc613ff7d9
++         label Dodanie dwóch kolejnych funtów przenosi się do kamieni
+
+% 1 1 0 0f5583a2f1a32dec021119ffef611dc6
+
+% 2 1 0 1f9021d4c5b4288c102505c1502280f3
+
+% 4 1 0 1fa028b11a65eebc1069cdacbe4744bc
+
+% 6 1 0 1cb72c33e41f97400863887642be8053
+
+% 0 1 0 0833e37bbd83d290065236b38eeffce8
+
+% 1 1 0 0b3bc3288458142310ceb4b6fc68f177
+
+@ 0 1 0 1069bfeb2f4e73ab18529e217d55ab02
++         label Po scaleniu kamienie stają się funtami
+
+% 1 1 0 146f842fd878235e04c43d66155a71c8
+
+% 2 1 0 0ee7478b8139cd421a340f8b1a582a2e
+
+% 4 1 0 1df155aa87d8dc191ad8ace220e83eab
+
+% 6 1 0 198855a4b7ef69ec043f11d1ecb45746
+
+% 0 1 0 1562e761b3ff6a7505b24d3b55538399
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0a074b8bbcc9f4191bcd73aa2d4261e1
++       Wartości o tej samej jednostce bazowej można dodawać i odejmować (`+`, `-`), negować,
++       mnożyć i dzielić przez `Double` (z zaokrągleniem do najbliższej jednostki bazowej),
++       porównywać (`<`, `>=`, …) – także dwie wartości o tej samej bazie, lecz różnych
++       kaskadach, przez ich wspólny nadtyp `Quanta[Base]` – i agregować za pomocą `total` i
++       `mean`. Konwertują się do `Quantity` przez `quantity`, a z niej przez `Quantity#quanta`.
++       Wynik odejmowania może być ujemny, a wtedy każdy składnik jest ujemny lub zerowy.
+
+@ 0 5 0 088dcadf40a4effd17628c187b677d5a
++       Giveny obiektu towarzyszącego są w zasięgu niejawnym: `show` przedstawia niezerowe
++       składniki z symbolami ich jednostek (`1st 3lb 2oz` lub nazwami z givena `UnitsNames`), a
++       `inspect` – każdy składnik, łącznie z zerami (`Quanta(0st 3lb 2oz)`). Pełna lista
++       składowych obiektu towarzyszącego znajduje się pod `abacist.protointernal.Quanta`, gdzie
++       zadeklarowano typ nieprzezroczysty i skąd jest on tu eksportowany.
+
+% 0 1 0 10033ed11151338c0bfc944bd7e7e43d
+
+% 0 1 0 040a7e810c58c1de13ac4ce62d1c52c0
+
+% 0 1 0 095eed01f5c5e66b1d8f3af9a2070c95
+
+% 0 1 0 108131ca247af01d0ad4893049851711
+
+@ 0 3 0 05076c96e7608fe4027b87ed90d0803b
++ entry .AnyUnit   ograniczenie jednostki bazowej `Quanta`: jedna jednostka quantitative, w dowolnej potędze
++     `Units[?, ?]`. To ograniczenie odrzuca `Quanta[String]`. Kaskadę buduje się z jednostek w
++     potędze 1, takich jak `Inches[1]`.
+
+@ 0 3 0 0825403284f4926b0d215ae310f8aa4b
++ entry .Divisions   ograniczenie `Form` dla `Quanta`: krotka jednostek lub pojedyncza jednostka
++     `Tuple | AnyUnit`, więc zarówno `Quanta[Inches[1]] in (Feet[1])`, jak i
++     `Quanta[Inches[1]] in Feet[1]` są poprawne, podobnie jak kaskada kilku jednostek w krotce.
+
+@ 0 1 0 046b8401f80b044614c6004142014b70
++ entry .TimeMinutes   czas trwania w godzinach i minutach: `Quanta[Minutes[1]] in (Hours[1])`
+
+% 1 1 0 1a94d324389077e80e989011aa34e153
+
+% 2 1 0 1ab9af4d9915125212a120fdb4f2581e
+
+% 0 1 0 15c508f02878a88809bdd12c14ff5725
+
+% 0 1 0 0fa68d9b8bbb928d1cfe94a603faa12a
+
+% 0 1 0 0636d85d8e14f6910b8a8260cab088ef
+
+% 1 1 0 08a459c444963120059383e92260a8cf
+
+@ 0 1 0 1d8a4fed417148c00b56d9366df4ddb4
++     Godziny są nieograniczone, więc czas trwania dłuższy niż doba nadal wyraża się w godzinach.
+
+@ 0 1 0 1e22c989bf7bb587039f810c71455e12
++ entry .TimeSeconds   czas trwania w godzinach, minutach i sekundach: `Quanta[Seconds[1]] in (Minutes[1], Hours[1])`
+
+% 1 1 0 08574dff0b65589b0025d366eb715cc6
+
+% 2 1 0 1d597b7ca508b7821b2f786770a41cfd
+
+% 0 1 0 08855aadcb13e2e306904a1ee92c3cc1
+
+% 0 1 0 18a0fe0373b9f12619f0e6752d59c65d
+
+% 1 1 0 003231c3ac1e73600dae62ed28ea2371
+
+@ 0 2 0 001534500e1cd9321b74cecced2e3773
++     Godziny są nieograniczone, więc `Quanta(27, 18, 9)` to dwadzieścia siedem godzin, a nie
++     doba i trzy godziny.
+
+@ 0 1 0 07b0f5a417a354f102b9e55728a1153a
++ entry .quanta   konwertuje `Quantity` do `Quanta` wybranej kaskady, z zaokrągleniem do jej najmniejszej jednostki
+
+% 1 1 0 049e19553b68021310d7c0eefee188d4
+
+@ 0 4 0 07041389961c1f400af9ccd87c440720
++       Rozszerzenie dla `Quantity`: `quantity.quanta[Result]` konwertuje wielkość do typu
++       `Quanta` `Result`, w jego jednostce bazowej, i zaokrągla do najbliższej całości. Wymiar
++       wielkości musi być wymiarem kaskady; współczynnik konwersji jest obliczany podczas
++       kompilacji kodu.
+
+% 2 1 0 02f759c5068a6fd91a9b93fae71a7ba2
+
+% 3 1 0 0e4f5204a511b6930394ce91e4aa069b
+
+% 5 1 0 107a0abf88e34d5c140eeaed3ed1d619
+
+% 1 1 0 0e0f3ecb5fbdc4ba1f2b4816c5604516
+
+% 0 1 0 16435fc2501dda1d15935531e668bac5
+
+% 0 1 0 07b974de3d09dcf41f201fe0b3cb3e40
+
+% 0 1 0 1d0b16cfae8953dc16b341ba7f98c52e
+
+% 0 1 0 11f17f78fa6b15d00bae712e1b0073ce
+
+% 1 1 0 07916814e07a87820939284adb6d30da
+
+@ 0 1 0 12844feb44574b8905e32e3a0dfcfb2d
++       Konwersją odwrotną jest `Quanta#quantity`.
+
+% 1 1 0 0a7fb04a3658b13b1e02461b6294ce56
+
+@ 0 1 0 160a5e94a2cfca650fabc5bc163aa3cf
++ entry .UnitsNames   jak oznaczane są składniki typu `Quanta` przy wyświetlaniu, zamiast symboli jednostek
+
+% 1 1 0 06863fadb769bbb0053d030d0dad92ff
+
+@ 0 3 0 1833baecbe030d6f13f11531ae51fc81
++       Given `UnitsNames[Q]` dla typu `Quanta` `Q` zastępuje symbole jednostek używane przez
++       `show`. Jest to trait z jedną metodą abstrakcyjną, więc wystarczy lambda zwracająca nazwy,
++       od największej jednostki:
+
+% 2 1 0 06c853029a7b2f6b0e476e192fdce1c8
+
+% 3 1 0 063da896de0152cc1db95073ca65c3e7
+
+% 5 1 0 1ff2974df63b37ad10248aa710f48eb7
+
+% 0 1 0 0e4aec8990b8730100d4f2111adc0f0b
+
+% 0 1 0 064730a742a743741c54646d236fbc02
+
+% 1 1 0 14b103c3d2f4d99c19d1a9aab99142e9
+
+@ 0 5 0 1b059634380db56c04a91406f24d4d62
++       Każdy wyświetlany składnik to jego liczba, a po niej nazwa, a składniki łączy
++       `#separator`. Składniki zerowe są pomijane, jak przy domyślnym przedstawieniu, a nazwy są
++       dopasowywane do pozostałych składników od najmniejszej jednostki w górę. Dlatego wartość
++       ze składnikiem zerowym *poniżej* niezerowego jest błędnie oznaczona: `Quanta(5, 0)` jako
++       `Height` wyświetla się jako `5"`, a nie `5'`.
+
+% 1 1 0 1b4272a4af41df170c6e8fa534c9489a
+
+@ 0 3 0 1cc2bd8f7b99fbd1056d7bd781abfcd7
++   entry #prefix   tekst przeznaczony do poprzedzania przedstawienia; domyślnie pusty i obecnie nieużywany przez `show`
++   entry #separator   tekst między wyświetlanymi składnikami: domyślnie spacja
++   entry #units   nazwy jednostek kaskady, od największej
+
+@ 0 1 0 1fe0ee0047157c510d4ca38b504352ff
++ entry .protointernal   miejsce nieprzezroczystego typu `Quanta` i metod rozszerzających, które ma każda `Quanta`
+
+% 1 1 0 18e10dd205c7af2b0b5a512fc08e13f0
+
+% 2 1 0 1ac2e6aa10b122f4009b5a255d34ebfa
+
+@ 0 5 0 106d9783b347d70608beed506521d1e0
++       Nie do bezpośredniego użytku: obiekt istnieje, aby `Quanta` mogła być nieprzezroczystym
++       aliasem `Long`, i jest prefiksem tego typu, więc jego metody rozszerzające stosują się do
++       każdej `Quanta` bez importu. `Quanta` jest stąd eksportowana do pakietu `abacist`, gdzie
++       znajduje się jej pełny opis.
++   entry .Quanta   wartość w kaskadzie jednostek, przechowywana jako jeden `Long`; zob. `abacist.Quanta`
+
+% 1 1 0 19598743794380d103eb2e9dd2aee97e
+
+@ 0 8 0 0462c09a23aaf57f12ee8d476c3f433c
++         Typ nieprzezroczysty `Quanta[Base <: AnyUnit] = Long` i jego obiekt towarzyszący z
++         konstruktorami i givenami. Pełny opis znajduje się na jego stronie w pakiecie
++         `abacist`. Obiekt towarzyszący dziedziczy given `commensurable` z
++         `anteprotointernal.Quanta2`.
++     entry .apply   buduje wartość z jej składników, od największej jednostki, w kaskadzie typu oczekiwanego
++         `Quanta(…)` to makro, które bierze jednostkę bazową i `Form` z typu oczekiwanego i
++         koduje składniki w liczbę jednostek bazowych. Składnik literałowy, który jest ujemny
++         lub zbyt duży dla swojej jednostki, albo więcej składników niż jednostek, jest błędem
++         kompilacji; składnik nieliterałowy nie jest sprawdzany.
+
+% 2 1 0 1a26fd45c4839f07019df9b9291c4540
+
+% 3 1 0 166275dceee4c63503bbed5c19901eca
+
+% 0 1 0 11295024e8edd8860281374ad8ebbeac
+
+% 0 1 0 03f18b5f8b2aecc8092624a6fa2a07a1
+
+% 1 1 0 02a8b4402178e424050a71f966c59717
+
+@ 0 15 0 0f1d4fdcbb4123c5147f9fef20571e63
++     entry .fromLong   interpretuje liczbę jednostek bazowych jako typ `Quanta`, bez sprawdzeń
++         `Quanta.fromLong[Q](long)` jest odwrotnością `long`: `Long` jest traktowany jako
++         wartość w jednostce bazowej `Q`. Argument typu musi być typem `Quanta`; nic tego nie
++         sprawdza.
++     entry .underlying   świadek `Underlying`, że `Quanta` z `Form` jest w czasie wykonania typem `Long`
++     entry .underlyingBare   świadek `Underlying`, że goła `Quanta[Base]` jest w czasie wykonania typem `Long`
++     entry .zeroic   zero gołej `Quanta[Base]`, dla `total` i innych agregatów
++     entry .zeroic2   zero `Quanta` z `Form`, dla `total` i innych agregatów
++         Given oddzielny od `.zeroic`, aby wyszukiwanie zera nieznanego podtypu nie mogło
++         zatrzymać się na `Nothing`.
++     entry .typeable   pozwala dopasować typ `Quanta` we wzorcu względem `Any`
++         Pasuje każdy `Long`, ponieważ kaskada nie istnieje w czasie wykonania: wzorzec
++         `case q: Weight` pasuje także do `Long` lub do `Quanta` innej kaskady.
++     entry .integral   instancja `Integral` typu `Long`, dla dowolnego typu `Quanta`
++         Pozwala standardowym operacjom liczbowym i agregatom Soundness, takim jak `mean`,
++         traktować `Quanta` jako liczbę całkowitą, którą jest w czasie wykonania.
+
+% 2 1 0 044d998471cd583c1051c61d2767323f
+
+% 3 1 0 06c19082617bd2070a95518fd410e758
+
+% 4 1 0 1cbf98d17d6f52fb1d463c0e116ecd20
+
+% 0 1 0 1129b879a8802a391ac14e2afba79fe7
+
+% 0 1 0 13093353d874a1b61f5f3c9728470b40
+
+% 1 1 0 17c72206cfddc5e91066b3a2b360c9fe
+
+@ 0 3 0 106f02cf6acbcfb70f52d3431ce9767e
++     entry .addable   `+` między dwiema wartościami jednego typu `Quanta`, z przeniesieniami między jednostkami
++     entry .subtractable   `-` między dwiema wartościami jednego typu `Quanta`; wynik może być ujemny
++     entry .multiplicable   `*` przez `Double`, z zaokrągleniem połówek w górę do najbliższej jednostki bazowej
+
+% 1 1 0 1707f6aa4d5443c80f32035528a8aff9
+
+% 2 1 0 1a680c50599cc60e0d6f2a3467c12b8d
+
+% 4 1 0 0b8de7c27896fefb18406397c8b9dbd2
+
+% 0 1 0 1763786c1b1f314208dcc4a111d5a589
+
+% 0 1 0 039daf2288d5c06701a43c72546368ba
+
+% 1 1 0 1da14da729221e8c1d27ec1dca546465
+
+@ 0 25 0 082c6422ff3bc2760b5dd71e6d03e5dd
++     entry .divisible   `/` przez `Double`, z zaokrągleniem połówek w górę do najbliższej jednostki bazowej
++     entry .negatable   jednoargumentowy `-` na `Quanta`, negujący każdy składnik
++     entry .showQuanta   buduje `Showable` dla typu `Quanta`: nazwy z givena `UnitsNames` lub symbole jednostek
++         Implementacja stojąca za `.showable` i `.showableBare`. Bez `UnitsNames` każdy
++         niezerowy składnik to jego liczba i symbol jednostki, połączone spacjami
++         (`1st 3lb 2oz`); wartość, której wszystkie składniki są zerowe, wyświetla się jako
++         pusty tekst.
++     entry .inspectQuanta   buduje `Inspectable` dla typu `Quanta`: każdy składnik, łącznie z zerami
++         Implementacja stojąca za `.inspectable` i `.inspectableBare`, przedstawiająca
++         `Quanta(0st 3lb 2oz)`, tak by spakowany `Long` nigdy nie był inspekcjonowany jako goła
++         liczba.
++     entry .inspectable   inspekcjonuje `Quanta` z `Form` jako `Quanta(0st 3lb 2oz)`
++     entry .inspectableBare   inspekcjonuje gołą `Quanta[Base]` jako `Quanta(9s)`
++     entry .showable   wyświetla `Quanta` z `Form` przez jej niezerowe składniki, jako `3lb 2oz`
++     entry .showableBare   wyświetla gołą `Quanta[Base]` przez jej liczbę i jednostkę, jako `9s`
++     entry .distributiveQuanta   buduje `Distributive` dla typu `Quanta`, według jego składników
++         Implementacja stojąca za `.distributive2` i `.distributive2Bare`: częściami wartości są
++         jej składniki jako wartości `Long`, od największej jednostki, a sformatowane części
++         rozmieszcza się jako `2 st, 3 lb, 4 oz`.
++     entry .distributive2   formatuje `Quanta` z `Form` składnik po składniku, jako `Distributive by Long`
++     entry .distributive2Bare   formatuje gołą `Quanta[Base]` jako jej jedyny składnik, jako `Distributive by Long`
++     entry .distributive   tworzy `Distributive by Long` z funkcji części i funkcji rozmieszczającej
++   entry .long   wartość jako jeden `Long`: cała, liczona w najmniejszej jednostce
++       Rozszerzenie dla każdej `Quanta`. `TimeSeconds` o wartości `Quanta(1, 30, 0)` to `5400`.
++   entry .apply   składnik `Quanta` w jednej z jej jednostek, jako `value[Minutes]`
++       Rozszerzenie dla każdej `Quanta`, przyjmujące konstruktor typu jednostki (`Feet`, a nie
++       `Feet[1]`). Jednostka spoza kaskady jest błędem kompilacji, _the Quanta does not
+
+% 0 1 0 0a80fcbec310c8390a89edb43fa4ec48
+
+% 2 1 0 0dffc867a6f206d414cf17420e5d8292
+
+% 3 1 0 1808bf43c0bd53d71e9eb0fcc72855e8
+
+% 0 1 0 1a25864463cfa0ba14bf3b29d162b4b1
+
+% 0 1 0 04fde87f8d79804009761b2abb3d635c
+
+% 1 1 0 15e419586a7e2c44048c43eefd9b07f7
+
+@ 0 4 0 1a45d5e98f8056a21e07c94a4f089281
++   entry .quantity   wartość jako `Quantity` w jednostce głównej jej wymiaru
++       Rozszerzenie dla każdej `Quanta`: długość staje się `Quantity[Metres[1]]`, masa
++       `Quantity[Kilograms[1]]`, a czas trwania `Quantity[Seconds[1]]`, przez współczynnik
++       obliczany podczas kompilacji kodu. `convert` daje następnie dowolną inną jednostkę.
+
+% 2 1 0 1626fa81101f8e8c11a5037d7d0a0877
+
+% 3 1 0 1c547515403591ce186deb3e492d2acb
+
+% 5 1 0 1be00b0ff90edeb21f66357a32d7b84c
+
+% 0 1 0 02244f7ab1d7850b14838d9dd530bf52
+
+% 0 1 0 0ca5192fb15f089c1e8fe0e241643cb3
+
+% 0 1 0 1b67d45c1fec68a11d5fc342da5724be
+
+% 1 1 0 0be118a6765feb79065eca1e086eed1a
+
+@ 0 13 0 067c78c2110de78d02059c17b9a4ac11
++   entry .components   składniki jako `Ledger` od symbolu każdej jednostki do jej liczby, od największej
++       Rozszerzenie dla każdej `Quanta`, łącznie ze składnikami zerowymi: `Quanta(3, 2)` jako
++       ciężar to `st → 0`, `lb → 3`, `oz → 2`. Do jednostki w potędze innej niż 1 dołącza się
++       jej potęgę w indeksie górnym.
++   entry .multiply   mnoży przez `Double`, z zaokrągleniem połówek w górę do najbliższej jednostki bazowej
++       Rozszerzenie dla każdej `Quanta`, zachowujące typ odbiorcy; to samo co `*`.
++   entry .divide   dzieli przez `Double`, z zaokrągleniem połówek w górę do najbliższej jednostki bazowej
++       Rozszerzenie dla każdej `Quanta`, zachowujące typ odbiorcy; to samo co `/`.
++   entry .collapse   scala największe jednostki kaskady z następną, jako `Quanta` o mniejszej liczbie jednostek
++       Rozszerzenie dla każdej `Quanta`: `value.collapse(n)` usuwa z typu `n` największych
++       jednostek, więc ich liczby przenoszą się do największej pozostałej. Wartość się nie
++       zmienia; zmienia się tylko jej kaskada. `n` musi być literałem nie większym niż liczba
++       jednostek powyżej bazy, w przeciwnym razie jest to błąd kompilacji.
+
+% 2 1 0 1a0a9356e7836d961618c7b2e4d4f0e3
+
+% 3 1 0 15b6b812a9aa54c9011c1427ea16f341
+
+% 5 1 0 08bb4d245d5804c31661aa9b1bf56fe8
+
+% 0 1 0 163d71421a0864611bea522d492b420c
+
+% 0 1 0 0550bb623ba191bf0fc5bbfb4065ffa5
+
+% 0 1 0 132689c6d0d885e8187fb22cbea3a372
+
+% 1 1 0 035f7fcd3f695060113a3c0a1d27a6ed
+
+@ 0 1 0 10ac3e0d8e115571051b905ba6ecd4f7
++ entry .anteprotointernal   trait, który daje obiektowi towarzyszącemu `Quanta` jego given porównania
+
+% 1 1 0 0628ee279ec7ce940266ac75d352b792
+
+% 2 1 0 06fc55f851d2eb5a16c00ffe0beb299f
+
+@ 0 3 0 1aa0f3fd312aeec11872470c45cfa7d0
++       Wmieszany do `protointernal`; nie do bezpośredniego użytku. Istnieje po to, by given
++       porównania miał niższy priorytet niż własne giveny obiektu towarzyszącego.
++   entry #Quanta2   rodzic obiektu towarzyszącego `Quanta`, zawierający `commensurable`
+
+% 1 1 0 100d2f81b35ffe631953fa8cec3de5cf
+
+@ 0 4 0 0b61880cda31ae7d181f9495e23daa0a
++         Nie do bezpośredniego użytku.
++     entry #commensurable   porównuje dwie wartości o jednej jednostce bazowej, jako `<`, `<=`, `>` i `>=` na ich liczbach jednostek bazowych
++         Wartości o tej samej jednostce bazowej, lecz różnych kaskadach porównuje się przez ich
++         wspólny nadtyp `Quanta[Base]`.
+
+@ 0 1 0 068c27cd59fbb0d21dfe72905759e20e
++ entry .internal   makra stojące za konstrukcją, składnikami, konwersjami i `collapse` typu `Quanta`
+
+% 1 1 0 1fdc2c873429c8a801f9bb9f3cc3ab38
+
+% 2 1 0 07832e13934d3fef1363d11568767609
+
+@ 0 10 0 181bdaf12980173313cbf4049a4f44b4
++       Nie do bezpośredniego użytku: obiekt istnieje, by makra miały stałe miejsce. Jego błędy
++       kompilacji to te, które widzą użytkownicy `Quanta`: składnik poza zakresem, kaskada
++       mieszająca wymiary, nieobecna jednostka, zbyt głębokie scalenie.
++   entry .assembleParts   makro stojące za `Quanta(…)`: koduje składniki względem kaskady typu oczekiwanego
++   entry .describeQuanta   makro stojące za `components`: liczba każdej jednostki, według symbolu
++   entry .multiplyQuanta   makro stojące za `multiply` i `divide`
++   entry .toQuantity   makro stojące za `quantity`: wartość w jednostce głównej jej wymiaru
++   entry .fromQuantity   makro stojące za `Quantity#quanta`: wielkość zaokrąglona do jednostki bazowej kaskady
++   entry .get   makro stojące za `value[Unit]`: jeden składnik lub błąd `↯/s.54.1`, jeśli jednostki brak
++   entry .collapse   makro stojące za `collapse`: ta sama wartość w kaskadzie o mniejszej liczbie jednostek

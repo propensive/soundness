@@ -1,0 +1,18 @@
+orthant 2 language
+
+% 0 2 0 13cb20562ad12b90122b786e4aeea2b0
+
+@ 0 13 0 1dbed9729d1301fb10936174d3acf2d1
++   entry .sha1   `0x11`，`sha1`
++   entry .sha2_256   `0x12`，`sha2-256`
++   entry .sha2_512   `0x13`，`sha2-512`
++   entry .sha2_384   `0x20`，`sha2-384`
++   entry .sha2_224   `0x1013`，`sha2-224`：在封装中为两字节的 varint
++   entry .blake3   `0x1e`，`blake3`：表中的草案条目，但含义明确且被广泛实现
++   entry .md5   `0xd5`，`md5`：表中的草案条目
++   entry .name   本库所知代码的注册名称，或 `Unset`
++       `Multicodec.name(0x12)` 为 `t"sha2-256"`；`0x00` 为 `identity`。
++       上述集合之外的代码是合法的，可以在 `Multihash` 中表示，但在这里没有名称。
++   entry .apply   `Multicodec[algorithm](code, name)`：为用户自己的算法构建的实例
++   entry #code   算法的 multicodec 代码，即在 multiformats 表中注册的代码
++   entry #name   算法注册的 multicodec 名称，例如 `sha2-256`

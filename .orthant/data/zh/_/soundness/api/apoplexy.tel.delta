@@ -1,0 +1,1165 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cfdb3519356eea91b1c45598f44d38f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03bc31ea70f9b62311eb2862b4e634bf
++ info   在代码编译时从 OpenAPI 规范派生的有类型 HTTP 客户端
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 07a064638f9600ef11042836d20e29e9
++     _Apoplexy_ 把一份 [OpenAPI](https://www.openapis.org/) 文档（REST API 的路径、参数、请求和响应 schema 以及安全方案）变成一个**有类型的客户端**，而不生成任何代码。
++     `Api(cp"/spec.json")` 在代码编译时从类路径读取规范，它返回的值按路径导航：每个段、每个路径参数、每个查询参数或头部参数、每个请求体和每个响应类型都会对照文档检查，因此 API 未提供的调用或类型错误的参数，会在书写调用之处成为编译错误。
++     客户端*就是*规范，由编译器解释；代码与契约之间的偏差会让构建失败，而不是让请求失败。
+
+% 2 1 0 14d1f9abe89e11b1162b5ef7ea856557
+
+% 3 1 0 110adced9c7bca2f084eec061dae2492
+
+% 4 1 0 0c5d5995bfc9612f0324ee3f76731a04
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 0ce8cde1ff9b0e2a18dad81c1fac9bf2
+
+% 0 1 0 14367c786e279a390474d703d55ee5c0
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 153b22363fcd680c07868dd2050167ea
+
+% 0 1 0 13fd51fc254d98431a3500ba8aa90e10
+
+% 0 1 0 1d3ab3e0abafb2641a7c0ddba7d34126
+
+% 0 1 0 0bbb97ed6571082e120791fcb7c7541b
+
+% 0 1 0 143eebcb0657f2680e2270c9a5c4a4a4
+
+% 0 1 0 1e9af5d44ec24f5a1f3a1618b016c82b
+
+% 0 1 0 10d90a2642483a7911db2314f90c77c5
+
+% 0 1 0 0a7e182ad29e6cc811de67d604b59465
+
+% 1 1 0 16cceecc5a47ceb6097d65ce6ac23d64
+
+@ 0 11 0 12e881cb725c469605e2b655e7b43fd5
++     这个库由三组类型组成。
++     `Api` 是可导航的客户端：一个用它在 API 中的位置（`Api at "/pets/{petId}"`）和规范声明的线上格式（`Api over Json`）细化的值，编译器对照文档解析它的 `Dynamic` 成员；在它上面调用一个动词会得到 `Api.Response`，其 `call`、`attempt`、`record` 和 `tuple` 执行请求。
++     `Api.Error` 是成功范围之外的响应所抛出的错误族，每个状态一个类，而 `Api.Violation` 是规范从未声明过的状态。
++     `OpenApi` 是作为值的文档本身（信息、服务器、路径、操作、参数、主体、响应、组件和安全方案），用 `read[OpenApi]` 从 JSON 或 YAML 解码，供检视而非调用 API 的工具使用；`OpenApi.Error` 指明无法加载的文档出了什么问题。
+
+@ 0 13 0 1da70653bf38f94613b78f4e81235a8e
++     响应正文如何变成值，由它的**媒体类型**决定。
++     规范为每个主体指明媒体类型，而 `gesticulate.Construable` given（`("application/json" is Construable to Json)`、`("image/png" is Construable to (Raster in Png))`）指明承载它的 Soundness 类型。
++     每个这样的映射都是 `construables` 族中的一个 given，由该格式自己的库声明（JSON 由 `jacinta.http`，XML 由 `xylophone.http`，栅格格式由 `hallucination`，纯文本和八位字节流由 `gesticulate`，……），并且**按名称导入**，因为 `import soundness.*` 不导入 given：没有经过刻意选择，什么都不会被解释；如果作用域中没有任何东西能解释某个响应的媒体类型，它就被读作原始的 `Http.Response`，并伴随一条编译时警告。
++     请求体由载体的 `telekinesis.Postable` 写出，它同样从 `postables` 按名称导入。
++     `Conformant` 类型类把两者连接起来：`call[T]()` 读取载体并从中解码 `T`，因此任何具有 `Decodable in Json` 的 `T` 都可以从 JSON 响应中请求。
+
+@ 0 6 0 0d1ffb53832af57e105876f75b09c81c
++     凭据来自 `orthodoxy`：以安全方案命名的 `Credential` given（`("api_key" is Credential to Text)`、`("basicAuth" is Credential to Auth)`、`("petstore_auth" is Credential to Authorization)`）在书写调用之处被召唤，并按方案的要求出示，即作为头部、查询参数、cookie 或 `Bearer` 授权；如果作用域中没有凭据能满足某个操作的要求，该操作就无法编译，错误会指出能满足要求的 given。
+
+@ 0 6 0 0b63db0ba6be65370ca8e9d55447a0e5
++     这个库只有一个源码集 `apoplexy.core`，仅限 JVM；它的宏通过编译器的类加载器读取规范，因此文档必须是由只接受字面量的 `cp"…"` 插值器指明的类路径资源。
++     `Api`、`Conformant` 和 `OpenApi` 导出到 `soundness` 总括包；顶层 given `yamlEncodableInJson` 则没有导出，需要手动把 YAML 文档读作 JSON 时，以 `apoplexy.yamlEncodableInJson` 导入。
+
+% 0 1 0 1ded61d524e211450c4dd671553c9282
+
+% 0 1 0 0c1d449a434652e307697961dac7f82c
+
+% 0 1 0 01d0b09fceaf81b11b9008c8cb92ec2e
+
+% 0 1 0 15c1b1c4b6e2ac240abc9557159c21b6
+
+% 0 1 0 195ed1605aa4dad0163115ae591e4c48
+
+@ 0 1 0 061a9b059d10a6420d6512f2c2ef98ba
++ entry .Api   按路径导航的客户端，每一步都对照规范检查
+
+% 1 1 0 0b00c862eece9d43041dbc7889d2387e
+
+@ 0 8 0 09ebb654f63a7ebf0f8fec5baa771613
++       `Api` 是 API 中的一个位置：迄今为止的请求（`#request`，一个 `Api.Request`，包含方法、基础 URL、路径模板、替换值、查询、头部、主体和 `accept` 媒体类型），加上一个细化类型，它把位置记录为字面量 `Locus`（`Api at "/pets/{petId}"`），把规范资源记录为 `Source`，把文档各响应共用的线上格式记录为 `Transport`（`Api over Json` 或 `over Xml`）。
++       每次成员访问都是 `Dynamic` 的：`#selectDynamic`、`#applyDynamic` 和 `#applyDynamicNamed` 都是宏，它们重新读取规范，并在路径、参数或动词不存在时中止编译。
+
+% 2 1 0 0ceeecdd17ab7b7d017815db83025c50
+
+% 3 1 0 1c449c85a857b43c0477e13771d91031
+
+% 0 1 0 0c82f0938af751140b554df1f10c14f3
+
+% 0 1 0 1954188ad5f14e5e1e9c96522a8da2d9
+
+% 0 1 0 16b234eb69c6171715611513af5ed9f0
+
+% 0 1 0 08a402c6ed0ceb9401fb94ac02e87bb8
+
+% 0 1 0 0f179ec955908fff057617933675be82
+
+% 0 1 0 0c62bb0574b802311903a0ff62f66bca
+
+% 1 1 0 10701fafd98eb40e1cfeeba64cf53815
+
+@ 0 15 0 04b7b33b6a8de108059afc58b569eee3
++       导航遵循四条规则。
++       **段**是一次成员访问，`api.pets`；规范中含有 Scala 标识符不允许的字符的段要放在反引号中，`` api.`museum-hours` `` 或 `` api.users.`@me` ``。
++       **路径参数**是其前一个段上的位置参数，`api.pets(42)`，按参数的 schema 定型：`type: integer` 是 `Int`，`format: int64` 是 `Long`（也接受 `Int`），`number` 是 `Double`，`boolean` 是 `Boolean`，其余都是 `Text`。
++       完整路径上的**动词**（`get`、`put`、`post`、`delete`、`patch`、`head`、`options`、`trace`）调用该操作，查询参数和头部参数作为命名参数，请求体作为唯一的位置参数，并产生一个 `Api.Response`。
++       恰好只有一个非 `DELETE` 操作的端点可以不写动词，直接在段上应用参数来调用，`api.pets(42).photos(width = 10)` 或 `api.login(credentials)`；有多个操作的端点需要写动词，而 `DELETE` 总是要显式写出。
++       遗漏必需参数、参数类型错误、路径项没有该动词，以及在多操作端点上省略动词直接应用，都是编译错误。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0dbda40102bd8bc21591dc12f30aa694
++         label 规范的根
+
+% 1 1 0 162b12b86101316b167caddc00596a22
+
+% 0 1 0 05cb51ced590344e15c26b2438d9deaf
+
+% 1 1 0 154001026953d89c1800c98cc18e10d2
+
+@ 0 1 0 039c4367cef149f40c95314374dfb0e0
++         label 一个段，检查它是否是某条路径的开头
+
+% 1 1 0 16117c55ca414b911595a8d43c0e0c43
+
+% 0 1 0 0f43ebfab4b39cd402750df091a23849
+
+% 1 1 0 0c34ecb2e0d1d3221f95c7c68548957e
+
+@ 0 1 0 1870ef30e6618ad11a37a02e936c3418
++         label 一个路径参数，按其 schema 定型
+
+% 1 1 0 07e3a17edd4e77b9073a4692dc1607b4
+
+% 0 1 0 1b8c90dd368632e0031a096e919ca081
+
+% 1 1 0 0506c797b5bca20d1b071ee68da5d6e4
+
+@ 0 1 0 0fc45af9f0f7986a0dbf165224b86d90
++         label 带参数的动词：一个 `Api.Response`
+
+% 1 1 0 100c7f484eb29c2a0f18e8f55272d41c
+
+% 0 1 0 03a1ae6d26f0ccae065dbfeaf6abb1eb
+
+% 1 1 0 07c5fb70b25457dc1c2684360bd9f0fc
+
+@ 0 1 0 00097a78f13bcb141b03eebd320dbd58
++         label 调用，解码为所请求的类型
+
+% 1 1 0 0c4b825b2d3ef088090bf92542affa49
+
+% 0 1 0 0641cb9fce68cae305a6cce06c25e46b
+
+% 0 1 0 03bdd43102ca49c504fb0a38882b3975
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 1f40225b8492f4a20b0e3d9512cbef14
++       在路径项上声明的参数适用于其上的每个操作；以 `$ref` 写入文档组件的参数、响应或请求体会被跟随解析；查询参数或头部参数用其实参的 `Showable` 渲染。
++       当一个操作声明了多个成功响应时，优先选择 `200`，其次是 `201`，再次是最小的那个。
+
+@ 0 7 0 12360fde90677287156662b29f2ce986
++       基础 URL 取自规范的第一个服务器，其 `{variables}` 取默认值，并在代码编译时解析为 URL；相对服务器（`/api/v3`）或完全没有服务器时，需要使用 `Api(resource, base)`。
++       规范通过编译器的上下文类加载器从类路径读取，因此资源必须是编译器类路径上的 `cp"…"` 字面量，格式为 JSON 或 YAML，版本为 OpenAPI 3.0 或 3.1。
++       Cookie 参数、`callbacks`、`links`、`webhooks` 以及指向其他文档的引用都不会被处理，`multipart/form-data` 主体也不会被解释。
+
+% 1 1 0 1e4e0d24b73b9cf61ada2c8a544e54b5
+
+% 0 1 0 1a4776226d3646ef1251a869afd4b5ad
+
+% 0 1 0 19b6567619ee68a10303f618d656ba4c
+
+% 0 1 0 13159d27577b006f199c48f4da5f612d
+
+% 1 1 0 0e78a905f03861fb1f5607c88d59a520
+
+@ 0 8 0 0951acb9537c2238086ae6ec8cdf0d9c
++   entry .apply   `Api(cp"/spec.json")` 或 `Api(resource, base)`：规范客户端的根
++       一个宏，它读取 `Resource` 的 `Locus`（因此实参必须是 `cp"…"` 字面量，其存在性已由 `cp` 插值器检查过），在代码编译时加载并验证文档，并返回一个 `Api at "/"`，它在 `Source` 类型中携带资源的路径，供导航宏重新读取。
++       它的 `Transport` 是每个操作的成功响应共用的载体类型，通过调用处作用域中的 `Construable` given 确定；若文档混用多种格式则为 `Json`；每个操作会重新计算自己的载体类型。
+
+@ 0 6 0 17212cd848649d070623ba291a890a8a
++       单参数形式从规范的第一个服务器取得基础 URL，每个 `{variable}` 取其默认值（`OpenApi.Server#resolved`），如果结果不是绝对的 `http` 或 `https` URL，就中止编译：_apoplexy: the server URL `/api/v3` is relative; supply a base URL_。
++       双参数形式从调用者取得基础 URL；相对的服务器 URL 用 `Api.extend` 追加到它后面，绝对的服务器 URL 则直接被它替换。
+
+% 2 1 0 0e73088e66e6913b0ef0d4d1bc906ffe
+
+% 3 1 0 08321f710916ed3f1f0408d25b737908
+
+% 0 1 0 0b2bd616e6a5f10f04ce2b7c933f8a1a
+
+% 0 1 0 045b85fd37e70cf701c4a8fe4364d1fc
+
+% 0 1 0 0f31e28dda02ebe602ab5dc68f15802b
+
+% 1 1 0 080b990651892ce804d506087ba845d8
+
+@ 0 14 0 0eca3131b95c143f06b2f5727ae106d8
++       无法解析的文档、声明了 3.x 以外版本的文档，或指明了 `path`、`query`、`header`、`cookie` 以外参数位置的文档，都会导致编译错误，错误中带有 `OpenApi.Error` 的消息。
++   entry .extend   追加到调用者基础 URL 之后的相对服务器 URL
++       `Api.extend(base, server)` 是这样一个 `HttpUrl`：其源、查询和片段取自 `base`，其位置是 `base` 的位置后接 `server`；这就是 `Api(resource, base)` 对服务器为 `/api/v3` 的规范所做的事。
++       服务器文本按原样追加，因此以 `/` 结尾的基础 URL 与以 `/` 开头的服务器会产生双斜杠。
++   entry .make   基于给定 `Api.Request` 的 `Api`
++       导航宏生成的构造器：一个普通的 `Api`，其 `#request` 就是给定的那个，之后再强制转换为细化类型。
++       它本身不带细化，因此手工构造的 `Api` 无法导航（宏会以 _apoplexy: the receiver has no spec `Source`_ 中止），但可以用 `Api.send` 发送。
++   entry .Records   `record()` 和 `tuple()` 构建其值所依赖的 JSON 读取原语
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 29 0 1142c2fc2d0fa4f619bbc8ee7079a9ea
++         一个自身没有字段的 `Json.Provider.Primitives`：`record()` 和 `tuple()` 宏提供每个响应 schema 的字段，并通过这些原语从响应的 JSON 中读取每个成员。
++         不供直接使用。
++     entry .fields   自身没有字段：宏根据每个响应的 schema 提供其字段
++     entry .list   数组响应的记录，每个元素一条
++         `Api.Records.list(json, transform)` 把一个 JSON 数组拆分为每个元素一条记录，每条记录都基于相同的原语构建；`record()` 就是这样把对象数组响应读作记录的 `List`。
++         对非数组抛出 `Json.Provider.Error`。
++   entry .apiKey   以方案指定的头部出示的 API 密钥
++       `Api.apiKey(credential, name)` 即 `Http.Header(name, credential.value)`：对于 `in` 为 `header` 的 `apiKey` 方案，调用宏以这种方式出示 `Credential to Text`。
++       对于 `in` 为 `query` 的方案，它改为成为一个查询参数，而 `.cookieKey` 处理 `cookie`。
++   entry .cookieKey   以 `cookie` 头部出示的 API 密钥，`name=value`
++       `Api.cookieKey(credential, name)` 即 `Http.Header(t"cookie", t"$name=${credential.value}")`，是 `in` 为 `cookie` 的 `apiKey` 方案出示 `Credential to Text` 的方式。
++       `Api.send` 按 RFC 6265 的要求，用 `; ` 把所有 `cookie` 头部合并为一个。
++   entry .httpAuth   作为 `authorization` 头部的 HTTP 认证
++       `Api.httpAuth(credential)` 为 `http` 方案把 `Credential to Auth`（`Auth.Basic(user, password)`、`Auth.Bearer(token)`）渲染为 `authorization` 头部。
++       当凭据是 `Auth` 而不是 `Authorization` 时，从别处获得的令牌也可以这样为 `oauth2` 或 `openIdConnect` 方案出示。
++   entry .tokenAuth   作为 `Bearer` 头部的 OAuth 2 `Authorization`，对照所需的作用域检查
++       `Api.tokenAuth(credential, scopes)` 接受一个 `Credential to Authorization` 和安全要求指明的作用域，并在发送请求之前，对令牌未授予的第一个作用域抛出带有 `Reason.InsufficientPrivileges(scope)` 的 `OAuth.Error`；否则它就是带有令牌 `bearer` 渲染形式的 `Http.Header(t"authorization", …)`。
++       它需要作用域中有 `Tactic[OAuth.Error]` 和 `Diagnostics`，调用宏会在书写调用之处召唤它们。
+
+% 2 1 0 1f4fd8103feb3a5200fed53e7ff9a34a
+
+% 3 1 0 14450f21f8dad8650c9e5ef58d9801fe
+
+% 4 1 0 181ecfc4e7a104d51953064fc542cf47
+
+% 0 1 0 08f4de0df4c722d41424191245bca85a
+
+% 0 1 0 16a6c08b1bb39aae017c05a509d88cf0
+
+% 0 1 0 0b2f61399237056703a8b86383d33e46
+
+% 0 1 0 0e1e8e8edae435d617af39b87b472cfe
+
+% 0 1 0 1a517df994be55dd04c424d4ecbcf218
+
+% 1 1 0 0a72c04da62dfd4a1e94decbc4e85650
+
+@ 0 18 0 102c01cecb9e39d104a475cbd5920e97
++   entry .jsonOf   读作 `Json` 的响应正文
++       `Api.jsonOf(response)` 对正文的流做 memoize，并把它聚合为 `Json`；JSON 格式错误时抛出 `Parse.Error`，正文被截断时抛出 `Truncation.Error`。
++       `record()` 和 `tuple()` 通过它读取响应，作为记录的错误载荷也是如此。
++   entry .dataOf   响应正文的字节，经过 memoize
++       `Api.dataOf(response)` 是作为 `Data` 的整个正文，需要 `Tactic[Truncation.Error]`。
++       调用代码用它作为 `Api.Violation` 的载荷，因为没有 schema 描述其正文。
++   entry .send   通过作用域中的 `Http.Client` 执行一个 `Api.Request`，得到原始响应
++       `Api.Response#call`、`#attempt`、`#record` 和 `#tuple` 生成的运行时发送。
++       URL 是请求的基础 URL，其路径模板中的 `{name}` 占位符被替换为相应的替换值（每个都按路径段做百分号编码，空格编码为 `%20`），并附上查询；请求没有查询时，则用基础 URL 自己的查询。
++       头部包括规范为响应声明的 `accept` 媒体类型、主体的 `content-type`、请求自身的头部，以及用 `; ` 合并为一个的所有 `cookie` 头部。
++       然后请求以 HTTP/1.1 经由作用域中的 `Http.Client onto Origin["http" | "https"]` 发出，它使用作用域中的任意 `Http.Backend`，因此测试可以用一个记录型后端替代网络。
+
+@ 0 4 0 1cfb5ee9ce67b31a0aa51141d1b9f092
++       它需要 `Online`（导入 `internetAccess.online`）、一个 `Http.Event is Loggable`（例如 `logging.silentLogging`）、用于连接失败的 `Tactic[Connect.Error]`，以及客户端。
++       这里不对照规范做任何检查：手工构建的请求按原样发送。
+
+% 2 1 0 0e36688e17b6d8830f00d33699008374
+
+% 3 1 0 1c31cee7faf7fdba099d1706799305c5
+
+% 4 1 0 1887efe275a8e43c05b5d1af03e176b4
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 0a9ee7c57fdf311716b4c39b2c6207f4
+
+% 0 1 0 177cfec3e554680516c2881a8a6a9105
+
+% 0 1 0 1f08e53d8dd54a4307bc4b2ef43d52a1
+
+% 1 1 0 0b081aeb16ee223c07c7832626a19455
+
+@ 0 1 0 08a41000af4b8dce00e54755654d7852
++   entry .Body   请求体：要么没有，要么是一个媒体类型加上每次发送都重新生成的字节
+
+% 1 1 0 0bf6023ab89406061365e221b4c1802e
+
+@ 0 4 0 0ed215c7f03722790b9447b70bb87d86
++         `Api.Body` 是一个有两个分支的枚举。
++         `Empty` 是没有主体的请求，是 `Api.Request` 的默认值。
++         `Content(mediaType, spring)` 是一个主体，由规范为它声明的 `MediaType` 和一个 `Spring[Data]` 组成；后者在每次发送请求时都重新产生字节，因此重试的请求不会从已耗尽的流发送。
+
+@ 0 8 0 11e7d830f6be0c0c0ea7b045a961efc6
++         调用宏根据调用的位置参数构建 `Content`：实参通过其 `Encodable in Carrier` 编码为媒体类型的载体（`NewPet` 经由 `jsonEncodable` 编码为 `Json`），或者在它本身就是载体时按原样发送（`application/x-www-form-urlencoded` 的 `Query`、`application/octet-stream` 的 `Data`），然后由从 `postables` 按名称导入的载体的 `Postable` 写出字节。
++         `Postable` 自身的媒体参数会被复制到规范的媒体类型上，因此用 `jsonPostable` 发送的 JSON 主体带有作用域中 `Codepage` 所给出的字符集。
+
+% 2 1 0 17b2cb15c31096340ecce4dc74bec0a7
+
+% 3 1 0 07629c706287034d08626d0d0fd5f119
+
+% 0 1 0 1308235da0d482ac17f72c3f15b9b366
+
+% 0 1 0 1e4719757030870f193f738649285767
+
+% 0 1 0 1377a07c80d9ad57123e02d286c5430e
+
+% 0 1 0 057704536a8ea39d063bda377c94c7b5
+
+% 0 1 0 1913dcc316693d9b00be63e512e36554
+
+% 1 1 0 04499e5a2368af58037d109e18abe2e5
+
+@ 0 11 0 053a921fb6863d8413b70629bf07c751
++     entry .content   由载体值及其 `Postable` 得到的主体
++         `Api.Body.content[Carrier](mediaType, value)` 构造一个 `Content`，其 spring 每次被取用时都在 `value` 上运行作用域中的 `Carrier is Postable`。
++         它是调用宏所调用的辅助方法，这样流就在调用处的捕获检查之外构建。
++     entry .data   由冻结的 `Data` 构成的主体，`application/octet-stream` 主体即是如此
++         `Api.Body.data(mediaType, value)` 就是 `content[Data](mediaType, value)`，只是由一个在普通代码中写出 `Data` 的签名的方法提供：宏自身无法写出 `content[Data]`，因为经由引用拼接的冻结类型会被重新铸造，带上一个新的读能力。
++   entry .Request   导航后的 `Api` 或 `Api.Response` 将要发送的请求，作为一个值
+
+% 1 1 0 0fc4ae28a15e282714aca943586add96
+
+@ 0 7 0 1f10ef49478d8fdf1803c02665bc41f2
++         任何 `Api` 或 `Api.Response` 上的 `request` 所持有的内容：HTTP 方法、来自规范服务器（或调用者）的基础 `HttpUrl`、仍是模板的路径、把每个 `{name}` 绑定到其渲染后实参的替换值、`Query`、主体、头部（声明为 `in: header` 的参数，以及作为头部或 cookie 出示的凭据），以及规范为响应声明的 `accept` 媒体类型。
++         导航每次复制并细化其中一个字段，因此即将发送的内容可以在发送之前检视或测试。
+
+% 2 1 0 1a9bfc5df0993a0001f7ba16ffcb9be7
+
+% 3 1 0 14ecffd80463f6ad0c400077292c057e
+
+% 2 1 0 0256659f6ead2ff50670b507f8854b22
+
+% 0 1 0 0f068c3f0e57f63c1a245bfa64fc8477
+
+% 0 1 0 014ebdffa0eef1310f4fb8fbae6f6479
+
+% 0 1 0 057ff7747cddcfe61dd7576bc467f2ff
+
+% 0 1 0 021707c6977389130d83e9d0d16291c1
+
+% 0 1 0 0e22debfda555c660c21ae05020b03fb
+
+% 0 1 0 1a9cc4b7450aa5ed112680189bcdaa2e
+
+% 1 1 0 1761fab6d4553f4816b9777055d2ad5f
+
+@ 0 12 0 16a826076fc35f930bcccdf88bc01aaf
++     entry #method   HTTP 方法：在调用动词之前为 `Http.Get`
++     entry #base   基础 URL：规范的第一个服务器取默认值，或调用者提供的 URL
++     entry #path   规范所写的路径模板，`/pets/{petId}`
++     entry #substitutions   绑定到路径中 `{name}` 模板的值，每个都渲染为文本
++     entry #query   查询参数，来自命名参数和在查询中发送的 `apiKey` 方案
++     entry #body   请求体，除非某个操作接受了主体，否则为 `Api.Body.Empty`
++     entry #headers   头部参数，以及作为头部或 cookie 出示的凭据
++     entry #accept   预期响应所用的媒体类型，未声明时为 `Unset`
++         规范为成功响应声明的媒体类型，取作用域中 `Construable` given 能解释的第一个（先是 `application/json`，然后按名称），并作为 `accept` 头部发送。
++   entry .Response   一个准备发送的操作：由 `call`、`attempt`、`record` 或 `tuple` 执行
+
+% 1 1 0 01f0882c9be7ba0c03379e2914b675c0
+
+@ 0 10 0 12bd78f8e812c30c1ff73b1a299a5707
++         在 `Api` 上调用动词会得到 `Api.Response`，它持有 `#request` 和一个记录该操作的细化类型：`#Result`，指向文档中成功响应 schema 的 JSON 指针；`#Form`，规范资源；`#Locus` 和 `#Verb`，路径和方法；`Transport`，成功响应的媒体类型所解释成的载体类型；以及 `#Failure`，该操作声明的错误响应所抛出的 `Api.Error` 类型的联合。
++         此时尚未发送任何东西：`#call`、`#attempt`、`#record` 和 `#tuple` 执行请求，它们各自需要 `Online`（`internetAccess.online`）、一个 `Http.Event is Loggable`、一个 `Tactic[Connect.Error]`、一个 `Tactic[Api.Violation]`、`Failure` 的每个成员各一个 `Tactic`，以及作用域中的 `Http.Client`。
+
+% 2 1 0 0e0521c550ccabce0fd705445b924074
+
+% 3 1 0 0282dbf3b5d115b51c690acf616965d9
+
+% 4 1 0 1598da4d8979509f0772e67bcd94cad7
+
+% 5 1 0 1964fd0a05fc2dd1112bf2c5ec9fcd80
+
+% 6 1 0 10800d7c6bf80b6904efcc95cffca1a0
+
+% 7 1 0 126b2c55acff00441ccab917d530c16d
+
+% 8 1 0 0e8ca1418441c785196a57fc0ac670cc
+
+% 1 1 0 0fdd28033ca0dd77040f95d7bae36ce2
+
+% 1 1 0 090d8e8c23c3adbe1876f917f2e5d77a
+
+% 0 1 0 099ab4c6d7ada0c909d49b27c850f244
+
+% 0 1 0 17572f6560a33b500cbb1351ed52d0b4
+
+% 0 1 0 1427bcd5d0d78dde1842ff54613acc14
+
+% 0 1 0 0fe4fba37a20ab681d0029daa9dff586
+
+% 0 1 0 06987ac8794dc83a0522a7edb080b8c8
+
+% 1 1 0 1e67828d42aa6c8e0ea682ff72691452
+
+% 0 1 0 05dae990ae7193f30e31ef73f94111c8
+
+% 0 1 0 07f01aa36824dea30adee63c2f34fe82
+
+@ 0 33 0 1683882b6a651fb40a567f5f3e296255
++     entry .make   基于给定 `Api.Request` 的 `Api.Response`
++         调用宏生成的构造器，之后再强制转换为细化类型。
++         手工构造的响应不带细化，因此在其上调用 `call`、`record` 和 `tuple` 会中止编译；`Api.send(response.request)` 则不经检查地发送它。
++     entry #Result   指向规范中成功响应 schema 的 JSON 指针
++         `#/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema`，或在响应是 `$ref` 时指向组件内部的指针；`call[T]()` 对照它所指的 schema 检查 `T`，`record()` 则据此构建字段。
++     entry #Form   规范资源的类路径路径，作为字面量类型
++     entry #Locus   规范中作为键的操作路径，`/pets/{petId}`
++     entry #Verb   操作的方法，小写：`get`、`post`、……
++     entry #Failure   该操作声明的错误响应所抛出的 `Api.Error` 类型的联合
++         `Hazard` 的子类型：例如 `Api.NotFound[Unit] | Api.BadRequest[Problem]`，其中每个载荷都是规范为该响应声明的类型。
++         `#attempt` 产生的 `Attempt` 恰好基于这个联合，`#call` 则要求每个成员各有一个 `Tactic`。
++     entry #request   该响应将要发送的请求，作为 `Api.Request`
++     entry #ensure   对成功范围之外的响应抛出已声明的错误
++         一个宏，它检查 `Http.Response` 的状态：`2xx` 状态通过；规范声明过的状态抛出该状态的 `Api.Error`（先匹配确切状态，再匹配 `4XX` 式范围，最后以 `Api.OtherError` 匹配 `default`），并把正文解释为规范为其指定的载荷类型；其他任何状态都抛出带有正文字节的 `Api.Violation`。
++         每个已声明错误以及 `Violation` 的 `Tactic` 都在书写调用之处被召唤，这正是让处理具有穷尽性的原因：缺少其中之一的处理函数是一个编译错误，错误会指出缺少的那个。
++         `#call`、`#record` 和 `#tuple` 在读取每个响应之前都会对其运行此检查。
++     entry #call   执行请求，并把响应读作所请求的类型
++         `call[T]()` 首先在代码编译时检查 `T` 是否符合响应 schema（字段与 schema 属性匹配的 case class、对应数组的 `List[T]`，或者不经任何检查的 `Json` 或原始 `Http.Response`），然后发送请求，对响应运行 `#ensure`，并通过作用域中的 `(T is Conformant) over Transport` 读取 `T`：即载体自身的 `Aggregable` 以及 `T` 的 `Decodable in` 该载体，因此 `List[Pet]` 像其他任何 `Decodable` 一样解析其解码器。
++         schema 不支持的 `T` 是编译错误。
+
+@ 0 4 0 0802b207aa0e52391f3742d670fb4eef
++         单独的 `call()` 把类型交给 `Defaulting to Transport` 决定，这使它成为响应自己的载体（`Json`、`Raster in Png`、`text/plain` 响应的 `Text`），对于像 `204` 那样不声明正文的响应则为 `Unit`，当作用域中没有任何东西能解释该媒体类型时则为原始的 `Http.Response`。
+
+% 2 1 0 15a03b8bb032b0300bc964e8acedf4f2
+
+% 3 1 0 14dcf5a7c1ec15cf0ad9bbcb7f1da0bf
+
+% 4 1 0 19534ae4c550490609fd266fa41b7fbc
+
+% 5 1 0 07ebe966632821db1ca1eb27e405da61
+
+% 6 1 0 01061ceb317ca7a1124e335f8fbee457
+
+% 0 1 0 1b29067dfd7f6b0904c0880b0c2c025a
+
+% 1 1 0 11eeb07156a7023503153b4a851111bb
+
+% 3 1 0 119b251c2e05338c17b53658e188385a
+
+% 4 1 0 18302b0276fa868c1190152358a95285
+
+% 5 1 0 05f2c7c230a607480e6cd2180d684251
+
+% 0 1 0 1e23f5816342329c134f65134d587993
+
+% 0 1 0 198db9708289360d1b9fc18b58d02d77
+
+% 0 1 0 10e42ae77a34026c19e06bd3c2aaf7bb
+
+% 1 1 0 0360113b10c5e37b17387628f7e4413c
+
+@ 0 13 0 1c3cf3d850ffb2bb1f0082daa5b0aa9d
++         空括号标示副作用。
++         除了 `#request` 的发送所需的 given（`Online`、`Http.Event is Loggable`、`Tactic[Connect.Error]`、`Http.Client`）之外，作用域中还必须有 `Api.Violation` 以及 `#Failure` 中每个错误的 `Tactic`，而 `Conformant` 可能需要一个 `Charset` 和一个 `Tactic[Truncation.Error]`。
++     entry #attempt   把调用作为基于已声明错误的 `Attempt`，用于穷尽的 `match`
++         `attempt[T]()` 在 `contingency.attempt[Failure]` 中执行 `call[T]()`，因此结果是一个 `Attempt[T, Failure]`：`Attempt.Success(value)`，或者 `Attempt.Failure(error)`，其中 `error` 是该操作声明的某个 `Api.Error`。
++         编译器会检查对它的 `match` 是否穷尽，而针对规范未声明的状态的分支无法编译；`recover` 接受偏函数，不做这种检查。
++         `Api.Violation` 不在联合中：它通过自己的 `Tactic` 抛出，作为对契约的违背，而不是契约的一个分支。
++         当传输类型是承载记录的响应时，需要显式给出类型实参。
+
+% 2 1 0 15a264398e56f5bc050b37ae24ab57d4
+
+% 3 1 0 0eec3468c4d1b2cc1471e18b515b2a1b
+
+% 4 1 0 090c2f5635ff34d7104296127fc9f039
+
+% 5 1 0 067cb24ef944731b128489e42f3c3fd4
+
+% 6 1 0 12381d0bb6888a250db3fe7d130afd30
+
+% 7 1 0 17a027c4f812a965052d9195a41caf63
+
+% 8 1 0 074bce3283dcc926095d6336a36f53b8
+
+% 10 1 0 01851f0abb7dd7350c6dd7461da8056e
+
+% 11 1 0 0fb067539d1f7e0a1fd4d1640348ae67
+
+% 12 1 0 1099f20599a7b32f0e3b21bce4822ec4
+
+% 0 1 0 13f579f838d4b3970e95e05123972fb8
+
+% 0 1 0 0e452f8318cb0423054e0a1ae5f13698
+
+% 0 1 0 1386b4d668996e3a020bc40709950424
+
+% 0 1 0 0f4e1eadb6a7d1b315f7e6eb13d0394f
+
+% 1 1 0 0af204e9861127621f61d77911b72fde
+
+@ 0 10 0 1fdf24e43563912e1c91d21e6cbcf1bf
++     entry #record   执行请求，并把 JSON 响应读作由其 schema 定型的记录
++         `record()` 不需要镜像类：结果是一个 polyvinyl 记录，响应 schema 的每个属性对应一个成员，类型即 schema 声明的类型（`Text`、`Int`、对应 `int64` 的 `Long`、`Double`、`Boolean`，嵌套对象以及指向组件 schema 的 `$ref` 为嵌套记录，数组为 `List`），而对象数组响应则是这类记录的 `List`。
++         仅适用于 schema 描述对象或对象数组的 JSON 响应：被解释为其他任何东西的响应，或其他形状的 schema，都是编译错误，并会建议使用 `call[T]()`。
++         除了发送所需的 given 之外，它还需要 `Tactic[Parse.Error]` 和 `Tactic[Truncation.Error]`，并在读取的成员不符合其 schema 时抛出 `Json.Provider.Error`。
+
+% 2 1 0 176a834fa2ef7e5e1cec4b421b69f7a3
+
+% 3 1 0 178d05b91fa784dc0d410d93f6a5ca62
+
+% 4 1 0 0d3b481c873735400877b1965ab4e750
+
+% 5 1 0 086c507665d442550b7c350a222d0139
+
+% 6 1 0 1ec456a03f9b31bd0a219da2811f42f6
+
+% 7 1 0 1cda24f3e5b302d61ab4b4835fb4ef82
+
+% 8 1 0 10921edc0fd5649b12e29f10a6cd0a06
+
+% 10 1 0 172c0accccdb71ab12317b2b4fa4b11e
+
+% 0 1 0 0039cc087d0fd6a5193ccab3c6ea5767
+
+% 0 1 0 1e3beeb01e9c458d0358df1d2bb50297
+
+% 0 1 0 0315182cf586ecaf1583b8f4afd9cd89
+
+% 1 1 0 1251ee66a9ccc8c60b569c64c1957eb9
+
+@ 0 6 0 1fce78b03f1c61d519252caf17a0c52c
++     entry #tuple   执行请求，并把 JSON 响应及早地读作命名元组
++         与 `#record` 相同，但 schema 的属性按 schema 中的顺序成为命名元组的字段，每个字段都在响应到达时读取，而不是在访问时读取：`api.pets(42).get.tuple().name`。
++         同样的限制也适用：schema 为对象或对象数组的 JSON 响应。
++   entry .Error   成功范围之外的响应，作为其状态对应的错误类抛出
+
+% 1 1 0 015e8ddf2c948b87117e8dd37a98791e
+
+@ 0 10 0 1b26c33be2e7257100095df4736d88d5
++         错误 `↯/s.135.2.1`：_the server responded with an unsuccessful status, `status`_。
++         它是 telekinesis 所命名的每个状态各一个 case class（`Api.NotFound`、`Api.BadRequest`、`Api.TooManyRequests`、……）的 sealed 父类型，另有 `Api.Informational`、`Api.Redirection`、`Api.ClientError` 和 `Api.ServerError` 对应 `1XX`–`5XX` 范围键（以及 telekinesis 未命名的编号状态），`Api.OtherError` 对应 `default` 响应。
++         每个类都携带 `#status` 和 `#payload`：错误正文，被解释为规范为该响应声明的类型（对于 JSON 对象，是由错误 schema 定型的记录，否则是媒体类型的载体，再否则是 `Text`；未声明正文时为 `Unit`），因此 `Api.NotFound(())` 匹配无正文的 `404`，`Api.NotFound(problem)` 匹配带有 schema 的 `404`，其 `problem.message` 是有类型的。
+
+@ 0 7 0 18baeef6a78acd570cf924ccda9ac3ea
++         一个操作声明的错误响应构成这些类的联合，即其 `Api.Response` 的 `Failure`；`attempt` 产生的 `Attempt` 恰好基于这个联合，而 `call` 要求每个成员一个 `Tactic`，因此每个已声明的错误要么被处理，要么代码无法编译。
++         Contingency 按类而不是按载荷类型区分这些类，这就是每个状态都有自己的类的原因。
++         载荷是协变的。
++         错误载荷记录中带约束的成员（`string!`、`enum`、`pattern`）会放宽为其普通类型，因为会抛出错误的成员会使该错误成为一种能力。
+
+% 2 1 0 0e95db2e5025ece90f069853c4deae24
+
+% 3 1 0 0ad04c752afd1bd700977c29ae909ff2
+
+% 4 1 0 14a73129a08ddfd8142b01f5cd8a63a6
+
+% 5 1 0 030253cad24da41f03ec18c8050dd940
+
+% 6 1 0 130761f8efe28af912e2fa54e542150c
+
+% 7 1 0 1f703a02e2d142eb17fc99444676ca2f
+
+% 8 1 0 107dc3b4e04136cc1f693443c50b6616
+
+% 10 1 0 1e38e55a808d6ff70f0a421f331def3f
+
+% 11 1 0 1cbf2879a6fb8ac7011cb0328224c825
+
+% 12 1 0 08112ad3bfdf28021ba9bdd13acfd669
+
+% 0 1 0 09e28b7d30dc3ae5043f2b24cfe59730
+
+% 0 1 0 1fe71464b30193680aa1b1a22de7fbf5
+
+% 0 1 0 0579e3cc8c66b5c11f8e4d9d81b59b68
+
+% 1 1 0 0e1d66880395b08308cf5b72a5f70c20
+
+@ 0 2 0 154657b809f5593915d76d476cbb6d32
++         规范未声明的状态根本不是 `Api.Error`，而是 `Api.Violation`。
+
+% 0 1 0 0688eb8e97ab94e10bd292f7e69c24e6
+
+% 0 1 0 15a5912f0c3bb6930c782770b2b5fbbc
+
+@ 0 3 0 133a2c43157680e21999c04ee6e1fdc4
++     entry #status   服务器响应的 HTTP 状态
++     entry #payload   错误正文，被解释为规范为该响应声明的类型
++   entry .Violation   状态未经规范声明的响应
+
+% 1 1 0 12fa91b968d139070078f5220aed3e1f
+
+@ 0 5 0 0b040fd0acd37a8d0097c76214b45df3
++         错误 `↯/s.135.2.2`：_the server responded with an undeclared status, `status`_。
++         服务器违背了它的契约，这是每次调用都可能遇到、并且必须与已声明错误分开处理的情况：它通过自己的 `Tactic[Api.Violation]` 抛出，从不是响应的 `Failure` 的成员，并携带状态和正文的原始字节，因为没有 schema 描述它们。
+
+% 2 1 0 1a4876477d19d9b51b3b80ab7b62a0d7
+
+% 3 1 0 114be42cf14f9196128c220e94735e84
+
+% 4 1 0 0c41c1fa1e7398d9154eada9f5ffa951
+
+% 5 1 0 18ec9293771743fb1b525fdfffaeb0b6
+
+% 6 1 0 07a063c2013c12701210dda35d585530
+
+% 7 1 0 1607240f89fb41820a28f4919af5a5d5
+
+% 8 1 0 03ede6168109992f1d3cb24e80593935
+
+% 10 1 0 09ae3d3d86b9728b0b5324f017b7222a
+
+% 1 1 0 00595ed0339064fc16204767daff7f9f
+
+% 0 1 0 131404d991b5371a05ec9cd6e98f75bd
+
+% 1 1 0 0b2c72c31d062c8b0f3709c08dac0298
+
+@ 0 89 0 0903caf1b7b3ca061bb4a7129453418c
++     entry #status   未声明的状态
++     entry #body   响应正文的字节
++   entry .Continue   已声明的 `100 Continue` 响应，其载荷已被解释
++   entry .SwitchingProtocols   已声明的 `101 Switching Protocols` 响应，其载荷已被解释
++   entry .EarlyHints   已声明的 `103 Early Hints` 响应，其载荷已被解释
++   entry .MultipleChoices   已声明的 `300 Multiple Choices` 响应，其载荷已被解释
++   entry .MovedPermanently   已声明的 `301 Moved Permanently` 响应，其载荷已被解释
++   entry .Found   已声明的 `302 Found` 响应，其载荷已被解释
++   entry .SeeOther   已声明的 `303 See Other` 响应，其载荷已被解释
++   entry .NotModified   已声明的 `304 Not Modified` 响应，其载荷已被解释
++   entry .TemporaryRedirect   已声明的 `307 Temporary Redirect` 响应，其载荷已被解释
++   entry .PermanentRedirect   已声明的 `308 Permanent Redirect` 响应，其载荷已被解释
++   entry .BadRequest   已声明的 `400 Bad Request` 响应，其载荷已被解释
++   entry .Unauthorized   已声明的 `401 Unauthorized` 响应，其载荷已被解释
++   entry .PaymentRequired   已声明的 `402 Payment Required` 响应，其载荷已被解释
++   entry .Forbidden   已声明的 `403 Forbidden` 响应，其载荷已被解释
++   entry .NotFound   已声明的 `404 Not Found` 响应，其载荷已被解释
++       操作的 `Failure` 中最常见的成员。
++       `Api.NotFound(())` 是规范声明为无正文的 `404`；`Api.NotFound(problem)` 是正文由声明的 schema 定型的 `404`。
++   entry .MethodNotAllowed   已声明的 `405 Method Not Allowed` 响应，其载荷已被解释
++   entry .NotAcceptable   已声明的 `406 Not Acceptable` 响应，其载荷已被解释
++   entry .ProxyAuthenticationRequired   已声明的 `407 Proxy Authentication Required` 响应
++   entry .RequestTimeout   已声明的 `408 Request Timeout` 响应，其载荷已被解释
++   entry .Conflict   已声明的 `409 Conflict` 响应，其载荷已被解释
++   entry .Gone   已声明的 `410 Gone` 响应，其载荷已被解释
++   entry .LengthRequired   已声明的 `411 Length Required` 响应，其载荷已被解释
++   entry .PreconditionFailed   已声明的 `412 Precondition Failed` 响应，其载荷已被解释
++   entry .PayloadTooLarge   已声明的 `413 Payload Too Large` 响应，其载荷已被解释
++   entry .UriTooLong   已声明的 `414 URI Too Long` 响应，其载荷已被解释
++   entry .UnsupportedMediaType   已声明的 `415 Unsupported Media Type` 响应，其载荷已被解释
++   entry .RangeNotSatisfiable   已声明的 `416 Range Not Satisfiable` 响应，其载荷已被解释
++   entry .ExpectationFailed   已声明的 `417 Expectation Failed` 响应，其载荷已被解释
++   entry .UnprocessableEntity   已声明的 `422 Unprocessable Entity` 响应，其载荷已被解释
++   entry .TooEarly   已声明的 `425 Too Early` 响应，其载荷已被解释
++   entry .UpgradeRequired   已声明的 `426 Upgrade Required` 响应，其载荷已被解释
++   entry .PreconditionRequired   已声明的 `428 Precondition Required` 响应，其载荷已被解释
++   entry .TooManyRequests   已声明的 `429 Too Many Requests` 响应，其载荷已被解释
++   entry .RequestHeaderFieldsTooLarge   已声明的 `431 Request Header Fields Too Large` 响应
++   entry .UnavailableForLegalReasons   已声明的 `451 Unavailable For Legal Reasons` 响应
++   entry .InternalServerError   已声明的 `500 Internal Server Error` 响应，其载荷已被解释
++   entry .NotImplemented   已声明的 `501 Not Implemented` 响应，其载荷已被解释
++   entry .BadGateway   已声明的 `502 Bad Gateway` 响应，其载荷已被解释
++   entry .ServiceUnavailable   已声明的 `503 Service Unavailable` 响应，其载荷已被解释
++   entry .GatewayTimeout   已声明的 `504 Gateway Timeout` 响应，其载荷已被解释
++   entry .HttpVersionNotSupported   已声明的 `505 HTTP Version Not Supported` 响应
++   entry .VariantAlsoNegotiates   已声明的 `506 Variant Also Negotiates` 响应，其载荷已被解释
++   entry .InsufficientStorage   已声明的 `507 Insufficient Storage` 响应，其载荷已被解释
++   entry .LoopDetected   已声明的 `508 Loop Detected` 响应，其载荷已被解释
++   entry .NotExtended   已声明的 `510 Not Extended` 响应，其载荷已被解释
++   entry .NetworkAuthenticationRequired   已声明的 `511 Network Authentication Required` 响应
++   entry .Informational   已声明的 `1XX` 范围响应，或 telekinesis 未命名的 `1xx` 状态
++       与按状态划分的类不同，范围类把实际状态作为第一个字段：`Api.Informational(status, payload)`。
++   entry .Redirection   已声明的 `3XX` 范围响应，或 telekinesis 未命名的 `3xx` 状态
++       `Api.Redirection(status, payload)`；实际状态是它的第一个字段。
++   entry .ClientError   已声明的 `4XX` 范围响应，或 telekinesis 未命名的 `4xx` 状态
++       `Api.ClientError(status, payload)`；实际状态是它的第一个字段。
++       确切声明的 `404` 是 `Api.NotFound` 而不是它，即使同时声明了 `4XX` 也是如此：确切状态先于其范围匹配。
++   entry .ServerError   已声明的 `5XX` 范围响应，或 telekinesis 未命名的 `5xx` 状态
++       `Api.ServerError(status, payload)`；实际状态是它的第一个字段。
++   entry .OtherError   已声明的 `default` 响应：没有其他已声明响应覆盖的任何状态
++       `Api.OtherError(status, payload)`，实际状态是它的第一个字段。
++       例如 Stripe 的规范把每个错误都声明为 `default`，因此来自它的每个错误都是一个 `OtherError`，其载荷是 `error` schema 的记录。
++   entry #request   迄今为止的请求，作为 `Api.Request`
++       导航所累积的方法、基础 URL、路径模板、替换值、查询、头部、主体和 `accept` 媒体类型：在发送任何东西之前都可以检视。
++   entry #selectDynamic   `api.segment`：一个路径段，检查它是否是规范中某条路径的开头
++       一个宏：`api.pets` 把 `pets` 接到当前 `Locus` 之后，除非规范中有某条路径以结果开头，否则中止编译（_apoplexy: no path begins with /unicorns_）；结果是细化到新位置的 `Api`。
++       如果是当前路径项定义了的动词名（`get`、`put`、`post`、`delete`、`patch`、`head`、`options`、`trace`），则改为不带参数调用该操作，得到一个 `Api.Response`。
++   entry #applyDynamic   `api.segment(x)`：一个路径参数，或带位置参数的调用
++       一个宏。
++       当 `segment` 是路径项定义了的动词时，位置参数就是请求体，结果是一个 `Api.Response`。
++       否则 `segment` 按 `#selectDynamic` 的方式导航，如果某条更深路径的下一个段是 `{template}`，实参就填入它（按参数的 schema 定型，用其 `Showable` 渲染），得到一个 `Api at "/pets/{petId}"`；如果不是，实参就调用该端点唯一的非 `DELETE` 操作，就像 `api.login(credentials)` 那样。
++   entry #applyDynamicNamed   `api.segment(name = x)`：带查询参数和头部参数的调用
++       一个宏。
++       每个命名实参填入在该操作或其路径项上声明的同名查询参数或头部参数，对照参数的 schema 做类型检查，并用其 `Showable` 渲染；其中的位置实参是请求体。
++       动词调用该操作；只有唯一非 `DELETE` 操作的段则调用那个操作。
++       未知的名称、错误的类型或缺少必需参数都会中止编译。
+
+@ 0 1 0 0b26d21d82dc67f81a298efad8230df2
++ entry .OpenApi   作为值的 OpenAPI 3.x 文档：信息、服务器、路径、组件和安全
+
+% 1 1 0 0696ffb659e10f5505f3922b4c5f93bb
+
+@ 0 6 0 17c9234bed5b95900bf81a0d869e2023
++       规范本身，用 `read[OpenApi]` 从 JSON 或 YAML 解码为有类型的部分，供检视而非调用 API 的工具使用：`#info`、`#servers`（及其变量）、由持有 `OpenApi.Operation` 的 `OpenApi.PathItem` 构成的 `#paths`、`#components`（schema、参数、响应、请求体和安全方案），以及全文档范围的 `#security` 要求。
++       `Api` 宏读取同一个模型来检查每次调用。
+
+% 2 1 0 1a2c12a5fcc181a90e7d1953e75a6b26
+
+% 3 1 0 1e237a40c4323e26155b709491a778c7
+
+% 4 1 0 1eed692db3ae864305aaf24ee6c3b045
+
+% 5 1 0 01acd58361e8d946068d6571320b94c4
+
+% 6 1 0 1fe3c077466c2ba514b1ad2b98832450
+
+% 0 1 0 011187671dc999341046f5d27424a486
+
+% 0 1 0 13149c062a299ae8009c8a5bfe9d33b7
+
+% 0 1 0 0db457fc9b0cd59a0d84b6618099bbc8
+
+% 0 1 0 1aa4808b6bb4031f07cca53b42d26692
+
+% 1 1 0 0f48874812f37b0e1a05a44deb3bc826
+
+@ 0 10 0 0f94d04b5dc17424153506f26deccb4f
++       YAML 文档会被转换为 JSON（`yamlEncodableInJson`），并由同一个解码器读取，因此两种形式不会产生偏差；文本采用哪种形式由它的第一个字符判断，`{` 表示 JSON。
++       以 `$ref` 写出的参数、响应或请求体，会以 `OpenApi.Ref` 的形式保存在 `OpenApi.Referable` 位置上，并在给定文档时由 `apply()` 按需解析；`JsonSchema.Ref` 以同样的方式解析，每次一跳，因此循环 schema 保持有限。
++       操作的 `responses` 映射以状态文本（`200`、`4XX`、`default`）为键，`response` 针对具体状态解释这些键。
++       无法解析的文档、声明了 3.x 以外版本的文档，或使用了 `path`、`query`、`header`、`cookie` 以外参数位置的文档，都会抛出 `OpenApi.Error`。
+
+@ 0 5 0 1b3fe0aed7d3cd0b17c99698f1cb1bd6
++       这个模型在一个已发布描述的语料库上经过检验（OpenAPI Initiative 的示例、Swagger 的 Petstore、Redocly 的 Museum、Twilio、Kubernetes、Discord、Box 和 Stripe（1,538 个 schema）），并且能加载 GitHub、OpenAI 和 Cloudflare 的描述。
++       `callbacks`、`links`、`webhooks` 以及指向其他文档的引用不在模型之内。
+
+% 0 1 0 0955f50f0014c6b7107a87a7d8ba17f6
+
+% 0 1 0 1cc7dd3d8c19d0901c068539a1f14cf8
+
+% 0 1 0 0099cccddc5d72c4036095e2719208d4
+
+@ 0 11 0 1fc941042c6e912d1fd7da59a8cfb7a0
++   entry .decodable   从 `Json` 读取 `OpenApi`，每个嵌套部分都经由其自己的锚定解码器
++       伴生对象中的 given `OpenApi is Json.Decodable`，在这里只派生一次，这样 `as[OpenApi]` 就不会在每个调用处内联整个文档图。
++       它需要 `Tactic[Json.Error]`、`Tactic[JsonPointer.Error]` 和 `Tactic[OpenApi.Error]`。
++   entry .aggregable   从 JSON 或 YAML 文本读取 `OpenApi`，并检查版本是否为 3.x
++       `text.read[OpenApi]` 和 `url.fetch().receive[Text].read[OpenApi]` 背后的 `OpenApi is Aggregable by Text` given：以 `{` 开头的文本按 JSON 解析，其他文本按 YAML 解析并转换；解析、JSON、YAML 或指针失败会变成 `OpenApi.Error(Reason.Malformed)`，而 `openapi` 不以 `3.` 开头的文档会抛出 `OpenApi.Error(Reason.UnsupportedVersion(version))`。
++       它需要一个 `Tactic[OpenApi.Error]`。
+
+% 2 1 0 031ec4d120ccc5c408a73454c2c2ab36
+
+% 3 1 0 176f55c971785df913a6d480544d2765
+
+% 4 1 0 1311ba15e3f68c9c024b3edc3cf25816
+
+% 0 1 0 093b92bb1a20e9820734fa95037e82a7
+
+% 0 1 0 0cdda8f257d2f18f1e2b23583a2fc44d
+
+% 1 1 0 02aa01556b42a97312f38696497bcd47
+
+@ 0 10 0 01748f881ac2e440119ab4c21e0ec60e
++   entry .Info   文档的标题、版本和描述
++     entry #title   API 的标题
++     entry #version   文档所描述的 API 的版本，而不是 OpenAPI 的版本
++     entry #description   描述，或 `Unset`
++   entry .ServerVariable   服务器 URL 中的一个 `{variable}`：其默认值、允许的值和描述
++     entry .decodable   从 JSON 读取服务器变量
++     entry #default   `OpenApi.Server#resolved` 所代入的值
++     entry #enum   变量可取的值，不受约束时为 `Unset`
++     entry #description   描述，或 `Unset`
++   entry .Server   API 的一个服务器：一个可能带模板的 URL，及其变量
+
+% 1 1 0 09294f5c2d3b736805b42b80dc8e19c9
+
+@ 0 12 0 028489f8a270013110eb76cfea945815
++         服务器 URL 可以是绝对的（`https://api.example.com/v1`）、相对于文档提供位置的（`/api/v3`），或者带模板的（`/v{version}`），每个 `{name}` 对应一个 `OpenApi.ServerVariable`。
++         `Api` 从第一个服务器的 `#resolved` 形式取得基础 URL，如果它不是绝对 URL，就需要调用者提供基础 URL。
++     entry .decodable   从 JSON 读取服务器
++     entry #url   按原样书写的 URL，包括其中的模板
++     entry #description   描述，或 `Unset`
++     entry #variables   URL 模板所引用的变量，按名称索引
++     entry #resolved   把每个 `{variable}` 替换为其默认值后的 URL
++         `version` 默认为 `2` 时，`/v{version}` 就是 `/v2`。
++         没有同名变量的模板保持原样。
++   entry .Ref   按 JSON 指针指向组件的 `$ref`，在模型中保持未解析
+
+% 1 1 0 16bb0625c461546119d865f3d2b34d7e
+
+@ 0 12 0 14371486110c885f0c922c08e239329b
++         当文档写的是 `{"$ref": "#/components/parameters/limit"}` 而不是组件本身时，`Referable[value]` 位置上保存的就是 `OpenApi.Ref(pointer)`。
++         在 referable 上调用 `apply()`，会对照作用域中的文档解析它；只有指向文档自身 `components` 的指针才能解析。
++     entry #pointer   引用所指的 JSON 指针
++   entry .Referable   就地写出或由 `$ref` 引用的组件：`value | OpenApi.Ref`
++       OpenAPI 允许 `$ref` 的每个位置的类型：操作的参数、请求体、响应，路径项的参数，以及各组件映射。
++       匹配必须处理两者：`case OpenApi.Ref(pointer) => …` 和 `case parameter: OpenApi.Parameter => …`；或者在给定 `OpenApi` 时，用 `referable()` 把任一种解析为组件。
++   entry .Componental   哪个 `OpenApi.Components` 映射保存某类组件，以及以什么名称保存
+
+% 1 1 0 0b6e7ba86eb880530c39637db6030c3f
+
+@ 0 20 0 099cec54d02035860b95054bb322a86b
++         `referable()` 背后的类型类：对于 `Parameter`、`Response` 和 `RequestBody`，它指明组件映射（`parameters`、`responses`、`requestBodies`），并在其中查找组件。
++         三个 given 位于伴生对象中，因此解析引用无需任何导入。
++     entry .parameter   参数位于 `components.parameters`
++     entry .response   响应位于 `components.responses`
++     entry .requestBody   请求体位于 `components.requestBodies`
++     entry .apply   由映射的名称和作用于 `OpenApi.Components` 的选择器构建 `Componental`
++     entry #kind   组件映射的名称，即它在指针中出现的形式：`parameters`、`responses`、……
++     entry #lookup   组件中该名称对应的组件；不存在或本身是 `Ref` 时为 `Unset`
++   entry .apply   对照作用域中的文档解析一个 `Referable` 组件或一个 `JsonSchema`
++       两个扩展，各需要一个 `given OpenApi`，并抛出 `OpenApi.Error`。
++       在 `Referable[Parameter | Response | RequestBody]` 上调用 `referable()`，若组件就地写出，结果就是组件本身，否则是其指针在 `#/components/parameters/`、`responses/` 或 `requestBodies/` 下所指的组件。
++       在 `JsonSchema` 上调用 `schema()`，会对照 `#/components/schemas/` 把 `JsonSchema.Ref` 解析一跳，其他 schema 则原样返回；每次只解析一跳、从不内联，使循环 schema 图保持有限，由使用者驱动遍历。
++       指向其他任何地方的指针会抛出 `Reason.UnsupportedRef(pointer)`，指向文档中不存在的组件的指针会抛出 `Reason.UnresolvableRef(pointer)`。
+
+% 2 1 0 013d407f8c901b3518e617c18e3bff66
+
+% 3 1 0 15d5c2e07aa07d501502b71f6114209b
+
+% 4 1 0 06fc6baf81dfc03609df9d2d9bd09d88
+
+% 5 1 0 1fbb7f1ce2668a13181384d0760692a4
+
+% 6 1 0 048caf70026b0d8f08157f3934b55acc
+
+% 0 1 0 16e6c578e1bea3061ca8013a199e39d2
+
+% 0 1 0 0b207c7bb2020465002b7fcfa69e358e
+
+% 0 1 0 0fc5ae6b61a27d9d1b09b9d719c909c1
+
+% 0 1 0 025df99b30ab57261f957210acc06363
+
+% 1 1 0 1de7bc8270bd80241b684afdece5775e
+
+@ 0 1 0 1b2580b6c2f7e2980691235246f6bfa2
++   entry .Parameter   操作或路径项的参数：其名称、位置、必要性和 schema
+
+% 1 1 0 1ad0375470ccf379023bdcf0919b0fe1
+
+@ 0 8 0 024321ac575d42350220ac28b9efd454
++         `in` 是 `OpenApi.Parameter.In` 中的 `Path`、`Query`、`Header` 和 `Cookie` 之一，从文档文本解码；Swagger 2 的 `body` 位置会抛出 `OpenApi.Error(Reason.BadParameterLocation(t"body"))`。
++         路径参数总是必需的；文档省略 `required` 时，它为 `Unset`。
++         `Api` 宏按 `#schema` 为路径参数的实参定型（`integer` 为 `Int`，`int64` 为 `Long`，`number` 为 `Double`，`boolean` 为 `Boolean`，其余为 `Text`），查询参数或头部参数的实参也以同样方式定型，没有 schema 时为 `Text`。
++     entry .In   参数的发送位置：路径、查询、头部或 cookie
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 12 0 1d732ed84f019372176ef7d1bf809c0f
++           由 `Path`、`Query`、`Header` 和 `Cookie` 组成的枚举，由其伴生对象中的 `.decodable` 从文档的小写文本解码。
++           `Api` 客户端发送路径参数、查询参数和头部参数；cookie 参数会读入模型，但不会发送。
++       entry .decodable   从文本读取 `path`、`query`、`header` 或 `cookie`，其他任何内容都抛出 `OpenApi.Error`
++     entry .decodableJson   从 JSON 读取参数，经过锚定，使路径项和操作共用它
++     entry .referable   读取参数或 `$ref` 位置：`$ref` 键标示一个 `OpenApi.Ref`
++     entry #name   参数的名称，即 API 所期望的名称
++     entry #in   它的发送位置，一个 `OpenApi.Parameter.In`
++     entry #required   是否必须提供，文档未说明时为 `Unset`
++     entry #description   描述，或 `Unset`
++     entry #schema   其值的 `JsonSchema`，或 `Unset`
++   entry .MediaTypeObject   `content` 条目的值：某种媒体类型下主体的 schema
+
+% 1 1 0 149f8c234f2f36c901cf6ce58d88fdc9
+
+@ 0 16 0 13391d094eaee9b20251fae284347696
++         `content` 映射以媒体类型文本（`application/json`、`image/png`）为键，每个值是一个 `MediaTypeObject`，在声明了 schema 时持有主体的 schema。
++         它的解码器是伴生对象中的一个匿名 given。
++     entry #schema   主体的 `JsonSchema`，或 `Unset`
++   entry .RequestBody   操作的请求体：按媒体类型划分的内容，以及它是否必需
++     entry .decodable   从 JSON 读取请求体
++     entry .referable   读取请求体或 `$ref` 位置：`$ref` 键标示一个 `OpenApi.Ref`
++     entry #description   描述，或 `Unset`
++     entry #required   主体是否必须发送，文档未说明时为 `Unset`
++     entry #content   主体在每种可发送的媒体类型下的 schema
++   entry .Response   已声明的响应：描述及按媒体类型划分的内容
++     entry .decodable   从 JSON 读取响应
++     entry .referable   读取响应或 `$ref` 位置：`$ref` 键标示一个 `OpenApi.Ref`
++     entry #description   响应的描述，或 `Unset`
++     entry #content   正文在每种可能的媒体类型下的 schema；无正文的响应为空
++   entry .Operation   路径上的一个 HTTP 方法：其参数、请求体、响应和安全
+
+% 1 1 0 1b3cf4cbe965eeed100f8e0ba8fe5d97
+
+@ 0 18 0 1ec21d74518834bd04ac33534b725589
++         `responses` 映射以文档所写的状态文本（`200`、`201`、`4XX`、`default`）为键，在操作上调用 `response(status)` 会对照这些键解释一个具体的 `Http.Status`。
++         `Api` 客户端优先选择 `200`，其次 `201`，再次最小的 `2xx` 键作为成功响应，并为其余每个键抛出一个不同的 `Api.Error`。
++         `security` 存在时会覆盖文档自身的要求；空列表表示该操作不需要凭据。
++     entry .decodableJson   从 JSON 读取操作，只锚定一次，使路径项的八个动词共用它
++     entry #operationId   操作的标识符，或 `Unset`
++     entry #summary   简短摘要，或 `Unset`
++     entry #description   描述，或 `Unset`
++     entry #parameters   操作自身的参数，每个都就地写出或作为 `OpenApi.Ref`
++     entry #requestBody   请求体，就地写出或作为 `OpenApi.Ref`，或为 `Unset`
++     entry #responses   按状态文本列出的已声明响应，每个都就地写出或作为 `OpenApi.Ref`
++     entry #security   操作自身的安全要求，或为 `Unset` 以继承文档的要求
++   entry .response   具体状态对应的已声明响应：先确切状态，再范围，最后 `default`
++       `OpenApi.Operation` 上的扩展：`operation.response(Http.NotFound)` 是键为 `404` 的条目，否则是 `4XX`，再否则是 `default`，再否则是 `Unset`，结果为 `Referable[Response]`。
++   entry .PathItem   API 的一条路径：按动词划分的操作，以及它们共用的参数
+
+% 1 1 0 1c5156510b9dd8e7110a02a4859832d6
+
+@ 0 18 0 1b692d01c62931bc10517a969a43af0a
++         路径项把 HTTP 方法键与 `summary`、`description` 和 `parameters` 混在一起，因此每个动词都是单独的 `Optional[Operation]` 字段；`#operations` 按 `Http.Method` 重建映射。
++         在这里声明的参数适用于该路径上的每个操作，操作自身同名同位置的参数会覆盖它。
++         它的解码器是伴生对象中的一个匿名 given。
++     entry #summary   简短摘要，或 `Unset`
++     entry #description   描述，或 `Unset`
++     entry #get   `GET` 操作，或 `Unset`
++     entry #put   `PUT` 操作，或 `Unset`
++     entry #post   `POST` 操作，或 `Unset`
++     entry #delete   `DELETE` 操作，或 `Unset`
++     entry #options   `OPTIONS` 操作，或 `Unset`
++     entry #head   `HEAD` 操作，或 `Unset`
++     entry #patch   `PATCH` 操作，或 `Unset`
++     entry #trace   `TRACE` 操作，或 `Unset`
++     entry #parameters   该路径上每个操作共用的参数，每个都就地写出或作为 `OpenApi.Ref`
++     entry #operations   存在的操作，作为 `Map[Http.Method, OpenApi.Operation]`
++   entry .Components   文档的可复用部分：schema、参数、响应、请求体和安全方案
+
+% 1 1 0 0f66ebe2bdf7492d179e9b7e25031443
+
+@ 0 11 0 06577e99a5b00d4e07bc989c0d5eb84e
++         `#/components/…` 指针解析到的内容。
++         `schemas` 保存 `JsonSchema`，`JsonSchema.Ref` 用 `schema()` 对照它们解析；`parameters`、`responses` 和 `requestBodies` 保存的组件本身可能是引用，用 `referable()` 解析；`securitySchemes` 命名 `OpenApi.Requirement` 所引用的方案。
++         它的解码器是伴生对象中的一个匿名 given。
++     entry #schemas   按名称列出的组件 schema，即 `#/components/schemas/…` 的目标
++     entry #parameters   按名称列出的组件参数，每个都就地写出或作为 `OpenApi.Ref`
++     entry #responses   按名称列出的组件响应，每个都就地写出或作为 `OpenApi.Ref`
++     entry #requestBodies   按名称列出的组件请求体，每个都就地写出或作为 `OpenApi.Ref`
++     entry #securitySchemes   按要求所用名称列出的安全方案
++   entry .SecurityScheme   API 的认证方式：API 密钥、HTTP 认证、OAuth 2、OpenID Connect 或双向 TLS
+
+% 1 1 0 1be12f7740e60119089351e217198f03
+
+@ 0 4 0 133a502cd2c2fe301e0b03c955877e0c
++         字段即 OpenAPI 3 §4.8.27 所定义的那些，并且只出现属于该方案 `type` 的字段：`apiKey` 的 `name` 和 `in`，`http` 的 `scheme` 和 `bearerFormat`，`oauth2` 的 `flows`，`openIdConnect` 的 `openIdConnectUrl`。
++         `#kind` 把 `type` 读作 `OpenApi.SecurityScheme.Kind`。
+
+@ 0 39 0 1ce55626281d6701066c63de62f9a2ee
++         `Api` 客户端用以方案命名的 `orthodoxy.Credential` given 满足一个方案：API 密钥用 `("api_key" is Credential to Text)`，按 `in` 所指定的方式在头部、查询参数或 cookie 中发送；HTTP 认证用 `("basicAuth" is Credential to Auth)`，作为 `authorization` 头部发送；OAuth 2 或 OpenID Connect 用 `("petstore_auth" is Credential to Authorization)`，作为 `Bearer` 令牌发送，并对照要求的作用域检查（对于从别处获得的令牌，可用 `Auth`）。
++         种类与方案不符的凭据是编译错误。
++         不支持双向 TLS，也不执行 OpenID Connect 发现。
++     entry .decodable   从 JSON 读取安全方案
++     entry .Kind   作为枚举的方案类型：`ApiKey`、`Http`、`OAuth2`、`OpenIdConnect`、`MutualTls` 或 `Unknown`
++         `Unknown` 是规范未定义的任何 `type` 文本；`Api` 客户端无法满足这样的方案。
++     entry .Flow   一个 OAuth 2 流程：其端点和它能授予的作用域
++       entry .decodable   从 JSON 读取流程
++       entry #authorizationUrl   授权端点，用于隐式流程和授权码流程
++       entry #tokenUrl   令牌端点，用于除隐式流程外的所有流程
++       entry #refreshUrl   刷新端点，或 `Unset`
++       entry #scopes   流程授予的作用域，每个都带有描述
++     entry .Flows   方案提供的 OAuth 2 流程：隐式、密码、客户端凭据和授权码
++       entry .decodable   从 JSON 读取流程
++       entry #implicit   隐式流程，或 `Unset`
++       entry #password   资源所有者密码流程，或 `Unset`
++       entry #clientCredentials   客户端凭据流程，或 `Unset`
++       entry #authorizationCode   授权码流程，或 `Unset`
++     entry #type   按原样书写的方案类型：`apiKey`、`http`、`oauth2`、`openIdConnect` 或 `mutualTLS`
++     entry #description   描述，或 `Unset`
++     entry #name   对于 `apiKey`，头部、查询参数或 cookie 的名称
++     entry #in   对于 `apiKey`，它的位置：`header`、`query` 或 `cookie`
++     entry #scheme   对于 `http`，认证方案：`basic`、`bearer`、……
++     entry #bearerFormat   对于 `http` bearer 方案，令牌格式的提示
++     entry #flows   对于 `oauth2`，方案提供的流程
++     entry #openIdConnectUrl   对于 `openIdConnect`，发现 URL
++     entry #kind   作为 `OpenApi.SecurityScheme.Kind` 的 `type` 文本，未定义的任何内容为 `Unknown`
++   entry .Requirement   安全要求：必须全部满足的方案，每个都带有其作用域
++       `Map[Text, List[Text]]`：从方案名称到所需作用域。
++       操作（或文档）的 `security` 是一个要求列表，它们是*备选项*，满足其中任意一个即可；空要求表示不需要凭据。
++       `Api` 客户端使用第一个其每个方案在作用域中都有 `Credential` 的备选项。
++   entry .Error   当文档不是有效的 OpenAPI 3，或引用无法跟随时抛出
+
+% 1 1 0 1cfcf1d86bdbdde9186df140ef327920
+
+@ 0 2 0 034e7af6b3c8d1e9100c965e4f9c467a
++         错误 `↯/s.135.1`：_the OpenAPI document was not valid because `reason`_，带有五个原因之一，编号为 `846.1` 到 `846.5`：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 0b351047b2c190fb0d587069f3672f62
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `Malformed`  1  _the OpenAPI document could not be parsed_  文本不是 JSON 或 YAML，或者不符合模型
++         row  `UnsupportedVersion(version)`  2  _the OpenAPI version `version` is not supported; only 3.x is supported_  例如 Swagger 2 文档
++         row  `UnresolvableRef(pointer)`  3  _the reference `pointer` could not be resolved_  指向文档中不存在的组件的 `$ref`
++         row  `UnsupportedRef(pointer)`  4  _the reference `pointer` is not supported; only #/components/schemas references work_  指向文档组件之外的 `$ref`，例如指向 `#/paths` 或另一个文件
+
+% 0 1 0 00c24ec212d4a56e08d0d58719ce0750
+
+% 1 1 0 1df7c4db5113b89915e35fd2f8f8e293
+
+@ 0 12 0 11e875e69b96b7170dc0eff775e4cb18
++         `read[OpenApi]` 抛出前两个和最后一个；`referable()` 和 `schema()` 抛出与引用有关的那些。
++         在 `Api(…)` 处，其中任何一个都是编译错误。
++     entry .Reason   文档被拒绝的原因：`Malformed`、`UnsupportedVersion`、`UnresolvableRef`、`UnsupportedRef` 或 `BadParameterLocation`
++         一个枚举，每个分支为其错误编号，并由其伴生对象中的匿名 `Communicable` given 渲染。
++     entry #reason   `OpenApi.Error.Reason`
++   entry #openapi   文档声明的 OpenAPI 版本，`3.0.3` 或 `3.1.0`
++   entry #info   文档的 `OpenApi.Info`：标题、版本和描述
++   entry #servers   服务器，按文档中的顺序；`Api` 使用第一个
++   entry #paths   按路径模板索引的路径项，`/pets/{petId}`
++   entry #components   可复用组件，文档未声明时为 `Unset`
++   entry #security   全文档范围的安全要求，操作自身的要求会覆盖它们
+
+@ 0 1 0 0feaf46f48be49dc0eea0f71ffeeaacf
++ entry .Conformant   如何把 `Http.Response` 读取为一个值，经由其媒体类型所解释为的载体
+
+% 1 1 0 0d07619860a3b3750112fd57a60b1d4e
+
+@ 0 13 0 1438ee40b144bff9113ebef3ca919260
++       `(T is Conformant) over Carrier` 把正文为 `Carrier` 的 `Http.Response` 读取为 `T`，其中 `Carrier` 是响应的媒体类型所解释为的类型——`application/json` 对应 `Json`，以及 `Xml`、`Text`、`Raster in Png`。
++       它只负责读取：在 `#read` 运行之前，`Api.Response#call` 已经检查了状态，并对照 schema 检查了 `T`。
++       这些 given 按优先级分层，使结果永远不会有歧义：首先是原始的 `Http.Response` 和 `Unit`（`.response`、`.unit`，适用于任何载体）；然后是从字节读取的载体本身（`.carrier`）；然后是从文本读取的载体，用于 `Xml` 这类 `Aggregable by Text` 的载体（`Conformant2#carrierText`）；然后是任何 `Decodable in` 该载体的值，按字节（`Conformant2#decodable`）和按文本（`Conformant3#decodableText`）。
++       这种排序使同时为 `Aggregable by Data` 和 `by Text` 的载体（如 `Text`）不会产生歧义，也使载体不会通过其自身的恒等 `Decodable` 来解码。
++       伴生对象从它所继承的 `Conformant2` 和 `Conformant3` 中获得那些较低优先级的 given。
+
+% 2 1 0 106785101361ca9f0eb867d5d418b7ef
+
+% 3 1 0 158496939687cd4e0833e0cb03d72823
+
+% 4 1 0 1d6008d75a8fea31096b7a9958b5c61c
+
+% 5 1 0 186dfe5f57bd60830078331fc7d46544
+
+% 0 1 0 0c0218cda5b1b1850bbb411d7f7460a2
+
+% 0 1 0 152a2833f798356c1aebd16c36204c17
+
+% 0 1 0 1f1b7a04c57a8be31f537d543a5fe73e
+
+% 0 1 0 146572b66e8cea1b05f6fb0d38e61347
+
+% 0 1 0 1a0f5b67fa326dfa1b963d8c8fbd2c1a
+
+% 1 1 0 0d979adcfcc39f0e0ca3dd797d6c0dbc
+
+@ 0 5 0 1833c9f52f28159715a50f03e0fff4c1
++       由于 `call[T]()` 在写下调用的地方召唤 `Conformant`，且 `T` 是具体的，`List[Pet]` 会像任何其他解码一样解析其 `Decodable in Json`，所要求的 given 只有载体自身的 `Aggregable` 和 `T` 的 `Decodable`；文本路径还需要一个用于字节的 `Charset`，而每条路径都需要一个 `Tactic[Truncation.Error]`，以应对被截断的正文。
+
+% 1 1 0 19346da35c5486e11683bdd64d8e6629
+
+% 1 1 0 17ae992c3b733d8f0a79225f5a867ae8
+
+% 0 1 0 0513750615724a521c1bb2f74e2d8412
+
+@ 0 7 0 17f4cd36e7bbbc921bc10d655d3ba916
++   entry .response   原始的 `Http.Response`，适用于任何载体：什么都不读取的逃生舱口
++   entry .unit   `Unit`，适用于任何载体：正文被丢弃，例如 `204` 或对 `DELETE` 的裸 `call()`
++   entry .carrier   载体本身，通过其 `Aggregable by Data` 从正文的字节读取
++       `(Json is Conformant) over Json`、`(Raster in Png is Conformant) over (Raster in Png)`：正文被 memoize，并由载体自己的读取器聚合。
++       需要一个 `Tactic[Truncation.Error]`。
++   entry #read   把响应读取为 `Self`
+
+@ 0 1 0 123404ffa1a0a44f0ff1454fb0474ae1
++ entry .Conformant2   `Conformant` given 的中间优先级：以文本读取的载体，以及从以字节读取的载体解码出的值
+
+% 1 1 0 07537572f022627a19c3917f21bb4dbf
+
+% 2 1 0 1edc52259666290e00057fd5530e5b2e
+
+@ 0 10 0 1131bf2afa09b8e41443d1ac1d1f59c0
++       `Conformant` 伴生对象的父类型，其存在只是为了让它的 given 排在 `Conformant.response`、`.unit` 和 `.carrier` 之后；其成员通过伴生对象找到，无需导入。
++   entry #decodable   任何具有 `Decodable in Carrier` 的 `T`，来自一个 `Aggregable by Data` 的载体
++       `call[Pet]()` 正是这样读取 JSON 响应的：字节被聚合为 `Json`，然后解码为 `Pet`。
++       需要一个 `Tactic[Truncation.Error]`。
++   entry #carrierText   载体本身，通过其 `Aggregable by Text` 以文本形式从正文读取
++       用于 `Xml` 这类读取器接受文本的载体：字节在解析器看到之前用作用域中的 `Charset` 解码。
++       需要一个 `Charset` 和一个 `Tactic[Truncation.Error]`。
+
+@ 0 1 0 0d2987bd1ce675250bff7b5badd9dc8f
++ entry .Conformant3   `Conformant` given 的最低优先级：从以文本读取的载体解码出的值
+
+% 1 1 0 0d197bc7288a68b00f221c3552e35cd3
+
+% 2 1 0 121c54c2d95ef6310c5903625064fd12
+
+@ 0 6 0 02e9cd46d18cc78f00dad1d7ca12edc3
++       `Conformant` 伴生对象优先级链的根；它唯一的 given 通过伴生对象找到，无需导入。
++   entry #decodableText   任何具有 `Decodable in Carrier` 的 `T`，来自一个 `Aggregable by Text` 的载体
++       `call[Note]()` 正是这样读取 XML 响应的：字节用作用域中的 `Charset` 解码，聚合为 `Xml`，然后解码为 `Note`。
++       需要一个 `Charset` 和一个 `Tactic[Truncation.Error]`。
+
+@ 0 1 0 041836b7bca37ad0172c0270def12183
++ entry .Executor   传输接缝：把 `Api.Request` 变成原始的 `Http.Response`
+
+% 1 1 0 0f48eb842c57cf7c05f6a517da0dca9a
+
+@ 0 7 0 1e960c093177acf306dc1c4d06890872
++       一个只有一个方法 `#execute` 的 trait，供不经网络应答 `Api.Request` 的实现使用，例如测试中的录制后端。
++       它没有导出到 `soundness` 总括包，因为在那里它的名称会与 superlunary 的 `Executor` 冲突，需以 `apoplexy.Executor` 访问。
++       客户端本身通过 `Api.send` 和作用域中的 `Http.Client` 发送，因此替换一个 `Http.Backend` given 是拦截请求的常用方式。
++   entry #execute   对一个请求的响应
+
+@ 0 8 0 1b2842f975b6567f14c5d3c12026802f
++ entry .yamlEncodableInJson   作为 JSON 的 YAML 文档，即 `yaml.in[Json]`
++     顶层 given `Yaml is Encodable in Json`，以 YAML 编写的 OpenAPI 文档在通往模型唯一解码器的路上要经过这一转换。
++     两棵树都逐节点遍历；YAML 写成数字或布尔值的映射键（`200:`）会变成 JSON 所要求的字符串。
++     它以带库名限定的名称位于包的顶层，因为 `jacinta` 和 `ypsiloid` 互不依赖，所以 `Yaml` 和 `Json` 都无法锚定它；它没有导出到 `soundness` 总括包，因此以 `import apoplexy.yamlEncodableInJson` 导入。
+
+% 2 1 0 14ea6737f474c2b115c595aa678354cc
+
+% 3 1 0 0bfb00676c7404171810141b18f86956
+
+% 4 1 0 056269b7668cb6df16f8eaf219e1d595
+
+% 0 1 0 1f58f2001601d2ff1433745f3bada8b5
+
+% 0 1 0 1dfc155e0824c96c006ded0f7fa8dc6f
+
+% 0 1 0 09e7b0122c1b94d20ecdbba5a0f76243
+
+% 0 1 0 009fff120ccf112e0018ec00f6f9d543
+
+% 0 1 0 16c6dc36a08108881934264001614a83
+
+% 0 1 0 120c70449f5bfb34100cdc65e7d2e52f
+
+% 0 1 0 09518f93c7c9d3d118441ee4119eef5c
+
+% 1 1 0 076603ffd025469118bd637711342108
+
+@ 0 6 0 0b637fee940a50bc09474ee9557ab968
++ entry .unsafeHttpUrl   解析 `Api` 宏已验证为 URL 的文本，由 `Unsafe` 门控
++     `unsafeHttpUrl(text)(using Unsafe)` 就是已处理掉 `Url.Error` 的 `text.as[HttpUrl]`：`Api(resource)` 生成的代码对宏在展开时已解析过的服务器 URL 调用它，由宏提供的 `Unsafe` 门控，而不是拼接进去的 `unsafely`，因为在捕获检查下，quote 无法匹配后者的上下文函数。
++     不供直接使用：请用 `text.as[HttpUrl]` 解析未经检查的 URL，并处理错误。
+
+@ 0 1 0 0c805f15fd2afed612644bc4cc25638a
++ entry .Apoplexy   `Api` 及其导航和 `Api.Response` 各调用背后的宏实现
+
+% 1 1 0 015b673a4dd01f44045cb2d0f3b347e8
+
+% 2 1 0 0024780503ba8b5f05f2dc91ba88b98d
+
+@ 0 24 0 1cf02df1fbc4b8481013d448a8d20024
++       不供直接使用：该对象的存在是为了给宏一个稳定的归宿。
++       它在整个编译期间缓存它加载的每份规范，以资源和内容为键。
++   entry .root   `Api(resource)` 背后的宏：加载文档并为根定型
++   entry .rootAt   `Api(resource, base)` 背后的宏：同 `.root`，但使用调用方的基础 URL
++   entry .select   `Api#selectDynamic` 背后的宏：一个路径段，或一个不带参数的动词
++   entry .applied   `Api#applyDynamic` 背后的宏：一个路径参数、一个正文，或一次不带动词的调用
++   entry .appliedNamed   `Api#applyDynamicNamed` 背后的宏：查询参数和头部参数，以及一个正文
++   entry .ensure   `Api.Response#ensure` 的 inline 入口点
++   entry .ensureMacro   对于成功范围之外的状态，抛出声明的错误或 `Api.Violation`
++       在写下调用的地方，为响应的 `Failure` 中的每个成员以及 `Api.Violation` 各召唤一个 `Tactic`；先按确切状态分派，再按声明的范围，最后按 `default`；并按规范的声明解释每个载荷。
++   entry .record   `Api.Response#record` 的 inline 入口点，给定已读取为 JSON 的正文
++   entry .tuple   `Api.Response#tuple` 的 inline 入口点，给定已读取为 JSON 的正文
++   entry .recordMacro   从响应的 JSON 构建基于 `Api.Records` 的 schema 类型化记录
++   entry .tupleMacro   从响应的 JSON 构建基于 `Api.Records` 的 schema 类型化命名元组
++   entry .check   对照响应 schema 检查 `call[T]()` 的 `T` 的 inline 入口点
++   entry .conform   除非 `T` 符合响应 schema，否则中止编译
++       `Json` 和 `Http.Response` 无需检查即可通过；case class 逐字段与对象 schema 的属性匹配，`List[T]` 与数组的元素匹配，基本类型与其类型匹配，其中 `int64` 接受 `Int`，`number` 接受整数类型。

@@ -1,0 +1,722 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0706085bebe1c98807dce18244ccff80
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d43a64c1a2f730d11073077cd535c3e
++ info   wartości nieobecne bez opakowania: `Optional`, `Unset` i kombinatory, które je konsumują
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 127fada871b6951209725c9cd98dedfb
++     _Vacuous_ reprezentuje wartość, której może nie być, jako `Optional[value]`, czyli
++     dokładnie typ unii `Unset | value`: wartość obecna jest samą wartością, bez
++     `Some` do alokowania czy rozpakowywania, a brak to pojedynczy wartownik `Unset`. W przeciwieństwie do
++     `null` brak jest widoczny w typie i nie można go przypadkiem wyłuskać; w przeciwieństwie do
++     `Option` opcjonalność jest *płaska* – unia pochłania powtórzoną składową, więc
++     `Optional[Optional[Int]]` to ten sam typ co `Optional[Int]`, a „obecnego braku”
++     takiego jak `Some(None)` w ogóle nie da się zapisać.
+
+% 2 1 0 1696b11c151b1d07095889b92fd3e36c
+
+% 3 1 0 0f1d73d8431aa6e70685a680754c6b93
+
+% 5 1 0 09e723e51317da1a12c313158255c4bb
+
+% 1 1 0 0fc73d1592aeb98a0816c106166da67f
+
+% 0 1 0 02ae34b08665da771eb933bb7e7d0cfc
+
+% 0 1 0 1d779d3648026b2804962c0f82507f95
+
+% 0 1 0 18047cf2012f34a9165b98bd44f2be2e
+
+% 0 1 0 0a57ed76b535b82405c90cfdbfea28d5
+
+% 0 1 0 17c665027c78dcf303f8e59f1604342d
+
+% 1 1 0 13234b1eff6504dd170db26a8b744bc7
+
+@ 0 9 0 062d7f3a38cac862146cedfe67b77943
++     Kombinatory czyta się jak pytania, na które odpowiadają. `or` dostarcza wartość rezerwową; `let`
++     przekształca wartość obecną i przepuszcza `Unset`, zastępując to, do czego `Option`
++     potrzebowałby zarówno `map`, jak i `flatMap`; `lay` przyjmuje naraz wartość rezerwową i przekształcenie,
++     więc zwraca zwykłą wartość; `present` i `absent` pytają wprost; `mask` odrzuca
++     wartość obecną, która nie spełnia predykatu; `assume` i `presume` wymagają wartości, przez
++     rzucenie `Optional.Error` lub przez powrót do `Default` danego typu. W drugą
++     stronę `unless`, `puncture` i `only` czynią dowolną wartość opcjonalną pod pewnym warunkiem, a
++     `optional`/`option`/`javaOptional` konwertują na granicy z kodem, który posługuje się
++     `Option` lub `java.util.Optional`.
+
+@ 0 4 0 1b45ec2358d3616210f5bda93271c2f2
++     `Optional` celowo nie jest monadą: nie ma `flatMap` ani wyrażenia `for`
++     nad nim. Z brakiem radzi się sobie tam, gdzie powstaje – blisko miejsca, w którym wartość
++     uzyskano – zamiast przenosić go przez program w opakowaniu, do którego musi się dostosować
++     każdy kolejny krok.
+
+@ 0 9 0 1ded330ed6df580e068587d180fbbef2
++     Płaska reprezentacja ma jeden koszt, którego pilnuje kompilator. Pochłanianie
++     działa, ponieważ obie składowe unii są znane, a dla typu *abstrakcyjnego* nie są:
++     `value` zinstancjonowane później jako coś już opcjonalnego połączyłoby dwa
++     braki, które miały być różne. Dlatego kombinatory wymagają dowodu `Optionality`, że
++     typ ich odbiorcy rzeczywiście jest `Optional` (wywołanie `let` na zwykłym `Text` to
++     błąd kompilacji, _the type Text is not an `Optional`_), a metoda generyczna przyjmująca
++     `Optional[value]` dla abstrakcyjnego `value` żąda w swojej sygnaturze `value: Concrete`.
++     `Distinct` i `Mandatable` to dwa pozostałe fakty na poziomie typów: że typ nie jest
++     składową unii oraz jaki jest nieopcjonalny typ wartości obecnej.
+
+@ 0 3 0 0685b4409bf0c80601f0d88d860b391b
++     Z `Option` każdy krok opakowuje, a wynikiem może być `Some(None)`; z `Optional`
++     wartość obecna jest sobą, `let` nigdy nie zagnieżdża, a wartość rezerwowa zamyka pytanie tam, gdzie
++     zostało zadane:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 08fe819a6e2aebe30624e78931dfb6f9
+
+% 1 1 0 0f8f6f5776eb461a078e69d3290a8cc8
+
+% 0 1 0 0f8299b11ead136f154f73be68e00d99
+
+% 0 1 0 1a28dd72cee4dd9e1352a4892c7e0381
+
+% 0 1 0 0959ba81820bd8641e5ff330437e6d43
+
+% 0 1 0 0f9d9e3ac544c2a1116c8d1aae36a5de
+
+% 1 1 0 18c67fe897c5a8f20ca55e8b4b769272
+
+% 0 1 0 181741a316dd330109027e39c9be6112
+
+% 0 1 0 12babffaf6418d861ddb7d45170ed243
+
+% 0 1 0 07e4d399d6af781a040973cdfdd6e5e4
+
+% 0 1 0 00ccfc13e068262b0671209eaad560d8
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 09ce040e31379aa806bcfe8ff09b3e26
++     Każdy akcesor kolekcji, który może niczego nie znaleźć – `head` na liście, o której nie udowodniono,
++     że jest `Populated`, `at` na `Map`, indeks na `Sequence` – zwraca `Optional`, więc
++     tutejsze kombinatory są zwyczajnym sposobem konsumowania wyników kolekcji.
+
+@ 0 6 0 0bbbe87ad454015307898ff8bd0d731b
++     Biblioteka to pojedynczy zbiór źródeł `vacuous.core`, kompilowany dla JVM, Scala.js
++     i Scala Native, a wszystko jest eksportowane do modułu zbiorczego `soundness`. Jej jedyne
++     giveny znajdują się w obiektach towarzyszących (instancje `Default` dla typów z oczywistym zerem;
++     oparte na makrach dowody `Concrete`, `Distinct`, `Mandatable` i `Optionality`), więc
++     rozwiązują się bez importu. Tu znajduje się też token zdolności `Unsafe`, poniżej
++     `unsafely` z contingency, które go dostarcza.
+
+% 0 1 0 175aa1e37ddd2f8e0f205fbc28fe837e
+
+% 0 1 0 17b184332d68ddbd0ea0c7793d372402
+
+% 0 1 0 04b7fe4eeb61a72b0069899a791d11dd
+
+% 0 1 0 1bd9060f4226978912e72179cbe1526f
+
+% 0 1 0 0adb5bed2b9a74420680f8c1be1f8562
+
+% 0 1 0 0994a53cda02c88c1d64c8b550b69882
+
+@ 0 1 0 008824c8be783c4e0fd27a19676a176f
++ entry .Optional   wartość, której może nie być, jako płaska unia `Unset | value`
+
+% 1 1 0 1a370a89e56ba4c91b322f33f41a1b4c
+
+@ 0 6 0 1a2dd6ccd9cf379e0f016bafd4a21c75
++       `Optional[value]` to alias typu `Unset | value`. Wartość obecna jest przechowywana,
++       przekazywana i odczytywana jako ona sama; brak to `Unset`. Ponieważ unia pochłania powtórzoną
++       składową, `Optional[Optional[Int]]` to `Optional[Int]`, więc opcjonalność nigdy się nie zagnieżdża i
++       nie ma niejednoznacznego „obecnego braku”. Przechowywanie `Optional[Text]` nie kosztuje więc
++       niczego ponad `Text`, i to jest cały powód takiego projektu: `Option`
++       alokuje `Some` dla każdej obecnej wartości.
+
+% 2 1 0 0aa9b5d506726a8a1da8e784d1b126d3
+
+% 3 1 0 019ccde94295e0f71576611a97d53df8
+
+% 0 1 0 0fd0c2aa4bf08bc112ea7bddb8a6cbfe
+
+% 0 1 0 0770ebee5149d3901254a32e3f09a2f5
+
+% 0 1 0 1a646051fd1ea16912c834c28bd2c5ea
+
+% 0 1 0 055a83a8a11c5c6d10d35412564d020e
+
+% 0 1 0 132d55f8ee76ac8913e4cc2c57b01fc5
+
+% 1 1 0 16f7ee77fab21e040cd481dbcd9904b6
+
+@ 0 6 0 01451626afe62e090f5ec27386799eb2
++       Kombinatory – `or`, `let`, `lay`, `present`, `absent`, `mask`, `assume`,
++       `presume`, `option`, `javaOptional`, `letGiven`, `layGiven` – to rozszerzenia na poziomie
++       pakietu, każde strzeżone dowodem `Optionality`, że typ odbiorcy jest
++       `Optional`; `Optional.check[value]` wykonuje to samo sprawdzenie jawnie. Obiekt ma
++       `.apply`, które zamienia wynik Javy mogący być nullem na `Optional`, oraz dwa
++       giveny `CanEqual`, które pozwalają porównać dowolną wartość z `Unset` przy ścisłej równości.
+
+@ 0 11 0 102ade784d06dce319ce660f07b60b87
++       Dla użytkownika istotne są dwa fakty dotyczące sprawdzania przechwytywania. *Tablica zamrożona* wewnątrz unii – na przykład
++       metoda zwracająca `Optional[Data]` – jest odświeżana do przechwycenia tylko do odczytu w każdym
++       miejscu wywołania, gdy tylko metoda przyjmuje także parametr zdolności (`Loggable` lub
++       lukier składniowy `logs Event`), a taki wynik nie może wtedy trafić do `safely` ani do zmiennej
++       typu; działającym kształtem jest metoda wolna od zdolności zwracająca
++       `Optional[Data]`, wywoływana z powłoki `inline`, która zajmuje się logowaniem, a powłoka
++       powinna sprawdzać `present` zamiast stosować `let` na bajtach, ponieważ lambda nad nimi
++       znów je odświeża. Natomiast `Optional` *zdolności* (`Optional[Handle^]`)
++       należy rozgałęziać za pomocą `match`, którego pierwszy przypadek to `case Unset =>`, zamiast
++       przez wartownika `| Null` i typowanie przepływowe, które gubi śledzenie skonsumowanej
++       wartości przez mechanizm sprawdzania separacji.
+
+% 0 1 0 0e987195d2e6f41b1acfb781d9d7a59c
+
+% 0 1 0 154dbda59e8f4ebc1dd25f29402e5a96
+
+% 0 1 0 049564bfa1ff3328011c14af770fd337
+
+% 0 1 0 1a13a359d9eb562a1d0546da0a4c4a93
+
+% 0 1 0 0915f937c35f32e3109f1e21fc8a7d86
+
+@ 0 16 0 0fa6169b25776ccd1647fc2f5f6b2ba5
++   entry .Unset   jedyna wartość nieobecna; jej typ to nieprzezroczysty `Unset`
++       `Unset` to zarówno typ nieprzezroczysty `Unset <: Matchable & caps.Pure`, jak i jego jedyna
++       wartość. Reprezentacją bazową jest `null`, więc wartość obecna nigdy nie jest opakowywana, a
++       brak nic nie kosztuje, ale typ jest nieprzezroczysty: `Unset` nie jest podtypem `Null`,
++       więc `nn` go nie usuwa, a `Unset | value` normalizuje się przewidywalnie przy rozwiązywaniu
++       givenów. Jest czysty, więc `Optional[value]` jest czysty, gdy tylko `value` jest. Nazwa
++       jest eksportowana także na poziomie pakietu, więc do `Unset` sięga się samym
++       `import soundness.*`.
++   entry .unsetEquality   `CanEqual[value, Unset]`: dowolną wartość można porównać z `Unset`
++       Przy ścisłej równości `optional == Unset` zostałoby w przeciwnym razie odrzucone dla `value`
++       bez własnego `CanEqual`; ten given i `.equalityUnset` dopuszczają porównanie
++       w dowolnej kolejności, i do tego kompilują się `absent` i `present`.
++   entry .equalityUnset   `CanEqual[Unset, value]`: `Unset` można porównać z dowolną wartością
++   entry .apply   zamienia wartość mogącą być nullem na `Optional`: `Optional(javaResult)`
++       `Optional(value)` to `Unset`, gdy `value` jest `null`, a w przeciwnym razie `value`. Jest to
++       punkt wejścia dla wyniku API Javy, który może być nullem:
+
+% 2 1 0 11035a1fed60cb4700fb59230d9db1ee
+
+% 3 1 0 08aa7682181e7c2b05c7babda83ffb9e
+
+% 0 1 0 08d2cf01bd8261fc1185d3d1d0f7df81
+
+% 1 1 0 0a32625e39e1c5451e78b7a4c87915c1
+
+@ 0 9 0 11e6f5e4079e99eb053a83d8d2f13a46
++   entry .check   sprawdzenie w czasie kompilacji, że typ jest `Optional`
++       `Optional.check[value]` rozwija się do niczego, jeśli `Unset` jest podtypem `value`, a
++       w przeciwnym razie nie kompiluje się z błędem `↯/s.20.3`, _the type `value` is not an `Optional`_.
++       To właśnie robi given `Optionality`, udostępnione dla kodu, który chce stwierdzić tę
++       własność bezpośrednio.
++   entry .Error   zgłaszany przez `assume`, gdy wartości nie było
++       Błąd `↯/s.20.4`: _the value was not set_. Rzucany przez `assume`, które wymaga
++       `CanThrow[Optional.Error]` w zasięgu (`import unsafeExceptions.canThrowAny` lub
++       otaczającego `unsafely`) właśnie dlatego, że jest niesprawdzanym stwierdzeniem obecności.
+
+@ 0 6 0 03cf1029fb28ed7609c39196defdc2f1
++ entry .Unset   jedyna wartość nieobecna, eksportowana z `Optional.Unset`
++     Wartość, którą zawiera każde `Optional`, gdy jest nieobecne, i typ tej wartości. Jest to
++     `Optional.Unset`, eksportowane na poziomie pakietu, tak by `Unset` czytało się jak słowo kluczowe.
++     Porównuje się przez `== Unset` (dopuszczają to giveny `CanEqual` w `Optional`), dopasowuje przez
++     `case Unset =>`, a nieobecne `Optional[Text]` tworzy się jako `Unset` bez argumentu
++     typu, ponieważ `Unset` jest zgodne z każdym `Optional`.
+
+@ 0 7 0 1194b804a4d1c4631be3884c014a992f
++ entry .or   wartość, jeśli jest obecna, albo wartość rezerwowa
++     `optional.or(fallback)` to wartość, gdy jest obecna, a w przeciwnym razie `fallback`;
++     wartość rezerwowa jest przekazywana przez nazwę i obliczana tylko w razie potrzeby. Wynik jest zwykłym `value`, więc
++     `or` jest zwykle ostatnim krokiem łańcucha wywołań `let`. Jest makrem: odbiorca będący
++     blokiem `optimizable` jest przepisywany tak, by wartość rezerwowa trafiła do bloku
++     bezpośrednio, bez pośredniego `Optional`, a odbiorca, którego typ nie jest
++     `Optional`, powoduje błąd kompilacji (465, _the type `T` is not an `Optional`_).
+
+% 2 1 0 154890cbcddceb5d196141977e50fdc3
+
+% 3 1 0 05eab28529bd897c1c9565b417580f5d
+
+% 5 1 0 06b28d25c8cbf90f002480cd4a39b3b8
+
+% 0 1 0 11b8ab6c837786d40ff8bb792f475633
+
+% 1 1 0 1d9140308c08930708285f5e46f104c9
+
+@ 0 4 0 1c2a4e61c4b6f5550fc7e05945355a70
++ entry .let   przekształca wartość obecną; przepuszcza `Unset`
++     `optional.let(lambda)` stosuje `lambda` do wartości obecnej i daje `Unset` dla
++     nieobecnej. Ponieważ opcjonalność jest płaska, `lambda`, która sama zwraca `Optional`,
++     nie dodaje warstwy – `let` zastępuje to, do czego `Option` potrzebuje zarówno `map`, jak i `flatMap`:
+
+% 2 1 0 00063737a05f887d0acd5bb349cb7c59
+
+% 3 1 0 19b4aace648a99451a134943dfa2e5ad
+
+% 0 1 0 1f75af68868fa268023b184b82e9513e
+
+% 1 1 0 1db41a627153b12d0d9332747339e72d
+
+% 0 1 0 098208b9b5ab3c2f1c227c37cc2d87db
+
+% 0 1 0 1cc370ff7219bf7107782233fbb35873
+
+% 1 1 0 05747d045de6cddf1bb236cbfdc42888
+
+@ 0 2 0 0bbb0a396d3b5d2216822ad0f528619b
++     Wymaga dowodu `Optionality` dla typu odbiorcy, który jest w zasięgu niejawnym dla
++     każdego `Optional`.
+
+@ 0 4 0 04ddc1c208ff19a20479c1368cec815f
++ entry .lay   wartość rezerwowa dla braku i funkcja dla obecności, dające zwykłą wartość
++     `optional.lay(alternative)(lambda)` to `lambda(value)`, gdy wartość jest obecna, a
++     w przeciwnym razie `alternative` (przekazywane przez nazwę), więc zwraca zwykłe `value2`, a nie
++     `Optional`. To `let` i `or` w jednym kroku, rozwijane w miejscu wywołania.
+
+% 2 1 0 0229422133a20cd500369026d490e3fa
+
+% 3 1 0 1e122defefc895530144e0560223dcd7
+
+% 5 1 0 077e6267c6fb42d00aaa28e83d8a72ee
+
+% 0 1 0 0a218052f5cc87070f9aebd566abe03e
+
+% 1 1 0 1b1a10b10a00522c19e76ee0753fb13d
+
+@ 0 4 0 00776338fed22a190d1b23873d82db51
++ entry .letGiven   `let` z wartością obecną dostarczoną jako wartość kontekstowa
++     `optional.letGiven(block)` oblicza `block` z wartością obecną jako `given`,
++     dając `Unset` dla nieobecnej. Dla bloku, którego ciało przywołuje wartość
++     (`Tactic`, `Classloader`, sesję) zamiast ją nazywać.
+
+@ 0 3 0 0a93b2cf6652a9741ceaed751fe44f93
++ entry .layGiven   `lay` z wartością obecną dostarczoną jako wartość kontekstowa
++     `optional.layGiven(alternative)(block)` oblicza `block` z wartością obecną jako
++     `given`, a `alternative` (przekazywane przez nazwę), gdy jej brak, zwracając zwykłą wartość.
+
+@ 0 3 0 148e42899a89f8a305e2c3b226436242
++ entry .present   czy wartość jest obecna
++     `optional.present` to `optional != Unset`, rozwinięte w miejscu wywołania. Wymaga dowodu `Optionality`,
++     więc można o to pytać tylko w przypadku typu, który jest `Optional`.
+
+@ 0 2 0 01600db13bc49ede0acb84589cc9eb5b
++ entry .absent   czy wartość to `Unset`
++     `optional.absent` to `optional == Unset`, rozwinięte w miejscu wywołania.
+
+@ 0 4 0 121c748e6bef61ce0be47d43371c9c1b
++ entry .mask   odrzuca wartość obecną, która spełnia predykat
++     `optional.mask(predicate)` to `Unset`, gdy wartość jest obecna i `predicate` jest dla niej
++     spełniony, a w przeciwnym razie niezmieniony odbiorca. Sens to „zamaskuj”: predykat
++     wskazuje, co *usunąć*.
+
+% 2 1 0 1736acea32562a280f0dba98eb6630c3
+
+% 3 1 0 1ef33fa2fa2b91a107adc64658df0e5e
+
+% 5 1 0 02c2e904bba882e309fed38ef1bf2e05
+
+% 0 1 0 1b015851dd7a433d10f3eefc8049ed00
+
+% 1 1 0 0203b8ec6e26c7f30ae76202bb52ea19
+
+@ 0 6 0 157d717b1bb0d3e7158bfa3efb12b1ca
++ entry .assume   wartość albo rzucony `Optional.Error`, jeśli jej brak
++     `optional.assume` stwierdza obecność. Jest to niesprawdzane stwierdzenie, więc wymaga
++     `CanThrow[Optional.Error]` w zasięgu – `import unsafeExceptions.canThrowAny` lub
++     otaczającego `unsafely` – i rzuca błąd `↯/s.20.4`, _the value was not set_, gdy
++     stwierdzenie jest fałszywe. Lepiej użyć `or`, `lay` lub dopasowania, gdy kod może powiedzieć, co oznacza
++     brak.
+
+% 2 1 0 0bc6ff54b90c1eaf11bec9b00b60b177
+
+% 3 1 0 18af29e89a27b9e114c7b25ce71b36a5
+
+% 0 1 0 0e561fef8d61f71209e71e56fc02c68d
+
+% 2 1 0 0cfdfa664d0e752a0795ff937076fea0
+
+% 0 1 0 182ede9beda3f112152c8e76a8c04214
+
+% 1 1 0 05fd47d94d23204e05061422fe667204
+
+@ 0 4 0 1073a1592680d8381125e9545c6b75b6
++ entry .presume   wartość albo `Default` danego typu, jeśli jej brak
++     `optional.presume` to `optional.or(default)` dla `value` z instancją `Default`:
++     pusty tekst, zero, pusta lista. Typu bez `Default` nie można domniemać, co
++     jest błędem kompilacji, a nie niespodzianką w czasie wykonania.
+
+% 2 1 0 01d6f47bb02c0f0f0d9215cff7e65386
+
+% 3 1 0 154c77a74fa292b301f9ba544823c30d
+
+% 5 1 0 1f190016da824a440c81166f24f599e6
+
+% 0 1 0 1699d8db09c995cc0b631868c525cee1
+
+% 1 1 0 0ae2ad924494b6a11e7b5f630e3a75de
+
+@ 0 4 0 0ba7ef6999aff7621b8d5130c0afa8c6
++ entry .option   wartość jako `Option`, na granicy z kodem posługującym się `Option`
++     `optional.option` to `Some(value)` lub `None`. Konwersja jest przeznaczona na skraj
++     programu – bibliotekę, która zwraca lub przyjmuje `Option` – a `optional` konwertuje z powrotem;
++     wnętrze programu Soundness posługuje się wyłącznie `Optional`.
+
+@ 0 3 0 1f4545426cec296c1349dbbd76479d36
++ entry .javaOptional   wartość jako `java.util.Optional`, dla API Javy
++     `optional.javaOptional` to `java.util.Optional.of(value)` lub `java.util.Optional.empty`;
++     `optional` na `java.util.Optional` konwertuje z powrotem.
+
+@ 0 5 0 0bf0ed8a9b2534a21bbef101d3d4fa15
++ entry .optional   `Option` lub `java.util.Optional` jako `Optional`
++     Dwa rozszerzenia mają tę nazwę: `option.optional` to wartość z `Some` albo `Unset`
++     dla `None`, a `javaOptional.optional` to samo dla `java.util.Optional`. Oba
++     są konwersjami granicznymi do wewnątrz; `option` i `javaOptional` to konwersje
++     na zewnątrz.
+
+% 2 1 0 05a1b8613ed372f712ae1ef7ebb1afe6
+
+% 3 1 0 1caf706b2470b8b304465848c900e576
+
+% 0 1 0 0918ac854f2391ed1e4a76fb228686dc
+
+% 0 1 0 0bf25de79db43ae50b418d3edcb99c5d
+
+% 1 1 0 049707706f6a5c821f762df5bcee71a9
+
+@ 0 4 0 1e7aba6988ce53ed1486824b526081f0
++ entry .unless   czyni wartość opcjonalną: `Unset`, gdy predykat jest spełniony
++     `value.unless(predicate)` to `Unset`, jeśli `predicate(value)` jest spełniony (lub, w przeciążeniu
++     przyjmującym `Boolean`, jeśli warunek jest prawdziwy), a w przeciwnym razie `value`. Warunek wskazuje
++     przypadek do *odrzucenia*.
+
+% 2 1 0 01d5c7ba1a66cdca05a842925f138f27
+
+% 3 1 0 03a786a26e45b308071163558961beef
+
+% 0 1 0 1c0cff94d43c0b190a4aaf040c3e9411
+
+% 0 1 0 1341a6fe1f5d5fc3045f14fa06d38179
+
+% 0 1 0 0592a38b0a91d56e189db32a1f2224d3
+
+% 1 1 0 1253b03de9931645109f3b27cfc94311
+
+@ 0 3 0 0c32b022741488c81ce4b20a7a4ea465
++ entry .puncture   czyni wartość opcjonalną: `Unset`, gdy jest równa jednej określonej wartości
++     `value.puncture(point)` to `Unset`, gdy `value == point`, a w przeciwnym razie `value`, dla
++     wartości wartowniczych, których API używa na oznaczenie braku – pustego tekstu, `-1`, `0`:
+
+% 2 1 0 11c15f8f013817721c638f0403f299a6
+
+% 3 1 0 1a28160f4838bba8197b8b1d5732b16c
+
+% 0 1 0 0ba500c57ef7f1290b4a4e487c162a92
+
+% 1 1 0 1b01e82e5989ff581cc9db37b537e073
+
+@ 0 5 0 1e95a246740642da08b5a2d3ae60ac10
++ entry .only   zachowuje wartość tylko tam, gdzie funkcja częściowa jest określona, stosując ją
++     `value.only { case pattern => result }` to `result`, gdy funkcja częściowa jest
++     określona w `value`, a w przeciwnym razie `Unset`: filtr i przekształcenie w jednym dopasowaniu.
++     Funkcja częściowa może przechwytywać zdolność (ekstraktor zgłaszający błąd
++     przechwytuje swoją `Tactic`), więc jest przyjmowana jako wartość przechwytująca.
+
+% 2 1 0 140a74f5448aba1d1aa1a61ef5aa7451
+
+% 3 1 0 06c9e65c5af499c00e7c2ee928902616
+
+% 0 1 0 1c52ea8c8e3416080e601a2b16a65de6
+
+% 1 1 0 1e21451aa471fcd70ca0144919301faa
+
+@ 0 4 0 0b0a05015b8447331c6c1b019ac197e0
++ entry .per   stosuje funkcję do wartości tylko wtedy, gdy opcjonalny drugi argument jest obecny
++     `value.per(optional)(lambda)` to `lambda(value, present)`, gdy `optional` jest obecne,
++     a niezmienione `value`, gdy go brak: kształt do stosowania opcjonalnego ustawienia do
++     budowniczego, `element.per(start)(_.start = _)`.
+
+@ 0 7 0 07858f8200bad89d09a2dee715e48971
++ entry .compact   obecne elementy kolekcji lub iteratora wartości `Optional`
++     `collection.compact` odrzuca każde `Unset` i daje obecne wartości, odbudowane w
++     kształcie samej kolekcji: `List[Optional[Text]]` kompaktuje się do `List[Text]`, `Set` do
++     `Set`. Działa na dowolnej kolekcji `Traversable`; przeciążenie dla `Iterator[Optional[value]]^`
++     z `murmuration`
++     konsumuje iterator i daje `Iterator[value]^`, który pomija nieobecne elementy w miarę
++     postępu. Typem wyniku jest typ elementu z usuniętą opcjonalnością.
+
+% 2 1 0 185a04424ea9be0b070cae84281630b4
+
+% 3 1 0 16381a3ed6938788075798393d530006
+
+% 0 1 0 02e3dec0b60b162617c4b60051f091aa
+
+% 1 1 0 01d93752c2b9d65f0d10fc41cd7f6193
+
+@ 0 4 0 17c73ca90c208f651caa579a7d44a06c
++ entry .entire   cała kolekcja, jeśli każdy element jest obecny, albo `Unset`
++     `collection.entire` działa na zasadzie wszystko albo nic: `Optional` kolekcji, w jej własnym kształcie,
++     wszystkich elementów, gdy żaden nie jest `Unset`, i `Unset`, jeśli którykolwiek jest. Jedno przejście sprawdzające obecność,
++     z odpowiedzią zapisaną w typie wyniku, podczas gdy `compact` po cichu pominąłby luki.
+
+@ 0 3 0 0cb8dbc1a27ef7751cc182c7a861d41f
++ entry .default   wartość `Default` danego typu, przywołana: `default[Text]` to `t""`
++     `default[value]` to `summon[Default[value]]()`, wartość, do której typ wraca w razie braku.
++     `presume` używa tej samej instancji dla nieobecnego `Optional`.
+
+@ 0 7 0 1209bf6be3af628f1fb4b9170b9954dd
++ entry .optimizable   oznacza blok, któremu `or` może bezpośrednio dostarczyć wartość rezerwową
++     `optimizable[value] { default => body }` buduje `Optional[value]` z lambdy,
++     która otrzymuje wartość rezerwową i początkowo jest stosowana do `Unset`. Gdy wynik jest
++     natychmiast konsumowany przez `or(fallback)`, makro `or` przepisuje aplikację tak,
++     że do lambdy przekazywane jest zamiast tego `fallback` i nie jest budowane żadne pośrednie `Optional`:
++     indeksowane `apply` z concordance używa go, aby `xs(index).or(fallback)` odczytywało
++     slot z wartością rezerwową pod ręką. Kod biblioteczny; program rzadko go potrzebuje.
+
+@ 0 5 0 0a5273359fc9400013b4813c173aa269
++ entry .invite   instancja typu, jeśli jest w zasięgu, albo `Unset`
++     `invite[entity]` to przywołanie `transparent inline`, które daje given typu
++     `entity`, gdy jest dostępny, a w przeciwnym razie `Unset`, podczas gdy `summon` by się nie
++     skompilowało. Dla opcjonalnej zdolności – loggera, kontekstu diagnostyki – której metoda
++     używa, jeśli jest, a bez której się obywa, jeśli jej nie ma.
+
+@ 0 1 0 0ebad75d57717f1b19a47e91868c68d7
++ entry .Default   wartość, do której typ wraca w razie braku, używana przez `presume` i `default`
+
+% 1 1 0 1518a7c7e5d1b73412d931cbeaf981a3
+
+@ 0 5 0 1c6052c6b9f801b80e595c54cbae0b0f
++       `Default[value]` to thunk przekazywany przez nazwę, `() => value`, więc wartość domyślna, której
++       obliczenie jest kosztowne, jest obliczana tylko tam, gdzie się jej używa. Instancje istnieją w
++       obiekcie towarzyszącym dla typów z oczywistym zerem – `Int`, `Long`, `Text`, `String`,
++       `List`, `Set`, `Sequence` – oraz dla każdego typu singletonowego z `ValueOf`; typ
++       deklaruje własną, definiując ją:
+
+% 2 1 0 0f05661f94fee13c0a2cbc956b3f2ffd
+
+% 3 1 0 056ac322345efad8105cf09d74a45d04
+
+% 0 1 0 1bbc976b14be7b890cead1b7da3c29cd
+
+% 0 1 0 160a122ff13371911c494fcd5593b217
+
+% 0 1 0 1c52fbca1fc1cfc3181dfa9f787e8f20
+
+% 0 1 0 186a3210d268bb5b184ded45f18c051f
+
+% 0 1 0 1fbb9c2dbb616d711da7ef2d1c0ad58e
+
+% 1 1 0 10bbb8eb1b45fbc818455a6180b759af
+
+@ 0 3 0 0ad25d6b8193b2df14f07a69b2e34a7d
++       `Default` jest kowariantny i czysty (bezpośrednio `scala.caps.Pure`, ponieważ jest
++       parametryzowany, a nie wybierany przez składową `Self`) oraz `Findable`,
++       czyli jest oznaczony znacznikiem beneficence dla typu, którego wartości są dostarczane kontekstowo.
+
+% 0 1 0 1ea1a6e4fb34bf8218bbad81936b4555
+
+% 0 1 0 14dbd22273c2a9b01e4e9abb10f7d318
+
+@ 0 2 0 0ce2e101ea4198021302bd4e7033282a
++   entry .apply   tworzy `Default` z wartości przekazywanej przez nazwę: `Default(Volume(0))`
++       Argument to czysty thunk przekazywany przez nazwę (`-> value`), obliczany przy każdym użyciu.
+
+% 0 1 0 0647daa2550cb75204ab3fbb34cde00c
+
+% 0 1 0 050309b61ae35b6c015849b5207337b3
+
+@ 0 4 0 1079248b113a25810e9f6279292c87f9
++       Given dla `Long`, nazwany `default` zamiast `long`.
++   entry .singleton   `Default[value]` dla dowolnego typu singletonowego z `ValueOf`: jego wartość
++   entry .text   `Default[Text]`: pusty tekst
++   entry .string   `Default[String]`: pusty napis
+
+% 0 1 0 102c1a09c4551c2d17849fc6f3e27fe8
+
+@ 0 3 0 1d2940aed3f1e2c0014fd0b5f27bac7f
++   entry .set   `Default[Set[element]]`: pusty zbiór
++   entry .sequence   `Default[Sequence[element]]`: pusta sekwencja
++   entry #apply   wartość domyślna, obliczana przy każdym wywołaniu
+
+@ 0 1 0 1eab32917668c48816287297f81c8081
++ entry .Optionality   dowód, że typ jest `Optional`, wymagany przez każdy kombinator
+
+% 1 1 0 030b4530c4f5f87f1f62e1360a033bfb
+
+@ 0 3 0 160afe817a15fb9d1c477570842041bb
++       `Optionality[value]` to zapieczętowany znacznik, którego jedyny given, `.default`, jest makrem,
++       które się powodzi, gdy `Unset` jest podtypem `value`, a w przeciwnym razie kończy się błędem `↯/s.20.3`, _the
++       type `value` is not an `Optional`_. Rozszerzenia `or`, `let`, `lay`,
+
+% 0 1 0 15a46e1dac4142571fc0125c2d7c7b34
+
+@ 0 3 0 14e5e4283f150874018e6d894747bc27
++       `letGiven` i `layGiven` przyjmują `Optionality[optional.type]`, więc rozwiązują się tylko
++       na odbiorcy, którego typ statyczny dopuszcza `Unset`; zwykły `Text` nie ma `let`.
++       Sprawdzenie nic nie kosztuje w czasie wykonania: given to `null` rzutowany na znacznik.
+
+% 2 1 0 19ac4ceff8741bad115428bcb938fc6e
+
+% 3 1 0 083b2524432479001a0c89f381080d8e
+
+% 0 1 0 0384f0978648ccf918ed6f4f3607eb74
+
+% 0 1 0 1c6ab6eac2e6e08a1752d9639c41c0dc
+
+% 1 1 0 05185c5b4ae4262b0324b24234697f34
+
+@ 0 1 0 18459422c3530d770ca70bb54ffeac9c
++   entry .default   given w postaci makra: `Optionality[value]`, gdy `Unset <: value`
+
+@ 0 1 0 14b5154eec352ac10c9fcde3b3f66beb
++ entry .Concrete   dowód, że typ jest określony, a nie abstrakcyjny
+
+% 1 1 0 11451237575b31a515ebf41608ddab0c
+
+@ 0 6 0 1bf9fd7f9dd3018f1034dc30c9b08bd7
++       `self is Concrete` jest wytwarzane przez given inline `.concrete`, makro, które
++       się powodzi, gdy `self` nie jest typem abstrakcyjnym, a w przeciwnym razie kończy się błędem `↯/s.20.5`,
++       _type `self` is abstract_. Metoda generyczna przyjmująca `Optional[value]` żąda
++       `value: Concrete`, ponieważ płaska unia jest jednoznaczna tylko wtedy, gdy obie składowe są
++       znane – abstrakcyjne `value` mogłoby później zostać zinstancjonowane jako typ już opcjonalny,
++       łącząc dwa braki, które miały być różne:
+
+% 2 1 0 066dab495e5b784703a90341fe220c85
+
+% 3 1 0 1f37dfaf14e979d00282b768d9aa205e
+
+% 0 1 0 08fd9ead4cf8754b167c88b6c1f8ac99
+
+% 0 1 0 14c5e020376d66d20570efe0e9b12620
+
+% 0 1 0 160dc59c15a49fd10c1b1065f6140182
+
+% 1 1 0 098380b7ddab547219f26657ef8e8f00
+
+@ 0 6 0 1a330372f6bd74df02527fb5a0dfafe4
++       Wewnątrz metody `inline` sprawdzenie jest odraczane do miejsca rozwinięcia, gdzie
++       parametr typu jest konkretny, więc `inline def f[value: Concrete]` się kompiluje, a każde
++       jej wywołanie jest sprawdzane. `Concrete.apply[self]()` tworzy instancję ręcznie, dla
++       makra, które samo ustaliło ten fakt.
++   entry .concrete   given w postaci makra: `typeRef is Concrete`, gdy typ nie jest abstrakcyjny
++   entry .apply   instancja przez stwierdzenie: `Concrete[self]()`
+
+@ 0 1 0 0818cde795ab805b026c92e517cb0b78
++ entry .Distinct   dowód, że typ nie jest składową unii: `self is Distinct from union`
+
+% 1 1 0 0fd95e598f3fffe30cdb0b4351510303
+
+@ 0 8 0 07587628a9e86c970ed74de238f24d2d
++       `typeRef is Distinct from otherType` jest wytwarzane przez given inline `.distinct`,
++       makro, które najpierw wymaga, by `typeRef` było `Concrete` (w przeciwnym razie błąd `↯/s.20.5`), a następnie
++       kończy się błędem `↯/s.20.2`, _type `typeRef` cannot be proven distinct from `otherType`_,
++       gdy `typeRef` jest podtypem `otherType`. To sprawdzenie trzyma `Unset` z dala
++       od typu wartości i pozwala API przyjmować „jeden lub kilka” bez niejednoznaczności:
++       `many[entity: Distinct from List[Any]](value: entity | List[entity])` z caduceus
++       potrafi odróżnić pojedynczy element od ich listy tylko dlatego, że udowodniono, iż `entity`
++       samo nie jest listą.
+
+% 2 1 0 1f5a0faad1e35dd01ada893c97157c65
+
+% 3 1 0 1dbfca172c73bcbe13ddc3aaf9147de4
+
+% 0 1 0 0d2c76436f2d93311fd8b53ae68b92d9
+
+% 0 1 0 17e1c637d7a9092511d3de023989900f
+
+% 0 1 0 0f68ebce9226a3d61613366643f92336
+
+% 1 1 0 16aa7662aefe7d9a0f884b697f5c3311
+
+@ 0 4 0 023b7678e77bd8680e7a6569c92e6af9
++       `Distinct` rozszerza `Original`, więc drugi typ jest jego `Origin` i nazywa się go za pomocą
++       `from`. `Distinct.apply[self, origin]()` tworzy instancję przez stwierdzenie.
++   entry .distinct   given w postaci makra: `typeRef is Distinct from otherType`, chyba że `typeRef <: otherType`
++   entry .apply   instancja przez stwierdzenie: `Distinct[self, origin]()`
+
+@ 0 1 0 144310bd7fcb6e97119074f91e4f6d53
++ entry .Mandatable   nieopcjonalny typ wartości obecnej: `self is Mandatable to result`
+
+% 1 1 0 1455b280f42ceaf419eeabf90b124c27
+
+@ 0 6 0 1c43260ae2bcf534136cdce9130ad9ba
++       `typeRef is Mandatable` jest wytwarzane przez given transparent inline `.mandatable`,
++       makro, które usuwa każde `Unset` z typu unii i zapisuje to, co zostaje, jako swój
++       `#Result`: `Optional[Text] is Mandatable to Text`. Typ bez `Unset` kończy się
++       błędem `↯/s.20.1`, _the value is not an `Optional`_. Kod derywacji używa go, by znaleźć
++       typ do zakodowania lub przedstawienia dla pola opcjonalnego – koder CBOR z breviloquence i
++       derywowany `Inspectable` przyjmują `[inner <: value, value >: Unset.type: Mandatable to
+
+% 0 1 0 174ee418ae32ef9b1fe592d09fac8b22
+
+@ 0 3 0 0694a5c273fd6629144490756bbc58b2
++   entry .mandatable   given w postaci makra: `typeRef is Mandatable to result`, z usuniętym `Unset`
++   entry .apply   instancja przez stwierdzenie: `Mandatable[self, result]()`
++   entry #Result   typ z usuniętą opcjonalnością; podtyp `Self`
+
+@ 0 1 0 0c19e489ea590a080b3feb85cbcb19c2
++ entry .Extractor   ekstraktor wzorca, który odpowiada za pomocą `Optional`
+
+% 1 1 0 1533a26ba143ecc507cab56923676c94
+
+@ 0 4 0 0bec58486b20617a1a510b66e5d17665
++       Trait dla obiektu przeznaczonego do użycia we wzorcach `case Name(value) =>`: należy zaimplementować
++       `#extract`, zwracające `Optional[extraction]`, a `#unapply` jest z niego wyprowadzane jako
++       `Option`, którego wymaga mechanizm dopasowania do wzorca. `Uuid` i `Otf` z phoenicia są
++       `Extractor[Text, …]`, więc `case Uuid(uuid) =>` dopasowuje tekst, który się jako taki parsuje.
+
+% 2 1 0 11539e8998e5fa4c1a3a74685ee00e37
+
+% 3 1 0 164498c934028bf80f2f6cffc123edd1
+
+% 0 1 0 017de0490f44109109293f73b9b3aed9
+
+% 0 1 0 16f618a05cc8c0ee0c43a8a089b5d211
+
+% 0 1 0 1debc5e66369178d1357370fc9604759
+
+% 0 1 0 0e64903546a6e847148126ef33687292
+
+% 0 1 0 0d8078fa6934c44f0d12cb4d1071bb21
+
+% 1 1 0 0e7c902307a4aecd01d431a42f4ff77c
+
+@ 0 2 0 0537c8408a5f56d505e55f566d7170c1
++   entry #extract   ekstrakcja albo `Unset`, jeśli wartość dopasowywana nie pasuje
++   entry #unapply   `extract(value).option`, dla mechanizmu dopasowania do wzorca
+
+@ 0 10 0 02309896c3e7571c1331a4fd2bf89762
++ entry .Unsafe   token zdolności, który bramkuje operacje omijające gwarancję bezpieczeństwa
++     Metoda wykonująca niesprawdzaną operację – parsowanie literału, który kompilator
++     już zweryfikował, interpolację, której części sprawdziło makro – przyjmuje parametr
++     `(using Unsafe)` i nazywa się `unsafe…`; wywołujący dostarcza token
++     przez blok `unsafely` z contingency lub przekazuje `Unsafe` jawnie. `Unsafe` to
++     zarówno zapieczętowany trait, jak i jego jedyna wartość obiektowa. Jest prawdziwą wartością, a nie
++     wartością `erased`, ponieważ backend Scala.js nie potrafi skompilować domknięcia nad wymazanym
++     parametrem, ale parametr `using erased Unsafe` nadal go wymazuje w miejscach wywołania.
++     Token jest deklaracją, którą łatwo wyszukać grepem, ograniczoną do operacji, które go potrzebują; metoda
++     powinna go przyjmować tylko tam, gdzie jej własne ciało rzeczywiście polega na nieudowodnionej własności.
+
+@ 0 1 0 13b90761e2e31ff818eab13349c483a5
++ entry .internal   implementacje makr stojące za dowodami i zoptymalizowanym `or`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 9 0 19db3199a65be2b40583cbc14a2e1f3a
++       Nie do bezpośredniego użytku. `check[value]` to makro `Optionality` i `Optional.check`;
++       `concrete`, `distinct` i `mandatable` wytwarzają dowody `Concrete`, `Distinct` i
++       `Mandatable`; a `optimizeOr` to makro stojące za `or`, które przepisuje odbiorcę
++       `optimizable` tak, by wartość rezerwowa trafiała do niego bezpośrednio.
++   entry .check   makro `Optionality[value]`: powodzi się, gdy `Unset <: value`, w przeciwnym razie błąd `↯/s.20.3`
++   entry .concrete   makro `typeRef is Concrete`: kończy się błędem `↯/s.20.5` na typie abstrakcyjnym
++   entry .distinct   makro `typeRef is Distinct from union`: kończy się błędem `↯/s.20.2` na podtypie
++   entry .mandatable   makro `typeRef is Mandatable`: usuwa `Unset` albo błąd `↯/s.20.1`, jeśli go nie ma
++   entry .optimizeOr   makro stojące za `or`: rozwija wartość rezerwową w odbiorcy `optimizable`

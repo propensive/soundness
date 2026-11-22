@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 0c21520be20ec02f153aaebf19bbf61b
+
+@ 0 2 0 01de378e79b9e6e20786ca882372489d
++ 当 JSON 值不满足用于验证它的 schema 时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1a1a9257451335b51f72027c10e57f4e
++ Jacinta 的 `Json.Provider` 在读取记录的字段时依据 schema 验证 JSON 值，并通过读取该字段的代码的 `Tactic`，以这一错误报告每处不匹配，以便进行验证的读取方能够收集全部不匹配。
++ 消息为 `the JSON was not valid according to the schema because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 14 0 08d296b9302f8492128252de64ce0b1e
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.106.3.1`  `JsonType`  值的类型与 schema 要求的不符。  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  提供 schema 所要求类型的值；如果该类型确实可以灵活多变，则放宽 schema。
++ row  `↯/s.106.3.2`  `MissingValue`  JSON 中缺少一个必需的值。在已知时，原因会指明缺失的字段。  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  添加缺失的字段，或在 schema 中将其标记为可选。
++ row  `↯/s.106.3.3`  `IntOutOfRange`  整数值超出 schema 允许的 `minimum`/`maximum`。由 `"integer!"` 提供器类型抛出；缺失的界限是 `Unset`，而不是哨兵值。  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  把值限制在 schema 允许的范围内。
++ row  `↯/s.106.3.4`  `PatternMismatch`  字符串值与 schema 的 `pattern` 中的正则表达式不匹配。  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  调整该值以匹配 schema 的模式，或放宽该模式。
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  数字超出 schema 声明的 `minimum`/`maximum`（或排他界限）。由 `"number!"` 提供器类型抛出。  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  把值限制在 schema 允许的范围内。
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  字符串的长度超出 schema 的 `minLength`/`maxLength`。由 `"string!"` 提供器类型抛出。  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  缩短或加长该值以符合 schema。
++ row  `↯/s.106.3.7`  `NotPermitted`  字符串不是 schema 的 `enum` 值之一（或不等于其 `const`）。由 `"enum"` 提供器类型抛出。  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  使用所列值之一，或扩展 schema 的 `enum`。
++ row  `↯/s.106.3.8`  `UnexpectedKind`  值所属的 JSON 种类不被其联合（`anyOf`、`oneOf`，或列出多个类型的 `type`）的任何备选项接受。  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  给出 schema 所列种类之一的值。
++ row  `↯/s.106.3.9`  `Unparsable`  字符串的文本对其 `format` 无效：无法解析的 `json-pointer` 或 `regex`。  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  更正该值，使其能按其格式解析。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1eacee630aefe77708d9951599b52b0f
++ - 源代码：`lib/jacinta/src/core/jacinta.Json4.scala`

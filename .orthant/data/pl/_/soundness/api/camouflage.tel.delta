@@ -1,0 +1,167 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1043d4992944c3a107bdcffdfc6eb13b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 04ebf6e0cf019db21fb412f8f8051a21
++ info   pamięci podręczne: ograniczona mapa typu LRU i pojedyncza wartość zapamiętywana z czasem życia
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 15a45f13b8c5a7890dc599b80f856dd4
++     _Camouflage_ dostarcza dwóch kształtów, które zwykle przybiera pamięć podręczna, tak aby
++     decyzje, które każda ręcznie pisana pamięć podręczna podejmuje niejawnie – kiedy usuwać
++     wpisy, co zrobić, gdy dwa wątki chcą tej samej brakującej wartości, i kiedy wartość w
++     pamięci jest zbyt stara, by jej ufać – podejmował typ.
+
+@ 0 4 0 135ad60909c56beb176ff8cc696d1af2
++     `LruCache` przechowuje do ustalonej liczby wpisów z kluczami, usuwając najdawniej używany.
++     `Cache` zapamiętuje jedną wartość, opcjonalnie na ograniczony czas życia, i oblicza ją pod
++     blokadą, więc równoczesne wywołania współdzielą jeden wynik, zamiast tłoczyć się przy jego
++     obliczaniu. W obu przypadkach obliczenie przekazuje się przez nazwę i uruchamia się ono
++     tylko przy chybieniu.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0b1bcecab61ce42205c7944547b54ddd
+
+% 0 1 0 05c9123cea43a11b148cba3ceb338234
+
+% 0 1 0 15e14f970c8613db0a76e47b59908ea7
+
+% 0 1 0 03019a6eba90a1a50e8e057bbf7e6477
+
+% 0 1 0 08eaff9f81cfc4b00e678aaafd94b8f5
+
+% 0 1 0 19415459bd1338f71254dc0166fc2e51
+
+% 0 1 0 0f55897c2d40313b173edc0ec8d0c08e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 04fea183e416f67d1e624bdbef706e73
++     Biblioteka ma jeden zbiór źródeł, `camouflage.core`, a wszystko jest eksportowane do
++     modułu zbiorczego `soundness`.
+
+% 0 1 0 0abc09b7e5376fc11d7cd5c2c8de0bce
+
+% 0 1 0 12075e465b2185ce01c91cbd8de9605f
+
+@ 0 1 0 14ab21f2bc201eb71bdfb44c1d4a2f24
++ entry .LruCache   ograniczona pamięć podręczna z kluczami, która po zapełnieniu usuwa najdawniej używany wpis
+
+% 1 1 0 05dc6b7ebe4c80b21fc18e9d2d0a5353
+
+@ 0 4 0 199aaaa24236d70d12886378ec608c95
++       `LruCache[Key, Value](maxSize)` przechowuje do `maxSize` wpisów. Zastosowanie jej do
++       klucza i obliczenia, `cache(key)(computation)`, zwraca wartość z pamięci, jeśli klucz
++       jest obecny, a w przeciwnym razie oblicza wartość, zapisuje wynik i usuwa najdawniej
++       używane wpisy, dopóki pamięć znów nie zmieści się w swoim rozmiarze.
+
+@ 0 2 0 0a14e8cdb02d44651f84a3fc70b32a3e
++       Odczyt lub zapis wpisu oznacza go jako niedawno używany, więc przetrwają te wpisy, do
++       których program wciąż wraca:
+
+% 2 1 0 0f22a2a9c1fd3e71133ef626ec3daae8
+
+% 3 1 0 09d5bdf4697176a9145561e9cd012bfd
+
+% 5 1 0 1718b2b3e359c21d053be8f65a4d1634
+
+% 6 1 0 16b597839e28f1d4050c19a8bf96f08c
+
+% 0 1 0 1343d58e753d753c0c8419675046645f
+
+% 0 1 0 0ccc0c5b4eb7de6714adc5dbedc385f4
+
+% 0 1 0 0ddb556550837b5405d7ceab812d8825
+
+% 0 1 0 010cc26b34174e6e1088da07ce8c91c8
+
+% 0 1 0 00db33f551dfa7000e6e8121b5d7a594
+
+% 0 1 0 0dfe8aaf5a22e78f15c4ba792e6c3ac5
+
+% 1 1 0 04ecf1da413589ec041b0dee7d077d1e
+
+@ 0 2 0 0c007944816c71e307309ec89593b835
++       `LruCache` nie trzyma blokady: jest przeznaczona do używania przez jeden wątek naraz
++       albo za blokadą wywołującego.
+
+% 0 1 0 18ffb6d36f56335a13fbec508d80c960
+
+@ 0 9 0 12502bb08f88ca170360f80443ef9a85
++   entry #apply   wartość dla klucza: ta z pamięci albo wynik obliczenia, zapisany
++       Obliczenie przekazuje się przez nazwę i wykonuje tylko przy chybieniu. Trafienie
++       oznacza wpis jako najświeżej używany; chybienie dodaje go jako najświeższy i usuwa
++       najdawniej używane wpisy ponad rozmiar pamięci.
++   entry #contains   czy pamięć przechowuje wartość dla klucza
++       Pyta, niczego nie obliczając i nie oznaczając wpisu jako niedawno używanego.
++   entry #remove   usuwa wpis klucza, jeśli jest obecny
++       Do unieważniania, gdy dane źródłowe się zmieniły i wiadomo, że wartość w pamięci jest
++       nieaktualna. Usunięcie nieobecnego klucza nic nie robi.
+
+% 2 1 0 0c5c617f6fb898f11515c2e352e45cfe
+
+% 3 1 0 12a60ae89d02a8d70c01006debea0684
+
+% 5 1 0 178211d04fb85cc0048e11a0c8189522
+
+% 6 1 0 09b640c51156f11e1bb024771eefdf59
+
+% 0 1 0 13516c29434a5f491f00dda5be29953c
+
+% 0 1 0 1b6ef3033cb3f8af0ed4e0d2bcbe729b
+
+% 1 1 0 1e71eab2c1a0f5981e7081f72b32b6ba
+
+@ 0 1 0 03624add4049ec54165e98a0e7879731
++ entry .Cache   pojedyncza zapamiętana wartość, obliczana raz pod blokadą i opcjonalnie wygasająca
+
+% 1 1 0 0133e663e05692c51743de0b7621e5e4
+
+@ 0 5 0 0c43912d86a6666c156e704da96f3f27
++       `Cache[Value]` przechowuje co najwyżej jedną wartość. `#establish` ją zwraca, obliczając
++       ją tylko wtedy, gdy żadnej nie ma albo przechowywana wygasła. Obliczenie wykonuje się
++       pod blokadą, więc gdy kilka wątków naraz prosi o brakującą lub wygasłą wartość, jeden ją
++       oblicza, a pozostałe otrzymują jego wynik: to tłok przy pamięci podręcznej, któremu goły
++       `lazy val` ze znacznikiem czasu nie potrafi zapobiec.
+
+% 2 1 0 1efcf7cb06c6b45d10ad996fe6286038
+
+% 3 1 0 150d695d01cf40201431bd509c1746d5
+
+% 0 1 0 08510d896ff9d98b1b5ddae155f38275
+
+% 0 1 0 1f07e039d02bb42316e17c4109e83204
+
+% 0 1 0 19ca7c5ed6c9f62c12efb642dadff1af
+
+% 0 1 0 0b018111d960f244111fcfe32f9c955f
+
+% 0 1 0 07bad33630ca28e412523298c75c28a4
+
+% 1 1 0 139dca28ecfb44ce070cc48df05e05c8
+
+@ 0 1 0 08601f10595b1e9916315697a724a018
++       Typ wartości podaje się jako typ oczekiwany albo jako argument typu,
+
+% 0 1 0 149a250b048ba7af1f686ece39cb2812
+
+% 0 1 0 0cde7b4f6f4eab52053cb83da422b009
+
+@ 0 8 0 1e26a8372843ac18151fbf541562add3
++   entry .apply   pamięć podręczna z czasem życia albo bez niego, `Cache[Value]()`, która przechowuje wartość na zawsze
++       Czasem życia może być dowolny czas trwania, który jest
++       `Abstractable across Durations to Long` – na przykład `Quantity` sekund z aviation, po
++       zaimportowaniu `durationInterfaces.aviationDuration` – odczytywany z dokładnością do
++       milisekundy. Czas życia mierzy się od chwili ostatniego obliczenia wartości, a nie od
++       jej ostatniego odczytu.
++   entry #establish   wartość z pamięci, obliczona przez podany blok, jeśli jej nie ma lub wygasła
++       Blok przekazuje się przez nazwę i wykonuje tylko w razie potrzeby, przy trzymanej
++       blokadzie pamięci; inne wywołania czekają na niego i otrzymują tę samą wartość.

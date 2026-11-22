@@ -1,0 +1,2104 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 169b2a1ae1d5c18b03ad74d4c0a0e9dc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e98b7fa9732f6af0768624d45037ef7
++ info   TCP、UDP、Unix 域和 TLS 套接字，以及一个 DNS 解析器，统一在一个与传输层无关的 API 之后
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 023b4652b4d41a5d1247b477bab32acd
++     _Coaxial_ 是这样一种套接字编程：传输方式由**套接字值的类型**决定，而不是由不同的 API 决定。
++     服务 `Tcp.Port` 和服务 `Uds` 用的是同一个 `listen`；连接 `Endpoint[Tcp.Port]`、`Uds` 和 `SecureEndpoint` 用的是同样的 `transmit`、`react` 和 `duplex`。
++     这些操作由类型类驱动：`Bindable` 用于任何可以提供服务的东西，`Serviceable` 用于请求/响应客户端，`Connectable` 用于持久的双向 `Duplex`，`Routable` 用于发后即忘的数据报，`Subscribable` 用于多播组；各种传输方式的区别仅在于存在哪些实例。
+
+@ 0 7 0 0979e260dbef75630e07038d1682b9a0
++     服务器是一种**借出操作**：`listen` 绑定套接字，为每个到达的连接在其自己的受监督任务上运行一个处理函数，把运行中的服务器以 `Socket.Service` 的形式借给一个代码块，并在代码块结束时停止它。
++     客户端是一条发出的消息和一个传回的回复流（`transmit`），一个基于会话的状态机（`react`、`exchange`），或一个借给代码块的 `Duplex`（`duplex`，或 `session` 借出操作）。
++     在线路上传输的是值，而不是字节：`Transmissible` 说明消息如何变成字节，`Ingressive` 说明字节如何变成消息。
+
+% 2 1 0 12bcdf7995cd29760ac262a10df5d170
+
+% 3 1 0 1620d3a5a9bc18111f3fdb93bcbb2693
+
+% 4 1 0 1356cee9277c99671b68e97965b16e09
+
+% 5 1 0 0e588b423ac3f5a001a2dc87a82a23e1
+
+% 6 1 0 07797a54ea9d43c41519b89581d1464c
+
+% 7 1 0 0313d3dcc332f1cb0c702cd628f535e8
+
+% 8 1 0 058aca1de872833e1da136f04853f402
+
+% 9 1 0 0a06b2e4779d71b80d9629e48613a3ed
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 1 1 0 16744b932deeb87a0ba9c36f7ff81f01
+
+% 3 1 0 1b8087c42b458f4f183a5d7640c6762d
+
+% 0 1 0 10b911416a79b75e13b68882700753f5
+
+% 0 1 0 05f6da11aedb71f115e12f446505ce84
+
+% 0 1 0 15f4acc1f6ecefcb18e763866dd81ba4
+
+% 0 1 0 1cba195f614d2b9c13cba1ac926f51f7
+
+% 0 1 0 006aa579392aec3f11de2eb4ee04eb84
+
+% 1 1 0 109e92208b20d9570a0709cfb9caa480
+
+@ 0 7 0 00112d21f4f471e60ba0dfd12cc3dfa5
++     API 中没有任何地方指名平台。
++     每种角色所需的原语操作（绑定和接受、连接和会话、接收和回复、分派数据报、加入组）都汇集在 `Socket.Backend` 中，通过从 `socketBackends` 包按名称导入一个 given 来选定（`import socketBackends.javaBaseSockets`；`import coaxial.*` 和 `import soundness.*` 不会引入任何后端）。
++     套接字选项同样是 given，从 `socketOptions` 按名称导入，并按连接种类收集（`Every[Socket.Option.Tcp]`、`.Udp`、`.Domain`），因此程序的套接字方针只需陈述一次，而不必在每次调用时陈述。
+
+@ 0 1 0 18b5259a85e28e15163e759bc4f3e220
++     这个库按各平台的能力拆分：
+
+@ 0 21 0 0255428774fb885718d3efafa8092c82
++     - `coaxial.core`：整个与平台无关的 API：`Socket`（其 `Backend`、`Option`、`Event`、`Service` 和 `Error`）、`Bind`，类型类 `Bindable`、`Connectable`、`Routable`、`Serviceable`、`Duplexable` 和 `Subscribable`，`Duplex`、`Uds`、`Multicast`、`Packet`、`UdpResponse`、`Control`、`Transmitter`、`Transmissible`、`Ingressive`，借出操作 `listen`、`listenOn`、`subscribe`、`transmit`、`react`、`exchange` 和 `duplex`，`connectableSessional` given 以及 `socketOptions` 包。
++       只要存在后端，它就能编译。
++     - `coaxial.jvm`：基于 `java.net` 和 `java.nio.channels` 的 `socketBackends.javaBaseSockets`（TCP、UDP、多播和 Unix 域套接字），TLS 层（`Tls`、`TlsAcceptance`、`Trust`，用于客户端的 `SecureEndpoint` 和用于服务器的 `SecurePort`，支持 ALPN 和双向认证），原始流 `Connection` 及其 `listenConnections` 借出操作，以及 `streamsDuplex`。
++     - `coaxial.native`（Scala Native）：`socketBackends.scalaNativeSockets`（TCP、UDP 和多播；Unix 域套接字会抛出 `Unsupported`），以及通过 OpenSSL 的 C API 实现的 `Tls` 和 `SecureEndpoint`：一个带验证但不支持 ALPN 的 TLS 客户端，没有服务器端 TLS，也没有 `TlsAcceptance`/`Trust`。
++     - `coaxial.wasi`（一个 Wasm 组件）：基于 `wasi:sockets` 的 `socketBackends.wasiSockets`：只支持 TCP，只能连接 IPv4 字面地址，没有 UDP、多播、Unix 域套接字或 TLS；另外还有 `wasiApis.wasiSocketsApi` WIT 接口和 `WasiSocketsApi` 类型。
++     - `coaxial.dns`：`Endpoint[Udp.Port]` 上的 `query`：向名称服务器发送一条 DNS 消息并取得其应答，通过后端的一次性数据报交换完成。
+
+@ 0 1 0 19e4c38011f0ce371d0e5879fdf3d51d
++     各平台的后端支持的功能：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 1 0 026f6f4a83c9361815032cb42e654051
++     column  功能
+
+% 0 1 0 093dabe263e605940e4b308140f3b969
+
+% 0 1 0 1434589956cf1de40c484a3b2199fcd8
+
+% 0 1 0 18e48d50d04b8dbe0577372873c9d824
+
+@ 0 8 0 0f25d8eeb6491a6f18eca6fc46ab367d
++     row  TCP  支持  支持  仅限 IPv4 字面地址
++     row  UDP  支持  支持  不支持
++     row  多播  支持  支持  不支持
++     row  Unix 域套接字  支持  抛出 `Unsupported`  不支持
++     row  TLS 客户端  支持  支持，基于 OpenSSL  不支持
++     row  ALPN  支持  不支持  不支持
++     row  TLS 服务器  支持  不支持  不支持
++     row  `TlsAcceptance`、`Trust`  支持  不支持  不支持
+
+% 1 1 0 1b6d3652a7b8e5480d3be63bf0a5b04c
+
+@ 0 9 0 05a06ee194e1e10c1f1394a756f38269
++     错误有两种：绑定失败时抛出 `Bind.Error`（端口被占用、权限被拒绝、地址不可用、不支持），此后的一切失败都抛出 `Socket.Error`，其原因说明失败发生在接受连接、传输、关闭、TLS 握手、超时、连接、被拒绝、名称解析，还是不支持的套接字种类上。
++     每个建立连接的操作都需要一个 `Tactic[Socket.Error]`；`listen` 需要一个 `Tactic[Bind.Error]`；连接远程主机需要 `Online`（`import internetAccess.online`）；借出操作需要一个 `Monitor` 和一个 `Probate`（一个带有 `threads.platformThreads` 和 `probates.awaitProbate` 的 `supervise` 块），以及一个 `Socket.Event is Loggable`（`logging.silentLogging` 会丢弃这些事件）。
+
+@ 0 3 0 1d79799c23e8aadf1ad389ea0c9c92b9
++     一切都导出到 `soundness` 总括包，`socketBackends`、`socketOptions` 和 `wasiApis` 选择包与总括包自身的选择包合并，因此用户写 `import soundness.*`，然后按名称导入一个后端和所需的选项。
+
+% 0 1 0 0528b988050a4ea813c50e1cf8cd4b10
+
+% 0 1 0 1eb9bc1d372bcb8003d73b9b2a098378
+
+% 0 1 0 01754128fb7918841dfa84c2989a0a97
+
+% 0 1 0 1c0a1581b83867b804d93de753a459a0
+
+% 0 1 0 1cf1769ad2ab73d1080945b0a6170000
+
+% 0 1 0 1b5e8195df326c1d06574077fe013dcb
+
+% 0 1 0 028244423dcf4fd6019677c13d0ffc7a
+
+% 0 1 0 09ffcce2eba2843f1d3a9409bd7eeb23
+
+% 0 1 0 0aa2f38c967178d61625260547bc2eca
+
+% 0 1 0 00679c86796a28aa0c689f05ab4df169
+
+% 0 1 0 05fa953b885e55e819de1c9eb6cb223d
+
+% 0 1 0 158455b4d34483641f00ebe0f1684f80
+
+% 0 1 0 0b2e116958dfd4d20c5de332c04e5716
+
+% 0 1 0 08d6cc2d25c05fd0092f4f75f01294b3
+
+% 0 1 0 1e12612dd8b22e070692a84fb259d270
+
+% 0 1 0 12eedd73cb81202410fe0a2012255a5d
+
+@ 0 1 0 12b4e4e34f5c8283183070f4c14d6cf6
++ entry .listen   在一个代码块执行期间服务一个套接字：每个到达的连接一个处理函数，各自在自己的任务上
+
+% 1 1 0 1ce182667933786400392f1740739ee0
+
+@ 0 6 0 1d99b1b4d59f78cd10b298cc290d6db5
++       `socket.listen[input](handler)(block)` 绑定任意 `Bindable` 套接字（`Tcp.Port`、`Udp.Port`、`Uds`、`Multicast` 组，或在 JVM 上的 `SecurePort`），为每个到达的连接运行 `handler`，并把运行中的服务器以 `Socket.Service` 能力的形式借给 `block`。
++       无论代码块是正常返回还是抛出异常，服务器都会在代码块结束时停止，因此接受循环永远不会比需要它的代码活得更久（这就是 `listen` 是借出操作，而不是返回服务器的方法的原因）。
+
+@ 0 5 0 13c8ad3771e0886d173b6de1c31ff752
++       套接字类型通过 `Bindable#Input` 和 `Bindable#Output` 决定处理函数的形状：TCP 或 Unix 域处理函数是 `Duplex => Data`（从 `Duplex#source` 读取请求，返回完整的响应），UDP 处理函数是 `Packet => UdpResponse`（数据报及其发送者；回复或忽略），多播处理函数是 `Packet => Multicast.Reply`。
+
+% 2 1 0 1715ac5fe9e23ddb065b5e02f9d077c0
+
+% 3 1 0 0cc304303909935013d6cdaa62790444
+
+% 4 1 0 057400beea4ea1640860c893c974aef0
+
+% 5 1 0 1f53fd3148edf5280a91bed7ffba472d
+
+% 6 1 0 003b7d4484f1800e07100c8bbb26b8b4
+
+% 7 1 0 1987f9e01ee1f54915896f500fe40042
+
+% 8 1 0 1c5bb19ed995ad61081e1a34734fc479
+
+% 9 1 0 08e7343153a324c00bac16a0f692bb6a
+
+% 10 1 0 0b18819493f0e7d00984bd3a583e128c
+
+% 2 1 0 14f76170d7d8334f168754b39e27bdd2
+
+% 0 1 0 1c6b3473f47b49cd1cb55a09153add22
+
+% 0 1 0 09890beb4d8c777708f048ae5ac6bb6e
+
+% 0 1 0 0eb63b684ce8604606681f68af01c095
+
+% 1 1 0 13d9ccab43083a1405a35442e6e2f3a8
+
+% 2 1 0 06624c9aedf2381d005588375f85a0d8
+
+@ 0 9 0 1438417faef804fe03b7ec3a1ca75692
++       每个被接受的连接都由它自己的受监督 `async` 任务服务，因此各连接并发处理；处理函数失败、客户端断开或回复失败只会结束该连接的任务（连接总会被关闭），而接受循环继续运行，接受失败则跳过一次迭代。
++       这个借出操作需要一个 `Monitor` 和一个 `Probate`（一个 `supervise` 块），在套接字无法绑定时抛出 `Bind.Error`，并在启动时记录 `Socket.Event.Listening`，停止时记录 `Socket.Event.Closed`。
++       `listenOn` 是同一个借出操作，只是多了一个要绑定的本地网络接口。
++       类型参数是处理函数的响应类型（`listen[Data]`）：`input` 类型参数从套接字的 `Bindable` 推断。
+
+% 1 1 0 0e7650f622281d1814d4492ba59c6ff7
+
+% 0 1 0 1d16bf642a61aed01a2dd365263fc1d4
+
+% 0 1 0 1b3ff907536d003c0c3396321077cb50
+
+% 1 1 0 1cc33ef2019507590538d59dfd331452
+
+@ 0 8 0 0283f8c1aade471807dc6e04e981f96a
++ entry .listenOn   绑定到一个本地网络接口（按其 MAC 地址）的 `listen`
++     `socket.listenOn(interface)(handler)(block)` 就是带一个 `Optional[MacAddress]` 的 `listen`，该参数指明要绑定的接口（`Unset` 绑定所有接口，与 `listen` 相同）。
++     TCP 端口绑定到该接口的地址（接口有 IPv4 地址时使用它）；UDP 端口把该接口用于发出的多播；Unix 域套接字没有接口，会忽略这个参数。
++     不属于任何本地接口的地址会被忽略，套接字绑定到所有接口。
++     带接口的形式有自己的名称，因为默认参数无法与处理函数的路径依赖类型 `Input`/`Output` 结合使用。
+
+@ 0 1 0 104e774ae1a2746b0a5501dfe49e1a61
++ entry .subscribe   在一个代码块执行期间加入一个多播组，每个数据报一个处理函数
+
+% 1 1 0 0e7eb8d46c18efbb0e11541538c3982c
+
+@ 0 6 0 1f6a58018a9acf5d1a343fc39f9b0378
++       `group.subscribe(handler)(block)` 在每个已启用且支持多播的接口（回环接口除外）上加入一个 `Multicast` 组，为组投递的每个数据报运行 `handler`（各自在自己的任务上），并把一个 `Multicast.Subscription` 借给 `block`，它还可以*主动*向组发送消息：一则通告，一句告别。
++       在组上调用 `listen`（通过 `Multicast.bindable`）只能回复；这个借出操作用于同时也会先开口的成员，这正是 mDNS 及其他服务发现协议的形态。
+
+% 2 1 0 0eaec268d325b03d13b2924d3676e025
+
+% 3 1 0 0b9ea65fa38ca7af1268fecab9787587
+
+% 4 1 0 1a849cfe180fbb170757d6da62402665
+
+% 5 1 0 1b84174272e2c1d40f65b94735bdec27
+
+% 6 1 0 0d88f102b7af845e1543fb9edd4f9b3d
+
+% 7 1 0 0b8af50b47c408ff0942ad3ff87742ad
+
+% 8 1 0 042e66f40cd9e98e10444af876e12742
+
+% 9 1 0 08b2d2be33ae0eec16b072a603857dfc
+
+% 10 1 0 13754fc78220d437025938f6d030cc14
+
+% 0 1 0 1a211a56feabaa401f9f5c1b3d73ed54
+
+% 2 1 0 11fe78091468cbcd0b0f8aa57d994583
+
+% 0 1 0 17322001462b8c2e14c93bedca1cfa17
+
+% 0 1 0 0534dcbb6dd54e200b71412fd4a0f061
+
+% 0 1 0 0c11d9a9e63d755713f33fabd7912f7b
+
+% 1 1 0 1b1cc7ed8758472201b74e3fd3c2b875
+
+@ 0 9 0 021a38be52f2acbe0f640142b71f955e
++       处理函数的裁决是一个 `Multicast.Reply`：`Group(data)` 应答整个组（这是多播的常规做法，使每个成员都得知应答），`Unicast(data)` 只应答发送者，`Ignore` 什么也不做。
++       组的端口以地址复用和端口复用方式绑定，因此同一主机上的多个程序可以并列订阅。
++       代码块结束时，订阅退出该组；需要一个 `Monitor`、一个 `Probate` 和一个 `Socket.Event is Loggable`，端口无法绑定时抛出 `Bind.Error`。
++       在 Scala Native 上，发往组的消息按内核的默认多播路由只发送一次，而不是每个接口一次，并且不会应用 `MulticastLoop`/`MulticastHops` 选项；在 WASI 上没有多播。
+
+% 1 1 0 11c680fd89928a3003978de7d9179cf5
+
+% 1 1 0 098ab3ad4c1495e3136540815a5b6b5a
+
+% 0 1 0 14ba9efcf68ff0441871b2de828edbfa
+
+@ 0 1 0 14510f40c88557b6186761f3ff3038e9
++ entry .transmit   向端点发送一条消息：对 `Serviceable` 返回回复流，对 `Routable` 什么也不返回
+
+% 1 1 0 096411dbec74530b1daa3819b4a178ce
+
+@ 0 1 0 15f332f33893d55200e6356c5364910d
++       两个重载，按端点的类型类选择：
+
+@ 0 8 0 1f55bf93e04d9c8b105790ea3ae15339
++       - 对于 `Serviceable` 端点（`Endpoint[Tcp.Port]`、本地主机上的 `Tcp.Port` 或 `Uds`），`endpoint.transmit(message)` 建立连接，以流的方式发送序列化后的消息并半关闭其输出，然后以惰性的 `Stream[Data] over Credit` 返回响应，该流在对端半关闭时结束。
++         这个流借用连接，因此要在创建它的作用域内读取（或 `memoize`），并且 `Serviceable` given 需要一个 `Tactic[Truncation.Error]`，以应对中途失败的读取。
++       - 对于 `Routable` 端点（`Endpoint[Udp.Port]` 或 `Udp.Port`），它把消息作为单个数据报分派出去，并返回 `Unit`；不等待任何东西。
+
+% 2 1 0 1f67c8f1ddb9fea70317cbdaf48cbcd7
+
+% 3 1 0 12b30faeea89313102867581a59ff495
+
+% 4 1 0 07f32d7423aadec20c9d0f7bb359bcb9
+
+% 5 1 0 1540bac129c07b2515afb7035bc27d91
+
+% 6 1 0 1a213a9f0f82bc6107a786c70d922f96
+
+% 7 1 0 13e00f18b2a711751c06dd6d0b040fd3
+
+% 1 1 0 173a01f7c4eeaea104086f20e6e3aa28
+
+% 2 1 0 0f112784a32490981e2f13b023c9e74c
+
+% 0 1 0 1e1b911b4606b36a0cf462e20106cd26
+
+% 0 1 0 024e3a7cb9e83af90df9183924b79fd4
+
+% 1 1 0 12ec09edb63058c613610e4655b1e864
+
+@ 0 7 0 175af37e0c42eb55002ab767237d95af
++       任何 `Transmissible` 值都是消息：`Data`、`Text`（通过作用域内的 `Codepage`）、`Chain[Data]`，或任何 `Encodable in Text` 的值。
++       两个重载都需要一个 `Tactic[Socket.Error]`，在无法建立连接（`Dns`、`Refused`、`Timeout`、`Connect`）或传输失败时抛出；远程 TCP 端点还需要 `Online`。
++       每个重载都会记录 `Socket.Event.Connected`。
++       由于值丢弃会使任何结果都符合 `Unit`，当两个类型类都适用时，不能仅靠类型标注来选中 `Routable` 重载；UDP 端点只有 `Routable` 重载。
+
+% 1 1 0 01b0db4792b49ba70340bc33e3ee44df
+
+% 0 1 0 02ea66b645065d6b1b8d544e0497482f
+
+% 1 1 0 0ba7a993b7d8cabd019feb1033cdef32
+
+% 2 1 0 0f022faffdbf817102015758344ed0bc
+
+@ 0 1 0 112257f508e32a901d443d8e16ba12af
++ entry .react   以状态机的方式驱动客户端会话，每条入站消息对应一个 `Control`
+
+% 1 1 0 0c7594fee1a43326067e04483b9e8a9a
+
+@ 0 7 0 0ca1abcb97d1704419a7230f04221937
++       `endpoint.react(initialState)[message](handle)` 连接到一个 `Serviceable` 端点并运行一个循环：每条入站消息（响应流的一个填充窗口，通过 `message` 的 `Ingressive` 解码）都传给 `handle`，后者把当前状态视为上下文值，并以一个 `Control` 作答：`Continue(state)` 等待更多消息，`Reply(message, state)` 发送一个响应并等待，`Conclude(message, state)` 发送一个响应并停止，`Terminate` 停止。
++       返回最终状态，并且无论循环如何结束，连接都会被关闭。
+
+% 2 1 0 1c8bde89152a4f5a0ff65042900c1450
+
+% 3 1 0 1973877251473b7f12726b95eec122bc
+
+% 4 1 0 162891df052836900527086731c9e681
+
+% 5 1 0 033d648519882afd1846dbf565707275
+
+% 6 1 0 1951924614c3bab612dd5f513c7f47dc
+
+% 7 1 0 0ba919533f43e77d067b9aae2c1b056a
+
+% 1 1 0 09204c46771ff9d40df68d78a60e503e
+
+% 1 1 0 1e8df8b21f74db690d88e65730c9e5bf
+
+% 2 1 0 1f534ea32931c3910b59728a296264ba
+
+% 1 1 0 1c85e98d269ed6630244a320d43b6f42
+
+% 2 1 0 19be0f08774b6437184be9e88e1a671a
+
+% 0 1 0 034a8bc8c0dbd39c16fe1fa7292ed1a5
+
+% 0 1 0 10158fdbdcd914c70a907fe712ce1513
+
+% 1 1 0 0484c3a6eac0d09d02e826011beaa90e
+
+@ 0 6 0 0b971190f57714b4084e45fea2b3e1bc
++       以这种方式编写协议，可以使其状态保持明确，而不是隐含在控制流恰好位于一系列交错读写中的哪个位置。
++       `Serviceable` 只能响应，从不先发送：对于能够先发送的传输方式，`exchange` 加上了一个 `Transmitter`。
++       该方法需要一个 `Buffering`（窗口大小）、一个 `Tactic[Socket.Error]` 和一个 `Socket.Event is Loggable`，对于文本消息还需要一个 `Charset` 或 `Codepage`。
+
+% 0 1 0 1518e122d114c2500d43eecbc7c9f946
+
+% 1 1 0 11e14d03eb7f505b10ee4576ce78b001
+
+% 1 1 0 1ed37142f844920b1641ff481993e953
+
+@ 0 1 0 1d9c82806c8f845f0155dbfafda1bece
++ entry .exchange   全双工会话：`react` 的状态机加上一个用于先发送的 `Transmitter`
+
+% 1 1 0 07c969d04994198302df89d7b10f6114
+
+@ 0 7 0 0c7e4bdf56c2bd61066cda739f8b4ffc
++       `endpoint.exchange(initialState)[message](handle)(interact)` 是基于 `Duplexable` 传输方式的 `react`，这种传输方式的 `transmit` 可以被反复调用，并与 `receive` 并发，从不半关闭。
++       连接一打开，在 `handle` 循环开始之前，`interact` 就会得到一个 `Transmitter[message]`，因此客户端可以主动发送（一句问候，或来自它所派生任务的推送），而 `handle` 仍然通过 `Control` 回复。
++       消息类型由带类型标注的 `handle` 确定，这就是它位于 `interact` 之前的原因。
+
+% 2 1 0 17bd2b87e4379fc305ea23b7759dd9e2
+
+% 3 1 0 170cbb63db171c6206578653ee34b1a7
+
+% 1 1 0 008581c190ca68941427f30b5d7017fe
+
+% 0 1 0 1403731ddfbe6d970f0db958849d798c
+
+% 0 1 0 1f345529128f9913145298eacbd55520
+
+% 0 1 0 00f033462284841c027e1236f7704860
+
+% 0 1 0 016ca193323b09981c53ad64be20ecc8
+
+% 0 1 0 1402741389a060f10c896675967518a3
+
+% 0 1 0 02838a3cdfdb1fc917dac527656300c5
+
+% 0 1 0 18dd2635365383041553e0410ea4987f
+
+% 1 1 0 0ae9ab80651f08e9058f4e45cca4254e
+
+@ 0 3 0 14dbdc5b1201535c09669ec27cb56b50
++       Coaxial 自身的套接字 given 是 `Serviceable`，而不是 `Duplexable`（普通的请求/响应套接字在传输后会关闭其输出）；WebSocket 客户端才是提供 `Duplexable` 的那种传输方式。
++       该方法的上下文需求与 `react` 相同。
+
+% 1 1 0 0a8334db218f2ba614a00adf45f744a1
+
+% 0 1 0 07e832167bb1c53118098c12ff52f048
+
+% 1 1 0 0f5d255773df536a14a5bfe653b01130
+
+@ 0 1 0 02eabb1c4d75398a01ac28260dac1185
++ entry .duplex   把一个持久的双向 `Duplex` 连接借给一个代码块，之后关闭它
+
+% 1 1 0 154b45283001d98710f8c3719a9dfba0
+
+@ 0 6 0 10bbba2b17fb68811fb8d26dc1c23ab6
++       `endpoint.duplex(lambda)` 连接到任意 `Connectable` 端点（`Endpoint[Tcp.Port]`、`Uds`、`SecureEndpoint`），并把打开的 `Duplex` 传给 `lambda`，在 lambda 返回或抛出异常时关闭它。
++       与请求/响应式的 `transmit` 不同，这个连接从不半关闭：读和写相互独立，这正是 HTTP/2 这样的多路复用协议所需的形态。
++       `duplex(lambda)(interface)` 先把本地一侧绑定到具有该 MAC 地址的接口。
+
+% 2 1 0 166a5ebc75fdd2370727410a9bd06685
+
+% 3 1 0 1ce74f4074c73c3409221c3d58ad6730
+
+% 4 1 0 1c2512670e4af88519f3746e3672b78b
+
+% 5 1 0 0a5dbe924d777e371f2c338080d3fb01
+
+% 6 1 0 1649b079449ba9af0f874336dc1192c6
+
+% 7 1 0 08d114c59e03aa5409d37d85290efe8f
+
+% 8 1 0 195a57000b41194f0f9c2648505cd7b8
+
+% 10 1 0 0aef2f67d817bef80c92f14c826b9971
+
+% 0 1 0 1251159b2a4f9d3c145ae71221768061
+
+% 0 1 0 1cd5424027acf010058dfdb0aa3524b4
+
+% 1 1 0 10f9096ff134925510bb2cc57928ff3d
+
+@ 0 5 0 001328c22fc87299079267a6a7c08232
++       必须比任何单个代码块都活得更久的长连接会让 lambda 一直运行（比如停驻在其监督者上），直到外围作用域结束，届时借出操作会关闭它。
++       `session` 借出操作（通过 `connectableSessional`）是作为上下文值的同一种东西。
++       需要一个 `Tactic[Socket.Error]` 和一个 `Socket.Event is Loggable`，对于远程端点还需要 `Online`；打开时记录 `Connected`，关闭时记录 `Closed`。
+
+% 1 1 0 13a735868cb7024c01dee5d36e81f98c
+
+% 1 1 0 15c8bcfbcf4bc1eb1731480e30525b52
+
+% 1 1 0 180838c8510b764c06e600c41f9d6ebb
+
+@ 0 8 0 12c6558adf965ac200809787837d7a4a
++ entry .connectableSessional   `Sessional` given：`endpoint.session` 把一个 `Duplex` 借给代码块
++     任何 `Connectable` 端点都承载一个传输层的会话：`endpoint.session { duplex ?=> … }` 打开连接，把它作为上下文值借出，并在代码块结束时关闭它，具体委托给 `duplex`。
++     结果类型在代码块之外量化，因此仍在借用活动连接的值无法逃出代码块，而已 memoize 的值则可以。
++     `Sessional` 特质本身位于 `aperture` 中，后者不了解任何传输方式，因此这个 given 位于 `coaxial` 的顶层而不是某个伴生对象中，`import coaxial.*`（或 `soundness.*`）会引入它。
++     它捕获自己所需的 `Socket.Event is Loggable` 和 `Tactic[Socket.Error]`。
+
+% 2 1 0 043c1b0d4c52b3e20d2899dc5631dcb3
+
+% 3 1 0 10ddfdd82fbfecfb0734fac42a0b811b
+
+% 4 1 0 159a356b18a3ff370aaef713d0b7d0f6
+
+% 5 1 0 0028e422b2162c460e48ec4bc4c52a96
+
+% 6 1 0 1f36753ba578e4ea011959329d30d0a7
+
+% 1 1 0 05ebbbd4e006f8141b264ef5108a2678
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 14d6b17a8a4d22e40fd71d4f80dbd7fd
+
+% 0 1 0 14ff205b259866760088aca20a9ca38f
+
+% 0 1 0 1beaef048192c7500639162926f1b841
+
+% 0 1 0 119bffa9f98b641d18fbd651be399d22
+
+% 1 1 0 0613b8787fb9cdd40e47866efb6a3a3d
+
+@ 0 4 0 1bed1726adc742d81387d4f2bbf063c8
++ entry .Sessional   会话类型类，从 `aperture` 重新导出，使 `import coaxial.*` 无需修改即可编译
++     `Sessional`（及其 `session` 借出操作）从 coaxial 移到了 `aperture`，因为会话并不特定于套接字；两者都在这里重新导出。
++     `connectableSessional` 是 coaxial 为每个 `Connectable` 端点提供的实例。
+
+@ 0 3 0 18e9ef9a9e355212054f231f6d0a1357
++ entry .session   从 `aperture` 重新导出的 `session` 借出操作
++     对任何 `Sessional` 目标使用 `target.session { handle ?=> … }`；对于套接字端点，句柄是一个 `Duplex`（参见 `connectableSessional`）。
+
+@ 0 1 0 129601e11c0e733114c4237adac2fc8e
++ entry .Socket   套接字词汇：平台后端、选项、事件、运行中的服务和错误
+
+% 1 1 0 0c2268b0e5a4eb441760062e076418ff
+
+@ 0 7 0 1138e7a4ad4840dd193a40306ab41de5
++       没有 `Socket` 类型（coaxial 用 `Bindable`、`Connectable` 和 `Duplex` 表达），因此 `Socket` 是所有传输方式共有词汇的命名空间：`.Backend`，即每个类型类实例赖以定义的各平台实现；`.Option`，即打开连接时所用的套接字选项，每个都按其适用的传输方式定类型；`.Event`，即服务器或客户端记录的内容；`.Service`，即 `listen` 借出的、指向运行中服务器的句柄；以及 `.Error` 及其 `Reason`，用于绑定成功之后出错的一切情况。
+
+% 2 1 0 12713a816a8b4ece0512a81f9763c017
+
+% 3 1 0 1bd4208858049b89175e610b612e7cee
+
+% 0 1 0 01e0edeed6472a2f1edabc46db9b3ead
+
+% 0 1 0 06ffb0cc7481a34302011e7ec44494f4
+
+% 1 1 0 058a772b1f34db001261922449fec0d8
+
+% 1 1 0 185fae4020a48fe0150d7656f749ad75
+
+% 1 1 0 0a484001e9a12d3602a1f0bcf541e939
+
+% 1 1 0 0993ec9d9b5319d41598179320859b6c
+
+% 0 1 0 0a16ee08452bb01d1f2fbb6eff9b5b84
+
+@ 0 1 0 0504f59bd5b459fc1d19bc272e4b6cdb
++   entry .Backend   平台的套接字操作，按角色分组；`socketBackends` 中每个平台一个 given
+
+% 1 1 0 06e52623d7de3a760161c2d52f7b677e
+
+@ 0 8 0 045ab40bf9e47d0a1e10fac2b29d86a0
++         coaxial 的平台无关 API 与操作系统之间可插拔的接缝：`Bindable`、`Connectable`、`Serviceable`、`Routable` 和 `Subscribable` 实例所依据的完整套接字操作集合，其中不涉及任何平台 API。
++         后端是从 `socketBackends` 包按名称导入的 given：`javaBaseSockets`（JVM 的 `java.net`/`java.nio.channels`）、`scalaNativeSockets`（Scala Native）和 `wasiSockets`（`wasi:sockets`）。
++         第三方后端实现每个成员；更高层的循环（`listen`、`react`、`exchange`、`duplex`、`subscribe`）随后无需修改即可在其上运行。
+
+@ 0 14 0 13a0dc0b38d09a12080db744a2e9e414
++         这些操作按类型类所扮演的六种角色组织，因为每种角色都有自己的字节传输规则：流*服务器*（`#listenTcp`/`#listenDomain`、`#accept`、`#shutdown`）绑定、接受连接，并向每个连接写出完整的响应；数据报*服务器*（`#listenUdp`、`#receive`、`#reply`、`#unbind`）接收一个 `Packet` 并回复其发送者；一次性*交换*（`#exchangeUdp`）发送一个数据报并等待一个回复；*多播*成员关系（`#joinMulticast`、`#receiveMulticast`、`#sendGroup`、`#sendTo`、`#leaveMulticast`）；请求/响应*交换*（`#dialTcp`、`#dialTcpPort`、`#dialDomain`、`#request`、`#response`、`#hangUp`）以流的方式发送请求并半关闭，然后一直读到对端半关闭；持久*双工*（`#duplexTcp`、`#duplexDomain`）交回一个从不半关闭的 `Duplex`；数据报*投递器*（`#routeUdp`、`#routeUdpPort`、`#dispatch`）发送一个数据报。
++         每种角色都有一个不透明的句柄类型（`#ServerSocket`、`#DatagramSocket`、`#MulticastSocket`、`#Exchange`、`#Courier`），它被传回后端，从不被检视。
+
+@ 0 5 0 02c95ce47a3561e10a098c8f09c5d879
++         后端无法支持的操作会抛出错误，而不是近似实现：Scala Native 和 WASI 上的 Unix 域套接字抛出 `Bind.Error(Unsupported)` 或 `Socket.Error(Unsupported)`；WASI 上的 UDP 和多播抛出 `Socket.Error`。
++         选项是 coaxial 抽象的 `Socket.Option`，以平台能理解的任何方式应用，平台不支持的选项会被静默跳过。
+
+% 2 1 0 1c90f5b8779f1fc900a11dbf64147f63
+
+% 3 1 0 1fe867e7008ad1971e11ab5d845b5b28
+
+% 1 1 0 074ced630925e296061a531fca68267c
+
+% 0 1 0 0741377a29b6f71e1404df915d53f5ca
+
+% 1 1 0 018fa202a417d7f81d8b4ff1d56aa52d
+
+% 0 1 0 0081b171422f8af809f854bb52fdb7be
+
+% 0 1 0 12f673e2492eddb60b4ae619673a3c5b
+
+@ 0 81 0 1ab39b4b721ceddb1947476d07546129
++     entry #ServerSocket   已绑定且正在监听的流套接字（TCP 或 Unix 域）的句柄
++     entry #DatagramSocket   已绑定的数据报套接字的句柄
++     entry #MulticastSocket   在其每个接口上都已加入某个多播组的套接字的句柄
++     entry #Exchange   请求/响应客户端连接的句柄
++     entry #Courier   发后即忘的数据报目的地的句柄
++     entry #listenTcp   在一个接口或所有接口上，以给定选项绑定一个 TCP 端口
++         `listenTcp(port, interface, options)` 抛出 `Bind.Error`（`PortInUse`、`PermissionDenied` 或 `AddressUnavailable`，根据平台的失败归类），并返回 `#accept` 所接受的 `#ServerSocket`。
++         JVM 和 Native 后端绑定一个 `java.net.ServerSocket`（它遵循 `Timeout` 选项）；WASI 在 IPv4 通配地址上绑定一个 `wasi:sockets` TCP 套接字。
++     entry #listenDomain   以给定选项在某个路径上绑定一个 Unix 域套接字
++         在没有 Unix 域套接字的 Scala Native 和 WASI 上抛出 `Bind.Error(Unsupported)`。
++         在 JVM 上，套接字文件在 `Uds` 的路径上创建，且该文件必须尚不存在。
++     entry #accept   阻塞等待下一个传入连接，以 `Duplex` 的形式返回
++         处理函数从双工连接的 `source` 读取请求，接受循环用 `send` 写出响应。
++         接受失败时抛出 `Socket.Error(Accept)`，服务器停止时被中断的接受报告的正是这个错误。
++     entry #shutdown   关闭一个正在监听的流套接字，解除挂起的 `#accept` 的阻塞
++     entry #listenUdp   以给定选项绑定一个 UDP 端口，用于接收数据报
++         选项在绑定之前应用，因此 `ReuseAddress` 和 `ReusePort` 能够生效。
++         给出接口时，它成为套接字发出多播所用的接口。
++         `DatagramSize` 选项确定接收每个数据报所用的缓冲区（未设置时为 1472 字节）。
++         在 WASI 上返回一个 unit 句柄，那里的每个数据报操作都会抛出错误。
++     entry #receive   阻塞等待已绑定 UDP 套接字上的下一个数据报，以 `Packet` 的形式返回
++         `Timeout` 选项到期时抛出 `Socket.Error(Timeout)`，其他任何失败抛出 `Accept`。
++         长于 `DatagramSize` 的数据报会被截断到该长度。
++     entry #reply   向收到的数据包的发送者及其端口回发一个数据报
++         发送失败时抛出 `Socket.Error(Transmit)`。
++     entry #unbind   关闭已绑定的 UDP 套接字，解除挂起的 `#receive` 的阻塞
++     entry #exchangeUdp   从一个临时端口发送一个数据报，并阻塞等待一个回复
++         `exchangeUdp(endpoint, interface, options, data)` 是 DNS、NTP 或 STUN 查询的形态：一个新的套接字，发出一个数据报，收到一个 `Packet`，然后关闭套接字。
++         `options` 中的 `Socket.Option.Timeout` 限定等待时间，超时表现为 `Socket.Error(Timeout)`；回复带有其发送者，因此调用者可以检查它是否来自正确的地方。
++         `coaxial.dns` 中的 `query` 就建立在它之上。
++         在没有 UDP 的 WASI 上抛出 `Transmit`。
++     entry #joinMulticast   以地址复用和端口复用方式绑定组的端口，并在每个接口上加入该组
++         `joinMulticast(multicast, interfaces, options)` 以 `SO_REUSEADDR` 和 `SO_REUSEPORT` 绑定端口（这是设计决定，而不是选项：同一主机上的多个订阅者共享该端口），然后在每个具有该组地址族地址的接口上加入该组（操作系统拒绝的接口会被略过），并一直保持这些成员关系，直到 `#leaveMulticast`。
++         之所以避免通配加入，是因为它会任意挑选一个接口，而且在 macOS 上不可靠。
++     entry #receiveMulticast   阻塞等待组投递的下一个数据报，以 `Packet` 的形式返回
++     entry #sendGroup   向组本身发送一个数据报
++         在 JVM 上，通过每个已加入的接口各发送一次（IPv6 链路本地组需要以接口作为其作用域）；在 Scala Native 上，按内核的默认多播路由发送一次。
++         失败时抛出 `Socket.Error(Transmit)`。
++     entry #sendTo   从组的套接字向一个单播目的地及端口发送一个数据报
++         用于回应请求了响应的发送者。
++         失败时抛出 `Socket.Error(Transmit)`。
++     entry #leaveMulticast   关闭组的套接字，放弃其成员关系，并解除挂起的接收的阻塞
++     entry #dialTcp   连接到远程 TCP 端点，进行一次请求/响应交换
++         抛出 `Socket.Error`，原因为 `Dns`（主机无法解析）、`Refused`、`Timeout` 或 `Connect`。
++         在 WASI 上，主机必须是 IPv4 字面地址（那里没有解析器），否则为 `Dns`。
++     entry #dialTcpPort   连接到本地主机上的 TCP 端口，进行一次请求/响应交换
++     entry #dialDomain   连接到 Unix 域套接字，进行一次请求/响应交换
++         在 Scala Native 和 WASI 上抛出 `Socket.Error(Unsupported)`。
++     entry #request   以流的方式发出请求，并半关闭输出一侧
++         以 `consume` 参数接受请求流：它在这里被耗尽并关闭，之后不能再使用。
++     entry #response   响应，作为一个新鲜的、只能使用一次的拉取流，在对端半关闭时结束
++         `response(exchange)` 需要一个 `Buffering`（填充窗口）和一个 `Tactic[Truncation.Error]`，后者在读取中途失败时抛出，并带有截至当时已读取的字节数。
++         该流捕获这个战术，因此要在创建它的地方读取。
++     entry #hangUp   关闭请求/响应连接
++     entry #duplexTcp   以持久 `Duplex` 的形式连接到远程 TCP 端点
++         通道是阻塞的，因此读取循环停驻在 `read` 中，而不是忙轮询；选项（以及给出接口时的本地绑定）在连接之前应用。
++         与 `#dialTcp` 一样抛出 `Socket.Error`。
++     entry #duplexDomain   以持久 `Duplex` 的形式连接到 Unix 域套接字
++         在 Scala Native 和 WASI 上抛出 `Socket.Error(Unsupported)`。
++     entry #routeUdp   从一个临时端口通往远程 UDP 端点的投递器
++         在创建投递器时解析端点的主机；给出接口时，它成为套接字发出多播所用的接口。
++     entry #routeUdpPort   通往本地主机上某个 UDP 端口的投递器
++     entry #dispatch   把整个流作为单个数据报发送到投递器的目的地
++         该流被 memoize 为一个数据报，因此它必须能装进一个数据报。
++   entry .Event   套接字记录的内容：开始监听、已连接和已关闭，每个都带有 `Log.Network` 标签
+
+% 1 1 0 1b1a7d9ea5c46a8d136a7cb6b8ad8e2c
+
+@ 0 16 0 04a2b34e207deef8199e6b0abdeee8b7
++         每个 `Event` 都扩展 `Log.Network`，因此日志配置可以按标签选择或屏蔽它们。
++         `listen` 和 `subscribe` 在服务器启动时以 `info` 级别记录 `Listening`，在停止时以 `fine` 级别记录 `Closed`；`transmit`、`react` 和 `exchange` 以 `fine` 级别记录 `Connected`；`duplex` 以 `info` 级别记录 `Connected`，以 `fine` 级别记录 `Closed`。
++         每个借出操作都接受一个 `Socket.Event is Loggable`；`logging.silentLogging` 会丢弃它们。
++         每个事件都以 `Text` 的形式携带端点的渲染结果。
++     entry .communicable   把每个事件渲染为一条消息
++         `Listening` 渲染为 _listening on `endpoint`_，`Connected` 渲染为 _connected to `endpoint`_，`Closed` 渲染为 _closed the connection to `endpoint`_。
++     entry .Listening   服务器开始在某个套接字上监听
++       entry #endpoint   该套接字，以文本显示
++     entry .Connected   客户端连接到了某个端点
++       entry #endpoint   该端点，以文本显示
++     entry .Closed   某个连接或服务器已关闭
++       entry #endpoint   该端点，以文本显示
++   entry .Option   套接字选项，按其适用的传输方式定类型，按连接从作用域中收集
+
+% 1 1 0 0aa27bc11c0891991c1bb63c12ffde99
+
+@ 0 6 0 15c9197dd88643651bcf9fb2e5e95fbe
++         套接字选项在新构建的套接字被绑定或连接之前应用于它。
++         每个具体选项都扩展其适用传输方式的标记特质（`.Tcp`、`.Udp` 和 `.Domain`（Unix 域）），而绑定或连接处会从作用域内的 given 中收集 `Every[Socket.Option.Tcp]`（或 `.Udp`、`.Domain`），因此只会收集到对该传输方式有效的选项，`NoDelay` 这样仅适用于 TCP 的选项无法到达 UDP 套接字。
+
+@ 0 6 0 14707959a3fe884701dd8baabe0d94c1
++         只是启用某项功能的标志选项是无参数的对象（`ReuseAddress`、`ReusePort`、`NoDelay`、`KeepAlive`、`Broadcast`、`MulticastLoop`）：它们的存在就是对默认关闭这一基线的偏离。
++         携带值的选项接受一个参数（`ReceiveBuffer`、`SendBuffer`、`Timeout`、`Linger`、`TrafficClass`、`MulticastHops`、`DatagramSize`）。
++         `socketOptions` 包为每个标志提供一个具名 given，为每个带值选项提供一个工厂方法，因此方针只需陈述一次：
+
+% 2 1 0 1b070250e30c95030bac4f9b51f83cc8
+
+% 3 1 0 1121a2d7dfb3c666098ea96b9bc7e091
+
+% 0 1 0 1a21c040da87df810bb2a88150870e29
+
+% 0 1 0 1e24e58ffb1e578519d63a47e2cdef77
+
+% 0 1 0 0898289cf839f04412d717a03e1430e8
+
+% 0 1 0 08466e61e8d0315c1f3b876d05e27f51
+
+% 1 1 0 173f933b7743953708fc3052528f1b24
+
+@ 0 4 0 1584264cf4364ca51399796a51855113
++         后端以其平台的方式应用每个选项，并静默跳过特定套接字不支持的选项（服务器套接字没有 `TCP_NODELAY`；Scala Native 没有可移植的 `ReusePort`）。
++         `DatagramSize` 由后端的接收操作使用，而不是设置在套接字上。
+
+% 0 1 0 1c9bae0f05d8765914368227780fd3a3
+
+@ 0 10 0 0af13d72b8fa3ee403f69a38346b30a7
++     entry .Tcp   适用于 TCP 套接字的选项的标记；`Every[Socket.Option.Tcp]` 收集它们
++     entry .Udp   适用于 UDP（及多播）套接字的选项的标记
++     entry .Domain   适用于 Unix 域套接字的选项的标记
++     entry .ReuseAddress   `SO_REUSEADDR`：重新绑定仍处于 `TIME_WAIT` 的端口；适用于 TCP、UDP 和 Unix 域
++         用于必须重启而不能等待 `TIME_WAIT` 结束的服务器，以及共享一个端口的多个 UDP 套接字。
++         `socketOptions.reuseAddressSocketOption` 是它的 given。
++     entry .ReusePort   `SO_REUSEPORT`：多个套接字绑定到同一端口；适用于 TCP 和 UDP，取决于操作系统
++         在平台不支持它的地方（以及在 Scala Native 上的所有地方）会被跳过。
++         `socketOptions.reusePortSocketOption` 是它的 given。
++     entry .ReceiveBuffer   `SO_RCVBUF`：接收缓冲区的字节大小；适用于 TCP、UDP 和 Unix 域
+
+% 1 1 0 18b55551a4440aab0bc4860d2906fb93
+
+@ 0 3 0 0a1da52eeb556f4e19ca9640ec3091f3
++           用 `socketOptions.receiveBuffer(bytes)` 创建。
++       entry #bytes   缓冲区大小
++     entry .SendBuffer   `SO_SNDBUF`：发送缓冲区的字节大小；适用于 TCP、UDP 和 Unix 域
+
+% 1 1 0 058ddfd8e388bea81886221ebc6d22dd
+
+@ 0 3 0 0de0e22bc25ca4b50981ea4b7a077a83
++           用 `socketOptions.sendBuffer(bytes)` 创建。
++       entry #bytes   缓冲区大小
++     entry .Timeout   `SO_TIMEOUT`：阻塞读取或接收等待多久，以毫秒计；适用于所有传输方式
+
+% 1 1 0 075f254a647040d0194fc94305e482ce
+
+@ 0 9 0 073fed36419c59be13da647858f5bc73
++           数据报套接字上的接收超时会抛出 `Socket.Error(Timeout)`；作用域内没有超时选项时，`coaxial.dns` 中的 `query` 会加上一个五秒的超时。
++           对可选择通道没有意义，在那里会被跳过。
++           用 `socketOptions.timeout(ms)` 创建。
++       entry #milliseconds   等待时间
++     entry .NoDelay   `TCP_NODELAY`：立即发送小块写入，而不是等待 Nagle 算法；适用于 TCP
++         `socketOptions.noDelaySocketOption` 是它的 given。
++     entry .KeepAlive   `SO_KEEPALIVE`：探测空闲连接，以便发现已失效的对端；适用于 TCP
++         `socketOptions.keepAliveSocketOption` 是它的 given。
++     entry .Linger   `SO_LINGER`：`close` 为冲刷未发送的数据而阻塞多久，以秒计，或以 `Unset` 禁用；适用于 TCP 和 Unix 域
+
+% 1 1 0 075cb7738df04cdb145e94c958a5f762
+
+@ 0 3 0 1e688e0ee263b9dc163802652527e06a
++           用 `socketOptions.linger(seconds)` 创建。
++       entry #seconds   逗留间隔，或以 `Unset` 表示默认行为
++     entry .TrafficClass   `IP_TOS`：发出数据包的流量类别或 DSCP 值；适用于 TCP 和 UDP
+
+% 1 1 0 1d17665395bda64b1ed1901f2154cb77
+
+@ 0 9 0 14c7fb52785ede851e0714a42784e30b
++           用 `socketOptions.trafficClass(value)` 创建。
++       entry #value   服务类型字节
++     entry .Broadcast   `SO_BROADCAST`：允许向广播地址发送；适用于 UDP
++         `socketOptions.broadcastSocketOption` 是它的 given。
++     entry .MulticastLoop   `IP_MULTICAST_LOOP`：把程序自己发出的多播消息投递回它自己；适用于 UDP
++         在 Linux 上回环接口无法承载多播，因此想看到自己的通告的订阅者改为设置这个选项。
++         在 Scala Native 上不会应用（其内核默认开启）。
++         `socketOptions.multicastLoopSocketOption` 是它的 given。
++     entry .MulticastHops   `IP_MULTICAST_TTL`：多播数据报最多可以经过多少个路由器；适用于 UDP
+
+% 1 1 0 093c3c2f676c3b9c18b85200046e6b41
+
+@ 0 4 0 05dbc190e888ca6e08bb84667637dc52
++           在 Scala Native 上不会应用（内核默认为一跳）。
++           用 `socketOptions.multicastHops(count)` 创建。
++       entry #count   跳数上限
++     entry .DatagramSize   接收数据报所用的缓冲区，也就是能完整到达的最大数据报；适用于 UDP
+
+% 1 1 0 1bfe3f159cdc7f1d06c94a0346d5731f
+
+@ 0 5 0 019b5ef6df04d7440adbd2abb203a324
++           未设置时为 1472 字节，即一个以太网帧；mDNS 允许 9000。
++           由后端的接收操作使用，而不是设置在套接字上。
++           用 `socketOptions.datagramSize(bytes)` 创建。
++       entry #bytes   缓冲区大小
++   entry .Service   指向运行中服务器的句柄，由 `listen` 借出；`stop()` 结束它
+
+% 1 1 0 1241fe5850702314111df9522694f907
+
+@ 0 4 0 0bf039ff06edd6ab1a0d4cc1f620b626
++         运行中的套接字服务器是一种独占能力：在停止之前，它拥有接受循环和受监督的连接任务，而捕获检查把它限制在 `listen` 所借给的代码块之内，因此接受循环永远不会逃出启动它的代码。
++         `Multicast.Subscription` 在它的基础上增加了向组发送的功能。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 0fa4331ff26c2bb01f9015f6cb3acddb
+
+% 0 1 0 0d3d74ab87d1a37e042de76c51ba63b1
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 1 1 0 1202cf9d2ae1de481674fcc69a7016b3
+
+% 2 1 0 0ef186f6ad66f48f1b8b366797f98ebd
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 0736367a46b1affb19d414e6bb1df48c
+
+% 0 1 0 01f635d7143d8bf81e8c8245f063101e
+
+% 1 1 0 1001dc308f55b9ab11d3537b5eb40d54
+
+@ 0 4 0 194d90a61cef8ed61312da1b45fd2ebf
++     entry #stop   停止接受循环，关闭正在监听的套接字，并等待循环的任务结束
++         记录 `Socket.Event.Closed`。
++         借出操作在其代码块结束时调用它，因此只有在代码块结束之前就要停止服务器时，才需要自己调用它。
++   entry .Error   在绑定成功之后连接失败时抛出，带有一个 `Reason`
+
+% 1 1 0 0b1da231938a8d580f830f4a35e3d988
+
+@ 0 7 0 130a9da3325713ed10c1b5f078c01d6f
++         错误 `↯/s.101.2`：_the connection failed because `reason`_。
++         由绑定之后的每个后端操作抛出（接受连接、传输、关闭、TLS 握手、超时的接收、连接、被拒绝、名称解析），也由缺少相应功能的后端的 `Unsupported` 操作抛出。
++         扩展方法 `transmit`、`react`、`exchange` 和 `duplex` 以及 `connectableSessional` given 都接受一个 `Tactic[Socket.Error]`；在 `listen` 借出操作内部，单个连接的失败由该连接自己的任务吸收，因此只会结束该连接。
+
+% 2 1 0 1fbbd54c364d42da0ada6aa43514154e
+
+% 3 1 0 18a24f08859ec0d91c8f7d41c39093eb
+
+% 2 1 0 12e155153954ac4514590ff8b945257a
+
+% 1 1 0 1a2a6aa62e5923b01bba3d72908cc5d9
+
+% 2 1 0 1ea8bdc7d527f30b0e6af404faa2924c
+
+% 0 1 0 144088bacc956d8a1cccbd3ba414f960
+
+% 0 1 0 1e158a058982777a10ada8c4aa22f453
+
+% 1 1 0 1bffc1d6750f57ff046d10a1d733e95d
+
+@ 0 2 0 05cdeef7ac1c828f0e0272f38a3825e8
++     entry .Reason   连接失败的原因，编号为 1 到 9
++         每一项都是带有 `number` 的 `Clarification`：
+
+% 1 1 0 1a8b918dc7f9969906d6d506b4bfab31
+
+@ 2 4 0 00919b4e47da24a4040f3ec784677ff4
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 07d7c223d45a8a0913986d5f257651af
+
+% 0 1 0 15587ad9da1315b40fe861d054afdffe
+
+% 0 1 0 1cab438da63f29160e69efaa0e1ababf
+
+@ 0 2 0 1c471921cb5a9bdf1feb9e710c833dc6
++         row  `Handshake`  4  _the TLS handshake with the peer failed_  被信任方针拒绝的证书、主机名不匹配，或监听方拒绝了客户端证书
++         row  `Timeout`  5  _no response arrived before the timeout_  在 `Socket.Option.Timeout` 下的数据报接收，或超时的连接
+
+% 0 1 0 09531279065fadda048dcee5344d133e
+
+% 0 1 0 1616cd7e3d4435720af4bf977bdd2039
+
+% 0 1 0 1de98d0e61aaec3d0a2c113119a92dfd
+
+@ 0 1 0 1fdddaf871af19e618fe036d3f4bd6c5
++         row  `Unsupported`  9  _the kind of socket is not supported on this platform_  Scala Native 或 WASI 上的 Unix 域套接字
+
+% 1 1 0 13c81f4d67a57acf0691e9f4f7527e80
+
+@ 2 2 0 1626255e6ce0506c0fce37d3e7b1052e
++     entry .communicable   把每个原因渲染为其消息
++     entry #reason   原因
+
+@ 0 1 0 06d9fa1e52a775a519050ddf16059880
++ entry .Bind   套接字无法绑定时抛出的错误
+
+% 1 1 0 1f180d4588e52ef4049499c9ed67149c
+
+@ 0 4 0 14a452c220fe42161fc55d43710ccad1
++       `Bind` 是 `Bind.Error` 的命名空间，它是 `listen` 或 `subscribe` 借出操作在服务器运行之前唯一会抛出的失败：端口被占用、用户无权绑定它、地址不在本主机上，或这种套接字在本平台上不存在。
++       绑定之后的一切失败都是 `Socket.Error`。
+
+% 1 1 0 0b96765c5a17860b00a2d20ebe9670d2
+
+% 1 1 0 02e7e503c3dc6c4f175c60ec0050c285
+
+@ 0 1 0 051792425c249f8b070c11ef87449d8b
++   entry .Error   套接字无法绑定时由 `listen` 和 `subscribe` 抛出
+
+% 1 1 0 151fa5fb30de076b0cd002fe43a8c35b
+
+@ 0 6 0 107eb501c70f06651d269989a09f94bd
++         错误 `↯/s.101.1`：_the socket could not be bound because `reason`_。
++         由 `Socket.Backend#listenTcp` 和 `#listenDomain` 抛出（因而也由 `Bindable#bind`、`listen`、`listenOn` 和 `subscribe` 抛出），根据平台的失败归类：提及权限问题的消息为 `PermissionDenied`，提及地址被占用的为 `PortInUse`，其他任何情况为 `AddressUnavailable`。
++         native 和 WASI 后端对 Unix 域套接字抛出 `Unsupported`。
+
+% 2 1 0 1765e47bde8eaf6512b41b34499d2da3
+
+% 3 1 0 14876d8b5cbe014d01d1ce3e68bd40c7
+
+% 0 1 0 0b2a08d43ac93c6d161de95626ea7095
+
+% 0 1 0 09f4ff6263a789ff0a16a5f18c49299f
+
+% 1 1 0 17bdffe6c758338f15480d912e5083ff
+
+@ 0 1 0 173199aed8d2697f0caf960538a76ee2
++     entry .Reason   绑定失败的原因，编号为 1 到 4
+
+% 1 1 0 08f5b9479079e804074803cd3719a6d6
+
+@ 2 4 0 0810dcd803cc9e991e7bce6543e9d34c
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 1ff0f6660ec909fd1d55989d7e573d68
+
+@ 0 1 0 18138a9a800d48b90270238c9c93524f
++         row  `PermissionDenied`  2  _the user does not have permission to bind the port_  没有特权时绑定 1024 以下的端口
+
+% 0 1 0 1c65fe6060e8a8f10eff4f805c505c20
+
+% 0 1 0 0114fb2275bac5ad09a24a565b784bdc
+
+% 1 1 0 0bb60bed63beeb2b00584756e88c5fab
+
+@ 2 2 0 076532ad1389a456066e5e58805dbd6e
++     entry .communicable   把每个原因渲染为其消息
++     entry #reason   原因
+
+@ 0 1 0 174e92d29508bd250e1b335d0ff535db
++ entry .Bindable   `listen` 对套接字的要求：绑定、接受到达的连接、逐一应答、关闭、停止
+
+% 1 1 0 03c83f0e16a28f8d158aab7ddbd4ba93
+
+@ 0 7 0 19dbb51e516aa80414ec07061bb05787
++       能够提供服务的套接字值是 `Bindable` 的：`Tcp.Port`、`Udp.Port`、`Uds` 和 `Multicast` 通过本伴生对象和 `Multicast` 中的 given 而是 `Bindable` 的，在 JVM 上 `SecurePort` 也是。
++       每个实例确定三个类型，它们决定 `listen` 处理函数的形状：`#Binding`（后端的句柄，对调用者不透明），处理函数对每个到达所接收的 `#Input`（流套接字为 `Duplex`，数据报为 `Packet`），以及它应答所用的 `#Output`（流为 `Data`，数据报为 `UdpResponse`，组为 `Multicast.Reply`）。
+
+@ 0 5 0 0370833e50603d8818749dc1ed9cbe07
++       这些实例接受作用域内的 `Socket.Backend` 以及为其传输方式收集的套接字选项（`Every[Socket.Option.Tcp]`、`.Udp` 或 `.Domain`），因此一旦选定后端，它们无需导入即可解析。
++       用户很少调用这些方法：`listen` 把它们组合成接受循环。
++       基于新种类套接字的协议只需提供自己的实例，就能免费获得 `listen`。
+
+% 1 1 0 06f7ebc74b5a706e01a821b81393830f
+
+% 1 1 0 1cd8f050603382b21cd1c394493e0fde
+
+@ 0 21 0 12db221d487284f407f4dd400e857a1b
++   entry .uds   服务 Unix 域套接字：`Uds is Bindable`，处理函数为 `Duplex => Data`
++       通过 `Socket.Backend#listenDomain` 绑定，因此套接字文件在该路径上创建，且必须尚不存在。
++       域套接字没有网络接口，因此 `listenOn` 的接口会被忽略。
++       在 Scala Native 或 WASI 上不可用（`Bind.Error(Unsupported)`）。
++   entry .tcpPort   服务 TCP 端口：`Tcp.Port is Bindable`，处理函数为 `Duplex => Data`
++       每个被接受的连接都是一个 `Duplex`；处理函数从其 `source` 读取请求，它返回的响应被完整写回，然后关闭连接。
++       需要会话而不只是一个回复的处理函数自己读写 `Duplex`，并返回一个空的 `Data`。
++   entry .udpPort   服务 UDP 端口：`Udp.Port is Bindable`，处理函数为 `Packet => UdpResponse`
++       每个数据报都是一个带有发送者地址和端口的 `Packet`；`UdpResponse.Reply(data)` 向该发送者回发一个数据报，`UdpResponse.Ignore` 什么也不发送。
++       `Socket.Backend#listenUdp` 没有声明 `Bind.Error`，因此 UDP 绑定失败会被直接抛出。
++   entry #Binding   后端指向已绑定套接字的句柄
++   entry #Input   处理函数对每个到达所接收的东西：`Duplex` 或 `Packet`
++   entry #Output   处理函数应答所用的东西：`Data`、`UdpResponse` 或 `Multicast.Reply`
++   entry #bind   在一个接口或所有接口上绑定套接字，抛出 `Bind.Error`
++   entry #connect   阻塞等待某个绑定上的下一个到达，抛出 `Socket.Error`
++   entry #transmit   执行处理函数对某个到达的应答
++   entry #close   在应答发送之后，关闭某个到达的连接
++   entry #stop   关闭绑定，解除挂起的 `#connect` 的阻塞
+
+@ 0 1 0 014ef18fbac1dfe9182c38c86a874b3f
++ entry .Connectable   `duplex` 对端点的要求：打开一个持久的双向 `Duplex`
+
+% 1 1 0 010bb4e69beec72e0f4f84695ffdb98c
+
+@ 0 5 0 1940e61b906e43e31bf9c6cdb46af6c1
++       对于保持连接打开并并发读写的协议（HTTP/2、WebSocket、SSH），而不是一个请求一个响应的协议，它是 `Serviceable` 的对应物。
++       `Endpoint[Tcp.Port]` 和 `Uds` 通过本伴生对象而是 `Connectable` 的，在 JVM 和 Scala Native 上，`SecureEndpoint` 通过 TLS 也是。
++       `duplex`、`connectableSessional` 和 `session` 借出操作都建立在它之上。
+
+% 2 1 0 0add35aceb3192c3153e50035332694d
+
+% 3 1 0 01ddfeaa190554c311dee5880559b2a1
+
+% 0 1 0 1296966e6ab111200fb6cdea03f77a11
+
+% 0 1 0 10412772a53ae1ff15f7d3c770540900
+
+% 1 1 0 0590ea12d38d7d3c106985bce1ed5df0
+
+@ 0 2 0 1369add881efa76b09d8f8994f8c9070
++       该特质的 `connect` 会抛出 `Socket.Error`，因此 lambda 无法转换为它；`.apply` 用一个普通函数为不会打开失败的连接创建实例。
+
+% 1 1 0 061d493ee6162b2a0f668afc9bd5a1fc
+
+% 1 1 0 089e1751368c3c9e1ba98eaed443c71a
+
+% 1 1 0 0af0c24f26f2300408d15d8a9b1f4006
+
+@ 0 15 0 1cb203a52c9e3a291ea23faf71c0577d
++   entry .apply   由不会失败的函数 `(endpoint, interface) -> Duplex` 创建的实例
++       用于双工连接已在手中的端点，例如测试中进程内的 `Duplex.pair()`。
++       该特质的 `connect` 声明了 `raises Socket.Error`，这就是 lambda 不能直接成为实例的原因。
++   entry .uds   以 `Duplex` 的形式连接到 Unix 域套接字：`Uds is Connectable`
++       通过 `Socket.Backend#duplexDomain`，使用作用域内的 `Every[Socket.Option.Domain]`；域套接字没有接口，因此接口参数会被忽略。
++       在 Scala Native 和 WASI 上抛出 `Socket.Error(Unsupported)`。
++   entry .tcpEndpoint   以 `Duplex` 的形式连接到远程 TCP 端点：`Endpoint[Tcp.Port] is Connectable`
++       通过 `Socket.Backend#duplexTcp`，使用作用域内的 `Every[Socket.Option.Tcp]`。
++       该实例只有在具备 `Online` 许可（`import internetAccess.online`）时才能解析，并且是一个携带该证据的能力，因此访问网络这一选择在使用处是可见的。
++       连接失败时抛出 `Socket.Error`，原因为 `Dns`、`Refused`、`Timeout` 或 `Connect`。
++   entry #connect   打开连接，给出接口时把本地一侧绑定到该接口
+
+@ 0 1 0 090de08a551c74621eb50a093c292245
++ entry .Routable   数据报 `transmit` 对端点的要求：连接并分派一条消息
+
+% 1 1 0 16078153e507f1dc02a33dcc00a786b3
+
+@ 0 5 0 0f65a0f28e26c44d054f45ea82c69f8d
++       发后即忘的角色：`Routable` 端点可以被连接，并接收分派给它的一条序列化消息，而不等待任何东西。
++       `Endpoint[Udp.Port]` 和（本地主机上的）`Udp.Port` 是 `Routable` 的；`Serviceable` 在它的基础上增加了响应和关闭，正是这一点使 TCP 端点的 `transmit` 返回回复流，而 UDP 端点的返回 `Unit`。
+
+% 1 1 0 17ddbd757e0f02d608710b1633a3e182
+
+% 1 1 0 086facb37338ca12113e4767be697df9
+
+@ 0 7 0 1fa340c78dfcba1e06b8936dbddcf177
++   entry .udpEndpoint   向远程 UDP 端点分派一个数据报：`Endpoint[Udp.Port] is Routable`
++       通过 `Socket.Backend#routeUdp` 和 `#dispatch`，使用作用域内的 `Every[Socket.Option.Udp]`。
++       主机在创建投递器时解析。
++   entry .udpPort   向本地主机上的 UDP 端口分派一个数据报：`Udp.Port is Routable`
++   entry #Connection   后端指向连接的句柄（对数据报端点而言是一个 `Courier`）
++   entry #connect   打开连接，抛出 `Socket.Error`
++   entry #transmit   向连接写出整个流，并消耗它
+
+@ 0 1 0 031ddf348dacbf7d0ee85a3f8e0efd40
++ entry .Serviceable   `transmit` 和 `react` 对端点的要求：发出一个请求，收回一个响应流
+
+% 1 1 0 0458699bff4b81231d5fb4712dcde515
+
+@ 0 7 0 120011144fa7ceeb114d36c9bb34278c
++       请求/响应角色：`Serviceable` 端点可以被连接，在其输出半关闭的同时接收流式发送的请求，并交回一个在对端半关闭时结束的响应流。
++       `Endpoint[Tcp.Port]`、`Tcp.Port`（在本地主机上）和 `Uds` 都是 `Serviceable`。
++       实例是能力——它们保留着其响应流抛出错误所经由的 `Tactic[Truncation.Error]`——因此 `transmit`、`react` 和 `exchange` 以捕获型 using 参数而不是上下文界定来接受该证据，实例在战术处于作用域中的地方解析。
+
+% 2 1 0 09797fef94e1292a1326a94e458356c5
+
+% 3 1 0 1b5f87cd60a43d63094abb365a548e18
+
+% 4 1 0 0404e7f0881a01ed051e3a4f3a750761
+
+% 5 1 0 162a65d1981a69910542dfc98aab94ea
+
+% 6 1 0 189e112e5f87d76f033a951f0027f6ae
+
+% 7 1 0 1f19297ed92310cb0cbe8c942b70ceeb
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 1b2e4a31828ee7ac169834199faab699
+
+% 2 1 0 0c3efb81d01ad26403bb253a30892814
+
+% 2 1 0 086d5b596678fbaf048c280065ba0294
+
+% 0 1 0 0b7b87fd7acd4f3017ec2c9b0fd07a55
+
+% 1 1 0 035d2bcf9e5e8c78177de7e5845a5429
+
+@ 0 2 0 1f0585fe5bc87fc616ce1d33115fbf79
++       `Serviceable` 只能响应，从不先发送；`Duplexable` 是一种 `Serviceable`，它的发送从不半关闭，因此可以先发送。
+
+% 1 1 0 1813e2bcf05c10af175e7eb33eb406d8
+
+% 1 1 0 17953270bed4acd716236abd046e1f6a
+
+% 1 1 0 12b69c1f1f74523308a05b937974dfcd
+
+@ 0 14 0 1c8419cda82af3d2130f776861e58bde
++   entry .uds   经由 Unix 域套接字的请求/响应交换：`Uds is Serviceable`
++       经由 `Socket.Backend#dialDomain`、`#request`、`#response` 和 `#hangUp`，作用域中需要有 `Every[Socket.Option.Domain]` 和一个 `Tactic[Truncation.Error]`。
++       在 Scala Native 或 WASI 上不可用（`Socket.Error(Unsupported)`）。
++   entry .tcpEndpoint   与远程 TCP 端点的请求/响应交换：`Endpoint[Tcp.Port] is Serviceable`
++       需要 `Online`（`import internetAccess.online`）、`Every[Socket.Option.Tcp]` 和一个 `Tactic[Truncation.Error]`。
++       连接失败时以 `Dns`、`Refused`、`Timeout` 或 `Connect` 抛出 `Socket.Error`。
++   entry .tcpPort   与本地主机上某个 TCP 端口的请求/响应交换：`Tcp.Port is Serviceable`
++       同 `.tcpEndpoint`，但不需要 `Online`：本地主机不是网络。
++   entry #receive   在连接的读取端上新建的一次性拉取流，在对端半关闭时结束
++       需要一个 `Buffering`。
++       该流可能保留实例的 `Tactic[Truncation.Error]`，因此它的类型相对于实例，并且要在创建它的地方读取。
++   entry #close   挂断连接
+
+@ 0 8 0 0b07e5141ffc2fa20e15f09bbf0298e4
++ entry .Duplexable   发送可重复且并发安全的 `Serviceable`，因此 `exchange` 可以先发送
++     `Duplexable` 传输方式的 `transmit` 可以被反复调用，也可以与 `receive` 以及它自身并发调用，而从不半关闭连接。
++     只有这样的传输方式才能*主动*发送——在第一条入站消息之前，或者从另一个任务中——因此把 `Transmitter` 交给调用者的 `exchange` 只对 `Duplexable` 提供；普通的请求/响应 `Serviceable` 只有被动响应的 `react`。
++     这个特质不添加成员：它是关于 `Serviceable` 成员的一个承诺。
++     Coaxial 自己的套接字 given 不是 `Duplexable`；WebSocket 客户端才是这类传输方式。
+
+@ 0 1 0 028def9c8ca6523a1b05029874d7ae63
++ entry .Subscribable   `subscribe` 对多播组的要求：加入、接收、向组或某个成员发送、离开
+
+% 1 1 0 0cc8a91a77b705e6031aeebd94de9b5f
+
+@ 0 6 0 04bfaaaa2c253fbb039cc500bdcd803c
++       `Bindable` 的形状——每次到达回复一次——无法表达不经请求的发送，这就是多播组有自己的类型类的原因。
++       `Multicast` 通过 `Multicast.subscribable`、基于作用域中的 `Socket.Backend` 成为 `Subscribable`，借出块 `subscribe` 把这些方法组合成一个接收循环，并提供一个也能发送的 `Multicast.Subscription`。
++       `Multicast.bindable` 从任何 `Subscribable` 派生出一个 `Bindable`，因此 `listen` 也适用于组，供只做响应的成员使用。
+
+% 1 1 0 13da7e4a8a44ee25018c6feff3b7eed2
+
+% 1 1 0 1d20a167dd499dce0cbbfb587190b6b2
+
+@ 0 9 0 136cbd495f22cc021c279529ca83a01a
++   entry #Binding   后端对已加入的组持有的句柄
++   entry #join   绑定组的端口，并在每个合适的网络接口（或具有给定 MAC 地址的那个接口）上加入该组
++   entry #receive   阻塞直到组投递下一个数据报，抛出 `Socket.Error`
++   entry #sendGroup   向整个组发送一个数据报
++   entry #sendTo   向一个单播目的地和端口发送一个数据报
++   entry #leave   放弃成员资格并关闭套接字，解除挂起的 `#receive` 的阻塞
++   entry #transmit   执行处理函数对收到的数据包给出的 `Multicast.Reply`
++       `Group(data)` 发往组，`Unicast(data)` 发往数据包的发送者及其端口，`Ignore` 不发往任何地方。
+
+@ 0 1 0 0f3f718aa6cdb4471b86183744832015
++ entry .Duplex   持久的双向连接：读写相互独立，从不半关闭
+
+% 1 1 0 0ab010e3bb47c3c514142bfd71cf9314
+
+@ 0 7 0 0cba5d33ca622ae30b96309e3dfee331
++       `Duplex` 是 `duplex`、`session` 和 `Connectable#connect` 交回的东西，也是 TCP 或 Unix 域 `listen` 处理函数接收的东西：一个打开的连接，其读取端是拉取流（`#source`），写入端可以接受任意次发送（`#send`，或推送端点 `#intake`），两者都不会半关闭。
++       这正是 HTTP/2 这类多路复用协议所需要的形状：一方既流式发送请求，又并发地接收服务器发起的帧；请求/响应式的 `transmit` 是另一种形状，它在发送之后关闭输出。
+
+% 2 1 0 042ec1df01e81ed51d5d9849c1d38b19
+
+% 3 1 0 1b70ed854995120b012a5d7f7cecd038
+
+% 4 1 0 009330a0fe3f1cab1d1652cc7f7951f8
+
+% 5 1 0 053a766e8cad94b605cec622878ced67
+
+% 6 1 0 00a708a24e2bcecc105392da8b755f9f
+
+% 7 1 0 131b4c96da4d877d02d2660ffbb41128
+
+% 8 1 0 0de0992fd05e942a127d6b7061365331
+
+% 10 1 0 078d325bf49a192000d9efcb7183887e
+
+% 0 1 0 082f98e689b68c6f05b718c61dafb477
+
+% 0 1 0 1bea4509510c84791ba7d46b68653b06
+
+% 0 1 0 153621c5ab02b7820811afc322cd5473
+
+% 0 1 0 14bddd4311c745d414a327ef5e6fce30
+
+% 1 1 0 0f112b573bb97a42029d633474fb597c
+
+@ 0 5 0 09a0fe11fc26e43915b6c5b6f477f622
++       读取会阻塞，直到数据到达或对端关闭。
++       约定是单一读取者，因此 `#source` 只打开一次。
++       基于套接字的双工连接捕获其背后的操作系统资源，因此存储它的代码把类型声明为 `Duplex^`；进程内的 `.pair()` 是纯的，同样匹配。
++       在 TLS 之上，`#alpnProtocol` 报告握手选定的应用协议。
+
+% 1 1 0 060eb08490a942990b058460cb40ee99
+
+% 1 1 0 1263d14bbd406f011950ecf229e970fc
+
+% 0 1 0 1247a63753ff2efe1c0ea4d248c14f42
+
+@ 0 5 0 01abeb767aa6516a17d1ae43f87c813b
++   entry .pair   进程内相互连接的一对：一方发送的任何内容，另一方都会收到
++       `Duplex.pair()` 构造两个背靠背连接的双工连接，用于在没有套接字的情况下测试协议。
++       数据块边界会被保留——每次发送都被 memoize 为一个元素，在另一方表现为一个重新填充窗口，内存中的协议测试依赖这一点——一方的 `close()` 会结束另一方的流。
+
+% 2 1 0 06733be459f88b911321bc84b2545689
+
+% 3 1 0 13a8e9ec383ad07b13880312d0fe64f7
+
+% 4 1 0 179b16d948bdec080c999bb55293834f
+
+% 0 1 0 0f995baa918becf8124719a94e1c04d6
+
+% 0 1 0 163dcfec7644ed761f00188fffae35e4
+
+% 0 1 0 06ebf705d39a77fc0dfa795ea289ea98
+
+% 0 1 0 008ec0610cd21ee80ec081d553abe91d
+
+% 1 1 0 072b99a4f077a55b0b73c528a3e0e63a
+
+@ 0 16 0 066c8db1f31bf75211920afaf089323a
++   entry #send   把整个流写入连接，并消耗它；可重复调用
++       以 `consume` 参数接受该流：流在这里被耗尽、写入并关闭，之后不得再使用。
++       可以多次调用；从不半关闭。
++   entry #close   关闭连接
++   entry #source   读取端上新建的一次性拉取流，阻塞直到数据到达或对端关闭
++       需要一个 `Buffering` 来确定窗口大小。
++       结果中的 `^` 至关重要：该流是有状态的，并保留着连接。
++       每个连接只打开一次。
++   entry #alpnProtocol   经 ALPN 协商的应用协议（`h2`、`http/1.1`），或 `Unset`
++       对于明文连接，或者对端没有选择 `Tls` 配置所提供的任何协议时，为 `Unset`。
++       统一的 HTTP 客户端在连接后立即读取一次这个值，以便在这同一个套接字上选择 HTTP/2 或 HTTP/1.1 驱动。
++       在 JVM 上由 `SecureEndpoint` 和 `SecurePort` 设置；Scala Native 的 TLS 客户端不提供 ALPN。
++   entry #intake   写入端上的推送端点，按 `Buffering` 的块大小缓冲
++       写入被收集到一个块中，块满时发送；`flush()` 和 `finish()` 发送已收集的内容而不半关闭，因此 `finish()` 之后还可以继续发送。
++       `stream.pump(duplex.intake)` 是在推送端把流复制到连接的方式。
+
+@ 0 1 0 02468a94e7fbd5070a773bdc1e07c7e7
++ entry .Transmitter   在打开的全双工连接上随时发送消息的句柄
+
+% 1 1 0 1275be7681cc54f408f052c15fd99e4d
+
+@ 0 5 0 1263f6b6d4d9aa910f609e24ddc0b686
++       交给 `exchange` 的 `interact` 块：`Transmitter[message]` 用每条消息的 `Transmissible` 将其序列化，并投递到连接上，可以在第一条入站消息到达之前，或者从另一个任务中并发进行，而 `Control` 只能回复。
++       它只在 `Duplexable` 传输方式上可用，因为其发送可以安全地并发调用。
+
+% 1 1 0 1d1e114e3257cbec1c972068182c2b63
+
+% 1 1 0 1cee3134fdf5248b0720a332dac6cbde
+
+@ 0 1 0 113739535b9ddbe31ba25ab8c8374d56
++   entry .Post   发送器投递到的消耗型目标：流入，无输出
+
+% 1 1 0 0e377264fd0f07e610a5cc14879b581b
+
+@ 0 4 0 0ed6e7aeb8745cf5071a03bd8ad9f725
++         一个单方法特质而不是函数类型，因为只有方法参数才能标记为 `consume`。
++         `exchange` 基于连接的发送构造一个。
++     entry #apply   写入整个流，并消耗它
++   entry #send   序列化一条消息并投递到连接上
+
+@ 0 1 0 16558cc4df65e10605a5e2912835a899
++ entry .Control   对话的下一步，由 `react` 或 `exchange` 处理函数针对每条消息返回
+
+% 1 1 0 01b1622068eb03021b3323c012a289fb
+
+@ 0 6 0 010277192afdd2e40a21ee5c8b529fbc
++       `Control[state]` 是处理函数对一条入站消息的裁决：是否回发内容，新状态是什么，以及对话是否继续。
++       四种分别是 `.Continue`（等待下一条消息）、`.Reply`（发送一条消息，然后等待）、`.Conclude`（发送一条消息，然后停止）和 `.Terminate`（停止）。
++       携带的状态为 `Unset` 时状态保持不变，因此 `Continue()` 表示“什么都不变”。
++       `Continue` 和 `Reply` 这两种让对话保持开放的控制也是 `.Interactive`。
+
+% 2 1 0 0516e9f19b6f4b38080acdbb1be4e4d3
+
+% 3 1 0 0b13994183c2d35716a957600e30328d
+
+% 4 1 0 1d648dab58dbff4d0fe8dbdda2d0b856
+
+% 1 1 0 0117605ccecd820d1f44fbce1b2ed214
+
+% 0 1 0 12ea56a6a5dcebc00f3ab8517994cec7
+
+% 0 1 0 10e0019a914ac7951d7104835fc1e485
+
+% 0 1 0 1fd363964ad5e6e0083da6609f4946df
+
+% 0 1 0 1ac883fa4156e48610342be171806c2c
+
+% 1 1 0 1cd550f950bd3ae91c8364da0df6570f
+
+@ 0 2 0 1729e6604e41f8b1129a63734e399b8e
++       消息在构造控制时就通过 `Transmissible` 序列化，因此 `Reply` 或 `Conclude` 以 `Data` 形式持有其线上字节。
+
+% 1 1 0 0e9884fbebba276b1669e4757bbdb723
+
+% 1 1 0 19104cea62990b1a1df536731a17ab3b
+
+@ 0 4 0 04a0c17b24a155910d58387f7d415a4a
++   entry .Interactive   让对话保持开放的控制的标记：`Continue` 和 `Reply`
++   entry .Continue   等待下一条消息，带有新状态，或以 `Unset` 表示不变
++     entry #state   新状态，或以 `Unset` 保持当前状态
++   entry .Reply   发送一条消息并等待下一条，带有新状态或 `Unset`
+
+% 1 1 0 138a7fffaba697331d2a1d4088c4e18b
+
+@ 0 6 0 0e73b788a2217a7d1bdd39ab6138ccdf
++         `Reply(message, state)` 接受任何 `Transmissible` 消息并立即将其序列化；这个 case class 持有得到的 `Data`。
++         状态默认为 `Unset`。
++     entry .apply   由任何 `Transmissible` 消息构造 `Reply(message, state = Unset)`
++     entry #message   回复的字节
++     entry #state   新状态，或 `Unset`
++   entry .Conclude   发送一条消息并停止，带有最终状态或 `Unset`
+
+% 1 1 0 133d8ed54f03efca007d9da11d528196
+
+@ 0 8 0 1fe4e686a49f13f90ca686e99f4a904b
++         `Conclude(message, state)` 接受任何 `Transmissible` 消息并立即将其序列化。
++         循环发送它、更新状态，然后结束；最终状态就是 `react` 的结果。
++     entry .apply   由任何 `Transmissible` 消息构造 `Conclude(message, state = Unset)`
++     entry #message   最终消息的字节
++     entry #state   最终状态，或 `Unset`
++   entry .Terminate   停止对话，不发送任何内容
++       一个 `Control[Nothing]`，因此适用于任何状态类型。
+
+@ 0 1 0 03d6d6373f25656f14d38a1be8a7b149
++ entry .Transmissible   消息在发出时如何变成字节：`serialize` 为一个流
+
+% 1 1 0 0eed7a956110648606b2d3d2ce624f34
+
+@ 0 6 0 18d50dbe078007f415ce87700b36b9b3
++       对 `#serialize` 的一次调用产生一条消息的传输形式，作为一个新的拉取流。
++       带消息分帧的传输方式（UDP 数据报、WebSocket 帧）可以把流 memoize 为单个分帧单元；字节流传输方式则零拷贝地通过窗口写出它。
++       `transmit`、`Reply`、`Conclude` 或 `Transmitter#send` 接受的任何东西都是 `Transmissible`：`Data`、`Text`（通过作用域中的 `Codepage`）、`Chain[Data]`，以及任何 `Encodable in Text` 的值。
+
+% 2 1 0 10ba27a75e291d121a8908b9d23bba6e
+
+% 3 1 0 1b508c38b856bf22158ae10b46ca28a2
+
+% 4 1 0 07c9a52e926d58671c404e799648512c
+
+% 0 1 0 0e5bdc6e1629849e1ca97be9c32372a9
+
+% 0 1 0 1976a8e4cb42557e01d134a556648b1d
+
+% 1 1 0 07af36795dceedd50d3ba0a3097f8f05
+
+@ 0 2 0 0622b65bcc41c43b19944271dffac536
++       这个类型类是纯的（它扩展 `Typeclass.Pure`），因此实例可以在任何地方召唤，并可自由捕获。
+
+% 1 1 0 1e648126c43d4dd40f12fa5379130839
+
+% 1 1 0 1666f81e32fc09ff0ea70d75644f04d1
+
+@ 0 13 0 1e17bd00859843a90b0ae327829f428a
++   entry .bytes   `Data is Transmissible`：字节本身，作为单个数据块
++       恰好绑定在 `Data` 上：子类型参数会在一个无法回流的通配捕获处实例化冻结数组，因此带品牌的 `Data` 需要 `.sizedBytes`。
++   entry .sizedBytes   `(Data & Sized[length]) is Transmissible`：带大小品牌的块按普通块发送
++   entry .stream   `Chain[Data] is Transmissible`：数据块链原样发送
++   entry .text   `Text is Transmissible`，通过作用域中的 `Codepage`
++       需要 `import codepages.utf8Codepage`（或其他代码页）。
++   entry .encoder   任何 `Encodable in Text` 的值，先编码为文本，再通过 `Codepage`
++       例如，`Port` 以其十进制文本发送。
++   entry #serialize   一条消息的传输形式，作为一个新的拉取流
++   entry #contramap   通过先把另一种类型映射到这一种，得到另一种类型的实例
++       `textTransmissible.contramap[Int](_.show)` 是一个 `Int is Transmissible`。
++       函数必须是纯的（`->`）。
+
+@ 0 1 0 027e60485962c1630bd82c25f06a099f
++ entry .Ingressive   字节在进入时如何变成消息：`deserialize` 一条分帧的消息
+
+% 1 1 0 19fa32c35c0872e11d8fb501dad3cecf
+
+@ 0 4 0 09af7d1d3255a2f50312443aff555435
++       `Transmissible` 的入站对应物：`react` 和 `exchange` 通过处理函数消息类型的 `Ingressive` 解码每条入站消息——连接流的一个重新填充窗口。
++       因此，经线上收到的 `Port` 就是一个 `Port`，在到达时即被校验，而不是留待以后检查的文本。
+
+% 2 1 0 1e7e60a7cedc560a16f1d13111eed13e
+
+% 3 1 0 01b2f4fcde3fd54d105091740f5146d7
+
+% 4 1 0 0ca6d7a25b47c3041e4c813a6b12709a
+
+% 1 1 0 10f37dfb425b29ce0fb26bc1518bc27e
+
+% 0 1 0 0d595e1ece3ebc961a1e5e747c40890a
+
+% 0 1 0 1ae1cc0fd4a16b1309994672a14034a7
+
+% 1 1 0 0e76558db93c83110b25f13ac9510557
+
+@ 0 2 0 145971855cfbbbb80b34d3a448469908
++       实例可能有所捕获（一个 `Charset`、一个战术），因此 `#map` 返回的实例捕获了这个实例和该函数。
+
+% 1 1 0 137dfe165858406c13967f9e4022a346
+
+% 2 1 0 0ef9e9637423ae48069f1487277876d7
+
+@ 0 8 0 1c3638a1d57b62890460c9bfacbf1824
++   entry .bytes   `Data is Ingressive`：按收到的原样给出字节
++   entry .text   `Text is Ingressive`，通过作用域中的 `Charset` 解码
++       需要 `import charsets.utf8Charset`（或其他字符集）。
++   entry .decoder   任何 `Decodable in Text` 类型，通过 `Charset` 从文本解码
++       解码失败经由该 `Decodable` 自己的战术抛出。
++   entry #deserialize   由字节得到一条消息
++   entry #map   通过映射这个实例的结果，得到另一种类型的实例
++       `Ingressive.text.map[Int](_.length)` 是一个 `Int is Ingressive`。
+
+@ 0 1 0 028285ae08a2c2da0e3631e9a07bcd70
++ entry .Packet   收到的数据报：它的字节，以及发送者的地址和端口
+
+% 1 1 0 1bbbe496789ac805102eb82bfb10b8ee
+
+@ 0 4 0 1c534e353653c11e1c5d5412a6fac1f2
++       UDP `listen` 处理函数和 `subscribe` 处理函数接收的东西，也是 `Socket.Backend#exchangeUdp` 返回的东西。
++       发送者就是回复的去处，这就是 `UdpResponse.Reply` 和 `Multicast.Reply.Unicast` 不需要自己的地址的原因；对于一次性交换，调用者也借此检查回复是否来自正确的地方。
+
+% 2 1 0 17e793a6ea1424100eaeb967d8fd42f0
+
+% 3 1 0 1998fd53e159a2181e0c588d4538e09f
+
+% 0 1 0 17c2f3c7b5e910970c98215685dc7706
+
+% 0 1 0 1457894c9114ceff05a8e81ad274a9da
+
+% 1 1 0 01e7f848a916f7610e134757b38e9aa1
+
+@ 0 3 0 166b37075fd0acb511fa985ff7f284ab
++   entry #data   数据报的字节，至多为生效的 `Socket.Option.DatagramSize`
++   entry #sender   发送者的 IPv4 或 IPv6 地址
++   entry #port   发送者的 UDP 端口
+
+@ 0 3 0 0d198faaae9299af04093b0cfd4a3aa9
++ entry .UdpResponse   UDP 处理函数对数据报的回答：回复发送者，或忽略它
++     `Reply(data)` 把 `data` 作为一个数据报发回数据包的发送者及其端口；`Ignore` 不发送任何内容。
++     UDP `listen` 处理函数的类型是 `Packet => UdpResponse`。
+
+% 2 1 0 182535d50597562118df671683194870
+
+% 3 1 0 0c713e6566772eb9034fcfb68fee7edc
+
+% 4 1 0 03e971eeaa59709f08ed9ec50f4dd10a
+
+% 5 1 0 18816b69261af076128b74727a5a274c
+
+% 6 1 0 02ae4ff4217c46c40e5fe1faf4315a9c
+
+% 7 1 0 153d49df385922d710566669b4c068d8
+
+% 8 1 0 1c9e92fa3ad88af71c78171f81e8df49
+
+% 9 1 0 0d3d3401a9b430900945efb98b79312c
+
+% 1 1 0 10e26940ccace9d91d475856c814cb8b
+
+% 3 1 0 12b2c811addb56051eb70995b9f8cc87
+
+% 0 1 0 1e0bac2c4e84178b1cb301f2f6c79714
+
+% 0 1 0 1bbe72c0dbaef42c06c8cce781fda8a3
+
+% 1 1 0 1d91665a4167a77c1f425fdc17578c33
+
+@ 0 1 0 073cf04370a04af50e19bec09e69f7ff
++ entry .Uds   Unix 域套接字，以其套接字文件的路径表示；可服务，也可连接
+
+% 1 1 0 1d09edc8472d8c2e149c5c808deeea79
+
+@ 0 6 0 1407d91bc77db56c03c9e34409eb23e5
++       `Uds(path)` 是本地文件系统上的一个套接字——`/var/run/docker.sock`，某个守护进程的控制套接字——它可以用 `listen` 提供服务（文件在该路径上创建，该路径不得已经存在），可以用 `transmit` 和 `react` 连接以进行一次请求/响应，也可以用 `duplex` 和 `session` 作为 `Duplex` 保持打开。
++       它接受任何路径类型（`Abstractable across Paths to Text`）或文本，并通过 `#path` 以任何路径类型交回路径。
+
+% 2 1 0 1870cf900c6f1a9f18d16061e6079dfe
+
+% 3 1 0 16fa8853f77b80fd176bfe34f719e8ae
+
+% 0 1 0 0ff4e31c6e3f169a1cce4196941588a2
+
+% 0 1 0 072bc5be0f26d99118ac449e2b891bf6
+
+% 0 1 0 025d22bd57d59dc7101cd2d58a8d2afd
+
+% 0 1 0 1e9815f1bea0bc4213d7fae8647ea181
+
+% 1 1 0 0d4abfbba70111ed0bdd78e86f824627
+
+@ 0 4 0 1dd344f54a9fe9420976d37b33b4e425
++       Unix 域套接字只存在于 JVM 后端：在 Scala Native 和 WASI 上，这些操作抛出 `Unsupported`。
++       在 JVM 上，`listenConnections` 用原始阻塞流和对端用户为套接字提供服务，供需要这些的守护进程使用。
++       域套接字没有网络接口，因此 `listenOn` 和 `duplex(…)(interface)` 会忽略它们的接口参数。
+
+% 0 1 0 0d99d4438ffc43d509287e1dbb846214
+
+% 1 1 0 195171b3fae4fc3b1d485f16274ec76f
+
+% 1 1 0 09a1d57615e725461004ac8a43668722
+
+@ 0 6 0 1241209cfffed0510bf2cce5529f30e2
++   entry .showable   把套接字呈现为其路径
++   entry .inspectable   以 `⇄` 为前缀的调试呈现，标示双向端点
++       单独的路径与任何其他类似路径的文本无法区分，因此呈现为 `⇄/var/run/docker.sock`，与端口的 `⌗8080` 同一思路。
++   entry .apply   由任何路径类型或文本构造 `Uds(path)`
++   entry .Endpoint   与请求路径配对的套接字：域套接字背后某个资源的地址
+
+% 1 1 0 013538e7f161de2c1af4f67216562f82
+
+@ 0 9 0 139ecd0cd7a67e871f395a456bb1041a
++         `Uds.Endpoint(socket, path)`——用 `socket.at(path)` 构造——指定域套接字所代理的服务*之内*的一个路径，就像通过 Docker 套接字工作的 HTTP 客户端访问 `/info` 那样。
++         它是 URL 在域套接字上的对应物，供通过域套接字路由请求的库使用。
++     entry #socket   套接字
++     entry #path   服务之内的路径
++   entry #path   套接字文件的路径，作为任何路径类型（`Instantiable across Paths from Text`）
++       例如 `socket.path[Path on Linux]`。
++   entry #at   `socket.at(path)`：服务之内某个路径的 `Uds.Endpoint`
+
+@ 0 1 0 19e21bd74c34ad2d1c8cc25a7b9b1456
++ entry .Multicast   多播组和端口，用 `subscribe` 订阅或用 `listen` 提供服务
+
+% 1 1 0 151817e1c05bce9a04a29f4ab94ed58b
+
+@ 0 6 0 118c5ca4ee03e5fb03dd573ba41260bc
++       `Multicast(group, port)` 以 IPv4 或 IPv6 地址和一个 UDP 端口指定一个组。
++       程序订阅它：在每个合适的网络接口上加入该组，接收组的数据报，并可以向组发送（公告）或回发给某个发送者（它以单播请求的响应）。
++       组是一个地址，因此只属于一个地址族：同时在 IPv4 和 IPv6 多播上使用的协议，例如 mDNS，要订阅两个组。
+
+% 2 1 0 00e8e0d20626d5da11b9947b621ff341
+
+% 3 1 0 0254fe2f83361c9b0af95ad90e967237
+
+% 4 1 0 1b9e12fc89747d750e8fcf500364257c
+
+% 5 1 0 10531abb5d0be50612061b18e44369ee
+
+% 6 1 0 178231ed21a688d70fa7fecfecea26c4
+
+% 7 1 0 015909b5370eae06064dc198e12a3e33
+
+% 8 1 0 1e6b91353100a1bf069c388c93574175
+
+% 9 1 0 0332aa284fbae50617bdc98167c5e332
+
+% 10 1 0 13b7a44f98b042311370e0c831f179d3
+
+% 0 1 0 14c89d9788ffd8db01b6959477307e43
+
+% 0 1 0 02030cc03afc0753096d048372988875
+
+% 2 1 0 177acb0dd74dc9ab1a7275593acfef3e
+
+% 0 1 0 14142cbc504ba34d1a280c835d69afdc
+
+% 0 1 0 01369e1f28e789a01a9b2b99267355f5
+
+% 1 1 0 07519f6533d0c8921b9ceed4cf0011ca
+
+@ 0 3 0 0b1e066fbbd2dfdc0ca16a1d4ec6de56
++       组的端口以地址和端口复用方式绑定，因此同一主机上的多个程序可以并列订阅。
++       JVM 和 Scala Native 后端支持它（Native 的差异见 `subscribe`）；WASI 没有多播。
+
+% 1 1 0 00776afc46aa71a305a523143987f942
+
+% 1 1 0 04884830bbbe8dc30ee30dfd80284d36
+
+@ 0 6 0 1133a1d7d585a79d06be80829ecdc907
++   entry .showable   把组呈现为 `address:port`，IPv6 地址放在方括号中
++   entry .Reply   处理函数对数据报的裁决：发往组、发往发送者，或什么都不发
++       `Group(data)` 回答整个组，这是多播的常规做法，使每个成员都得知答案；`Unicast(data)` 只回答发送者，用于它以单播请求的响应；`Ignore` 不发送任何内容。
++   entry .Subscription   借出的已加入组的句柄：`Socket.Service` 的 `stop`，外加不经请求的发送
+
+% 1 1 0 0fc0379b2dd810ae104115b492603a2e
+
+@ 0 16 0 1b4b2575a96328ec08779e354d263393
++         `subscribe` 作为上下文值借给其块的东西，也是处理函数在请求/响应形状之外发送时所能触及的东西：加入时的公告、离开时的告别、对看到（而非收到）的内容的响应。
++     entry #send   `send(data)` 发往整个组；`send(data, destination, port)` 发往某一个成员
++         两者失败时都抛出 `Socket.Error(Transmit)`。
++   entry .subscribable   `Multicast is Subscribable`，基于作用域中的 `Socket.Backend` 和 `Every[Socket.Option.Udp]`
++       经由 `Socket.Backend#joinMulticast` 在 `.interfaces` 所选的接口上加入。
++   entry .bindable   `Multicast is Bindable`，从 `Subscribable` 派生：在组上 `listen`
++       供只做响应的成员使用：处理函数为 `Packet => Multicast.Reply`，`listen` 借出的是不带发送的 `Socket.Service`。
++       `subscribe` 则是带发送的借出。
++   entry .interfaces   订阅所加入的接口：具有某个 MAC 地址的那个，或每个合适的接口
++       为 `Unset` 时，取除回环接口之外每个已启用且支持多播的接口，回环接口在 Linux 上无法承载多播（程序自己的数据报改由 `Socket.Option.MulticastLoop` 送回）；为 `MacAddress` 时，取具有该地址的接口。
++   entry #group   组的 IPv4 或 IPv6 地址
++   entry #port   组的 UDP 端口
+
+@ 0 1 0 0228970916c2fa8806305b20d81f575d
++ entry .socketOptions   作为 given 按名称导入的套接字选项，以及带值选项的工厂方法
+
+% 1 1 0 12557892123f23b910e3e2f95a48d1d0
+
+@ 0 7 0 09cfa057704302d5108f636ecb39f832
++       每个标志选项都是一个以其具体类型声明的具名 given——`Socket.Option.NoDelay` 而不是 `Socket.Option`——因此按连接进行的 `Every[Socket.Option.Tcp]`、`.Udp` 和 `.Domain` 搜索会恰好为它适用的传输方式收集它。
++       带值的选项是工厂方法，其结果是具体的选项，因此 `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)` 同样会被收集。
++       `import soundness.*` 不引入任何选项：每一个都按名称导入，程序的套接字方针就是这样一次声明、并从其导入中读出的。
+
+% 2 1 0 0b9ad316322eba7f09b372e7d27f463c
+
+% 3 1 0 0bd4fea9117652c003a3873b778f6fdb
+
+% 0 1 0 0ad9838dfb4040d21ad9686b074e3a5c
+
+% 0 1 0 12a252c229474416127562099c1f1669
+
+% 0 1 0 1729778370a9d104003c12accbffaab7
+
+% 0 1 0 192f5f4c4de03c95107fcc3797c50cbc
+
+% 0 1 0 1315ff0b94975ab3023b549143d6d493
+
+% 0 1 0 1b2e1ad81f262d4916ba31736aa676ca
+
+% 1 1 0 05ed751e00cbaa5517c29f680c5b9caf
+
+% 1 1 0 0a3940ac86dc44571c1082002372f34d
+
+@ 0 13 0 0235d26e0d054816007eceba0e25843f
++   entry .reuseAddressSocketOption   `SO_REUSEADDR`，用于 TCP、UDP 和域套接字
++   entry .reusePortSocketOption   `SO_REUSEPORT`，用于 TCP 和 UDP 套接字，在平台支持时
++   entry .noDelaySocketOption   `TCP_NODELAY`，用于 TCP 套接字
++   entry .keepAliveSocketOption   `SO_KEEPALIVE`，用于 TCP 套接字
++   entry .broadcastSocketOption   `SO_BROADCAST`，用于 UDP 套接字
++   entry .multicastLoopSocketOption   `IP_MULTICAST_LOOP`，用于 UDP 和多播套接字
++   entry .receiveBuffer   `receiveBuffer(bytes)`：一个 `Socket.Option.ReceiveBuffer`，用于绑定为 given
++   entry .sendBuffer   `sendBuffer(bytes)`：一个 `Socket.Option.SendBuffer`，用于绑定为 given
++   entry .linger   `linger(seconds)`：一个 `Socket.Option.Linger`；`linger()` 禁用逗留
++   entry .trafficClass   `trafficClass(value)`：一个 `Socket.Option.TrafficClass`，用于绑定为 given
++   entry .timeout   `timeout(milliseconds)`：一个 `Socket.Option.Timeout`，用于绑定为 given
++   entry .multicastHops   `multicastHops(count)`：一个 `Socket.Option.MulticastHops`，用于绑定为 given
++   entry .datagramSize   `datagramSize(bytes)`：一个 `Socket.Option.DatagramSize`，用于绑定为 given
+
+@ 0 1 0 0eb432254a5ef43f08f904ab5958606f
++ entry .socketBackends   各平台的 `Socket.Backend`，每一个都是按名称导入的 given
+
+% 1 1 0 159731321de882b40bcc37ad3ec46113
+
+@ 0 5 0 15a97392aabb9ca1167fbeabeff307b7
++       每个套接字操作都经过作用域中唯一的 `Socket.Backend`，而这个选择从不隐式进行：`import soundness.*` 不引入任何后端，后端要从为该平台构建的组件中按名称导入。
++       名称遵循本项目的来源用词：Java 模块用 `javaBase…`，Scala Native 用 `scalaNative…`，WASI 接口用 `wasi…`。
+
+% 2 1 0 1f35426ad7edef68155aa95f1204fd07
+
+% 3 1 0 165f2b1398993df4115a4adfda36bbe4
+
+% 1 1 0 1b15c02f92fc99140d99b5a2333abf3e
+
+% 1 1 0 099529439963498d1e2ed2ff238d5edd
+
+@ 0 3 0 031badd39edf222419b370b5c08e13d2
++       三个后端实现相同的操作，差别在于平台所提供的功能：JVM 一应俱全；Scala Native 没有 Unix 域套接字；WASI 只有连接 IPv4 字面量的 TCP。
++       第四方后端就是任何 `Socket.Backend` given。
+
+% 1 1 0 10b44cd0d4a18545061803d7a01a2f44
+
+@ 0 16 0 005cd9d66f54126519d7fd85abfeb058
++   entry .javaBaseSockets   JVM 后端，基于 `java.net` 和 `java.nio.channels`；位于 `coaxial.jvm`
++       TCP、UDP、多播和 Unix 域套接字。
++       每个句柄都保留其角色所需的 Java 表示——TCP 服务器是 `ServerSocket`（它遵守 `Timeout`），Unix 域服务器是 `ServerSocketChannel`，请求/响应交换对 TCP 是阻塞的 `Socket`，对域套接字是 `SocketChannel`——因此不会丢失任何角色特有的行为。
++       多播发送经过每个已加入的接口各一次。
++       绑定和连接失败根据 JDK 的异常及其消息被归类为 `Bind.Error` 和 `Socket.Error` 的原因。
++   entry .wasiSockets   WASI 后端，基于 `wasi:sockets`；位于 `coaxial.wasi`
++       只有 TCP，并且只能连接 IPv4 字面量（WASI 在这里不提供解析器，因此主机名会抛出 `Socket.Error(Dns)`）。
++       监听器绑定 IPv4 通配地址；`start-connect`/`accept` 通过在套接字的 pollable 上阻塞来驱动至完成；网络必须由宿主授予（`wasmtime run -S inherit-network`）。
++       Unix 域套接字抛出 `Unsupported`；UDP、多播和 TLS 抛出 `Socket.Error`。
++       该 given 是 `inline` 的，因此 WIT 调用在召唤它的地方展开，这需要 `wasiApis.wasiSocketsApi` 接口以及类路径上的 WASI 门面。
+
+@ 0 1 0 069d5990b9452b311780f49a6398ab22
++ entry .wasiApis   WASI 后端据以进行类型检查的 WIT 接口，作为按名称导入的 given
+
+% 1 1 0 002494f3120bd1910b0d54d8bee603a2
+
+@ 0 6 0 128d02c2458b51570612d8aa77b77d93
++       `wasiSockets` 通过 xenophile 的 `Foreign` 和 `call` 导航 `wasi:sockets` 世界，它们查阅 WIT 接口以获取模块 ID、资源方法和参数类型。
++       该接口是类路径资源 `/coaxial/sockets.wit`，由这里的 given 加载；它与其他 WASI 组件的接口一起并入总括包的 `wasiApis` 包。
++   entry .wasiSocketsApi   `WasiSocketsApi` given，从类路径资源 `/coaxial/sockets.wit` 加载
+
+@ 0 3 0 0d9e03f1c00d59ca02a82bedfe43a2ab
++ entry .WasiSocketsApi   `wasi:sockets` WIT 接口的类型：`Interface in Wit at "/coaxial/sockets.wit"`
++     `wasiApis.wasiSocketsApi` 提供的类型别名，WASI 后端的 `Foreign` 导航据此进行类型检查。
++     仅位于 `coaxial.wasi`。
+
+@ 0 1 0 01259ee3d9fcc06511976a607f39be78
++ entry .query   通过 UDP 向名称服务器发出的 DNS 查询：发出一条消息，收回其回答；位于 `coaxial.dns`
+
+% 1 1 0 122930fa5086ad151b0d3eeab347ed2d
+
+@ 0 7 0 1bffd20f2fa5550e08a2dfe15c53a6b3
++       两个重载，都是指定名称服务器的 `Endpoint[Udp.Port]` 上的扩展方法。
++       `endpoint.query(message: Dns.Message)` 从一个临时端口把消息作为一个数据报发送（`Socket.Backend#exchangeUdp`）并返回回复，回复必须带有查询的 ID 和它的第一个问题，否则它属于别的交换，并会抛出 `Dns.Error(Mismatch(id))`。
++       `endpoint.query(name, rtype = Dns.Type.A)` 提出常见的问题——`name` 的 `rtype` 记录，请求递归，使用新的随机 ID——并返回作答的 `Dns.Record`。
+
+% 2 1 0 1badeb53999831bb15a372e8a207bbf3
+
+% 3 1 0 03f8d361a91505aa15c3d40a230a2ac2
+
+% 4 1 0 17124d59d0a195c816840efb056fa92f
+
+% 5 1 0 05eb6a14d8bdc010043b4cfd772f7a5a
+
+% 6 1 0 17696caf4214ba2b1e56c83d3efff468
+
+% 1 1 0 1ee9b993099d6e690b272be2d0886cc0
+
+% 0 1 0 0fd82cd6a93eda240ec5fb1e48b8f3c9
+
+% 0 1 0 17139d1f18a7f74007456f4e267d330a
+
+% 0 1 0 1a1548825325770808cd0d88b9484d1b
+
+% 1 1 0 142779e60471cad70e0f2a07dc7dc9a0
+
+@ 0 6 0 15bde1cbd64a91e9174d1ea67976188b
++       等待时间由作用域中的 `Socket.Option.Timeout` 限定，否则为五秒；丢失的数据报是 `Dns.Error(Timeout)`，由调用者决定是否再问——没有重传。
++       任何其他套接字失败都作为 `Socket.Error` 传出。
++       该方法需要作用域中有一个 `Socket.Backend` 和 `Every[Socket.Option.Udp]`，并抛出 `Dns.Error` 和 `Socket.Error`。
++       消息和记录类型是 urticose 的 `Dns`。
++       它叫 `query` 而不是 `lookup`，因为 `soundness` 把后者这个名称留给了 anamnesis。
+
+% 1 1 0 0c0aa7beb236c74107395eb86e97d347
+
+@ 0 1 0 1ebc6bc6b7f1daa00e97cdfe88d4d8a1
++ entry .Tls   TLS 连接的配置：信任与密钥、校验、ALPN、版本、双向认证
+
+% 1 1 0 0473f5fcc82677911b88683e765c2dcc
+
+@ 0 6 0 181459da7807592d0456db52eae11a61
++       `Tls` 值是每个 `SecureEndpoint` 连接和每个 `SecurePort` 监听器所依据的上下文配置。
++       匿名的默认 given `Tls()` 是完全安全的：平台的信任库、开启主机名校验、不提供 ALPN（保留 `wss` 对端所期望的普通 TLS 握手）、平台的协议版本，以及不进行客户端认证。
++       更宽泛的方针通过这些字段构造，或者用 `TlsAcceptance` 的 `tls(…)` 和 `keyed(…)` 扩展方法从中呈现出来。
+
+% 2 1 0 0038742f0312d676129342da5dfdd94a
+
+% 3 1 0 1a4514447d3f81eb112f4a89bb5d3434
+
+% 0 1 0 16a126cb3a86852804ed57b933ab1b4a
+
+% 0 1 0 0abfb538d76edc7a1663ff0d988ac271
+
+% 1 1 0 14fdf41c138c666e15011996ffc83418
+
+@ 0 6 0 1e476725aaf55adb11553020b37daa00
++       JVM 上的 `Tls` 有五个字段：`#context`（一个 `SSLContext`，或以 `Unset` 表示 JVM 默认值）、`#verify`、`#protocols`、`#versions` 和 `#mutual`。
++       Scala Native 上的 `Tls` 只有一个字段 `#verify`：OpenSSL 的上下文按连接从系统证书库构建，因此没有别的可配置，也没有 ALPN、版本限制或服务器端 TLS。
++       `.keyed`、`.certificate` 和 `.fingerprint`——服务器和固定证书的客户端所需的密钥材料辅助方法——只存在于 JVM 上。
+
+% 1 1 0 0d36003d9e10bce211dd26bb0e1b8f67
+
+% 1 1 0 1add1f14450c1cdc0cd817f1c0f419fa
+
+% 1 1 0 182766f43e848dc21445426aceb20b14
+
+@ 0 7 0 13ccc64c0cd5cada1a0a13240ce21a98
++   entry .keyed   一个其上下文呈现 PKCS#12 密钥库密钥材料的 `Tls`；仅限 JVM
++       `Tls.keyed(keystore, password)` 是 `SecurePort` 监听时所用的配置（JVM 的默认上下文没有私钥，用它绑定的服务器每次握手都会失败），也可供向对端认证自身的客户端使用。
++       信任采用平台的默认设置——`TlsAcceptance().keyed(…)` 在其他任何接受方针下呈现同样的材料。
++       传入的是密钥库的字节而不是路径，因此由调用者决定机密存放在哪里。
+
+% 2 1 0 1181de6914e9fe570361e740c9745c74
+
+% 3 1 0 029fffe2af6adc5f18b98566da8d8328
+
+% 4 1 0 0da67b6ebff2ca5917afa4caec0bccae
+
+% 5 1 0 1df9f7ab28e2251617d13d0ff219ca45
+
+% 6 1 0 03f0900843297e6f06231216ea5df4af
+
+% 7 1 0 07215792cc23087219485238a0937f0b
+
+% 0 1 0 0cf05aec8ff076cc152e3402b9840be0
+
+% 0 1 0 0a7d123af5b4e4b3102f653f5cd27ae6
+
+% 1 1 0 1de31a6fd86e1d5b163b39bc1af4722c
+
+@ 0 19 0 164703879fe1d5500e015880ab576d89
++   entry .certificate   密钥库中私钥之下第一个证书的 DER 编码；仅限 JVM
++       用 `.keyed(keystore, password)` 绑定的 `SecurePort` 所呈现的证书，因此也是客户端计算指纹并固定的对象。
++       密钥库中没有密钥条目时为 `Unset`。
++   entry .fingerprint   证书 DER 编码的 SHA-256 摘要；仅限 JVM
++       `TlsAcceptance#pinning` 所比较的身份，也是 `openssl x509 -fingerprint -sha256` 打印的内容。
++       三十二个字节。
++   entry #context   提供信任和密钥的 `SSLContext`，或以 `Unset` 表示 JVM 的默认值；仅限 JVM
++   entry #verify   是否根据主机名检查对端证书（在 Native 上还决定是否信任它）
++       默认开启（RFC 2818 端点识别）。
++       只有在对端证书自签名且已经通过带外方式受信任时才关闭；固定证书的 `TlsAcceptance` 会自行关闭它，因为固定值已指明对端。
++       在 Scala Native 上，关闭它还会完全禁用证书校验。
++   entry #protocols   要提供的 ALPN 应用协议，按偏好顺序排列；仅限 JVM
++       例如 `List(t"h2", t"http/1.1")`。
++       为空时不提供 ALPN。
++       对端的选择从 `Duplex#alpnProtocol` 读取。
++   entry #versions   允许的 TLS 协议版本（`TLSv1.3`、…）；为空时采用上下文的默认值；仅限 JVM
++   entry #mutual   以此配置监听的 `SecurePort` 是否要求每个客户端出示证书；仅限 JVM
++       此时客户端的上下文必须出示一个证书（`TlsAcceptance#keyed`）；所出示的证书是否被接受，由监听器的信任管理器决定。
+
+@ 0 1 0 06f1b45eb1808ed00ec8970537ed3aea
++ entry .TlsAcceptance   TLS 连接接受哪些对端配置：默认严格，只在许可下放宽
+
+% 1 1 0 1f0e1f6cb90b14260b86c1f26326b84c
+
+@ 0 7 0 143e2cbe3b48470c10543d909aa1d0fd
++       `TlsAcceptance` 是评判 TLS 连接所依据的信任方针，在每个创建连接的地方从上下文中解析，与 gastronomy 的密码学许可相呼应：严格的默认值（`.strict`）不需要任何许可，而每一种放宽都只能在对应 `Concession` 的已擦除 `Permit` 之下构造，因此代码库所容忍的弱点仅从其许可导入就能审计，且没有运行时开销。
++       `.tls` 和 `.keyed` 扩展方法把它作为 `Tls` 呈现给 coaxial 的套接字，因此同一个方针既可以管理 JDK 的 HTTP 客户端，也可以管理 coaxial 自己的套接字。
+
+% 2 1 0 02414a732ed708ef022c21acc1a09b40
+
+% 3 1 0 176bafe1c01de95900033aa06963fd5c
+
+% 0 1 0 04e56e4eb7932cf209f6fb82e6f1c7f5
+
+% 0 1 0 09636736d03a9b0f01aa70ee16e9eeb7
+
+% 0 1 0 187166d9662d1e071a2b9ceb622e09e1
+
+% 1 1 0 193dd77a60b613e804b15a77c113600b
+
+@ 0 9 0 1cea157faa8227231dde99ca74f686e4
++       证书层面的准则——信任锚、过期、自签名、主机名校验、吊销——通过一个包装的信任管理器和 `SSLParameters` 按连接施行；只有放宽的接受方针才需要付出自定义信任管理器的代价，不带密钥的严格默认值恰好就是平台自己的上下文。
++       协议层面的重新启用（TLS 1.0/1.1、小的密钥长度）则不同：JSSE 把按连接的约束仅仅视为对进程级 `jdk.tls.disabledAlgorithms` 属性的附加，因此这些要用 `Trust.unlock` 在进程级别一次性解锁。
++       固定证书（`#pinning`）不需要许可：固定值是比通往公共信任锚的证书链更强的身份检查。
++       仅限 JVM。
+
+% 0 1 0 03050379dfb1b79e183a3cf9646df898
+
+% 1 1 0 023168edd6a73d350460b6ddc176cbe4
+
+@ 0 16 0 122792cb0af5bc26024ee2f888192cfc
++   entry .strict   默认 given：`TlsAcceptance()`——平台版本、严格信任、软失败吊销检查
++   entry .materialize   一个接受方针所对应的 JSSE `SSLContext` 和 `SSLParameters`
++       扩展方法 `acceptance.materialize()`：上下文（对于不带密钥的严格接受方针为平台的上下文，否则为带包装信任管理器的上下文），以及设置了版本和端点识别算法的参数。
++       供接受它们的 JDK API 使用。
++   entry .tls   把接受方针呈现为供 `SecureEndpoint` 使用的 `Tls`，可选地提供 ALPN 协议
++       扩展方法 `acceptance.tls(protocols = Nil)`：物化后的上下文、取自接受方针主机名设置的 `verify`、版本，以及给定的 ALPN 协议。
++       不带密钥材料：不向对端认证自身。
++   entry .keyed   在接受方针的信任之下呈现密钥库的密钥材料，供服务器或需认证自身的客户端使用
++       扩展方法 `acceptance.keyed(keystore, password, protocols = Nil, mutual = false)`。
++       双向认证连接的两端都需要它，因为单独的 `Tls.keyed` 信任平台的信任锚，而单独的 `.tls` 不呈现证书。
++       带 `mutual` 时，用结果绑定的 `SecurePort` 要求每个客户端出示证书，再由这个接受方针评判——固定证书的方针恰好只接纳被固定的客户端。
+
+% 2 1 0 096805cff213c5450602531d30b6fe6a
+
+% 3 1 0 05e2aca81bc9ee24070779ba5932d921
+
+% 4 1 0 08b7e8b5047401830b0358f1bcc1a405
+
+% 1 1 0 0eba106bb839c230067606b1bd357785
+
+% 0 1 0 1b18a5e2297088eb06f0bbf3618adb81
+
+% 1 1 0 1fa799a531ee8eb7079d2d295b9d7e50
+
+% 2 1 0 086411f3d70ab5520a6faf2244e3e2d1
+
+% 3 1 0 0f4e93a3613c427e0eba431226981bf8
+
+% 0 1 0 0e0de1d369fbcc5d105844fc1dcbabe1
+
+% 0 1 0 148d6d2584b095111a8409207bfebcb1
+
+% 0 1 0 1de18c6bf942ee1c0595671b773b393f
+
+% 0 1 0 1e361c9803ebd20204067f6521289950
+
+% 1 1 0 03c292505fe3f8ce0ca6dc82e5c3097a
+
+@ 0 23 0 095d7dcba85c938c16100f76a23d1fbb
++   entry #versions   允许的 TLS 版本，或以 `Nil` 表示平台的默认集合
++   entry #trust   证书准则，一个 `Trust`
++   entry #revocation   如何检查吊销：`Required`、`SoftFail`（默认）或 `Unchecked`
++   entry #permitExpired   接受已过期的证书链；需要 `Permit[Concession.ExpiredCertificate]`
++       由 `import cryptoPermits.permitUntrustedCertificates` 授予。
++   entry #permitSelfSigned   接受没有通往信任锚路径的证书链；需要 `Permit[Concession.SelfSignedCertificate]`
++       由 `import cryptoPermits.permitUntrustedCertificates` 授予。
++   entry #permitHostnameMismatch   跳过主机名校验；需要 `Permit[Concession.UnverifiedHostname]`
++       由 `import cryptoPermits.permitUntrustedCertificates` 授予。
++   entry #requireRevocationChecks   无法确定吊销状态时使连接失败
++       把 `revocation` 设为 `Required`，而默认的 `SoftFail` 容忍未确定的状态，但不容忍已吊销的证书。
++   entry #permitRevoked   接受已吊销的证书；需要 `Permit[Concession.UncheckedRevocation]`
++       由 `import cryptoPermits.permitUncheckedRevocation` 授予。
++   entry #trusting   以给定的 X.509 证书作为信任锚，取代平台的信任锚
++   entry #pinning   恰好接受证书具有此 `Tls.fingerprint` 的对端，不接受其他任何对端
++       SSH known-hosts 模型，适用于自签名证书已通过带外方式交换的对端。
++       被固定的证书链仅凭其叶证书的摘要就被接受——不检查信任锚、有效期或主机名，因为固定值比其中任何一项都更精确地标识了对端——其他所有证书链都被拒绝。
++       主机名校验被关闭。
++       在监听器上（`keyed(…, mutual = true)`），固定值指明唯一被接纳的客户端，并且证书请求中不列出任何签发者，因此自签名的客户端会出示它的证书。
+
+% 2 1 0 11c73fb5d1a3609213477a69adeab270
+
+% 3 1 0 19b95a37a10121580b511ae8d6646488
+
+% 4 1 0 0ab3b414920c3f3e1b26181e1b3961d6
+
+% 5 1 0 06d4b92faa6adf77127ec3d8432a6e2f
+
+% 6 1 0 0a2f2841139ca654024428110ce0fd93
+
+% 7 1 0 15a7d28bc79eb9ce12c071e16262e702
+
+% 0 1 0 006457590a9f3c861cd6da8ceabaa4d6
+
+% 0 1 0 1f08d752e23da44c112b5a77ea5787b7
+
+% 1 1 0 05f5f013a9ad436d0d893c5a50c664b9
+
+@ 0 1 0 002db746af8e6d22050b569a737753e3
++ entry .Trust   `TlsAcceptance` 的证书准则，以及对已弃用 TLS 的进程级解锁
+
+% 1 1 0 10a6eb079fd8e6ed091012724dbd8ae8
+
+@ 0 6 0 1102122a36c66433110b113cbd18eb73
++       `Trust` 说明，除了通往平台信任锚的完整且当前有效的证书链之外，还接受哪些证书链：是否接受 `#expired` 的证书链，是否接受 `#selfSigned` 的证书链，是否检查 `#hostname`，哪些 `#anchors` 取代平台的信任锚，以及哪一个证书是 `#pinned`。
++       `TlsAcceptance` 的 `permit…`、`trusting` 和 `pinning` 方法构造它；`.Strict` 是默认值。
++       伴生对象还容纳 `Version` 和 `Revocation` 词汇以及 `.unlock`。
++       仅限 JVM。
+
+% 1 1 0 13c22c08555d541b15f5f3db95b25102
+
+@ 0 1 0 1a4d1cf27b888de91cd4981bb127704b
++   entry .Version   TLS 协议版本：`Tls12`、`Tls13`，以及已弃用的 `Tls10` 和 `Tls11`
+
+% 1 1 0 0bfb916a49b4b2810a5b0e1430fc100c
+
+@ 0 19 0 0e06ec84641ccad01d287bef8520487b
++         `TlsAcceptance#versions` 列出允许的版本。
++         仅允许 `Tls10` 或 `Tls11` 还不够：JSSE 在进程级别禁用了它们，因此必须先运行 `.unlock`。
++     entry #id   JSSE 名称：`TLSv1`、`TLSv1.1`、`TLSv1.2` 或 `TLSv1.3`
++   entry .Revocation   如何检查吊销：`Required`、`SoftFail` 或 `Unchecked`
++       `Required` 在无法确定状态时使连接失败；默认的 `SoftFail` 容忍未确定的状态，但拒绝已吊销的证书；`Unchecked` 甚至接受已吊销的证书，并需要 `Permit[Concession.UncheckedRevocation]`。
++   entry .Strict   默认准则：未过期、非自签名、检查主机名、平台信任锚、不固定任何证书
++   entry .unlock   在进程级别重新启用已弃用的 TLS 版本；需要 `Tls10` 和 `Tls11` 许可
++       `Trust.unlock(versions)` 从 `jdk.tls.disabledAlgorithms` 安全属性中移除这些版本。
++       它必须在任何 JSSE 机制初始化之前运行——之后的调用对已创建的上下文没有效果——并且影响整个进程，这就是它是 `import cryptoPermits.permitLegacyTls` 之下的显式调用、而不是按连接设置的原因。
++   entry #expired   是否接受已过期的证书链
++   entry #selfSigned   是否接受没有通往信任锚路径的证书链
++   entry #hostname   是否根据主机名检查证书
++   entry #anchors   作为信任锚受信任的 X.509 证书，或以 `Nil` 表示平台的信任锚
++   entry #pinned   唯一被接受的证书的 SHA-256 指纹，或 `Unset`
+
+@ 0 1 0 1722de3c9d69c84b09ff252c00edcdd9
++ entry .SecureEndpoint   经由 TLS 访问的 `host:port`：明文 `Endpoint[Tcp.Port]` 的可连接对应物
+
+% 1 1 0 088bd7c0476737a2165c3782ab9e1b6d
+
+@ 0 7 0 1cf24fa4d1d0b03217c19e7028613077
++       `SecureEndpoint(host, port)` 在作用域中的 `Tls` 之下用 `duplex` 和 `session` 连接：它的 `Connectable` 打开一个 TLS 连接，SNI 设为 `host`，除非 `Tls#verify` 关闭，否则校验对端主机名，为 ALPN 提供 `Tls#protocols`，并限制在 `Tls#versions` 之内，完成握手后把连接呈现为一个 `Duplex`，其 `alpnProtocol` 是对端所选的协议。
++       握手失败——信任方针拒绝的证书、主机名不匹配——为 `Socket.Error(Handshake)`。
+
+% 2 1 0 0d252498b1784da4039cb509d6f0f0cf
+
+% 0 1 0 1fbe22663e22b65e0aaf1fb0e21e4272
+
+% 1 1 0 1ca9453bbc46a9de17281770a6ea3e26
+
+% 2 1 0 12f300053e0b031313ef2248ddde7703
+
+% 3 1 0 0bcab5dc67ed86e306033f6e357976bb
+
+% 4 1 0 172b61eb64788a841815a3d2f669fb0a
+
+% 5 1 0 012baeafa571369f0a50faaeb477ceaa
+
+% 6 1 0 07655a224d6af8ed0d6f4fdf4ddde354
+
+% 0 1 0 01363661624807cb186c135c9bbed9cd
+
+% 0 1 0 1003ce2e97fe105c0d538e1611f4983d
+
+% 0 1 0 05f8e132f0de05ce1694fb4f01124fde
+
+% 1 1 0 129d73dc9ff155fd1efe1d79ae935c56
+
+% 2 1 0 1acdafe3939923861c5a38bd334200dd
+
+% 3 1 0 04f01fe5099bf1770a00fe091527c0cf
+
+% 4 1 0 1aefc5b0198a5858151f9e015e71a5b6
+
+% 5 1 0 1e530da95117c8fb179da8e735c366ed
+
+% 6 1 0 0f2c7b0c3b8be92d0065ffc5bd108155
+
+% 2 1 0 1ed04b63de7deea01fbc40a7e21a1e9b
+
+% 0 1 0 13b6696cf39372a11acbfbdbb88027bd
+
+% 0 1 0 0d9911570f50bc2106e181176cfe960f
+
+% 1 1 0 164a5af460eccca01890918ae45cf0d2
+
+% 2 1 0 00b936ebc3905c6506da3fc62db49b41
+
+% 3 1 0 02be0d5fb2cc0d9f0e64458c83ee4df6
+
+% 4 1 0 1caa962fd20a605b067448ce9f6ff651
+
+% 5 1 0 12f99296901cc4131a40c385eea0429b
+
+% 6 1 0 0c5bf9e884f32bdc034d2397fb843edb
+
+% 0 1 0 10bbfa0d09a5302613c081d5cf7062e9
+
+% 2 1 0 0cd3eadd6afaf2de0977a0c35621f61c
+
+% 0 1 0 168862c33f9b397804c71eecc3a93c2a
+
+% 1 1 0 1a9db2518a629c6511c81ab61cc364e0
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 166ef86678b05bd003ec5fa3a842e462
++       在 JVM 上，连接是来自 `Tls#context`（或 JVM 默认值）的 `SSLSocket`，套接字选项和本地接口绑定在连接之前应用。
++       Scala Native 没有 `javax.net.ssl`，连接是一个信任系统默认证书库的 OpenSSL *connect BIO*，带有 SNI 和 `SSL_set1_host` 主机名校验；connect BIO 在内部打开它的套接字，因此套接字选项和接口被忽略，不提供 ALPN，解析、连接或握手的每一种失败都是 `Socket.Error(Handshake)`。
++       在 WASI 上不可用。
++       主机和端口以 `Text` 和 `Int` 而不是类型化的端点接受，因为主机是用于 SNI 和证书匹配的名称，而不是地址。
+
+% 1 1 0 119a495583370fae055db333976565de
+
+% 1 1 0 0dfa9bd52670eb070092a9f337a84791
+
+% 1 1 0 05e2a401e02c32150d560ffaf4796117
+
+% 1 1 0 099afd4f901b3d451b9899606fdb028f
+
+@ 0 6 0 074c92e86747aea90d9825c5f81c1107
++   entry .showable   把端点呈现为 `host:port`；仅限 JVM
++   entry .connectable   `SecureEndpoint is Connectable`，在作用域中的 `Tls` 和 `Every[Socket.Option.Tcp]` 之下
++       只有在具备 `Online` 许可时才能解析（`import internetAccess.online`），并且是携带该证据的能力，与 `Connectable.tcpEndpoint` 一样。
++   entry #host   主机名，用于 SNI 和证书校验
++   entry #port   端口号
+
+@ 0 1 0 1f6474beaf4b0398114bda444afd1545
++ entry .SecurePort   受 TLS 保护的监听 TCP 端口：`SecureEndpoint` 的服务器端对应物；仅限 JVM
+
+% 1 1 0 0aed80364335f7060893cc14a154bd51
+
+@ 0 9 0 1c2ad8e27f80570c0b67421ec323ce7b
++       `SecurePort(port)` 像 `Tcp.Port` 一样用 `listen` 提供服务，在作用域中的 `Tls` 之下——其上下文**必须**携带服务器的密钥材料（`Tls.keyed` 或 `TlsAcceptance#keyed`）：JVM 的默认上下文没有私钥，用它绑定的服务器每次握手都会失败。
++       每个被接受的连接都在借给处理函数之前完成握手，因此认证或协商失败的客户端被报告为 `Socket.Error(Handshake)`——像任何其他按连接的失败一样，只结束该连接的任务——而不是表现为截断的读取。
++       处理函数收到一个 `Duplex`，其 `alpnProtocol` 是根据 `Tls#protocols` 协商出的协议。
+
+% 2 1 0 1505f05958fa91971f45d186f07fed11
+
+% 3 1 0 1c99920fd23132831f5528159a034021
+
+% 4 1 0 0dbc3f8d77bf86bd1a3c472733bb99d1
+
+% 5 1 0 16a4c834e3761551076dd8dc983de93c
+
+% 6 1 0 1669fd16caf0ea5d041164a483ca47c3
+
+% 7 1 0 0539e65025992e4607be3f37424af32c
+
+% 4 1 0 1366bf0bd8513ca21f80bb2d24ba871f
+
+% 5 1 0 19b2488c9b2dafd9035f6fb7e24c8bdb
+
+% 6 1 0 106e8fb853e1b4310d4499f09fe0bd4b
+
+% 7 1 0 1116bdde7831599000df6df0a943a73b
+
+% 0 1 0 1addd8b128b5112f09fe4acc6aa30f75
+
+% 0 1 0 069c19d3ae61fdfd0d0fdcecee5dc9ba
+
+% 2 1 0 19185182e5616fa30fd786e99fa395cc
+
+% 0 1 0 1fa17d94d22b3fd91eaa6297dfee8c5f
+
+% 1 1 0 13bfb254ae69abd80f08d72245f6b3c3
+
+% 2 1 0 1c4351c5dbbe194f0329953cf13cd801
+
+@ 0 5 0 1fd57b726bc268c7094603cc62205d8e
++       带 `Tls#mutual` 时，监听器要求每个客户端出示证书，由上下文的信任管理器评判：来自固定证书的 `TlsAcceptance#keyed` 的 `Tls` 恰好只接纳被固定的客户端。
++       在 TLS 1.3 下，客户端在监听器评判其证书之前就完成了握手，因此拒绝可能以监听器不作回复就关闭连接的形式到达客户端，而不是表现为握手错误。
+
+% 1 1 0 0a32dd65e519d668116afe8316223156
+
+% 1 1 0 010a8a1accc68240006b6844d5dda09e
+
+% 1 1 0 0c565b88ec4726481a823c20b70dd0de
+
+@ 0 5 0 14355983804911811ca004d02d6b6d4a
++   entry .bindable   `SecurePort is Bindable`，在作用域中的 `Tls` 和 `Every[Socket.Option.Tcp]` 之下；处理函数为 `Duplex => Data`
++       从 `Tls#context` 打开一个 `SSLServerSocket`，应用 ALPN 协议、版本和客户端认证要求；绑定失败为 `Bind.Error`。
++   entry .showable   把端口呈现为 `tls:8443`
++   entry #port   TCP 端口
+
+@ 0 1 0 08f81a605196035d036ebdf4f66f28d0
++ entry .Connection   原始的 Unix 域连接：阻塞的 Java 流以及对端用户；仅限 JVM
+
+% 1 1 0 1cfbe2351ec4f7d41d6f4bc464f9e768
+
+@ 0 7 0 171a4ef4aa7c33a1091e459be7afa6d7
++       `listenConnections` 交给其处理函数的东西：一个已接受的 Unix 域连接的阻塞 `InputStream` 和 `OutputStream`，供必须构建子进程 `Stdio`（套接字上的 `PrintStream`、交给子进程的流）、而不能使用 `listen` 所暴露的平台中立 `Duplex` 的使用者——例如代表客户端运行命令的守护进程。
++       `#peer` 是操作系统报告的另一端用户（`SO_PEERCRED`），它是内核的回答而不是客户端的声称，因此可用作认证检查。
+
+% 2 1 0 16b9517e7600cbe310d266a953471be7
+
+% 3 1 0 040b9fc70475158205931eb50d0d4f95
+
+% 0 1 0 07f501c53fa93c1d072b2090473e7d78
+
+% 0 1 0 14bb9ef4be22cc050279c87a7f18b97c
+
+% 1 1 0 06818519bc4a9d001fca97617f92645f
+
+% 1 1 0 064871b0144ca0cb0709c458595072c4
+
+% 0 1 0 1cf45967cef08a210df560fb68747b9c
+
+@ 0 7 0 0f3677814e5b1df002dd4268c5d45351
++   entry #peer   连接用户的主体名称，由内核报告，或在平台不提供时为 `Unset`
++   entry #source   读取端上新建的一次性拉取流
++       `connection.source()` 需要一个 `Buffering` 和一个 `Tactic[Truncation.Error]`，该流会保留它们。
++   entry #reader   原始的 `java.io.InputStream`
++   entry #writer   原始的 `java.io.OutputStream`
++   entry #close   关闭两个流，忽略失败
+
+@ 0 1 0 1860e8e414b25b7d11cef26ee3bd6688
++ entry .listenConnections   以原始 `Connection` 服务一个 Unix 域套接字，供需要 Java 流的守护进程使用；仅限 JVM
+
+% 1 1 0 07dcdce658ca0f9a1270bd1c0ba5ce27
+
+@ 0 7 0 1dc4652f1144f12a1c596f8e22613e03
++       `uds.listenConnections(handler, ownerOnly = false)(block)` 是处理函数接受 `Connection`（阻塞的流对及对端用户）而非 `Duplex` 的 `Uds` 版 `listen`。
++       接受循环和逐连接的监管与 `listen` 相同：每个连接在自己的 `async` 任务上服务（因此处理函数失败或客户端断开只会结束那一个任务，且连接总会被关闭），一次接受失败只跳过一轮迭代，运行中的服务器作为 `Socket.Service` 借出给 `block`，并在代码块结束时停止。
+
+% 2 1 0 1f6cdfb74c1f16d2126f57ba98bfd1ca
+
+% 3 1 0 1fb95de8de9e10091145ef94b8465765
+
+% 4 1 0 02e327ffa2c7f0891405d21b5fa9eb43
+
+% 5 1 0 144c08b06157026b0a1b1db355c808cb
+
+% 6 1 0 1da26352d990a87b17462a476b4d3d6a
+
+% 7 1 0 0f253bcadc69fbc90def9163b6d70813
+
+% 8 1 0 15933666697e6b341096a84fdd8fdec1
+
+% 9 1 0 126b4b2cb2c507ac0d45a9cbb346f997
+
+% 2 1 0 15713cb7ee8feac50b47baa5ebc9933f
+
+% 0 1 0 1de4415735c4583a1e4c9b9184626dbe
+
+% 1 1 0 0001a367ec174272126c302856f2377a
+
+% 2 1 0 1bbc3aa5eda512410c1a8cf6ce8c131c
+
+@ 0 5 0 1d59ba181f9e56d40c086f1f7cf28902
++       使用 `ownerOnly` 时，套接字文件在绑定后立即被设为模式 0600——否则绑定的套接字会采用进程的 umask，通常是 0755——因此只有当前用户可以连接；不支持 POSIX 权限的文件系统保持原样。
++       处理函数在任务上运行，因此它只能捕获持久的能力。
++       需要一个 `Monitor`、一个 `Probate` 和一个 `Socket.Event is Loggable`；绑定失败会被抛出（throw），而不是以错误形式抛出（raise）。
+
+% 0 1 0 1c3f1fa5322b7424032da69adc716a51
+
+% 1 1 0 19e11b34bbd8c8a508ef55c1780d025f
+
+@ 0 8 0 09f3ae3375adb3d2175251c81f217a50
++ entry .streamsDuplex   基于阻塞的 `InputStream`/`OutputStream` 对的 `Duplex`；仅限 JVM
++     `streamsDuplex(in, out, negotiated = Unset)(shutdown)` 把没有 `SocketChannel` 的套接字所呈现的形状——`SSLSocket`，或子进程的管道——表示为一个 `Duplex`：读取端在 `read` 中阻塞并在 EOF 处结束，每次发送都直接写出并刷新，`close()` 运行 `shutdown`，`alpnProtocol` 为 `negotiated`。
++     `shutdown` 是一个纯函数（`() -> Unit`），因此该双工通道不带捕获。
++     TLS 端点和 JVM 后端的 TCP 接受都建立在它之上；把其他 Java 流对桥接到 coaxial API 的库会直接使用它。
+
+% 2 1 0 0881bc05db3191bf19db563a3885c002
+
+% 3 1 0 01f387a5df8f00f00ccf1ff910d34de0
+
+% 0 1 0 06b5aa9bb0e2148116df5511cfb637db
+
+% 1 1 0 13a044c22d96d78511a97f25240fbe40
+
+% 2 1 0 0185e7e2bb11b8dc18e3890389ce9c29
+
+% 0 1 0 1eabd287b3d31d5515aa4d0b2b1d5f9c
+
+% 0 1 0 0fa2d15e66254432163abc81503135a1
+
+% 0 1 0 09891fdc3fec9d640968e216160ec035
+
+% 1 1 0 02523d54ed81b8811ca0add99a276d23

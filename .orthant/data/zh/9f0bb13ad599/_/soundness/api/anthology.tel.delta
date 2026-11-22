@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 1 0 098846f338813e320125925b2770c292
++   entry .Notice   一条诊断信息：其重要程度、文件、消息、跨度、语义标记和 bolt 代码
+
+@ 0 15 0 0b65f9c3c06d5523049be85ac6e89686
++         `#markup` 只在 `scalacOptions.semanticDiagnostics` 下由 `Scalac` 设置：保留了编译器带内语义标记（U+E000 及其同伴字符）的原始消息，delicious 库将其解析为由带样式跨度、占位符和序列化类型构成的 `SemanticMessage`，因此一条 "found `A`, required `B`" 消息会以两个可供渲染和比较的类型到达，而不是作为需要重新解析的文本。
++
++         `#code` 只在 `scalacOptions.boltCodes` 下由 `Scalac` 设置，并且只针对错误或警告：它是 Proscala 赋予该诊断信息的 bolt 代码，以 `fulminate.Bolt` 表示，例如类型不匹配的 `↯/p.1.7`（上游的 `E007`）。
++         Proscala 把代码写在它自己报告的标题中，而不是写在消息中，因此这里从诊断信息本身读取它。
++     entry #importance   该通知是信息、警告还是错误
++     entry #file   源文件编译时被赋予的名称
++     entry #message   诊断信息的文本，已去除所有语义标记
++     entry #span   该通知所涉及的源文件区域，或 `Unset`
++     entry #markup   在 `-Zsemantic-diagnostics` 下带有语义标记的原始消息，否则为 `Unset`
+
+@ 0 1 0 19f81d9a56aafe8907b940c614df3aa6
++     entry #code   诊断信息的 bolt 代码，在 `-Zbolt-codes` 下，否则为 `Unset`
+
+@ 0 12 0 19a020521e8b60771553bf4728b8eafe
++   entry .newSyntax   `-new-syntax`，适用于所有版本
++   entry .sourceFuture   `-source future`，适用于所有版本
++   entry .experimental   `-experimental`，适用于 3.4 到 3.8
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`，适用于 3.9：保留每条通知的语义标记
++       在此选项下，编译器会在带内标记消息的每个插值参数，对其中的类型使用序列化的 TASTy，而 `Compiler.Notice` 将这种带标记的形式作为其 `markup` 与纯文本的 `message` 一起保留，供 delicious 库解析为 `SemanticMessage`。
++   entry .boltCodes   `-Zbolt-codes`，适用于 3.9：为每条错误和警告通知赋予其 bolt 代码
++       在此选项下，Proscala 为每个错误和警告赋予一个 bolt 代码 `↯/p.1.7`，`Compiler.Notice` 将其作为自己的 `code` 携带。
++   entry .warnings   警告选项：`-feature`、`-deprecation`、`-W…` 标志和 `-Wunused`

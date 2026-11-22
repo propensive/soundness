@@ -1,0 +1,190 @@
+orthant 2 language
+
+@ 0 1 0 07a548547464ca600d35aef5aeaaa6a0
++ # 上下文值命名标准
+
+@ 0 8 0 1ef4fa18394e7f2716140265dc3a2349
++ 本标准规定可导入的 `given` 值如何命名和分组。
++ 它涵盖*孤立*的上下文值：即使用者按名称引入作用域的那些值，它们要么来自选择包（`import strategies.throwUnsafely`），要么对于少数无法锚定到伴生对象的值，来自库的顶层（`import bitumen.tarPathOpenable`）。
++ given *放在哪里*由 `.claude/CLAUDE.md` 中的放置规则决定；本文档决定它*叫什么*。
++ 名称为何重要，参见[声明式上下文](../philosophy/declarative-context.md)和[命名](../philosophy/naming.md)。
+
+@ 0 2 0 15645943122e4b9a1b1327518ee67571
++ 伴生对象中的 given（`Tui.Block.Anchoring.default`、`Buffering.standard`）不在本标准范围内：它们按类型解析，从不写在导入处。
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## 检验
+
+@ 0 5 0 1e60420e02642bd11e88f7fcc8cef509
++ 一位了解 Soundness 能做的一切、但对其命名一无所知的读者，应当能在去掉包名之后，仅凭名称说出一个 given 做什么。
++ `throwUnsafely` 通过：它是一种策略，并且会抛出。
++ `enabled` 和 `native` 不通过：启用*什么*？对*什么*而言是原生的？
++ 名称是导入行上唯一可见的东西，而且往往是任何地方唯一可见的东西，因此它承载全部含义。
+
+@ 0 1 0 0de87de1a87905fa110cb8b248d3e561
++ ## 规则
+
+@ 0 1 0 0f4b042a6d42ee7c16ab1e4978c5d7eb
++ ### 1. 族即角色，以包的形式出现
+
+@ 0 6 0 1bee6eff7d22e55e07145a3d0832c899
++ 选择包以其成员所担当的角色命名：一个复数可数名词（`strategies`、`stdios`、`filesystemBackends`、`probates`）或一个不可数名词（`formatting`、`threading`、`logging`）。
++ 从不使用单数可数名词：用 `blockCipherModes`，而不是 `blockCipherMode`。
++ 族名是全局的（来自不同库的同名块会在 `soundness` 总括包中合并），因此一个族在任何地方都必须表示同一个角色。
+
+@ 0 5 0 0a8137c7a4bd2d811f4682875640e690
++ 族从不嵌套。
++ 库把每个族声明为一个顶层的 `package <family>:` 块，总括包以同一名称镜像它，因此 `import aviation.monthFormats.englishMonths` 与 `import soundness.monthFormats.englishMonths` 是同一路径。
++ 本应位于另一个族内部的族，改为以其父族的词作前缀（`dateSeparators`、`timeSeparators`、`randomSizes`、`pathInterfaces`）。
+
+@ 0 1 0 1c37b1ac4b8889eb075a6efc3ba53810
++ ### 2. 名称先写选择，再写角色
+
+@ 0 2 0 19cc64c0ba168d90067e1d0c96c34ee8
++ 选择词在前，后面附加角色的单数形式，除非选择词已经隐含了角色：
+
+% 2 1 0 1506cd82fa98740a12deb7c4bd6dbbb6
+
+% 0 1 0 1bf570676b9440b3071af989a2ca102c
+
+% 0 1 0 0764277469c043000d5aa018959677d6
+
+% 0 1 0 1856c23de59d15e217bdb8ad6263667c
+
+% 0 1 0 0e63de87faf4ee840460673274f85e76
+
+% 0 1 0 051c46980e4aa3a91dd122afe5b378a5
+
+% 1 1 0 1939f1afc1b4857b1001bcba900d726f
+
+@ 0 2 0 193bf0ff34c9b1311db3300eb079efb5
++ 后缀是角色自身的词（`…Probate`、`…Stdio`、`…Formatting`），而不是它的同义词，这样一个族的每个成员都以相同的方式结尾。
+
+@ 0 1 0 063ee01d01bee40f1e950864a7ce7ce7
++ ### 3. 去掉包名后仍唯一
+
+@ 0 3 0 1abed31c3438c84400e2dda97ceb76a3
++ 每个孤立的 given 在整个 Soundness 中都是唯一的，判断时当作包不存在。
++ 它们全部导出到 `soundness`，任意两个都可能需要共存于同一作用域，因此 `import x.enabled` 和 `import y.enabled` 不能同时存在。
+
+@ 0 2 0 112593cb81ec4fcc08b0487fd4fd2a53
++ 由此推论，不存在开关式成员。
++ 开关在两侧都以其所选择的行为命名：
+
+% 2 1 0 066a624f25953eee0518f70d156f1bdc
+
+% 0 1 0 1d973ea894f06ea405a4df0983f6e8e7
+
+% 0 1 0 0f49116ac9427e4b02d11d8883b1fd89
+
+% 0 1 0 06ebb99e9fd46a2014724d2a241d7890
+
+% 0 1 0 08313dddbc1df0070d67bb38330b71b0
+
+% 1 1 0 112b34bc27b8b8d919ffb350879d5a10
+
+@ 0 1 0 07b3925c8c4876211456174832465e14
++ ### 4. 只用现有词汇
+
+@ 0 4 0 148463d6936ddb4809333963efda160a
++ 名称复用它所选择的类型或术语，使导入与它所启用的声明用相同的词来读：`cancelProbate` 选择一个 `Probate`；`taiChronometry` 选择 `Tai` 时间线；`offHeapCloak` 就是 `OffHeapCloak`。
++ 名称从不创造一个在 Soundness 其他地方都没有出现过的术语。
+
+@ 0 6 0 1d01aa31e48507ce03a8405d7839ef3b
++ `default`、`standard`、`basic` 和 `simple` 不是选择词：它们说明的是某个选择很常见，而不是它是什么。
++ `indentedCssFormatting`、`thickTableStyle` 和 `timestampedLogFormat` 都说明了自己做什么；`standardCssFormatting` 只说明了有人偏爱它。
++ 例外是这样的词*就是*该类型自身的名称时（`standardKeyboard` 选择 `Keyboard.Standard`；RFC 4648 的字母表在其规范中就被称为 "standard"）。
+
+@ 0 3 0 185ee7b38a735328155971d2bb2e0865
++ 数字只有在属于选择本身时才出现在名称中（`sha256Signature`、`xterm256Termcap`、`iso8601DateFormat`），从不用于区分两个 given（`populatedEquality2`）。
+
+@ 0 1 0 1222d32e4eafb4390a22acdc9405b0f5
++ ### 5. 后端使用来源词
+
+@ 0 2 0 01cf2ca4b294bd9f0bb9fafbcc4d9b6b
++ 当选择的是*哪一种实现*时，选择词指明该实现来自何处。
++ 每个来源一个词，在所有地方以相同方式使用：
+
+% 2 1 0 0e78d680688a73f21d8eb2294144d910
+
+@ 0 6 0 09aaa2d07b69dbc00e1f44fcc9a6c2fc
++ column  来源
++ column  用词
++ column  示例
++ row  Java 模块  模块的名称  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
++ row  WASI 接口  `wasi` + 接口  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
++ row  基于 libc/POSIX 的 Scala Native  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+
+% 0 1 0 11ff93a2626c5475196a1ec38fb9a402
+
+@ 0 2 0 147eb58ae6b3d21f16ec165eb76e051d
++ row  Soundness 自己的纯 Scala 代码  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
++ row  第三方  其自身名称  `opensslProvider`, `re2`, `resendCourier`
+
+% 1 1 0 18e70806ffec447e0648d309f51e03fa
+
+@ 0 7 0 012bc4a5855a31ed1bdfdf174c45ec9e
++ 之所以以 Java 模块命名，是因为 `requires` 子句所指明的正是模块：Soundness 打算按模块声明它依赖哪些 Java 模块，而选择基于 Java 的实现的 given 应当说明它取自哪个模块。
++ 大多数实现由 `java.base` 提供，因此 `javaBase…` 是常见情况；当两个 `java.base` 选择有所不同时，名称说明区别所在（`fileDescriptorStdio` 包装进程的文件描述符；`javaLangSystemStdio` 包装 `java.lang.System` 可重定向的流）。
+
+@ 0 6 0 0da981de98dd37100aea8eb67ae8735e
++ 有两种情况看似来源词，其实不是。
++ 作为代表而采用的 Java *类型*保留它在 Soundness 其他地方已有的类型路径名称（`javaNioPath`、`javaUtilDate`、`javaNetUrl`）：此处的选择是类型，而不是模块。
++ 而 Java 自身的概念词在指称概念而非来源时仍沿用 Java 的说法：`platformThreads` 和 `virtualThreads` 是平台线程和虚拟线程；`systemClassloader` 和 `platformClassloader` 是 JDK 对这些加载器的称呼。
+
+@ 0 2 0 0284a2480e82b21705b86d0184c54b07
++ `native` 从不单独出现。
++ 它在不同时期曾指 Scala Native、JDK 的 `WatchService` 以及 Soundness 自己的 HTTP 栈，这多出了三种含义。
+
+@ 0 1 0 16ed697ccf8f543712f5321b4b87ea0d
++ ### 6. 顶层孤立 given 以其库命名
+
+@ 0 5 0 1ec5581f3b49bc84166c7364961f1863
++ 无法放在伴生对象中的 given（其主体归别处所有，或者是联合类型或别名，或者该库是某个平台无关类型的平台组件）留在库的顶层，其名称以其用途加以限定：`tarPathOpenable`、`terminalStdio`、`collationComparable`。
++ 它从不匿名，因为无法命名的 given 既不能被选择性导入，也无法消除歧义；也从不使用一个光秃秃的泛称。
+
+@ 0 1 0 0e16d20ec40e4f520f7723d987bab54f
++ ## 无需后缀的认可名称
+
+@ 0 2 0 0531d653b29a96ff00cf534943d010d5
++ 以下名称因选择词已指明角色而符合规则 2，列在这里，免得有人再次争论：
+
+% 2 1 0 07774e4b6ccf388e0403c5af7d9bbb95
+
+@ 0 4 0 093e8fede7284d1311fe26aa6dc5546a
++ column  族
++ column  认可的成员
++ row  `sortingAlgorithms`  全部
++ row  `alphabets`  全部
+
+% 0 1 0 0df41455002774cb0dbef724a949e8fe
+
+% 0 1 0 0befcb494045d6a505622c4e02a4fb09
+
+% 0 1 0 13b7dac1ada084b515f4a2ac1ca9933c
+
+% 0 1 0 089be0668036df01187f0f05e02fa8b9
+
+@ 0 1 0 09fcc98a30b78b9314ea16d43c6a0119
++ row  `endianness`  全部
+
+% 0 1 0 155393a15a33208a15d5762e6b004d05
+
+@ 0 6 0 1b664aad9e5215701279428942ad0070
++ row  `currencies`  `Usd`…（ISO 代码，用作项）
++ row  `strategies`  全部
++ row  `calendars`  全部
++ row  `highlighting`  全部
++ row  `caseSensitivity`  全部
++ row  `dysasymptotics`  全部
+
+% 0 1 0 0eb34f125b24256b1b953c1f063028a8
+
+% 1 1 0 09221ec3b58b232b106041b1a37e86ee
+
+@ 0 1 0 1c16794117f821210e2672db11bd501e
++ ## 检查
+
+@ 0 4 0 057e2082369756c409f09ad69e2ce33a
++ `make build` 运行 `etc/check-given-uniqueness.py`，它读取各库中的每个选择包及其 `soundness_*` 导出镜像，遇到重复名称或未镜像的族时失败。
++ 新的孤立 given 在加入时就针对整个命名空间进行检查，而不是等到使用者遇到冲突时。

@@ -1,0 +1,311 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 17ce6dd5de3773731bddabb274f25ef1
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 01a13deee3ab393f0b4a3b3fb331e59c
++ info   wtyczka kompilatora, która podczas kompilacji indeksuje givens, zestawy testów i testy, by narzędzia mogły je później odnaleźć
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 164616ab90af759711b6212bfea12955
++     _Beneficence_ to wtyczka kompilatora Scali 3 z niewielką częścią uruchomieniową. Podczas
++     kompilacji każdego modułu wtyczka przechodzi po typowanych drzewach i zapisuje trzy indeksy
++     w katalogu wyjściowym modułu, dzięki czemu narzędzie może później ustalić, co oferuje
++     ścieżka klas, bez ładowania czy uruchamiania czegokolwiek z niej:
+
+@ 0 11 0 1e0d7e0fe1d394880e4a114440339458
++     - `META-INF/givens/<typeclass>` – każdy nazwany given typu `Findable`, według w pełni
++       kwalifikowanej nazwy, pod którą programista by go zaimportował. Objaśnienie brakującej
++       wartości kontekstowej w bibliotece `frontier` odczytuje ten
++       indeks (za pośrednictwem `givens`), by zaproponować givens, które by ją dostarczyły, na
++       przykład `systems.javaBaseSystem` dla brakującego `System`.
++     - `META-INF/services/probably.Suite` – każdy obiekt `probably.Suite`, w standardowym
++       układzie `ServiceLoader`. Zestaw testów nie ma klasy głównej: runner testów fume odkrywa
++       zestawy wyłącznie z tego indeksu, więc moduł testowy skompilowany bez wtyczki nie ma
++       testów, które dałoby się uruchomić.
++     - `META-INF/probably/tests/<source>-<hash>` – jeden plik na plik źródłowy, wymieniający
++       każdy test, grupę i zestaw, jego miejsce w hierarchii, rodzaj, przydomek, tagi i wiersz,
++       dzięki czemu runner może listować i wybierać testy bez uruchamiania zestawu.
+
+@ 0 1 0 13d32ba7caccf15701bca3230e2de867
++     Typ bierze udział w indeksie givens, rozszerzając `Findable`:
+
+% 2 1 0 1ba2836ac564cfd61c93a4ec9eb07d58
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 1e02286af3c0250a00297434acd2e40d
+
+% 0 1 0 055395efa336d90506acb78519d15f05
+
+% 0 1 0 055ea710e1e1b1b7082beeed05137e76
+
+% 0 1 0 0efc6cea83328dfe012c6ecbb9f67b1f
+
+% 1 1 0 00682fd81fe6065f082577d6ccbc25f5
+
+@ 0 2 0 077d8eea7032b6331f0655fda3b73844
++     Skompilowany z wtyczką ten kod zapisuje `renderers.plainRenderer` do
++     `META-INF/givens/Renderer`, pod wierszem `# source:` wskazującym plik, z którego pochodzi.
+
+@ 0 7 0 19537c386c656be614b927d611f257ce
++     Wtyczkę włącza się opcją `-Xplugin:` wskazującą na jar `beneficence.plugin`, a nie robi ona
++     nic, dopóki `beneficence.Findable` nie znajduje się na ścieżce klas kompilacji. Zapisuje
++     wyłącznie do wyjścia katalogowego; kompilacja bezpośrednio do JAR-a nie zapisuje żadnego
++     indeksu. Kompilacja jest bezpieczna przyrostowo: wpisy wniesione przez ponownie
++     kompilowane pliki źródłowe są zastępowane, a wpisy wszystkich pozostałych plików
++     zachowywane, przy czym każdy plik jest zapisywany do unikalnego pliku tymczasowego obok
++     niego i atomowo przenoszony na miejsce, więc współbieżne kompilacje do tego samego katalogu
++     nie psują sobie nawzajem danych.
+
+@ 0 3 0 04f40904be8db8611da633857564511f
++     Ponieważ każdy moduł zapisuje własny fragment każdego indeksu, kompilacja, która scala
++     moduły w jeden JAR (assembly, fat jar), musi konkatenować pliki z `META-INF/givens/`,
++     `META-INF/services/` i `META-INF/probably/` zamiast zachowywać tylko jeden z nich.
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     Biblioteka ma dwa komponenty:
+
+@ 0 5 0 0d8d409e1878683b12346a3a5cd41282
++     - `beneficence.core` – `Findable` i wyszukiwanie `givens`, zależność niemal każdej
++       biblioteki Soundness. Eksportowany do modułu zbiorczego `soundness`.
++     - `beneficence.plugin` – `BeneficencePlugin` i jego faza, kompilowane względem kompilatora
++       i publikowane jako samodzielny artefakt, ponieważ jar podawany w `-Xplugin:` deklaruje
++       dokładnie jedną wtyczkę.
+
+% 0 1 0 0d1e1293c0f484560e6c09d2a0704e43
+
+% 0 1 0 1f163f1f18d047531b0c3e039aed5092
+
+% 0 1 0 152e77a6c4f4f6450203edc7b547674c
+
+@ 0 1 0 1b82343d5dc2225502afd3c304e54213
++ entry .Findable   oznacza typ, którego nazwane givens są zapisywane w indeksie `META-INF/givens`
+
+% 1 1 0 1112cd08c86005f61337c75d31119105
+
+@ 0 6 0 1941cb9fbc53472b0b1bc963acf5ac48
++       `Findable` to pusty trait znacznikowy. `given`, którego typ ma `Findable` wśród swoich
++       klas bazowych, jest zapisywany przez wtyczkę beneficence pod `META-INF/givens/<typeclass>`,
++       gdzie klasą typów jest pierwsza właściwa klasa bazowa givena: dla
++       `given javaBaseSystem: System` plikiem jest `META-INF/givens/ambience.System`, a wierszem
++       `ambience.systems.javaBaseSystem`. Given zadeklarowany z rafinującym ciałem (`given puck: T:
++       …`), który kompilator implementuje jako osobną klasę, jest zapisywany pod `T`.
+
+@ 0 1 0 017b61ef16ff3b1a013538d5094f8fcb
++       Co zapisuje wtyczka w zależności od zmian deklaracji:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0b22bee2fda1bd370dd8e3fdbd920c93
++         label Zwykły trait: nic nie jest zapisywane
+
+% 1 1 0 03e897c4528b77c30bed803fc3e66695
+
+% 0 1 0 02c215b05dd756770a79fbf36090cb53
+
+% 1 1 0 126933c6f538104d15dab1270095001d
+
+% 3 1 0 1009a52b5439023608d71b134808f736
+
+% 4 1 0 0f03d28f0eac691415b55f372bf6e2ff
+
+% 5 1 0 1ce1cad46ea882351f2d779dbe0e6b8f
+
+% 6 1 0 16f8b90f8bdd7c651acfbe6a45d5c638
+
+@ 0 1 0 0b247098c05502a20677b2f3c3e2f428
++         label Rozszerzenie Findable: `dialects.ansiDialect` jest zapisywany do META-INF/givens/Dialect
+
+% 1 1 0 04214016c1349ec31a166f6ba242c1e1
+
+% 2 1 0 0057b2b1bed2e2111bf11fc3095d0c5c
+
+% 3 1 0 1377c9f8d90f979a17790504417136ab
+
+% 3 1 0 1d11306c0c1ab2f6080eae67cab3f62b
+
+% 4 1 0 1479e0b48df865631325b3c4230d474b
+
+% 5 1 0 12efd14edb82022112f034422a200221
+
+% 6 1 0 09fd5c97eafd046115ebe6192b037af7
+
+@ 0 1 0 144db3b3a1101b5617168bbbd3f5c4bb
++         label Givena wewnątrz klasy nie można zaimportować, więc nie jest zapisywany
+
+% 1 1 0 0cebea128d9683d11fd899414b9521ef
+
+% 2 1 0 0c5ff96a61810b460064e1298c565d56
+
+% 3 1 0 0afc1735bdd775210ff93a3300a7544e
+
+% 0 1 0 07e4e070a805fd440f40f740f1a194fd
+
+% 1 1 0 14929716d901f05e0b99bac072363ecb
+
+% 2 1 0 037f6ef91a56357f0eec26c2bcec0c0a
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 6 0 1edeb576be638d9a06ec8dd80275c02a
++       Zapisywane są tylko givens, do których mógłby sięgnąć zwykły `import`: każdy otaczający
++       zasięg musi być pakietem lub obiektem. Given w ciele klasy, traitu lub metody jest
++       pomijany, podobnie jak anonimowy given, który nie ma nazwy do zaimportowania. Wiele
++       kontekstów Soundness jest `Findable` (`System`, `Clock`, `Random`, `Timezone`,
++       `Environment`, `Serializable`, `Deserializable`, …), i to właśnie pozwala, by błąd
++       kompilacji dotyczący brakującego kontekstu podsuwał import, który by go dostarczył.
+
+% 0 1 0 05d1090f77b738141f38f8bd85f66b62
+
+@ 0 7 0 07998e1c3a5dc1a814943ec9157d671a
++ entry .givens   givens zapisane na ścieżce klas kompilatora dla klasy typów, do użycia w makrze
++     `givens(typeRepr)` to wyszukiwanie w czasie wykonywania makra: dla `TypeRepr` w kontekście
++     `Quotes` odczytuje każdy zasób `META-INF/givens/<typeclass>` na ścieżce klas własnego
++     classloadera makra (klasa typu po rozwinięciu aliasów wskazuje plik), pomija puste wiersze
++     i komentarze `#`, usuwa duplikaty i rozwiązuje każdą w pełni kwalifikowaną nazwę do
++     `Symbol` givena, jako metody lub pola obiektu albo klasy, do której należy. Nazwa, która
++     już się nie rozwiązuje, jest po cichu pomijana, a typ bez symbolu klasy daje `Nil`.
+
+% 2 1 0 0a0362e75b01ff1f11cb73c82479e5c0
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 1 1 0 03683557f751aba6066aa7200860680a
+
+% 0 1 0 0722b7ad7eeb5eb608ce2a35db51be12
+
+% 0 1 0 0d1371cb9127a4db0b4b8071b6c7c3d9
+
+% 0 1 0 1ac5afcf3b11c11b04c7a84dec0656a0
+
+% 1 1 0 0791f32dd3968cf50e2c732b3a08e7eb
+
+@ 0 3 0 0eae0ca7c9a0d605111ed4daed8924c6
++     Wynikiem jest `List` z biblioteki standardowej zawierająca
++     `quotes.reflect.Symbol`, ponieważ używa jej tylko kod makr. `frontier` używa jej, by
++     zaproponować givens, które zaspokoiłyby brakujący parametr kontekstowy.
+
+@ 0 1 0 0ce38bb8dbf72cc81e5db8c379fd4d7a
++ entry .internal   czytnik ścieżki klas stojący za `givens`
+
+% 1 1 0 030b78ab957466920386b1f7d058de82
+
+% 2 1 0 19bd283e6ee7d9681329c3ca1f511f52
+
+@ 0 2 0 02a176c8d67faa3006026c595a154328
++       Nie do bezpośredniego użytku: `givens` deleguje do niego.
++   entry .givens   odczytuje i rozwiązuje wpisy `META-INF/givens` dla typu; zob. `beneficence.givens`
+
+@ 0 1 0 1d60c13ce82abe4a06d650bf901da23c
++ entry .BeneficencePlugin   wtyczka kompilatora, która zapisuje indeksy givens, zestawów testów i testów
+
+% 1 1 0 029fa8236c33160815a4727de70f40f3
+
+@ 0 5 0 08fc07d985656e8d0ec4b8b6377ba1ba
++       `StandardPlugin` o nazwie `beneficence`, który instaluje jedną fazę, `GivensPhase`.
++       Włącza się go, przekazując kompilatorowi jar `beneficence.plugin` jako
++       `-Xplugin:<path to the jar>`, i nie przyjmuje żadnych opcji. Wtyczka zapisuje indeksy
++       wyłącznie do wyjścia katalogowego i zapisuje givens tylko wtedy, gdy
++       `beneficence.Findable` jest na ścieżce klas; zestawy testów i testy są indeksowane tylko
++       wtedy, gdy są na niej `probably.Suite` (i `probably.Testable`).
+
+% 0 1 0 1fc086a56d77b8e1066428b52cc00c5e
+
+@ 0 1 0 1898b7dc8aa31aea035e2e77082bbf0e
++   entry #name   nazwa wtyczki: `beneficence`
+
+@ 0 1 0 1d7cd6ffb4748af8030a2ad5c0dcf901
++ entry .GivensPhase   faza wtyczki, która zbiera givens, zestawy testów i testy oraz zapisuje ich indeksy
+
+% 1 1 0 01051d0d42cbebd31fde0d82c03a1542
+
+@ 0 2 0 1a76feb8273541580a0f82a30880b3ec
++       Działa po `typer`, a przed `pickler`, jednocześnie nad wszystkimi jednostkami kompilacji
++       danego przebiegu. Zapisuje:
+
+@ 0 4 0 11807bc52c6be9f71376e96651105dcc
++       - każdy stabilnie dostępny nazwany given typu `Findable`, pod jego klasą typów;
++       - każdy `object` najwyższego poziomu lub zagnieżdżony w obiekcie, rozszerzający
++         `probably.Suite`, do `META-INF/services/probably.Suite`;
++       - testy każdego pliku źródłowego, za pomocą `TestsIndex`, do `META-INF/probably/tests`.
+
+@ 0 7 0 16e48c92a07c7c5610ab98347130ce75
++       Następnie scala to, co znalazła, z katalogiem wyjściowym za pomocą `GivensWriter`. Podczas
++       indeksowania testów faza może też zgłosić dwa błędy kompilacji: _the suite id "…" must be
++       a letter or `_` followed by letters, digits, `_` or `-`, so that it can be typed on a
++       command line_ dla zestawu, którego `Topic` nie jest takim identyfikatorem, oraz _this
++       Testable has no topic, so a test declared in this method would not be declared for it_
++       dla metody przyjmującej `Testable`, którego `Topic` nie jest ustalony (należy napisać
++       `Testable of "<suite>"` albo `Testable of topic` dla parametru typu `topic <: Label`).
+
+% 0 1 0 1a96ad76e95a860f01f60bf3f59d7a99
+
+% 0 1 0 17bed36861bb978a0cd69d58a2cf0b1f
+
+@ 0 1 0 1110d9c12a487a850beb620616068f84
++   entry #phaseName   nazwa fazy: `beneficenceGivens`
+
+@ 0 1 0 02d5d4d6bd360b911a512a74b0b2514a
++ entry .Entry   jedna zapisana nazwa i plik źródłowy, który ją zadeklarował
+
+% 1 1 0 0d698321c1e27c3a1ebd25b7a94d8d49
+
+% 2 1 0 123bdedc5056d7b20745fd22f68a8c2a
+
+@ 0 4 0 0321f6897eb8451e0352e3475caa850d
++       Rekord roboczy wtyczki, grupowany według pliku źródłowego przy scalaniu indeksu. Nie do
++       bezpośredniego użytku.
++   entry #fqn          w pełni kwalifikowana nazwa givena lub zestawu testów
++   entry #sourceFile   ścieżka pliku źródłowego, który go zadeklarował
+
+@ 0 1 0 0fae77d68ab3274a0794f40541d5b943
++ entry .GivensWriter   scala zebrane przez wtyczkę wpisy z plikami indeksów w katalogu wyjściowym
+
+% 1 1 0 113881db28822ad7136834e971719b3e
+
+% 2 1 0 172a23dffaa3d8601910037ced86fa3d
+
+@ 0 12 0 1cba37f38b95b6161a03df2888455df5
++       Nie do bezpośredniego użytku. Każdy plik indeksu to ciąg bloków, po jednym na plik
++       źródłowy, każdy z nagłówkiem `# source: <path>`, po którym następuje po jednej w pełni
++       kwalifikowanej nazwie na wiersz. Scalanie usuwa bloki ponownie kompilowanych plików
++       źródłowych, zachowuje pozostałe w ich kolejności i dopisuje nowe, a następnie zapisuje
++       unikalny plik tymczasowy obok pliku docelowego i atomowo przenosi go na miejsce. Przy
++       wyjściu do JAR-a nic nie jest zapisywane.
++   entry .merge         scala zebrane givens do `META-INF/givens/<typeclass>`, po jednym pliku na klasę typów
++   entry .mergeSuites   scala zebrane zestawy testów do `META-INF/services/probably.Suite`
++       Pomijane całkowicie, gdy kompilacja nie znalazła żadnych zestawów, co pozostawia
++       wcześniejszy plik bez zmian.
++   entry .writeTests    zapisuje indeks testów każdego pliku źródłowego do `META-INF/probably/tests`
++       Jeden plik na plik źródłowy, nazwany od nazwy pliku źródłowego i pierwszych sześciu bajtów
++       SHA-256 jego ścieżki, więc żadne dwa moduły jednego assembly nie zapisują tego samego
++       pliku. Plik źródłowy, który nie deklaruje już żadnych testów, ma swój plik usunięty.
+
+@ 0 1 0 1d6caede2b3985a31118cf4f7e09e8c3
++ entry .TestsIndex   statyczny indeks testów Probably, który wtyczka zapisuje dla każdego pliku źródłowego
+
+% 1 1 0 1818a2a62282b3ca0c68779b89f5f788
+
+% 2 1 0 0317566158046d9b0b6d2eb93698dd74
+
+@ 0 10 0 0e7053813c4f56091311d23dc6c1c786
++       Nie do bezpośredniego użytku; format odczytują runnery testów, takie jak fume. Każdy plik
++       zaczyna się od `# probably tests <version>` i `# source: <path>`, po których następują
++       rozdzielone tabulatorami wiersze sześciu rodzajów – `suite`, `group`, `test`, `nest`,
++       `call` i `open` – umieszczające każdą deklarację testu w hierarchii jej zestawu według
++       `probably.Testable` wybranego dla niej przez kompilator, a nie według jej położenia w
++       źródle. Test zadeklarowany wewnątrz bloku `impromptu` jest pomijany, a wiersz `open`
++       oznacza, że w danym miejscu jest więcej testów, niż wymieniono. Ukośniki wsteczne,
++       tabulatory i znaki nowego wiersza w polu są poprzedzane ukośnikiem wstecznym, a `\*`
++       oznacza część nazwy znaną dopiero w czasie wykonania.
++   entry .version   wersja formatu indeksu, zapisywana w pierwszym wierszu każdego pliku
++   entry .index     wiersze indeksu dla jednej jednostki kompilacji

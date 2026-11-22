@@ -1,0 +1,290 @@
+orthant 2 language
+
+@ 0 1 0 1d143e919d57047115dbef2b115f5242
++ ## Base 编码
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 12fcee1183d020e3026936582562ab48
++ 二进制数据常常需要经过一个只能承载文本的通道：URL、JSON 字符串、电子邮件头部。
++ [Base 编码](https://en.wikipedia.org/wiki/Binary-to-text_encoding)把字节映射到一组安全的字符上，使它们能够安然通过。
+
+@ 0 3 0 063696cad69e2cd91f0816d99d92a793
++ 字节以 Base64、Base32、十六进制和更小的进制序列化为文本，也可以反向转换。
++ 编码以类型命名，而它的字符集，称为它的*字母表*，在作用域中选择。
+
+@ 0 1 0 09e76515746de7641cf678f4df5f8080
++ ### 关于 Base 编码
+
+@ 0 5 0 16a0e512ac8e33d01b231299f0e4110a
++ “Base64”并不是一种东西。
++ 标准字母表、URL 安全字母表，以及 MIME、bcrypt 和 IMAP 所用的变体，都把相同的字节编码成不同的字符，混用它们会破坏结果。
++ 解码还带来另一个问题：如何处理根本不在字母表中的字符。
++ 大多数 API 把这些选择埋在标志中，或者悄无声息地把它们定死。
+
+@ 0 1 0 0423f9127da4e9d41bb7ba02abd7d851
++ 这里编码是一个类型，字母表是一个显式的值：
+
+@ 0 5 0 1addbfd2093b122118d92ddcc75fc6a1
++ - 进制，即每个字符承载多少位，是一个类型参数。
++ - 字母表是一个 [given]，通过导入引入作用域，因此 Base64 的标准形式和 URL 安全形式只差一行。
++ - 解码会验证每个字符，并将字母表之外的字符报告为一个类型化的错误。
+
+@ 0 2 0 1e92bbe01a610f6f0d6a3469fd0198ff
++ 通过导入而不是传递标志来指名字母表，正是贯穿始终的[声明式上下文](../../philosophy/declarative-context.md)风格。
+
+@ 0 6 0 0d83c56e1eb3ea611a93f68990123b43
++ “编码”一词被用于两种不同的工作，值得准确说明这里是哪一种。
++ 这里发生的是*序列化*。
++ 字节变成文本，字节的含义完全不被参考，也不被保留：同样的字节无论是图像还是签名，序列化的结果都相同。
++ 把一个*值*转换为 JSON 或 XML 是另一种工作。
++ 那是[编码](json.md)，它需要知道值是什么。
++ 这里的操作也相应地命名为 `serialize` 和 `deserialize`。
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ 一切都来自 `soundness` 包。
++ 最后一个导入让示例可以打印其结果：
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0a42bec28543a29a1272a565021a68bf
++ ### 序列化字节
+
+@ 0 2 0 165c043848ab7121026a63d39c5d712a
++ `serialize` 以指名的编码将字节写成文本。
++ 字符来自作用域中的字母表：
+
+% 2 1 0 0d919a20bffba2cf15cc2b949d276bf3
+
+% 0 1 0 1921fb6b9141e2261014d1e74d1c48f0
+
+% 0 1 0 03c3d5f384c61d251fab7a59dc745ba3
+
+% 1 1 0 17c11bfa83fd16d00a697beb7820127e
+
+% 3 1 0 12cf486fa04b835b1cb2e75891c56841
+
+% 4 1 0 1746fa7dcaa2ecbe02ad5b6637838229
+
+% 5 1 0 0d281da3536257be047d350336aea041
+
+% 0 1 0 0686837be74895480ad4f5489ab297c3
+
+% 1 1 0 1dd107db3c84a13413af0e823cdcbd79
+
+@ 0 2 0 1eb8235562bcc7be10cb928ea2e57bf8
++ `serialize` 适用于任何可以编码为字节的值，而不仅仅是原始字节。
++ 具有 `Encodable in Data` 实例的值，例如[摘要](hashing.md)，可以直接序列化。
+
+@ 0 1 0 07c314cfd56dc0941cea46136cc69cd3
++ 当作用域中没有该进制的字母表时，就没有东西可以用来序列化：
+
+% 2 1 0 0e63aee57abb9e480054fc9b4def4916
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 17042211b66dd8a816680bb5b4b60884
+
+% 1 1 0 169994fda9c950d017e05f24d5c1c688
+
+@ 0 1 0 11056ce85ea6d02d09ae1c8a011aba0e
++ ### 反序列化
+
+@ 0 2 0 1049c1279791cac104c7d01414e65000
++ `deserialize` 以同样的编码将文本读回字节。
++ 字母表之外的字符会抛出 `Serialization.Error`，因此反序列化需要作用域中有一个[策略]：
+
+% 2 1 0 19d39811b5931b0a06c79a90fbb1e95b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 0dd062ae6276e45e0808f944c4eb3713
+
+% 1 1 0 01c89d42f81aed9010d03fc0c95852d6
+
+% 3 1 0 0c5a9711940bdd4d02c4942285101dc3
+
+% 4 1 0 0d0e806e88af423b193018ed1e2f2eee
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0a87743c9a8dea4b17c5aecd30c5f88e
+
+% 1 1 0 147931322a1d829b1756c133b063db44
+
+@ 0 1 0 0ee7a62c0f742ae60ae06e3e852f9287
++ ### 选择字母表
+
+@ 0 3 0 00a46f646055eb140bb4992945eb0fa3
++ 作用域中的字母表决定确切的字符。
++ `base64Standard` 和 `base64Url` 是常见的选择。
++ URL 安全形式没有填充，并且避开了 `+` 和 `/`，它们在 URL 中有特殊含义：
+
+% 2 1 0 1f87b918ccaa3ea512cee0a63ad83242
+
+% 3 1 0 08a2685e5535eee7006cc2e92984c13b
+
+% 4 1 0 01b872764d9049071d934cc72d65f167
+
+% 1 1 0 0aec10e0e6434631069d840d20311d4e
+
+% 0 1 0 068968989e5227490fd0ab43d0543684
+
+% 0 1 0 0900b58e7b42f2b10af9a396ab1362cd
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 0e050b7bce38fa3510acc39b2a36a0bf
+
+% 0 1 0 1c24a70cd02a3c6905c81e8ef0fa93ed
+
+% 1 1 0 10d3db50ab97fbdb05729532cf6cee9f
+
+@ 0 4 0 121a13fd2ff15dfd07e54e93ebcd354e
++ *严格*字母表在解码时只接受它自己的字符。
++ 包容的字母表还接受可识别的等价字符，例如大小写任意的十六进制。
++ 因此，解码的严格程度是在不同导入之间作出的选择：`hexLowerCase` 读取任意大小写，而 `hexStrictLowerCase` 只读取它自己的。
+
+@ 0 1 0 1e588572ec612396020807a8ff37a582
++ 完整的集合位于包 `alphabets` 中：
+
+% 2 1 0 1c78fb5d3df47eac1cc7f0c37d30faad
+
+@ 0 1 0 1714f8ed59bfbc0d176a5806fb4a40b2
++ column  进制
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 33 0 1c76c1b18d1abb3f0755b3f55a17e17f
++ column  变体
++ column  填充
++ column  还接受
++ row  `Base64`  `base64Standard`  标准  是
++ row  `Base64`  `base64Unpadded`  标准，无填充  否
++ row  `Base64`  `base64Url`  URL 安全，使用 `-` 和 `_`  否
++ row  `Base64`  `base64Xml`  XML，使用 `+` 和 `-`，以 `.` 填充  是
++ row  `Base64`  `base64Imap`  IMAP，使用 `+` 和 `,`  否
++ row  `Base64`  `base64Yui`  YUI，使用 `.` 和 `_`  否
++ row  `Base64`  `base64Radix64`  Radix-64  是
++ row  `Base64`  `base64Bcrypt`  bcrypt，`.` 和 `/` 在前  否
++ row  `Base64`  `base64Sasl`  SASL，使用 `+` 和 `,`  否
++ row  `Base64`  `base64Uuencoding`  uuencoding  否
++ row  `Base32`  `base32StrictUpperCase`  标准，大写  是
++ row  `Base32`  `base32StrictLowerCase`  标准，小写  是
++ row  `Base32`  `base32UpperCase`  标准，大写  是  小写
++ row  `Base32`  `base32LowerCase`  标准，小写  是  大写
++ row  `Base32`  `base32ExtendedHexUpperCase`  扩展十六进制，大写  是  小写
++ row  `Base32`  `base32ExtendedHexLowerCase`  扩展十六进制，小写  是  大写
++ row  `Base32`  `base32ZBase32`  z-base-32  是
++ row  `Base32`  `base32ZBase32Unpadded`  z-base-32，无填充  否
++ row  `Base32`  `base32Geohash`  Geohash  否
++ row  `Base32`  `base32WordSafe`  word-safe  否
++ row  `Base32`  `base32Crockford`  Crockford  否  小写；`o` 和 `O` 视为 `0`；`i`、`I`、`l` 和 `L` 视为 `1`
++ row  `Hex`  `hexStrictUpperCase`  大写  否
++ row  `Hex`  `hexStrictLowerCase`  小写  否
++ row  `Hex`  `hexUpperCase`  大写  否  小写
++ row  `Hex`  `hexLowerCase`  小写  否  大写
++ row  `Hex`  `hexBioctal`  bioctal  否
++ row  `Octal`  `octalStandard`  标准  否
++ row  `Quaternary`  `quaternaryStandard`  `0123`  否
++ row  `Quaternary`  `quaternaryDnaNucleotide`  DNA 核苷酸，`ATCG`  否
++ row  `Binary`  `binaryStandard`  `01`  否
+
+% 1 1 0 0bc6cb7489d20bb81aa2f868b1f3642f
+
+@ 0 1 0 1c06c44e232d760a0f1f735162752e13
++ ### 其他进制
+
+@ 0 2 0 191a6b41bfc6eacb01fa643302b81b17
++ 同样的 `serialize` 和 `deserialize` 处理所有进制，每种进制都有自己的字母表。
++ 进制就是每个字符承载的位数：
+
+% 2 1 0 1aa40a76328d955f00c11a941f7f7c89
+
+@ 0 2 0 068fe886bc2d186115b465ece0cbc04f
++ column  编码
++ column  每个字符的位数
+
+% 0 1 0 1bc07f3c58023cb701f85b19585b9dc5
+
+% 0 1 0 16667b48b178c8980c1b18acbca7875a
+
+% 0 1 0 12c0623181158c2116ceed89c10ae6eb
+
+% 0 1 0 11a7ca1744415e6d0e62c89ac950a630
+
+% 0 1 0 0374135d4834c576008ff9e33f3d7497
+
+% 0 1 0 07eaa86b232259ee0920c5539dab1998
+
+% 1 1 0 03603ab54ccf5dea1e4b952d8af5a6fe
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 175587a7f960cb7209bf0fbbdbcd86e0
+
+% 1 1 0 10bf12a5d86b358605b1ba259c8f2c99
+
+% 3 1 0 1fa55c843d35ca2e1ae5296a148f765a
+
+% 4 1 0 06a33d62794cd3d70f1eebfd2aa4fc20
+
+% 5 1 0 1bd3d4da63c9f4971ef07e80970319e3
+
+% 0 1 0 13423416dcdf23d6180ec02a126fafb0
+
+% 0 1 0 168ded439e6f2e19111a8a44510a87ca
+
+% 0 1 0 02352bd34e90060f103449014d4a4e57
+
+% 1 1 0 026239180dcb727c1447b624d2df5f01
+
+@ 0 2 0 00381214a04edfb51f73e23de5acc380
++ 字节的十六进制字面量用 `hex"…"` 插值器书写，如[二进制数据](binary-data.md#reading)所示。
+
+@ 0 1 0 1c12cb6a3eb5951802149028c1042a35
++ ### 编码流
+
+@ 0 3 0 09c269883b41bdc417a3da892936884b
++ 字母表也是[流](streams.md#composing-a-pipeline)的一个阶段。
++ 字节在流动的同时被编码，无需先收集起来，这正是写入套接字的 Base 编码正文，或为以文本形式传输而准备的大文件所需要的：
+
+% 2 1 0 1f4acc7b6d62e2930fa649986a117bac
+
+% 0 1 0 004f3a2e35d34d3a062a60ef6d77d50d
+
+% 1 1 0 089343e7e4993a700a034166a3a33e4d
+
+@ 0 4 0 03524f69fb472243051667a9e5d62766
++ 流式形式与整值形式逐字节一致。
++ 这也包括 Base64 的三字节组或 Base32 的五字节组横跨两个数据块的边界处。
++ 解码以同样的方式运行，因此一个流可以在一侧编码、在另一侧解码，任何一侧都不必持有它的全部。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 1 0 0125843c5adce93e1aaec3c194677576
++ - [CBOR](cbor.md)、[密码学](cryptography.md)、[SSH](ssh.md)、[地理](geography.md)和[文本](text.md)用这些字母表编码字节和坐标。

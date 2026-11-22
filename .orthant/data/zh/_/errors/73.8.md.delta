@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 13eb9bbe576240690752586c7628f1c7
++ # `↯/s.73.8` — 时间字面量必须是 `Double`
+
+@ 0 2 0 14886e82b484a672121b2a19f4189e89
++ 当参数不是 `Double` 字面量时，由 Aviation 的 `validTime` 宏抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 015c19b522adc6bd071b8c0c4343d08e
++ 该宏对 `Literal(DoubleConstant(_))` 进行模式匹配；其他任何东西（变量、方法调用、整数字面量）都无法在编译时检查。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0ebc16e2650b65780ca459d1cc45378c
+
+% 1 1 0 057eeecf7c9025d70343ad9954824ad4
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 17ea98c8e727efc81e4bb88836471e5f
++ 直接向该宏传入一个 `Double` 字面量。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 134e7c69bc3b1f9c187f8ba40d928c64
++ - 其他时间字面量错误：[错误族](README.md#families)
++ - 源代码：`lib/aviation/src/core/aviation.internal.scala`

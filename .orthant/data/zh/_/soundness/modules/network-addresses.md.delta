@@ -1,0 +1,383 @@
+orthant 2 language
+
+@ 0 1 0 1e7cf5f1b50ff4591cdbe1fe87052445
++ ## 网络地址
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 6 0 0c78b721ef5375680e8057770e138666
++ 网络中的各种标识符各有自己的类型：[URL](https://en.wikipedia.org/wiki/URL)、[主机名](https://en.wikipedia.org/wiki/Hostname)、[IP 地址](https://en.wikipedia.org/wiki/IP_address)、[电子邮件地址](https://en.wikipedia.org/wiki/Email_address)、端口和 [MAC 地址](https://en.wikipedia.org/wiki/MAC_address)。
+
+@ 0 3 0 0664a4663c2a5b180141fa65fa1d4561
++ 字面量在[编译时]校验，因此格式错误的字面量会在书写处产生编译错误。
++ 文本在[运行时]被解析为同样的类型，不符合时报告一个带类型的错误。
+
+@ 0 1 0 0245399382511ce1184a2a61662100e4
++ ### 关于网络标识符
+
+@ 0 4 0 16e6d2495f3380890dd61deb4a2c3e6a
++ 在大多数代码中，URL、IP 地址和电子邮件地址都只是字符串。
++ 它们之间的区别只存在于程序员的脑海中。
++ 一个并非格式良好地址的值会在程序中一路传递，直到某处试图使用它时才失败。
++ 校验即便进行，也来得很晚，而且远离错误值进入的地方。
+
+@ 0 6 0 176239c2fb17cc9716b757bc03e1e405
++ 在这里，每种标识符都有自己的类型，并在尽可能早的时刻得到校验：字面量在编译时，文本在被解码的那一刻。
++ `Hostname`、`EmailAddress` 和 `Port` 都已知是格式良好的。
++ 它们的组成部分也是带类型的：URL 的端口是一个数字，主机是主机名或 IP 地址。
++ 无法以非法形式构造的地址，是[构造即安全](../../philosophy/safety-by-construction.md)最简单的形式。
+
+@ 0 2 0 1c2fee29596c6422194462ee7c65dca2
++ 所有内容都来自 `soundness` 包。
++ 示例将任何错误作为异常抛出，最后一个导入让它们能够打印结果：
+
+% 2 1 0 0683c532939f05bd1bf8f090f2826090
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0aa8bd59cfcb7ee70926e68fe6707e18
++ ### URL
+
+@ 0 1 0 127c24ba836509cf0fdcefdbe9acf139
++ `url"…"` [插值器]用于书写 URL，并在编译时检查它：
+
+% 2 1 0 14258efcc1f841e702c16f7f6df23ff9
+
+% 0 1 0 0080617fa6303b42002bd32bae67483f
+
+% 1 1 0 0e55088f8edd9ae611521f9387878442
+
+@ 0 3 0 04b2aed1fb9cb6590ffa5d23f049372c
++ URL 的各部分是带类型的成员：方案、主机、端口、路径、查询和片段。
++ 替换会把值放到正确的位置。
++ 数字成为端口，文本值则经 URL 编码后放入路径。
+
+@ 0 1 0 0ab9b10e36df56f00e64aac566ac359f
++ 格式错误的 URL 无法编译：
+
+% 2 1 0 1024e20e528e98f70ae499c9a9c46df0
+
+% 3 1 0 0110c116919d3d4f04f31783292d2c93
+
+% 4 1 0 0082ae7b23709c271cc65cb52f47f901
+
+% 5 1 0 0e331d9f13737a3d1516e51db7f227df
+
+% 0 1 0 019fc721bde1fe0b0ce3493479a9a680
+
+% 1 1 0 1530e898fea5af3611bd168ee08fb691
+
+@ 0 1 0 085b2d78a77383ec148522ffeba0fbd2
++ 文本在运行时用 `as` 解码为 `HttpUrl`：
+
+% 2 1 0 1dbb5524069cc26b0d06ed7313b70af8
+
+% 3 1 0 0374eb79136d215c0f557a44ebe357e3
+
+% 4 1 0 1dc230039467221c17e62376bd3f2365
+
+% 0 1 0 1caebe0a3b65a3b214dec52d5adb8f9e
+
+% 1 1 0 0f1d4288624cfb210dc65ab06dd9d186
+
+@ 0 2 0 00c194682c2bb626015983a3a72814b5
++ [HTTP 客户端](http-client.md)向 URL 发送请求，[路径](paths.md)描述了 URL 的路径与文件系统路径共有的层次结构。
+
+@ 0 1 0 199be985af5dbdb01d2dbe145f501c91
++ ### 主机名和 IP 地址
+
+@ 0 2 0 042866d3ac2771b70d4125df5a7f4e51
++ 主机名用 `host"…"` 书写，IPv4 或 IPv6 地址用 `ip"…"` 书写。
++ 每一个都在编译时校验：
+
+% 2 1 0 022534e50fede2161a430f66630fa854
+
+% 0 1 0 0fd7317b383fea19074d578a5038519e
+
+% 0 1 0 14118b3611a787830217a22d9d62d6d8
+
+% 0 1 0 02302b2f460018ce0c5b6958b0e6a108
+
+% 1 1 0 03a493a25267978f01b56e1712fa0b43
+
+@ 0 1 0 1c2bc271ca1f40351de8414abf16c80d
++ 无效的地址无法编译：
+
+% 2 1 0 0224ec756b8ebd80159cae8a8f23728d
+
+% 3 1 0 013048877af913420a50dfad8d1dccaa
+
+% 4 1 0 1e1c887aa28a93e40e2b7afcd067ec63
+
+% 5 1 0 1bfe3fe48b910ecd15dcea448cd9bd5f
+
+% 0 1 0 03bc52c29bfd11e305eeb134d2e9dcf4
+
+% 1 1 0 1e647eaf2508f46f057888f6b861f2b7
+
+@ 0 4 0 11ebd7c6f23a1fc4143e4c0fc05fa933
++ `ip"…"` 插值器同时服务于两类地址。
++ 它根据所给内容确定类型 `Ipv4` 或 `Ipv6`，并对每一类执行完整的检查。
++ 子网前缀也会按其地址族的范围检查，因此不可能的掩码会与地址一起被发现：
+
+% 2 1 0 03c057f40d6d57ec08c08481064e718d
+
+@ 0 1 0 1e6c099402bdedec1995caf874dfe781
++ column  规则
+
+% 0 1 0 134ffc194b9b526e1d59242025e7e0a0
+
+% 0 1 0 134ffc194b9b52701d59242025e7e0a2
+
+@ 0 4 0 1cefa2adfe9f344603ecf8e2216e67f4
++ row  分组  恰好四个，以点分隔  最多八个，以冒号分隔
++ row  每个分组  0–255 范围内的数字  一到四个十六进制字符
++ row  缩写  无；只有数字和点  最多一个 `::`
++ row  子网前缀  0–32  0–128
+
+% 1 1 0 0e40448e8388d93c1d4f536d7d3d3d6f
+
+@ 0 1 0 0115739e63b9f5a518b0eb67e4a76f6f
++ ### 子网
+
+@ 0 4 0 1f99a477b3a3ee360e32efaf68fbf7d5
++ IP 地址可以给出一个子网，以常用的斜杠记法写出；`subnet"…"` 则直接书写子网及其前缀长度，并在编译时检查。
++ 前缀以下的主机位会被掩去，因此随手写出的子网会被纠正，而不是被误解：
+
+% 2 1 0 0f51996c7d27d605023424e7f234da76
+
+% 3 1 0 15f71786b16e722e07d8e434e8df3ae2
+
+% 4 1 0 044a358eb16d183c1c6607ccce4cc54b
+
+% 0 1 0 02c7c80c21f5762a15e96a2fbadf42ee
+
+% 0 1 0 1d084672af36ed450d7967526b2be36c
+
+% 0 1 0 08c3f4f9647add910560d9c4b7c2419d
+
+% 0 1 0 1588f0c80139660305ec8022c3f0734b
+
+% 1 1 0 1d3d5629854b7fad04a5d4c1474ce04c
+
+@ 0 2 0 03d2a6717a93b7241fa139eafc5e1356
++ 子网能回答某个地址是否落在其中，这正是访问规则或路由决策所需要的。
++ 它是一个值，而不是一对需要手工比较的字符串。
+
+@ 0 1 0 057c43566e322d60162b3b59fda48980
++ ### 电子邮件地址
+
+@ 0 2 0 07803b43f14b4ff5029d9ead5af34144
++ 电子邮件地址用 `email"…"` 书写，并用 `as` 从文本解析。
++ 两者都按格式良好地址的规则对其进行校验：
+
+% 2 1 0 19f183e6f965a7481f6f400aa8c23f10
+
+% 0 1 0 0ace9f85da163d1e0e3370a5bb3847ef
+
+% 1 1 0 02edcebe490dd84313d5a76023955935
+
+% 3 1 0 13ebd0ff51b74b7810c5d57d802f8e43
+
+% 4 1 0 0a82b416ffdc164511c49faa7a020b5d
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 0a3c4f66b3fea5ef0498fb9eab82540c
+
+% 1 1 0 05567ede4ed2673f0ab8526bd03649c7
+
+% 3 1 0 0dd15bde44bbd6bf1d4afa8a3b8191ed
+
+% 4 1 0 1fc8d6854e5d34c6033d5c839fb79451
+
+% 5 1 0 00e00696cf7ac6ae1a3e6535248992ff
+
+% 6 1 0 0d176efed1d3fad5155266ac9788c426
+
+% 0 1 0 06c33167c17ab9321605f61195404390
+
+% 1 1 0 159ca571bd37b110090b174f1cb47413
+
+@ 0 1 0 1699940d0e27bd721fd17466d1e477c2
++ [电子邮件](email.md)向这样的地址发送消息。
+
+@ 0 1 0 09788d85f8b135240924430f2845bb4d
++ ### 端口
+
+@ 0 4 0 0f3749d986a4b73116ae13c9c2f70e1f
++ 端口用 `tcp"…"` 或 `udp"…"` 书写。
++ 它的类型记录了传输协议，对于字面量还记录了端口号。
++ 端口可以用其 [IANA 服务名称](https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml) 代替端口号来命名，名称在编译时解析：
+
+% 2 1 0 0f3c52ede34bb15d0b34c1c3ed34f850
+
+% 3 1 0 01bd765be649974106763568a2c646e4
+
+% 4 1 0 05d60ba4885e87a504e6532858dead30
+
+% 0 1 0 1b096fa6cedb4617095cabcb174808c3
+
+% 0 1 0 1f387eae840b69fb0907a9520c293ae2
+
+% 1 1 0 18dc269b7a5b83c411187c24f5a058ec
+
+@ 0 2 0 16fba20a3a61fe1718bb89b2fd613257
++ 名称会对照服务注册表进行检查，包括每个服务注册的传输协议。
++ 在错误的传输协议上请求某个服务无法编译：
+
+% 2 1 0 1553ebc07c3b5fff1e3a670629082944
+
+% 3 1 0 1ae3d89b3f10f1b80165c1d93b936aae
+
+% 4 1 0 167d33cb4339a5431a7c629133ef1838
+
+% 5 1 0 1691b085e87f7d380e4eb95f783b10ea
+
+% 0 1 0 125e09ad2b1d80d018c4efa521222cd6
+
+% 1 1 0 19271b0ee1a2915509aa6c26a6a2beb8
+
+@ 0 4 0 159409161ca53db50995ffaa96112c2b
++ 不带端口号的 `Port[Tcp]()` 向操作系统请求一个未被占用的端口。
++ 测试服务器，或动态绑定端口的服务，正需要这个。
++ 它返回的端口确实可以绑定，而不是一个可能与其他进程竞争的猜测。
++ [套接字](sockets.md)负责绑定和连接端口。
+
+@ 0 1 0 1ef75bcf8ed396301e38c9363aea0575
++ ### 网络接口
+
+@ 0 2 0 148e088f8f90700f1c5a1ef24ea3ceb6
++ 本机自身的网络接口以带类型的值列出。
++ 每个接口都报告自己是否为回环接口，并且都可以按名称访问：
+
+% 2 1 0 1e9b679445a075b60a5a65b75eda964b
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 18a28c39d1f17a8f0340f432f8ebb32f
+
+% 0 1 0 1b859092907ce8a30fa8eb31c0ef2466
+
+% 1 1 0 08c161ca583cb43404f63f45289d77b5
+
+@ 0 1 0 1f66da3f233e9b5f11b137ed38e47a77
++ ### MAC 地址
+
+@ 0 2 0 04ec6818f5b9fe721d7978149f7504d1
++ MAC 地址用 `mac"…"` 书写，或从文本解码。
++ 它按六个十六进制分组进行校验：
+
+% 2 1 0 1a7b49441f37620a0d33831b64d67981
+
+% 0 1 0 1aea3e08be5ce63d074f3970c7776661
+
+% 1 1 0 031115b6c321396b097fec5c39aa37ea
+
+% 3 1 0 02509922fae910d70e52a984774fe4e1
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 19326afe07d95a290e766aa0664f242c
+
+% 1 1 0 0265af2fdd50c16e1ce9d9bd3274f0d2
+
+@ 0 1 0 1e9eff5ff37f893307653ff618c86c7c
++ ### DNS 名称和消息
+
+@ 0 5 0 0b178b1c0f307f9b0d49c7d1ebc76003
++ DNS 有自己的名称。
++ 任何标签都可以容纳任意 UTF-8，包括点和空格，DNS-SD 服务的实例名（例如 `Hamlet's Printer._ipp._tcp.local`）正依赖于此。
++ `Dns.Name` 用 `dns"…"` 书写，并在编译时检查。
++ 相等比较忽略 ASCII 字母的大小写，这与 DNS 本身比较名称的方式一致，而标签保留其原有拼写：
+
+% 2 1 0 0bd79f63b45ccdc3182aae015fac3a76
+
+% 3 1 0 0edb3f1b65a4a3dc198744888e7eb500
+
+% 4 1 0 0fbf923e9cd277b81361b4a0c65c21cd
+
+% 0 1 0 18f758c92b3208d607e2b5891ad8a03e
+
+% 0 1 0 1b1802b198bf32f60287202df6c5c47e
+
+% 1 1 0 131c0062ff63a73413700803dfcafb90
+
+@ 0 4 0 09196439d3fcc1e201ade84ecd05737b
++ RFC 1035 的消息由问题和记录组成，记录承载基于上述地址的带类型数据。
++ 它们用常用的 `in` 和 `as` 编码为 `Data` 或从中解码。
++ 名称在输出时被压缩，在输入时被严格校验。
++ 记录的数据是已识别的类型之一，或者是一个保存其字节的 `Unknown`：
+
+% 2 1 0 04e45f882e9f6a651f7b0e2543e77d5e
+
+% 0 1 0 17550eba7ce5cd3813d96a9d9a20d591
+
+% 0 1 0 065af9087663108e0c163e6d0afd11fe
+
+% 1 1 0 0414c2169ac0fcb7019bccbfad83bdd7
+
+@ 0 4 0 10e6fb2c0745f3ce14abee23817aa23b
++ mDNS 增加了两个位：一个表示问题接受单播响应，一个表示记录会刷新接收者的缓存。
++ 它们是普通字段 `unicast` 和 `flush`，默认关闭。
++ `Dns.resolve` 调用平台的解析器，[服务发现](service-discovery.md)建立在这些消息之上。
+
+@ 0 1 0 066c2593796962940a87d010416acb9b
++ ### 运行时解析
+
+@ 0 4 0 138ca7ad8f984c3c0a35c70fe823861f
++ 每个具有字面量形式的标识符，也都可以用 [`as`](decoding.md#decoding-a-value) 从文本解码，并指明目标类型。
++ 不符合的值会抛出一个带类型的错误，准确指出问题所在。
++ 因此，校验用户输入的程序可以报告具体的错误，而不必仅仅拒绝该值：
+
+% 2 1 0 1e0052dc0e5f9cd103e3e8d965ea0bed
+
+@ 0 12 0 0230a6bca32e40a708a5243ca91bc625
++ column  标识符
++ column  字面量
++ column  类型
++ column  错误
++ row  URL  `url"…"`  `Url`，HTTP 则为 `HttpUrl`  `Url.Error`
++ row  主机名  `host"…"`  `Hostname`  `Hostname.Error`
++ row  IP 地址  `ip"…"`  `Ipv4` 或 `Ipv6`  `IpAddress.Error`
++ row  子网  `subnet"…"`  `Ipv4Subnet` 或 `Ipv6Subnet`  `IpAddress.Error`
++ row  电子邮件地址  `email"…"`  `EmailAddress`  `EmailAddress.Error`
++ row  端口  `tcp"…"`、`udp"…"`  `Port`  `Port.Error`
++ row  MAC 地址  `mac"…"`  `MacAddress`  `MacAddress.Error`
++ row  DNS 名称  `dns"…"`  `Dns.Name`  `Dns.Error`
+
+% 1 1 0 13a58c4c57d65b1914600cb20cc4bb2a
+
+% 3 1 0 1c4ab1cabff1dd260e9b56a792c0ba23
+
+% 4 1 0 1f72cfc2be7b21d80c30faef5ed38473
+
+% 5 1 0 15394b48a1f98e351df371796dc606c2
+
+% 6 1 0 03b960c826bac4aa0da2af632ecb7035
+
+% 0 1 0 15988ddd96f65a1c0d5d3c99e3723703
+
+% 1 1 0 1dc238443a6c548f07f92c7426517f2d
+
+@ 0 2 0 0098853224c035cf11e23693b1d1a975
++ case class 中属于这些类型之一的字段也以同样的方式解码，因此配置文件中的 `Hostname` 会在读取 [JSON](json.md) 或 [YAML](yaml.md) 时得到校验。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 1 0 1be7ac72129b9c751a29387529166d27
++ - [表单](forms.md)、[地理](geography.md)、[HTML](html.md) 和[插值](interpolation.md)负责检查和承载 URL 与地址。

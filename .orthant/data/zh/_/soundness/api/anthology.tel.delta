@@ -1,0 +1,2880 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14f7aa466e39789e07dd342ef8c79b5e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c5523d30a7fc3671ba9d1752c8af003
++ info   以值表示的编译器和链接器：进程内的 Scala、Java 和 Kotlin，输出 JVM、JavaScript、Wasm、原生和 Android 格式
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 09f62f0ec16d9d5e1b340a75a9af44c0
++     _Anthology_ 以编程方式驱动编译器和链接器，将它们作为带类型的值而不是命令行。
++     编译器——`Scalac`、`Javac` 或 `Kotlinc`——是一个携带带类型选项的值，只对接受这些选项的语言版本有效；它针对 `LocalClasspath` 将一组具名源文件编译到一个目录中，并返回一个 `Compiler.Process`，其诊断信息（带有重要程度、文件和跨度的 `Compiler.Notice`）、进度和 `Compiler.Result` 都是值，而不是需要重新解析的控制台输出。
++     崩溃是一个带有堆栈跟踪的 `Compiler.Result.Crash`，正在运行的编译可以被中止。
+
+@ 0 10 0 1428d965ec33213b1ee8fb238c6681cb
++     链接是另一半。
++     编译产生的中间表示是 `Toolchain.Universe`——`Classfile`、`Sjsir` 或 `Nir`——而构建产生的东西是 `Artifact.Application` 节点：可执行的 `Artifact.Jar`、`Library` JAR、在所选模块系统下的 JavaScript（`anthology.Js`）、浏览器 Wasm（`anthology.Wasm`）、WASI 组件（`Wasi`）、包装组件的 `OciImage`、针对每个 `Toolchain.Triple` 的原生 `Artifact.Binary`、`Dex` 归档以及已签名的 `Apk`。
++     universe、语言和应用程序是 `Toolchain` 的节点，`Toolchain` 是一个以工具为边的有向无环图；由一种格式产生另一种格式就是在其上搜索路径，因此多阶段构建（类文件先被 dex 化，再打包为 APK；组件先被链接，再包装为 OCI 制品）由边组合而成，无需任何定制的流水线。
+
+% 2 1 0 0a3763b60b4026df09c530ee112265ca
+
+% 3 1 0 19aab03d5d126116047009c66ad81379
+
+% 4 1 0 1b9252ff92e034061ca0aea8595bc220
+
+% 5 1 0 1dc9ef76f0de76ad044c9387739b6b03
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 1 1 0 05a5bc03c943f0e707070d932bb37b69
+
+% 0 1 0 059174723a298f9c186e2cbad03d1515
+
+% 1 1 0 0cfe3034adb5262a0e3d2eb0c3bc8b17
+
+% 2 1 0 1de2dfdc296b7b470c4d7858bd37afc0
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 2 1 0 1c8225d2f6837393147b5f42cfd3bb75
+
+% 0 1 0 1333bc44a24f46261439344aeb1c1f44
+
+% 0 1 0 1365544696e0382616d99992ebd6c6d1
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 115cf8af5d07d6211402ae9bbafe6b7d
+
+% 0 1 0 10b113be7e4c898e0a17cdce1b75f4f5
+
+% 0 1 0 02a4f10577e41fa8130a6cad9d4037af
+
+% 0 1 0 069316fd43d405ae1f375d77714bbdf3
+
+% 0 1 0 0e302c872a805ed409e2355f0ddfdd15
+
+% 0 1 0 117d88c50896774b163adcfb2b4a4020
+
+% 0 1 0 06255cdbc33f329e009de700fec5dd88
+
+% 0 1 0 019855415bc8afad10bb48e865d571b8
+
+% 0 1 0 0c6ade4afe0c9d4218b7e2d61e83adf5
+
+% 0 1 0 1652fc113c1a9ca508484fe844fa2a70
+
+% 0 1 0 1b7b0d95a750e1d417303f22849269d1
+
+% 0 1 0 0059f4cd4f54e0561d9d0f0c2ad43964
+
+% 1 1 0 1dc8f30069a5c8130ed97c8e9a80b7e9
+
+@ 0 2 0 09c20860749775e4111a0113f1a9b744
++     该库按每个组件所包装的工具拆分为多个组件，使构建只引入它用到的依赖：
+
+@ 0 26 0 0aab66024295014f0b3993b8d10f0791
++     - `anthology.core`——词汇：`Compiler`、`Compiler.Process`、`Compiler.Notice`、`Importance`、`Compiler.Result`、`Compiler.Event`、`Artifact`、`Toolchain.Universe`、`Deliverable`、`Edge`、`Toolchain.Tool`、`Toolchain`、`EntryPoint`、`Link`、`LinkEvent`、`Toolchain.Triple`、`NirPlugin`，以及两个没有边的节点 `Component` 和 `WasmObject`。仅限 JVM（它需要 hellenism 的类路径）。
++     - `anthology.scala`——`Scalac`、它的 `scalacOptions`、预热的 `Scalac.Session`，以及 `scalacEdges` 编译边。Scala 编译器（`scala3-compiler`）是*仅编译期*依赖：驱动它的程序将其所需的编译器放在自己的运行时类路径上，`Scalac.version` 会报告是哪一个。
++     - `anthology.java`——`Javac` 和 `javacEdges`，基于正在运行的 JDK 自带的编译器。
++     - `anthology.kotlin`——`Kotlinc`、`kotlincOptions` 和 `kotlincEdges`，基于 `kotlin-compiler-embeddable`，同样是仅编译期依赖：由调用者提供编译器。
++     - `anthology.linker`——`jarEdges`、`jarOptions`、`Library` 和 `Bundler`：JAR 打包，不需要外部工具。
++     - `anthology.link`——`sjsEdges`、`linkerOptions`、`Wasi`、`WasiToolchain`（以及未导出的 `anthology.Js` 和 `anthology.Wasm` 节点），驱动 Scala.js 链接器，这是一个随组件捆绑的 JVM 库。WASI 组件的链接还要调用外部的 `wasm-tools` 和 scala-wasm 分支版的 `wit-bindgen`，`WasiToolchain()` 会探测它们。
++     - `anthology.nir`——`nativeEdges` 和 `nativeOptions`，通过 `clang` 和 `clang++` 驱动 Scala Native 构建（`tools_3`，已捆绑），`nativeEdges()` 会在 `PATH` 上探测它们。编译*到* `Toolchain.Universe.Nir` 需要 Scala Native 编译器插件，由一个 `NirPlugin` given 指明。
++     - `anthology.dex`——`Dex`、`dexEdges` 和 `dexOptions`，驱动 R8 的 D8 dex 工具（已捆绑）。
++     - `anthology.apk`——`Apk`、`apkEdges`、`apkOptions` 和 `Axml`：完整的、已签名的、经 zip 对齐的 Android 包，完全不需要任何 Android SDK 构建工具，只需要一个密钥库。
++     - `anthology.oci`——`OciImage`、`ociEdges`、`ociOptions` 和 `OciConfiguration`：包装为 Wasm OCI 制品的 WASI 组件。
+
+@ 0 7 0 09384b8fcd14ce56130a085023aef86f
++     每个组件都仅限 JVM，所有内容都导出到 `soundness` 总括包，只有三个会在那里冲突的名称例外：`anthology.Js` 和 `anthology.Wasm`（总括包的 `Js` 和 `Wasm` 属于 xenophile，即 JavaScript 和 Wasm 外部函数接口）以及 `anthology.Language`（总括包的是 cosmopolite 的）。
++     在 `import soundness.*` 下，这三个名称要写成完全限定形式，如 `anthology.Js(anthology.Js.Module.Es)`。
++     选项对象 `scalacOptions` 和 `kotlincOptions` 在总括包中镜像为包，因此 `scalacOptions.experimental` 从两边读起来都一样。
+
+@ 0 7 0 03785cd4e890719900a96deb734dd4ce
++     一次编译所需的上下文值是 `System`（`systems.javaBaseSystem`）、`Monitor`（在 `supervise` 内部，并有一个 `threads` given）和 `Probate`（`probates.cancelProbate`）、`Compiler.Event is Loggable`（用 `logging.silentLogging` 丢弃事件）以及 `Tactic[Compiler.Error]`；`Toolchain#produce` 需要 `Monitor`、`System`、`WorkingDirectory`、`Tactic[Link.Error]` 和 `LinkEvent is Loggable`。
++     探测工具的构造方法 `WasiToolchain()` 和 `nativeEdges()` 还需要 `WorkingDirectory` 和 `Environment`。
+
+% 0 1 0 0e5152cb0a80081d0813ac40ff570a5a
+
+% 0 1 0 112d5899b7f448111d9c9e07371fbd4f
+
+% 0 1 0 0438d508389f00610ac2343ba5984ccb
+
+% 0 1 0 036915c7f1a495321b4eb5654965392f
+
+% 0 1 0 07fa6f2b7258bb0805a0b62a75dbcb9a
+
+% 0 1 0 08073aad6bf47e221d5d5d1e427b7d45
+
+@ 0 1 0 069537f19599add5185e2c67a0309c5d
++ entry .Compiler   进程内编译器的形状：一个版本，以及从源文件加类路径到 `Compiler.Process` 的转换
+
+% 1 1 0 141c62780ed717e015fcbbac154028e1
+
+@ 0 6 0 07efbfc398415c6f0d86c125a12115d8
++       `Compiler` 是 `Scalac`、`Javac` 和 `Kotlinc` 共同呈现的接口：`#version` 报告该值所驱动的编译器，以编译器自身报告的形式给出；`#apply` 针对 `LocalClasspath` 将一组具名源文件编译到输出目录中，返回一个 `Process`，其诊断信息和结果都以值的形式到达。
++       每个编译器都以相同顺序接受相同的参数，因此编排编译的工具无需为每种语言改变写法。
+
+% 2 1 0 0967b3ade6d6057b1542027bc7e7acf9
+
+% 3 1 0 18b3da96c4644c001942c698f66b240e
+
+% 4 1 0 02527c84bb9023c417bf0795f09e048e
+
+% 5 1 0 0c5d19d7bc72796f09d1aa6efd673844
+
+% 6 1 0 1718c4e0b4398acf0aab0c241cc695c2
+
+% 7 1 0 1ae27f0773f6fe520216e8cd1a8e640b
+
+% 8 1 0 06e716b090967240184b66976f3ae6be
+
+% 9 1 0 14f89392bd14605314b4a0d7bae9556b
+
+% 10 1 0 0efb71e6b638651b128a6f25be8101ec
+
+% 12 1 0 171db999561a2d1113cf19f56cea90f6
+
+% 13 1 0 0749ca327acffe3e14e71354e17b0fd5
+
+% 15 1 0 1fc8b1677711c2171c49d66bc3878c3b
+
+% 0 1 0 194678915c6896d1178d0f43e2922dad
+
+% 1 1 0 15edf89c2f6bf2e205c747f82dad1087
+
+% 2 1 0 00daa24ed9a13e100d2f6e6717dec580
+
+@ 0 2 0 17a457035cf8458217865b865ad5de2d
++       伴生对象中有 `Compiler.Error`，这是每个编译器在完全无法配置时抛出的唯一错误，它有别于运行了但失败的编译。
+
+% 1 1 0 0d0fb41b4b8d456d141232c189f4d1b0
+
+% 0 1 0 060c52244f3056531fa561f5f28b29b6
+
+% 1 1 0 11df5025adaafc7c1e899298e77a4fdd
+
+% 1 1 0 1260a6c499a162d8074eff6753677f18
+
+@ 0 1 0 1f7b7bc742428bab10b92ddcec9b0b97
++   entry .Error   当无法根据选项设置编译器时抛出
+
+% 1 1 0 0479fd3dfa8873fa1967344cb37db399
+
+@ 0 19 0 1d48c60e8bc8841a0fa3cafaf4062521
++         错误 `↯/s.137.3`：_there was a problem with the compiler configuration_。
++         当无法根据传给 `Scalac` 的参数构建编译器的基础上下文时抛出——即嵌入的编译器拒绝了某个选项——这发生在打开 `Scalac.Session` 时。
++         这是配置故障，而不是编译失败：无法编译的源文件给出带有 `Notice` 的 `Result.Failure`，抛出异常的编译器给出 `Result.Crash`，两者都不会抛出此错误。
++   entry #version   该值所驱动的编译器的版本，以编译器自身报告的形式给出
++       嵌入的 Scala 编译器为 `3.10.0`，正在运行的 JDK 的 Java 编译器为 `25.0.4`，类路径上的 Kotlin 编译器为 `2.4.10`。
++       构建将其记录为产生某个输出的工具，memoize 的键必须包含它，以便编译器变化时重新构建不会命中缓存。
++       编译返回的 `Process` 在其自身的 `version` 中携带相同的文本。
++   entry #apply   针对类路径将具名源文件编译到目录中，返回 `Compiler.Process`
++       `compiler(classpath)(sources, out)`：源文件是一个 `Map`，从名称（诊断信息会引用它，如 `hello.scala`）映射到其内容；类路径是源文件编译所针对的 `LocalClasspath`；`out` 是任何 `Abstractable across Paths to Text` 的路径类型。
++       它需要 `System` 和 `Monitor`，记录 `Compiler.Event` 日志，并抛出 `Compiler.Error`。
++       对于 `Scalac`，输出目录必须已经存在；`Toolchain` 的编译边会创建它，但直接调用不会。
+
+@ 0 1 0 088c983663b3e2fe13922a915d0b86f4
++   entry .Process   正在运行或已完成的编译：其诊断信息、进度和结果都是值
+
+% 1 1 0 1561927ab96f638f0f7702e8d787feaf
+
+@ 0 7 0 1cdbf4f1776fe006196749764bc93672
++         每个编译器的 `apply` 都立即返回一个 `Process`，同时编译在其自身的任务中运行（`Scalac`、`Javac`、`Kotlinc`），或者已经完成（`Scalac.Session.Process`）。
++         `#complete()` 等待 `Result`；`#notices` 是迄今为止的诊断信息列表，最早的在前；`#errors` 和 `#warnings` 对它们计数；`#updates` 是一个实时数据流，按到达顺序交错诊断信息和进度刻度，供实时显示编译过程的工具使用。
++         `#abort()` 请求编译器在下一个进度刻度处停止。
+
+% 2 1 0 1708328d8d6d4d791166ee14307150c3
+
+% 3 1 0 097c2289c4de5e920bbb9cd55b0ee6e3
+
+% 4 1 0 089f6f392efbc1ba03ea6b8da6dd8d7a
+
+% 5 1 0 15ebc65531ad5ae507a4ff63606b8726
+
+% 6 1 0 0ee2b6d23688c5ad1969ae07fd61cf0f
+
+% 7 1 0 04d2551ff72dc51406137cd50d29ccd6
+
+% 8 1 0 009ee397ad7777f016640e60b2a7d7ed
+
+% 9 1 0 00bad761efcea2e71dca866df95d2da7
+
+% 10 1 0 08135abd70c5851517f90db2ab5e1cef
+
+% 12 1 0 06a58ee3905592d6132a70cde7676038
+
+% 13 1 0 0151dd9fdac58056108e4773b1fca530
+
+% 15 1 0 167b21a33a3afc9805e27d38fe26a065
+
+% 0 1 0 01ffb0e476b78c0a1090683d8b731f9c
+
+% 0 1 0 185d4189271be9250591eda7ecbf1b0c
+
+% 0 1 0 0d71d5e30a1ff6690e5b4cb98678329d
+
+% 0 1 0 0c5df8d6c36b94691e24e721874d305d
+
+% 0 1 0 0ffa97939ea79b50104f65e9305b59ea
+
+% 1 1 0 11d92feda25b5c48185f41327786b7a4
+
+@ 0 4 0 071d51b36657a4180535d4ce9d31e4ce
++         进程也是编译器写入的数据汇——即三个 `#put` 重载——包装另一个编译器的工具正是借此向进程输送数据。
++         它的 `#version` 是运行它的编译器的版本，因此已完成的编译无需调用者保留编译器，就能说明是什么产生了它的输出。
+
+% 0 1 0 1f2ea1ed2bd6fcef083747faa9f44468
+
+% 0 1 0 176736af42a4829b1b32edf7a2d69570
+
+% 0 1 0 07921ad559fcf1e9081f569ce51b4adc
+
+@ 0 4 0 169b0eb8cf0d4e1601fb930b6747d63d
++     entry .Update   实时数据流中的一个元素：一条诊断信息或一个进度刻度
++         `Noticed(notice)` 携带编译器报告的 `Notice`，`Progressed(progress)` 携带 `Progress`，按到达顺序排列；`#updates` 产生它们。
++         消费者对这两个分支进行匹配：
+
+% 2 1 0 0f4872edb456157b0d45c68012df6887
+
+% 3 1 0 1e60045c4122aca81d14e43e74d38efe
+
+% 0 1 0 1d4e2cc410e368ec02bdc034f708ebce
+
+% 0 1 0 1ae1064bf1137a4219ed59c91a2dcb91
+
+% 0 1 0 19f55bf95c1472cc15ac2086aa56e43a
+
+% 1 1 0 0fed48038575b7570c53ea8674b97220
+
+@ 0 27 0 1ba005e717319ec1192838a44949376f
++     entry #version   运行此次编译的编译器的版本
++     entry #put   记录一条通知、一个进度刻度、结果，或运行编译的任务
++         为向进程输送数据的编译器提供的四个重载：`put(notice)` 追加一个 `Notice`，按其重要程度计为错误或警告，并将其提供给数据流；`put(progress)` 将一个 `Progress` 提供给数据流；`put(result)` 以一个 `Result` 完成进程；`put(task)` 注册编译所在的 `Task[Unit]`，使 `#complete()` 在得到结果后能等待它结束。
++     entry #errors   迄今为止报告的错误级通知数量
++     entry #warnings   迄今为止报告的警告级通知数量
++     entry #complete   等待编译的结果，然后停止更新数据流
++         等待 `Result`——`Success`、`Failure` 或 `Crash`——然后等待编译任务结束并停止数据流，使 `#updates` 的消费者看到其结尾。
++         它需要 `Monitor`、`Tactic[Async.Error]`（用于等待）以及 `Event is Loggable`。
++         它返回之后，`#notices` 是完整的。
++     entry #abort   请求编译器停止
++         清除一个原子标志，编译器通过其进度回调轮询该标志，因此被中止的编译会在下一个进度刻度处停止，而不是一直运行到完成。
++         之后它完成时的结果就是编译器所报告的结果。
++         `#cancelled` 读回该标志。
++     entry #cancelled   是否已调用 `#abort()`
++     entry #updates   诊断信息和进度刻度的实时数据流，以窗口流的形式表示
++         基于进程中继的单一所有者流：每个窗口是一个由 `Process.Update` 构成的 `Array`，第一个窗口在第一条更新到达时到达，其余窗口排空此后到达的任何内容。
++         只认领一次，并用 `updates.records.each` 逐元素消费。
++         编译完成时它就结束（`#complete()` 停止中继）；编译完成后再认领会重放整个数据流然后结束，已完成的进程正是借此仍可被检视。
++         它需要作用域中有一个 `Buffering`。
+
+% 2 1 0 0ed40a3055c9eefc16be84c3a5650e1d
+
+% 3 1 0 1bc6ffd78c82f231139fa9beb8fbd3cb
+
+% 4 1 0 1523806a8d2906ac1bd4a33f2e9e2d95
+
+% 5 1 0 1d712504714df9da1e69bae083a75d1d
+
+% 6 1 0 1412f9af950f60090f1590fa8ffe08e8
+
+% 7 1 0 11fe73a79c584b260f79093579db904b
+
+% 8 1 0 13481b05fb177d480a63584f6c1d8bce
+
+% 9 1 0 08a3520c7a4c39fb05378c2c26e8f0e3
+
+% 10 1 0 12f992422363bbb417cfc596e7d42dae
+
+% 12 1 0 1431149c19f72ef20dc487dc67a2b196
+
+% 13 1 0 033d66b75b53c6a51191323397cc001f
+
+% 15 1 0 1ef4b0fdf3a003db0c1a1a9f14bead70
+
+% 0 1 0 10fc6d011bc04f991cff4889126b4d82
+
+% 0 1 0 163cc6d22219fefc0df7c00680f2d80c
+
+% 0 1 0 0e414d68fb8182d30f78dfb99a3f05fd
+
+% 0 1 0 1e668aa35349cdb70431aa8a77e9b2c0
+
+% 0 1 0 1b6563f0c153f734194d759870fa0e4b
+
+% 1 1 0 1d95eae59715b7651c081f0991ec2386
+
+@ 0 10 0 1415dd745f73c3fa1e644fc6f2a0aa03
++     entry #notices   迄今为止报告的诊断信息，最早的在前
++         用于事后检视的严格快照，在 `#complete()` 返回后即为完整。
++         实时消费者应优先使用 `#updates`，它还携带进度。
++   entry .Result   编译如何结束：成功、失败，或带有堆栈跟踪的崩溃
++       `Success` 表示编译器运行且未报告错误；`Failure` 表示它运行并报告了至少一个错误，由 `Process` 的 `notices` 描述；`Crash(error)` 表示编译器本身抛出了异常，并附带其抛出的 `StackTrace`。
++       崩溃以值而不是异常的形式到达；崩溃之后，无状态的编译器会替换其共享的编译器实例（`Scalac.refresh()`、`Javac.refresh()`），`Scalac.Session` 会重建其预热状态，因此下一次编译从干净状态开始。
+
+% 2 1 0 1214ce4199b597e7153434001c9e191d
+
+% 3 1 0 055f8bd79dbc6e2202581f54521a2eaa
+
+% 0 1 0 0b340abfa9e5f10b1bd42f06c3c64bee
+
+% 0 1 0 0e1879f1353c3b3d095e3a730b568f04
+
+% 0 1 0 190c6de313de9b43080c79183f95716d
+
+% 0 1 0 0c5539a9dc21dab00b01245f506bc6bd
+
+% 1 1 0 084080476a3eedcd0bcd599a1186e1ac
+
+@ 0 1 0 1ce10f99a511ad0f0af723783045b24f
++   entry .Event   编译器运行时记录的日志：启动、参数、每条诊断信息、崩溃
+
+% 1 1 0 04cc29d98413d62a0796cb40bee8f40e
+
+@ 0 17 0 07a0f62ab41c0464085fa7400e8bbe15
++         每个 `Compiler.Event` 都带有 `Log.Compiler` 标签。
++         `Running(arguments)` 在编译器启动前以 `info` 级别记录，附带编译器的完整参数列表；`Notice(diagnostic)` 在每条诊断信息被报告时以 `fine` 级别记录；`CompilerCrash` 在编译器抛出异常时以 `fail` 级别记录；`Start` 由 `Javac` 和 `Kotlinc` 在运行前以 `info` 级别记录。
++         每次编译时作用域中都必须有一个 `Compiler.Event is Loggable`；`logging.silentLogging` 丢弃它们，`Event.relay` 将它们转发到 `LinkEvent` 通道上。
++     entry .communicable   将每个事件渲染为消息
++         _starting compilation_、_the compiler crashed_、_the compiler emitted a diagnostic: `diagnostic`_ 以及 _running the compiler with arguments `arguments`_。
++     entry .relay   一个将每个事件作为 `LinkEvent.Message` 转发的 `Event is Loggable`
++         `Toolchain` 的编译边被赋予工具链的 `LinkEvent is Loggable`，而它们所驱动的编译器使用的是 `Event`；`Event.relay(using linkEvents)` 在一次编译期间将两者桥接起来，因此观察某条路径事件的构建能同样看到编译和链接。
++         每个事件都通过 `Event.communicable` 渲染，并以与 `LinkEvent.Message` 相同的级别记录。
++         它捕获链接通道所捕获的一切。
++   entry .Progress   一个进度刻度：已完成的比例以及编译器当前所处的阶段
+
+% 1 1 0 18eeca25a44c29cd1b5af7ddc689e35c
+
+@ 0 6 0 096c7bc4cc61dde104e5e55c6358ac42
++         `Scalac` 每完成一个整数百分点报告一个刻度，以编译器所处的阶段名称（`typer`、`erasure` 等）作为其 `#stage`；`Javac` 和 `Kotlinc` 不暴露进度，启动时报告 `0.1`，成功时报告 `1.0`，以编译器的名称作为阶段。
++         刻度通过 `Process#updates` 以 `Update.Progressed` 的形式到达。
++     entry #complete   编译已完成的比例，从 `0.0` 到 `1.0`
++     entry #stage   编译器当前的阶段，以它自己的命名表示
+
+@ 0 1 0 1a5e3e374787867d0e3babf29877e364
++   entry .Notice   一条诊断信息：其重要程度、文件、消息、跨度和语义标记
+
+% 1 1 0 1b1eda47efba43781a8911f3d0c86cd6
+
+@ 0 6 0 1261d6c225c0fa6009e39ef163c91f89
++         编译器关于源文件的报告，以值的形式表示：`#importance` 是 `Info`、`Warning` 或 `Error`；`#file` 是源文件在编译的 `Map` 中被赋予的名称（`hello.scala`），而不是磁盘上的路径；`#message` 是文本；`#span` 是它所涉及的源文件区域，以 denominative 的 `Span` 表示，对于没有位置的诊断信息则为 `Unset`。
++         工具可以在出错的代码下画线，而不是照搬编译器的输出。
+
+% 2 1 0 0812b646c7317998008d744709e46446
+
+% 3 1 0 09187b25bb5c032403f7edce48d6826a
+
+% 0 1 0 14d493e25a69f88c0dcb749c094cc8ad
+
+% 0 1 0 195f7ebe823acfbe09059e1f48c7fa87
+
+% 1 1 0 143c7c85e1cc1b9b084b47c01ffecdbc
+
+@ 0 10 0 1ab603186ef837121676d232b7ce449a
++         `#markup` 只在 `scalacOptions.semanticDiagnostics` 下由 `Scalac` 设置：保留了编译器带内语义标记（U+E000 及其同伴字符）的原始消息，delicious 库将其解析为由带样式跨度、占位符和序列化类型构成的 `SemanticMessage`，因此一条 "found `A`, required `B`" 消息会以两个可供渲染和比较的类型到达，而不是作为需要重新解析的文本。
++     entry #importance   该通知是信息、警告还是错误
++     entry #file   源文件编译时被赋予的名称
++     entry #message   诊断信息的文本，已去除所有语义标记
++     entry #span   该通知所涉及的源文件区域，或 `Unset`
++     entry #markup   在 `-Zsemantic-diagnostics` 下带有语义标记的原始消息，否则为 `Unset`
+
+@ 0 1 0 0dd67d78f06bb78a16e1547a8d57a4a9
++ entry .Compilation   编译的输出目录和类路径，并以其 `Universe` 标记
+
+% 1 1 0 025cf6a683a7e3ac1207276bf1602c95
+
+@ 0 5 0 16b829744f7c234603d42d19ce4c8e25
++       一个令牌，将编译写入的目录与编译所针对的 `LocalClasspath` 配对，并将其所在的 universe 作为类型参数携带，因此不能在需要 `Compilation[Toolchain.Universe.Nir]` 的地方传入 `Compilation[Toolchain.Universe.Sjsir]`：两者是不同的类型，不匹配会成为构建工具中的编译错误，而不是链接时的失败。
+
+% 2 1 0 0e89697f7ee6f4a11e2237ee421444b3
+
+% 3 1 0 11e957325721085b1c7005e3235a9e00
+
+% 0 1 0 035b83b2969ca61318513a41f99a62b6
+
+% 0 1 0 1e0282d9f69044fc1fe75ab96becb5d8
+
+% 1 1 0 11fbc502ef86fb8f0cfe4359fd7f2bff
+
+@ 0 4 0 18fb9260c9510b3d12181e8c63ae68bc
++       `Toolchain` 机制以 `Deliverable.Emission` 的形式传递同样的一对值而不加标记，因为在那里 universe 是图的节点而不是类型。
++   entry #out   编译写入其输出的目录
++   entry #classpath   源文件编译所针对的类路径
+
+@ 0 5 0 068f511ff6f4c51b1e5631253f9e7d2b
++ entry .Importance   诊断信息的级别：`Info`、`Warning` 或 `Error`
++     按 Scala 编译器自身的级别排序（其序数即编译器的序数），因此当通知的重要程度为 `Importance.Error` 时，它被计为错误。
++     `Link.Error.Reason .CompilationFailed` 以同样的方式统计其错误：`notices.filter(_.importance == Importance.Error).length`。
+
+@ 0 7 0 0f164081aecc301808cd6bc47ef8f631
++ entry .Language   源语言，作为工具链的源节点：`Scala`、`Java`、`Kotlin`
++     该库为其提供了编译器的每种语言各有一个 `Artifact.Source`，id 分别为 `scala`、`java` 和 `kotlin`：这是 `Deliverable.Sources` 所在的节点，从这里 `scalacEdges`、`javacEdges` 和 `kotlincEdges` 通往各编译器能够产生的 universe。
++     它**不导出**到 `soundness` 总括包，因为总括包的 `Language` 是 cosmopolite 的，所以在 `import soundness.*` 下要写成 `anthology.Language.Scala`。
++     `Artifact.source(t"scala")` 是同一个节点。
+
+% 2 1 0 178ec7b8c45f99c30d454dd3b3776479
+
+% 3 1 0 0d839f7b7dcabedf02d6e4d834e879e5
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 09866ebe08e4f9d51cc144ad69591a7c
+
+% 0 1 0 0173b2ad47146740019a1868ff52a795
+
+% 1 1 0 102447f14271f35a0fb55ecc0e5ca14b
+
+@ 0 1 0 0bac91480f5ba1391bb89a94cb91e830
++ entry .NirPlugin   Scala Native 编译器插件的位置，作为可以产生 NIR 的证据
+
+% 1 1 0 1d8ccb6c866ef9751c3444c5256ecd6d
+
+@ 0 6 0 13bb082eaa1f91d91c9a3458e57b0112
++       NIR 由编译器插件（`nscplugin`）而不是 Scala 编译器内置的后端产生，因此编译到 `Toolchain.Universe.Nir` 需要知道插件 JAR 在哪里。
++       作用域中的 `NirPlugin` given 就是这一证据：`Toolchain.Universe.nir` 由它构建 `Toolchain.Universe.Emission[Toolchain.Universe.Nir]`，向编译器参数中添加 `-Xplugin:<jar>`，而 `scalacEdges.nir` 要求它。
++       没有它，就无法应用 `Scalac#targeting[Toolchain.Universe.Nir]`，也无法构建该边。
+
+% 2 1 0 04db0529a669695512ab95fb2d84f7c2
+
+% 3 1 0 13fc1b0f409549ae1a26e9a5e4d20e1e
+
+% 4 1 0 1e102465f6d389ba0f902e46fd814b82
+
+% 0 1 0 1ada3ecc6a4015280b3387780ef305db
+
+% 0 1 0 01e83936a27cdc72155afe699cb38397
+
+% 1 1 0 0dc7e531bf3e0187062b6f6b1a8eabb2
+
+@ 0 5 0 1b80c844dd1539ce183726a305e3007b
++       官方发布的插件（`org.scala-native:nscplugin_<scala version>:0.5.12`）可与 Soundness 编译器配合使用；Scala Native 运行时（`scalalib`、`scala3lib`、`javalib`、`auxlib`、`clib`、`posixlib` 和 `nativelib`）像其他任何库一样放在类路径上，缺少它们时会表现为普通的编译器诊断信息。
++   entry #jar   插件 JAR 的路径
+
+@ 0 1 0 1cc15878bd757ed91705e89621a4b618
++ entry .Artifact   工具链的一个节点：源语言、中间表示或应用程序格式
+
+% 1 1 0 105f2ed0e9934be10bf862eeb668dfac
+
+@ 0 5 0 11a96319824699aa13c10cc6a177ddc8
++       `Toolchain` 的每个节点都是一个 `Artifact`，属于三个层级之一：`.Source`，如 `anthology.Language.Scala`，由编译器消费；`.Ir`，如 `Toolchain.Universe`，保存开放世界的、链接前的内容，库在其中组合；或 `.Application`，如 `Artifact.Jar` 或 `Apk`，是宿主运行的封闭格式。
++       工具可以消费任何格式，但只会产生 `Ir` 或 `Application`——`Edge` 在其类型中说明了这一点。
+
+@ 0 7 0 02716b434315460902fd8fbad5202cca
++       格式的身份是其 `#kind` 和 `#id`，别无其他：`equals` 和 `hashCode` 是 final 的，只比较这两者。
++       因此，凡是某个参数会改变用户所得到的东西——JavaScript 制品的模块系统、WASI 制品的接口版本、原生二进制文件的目标三元组——它就是 `id` 的一部分，每种参数化都是一个不同的节点。
++       `Artifact.Binary(Toolchain.Triple.Arm64MacOs)` 与 `Artifact.Binary(Toolchain.Triple.X64Linux)` 的区别，就像 JAR 与 JavaScript 包的区别一样；它们共用一个链接器并不使它们可以互换。
+
+@ 0 5 0 09d79f71c842f73308b3ae189853f3ca
++       节点集合是开放的。
++       格式可以作为数据，通过其种类和名称，用 `.apply`、`.source`、`.ir` 和 `.application` 声明，就像在运行时读取的注册表声明任何 Soundness 版本都不知道的形式那样；而声明的格式与同种类同名称的内置格式是*同一个节点*，因此 `Artifact.ir(t"classfile")` 能到达为 `Toolchain.Universe.Classfile` 注册的每条边。
+
+% 2 1 0 111bdceda737564a150b2708edef6d62
+
+% 3 1 0 0a2d1c8e7911f8a7097f934806bcc685
+
+% 0 1 0 03a870baaaff7c8f083e4b61f1465d36
+
+% 0 1 0 1681485231a06feb0dc615f736e7b952
+
+% 0 1 0 01ba4a490045f1cc0d5f6234fe5da0b0
+
+% 0 1 0 0676cc91e152dc82104e6a4c12da32f4
+
+% 1 1 0 182307eb95df21f31f83c1791e77ce86
+
+@ 0 4 0 19bcee6c5016528a1fff74d7bfe2b33f
++       不通过三个层级特质之一而继承 `Artifact` 的类必须自行定义 `#kind`，并且任何类都不得重写 `equals` 或 `hashCode`；继承它的 case class 没有合成的结构相等性，因此参数会区分节点的格式必须将这些参数编码到其 `id` 中，正如每个内置格式所做的那样。
+
+% 1 1 0 117d7cb7f5622b42050553e7bfbc2452
+
+% 1 1 0 0cf545747b5ed81c1a70c67e9822655e
+
+% 1 1 0 1f43fe9da9580bf51b1a90b5a686fa66
+
+@ 0 19 0 0d958b6d7530e7c91cc220845df650df
++   entry .Kind   格式所属的层级：`Source`、`Ir` 或 `Application`
++       格式声明时所用的种类，以数据表示。
++       两个格式只有在种类相同时才相等，因此源和应用程序可以同名。
++   entry .Source   编译器所消费的格式层级：源语言
++       `kind` 固定为 `Kind.Source`。
++       内置的源是 `anthology.Language` 的各个分支；`Artifact.source(id)` 声明另一个。
++   entry .Ir   中间表示的层级：类文件、`.sjsir`、`.nir`、组件
++       `kind` 固定为 `Kind.Ir`。
++       内置的中间表示是 Scala 编译产生的 `Toolchain.Universe`，外加没有边的 `Component` 和 `WasmObject`；`Artifact.ir(id)` 声明另一个。
++   entry .Application   宿主运行的封闭格式的层级：JAR、APK、包、二进制文件
++       `kind` 固定为 `Kind.Application`。
++       内置的应用程序是 `Artifact.Jar`、`Artifact.Binary`、`Library`、`anthology.Js`、`anthology.Wasm`、`Wasi`、`OciImage`、`Dex` 和 `Apk`；`Artifact.application(id)` 声明另一个。
++   entry .Jar   绑定到 JDK 的可执行 JAR：`jarEdges` 从 `Classfile` 到达的节点
++       id 为 `jar` 的应用程序节点：将编译输出连同其整个类路径打包而成的可执行 JAR，以唯一的 `EntryPoint` 作为其 `Main-Class`。
++       它嵌套在这里作为 `Artifact.Jar`，是因为 `soundness` 总括包的 `Jar` 属于 zeppelin。
++   entry .Binary   针对一个目标 `Triple` 的机器码可执行文件：每个三元组一个节点
+
+% 1 1 0 0619c7a1489c5c69146bd6a3eb690aca
+
+@ 0 21 0 000fd10830743dbf1a9f026e64237eae
++         id 为 `binary-<triple>` 的应用程序节点，例如 `binary-arm64-apple-darwin`，通过 `nativeEdges` 从 `Toolchain.Universe.Nir` 到达。
++         二进制文件绑定到一种操作系统和架构的 C 库，因此每个三元组都是独立的节点，用 `nativeEdges(Toolchain.Triple.X64Linux)` 构建的工具链没有通往 `Artifact.Binary(Toolchain.Triple.Arm64MacOs)` 的路径。
++         它嵌套在这里作为 `Artifact.Binary`，是因为总括包的 `Binary` 属于 monotonous。
++     entry #triple   该二进制文件运行的目标平台
++   entry .apply   `Artifact(kind, id)`：作为数据、通过其种类和名称声明的格式
++       按种类分派到 `.source`、`.ir` 或 `.application`。
++       如果存在该种类和 id 的内置格式，结果与其相等，且哈希值相同。
++   entry .source   `Artifact.source(id)`：声明的源格式
++       `Artifact.source(t"proto")`，用于没有 Soundness 编译器了解、但某条已注册的边能够消费的语言。
++       它检视为 `Artifact.source(proto)`。
++   entry .ir   `Artifact.ir(id)`：声明的中间表示
++       `Artifact.ir(t"descriptor")`，一个有自己载体的 universe。
++       `Artifact.ir(t"classfile")` 即 `Toolchain.Universe.Classfile`。
++   entry .application   `Artifact.application(id)`：声明的应用程序格式
++       `Artifact.application(t"bundle")`，一个有自己宿主契约的交付物。
++       `Artifact.application(t"js-es")` 即 `anthology.Js(anthology.Js.Module.Es)`。
++   entry #id   格式的名称，与其种类一起构成其全部身份
++   entry #kind   格式所属的层级
+
+@ 0 1 0 0c829b480001570a1fd03c9ac65b7611
++ entry .Deliverable   沿工具链路径流动的值：源文件、产出或成品
+
+% 1 1 0 151bc6266ec0044b09ec9a18a1483221
+
+@ 0 7 0 0f3c13b41b61205f190d3d56435acdad
++       每条边的工具所消费和产生的东西，其分支说明了它在图中所处的位置：`Sources(sources, classpath)`——一组具名源文件以及编译它们所针对的类路径——位于源语言节点；`Emission(out, classpath)`——编译的输出目录以及编译所针对的类路径——位于中间表示；`Product(file)`——已链接或已打包的文件——位于应用程序。
++       `Toolchain#produce` 以其中之一作为输入，位于它所指定为源的节点上。
+
+% 2 1 0 00d54e188e6812bf0160f8750c9630a6
+
+% 3 1 0 07f0c868c5478d3911de43fd84b1de74
+
+% 4 1 0 13b694e2625b0aac048ee5375bdb75af
+
+% 2 1 0 1d9e30cc6acb539604ba44fbaac23acb
+
+% 3 1 0 0cf8c7f5173ab1961222e335a6ae2776
+
+% 0 1 0 1da197e2b47ddf85135e4849c87502b8
+
+% 0 1 0 093da03dae26d63f1ae5f444c63e8c11
+
+% 0 1 0 1ab626aa629512b01131bf4c6b0a934d
+
+% 1 1 0 1697d2142ef918b10b781d42ad1efa6a
+
+@ 0 4 0 083110e1d1fc41d30d169c33acd3433d
++       工具静态地知道其边消费哪种变体，三个访问器 `#sources`、`#emission` 和 `#product` 就是它的强制转换：当给出的是另一种变体时，每个访问器都会抛出原因为 `UnexpectedInput(format)` 的 `Link.Error`，并指明正在产生的格式，连接错误的工具链正是这样被诊断出来的。
+
+% 1 1 0 1f4d46aacff176b90a64e3e6ac8058be
+
+% 0 1 0 086080c132c88e4409d1d47cf72df74d
+
+@ 0 7 0 14f3d17d73315b1203c3a29e51f2bc45
++   entry #sources   具名源文件和类路径，用于编译边
++       除非这是 `Sources`，否则抛出 `Link.Error(UnexpectedInput(target.id))`。
++   entry #emission   输出目录和类路径，用于链接边或打包边
++       除非这是 `Emission`，否则抛出 `Link.Error(UnexpectedInput(target.id))`。
++   entry #product   文件，用于重新打包已完成成品的边
++       `Apk` 和 `OciImage` 工具以这种方式消费其前一条边的成品。
++       除非这是 `Product`，否则抛出 `Link.Error(UnexpectedInput(target.id))`。
+
+@ 0 1 0 0eed15c837aadf3a079502173a3e56a7
++ entry .Edge   工具链的一条边：由 `source` 格式产生 `target` 格式的工具
+
+% 1 1 0 0feb29f5c70baf6b1f14b4498c9b1f19
+
+@ 0 6 0 0db9eb664159fc24111ec85d3424fafd
++       `Edge(source, target, tool)`。
++       目标的类型为 `Artifact.Ir | Artifact.Application`，因为源从不被产生。
++       边提供者——`jarEdges()`、`dexEdges()`、`apkEdges()`、`sjsEdges()`、`nativeEdges()`、`ociEdges()`、`scalacEdges.classfile(…)`、`javacEdges(…)`、`kotlincEdges(…)`——各自返回其工具的边，`Toolchain(…)` 可组装任意数量这样的列表；新格式的边直接编写，并配以它自己的 `Toolchain.Tool`。
+
+% 2 1 0 01c3ea951a307ac1130b01d59454404d
+
+% 0 1 0 07b750cd940b39ca13b1331c684c2c28
+
+% 1 1 0 0c350a5776ffba69126c55b22df55c94
+
+% 2 1 0 164f3912a0e3096a1a3539b6de2a98d8
+
+% 0 1 0 125a0b1fea034da615ceb193786a129d
+
+% 0 1 0 04e093c6a316e443122742045c3bcad9
+
+% 0 1 0 163261c8c2c7e1341ec2576f3eda60db
+
+% 0 1 0 1f4b349e0c1bb195095b9298523b9784
+
+% 1 1 0 091fcbae2c768aaa145901781759efc4
+
+@ 0 3 0 063ecf2775b0706f1125fff3bbe3470e
++   entry #source   工具消费的格式
++   entry #target   工具产生的格式：中间表示或应用程序
++   entry #tool   运行该边的工具
+
+@ 0 1 0 131e1e0e147296581595a88077fbd74c
++ entry .Toolchain   由格式和工具构成的图，在其上由一种格式产生另一种格式就是路径搜索
+
+% 1 1 0 194196834444fe331dfde7265cdc7692
+
+@ 0 6 0 17f1db0504217bd60731ccfb6e6bb7b2
++       `Toolchain` 是一个有向无环图，其节点是 `Artifact`，边是 `Tool`。
++       `#produce` 接受已有的东西、想要的格式和一个输出位置，找出两个节点之间唯一的最短路径，并依次运行其上的每个工具；`#path` 报告路线而不运行任何东西。
++       该图通过 `.apply` 由边列表组装而成，它会拒绝同一对格式之间的重复边，也会拒绝环。
+
+% 2 1 0 1a77a263c13c7a180afbeb74473b841f
+
+% 3 1 0 1dc5e5eb7773e22e1876c99380688606
+
+@ 0 1 0 0061aaf52951885106ed47248a96fad4
++         label 可执行 JAR 直接由类文件链接而成
+
+% 1 1 0 06d5986612f677d80dffd224833ec580
+
+% 2 1 0 0e97645fcc83886213ead0f26561f166
+
+% 3 1 0 10a7bfe14b36c91f12e61624a59cfc4e
+
+% 0 1 0 0a9d40be72e6d6121f2082917aa968d3
+
+% 0 1 0 030c599ba8c360131de08b1a3df07b19
+
+% 1 1 0 0e92294235d14d9a168de93dfc995e2d
+
+@ 0 1 0 0a4fc41495f8d11a0c171bb6d2c750a8
++         label 加入 dex 边后，`Dex` 变得可达，只需一步
+
+% 1 1 0 08798e8109eeb288141ce050bdc7b0e5
+
+% 2 1 0 1c6aec41e23a4df01fc4c12ff4d50597
+
+% 3 1 0 0da7e97ac78e437a08c324884d9add4f
+
+% 0 1 0 0e081d05f55a111701a48a95c76d4a0b
+
+% 0 1 0 09bee58fd0bdb2fc126a419e39741746
+
+% 1 1 0 13e4c171e7cadaf40724809aa5a0fd37
+
+@ 0 1 0 158e4917699c26131653be7a276b84d6
++         label 加入 APK 边后路径延长：类文件先被 dex 化，再被打包
+
+% 1 1 0 0bd5955e16a0a6571c1ba4060ed52a94
+
+% 2 1 0 0a7f53fd08f6960409f5ad5da2bf7bf8
+
+% 3 1 0 17bf905d6821ceb9157f2b17b131d4a4
+
+% 0 1 0 118267e9d00f7dd6080d86d3cdf7c1ff
+
+% 0 1 0 1fdb0c6cf3e3e5961a3bec3808227f9e
+
+% 1 1 0 0c1015352e2387281c28682361e35920
+
+% 2 1 0 11e52f4b93f872301e5f7ac6e3404694
+
+@ 0 5 0 1f8639846a1b06021841b1e7d04c52ab
++       APK 工具中没有写入任何关于这一两阶段序列的东西：是路径将其组合起来的。
++       无法到达的格式会抛出原因为 `NoPath` 的 `Link.Error`，并指明这两个格式，而不是执行到一半才失败；两条同样短的路线会抛出 `AmbiguousPath`，解决办法是在单独的步骤中显式地产生一个中间格式，而不是依赖调用者看不到的平局裁决。
+
+@ 0 5 0 0f0e36229080ed850cb910f7ffe58423
++       工具通过 `.Setting` 配置，这些设置指向其产生过程受配置的*格式*，而不是指向工具：`apkOptions.minApi(24)` 同时作用于 `Dex` 和 `Apk`，因为 API 级别既决定 D8 如何脱糖，也决定清单声明什么；`linkerOptions.optimize.fast` 作用于 Scala.js 链接器产生的每种格式。
++       不匹配路径上任何格式的设置会在任何工具运行之前被拒绝。
+
+% 1 1 0 076e5fcbe81cb5f304d37ed5465d0c1f
+
+% 0 1 0 076ae5d98fd7e29f196bc19236e47322
+
+% 0 1 0 027fdaa6954674f20c92338b1fb7b79e
+
+@ 0 6 0 13f98e980ce8c13f1093260b4cfab91e
++   entry .apply   由任意数量的边列表组装工具链，并检查重复和环
++       `Toolchain(jarEdges(), dexEdges(), apkEdges())`，或 `Toolchain(List(edge1, edge2))`。
++       当两条边连接同一对格式时，抛出原因为 `DuplicateEdge(source, target)` 的 `Link.Error`；当边构成环时，抛出 `CyclicToolchain`；因此，存在的工具链一定是一个 DAG，其中每对节点之间至多有一条直接边。
++   entry .Error   当工具链所调用的原生工具不在 `PATH` 上时抛出
+
+% 1 1 0 00f42e2da20a3c7f0b2d2a34f1186222
+
+@ 0 8 0 11c07500d3c79b17027d365e12de8fca
++         错误 `↯/s.137.2`：_the native tool `tool` is not available on the PATH_。
++         由探测性构造方法抛出——`WasiToolchain()` 探测 `wasm-tools` 和 `wit-bindgen`，`nativeEdges()` 探测 `clang` 和 `clang++`——这样，缺少工具支持的边就无法构建，缺失的工具会在组装工具链时被发现，而不是在链接失败时。
++         `nativeEdges()` 还会把无法识别的构建主机（它无法说出自己的三元组）报告为缺少 `clang`。
++     entry #tool   缺失工具的名称
++   entry .Setting   工具设置，指向其产生过程受配置的格式
+
+% 1 1 0 15e04692eb4a845b0ec4718374dbf04f
+
+@ 0 6 0 07b4951109da55df132398fa53c087b7
++         `Toolchain` 按给定顺序，将每个设置应用于路径上目标被 `#appliesTo` 接受的每条边的初始设置；然后 `#edit` 变换该边的设置。
++         契约是：`appliesTo(format)` 蕴含 `edit(format, _)` 接受并返回每条以 `format` 为目标的边的设置类型；跨越设置类型不同的多种格式的设置——Android API 级别同时配置 dex 化和打包——按其 `format` 参数分派。
+
+@ 0 3 0 1a43aa41468c3b4a0301b45ee6dca5e3
++         选项对象（`jarOptions`、`linkerOptions`、`nativeOptions`、`dexOptions`、`apkOptions`、`ociOptions`）是内置的设置；`.apply` 为调用者自己的工具创建设置。
+
+% 2 1 0 0e2c9cd7433c0fb0118cc4083df2cb05
+
+% 3 1 0 1cba62e45aae209106a890bb66295196
+
+% 0 1 0 1ed0464a715b81921899537ded62f450
+
+% 0 1 0 16005f14cd51f0dd063f4efa109edb98
+
+% 1 1 0 177df02babf9af120d62c99a57cb5cf4
+
+@ 0 14 0 07cb33e211c16efd09c98ed9902fc3ba
++     entry .apply   `Toolchain.Setting[settings](appliesTo)(edit)`：作用于一种设置类型的设置
++         第一个参数说明该设置配置哪些格式；第二个参数编辑以其中某个格式为目标的每条边的设置，其类型为 `settings`。
++         抛出异常的 `edit` 会使产生过程以原因为 `Failed` 的 `Link.Error` 失败。
++     entry #appliesTo   该设置是否配置某种格式的产生过程
++     entry #edit   应用于某条边设置的设置，给定该边产生的格式
++   entry #edges   工具链的边
++   entry #path   两种格式之间唯一的最短路径，以按顺序运行的边表示
++       `toolchain.path(Toolchain.Universe.Classfile, Apk)` 是从前者到后者的 `Edge` 列表；格式到自身是一条长度为零的路径。
++       不存在路线时——逆着边的方向，或通往其边从未注册的节点——抛出原因为 `NoPath(source, target)` 的 `Link.Error`；两条或更多路线同样短时，抛出 `AmbiguousPath(source, target)`。
++       声明的格式（`Artifact.ir(t"classfile")`）的路由与其相等的内置格式完全相同。
+
+% 2 1 0 0d047b56f7dc91ba1c977af9d5a797f2
+
+% 3 1 0 1031d2a0e904570006be91a0b871a649
+
+% 4 1 0 125ae66345f238fa1d3a433dd2125d66
+
+% 0 1 0 10f1d822669d2cb71aa3d7b432e952cb
+
+% 0 1 0 10aad8b148fc98c610757b6796b9a26f
+
+% 0 1 0 1459b5d0ca5ec0ad1f89ebaded0c728a
+
+% 0 1 0 0fa1f8081108963f160142b99e497b5c
+
+% 1 1 0 0e24c0741884485d08607f2696067d58
+
+@ 0 7 0 0e5e121e1c03194e0d0a2fa8269c2cba
++   entry #produce   通过运行路径上的每个工具，由输入产生目标格式，并返回输出的路径
++       `produce(input, source, target, out, settings = Nil, entryPoints = Nil)`：`input` 是位于 `source` 的 `Deliverable`；多阶段路径上的每个中间成品都写入 `out` 之下以其格式 `id` 命名的目录中（APK 的 dex 归档落在 `out/dex/`），最终成品则写入 `out` 本身。
++       结果是最终 `Product` 的文件；当目标是 `Toolchain.Universe.Classfile` 这样的中间表示时，则是 `Emission` 的目录。
+
+@ 0 5 0 085951d06390c8331ce49fd6c9d41a72
++       每个设置都会先与路径的目标进行核对，不适用于任何目标的设置会在任何工具运行之前抛出原因为 `InapplicableSetting` 的 `Link.Error`。
++       入口点在整条路径上都是环境性的：可执行 JAR 至多接受一个作为其 `Main-Class`，原生二进制文件和 APK 恰好需要一个，而 `Library` 或 `Dex` 会忽略它们。
+
+% 2 1 0 00c221a9d7a3804e1b85c35ef65d99f9
+
+% 3 1 0 14c230b6462b7d74140290de1eb958da
+
+% 4 1 0 11a998e1a2d2503f1d40a25ef8da7c27
+
+% 5 1 0 1d16481b094d1d011deb7923016bd957
+
+% 6 1 0 1ba1d10547447f491d67f842d370200a
+
+% 7 1 0 1645a0cb01faa4f41102cba74049329c
+
+% 8 1 0 17295f3d963b66ac0ffeab57d9799c19
+
+% 9 1 0 1f6d7f6863df885817c8f4d9ff38c278
+
+% 10 1 0 15c31f60958776981c4d6df7e0ee1f51
+
+% 11 1 0 15ff53ae8fe32fa9151f28b091b9f832
+
+% 13 1 0 1bcc016081ea17170bfcb4e121993158
+
+% 14 1 0 0af5450541a0fe5810f74df9fda21dc1
+
+% 15 1 0 051844a652a1b1cd025c62d6d2f1e0a1
+
+% 17 1 0 0b890d294390ec531e1099b6e6799825
+
+% 0 1 0 1443eaec1627e96219fbb9821ce26be2
+
+% 1 1 0 0b252077dcdc00fb153e19b2994ba3c0
+
+% 2 1 0 0991d4b5040f595818c633cb8ce33d1a
+
+% 3 1 0 0e109b573613e56f08f00d9224980052
+
+% 4 1 0 0abb66841659adf91b7d3721568b1f0d
+
+% 0 1 0 1ac93889ed5c9b3b15fb838589d557c5
+
+% 1 1 0 0138846a66c36db1039c8f32acaeb7f7
+
+% 2 1 0 1546060f6ea00e721b586112ebe69098
+
+@ 0 4 0 1c845998e1c7227e02eede3adca71883
++       它需要 `Monitor`、`System` 和 `WorkingDirectory`，抛出 `Link.Error`，在第一个工具之前记录 `LinkEvent.Start`，在最后一个工具之后记录带有输出路径的 `LinkEvent.Linked`；路径上的编译边会将其 `Compiler.Event` 中继到同一通道上。
+
+@ 0 1 0 1d859deced4cc9960548caaeea305c21
++   entry .Universe   编译产生的中间表示：`Classfile`、`Sjsir` 或 `Nir`
+
+% 1 1 0 08f425c0f49c8eed1559536764866e9b
+
+@ 0 8 0 16c9844f93b34d850aa61e2c8859e74f
++         一次编译产生一种中间表示，这一选择决定了它能与哪些库制品链接，以及能成为哪些应用程序格式。
++         `Classfile` 是 JVM 类文件，可链接为 `Artifact.Jar`、`Dex` 或 `Apk`；`Sjsir` 是 Scala.js IR，其链接形式——JavaScript、浏览器 Wasm 或 WASI 组件——在链接时选择；`Nir` 是 Scala Native IR，通过 LLVM 链接为机器码。
++         每个 universe 都是 `Toolchain` 的一个 `Artifact.Ir` 节点，id 分别为 `classfile`、`sjsir` 和 `nir`，并且每个 universe 另外都有一个打包其未链接输出的 `Library` JAR。
+
+@ 0 6 0 1038e3eb74e8ccd51ef46f88c3cebaad
++         universe 也是一个*类型*，即 `Scalac` 的第二个类型参数，因此为一种 universe 配置的编译器不能当作另一种使用：`Scalac[3.8](options)` 以 `Toolchain.Universe.Classfile` 为目标，`targeting[Toolchain.Universe.Sjsir]` 则将其重新定向。
++         每个 universe 所需的编译器标志由为其提供的 `.Emission` given 决定——类文件不需要，Scala.js 需要 `-scalajs`，Native 需要插件标志，后者只在作用域中有 `NirPlugin` 时才存在——而不是手工提供。
+
+% 2 1 0 108835822d2a83d21dd309b74cf2ae1d
+
+% 3 1 0 198e9dbbc0a2fd2517fc09df4a747d97
+
+% 0 1 0 0879b33f4c92082b1568ecf8d9b9c55b
+
+% 0 1 0 0fd248cb658c1e3e18a229824bfe1a94
+
+% 1 1 0 13da595c848d46271ec44cfc2867fc69
+
+@ 0 5 0 0df6d241477e41e403611e1f9ae54a99
++         JVM 之外的每个 universe 都有运行时先决条件，像其他任何库一样在类路径上提供：`Sjsir` 需要 `scalajs-javalib`、`scalajs-library_2.13`、`scalajs-scalalib_2.13` 和 `scala3-library_sjs1`，`Nir` 需要 Scala Native 运行时（`scalalib`、`scala3lib`、`javalib`、`auxlib`、`clib`、`posixlib`、`nativelib`）。
++         缺少它们时，表现为普通的编译器诊断信息，而不是一种独特的失败。
+
+% 0 1 0 1ee07b172b0fe65d13fc285421c04121
+
+% 0 1 0 0d81c7104794edc712c161f37d95f0b4
+
+% 0 1 0 065745a6d33313f00d2ed69db7dbc612
+
+@ 0 15 0 01e714e98b2a9cba1a9a1b3bdba2f33a
++     entry .Classfile   JVM 类文件；也是类型 `Toolchain.Universe.Classfile`，即该分支的单例类型
++         普通的 `Scalac[version](options)` 所针对的 universe，也是 `Javac` 和 `Kotlinc` 唯一产生的 universe。
++         它可链接为 `Artifact.Jar`、`Library(Toolchain.Universe.Classfile)`、`Dex` 或 `Apk`。
++         类型别名 `Toolchain.Universe.Classfile` 即 `Universe.Classfile.type`，因此该分支可以作为类型参数命名：`Compilation[Toolchain.Universe.Classfile]`。
++     entry .Sjsir   Scala.js IR；也是类型 `Toolchain.Universe.Sjsir`
++         通过 `scalac.targeting[Toolchain.Universe.Sjsir]` 到达，它会添加 `-scalajs`。
++         它通过 `sjsEdges` 链接为任意模块系统下的 JavaScript、浏览器 Wasm，或者——在给定 `WasiToolchain` 和 `Wasi.World` 时——WASI 组件，并打包为 `Library(Toolchain.Universe.Sjsir)`。
++     entry .Nir   Scala Native IR；也是类型 `Toolchain.Universe.Nir`
++         通过 `scalac.targeting[Toolchain.Universe.Nir]` 到达，它需要一个 `NirPlugin` given 来提供 `-Xplugin:` 标志。
++         它通过 `nativeEdges` 为每个目标三元组链接为一个 `Artifact.Binary`，并打包为 `Library(Toolchain.Universe.Nir)`。
++     entry .Emission   universe 的产出所需的编译器标志，以 universe 上的类型类表示
+
+% 1 1 0 057dc921ba3e7cbe0d3504cdcc41acb5
+
+@ 0 17 0 1917383e929f89aa18d51aea9519598b
++           `Universe.Emission[universe]` 是 `Scalac#apply` 和 `Scalac.Setup` 的会话所召唤的东西，用以得知要为编译器所针对的 universe 添加哪些标志。
++           三个 given `.classfile`、`.sjsir` 和 `.nir` 位于这个伴生对象中，因此无需导入；最后一个只在作用域中有 `NirPlugin` 时才存在，正是这一点使得不指明插件就无法为 Native 编译。
++       entry #flags   要添加到编译器命令行的参数
++     entry .classfile   `Emission[Classfile]` given：无额外标志
++     entry .sjsir   `Emission[Sjsir]` given：`-scalajs`
++     entry .nir   由作用域中的 `NirPlugin` 构建的 `Emission[Nir]` given：`-Xplugin:<jar>`
++         在没有 `NirPlugin` given 的情况下召唤它是编译错误，因此重新定向到 `Toolchain.Universe.Nir` 的 `Scalac` 在插件位置进入作用域之前无法应用。
++     entry #section   保存该 universe 内容的 LIRA 节的标注：`jvm`、`sjsir` 或 `nir`
++     entry #suffixes   该 universe 存储形式的文件名后缀，连同 `.tasty`
++         `Classfile` 为 `.class` 和 `.tasty`，`Sjsir` 为 `.sjsir` 和 `.tasty`，`Nir` 为 `.nir` 和 `.tasty`：即每个 universe 的二进制形式，外加承载其接口的 TASTy。
++   entry .Tool   工具链边的实现：编译器、链接器或打包器，及其设置类型
+
+% 1 1 0 16901b51e2c9525b1e296a269d9c3a1e
+
+@ 0 5 0 10a73d6ed562cc4415b81083884d0245
++         `Tool` 是一个惰性的值：其执行所需的能力——`Monitor`、`System`、`WorkingDirectory`——通过 `#run` 的上下文流入，而不是在构建时被捕获。
++         它声明一个 `#Settings` 类型以及该类型的 `#initial` 配置，`Toolchain#produce` 在调用 `#run` 之前将适用的 `Toolchain.Setting` 折叠进去。
+
+% 2 1 0 1b2d2cc938c8239b162ccb7da30893e9
+
+% 3 1 0 123476d8466ba2a507abb2897ba0e542
+
+% 0 1 0 0910f4fc3beb3dce0079016a23e734ee
+
+% 0 1 0 0b317198c6e307071b9c1af5bfcfb938
+
+% 0 1 0 18f58e7e8c1c208210069aaa4b9d4c5d
+
+% 0 1 0 1f0504696923f2f4165425fdfbe7fe46
+
+% 0 1 0 164744d2dd6ec6141de78dea0b8cf765
+
+% 0 1 0 183eb08167ab1ebc0610dc4c5ede3371
+
+% 0 1 0 1f0676876a9e0bc00b0cbdd9025c1120
+
+% 0 1 0 08472d2aa9215f6a0baf8c12ba8b5366
+
+% 0 1 0 1bcd247f1820b7f4052609718236776c
+
+% 0 1 0 18f76edda21d541215878834b1ac3473
+
+% 0 1 0 1a4d2de65a1abe7c0680702582d7ca3a
+
+% 0 1 0 1d0bf88cb6b211d417c249fac5d6f318
+
+% 0 1 0 1484b2546a7aba5a1a2338bf069840fe
+
+% 1 1 0 10521d29af348ec10c42d5a306885caf
+
+@ 0 2 0 122a945c05f8183e140e195c5156074e
++         内置工具对其边提供者是私有的；用户持有的是 `Edge`，其 `tool.name` 就是路径所报告的内容。
+
+% 0 1 0 08abb907433137ce196aa82b35b75d02
+
+% 0 1 0 09887fcb8b19f2240a9d92d8ad074b83
+
+@ 0 14 0 192d39523706a5591675ba2a261a9713
++     entry #Settings   驱动该工具的配置类型
++         编译边为 `Unit`（编译器携带自己的选项），JAR 边为 `Text`（文件名），`sjsEdges` 为 Scala.js 的 `StandardConfig`，`nativeEdges` 为 Scala Native 的 `NativeConfig`，`apkEdges` 为 `Apk.Configuration`，`ociEdges` 为 `OciConfiguration`。
++     entry #name   工具的名称，即路径所报告的名称：`scalac`、`jar`、`dex`、`apk`、`oci` 等
++     entry #initial   默认设置，应用任何 `Toolchain.Setting` 之前的设置
++     entry #run   在交付物上运行工具，写入目录，并返回其产生的东西
++         `run(settings, input, entryPoints, out)`：`input` 是位于边的源节点上的 `Deliverable`，`entryPoints` 在整条路径上都是环境性的（每个工具按其格式的要求应用或忽略它们），`out` 是要写入的目录。
++         它需要 `Monitor`、`System` 和 `WorkingDirectory`，抛出 `Link.Error`，并记录 `LinkEvent` 日志。
++   entry .Triple   原生链接的目标平台，渲染为 LLVM 目标三元组
+
+% 1 1 0 05069f348205d8a50d67ddca136cb101
+
+@ 0 7 0 023d3d2e96621258136195e8a7907c1d
++         六个目标：`Arm64MacOs`、`X64MacOs`、`Arm64Linux`、`X64Linux`、`Arm64Windows` 和 `X64Windows`，每个都通过 `#text` 渲染为传给 Scala Native 的 LLVM 三元组（`arm64-apple-darwin`、`x86_64-apple-darwin`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、`aarch64-pc-windows-msvc`、`x86_64-pc-windows-msvc`）。
++         `Artifact.Binary(triple)` 是该平台上二进制文件的应用程序节点，`nativeEdges(triples*)` 为每个三元组注册一条边。
++         构建主机之外的目标需要一个能够交叉编译到这些目标的 C 工具链和 sysroot。
+
+% 2 1 0 081b578b3103963d0bafd1d7dd31eae6
+
+% 3 1 0 0f63f7a230f0304f1cda122afc52cd70
+
+% 0 1 0 18960e1aab2a5ca3040ac42567b2ae5a
+
+% 0 1 0 02483ba0dca24a3d05f285d7e0292ea3
+
+% 1 1 0 1aa57e0e9ef56f650579e41535a3d8e9
+
+% 0 1 0 0138ccf1a0c4bc230f787c7c1805abaa
+
+@ 0 5 0 01504425488783d8029a1eac82a9f441
++     entry .host   构建主机自身的三元组，取自 `os.name` 和 `os.arch`；无法识别时为 `Unset`
++         可识别 ARM64 或 x86-64 上的 macOS、Linux 和 Windows；任何其他平台都是 `Unset`，而不带显式三元组的 `nativeEdges()` 会将其报告为缺少 `clang`，因为这样的主机也没有 Scala Native 运行时。
++     entry #text   LLVM 目标三元组
+
+@ 0 8 0 171a398bd465899506ad84e59d46efa9
++ entry .Component   WebAssembly 组件 universe：一个尚无边的中间节点
++     一个 id 为 `component` 的 `Artifact.Ir`：WebAssembly 库组件，通过 WIT 描述的接口相互组合，就像 TASTy 让 `sjsir` 和 `nir` 组合一样。
++     它是 `Ir` 而不是 `Toolchain.Universe`，因为没有任何 Scala 编译会产出它——当一个组件所导出的 world 可运行时，它是一个应用程序（`Wasi`），而当它与其他组件组合时，它是这个 universe 中的内容。
++     没有内置的边产生或消费它；这个节点的存在是为了让组合工具注册它们自己的边，在有工具注册之前，通往它的路径会抛出 `NoPath`。
+
+@ 0 1 0 02d80569a85aac6602e7b93135e665ce
++ entry .EntryPoint   一个类，其 `main(args: Array[String])` 在链接产物加载时运行
+
+% 1 1 0 183dab6d473b828c1be627be42ecbdf5
+
+@ 0 9 0 0e9e3328e870d67206e9ad101873b4cd
++       `EntryPoint(Fqcn(t"com.example.Main"))`。
++       入口点被传给 `Toolchain#produce`，并在整条路径上作为环境值存在，每个工具按其格式的要求应用或忽略它们：可执行的 `Artifact.Jar` 最多接受一个，作为其 `Main-Class`（没有入口点意味着没有主类的 JAR；两个则抛出原因为 `ManyEntryPoints` 的 `Link.Error`）；原生 `Artifact.Binary` 要求恰好一个（否则为 `NoEntryPoint`）；`Apk` 要求恰好一个，即它的启动器 activity；JavaScript 和 Wasm 链接将每个入口点初始化为模块初始化器；而 `Library` 或 `Dex` 完全忽略它们，因为两者都不记录入口点。
++   entry #mainClass   完全限定的类名
+
+@ 0 1 0 17a7314c6d909c901cc90860952fd558
++ entry .Link   `Link.Error` 的命名空间，即链接、路径搜索或打包的失败
+
+% 1 1 0 1532d5392e8753ee1b198fc804364aaa
+
+@ 0 7 0 11901c477df2daef0e04096d268414c2
++       `Toolchain` 可能发生的每种失败都是携带一个 `Link.Error.Reason` 的 `Link.Error`，因此一个 `Tactic[Link.Error]` 就能覆盖工具链的组装、搜索以及其工具的运行。
++       工具自身的故障（抛出的异常）是带有其堆栈跟踪的 `Failed`；结构性故障（没有路径、重复的边、一个没有可配置对象的设置）各有其原因；而编译边的失败是 `CompilationFailed`，携带编译器报告的每个 `Compiler.Notice`。
++   entry .Error   由工具链抛出：错误 `↯/s.137.1`，_linking failed because `reason`_
+
+% 1 1 0 05ae7d45d2f88fc40a7afc6b82185f70
+
+@ 0 2 0 099422ebabed691218216dd9656911f8
++         `Link.Error(reason)`；其编号的细节部分是原因自身的编号。
++         匹配 `#reason` 来区分各分支：
+
+% 2 1 0 09b426e2c23ed0941430064a1cd2d80a
+
+% 3 1 0 10c538f61454c48f1ad491268c14a039
+
+% 0 1 0 08a95c731285b88e0c020fc4aa1b64ac
+
+% 0 1 0 11e521e8345140c01c359979bac9c994
+
+% 0 1 0 0d43cc015d8188ee194183ed32a11a75
+
+% 0 1 0 05fd37d2a97e3be20ac16633fe6dcd3f
+
+% 0 1 0 1ac38e0856a5230d099633a5196c2666
+
+% 1 1 0 10a24088556484350e6576e5a3eaadbd
+
+@ 0 1 0 1d02e34a23b9b5000a50285d6039d3bd
++     entry .Reason   链接失败的原因：十四个带编号的分支，各有其消息
+
+% 1 1 0 1895944420d17ba902a8aafe3cb1a254
+
+@ 0 2 0 06f7bdef3270b8ea0d736e11c09ce540
++           每个分支都以 `#number` 携带其编号，它是错误代码的细节部分（`NoPath` 为 `443.5`）：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 6 0 1f028a62c24f40641410fa901f3a27c0
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `Failed(trace)`  1  _the linker terminated abnormally_  某个工具抛出了异常；`StackTrace` 被保留
++           row  `NoEntryPoint`  3  _the artifact requires exactly one entry point_  对原生二进制文件和 APK 抛出，后者需要其启动器 activity
+
+% 0 1 0 1a2b3914663ab5330e1d6f1618c6f98f
+
+% 0 1 0 03e55c6b6631602a08476b762fe8b03d
+
+% 0 1 0 12ea113648aadd2812b372c564fc103d
+
+% 0 1 0 19b0b8f8460eaf2e0002957d1f940d6b
+
+% 0 1 0 12c6426b143d860c0c9bab02bb6f4136
+
+% 0 1 0 11f682ee1ba3b0ab0354d5bac9910670
+
+@ 0 2 0 0bf19dfcca24a2650861269fa986d4da
++           row  `UnexpectedInput(format)`  10  _the tool producing `format` cannot consume the content it was given_  错误变体的 `Deliverable` 到达了某个工具
++           row  `CompilationFailed(notices)`  11  _compilation failed with N errors_  N 计数重要性为 `Error` 的通知；列表保存每一条诊断信息
+
+% 0 1 0 0ee5b79dacbc82890b3172384be11154
+
+@ 0 3 0 11326b32bac489061e315ab9cfeb7cbd
++           row  `Packaging(detail)`  13  _packaging failed: `detail`_  打包 JAR、dex 转换或打包 APK 时发生的 zip、路径、I/O 或文件名故障，附带底层错误的消息
++           row  `CompilerCrash`  14  _the compiler crashed_  编译边的编译器抛出了异常
++           row  `CompilerUnusable(detail)`  15  _the compiler could not be run: `detail`_  编译边无法配置或等待其编译器（`scalac`、`javac`、`kotlinc`）
+
+% 1 1 0 10196ec02554ec581674e0b0956f75c4
+
+@ 0 3 0 064b7846d2775b97145f03e15e678a4b
++       entry #number   原因的编号，即错误代码的细节部分
++     entry .communicable   将每个原因渲染为 `Link.Error.Reason` 下所列的消息
++     entry #reason   链接失败的原因
+
+@ 0 1 0 0cefd79cc458dc8c0d237a9356a782f5
++ entry .LinkEvent   工具链在链接时记录的日志：开始、每条消息，以及输出的路径
+
+% 1 1 0 14f4ed9fa2bd0f9d0e4f68545bea2149
+
+@ 0 9 0 1d6522585730074d1b97c46f7046e0f2
++       每个 `LinkEvent` 都携带 `Log.Compiler` 标签。
++       `Toolchain#produce` 在第一个工具之前以 `info` 级别记录 `Start`，在最后一个工具之后以 `info` 级别记录 `Linked(path)`；每个工具都将其链接器自身的输出转发为 `Message(message)`——Scala.js 链接器的错误和警告为 `warn`，信息为 `info`，其余为 `fine`；D8 的错误和警告为 `warn`；而编译边的 `Compiler.Event` 通过 `Compiler.Event.relay` 以各自的级别记录。
++       每次 `produce` 都需要作用域中有一个 `LinkEvent is Loggable`。
++   entry .communicable   将每个事件渲染为消息
++       _starting linking_、_the linker reported: `message`_ 和 _linked output written to `path`_。
+
+@ 0 6 0 00ccf17e17e689a61cdb432280b1b900
++ entry .WasmObject   可重定位 WebAssembly 目标文件 universe：一个尚无边的中间节点
++     一个 id 为 `wasm-object` 的 `Artifact.Ir`：通过其链接段的符号进行组合的可重定位 WebAssembly 目标文件——即 `rustc --target wasm32` 和 clang 所产出的东西，由 `wasm-ld` 链接成 WASI 0.1 模块，或由组件工具提升到 `Component` universe 中。
++     没有任何 Scala 编译会产出它，也没有内置的边产生或消费它；这个节点的存在是为了让外部编译器和 wasm 链接器注册它们自己的边。
+
+@ 0 1 0 0b39a2372fe60a2d00f6e65e7e430805
++ entry .Scalac   作为值的 Scala 编译器：有类型的选项、语言版本和目标 universe
+
+% 1 1 0 0b008520c2c860b20662d9d6bf93771e
+
+@ 0 5 0 1c84a56221b938d01d57a2c61b8663e0
++       `Scalac[version, universe]` 携带一个 `Scalac.Option` 列表，每个选项都按接受它的语言版本定型，并携带它所产出的 `Toolchain.Universe`。
++       `Scalac[3.8](options)`——单类型参数形式——以 `Toolchain.Universe.Classfile` 为目标；`#targeting` 可以改变其目标。
++       将它应用于类路径和源码时，它在进程内、在自己的任务中进行编译，并返回一个 `Compiler.Process`：
+
+% 2 1 0 094c9d99d8d631921aa54d45d08111e3
+
+% 3 1 0 1d3be146434fd267037c3aac3aaab1ba
+
+% 4 1 0 1352bfee9bf83d9113ac23dc787f9f53
+
+% 5 1 0 0f006428a77ca0da1bd881e6e2e7ebf4
+
+% 6 1 0 19f60f48d398547f0376405c88c5e246
+
+% 7 1 0 0be051becc29460d1bcc79fbdec2e887
+
+% 8 1 0 0d840e7db2d2e53e0a40e9c903d25534
+
+% 9 1 0 0bc67c3750f7e5ab13ed36dc865f729c
+
+% 10 1 0 12094f24dbf9e1cd1561ce49bac4c439
+
+% 12 1 0 13e2d2a1327f226a14f77472f6a0298f
+
+% 13 1 0 0e33727c01dbcb081581a327fcbaaab8
+
+% 15 1 0 02c4c35a953c3242137de956763008fe
+
+% 0 1 0 0afd0b1562317dc809874c317d277aeb
+
+% 0 1 0 10028864858006f40268069fd953fd67
+
+% 1 1 0 0531e8d35fa6737c00c2fc49f4075882
+
+% 2 1 0 113d228b41c5b00c1772825bc5764b07
+
+@ 0 6 0 1de8d96650d11530002901182acf0093
++       版本参数是一个*声明的语言目标*，它静态地对选项进行门控：版本不包括该编译器版本的选项，在工具中就是编译错误，而不是编译器在运行时的抱怨。
++       它并不选择编译器。
++       实际运行的编译器是程序运行时类路径上的那个 `scala3-compiler`——它是 `anthology.scala` 的仅编译期依赖，因此由驱动它的程序来选择——而 `.version` 报告它是哪一个。
+
+% 2 1 0 1e4054a6ee9c279e1b8ecb01b58b5fa9
+
+% 3 1 0 1bcda290ac512bef0f017c44b33c6115
+
+@ 0 1 0 1557865e2668c2541d0b72ce7b5d9460
++         label 在所有版本上都有效的选项
+
+% 1 1 0 1edb019a206b64df1afd3a58a7358c27
+
+% 2 1 0 1b438690a8a7298206617d8ce0c7200d
+
+% 0 1 0 0352ac8321cd33e40d97fefcbd4f9d1f
+
+% 0 1 0 1246eebebd3a8f520c3fcac65455e14e
+
+% 1 1 0 15149d78314b122c1480432930cd1a33
+
+@ 0 1 0 10af12f7c887cd2608db6cfe9f1ba67d
++         label `experimental` 在 3.4 到 3.8 上被接受，因此 3.8 可以使用它
+
+% 1 1 0 01924a6421a11a6f010bf8703ff336f1
+
+% 2 1 0 1bfdc5c3f57a4b6d0b86d5583f8828be
+
+% 4 1 0 0ea758cd51ee510c00f3da80b693a0e3
+
+% 0 1 0 1a938c0521290933168283170d7c4555
+
+% 1 1 0 10728212bbd8d1110b9abae0d1a8b0d1
+
+@ 0 1 0 1b3abc3c67e872831029ad9ed3435b64
++         label `semanticDiagnostics` 只存在于 3.9：3.8 编译器拒绝它
+
+% 1 1 0 02333973931d81e707b1ec0e31c4f56e
+
+% 2 1 0 0cbaaa0eee9626c61ee24c245f5931f2
+
+% 0 1 0 0010b648d3e0fc8502d59bdf2274fd9c
+
+% 1 1 0 1f1987607ea853531a2fb82f62050f39
+
+@ 0 1 0 09e79408322400c210b64cc1c73aadb3
++         label 重新定向保留选项并改变 universe
+
+% 1 1 0 0bf4ff12df35a5631f34250dba6b4414
+
+% 2 1 0 05adb88349bbb05d16d76dd32f0e6e63
+
+% 4 1 0 0baf670bb1709722130a4e2c1134b29c
+
+% 0 1 0 0fa699198e7f42f5152e7284bafdbb65
+
+% 0 1 0 1a0c200d1fbf2c1811a38305dc88d004
+
+% 1 1 0 1c954e8e9f00942610209b0c3159937a
+
+% 2 1 0 16f51a4b6d7b540d122411717bece391
+
+@ 0 4 0 0e830c9900f307fb001061b1b568b306
++       除了无状态的 `#apply` 之外，用 `#on` 绑定到类路径的编译器可以打开一个*热会话*——`scalac.on(classpath).session: …`——在其中多次编译共享一个已加载的符号表，每次编译都能看到之前的编译所定义的内容；参见 `Scalac.Session`。
++       `Toolchain` 的编译边（`scalacEdges`）也以同样的方式携带一个 `Scalac`。
+
+@ 0 5 0 08acd1158f4b25620f4c76cd4d3160b8
++       无状态编译在整个程序中共享一个编译器实例（`.compiler()`），崩溃后由 `.refresh()` 替换。
++       诊断信息成为带有跨度的 `Compiler.Notice`；在 `scalacOptions.semanticDiagnostics` 下，每条还会保留其语义标记。
++       进度按整百分点报告，以编译器的阶段作为当前步骤，而 `Compiler.Process#abort()` 会在下一个刻度时被察觉。
+
+% 0 1 0 1426e4bc1b07478b1f38ddab2c1c72db
+
+% 0 1 0 14290c98bd1293a711e89af755795208
+
+% 1 1 0 1bc7629506b6722711f53b58cbc8e767
+
+% 1 1 0 12c3f68a7abacb0c0625108975fc034f
+
+@ 0 5 0 1c7a54083e35fcd50a4bcdeefe8d4e6d
++   entry .Versions   `Scalac` 可以声明的语言版本：`3.0` 到 `3.9`
++       字面量类型的并集 `3.0 | 3.1 | … | 3.9`，它是 `Scalac` 版本参数的上界，也是 `Option` 可以声明的最宽版本范围。
++       版本是一个字面量，即 `Scalac[3.8]`，而从不是一个值。
++   entry .Option   一个编译器选项，表示为它所添加的标志，按接受它的版本定型
+
+% 1 1 0 0a645daa2540c7150edc3a061cfccf0a
+
+@ 0 4 0 117233462df9668f07f76478370e0ec2
++         `Scalac.Option[-version <: Versions](flags*)`：版本参数是*逆变*的，因此为 `3.4 | 3.5 | 3.6` 声明的选项会被 `Scalac[3.5]` 接受，而为 `Scalac.Versions` 声明的选项会被任何编译器接受。
++         `scalacOptions` 对象包含内置的选项；该对象没有的选项可以直接写出：
+
+% 2 1 0 01c31c4835d2e5821bc301959d20fb3c
+
+% 3 1 0 1506f365d87646a117799e0c97ec9560
+
+% 0 1 0 0612b2aa1f375bb415c46c72907cacf4
+
+% 0 1 0 15bef381fc7a781c00a9d367bf94f27d
+
+% 1 1 0 0743b4d0786da4d10f29c2aa25a71238
+
+@ 0 13 0 13a431bb524f871916ed2c76a1341d15
++     entry #flags   该选项所贡献的命令行参数，按顺序
++   entry .refresh   替换共享的编译器实例，就像崩溃后发生的那样
++       无状态编译共享一个 `dotty.tools.dotc.Compiler`；崩溃会自动替换它，而 `refresh()` 按需进行替换。
++   entry .compiler   无状态编译所运行的共享编译器实例
++   entry .version   内嵌编译器的版本，即它自己报告的版本
++       `dotty.tools.dotc.config.Properties.versionNumberString`：运行时类路径上的 `scala3-compiler` 的版本，也就是每个 `Scalac` 的 `#version` 和每个进程的 `version` 所报告的版本。
++   entry .apply   `Scalac[version](options)`：面向 classfile universe 的编译器
++       单类型参数形式，它将 universe 固定为 `Toolchain.Universe.Classfile`；`#targeting` 可以改变它。
++       每个选项的版本都必须包含所指定的版本。
++   entry .Setup   绑定到类路径的编译器：热会话的主体
+
+% 1 1 0 05e004c2acac02e5027fd5c706e04f00
+
+@ 0 11 0 03e4838487bced7e1c15aa8a5a6e412e
++         `scalac.on(classpath)` 创建一个 `Setup`，在它上面调用 `.session` 会通过 aperture 的 `Sessional`——即这里的 `.sessional` given——打开一个 `Scalac.Session`，在其中类路径的符号表只加载一次，并在多次编译之间保留。
++         `Setup` 只是这一对值；状态存在于会话中。
++     entry .sessional   从 `Setup` 打开 `Scalac.Session` 的 `Sessional` given
++         位于伴生对象中，因此无需导入。
++         它需要一个 `System`、该 setup 的 universe 对应的 `Toolchain.Universe.Emission`、一个 `Tactic[Compiler.Error]` 和一个 `Compiler.Event is Loggable`，`setup.session: …` 解析到的就是它。
++     entry #scalac   编译器，带有其选项和 universe
++     entry #classpath   会话编译所依照的类路径
++   entry .Session   热编译器会话：在多次编译之间保留同一个符号表
+
+% 1 1 0 1cb0c0e20a9f3dfe08cd379129c3f436
+
+@ 0 8 0 1b3c8400618e13e501ca3454d50f85a3
++         通过 `scalac.on(classpath).session: …` 打开；在代码块内，会话是上下文中的 `Scalac.Session^`，以 `compilation` 访问，而 `sources.compile()` 或 `compilation.compile(sources)` 在其中进行编译。
++         一个基础上下文（其符号表像在 REPL 中一样在每次运行之间保留）和一个编译器被重复使用，因此第二次编译能看到第一次编译的类，并且无需再为类路径的加载付出任何代价。
++         编译在调用者的线程上同步运行（编译器会将上下文固定到其首次运行的线程上），所返回的 `.Process` 在返回时就已经完成。
+
+% 2 1 0 15ac4e247adcce3c14f88617c8639a52
+
+% 3 1 0 0687a59b983af7fb064018a40d023b56
+
+% 4 1 0 152960a0d1fe069d0a47eef9c26b6b5f
+
+% 5 1 0 149d054bd98ce12f072d38bfa0f311a7
+
+% 6 1 0 1987f2f3f9fa56a10fe77db25c22af63
+
+% 1 1 0 0ef91427fd5ba7ce1185a09ea5211102
+
+% 2 1 0 031f6a6aa94f1d46191b32975868b6d8
+
+% 2 1 0 0b1701676bd110d20cc69be97473332f
+
+% 0 1 0 110b7e1cc2e5a0ed1056865c3b0e8854
+
+% 0 1 0 11eda7c4544c71420df0899b50cec233
+
+% 0 1 0 18cdeb2fc09830c1092c07b461cdaf5c
+
+% 0 1 0 1a7c118a21be7a651eb25d62b130348c
+
+% 0 1 0 146cc0fbe34373450cc58c93d8951c15
+
+% 0 1 0 0b26043acbf04d7e1f663f426d461b33
+
+% 0 1 0 16e306b1cd9d6fe10bcd2ccb223baf1d
+
+% 1 1 0 065ac7ce3f99d11618d1ba8bfd3e0ca8
+
+@ 0 5 0 1d2e59db2df83ce80f9fa2b678c58290
++         输出保存在内存中：`Process#classfiles` 暴露每个产出的制品，以其类路径路径为键，而 `Process#save(directory)` 仅在需要时将它们写入磁盘。
++         编译失败后会话仍然可用；崩溃会同时重建其编译器和上下文，因此下一次编译会从干净的状态开始。
++         以编译器拒绝的选项打开会话会抛出 `Compiler.Error`。
+
+@ 0 7 0 091b589111114bf9061ed4bcd9010c2d
++         REPL 式的保留符号表带来两个限制：不支持在同一会话中重新定义之前编译过的顶层名称（每次编译使用不同的源文件名和类名，就像 REPL 所生成的那样，是安全的）；而由一次编译定义的宏在下一次使用时是从*类路径*加载的，而不是从保留的符号中加载，因此想在同一会话中展开宏的调用者必须将其 `save` 到会话类路径上的某个目录中。
++         会话句柄是一个新鲜的、独占的能力，被限制在代码块内，因此不能从代码块中返回。
+
+% 0 1 0 05e277de48eb383a049435f9ea651b05
+
+% 0 1 0 1d472696a8069f5415d7a3fe4e4a77a4
+
+@ 0 1 0 0aacf5ae5940d6e61e5b126515e7a375
++     entry .Frontend   会话的编译器、基础上下文、类路径和选项的当前状态
+
+% 1 1 0 0b3c61ce1fdd96fe154dec9e191d861f
+
+@ 0 11 0 04ecb061c442415e05704b5a7518e156
++           供在会话中对源码进行类型检查而不编译的工具使用——harlequin 的 `highlighting.sessionScala` given 就接受一个——从而能看到会话的编译所定义的内容，而无需再为加载付出任何代价。
++           这些是编译器自己的值：只在会话的线程上有效，并且只在其下一次崩溃（会替换它们）之前有效，因此调用者每次使用时都应重新获取 `Session#frontend`，而不是保留一个。
++       entry #compiler   会话的 `dotty.tools.dotc.Compiler`
++       entry #context   基础上下文，会话已加载其符号表并在其中添加了内容
++       entry #classpath   打开会话时所用的类路径，以文本形式
++       entry #options   打开会话时所用的编译器参数
++     entry .Process   会话中一次编译的过程，其输出保存在内存中
+
+% 1 1 0 076231dc755746430b1f8314c7d569c1
+
+@ 0 7 0 0fcc7ece943dfba80a409cd7256ad2ef
++           一个 `Compiler.Process`，其结果在返回时就已完成，因为会话编译是同步运行的；`complete()` 仍然可用，并返回该结果。
++           `#classfiles` 保存编译所产出的内容，`#save` 将其物化。
++       entry #classfiles   编译所产出的每个制品，以其在类路径上的路径为键
++           classfile、TASTy、`.sjsir` 或 `.nir`，作为一个 `Map[Path on Classpath, Data]`，以各自在以输出为根的类路径上所处的位置为键（`/Alpha.class`、`/pkg/Name.tasty`）。
++           如果编译在后端运行之前就失败了，则为空。
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 1f3de2f7adc1dab51cbd6eaa5740b17c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1a4dfa2b92355b06107ac50272122c8e
+
+% 0 1 0 1da1174df5658ea10629769fcbb34ce5
+
+% 0 1 0 031eb4897d6fcd7a0e81b13dd3ac6fa8
+
+% 0 1 0 19298100a9451d411fba2a48873684dd
+
+% 0 1 0 1223ec82a4c4441d0c8719e4c5161652
+
+% 1 1 0 0e681e20b37f21d809db0b5112a0122b
+
+@ 0 11 0 199c91bd5b6d34641e8f4c8a78917a6b
++       entry #save   将产出的制品以 `pkg/Name.class` 的形式写到某个目录下
++           接受任何 `Abstractable across Paths to Text` 的路径类型，并按需创建包目录。
++           保存到会话类路径上的某个目录，就是让会话中编译的宏能被其后续编译展开的方法。
++     entry #frontend   会话的编译器和上下文的当前状态，用于不编译而进行类型检查
++     entry #compile   在会话中同步编译具名的源码
++         `session.compile(sources)`——或者在会话处于上下文中时，用 `sources.compile()`——在调用者的线程上依照保留的符号表运行编译器，并返回一个结果已完成的 `Scalac.Session.Process`。
++         该进程借用了会话，因此下一次编译会等待它被消费。
++   entry .Sessional   为 `Setup` 打开 `Scalac.Session` 的 `aperture.Sessional` 实例类
+
+% 1 1 0 1221f22b717ac34e0449df4188a54c5e
+
+@ 0 29 0 15ad77980fd444e3157e70fccaebed2d
++         `Scalac.Setup.sessional` 背后的具名类；用户只能通过 `setup.session: …` 访问它。
++         它的 `#Self` 是 `Scalac.Setup[version, universe]`，其 `#Result` 是每次 `session` 调用限制在其代码块内的新鲜 `Scalac.Session^` 句柄。
++     entry #Self   主体：`Scalac.Setup[version, universe]`
++     entry #Result   会话代码块所接收的句柄：一个新鲜的 `Scalac.Session^`
++     entry #session   以一个新会话作为上下文句柄运行代码块
++         代码块结束时不会拆除任何操作系统层面的东西：热上下文只是内存，随句柄一起回收。
++   entry #options   编译器的选项，按顺序
++   entry #commandLineArguments   所有选项的标志，按顺序连接
++       即选项所贡献的内容；universe 的产出标志、`-d`、`-classpath` 和源码在调用时添加。
++   entry #version   内嵌编译器的版本，`Scalac.version`
++   entry #targeting   以另一个 universe 为目标的同一编译器：`scalac.targeting[Toolchain.Universe.Sjsir]`
++       选项被保留；只有 universe 改变，随之改变的还有编译所添加的产出标志（`-scalajs`，或对于 Native 为 `-Xplugin:`，此时调用处需要一个 `NirPlugin` given）。
++   entry #on   将编译器绑定到类路径，作为一个 `Scalac.Setup`，准备打开会话
++       `scalac.on(classpath).session: …`。
++   entry #apply   依照类路径将具名源码编译到某个目录中，在自己的任务中进行
++       `scalac(classpath)(sources, out)`：编译器的参数依次是 universe 的产出标志、`-d out`、`-classpath`，然后是 `#commandLineArguments`；它将这些参数记录为 `Compiler.Event.Running`，启动一个名为 `scalac` 的任务在共享编译器上运行编译，并立即返回 `Compiler.Process`。
++       它需要一个 `System`、一个 `Monitor`、一个 `Probate`、编译器 universe 对应的 `Toolchain.Universe.Emission`、一个 `Tactic[Compiler.Error]` 和一个 `Compiler.Event is Loggable`。
++       输出目录必须已经存在：编译器会拒绝找不到的 `-d`，而直接调用不会创建它（`scalacEdges` 的工具会创建）。
++       崩溃会成为 `Compiler.Result.Crash`，并替换共享编译器。
+
+@ 0 3 0 032df2150f83dd5011f5e2b759d0989e
++       相同的源码在相同的编译器下会产生逐字节相同的输出，无论运行多少次、输出目录是什么：TASTy UUID 是文件自身各段的哈希值，而虚拟源码携带的是赋予它们的名称。
+
+@ 0 1 0 02d283fe39ddc78d018352da8e148e86
++ entry .scalacOptions   作为有类型值的 Scala 编译器选项，每个只在接受它的版本上有效
+
+% 1 1 0 014bc52f39c9accc10c2f89c27a57e10
+
+@ 0 7 0 0c0a1d12dfb8341216edf158a8ce98c8
++       以 `scalacOptions` 下的 `Scalac.Option` 镜像编译器的命令行——语法、警告、语言特性、内部标志——每个都按接受它的语言版本定型，因此 `Scalac[3.8](List(scalacOptions.experimental))` 能编译，而 `Scalac[3.9](List(scalacOptions.experimental))` 不能。
++       嵌套对象将它们分组：`warnings`（含 `warnings.lint`）、`internal`、`advanced` 和 `language.experimental`。
++       该对象被镜像为 `soundness` 总括包中的一个包，因此 `scalacOptions.newSyntax` 从两边读起来都一样。
+
+% 2 1 0 0a4f6b3e46ea27020cac81a8a2db5f43
+
+% 3 1 0 18f974eba03693980b1e7a994908d8e4
+
+% 0 1 0 14a01fae496c6f2f14216d88dd93b39e
+
+% 0 1 0 0ae0b16a64b1ec0b049818b0507c8a6e
+
+% 0 1 0 18b2fb50fa8e2023100bf2994920b553
+
+% 0 1 0 1c01abb9a15781500cb839826f82e58b
+
+% 0 1 0 00a19046d3c927dc0faa8be34cee75fb
+
+% 0 1 0 1df7aeea8cbfe82e02b09308cd2ac80d
+
+% 0 1 0 02b48e918a7d59ac10622e3a6b8431b4
+
+% 0 1 0 085e147b0b457365052f988065dfec59
+
+% 1 1 0 07cc25c150b889e613becf4923f31d39
+
+@ 0 1 0 02f7b4a8848ac2c90775a84663260c35
++       该对象没有的选项直接写作 `Scalac.Option[Scalac.Versions](flags*)`。
+
+% 1 1 0 0f5beef8bf304f2d1b8ed5083df34a7b
+
+@ 0 9 0 0412f16e913861d11f0ff40878c6b219
++   entry .newSyntax   `-new-syntax`，适用于所有版本
++   entry .sourceFuture   `-source future`，适用于所有版本
++   entry .experimental   `-experimental`，适用于 3.4 到 3.8
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`，适用于 3.9：保留每条通知的语义标记
++       在此选项下，编译器会在带内标记消息的每个插值参数，对其中的类型使用序列化的 TASTy，而 `Compiler.Notice` 将这种带标记的形式作为其 `markup` 与纯文本的 `message` 一起保留，供 delicious 库解析为 `SemanticMessage`。
++   entry .warnings   警告选项：`-feature`、`-deprecation`、`-W…` 标志和 `-Wunused`
+
+% 1 1 0 06af99217caafc5c15c3a4e2f4b459e4
+
+@ 0 14 0 1f29d5baa9189f7014f1ba412f2e145c
++         每个都是按其存在的版本定型的 `Scalac.Option`；`.unused` 接受一个 `Unused` 选择，`.lint` 包含 `-Wshadow` 标志。
++     entry .feature   `-feature`，适用于所有版本
++     entry .deprecation   `-deprecation`，适用于所有版本
++     entry .implausiblePatterns   `-Wimplausible-patterns`，适用于 3.3 到 3.6
++     entry .enumCommentDiscard   `-Wenum-comment-discard`，适用于 3.4 到 3.6
++     entry .unstableInlineAccessors   `-WunstableInlineAccessors`，适用于 3.4 到 3.6
++     entry .nonUnitStatement   `-Wnonunit-statement`，适用于 3.4 到 3.6
++     entry .valueDiscard   `-Wvalue-discard`，适用于 3.4 到 3.6
++     entry .unused   来自 `Unused` 选择的 `-Wunused:…`：全部、无，或特性的子集
++         `warnings.unused(Unused.All)` 是 `-Wunused:all`，`Unused.None` 是 `-Wunused:none`，而 `Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals))` 是 `-Wunused:privates,locals`。
++         该选项的版本就是所选内容的版本。
++     entry .lint   `-Wshadow` lint 标志
+
+% 1 1 0 11fff09eaf01ca391174bb3136cfa239
+
+@ 0 1 0 0c92f782c6a0e4370f60a51b43f10e20
++           `privateShadow` 和 `typeParameterShadow`，适用于 3.4 到 3.6。
+
+% 0 1 0 035be3d050a219e61fec5495d7176d5b
+
+% 0 1 0 1c1c670b861088ed18c04f7155651825
+
+@ 0 1 0 1cdc0887147d0a161f643c74fe9afcdf
++   entry .internal   `-Y` 标志：目标名称、安全初始化、显式 null、模式检查、捕获检查
+
+% 1 1 0 168683455d6cf9dc004f78d9ad24eca9
+
+@ 0 9 0 0acc7982d1d8f6b409efdb3eb05be046
++         作为值的编译器内部选项。
++     entry .requireTargetName   `-Yrequire-targetName`，适用于所有版本
++     entry .safeInit   `-Ysafe-init`，适用于所有版本
++     entry .explicitNulls   `-Yexplicit-nulls`，适用于所有版本
++     entry .checkPatterns   `-Ycheck-all-patmat`，适用于所有版本
++     entry .ccNew   `-Ycc-new`，适用于 3.4 到 3.6
++     entry .ccDebug   `-Ycc-debug`，适用于 3.5 和 3.6
++     entry .ccLog   `-Ycc-log`，适用于 3.5 和 3.6
++   entry .advanced   `-X` 标志
+
+% 1 1 0 1add7cf74d5851a00d37da4246f0a05f
+
+@ 0 3 0 1be80a3bd3c2432c1add120cf4a0a395
++         目前只有 `maxInlines`；其他的直接写作 `Scalac.Option`。
++     entry .maxInlines   `-Xmax-inlines n`，适用于所有版本
++   entry .language   `-language:` 选项
+
+% 1 1 0 083ed279504b64b7021f673ee8e6495b
+
+@ 0 2 0 10bfac5a00c34fac1a83b094ddcc7099
++         包含 `experimental`，即 `-language:experimental.…` 特性。
++     entry .experimental   `-language:experimental.…` 特性，每个适用于提供它的版本
+
+% 1 1 0 05474da1a2707970106661f288a5222b
+
+@ 0 24 0 1a81a70536ef4abe127e200abadd176d
++           每个实验性语言特性一个选项，以该特性命名：`clauseInterleaving`（3.3 到 3.6）、`givenLoopPrevention`（3.4 到 3.6）、`fewerBraces`（3.1 到 3.6）、`into`（3.4 到 3.6）、`relaxedExtensionImports`（3.3）、`erasedDefinitions`（所有版本）、`saferExceptions`（3.2 到 3.6）、`namedTypeArguments`（所有版本）、`pureFunctions`（3.3 到 3.6）、`captureChecking`（3.3 到 3.6）、`modularity`（3.5 和 3.6）、`namedTuples`（3.5 和 3.6）、`genericNumberLiterals`（所有版本）、`betterMatchTypeExtractors`（3.5 和 3.6）、`quotedPatternsWithPolymorphicFunctions`（3.6）以及 `betterFors`（3.6）。
++       entry .clauseInterleaving   `-language:experimental.clauseInterleaving`，适用于 3.3 到 3.6
++       entry .givenLoopPrevention   `-language:experimental.givenLoopPrevention`，适用于 3.4 到 3.6
++       entry .fewerBraces   `-language:experimental.fewerBraces`，适用于 3.1 到 3.6
++       entry .into   `-language:experimental.into`，适用于 3.4 到 3.6
++       entry .relaxedExtensionImports   `-language:experimental.relaxedExtensionImports`，适用于 3.3
++       entry .erasedDefinitions   `-language:experimental.erasedDefinitions`，适用于所有版本
++       entry .saferExceptions   `-language:experimental.saferExceptions`，适用于 3.2 到 3.6
++       entry .namedTypeArguments   `-language:experimental.namedTypeArguments`，适用于所有版本
++       entry .pureFunctions   `-language:experimental.pureFunctions`，适用于 3.3 到 3.6
++       entry .captureChecking   `-language:experimental.captureChecking`，适用于 3.3 到 3.6
++       entry .modularity   `-language:experimental.modularity`，适用于 3.5 和 3.6
++       entry .namedTuples   `-language:experimental.namedTuples`，适用于 3.5 和 3.6
++       entry .genericNumberLiterals   `-language:experimental.genericNumberLiterals`，适用于所有版本
++       entry .betterMatchTypeExtractors   `-language:experimental.betterMatchTypeExtractors`，适用于 3.5 和 3.6
++       entry .quotedPatternsWithPolymorphicFunctions   `-language:experimental.quotedPatternsWithPolymorphicFunctions`，适用于 3.6
++       entry .betterFors   `-language:experimental.betterFors`，适用于 3.6
+
+@ 0 1 0 031208798f1af983079e653f89a4e5e1
++ entry .scalacEdges   工具链的 Scala 编译边：从 `Language.Scala` 到各个 universe
+
+% 1 1 0 1540383fb8db3011129c98a68be94275
+
+@ 0 5 0 132bcfe14a47b2db0c0fa0a90d6ffb1c
++       每条边都携带它所驱动的 `Scalac`，连同其选项，因此编译器自身的配置保留在调用者书写它的地方，而边的设置为空（`Unit`）。
++       包含这样一条边的工具链可以从 `Deliverable.Sources` 出发，因此一条路径就能从 `.scala` 文本一直通往可运行的 JAR，编译器和打包器都由路径选定：
+
+% 2 1 0 04401e91251c74791a71c6fc95ec353c
+
+% 3 1 0 09070696289c4cbd19041da10dc84910
+
+% 4 1 0 1442a79ab8ed5e230cace83949a66f08
+
+% 5 1 0 16bc55793823365a03ce41fb5d3828ba
+
+% 6 1 0 1369d898a7423e5412ff38b35ce243e3
+
+% 7 1 0 04feaa5ad1180b85183e968c9ac14bbc
+
+% 8 1 0 1e15819a75025e950f510653c8f6e800
+
+% 9 1 0 01f1d495abb31a3d1ca2a7d608b38d55
+
+% 10 1 0 008f023f739d19f915d0722a8d70e128
+
+% 11 1 0 166b0343fc807a280a632b5a942b416d
+
+% 13 1 0 1e75049d6042a1fe0b2ff7ccf9ab5665
+
+% 1 1 0 1967c7baf710caf8168882ebefd3c6df
+
+% 0 1 0 123839e576b32bfe057b6f4420be2ab6
+
+% 2 1 0 1ebdc4a89653c8500b0b97ccc3391326
+
+% 0 1 0 05a8a29ab98ceda217de13ae95aa4dfe
+
+% 0 1 0 1b5783985d8bcbe6045d48a2a55eedd8
+
+% 0 1 0 05e97918ca8c1c5b0f896aaec23b9635
+
+% 0 1 0 198c434feb4e116302d17cce3bcd83d1
+
+% 1 1 0 0378038f5166f5c10b4b1b1d4fb498ef
+
+% 1 1 0 0c9b8ce8de6443cb13d8e9b76ae504e4
+
+% 0 1 0 124731dbd6fc62b21296ee90346ffd3c
+
+% 1 1 0 1ec19ac0ac5459d61312a5e5acc4824e
+
+% 2 1 0 1896345fc9acf8f00ddb7a3cd9332dab
+
+@ 0 6 0 08cc288befd38254049790f37930c275
++       这个名为 `scalac` 的工具会创建输出目录，将编译器的 `Compiler.Event` 转发到工具链的 `LinkEvent` 通道上，并映射结果：失败会抛出原因为 `CompilationFailed(notices)` 的 `Link.Error`，携带每一条诊断信息；崩溃为 `CompilerCrash`；无法配置或等待的编译器为 `CompilerUnusable(t"scalac")`。
++       `Scalac` given 会被重新定向到边的 universe，无论它原本是为哪个 universe 声明的。
+
+% 1 1 0 0402d20a57b3eb1d01bb9e8bbf83f0cd
+
+% 1 1 0 059ae2b44f7081e5117dbd193b2feb25
+
+@ 0 5 0 0ad21b520c04a83a111ff4cadfbea84e
++   entry .classfile   从 `Language.Scala` 到 `Toolchain.Universe.Classfile` 的边，驱动给定的 `Scalac`
++   entry .sjsir   从 `Language.Scala` 到 `Toolchain.Universe.Sjsir` 的边，添加 `-scalajs`
++   entry .nir   从 `Language.Scala` 到 `Toolchain.Universe.Nir` 的边；需要一个 `NirPlugin` given
++       NIR 由 Scala Native 编译器插件产出，因此这条边只有在给出插件位置的证据时才存在，该证据提供了插件的 `-Xplugin:` 标志。
+
+@ 0 4 0 06542e815eb7c86f12a82431b3cec076
++ entry .compile   `sources.compile()`：在上下文中的 `Scalac.Session` 里编译具名源码的映射
++     `Map[Text, Text]` 上的扩展方法，可在 `scalac.on(classpath).session: …` 代码块中使用，其中会话是上下文中的 `Scalac.Session^`；它委托给会话自己的 `compile`。
++     结果是一个已经完成的 `Scalac.Session.Process`。
+
+% 2 1 0 19e614465e9b858e0d7d6ef9b04f080c
+
+% 3 1 0 0f5d63539020ada70c421b00fa242390
+
+% 4 1 0 167456c870b426b2024466a32908d318
+
+% 5 1 0 0811cf8a3faf19e3178d28e5a6c01d15
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 2 1 0 186c628c923e452b0be1a299e2f3b006
+
+% 2 1 0 1c0fefe70711057817380fee6a746eef
+
+% 0 1 0 15ced8f030bf173e0a8d327cb91498e7
+
+% 0 1 0 038ad3a8ffba26331c583a19314d3f7b
+
+% 1 1 0 07c07fe6f97ad94c0eb991488333bf92
+
+@ 0 5 0 12643cf45a2675380acabd6c2a79345c
++ entry .compilation   会话代码块内上下文中的 `Scalac.Session` 句柄
++     一个 `transparent inline def`，以精确的、限定作用域的类型返回作用域中的会话，从而可以在句柄没有名称的地方写出 `compilation.compile(sources)` 和 `compilation.frontend`。
++     在 `session: …` 代码块之外，没有可召唤的会话，调用不能通过编译。
+
+@ 0 3 0 0e537e9812e323161a1fdf4f79d157b3
++ entry .CompileFlag   只有一个分支 `Explain` 的枚举
++     声明于 `anthology.scala`，但库中没有任何东西使用它：`-explain` 不在 `scalacOptions` 中，应写作 `Scalac.Option[Scalac.Versions](t"-explain")`。
+
+@ 0 1 0 080ffb98d2d43d520b9b83a384a7fa07
++ entry .JavaVersion   一个 Java 发行版，作为 JDK 或 JRE：`Jdk(version)` 或 `Jre(version)`
+
+% 1 1 0 05baf19a80f758a8071b90d1944ea6d5
+
+@ 0 4 0 18f17cf53aede13111d4f0585cf7d99e
++       `JavaVersion.Jdk(21)` 或 `JavaVersion.Jre(17)`，其中版本是 `.Version` 的字面量，从 `8` 到 `26`。
++       它声明于 `anthology.scala`，但库中没有任何选项使用它。
++   entry .Version   Java 发行版本号，作为字面量类型：`8 | 9 | … | 26`
+
+@ 0 6 0 151d4940c19c49281879fe93d5090c4e
++ entry .LanguageFeature   Scala 语言特性的名称，作为枚举
++     `ClauseInterleaving`、`FewerBraces`、`RelaxedExtensionImports`、`ErasedDefinitions`、`SaferExceptions`、`PostfixOps`、`ImplicitConversions`、`Dynamics`、`ReflectiveCalls`、`CaptureChecking`、`GenericNumberLiterals`、`NamedTypeArguments`、`PureFunctions` 和 `Into`。
++     声明于 `anthology.scala`，但库中没有任何东西使用它；`-language:` 选项是 `scalacOptions.language.experimental` 的值。
+
+@ 0 4 0 1f7eee21f3cf3ee00e7ded37f7e3e9e0
++ entry .Unused   `-Wunused` 的选择：`All`、`None`，或 `UnusedFeature` 的 `Subset`
++     `scalacOptions.warnings.unused` 的参数，按版本定型：`All` 和 `None` 存在于 3.1 到 3.8，`Subset(features)` 存在于 3.3 到 3.8，其版本为所列特性的版本。
++     `Unused.None` 是这个枚举的分支，而不是 vacuous 的 `Unset`。
+
+% 2 1 0 0196ff061700ccc2108f4005b3c83297
+
+% 3 1 0 02cabef723eab1030e9c2ec8ffe29132
+
+% 0 1 0 1938c7f6cdbd750a13056d0c504ac433
+
+% 0 1 0 02f9f4713e77a39319bb6f93350a3dea
+
+% 1 1 0 16a2287d95ee401b01f676ba0e91e063
+
+@ 0 1 0 0e4d90d4cea9e7460a54ea72c7a4436e
++ entry .UnusedFeature   `-Wunused` 可以检查的一个类别：imports、privates、locals、explicits、implicits、params、linted
+
+% 1 1 0 06d6c0cb8db427990242a7ea22ca8998
+
+@ 0 4 0 0eb096eceecc12ec03e195b2091e0313
++       `Imports(strict)` 存在于 3.3；`Privates`、`Locals`、`Explicits`、`Implicits`、`Params` 和 `Linted` 存在于 3.3 到 3.6。
++       `#name` 是 `-Wunused:` 所接受的单词，由它们组成的 `List` 就是一个 `Unused.Subset`。
++   entry #name   按 `-Wunused` 拼写的类别：`imports`、`privates`、`locals`、…
+
+@ 0 3 0 1cdc9bdcf27820e216baf538df3a3cea
++ entry .WarningFlag   由 `Deprecation` 和 `Feature` 组成的枚举
++     声明于 `anthology.scala`，但库中没有任何东西使用它；对应的选项是 `scalacOptions.warnings.deprecation` 和 `scalacOptions.warnings.feature`。
+
+@ 0 1 0 05730931cf41e7fe1b91c6545bf46aba
++ entry .Javac   作为值的 Java 编译器，基于正在运行的 JDK 自带的编译器
+
+% 1 1 0 01e08a7ca4c9ba680614a56caaf6b8f1
+
+@ 0 5 0 1da8a677f6d1ec54008232aebfe8b64d
++       `Javac(options)` 在进程内驱动系统 Java 编译器（`ToolProvider.getSystemJavaCompiler`），使用与 `Scalac` 形状相同的 API：具名源码的映射和类路径在自己的任务中被编译到一个目录中，结果是一个 `Compiler.Process`。
++       Java 只有一个后端，因此输出总是 `Toolchain.Universe.Classfile`，而混合 Scala 和 Java 的应用程序会链接成一个制品。
+
+% 2 1 0 194af61c3fbc8dac0d7a0edc8fc3e060
+
+% 3 1 0 1bf9e0dab3bb0e8919abd1121ce3a232
+
+% 4 1 0 173fa0fbdc0720e00e0e75d9eada0d40
+
+% 5 1 0 1b0129f81085a64511e2903db8e693cd
+
+% 6 1 0 1ec0d7971f7bb9cd062ffc50f58ace37
+
+% 7 1 0 0e77da2e807cc7b71691bb9a946d417a
+
+% 8 1 0 19c4c3323e2c6f170daa218d4c1dbe83
+
+% 9 1 0 1f9c265ec0ffa13111e566457e1b9914
+
+% 10 1 0 18e7916b2b0f9ac707e37cbbaa59c844
+
+% 12 1 0 0dd2c399fd8fa079189ce4c1e10b7756
+
+% 13 1 0 0ed9e3e425cff1d618ed9b48f1d0160e
+
+% 15 1 0 12f0ded1722a3bf011529348550535ac
+
+% 0 1 0 1909c6d30ecfe23409f0b6cd7d4c3f85
+
+% 0 1 0 079c8c9de2978bae0a083008e32031a3
+
+% 1 1 0 10510deea89171481af789ef10aaf05a
+
+% 2 1 0 0f92dc4502443bd11af8360d33224c62
+
+@ 0 7 0 0d963ea7348093b50787c970ca6c8c92
++       Java 诊断信息成为 `Compiler.Notice`：错误为 `Error`，警告和强制警告为 `Warning`，其余为 `Info`，在编译器给出位置的地方，每条都带有一个单行跨度。
++       通知的 `file` 目前并不是赋予源码的名称：它是占位符 `name`，因此必须将 Java 诊断信息归属到其源码的工具应当读取消息。
++       进度是两个刻度：开始时为 `0.1`，成功时为 `1.0`。
++       编译器是正在运行的 JDK 的编译器，因此没有版本参数，`.version` 是运行时的版本。
+
+% 1 1 0 08e5a03ddfb0824c1c57e56ec438c061
+
+% 0 1 0 00f3ddcd1542ba2614aff16685efcfc8
+
+@ 0 4 0 1f091ec7e15595f10fff854d36667e1d
++   entry .refresh   替换共享的编译器实例，就像崩溃后发生的那样
++   entry .compiler   编译所运行的共享 `javax.tools.JavaCompiler`
++   entry .version   正在运行的 JDK 的版本 `Runtime.version()`：`25.0.4`
++   entry .Option   一个 Java 编译器选项，表示为它所添加的标志
+
+% 1 1 0 0feb91e8f1c2c9d40c0ed7a8b371d873
+
+@ 0 7 0 08cdc884bfcff5651e2dd8bf37834d68
++         `Javac.Option(flags*)`：Java 选项不按版本定型，因为编译器就是正在运行的那个 JDK。
++         `Javac.Option(t"--release", t"17")` 或 `Javac.Option(t"-Xlint:all")`。
++     entry #flags   该选项所贡献的命令行参数
++   entry #options   编译器的选项，按顺序
++   entry #version   正在运行的 JDK 的版本，`Javac.version`
++   entry #JavaSource   一个具名的内存源码，作为编译器所读取的 `JavaFileObject`
+
+% 1 1 0 1e3aeadedbffa65413a418151790b93a
+
+@ 0 11 0 1792ac14466fff211ea9d0b859c60d5a
++         `javac.JavaSource(name, code)`，一个带有 `string:///name` URI 的 `SimpleJavaFileObject`，其内容是代码。
++         `#apply` 将每个源码包装在一个这样的对象中；它是公开的，供直接驱动 `JavaCompiler` API 的工具使用。
++     entry #name   源码的名称
++     entry #code   源码的内容
++   entry #apply   依照类路径将具名源码编译到某个目录中，在自己的任务中进行
++       `javac(classpath)(sources, out)`：在一个 `async` 任务中以 `-classpath`、`-d` 和各选项运行系统编译器，并立即返回 `Compiler.Process`。
++       它需要一个 `System`、一个 `Monitor` 和一个 `Probate`，记录 `Compiler.Event`（`Start`、`Running`，以及抛出异常时的 `CompilerCrash`），并声明会抛出 `Compiler.Error`。
++       崩溃会成为 `Compiler.Result.Crash`，并替换共享编译器。
+
+@ 0 1 0 15a94b907f1d275b1f3b8153caaccc67
++ entry .javacEdges   工具链的 Java 编译边：从 `Language.Java` 到 `Toolchain.Universe.Classfile`
+
+% 1 1 0 14ef23bf815044c70d95f132249bc78c
+
+@ 0 5 0 0d3e9be74350d19a08498b1abcf30f18
++       `javacEdges(javac)` 是一个只有一条边的列表，携带它所驱动的 `Javac`。
++       这个名为 `javac` 的工具会创建输出目录，将编译器的事件转发到工具链的 `LinkEvent` 通道上，并将失败映射为原因为 `CompilationFailed(notices)` 的 `Link.Error`，将崩溃映射为 `CompilerCrash`，将无法配置的编译器映射为 `CompilerUnusable(t"javac")`。
+
+% 2 1 0 0bf773d8c74203970d3cba67f5a2ce1c
+
+% 3 1 0 0b082cf2259b733816a53f9f5eead8e0
+
+% 4 1 0 1a85f852156ae1991cb3c5989c71e8aa
+
+% 0 1 0 06ab7b773ff7c2990b6b03586028f22b
+
+% 0 1 0 0dd897b4371f88fc17902a224efc5103
+
+% 1 1 0 1dacaa089454467f178128ce5998d031
+
+@ 0 1 0 08b85d45c987b0ca071a8b292d99e313
++   entry .apply   一个 `Javac` 的边列表
+
+@ 0 1 0 0ebd5875d24fa62c18af7adb016eb127
++ entry .Kotlinc   作为值的 Kotlin 编译器：有类型的选项和语言版本，产出 classfile
+
+% 1 1 0 195f5889ff304c451cefa77035684504
+
+@ 0 6 0 1c5ce0899f0a060502ccabcff7d61107
++       `Kotlinc[version](options)` 在进程内驱动 Kotlin 编译器，呈现与 `Scalac` 和 `Javac` 相同的接口：具名源码的映射和类路径被编译到一个目录中，编译器的消息成为所得 `Compiler.Process` 上的 `Compiler.Notice`。
++       版本参数是 `.Versions` 之一（`1.9` 到 `2.4`），而每个 `kotlincOptions` 值都按接受它的版本定型，因此某版本所没有的选项在工具中就是编译错误。
+
+% 2 1 0 09f22bc432a98a3b0ec7bb20ca4d123c
+
+% 3 1 0 1422c24185a3633105ade1990f7de83a
+
+% 4 1 0 0e60dfcac830f19a0f36ef45a1533a41
+
+% 5 1 0 0a03300a9e63ce3e1b2dce7956e6460c
+
+% 6 1 0 0baa27cb0bea83f60f1d1d036333e17f
+
+% 7 1 0 1579076ae73e47b40d28ee57ab9ad48c
+
+% 8 1 0 17d4657e97620ec8147a0505cfc00f83
+
+% 9 1 0 071df32682cd7ce50e66c87ae52e9fec
+
+% 10 1 0 044f3fe7e2ff6afb07c0bc53b2c9d5a9
+
+% 12 1 0 0fe64466160c60470481fa1dda8dc36e
+
+% 13 1 0 0a105d31201c0723126b5a111518671e
+
+% 0 1 0 152a1de7a14944b6058780800c557985
+
+% 2 1 0 10a38408f0b6a0691f6d4648717c9898
+
+% 0 1 0 1fc242f58cd8aa2a1f057a1b7c8b066e
+
+% 0 1 0 076654d24676b62d16f6a8faa40d9b2f
+
+% 1 1 0 0f7e1b4d009924c6199fe3c5d9c5c89e
+
+% 2 1 0 150b7bef2eddd6c904cfdab6651b9129
+
+@ 0 6 0 18dbef1ac19e12c00d0a03b2a6c641b8
++       Kotlin 从磁盘读取源码，因此在编译期间，源码被写入一个临时目录，编译结束时将其删除；诊断信息仍以赋予源码的名称（`demo/Greeting.kt`）指称源码，而不是它被写入的文件。
++       Kotlin 标准库从不被隐含——编译器以 `-no-stdlib` 运行，因此 `kotlin-stdlib` 像其他条目一样放在类路径上——而输出是 classfile，可以像任何 classfile 制品一样链接，包括链接为 `Dex` 或 `Apk`。
+
+@ 0 5 0 100848e82d5156be1fc7939812b09b5c
++       只有编译器关于源码所说的内容才会成为通知：没有源码位置的 info 级别消息（日志选项 `-verbose` 会产生大量这样的消息）会被丢弃。
++       编译器本身（`kotlin-compiler-embeddable`）是 `anthology.kotlin` 的仅编译期依赖：驱动它的程序将所需的版本放在自己的运行时类路径上，而 `.version` 报告它是哪一个。
+
+% 0 1 0 1d9494e4f90eb71b1b404f85e0e4daf1
+
+% 0 1 0 0f7502748bd40d5700ce55ae14819939
+
+% 1 1 0 05751aea5b43acfd09cad2b65285bdec
+
+@ 0 2 0 0fb7402a4dcde0c017751d5949122cf5
++   entry .Versions   `Kotlinc` 可以声明的 Kotlin 语言版本：`1.9` 到 `2.4`
++   entry .Option   一个 Kotlin 编译器选项，表示为它所添加的标志，按接受它的版本定型
+
+% 1 1 0 037817dbc2f586ac1f44b6896d08b624
+
+@ 0 17 0 19253745611c479c14fe22036b8bfd4a
++         `Kotlinc.Option[-version <: Versions](flags*)`，与 `Scalac.Option` 一样在其版本上是逆变的，因此为 `Kotlinc.Versions` 声明的选项适合任何编译器。
++         `kotlincOptions` 没有的选项可以直接写出：`Kotlinc.Option[Kotlinc.Versions](t"-Xcontext-receivers")`。
++     entry #flags   该选项所贡献的命令行参数
++   entry .version   内嵌编译器的版本，即它自己报告的版本：`2.4.10`
++   entry #options   编译器的选项，按顺序
++   entry #commandLineArguments   所有选项的标志，按顺序连接
++   entry #version   内嵌编译器的版本，`Kotlinc.version`
++   entry #apply   依照类路径将具名源码编译到某个目录中，在自己的任务中进行
++       `kotlinc(classpath)(sources, out)`：将源码写入一个临时目录，在一个 `async` 任务中以 `-no-stdlib`、`-classpath`、`-d` 和各选项运行 JVM 编译器，并立即返回 `Compiler.Process`；任务结束时删除临时目录树。
++       它需要一个 `System`、一个 `Monitor` 和一个 `Probate`，记录 `Compiler.Event`，并声明会抛出 `Compiler.Error`。
++       诊断信息携带编译器报告的跨度，并映射回赋予每个源码的名称；崩溃会成为 `Compiler.Result.Crash`。
+
+@ 0 1 0 1e01c8e17533b2ac0c7fb0b057292bdf
++ entry .kotlincOptions   作为有类型值的 Kotlin 编译器选项
+
+% 1 1 0 01e298e56650b9420c9d354be5b77e86
+
+@ 0 4 0 10d3e1ea8d0e27b913cf803adcad25d9
++       以 `kotlincOptions` 镜像 Kotlin 命令行，每个都是按接受它的版本定型的 `Kotlinc.Option`，带有嵌套对象 `warnings`、`compatibility`、`explicitApi` 和 `advanced`。
++       该对象被镜像为 `soundness` 总括包中的一个包。
+
+% 2 1 0 05ef0915647fcda51500af09e3b03430
+
+% 3 1 0 05b9b297d94216cd01bae46d1cdbbf75
+
+% 0 1 0 1c6c394755b598b304ee1d90cb43eb9f
+
+% 0 1 0 0b5aa0ee5abb0eda156c1b3cf9247940
+
+% 0 1 0 181704fe0c4190c2062183a8780681a9
+
+% 1 1 0 16c784aef3c1f58004b24e3cef5b0521
+
+% 1 1 0 0411c533ffbf07e910e3d50bdf6263e2
+
+@ 0 4 0 052422c06a40ac09051740861a5d253c
++   entry .javaParameters   `-java-parameters`：为 Java 反射保留参数名
++   entry .noJdk   `-no-jdk`：不将 JDK 放在类路径上
++   entry .progressive   `-progressive`：启用渐进模式
++   entry .verbose   `-verbose`：详细的编译器日志（其消息不是通知）
+
+% 0 1 0 0e2632139563ad36040c1ec90ef208b4
+
+@ 0 3 0 1a08b9e07fa547f415c493334ca46c74
++   entry .jvmTarget   `-jvm-target version`：JVM 字节码版本，以 `17` 这样的数字表示
++   entry .optIn   `-opt-in marker`：选择启用一个带注解的 API
++   entry .warnings   `-nowarn`、`-Werror` 和 `-Wextra`
+
+% 1 1 0 18a198bdb49e008215d967c5b7f29ca5
+
+@ 0 1 0 1bb9fbb65040afde18c6d44de4a43234
++         `none` 和 `asErrors` 适用于所有版本；`extra` 从 2.0 开始。
+
+% 0 1 0 077d414b8de0e0ca052c9f84a3d206e4
+
+@ 0 3 0 1ec7e53698bd2f441f6d1a9fc535f484
++     entry .asErrors   `-Werror`：警告会使编译失败
++     entry .extra   `-Wextra`，适用于 2.0 到 2.4
++   entry .compatibility   编译所依照的 API、语言和 JDK 发行版本
+
+% 1 1 0 0f99178734ac8c900e481bf276345efe
+
+@ 0 1 0 05367f19e21aed8004fc41034c6f4cc7
++         `api` 和 `language` 接受一个 `Kotlinc.Versions` 字面量；`jdkRelease` 接受一个 JDK 编号。
+
+% 0 1 0 1933d9f0a38a8f8609158839f85b80fe
+
+% 0 1 0 1bf3e017cd904ddc0715ba56e52b53cd
+
+% 0 1 0 11bdb0303dab05041e1b382f0f01120c
+
+@ 0 1 0 0f57b4231210efcb0629000c5d079640
++   entry .explicitApi   `-Xexplicit-api=strict` 或 `=warning`
+
+% 1 1 0 05e6a6c21eae970e1488d4ecd315bd3c
+
+@ 0 2 0 134f01c2df121d5d18f30aab1dd905f7
++         显式 API 模式，面向库作者：每个公开声明都必须写明其可见性和返回类型。
+
+% 0 1 0 0135889d22ade2f6122d7e8f003b04e2
+
+% 0 1 0 1a7f5b8a8c552b5613d371e713128fbc
+
+@ 0 1 0 02181b95065d318309a58a6ffe260739
++   entry .advanced   `-Xno-call-assertions` 和 `-Xno-param-assertions`
+
+% 1 1 0 043bab3c655062bd197c926855e1327c
+
+@ 0 1 0 134ab047d016d9801ddecf536b78cec1
++         去掉 Kotlin 在 Java 边界处产出的 null 检查断言。
+
+% 0 1 0 17908a4b5e12dfcd1dcc66575ec4b398
+
+% 0 1 0 1a0c3033e491415d037468d41c778fcb
+
+@ 0 1 0 0fd7226cca69355513b826d3924127eb
++ entry .kotlincEdges   工具链的 Kotlin 编译边：从 `Language.Kotlin` 到 `Toolchain.Universe.Classfile`
+
+% 1 1 0 03666c5dee90bcde03437f1cbd6be0d5
+
+@ 0 6 0 06ce6c02d79c947b13faf53fe31da553
++       `kotlincEdges(kotlinc)` 是一个只有一条边的列表，携带它所驱动的 `Kotlinc`。
++       只对 JVM 后端建模：Kotlin 的其他后端产出的是 klib，而不是 anthology 所知道的 universe。
++       这个名为 `kotlinc` 的工具将失败映射为原因为 `CompilationFailed(notices)` 的 `Link.Error`，将崩溃映射为 `CompilerCrash`，将无法配置的编译器映射为 `CompilerUnusable(t"kotlinc")`，与 `scalacEdges` 相同。
++   entry .apply   一个 `Kotlinc` 的边列表
+
+@ 0 1 0 1918390493227b810c27fa70b8da2f66
++ entry .Js   通过模块系统绑定到宿主的 JavaScript：每个模块系统一个应用程序节点
+
+% 1 1 0 0db2eba1395ed8cb082e49799c0f9b18
+
+@ 0 6 0 0a051d80803107960abbcbaaae692022
++       `anthology.Js(module)` 是 id 为 `js-<module>` 的应用程序节点：`js-es`、`js-commonjs` 或 `js-script`。
++       模块系统是制品绑定契约的一部分——即浏览器或 Node 如何导入它——因此它是节点身份的一部分，而 `sjsEdges()` 从 `Toolchain.Universe.Sjsir` 到每个节点各注册一条边。
++       它**没有导出**到 `soundness` 总括包，后者的 `Js` 是 xenophile 的 JavaScript 外部函数接口，因此在 `import soundness.*` 下需要完全限定地书写。
+
+% 2 1 0 0d35a7d8064a1c1e0b2a0cb386582f98
+
+% 3 1 0 1f7ea5757a18c4610670bb5bb4981d2e
+
+% 4 1 0 0d5e05c12c1f8f9c009e16238076ee13
+
+% 0 1 0 1bc8d57a04c1106e0b61a1636064a80d
+
+% 0 1 0 140ef1e2dd2707971cd4e37397ce2ec7
+
+% 0 1 0 0f7b9cbb0c6861720516a96c21bd10f2
+
+% 1 1 0 14df9a5774f4236b171030482a398140
+
+@ 0 1 0 18e22391882df3ea0bbda5bff09032dd
++       链接会将 `main.js` 写入输出目录。
+
+% 1 1 0 0515e646812691f40e2d0ba214d69d5e
+
+% 1 1 0 0301c32cf39f804b0cc759f053f89720
+
+@ 0 1 0 1ad1d878602b19a21572fc6ccbfb8dc0
++   entry .Module   JavaScript 宿主如何使用制品：`Es`、`CommonJs` 或 `Script`
+
+% 1 1 0 03385c8ce38673f502bb2f048372f7ab
+
+@ 0 4 0 14bae4edd1ed65b30c934d3f5c0926ee
++         ECMAScript 模块（`ModuleKind.ESModule`）、CommonJS 模块，或没有模块系统的普通脚本，其 `#id` 分别为 `es`、`commonjs` 和 `script`。
++     entry #id   模块系统在节点 id 中的名称
++   entry #module   制品所绑定的模块系统
+
+@ 0 1 0 1236a68738406caa07cdb84801cc3e5e
++ entry .Wasi   绑定到某个 WASI 接口版本的独立 WebAssembly 制品：每个版本一个节点
+
+% 1 1 0 124612397eba8e39109932e3b972f350
+
+@ 0 9 0 04fcacad43d66c8b1a4929d8023ba584
++       `Wasi(version)` 是 id 为该版本 id 的应用程序节点：`wasip1`、`wasip2` 或 `wasip3`。
++       各代 WASI 是不同的节点，因为它们决定了制品的 ABI，而只有 `Wasi(Wasi.Version.Wasip2)`——一个其导入和导出由 WIT 描述的组件模型 `.wasm`——有产生它的边，即 `sjsEdges.wasi()`，因此请求 `Wasip3` 会抛出 `NoPath`，而不是悄悄地产生别的东西。
++       除链接器之外，组件边还有两个前提条件，都是 given：一个 `WasiToolchain`，只能通过探测 `wasm-tools` 和 `wit-bindgen` 获得；以及一个 `.World`，指明要链接的 WIT 目录和 world。
++       然后 `ociEdges()` 将组件包装为一个 `OciImage`。
+
+% 2 1 0 0b3e84c7f5dda4bf0c889e325e4943ba
+
+% 3 1 0 1454b3b135130d700f9dc029e296445c
+
+% 4 1 0 0ff1f4abffce8ff4064b60a5e71a6f68
+
+% 5 1 0 159c5a0c54af082d1b85a928ffa1d9ba
+
+% 6 1 0 1dfd8ba93a9459c71ef95f2db2b3371b
+
+% 7 1 0 0c734a29e59d2dad0270c85bd7d3678c
+
+% 8 1 0 18d5111c1da4e49116589682b07c4089
+
+% 9 1 0 05af5dae904ba1d41e48a42b21ba31a6
+
+% 10 1 0 0f9161bd2106353b1a7ab675208835fe
+
+% 11 1 0 1196deea3e4945411afc460f955d5c92
+
+% 13 1 0 1812610f7f7e4eda05dffab9f575f2e8
+
+% 14 1 0 0c0486d77c2100981ed89de5330d1704
+
+% 15 1 0 0838618d37e1bcfc01635435c698465f
+
+% 2 1 0 0fc76cbee0fddc1c07b6d44ad3f7fb1d
+
+% 0 1 0 173acea7d21a48540263d311d6ea9723
+
+% 2 1 0 0f2bcc40d72629210c7921626be0bc0f
+
+% 0 1 0 0706d703b369efe007f6ce6753230a7b
+
+% 0 1 0 0a9f3345381fcd6c1d6612e81aa7de47
+
+% 1 1 0 1393f7b0e32f1b1412bab4d78faa981a
+
+@ 0 1 0 187d74bcb70b33c01ed5267ed1e693a6
++       链接会将 `main.wasm` 写入输出目录。
+
+% 0 1 0 01df9b0199fe9ff80d02db4267fb0dd1
+
+% 1 1 0 1d49d89da07772651c1010ed054e1297
+
+% 1 1 0 0af70cba11ea949d165527ce1a33b860
+
+@ 0 1 0 1f0255ee3447163d04ee71d0a8894ef2
++   entry .Version   各代 WASI：`Wasip1`、`Wasip2`、`Wasip3`
+
+% 1 1 0 16bccbfaa50ffced1aab2af39a4cbb92
+
+@ 0 5 0 0a09e5465eb478130f445191152d5288
++         `wasip1`（0.1）是核心模块上扁平的、libc 风格的系统调用 ABI；`wasip2`（0.2）是组件模型，其导入和导出由 WIT 描述；`wasip3`（0.3）增加了原生异步。
++         `#id` 是小写名称。
++     entry #id   `wasip1`、`wasip2` 或 `wasip3`
++   entry .World   组件链接所依照解析的 WIT 定义：一个包目录和一个 world 名称
+
+% 1 1 0 1760cfc3b83a415703df5a92bab9694e
+
+@ 0 7 0 0316d4a1abdcc6750b982b796da2577f
++         `Wasi.World(directory, world)`：目录包含 `.wit` 包（其依赖位于 `deps/` 下），`world` 指明要链接的 world。
++         `sjsEdges.wasi()` 和 `ociEdges()` 都以它作为 given；OCI 工具从目录顶层的 `.wit` 文件中读取该 world 的导入和导出，以描述制品。
++     entry #directory   `.wit` 包所在的目录
++     entry #world   要链接的 world 的名称
++   entry #version   制品所绑定的 WASI 代
+
+@ 0 1 0 06536cac64b15db211a7eedc8d88fc26
++ entry .WasiToolchain   `wasm-tools` 和 `wit-bindgen` 已安装的证据，只能通过探测获得
+
+% 1 1 0 044acdc13e78da3a1d56a907cc9a2f3c
+
+@ 0 6 0 04ef5782cc725d331c0671bbf49ed3d6
++       WASI 组件链接会调用外部的 `wasm-tools` 和 `wit-bindgen` 的 scala-wasm 分支；`WasiToolchain` 值是它们存在的证据，而创建它的唯一方法是 `.apply`，它以 `--version` 运行每个工具。
++       `sjsEdges.wasi()` 以它作为 given，因此工具缺失的组件边无法构造，缺失的工具会在组装工具链时被发现，而不是在链接失败时。
+
+% 2 1 0 18078f920668209c0cca14d92e102920
+
+% 3 1 0 10c3348e3e9438ba0195d77fd56cb250
+
+% 4 1 0 11fa46ffa0a347eb1ae8c83ff3fa815f
+
+% 5 1 0 13434c5ce15232fd0e8313214657337d
+
+% 6 1 0 109eb3f980258a0c072c878d2f238e6a
+
+% 1 1 0 13411c2f830bff2c0178e813bb4a80c0
+
+% 1 1 0 06c49b41b7bd78ba0d73dfde718821dd
+
+% 2 1 0 0bcfe51d22bdc3c70444b66095f0ae3e
+
+% 1 1 0 0ff29296da0278f90c768ad642e19c30
+
+@ 0 5 0 09c280bd037e366a0078fb412ce435f6
++   entry .apply   探测 `wasm-tools` 和 `wit-bindgen`，任一缺失则抛出 `Toolchain.Error`
++       通过 guillotine，以作用域中的 `WorkingDirectory` 和 `Environment` 运行 `<tool> --version`——请提供进程应当继承的环境（`environments.javaBaseEnvironment`，或 CLI 自己的环境）——并抛出 `Toolchain.Error`，指明第一个未能成功退出的工具。
+
+@ 0 6 0 0c69a16fd9c08f031fb92f2eb2f2f86a
++ entry .Wasm   带有 JavaScript 胶水代码的核心 WebAssembly 模块，绑定到 JavaScript 宿主
++     `anthology.Wasm` 是 id 为 `wasm` 的应用程序节点，通过 `sjsEdges()` 从 `Toolchain.Universe.Sjsir` 到达：即 Scala.js 链接器的 WebAssembly 后端，产出为 ES2022 模块，由浏览器或 Node 连同其胶水代码一起加载。
++     它**没有导出**到 `soundness` 总括包，后者的 `Wasm` 是 xenophile 的，因此需要完全限定地书写。
++     链接会将 `main.wasm` 写入输出目录，不需要任何原生工具。
+
+@ 0 1 0 18f8eea5c8ff2274036495f9a8db0057
++ entry .linkerOptions   Scala.js 链接器所产生的每种格式的设置：IR 检查、源码映射、ES 版本、优化器
+
+% 1 1 0 0e2586ab2d0d22c007ccde59a9366c08
+
+@ 0 3 0 0c96d05de824786200d190e98f58c643
++       每个都是一个 `Toolchain.Setting`，同样适用于 `anthology.Js`（任何模块系统）、`anthology.Wasm` 和 `Wasi`，用于编辑链接器的 `StandardConfig`；在不产生其中任何一种的路径上，它会以 `InapplicableSetting` 被拒绝。
+
+% 2 1 0 007378b96c5128020a470a0f2fd273e8
+
+% 3 1 0 1cfa81cd1a7ac20c0775f8b4e8ddcc70
+
+% 0 1 0 0d750b2488aff2ab068ad399cb99ad80
+
+% 1 1 0 0e1c81840a1c5c411049f52646bde49b
+
+@ 0 3 0 0c7c61612752ee761b1201482d0889da
++   entry .checkIr   在链接之前检查 IR
++   entry .sourceMaps   产出源码映射
++   entry .esVersion   要产出的 ECMAScript 版本：`es2015` 到 `es2022`
+
+% 1 1 0 07ca1544701be734075b827121d7145b
+
+@ 0 10 0 0c45db5389ef3a310452b22616a659eb
++         每个版本一个设置，例如 `linkerOptions.esVersion.es2020`。
++     entry .es2015   以 ECMAScript 2015 为目标
++     entry .es2016   以 ECMAScript 2016 为目标
++     entry .es2017   以 ECMAScript 2017 为目标
++     entry .es2018   以 ECMAScript 2018 为目标
++     entry .es2019   以 ECMAScript 2019 为目标
++     entry .es2020   以 ECMAScript 2020 为目标
++     entry .es2021   以 ECMAScript 2021 为目标
++     entry .es2022   以 ECMAScript 2022 为目标
++   entry .optimize   链接器的优化器是否运行：`none` 或 `fast`
+
+% 1 1 0 1586c85452763e27089495ba105e51a6
+
+@ 0 3 0 133a72a0422d88ba130a1fc7647bc00b
++         `fast` 启用优化器，`none` 禁用它。
++     entry .none   禁用优化器
++     entry .fast   启用优化器
+
+@ 0 1 0 042497b0dd1f31710303171d74272a03
++ entry .sjsEdges   Scala.js 链接边：从 `Sjsir` 到每种 JavaScript 模块系统、到浏览器 Wasm，以及到 WASI 组件
+
+% 1 1 0 08e26b4e96dbb84b1d27032bee39a8bb
+
+@ 0 8 0 196f3c65b47a140f199e0fc05522d714
++       `sjsEdges()` 从 `Toolchain.Universe.Sjsir` 注册四条边：在 ES、CommonJS 和 script 三种模块系统下各一条通往 `anthology.Js`，以及一条通往 `anthology.Wasm`；`.wasi()` 添加第五条，通往 `Wasi(Wasi.Version.Wasip2)`，并且只在给定 `WasiToolchain` 和 `Wasi.World` 时存在。
++       它们都驱动 Scala.js 链接器——一个随 `anthology.link` 打包的 JVM 库——处理编译输出目录及其类路径中的目录和 JAR，把每个 `EntryPoint` 作为调用其 `main` 的模块初始化器，并把 `main.js` 或 `main.wasm` 写入输出目录。
++       链接器的消息以 `LinkEvent.Message` 的形式记录到日志，而抛出异常的链接器会抛出原因为 `Failed` 的 `Link.Error`。
+
+% 2 1 0 09950cd73ece48d91cc1cb447ade211a
+
+% 3 1 0 1f6ad6b27373de550f11c1db77948e2f
+
+% 4 1 0 0365aeac3507a6f10c671b41715e523f
+
+% 5 1 0 08d0f6eec37514d411f76688e803b0a2
+
+% 6 1 0 1478fa0495fa36b31c63bf3ad18fd426
+
+% 7 1 0 1c312cb0f74036941101499c7aaa8928
+
+% 8 1 0 1ee505ede02156d40454c60d26af40c1
+
+% 9 1 0 0594ba8d92785a2a0166f172a906de54
+
+% 10 1 0 0bd4f900fd22eff410dbc761957a4720
+
+% 11 1 0 028db6dd818a611f02086418a5df7d9c
+
+% 13 1 0 046bda7d69379c6e042182eca19b0b7b
+
+% 14 1 0 15f644ed3b9882061d807f781061d502
+
+% 15 1 0 057f61a0828ef8821a556a2824be23a0
+
+% 17 1 0 1104c9493e5291860269a1cbf5be6b98
+
+% 0 1 0 1197124d30dc6c8701da11dbd65fc0f8
+
+% 1 1 0 047557205e0ab89316217463217eb8fe
+
+% 0 1 0 1c598954c37840ba068bb7ac2f6eae57
+
+% 0 1 0 123e0a0d3a912afe01385c2356406d25
+
+% 1 1 0 032971743b99eca21bafd3b79431a0a9
+
+% 0 1 0 1789d1c554ac11ac00fa6fc5f8bfeab2
+
+% 1 1 0 0bb531d181b1ba66043e393cfc170988
+
+% 2 1 0 0a3aed749845f9c90bc07702faffad22
+
+@ 0 3 0 08efa8b57538dabe1817abbbc62ce005
++       编译输出必须是用 `-scalajs`（一个重定向到 `Toolchain.Universe.Sjsir` 的 `Scalac`）针对 Scala.js 运行时 JAR 编译而成的；类文件编译没有通往这些节点中任何一个的路径。
+
+% 1 1 0 0441521a9904ac01180a14fec8344a97
+
+% 1 1 0 011597c60a4f988d0cce026fd83b0561
+
+@ 0 7 0 030959eae3bec77b1576b38a1390db5a
++   entry .apply   不需要原生工具的四条边：三种 JavaScript 模块系统和浏览器 Wasm
++       每条边的工具以其节点的 id 命名（`js-es`、`js-commonjs`、`js-script`、`wasm`），而 Wasm 边固定使用 ES2022 和 WebAssembly 后端。
++   entry .wasi   通往 `Wasi(Wasip2)` 的边，需要给定一个经过探测的 `WasiToolchain` 和一个 `Wasi.World`
++       把链接器配置为针对该 world 的 WIT 目录和 world 名称生成 `WasmComponent` 模块；链接过程中会运行 `wasm-tools` 和 `wit-bindgen`。
++       缺少原生工具的 WASI 链接是无法表达的，因为无法构造所需的 given。
+
+@ 0 1 0 13967596cd0f90621df76f8cfc7fc8e1
++ entry .Bundler   正在运行的应用程序的类路径，以及由类路径组装 JAR
+
+% 1 1 0 153a416b051266e705726a171d5202dc
+
+@ 0 4 0 04b03cbf26fc0f1b01388f21c0f2a684
++       `.applicationClasspath` 是正在运行的程序被加载时所用的类路径。
++       一个必须把自己正在运行的类路径并入它所产生的 JAR 的分阶段执行装置，会把它与自己的编译输出配对为一个 `Deliverable.Emission`，并通过 `Artifact.Jar` 边把两者打包，从而让 JAR 带上该装置自己的执行器和依赖：
+
+% 2 1 0 1fe60bc9ddc7112f12749338fef1defe
+
+% 3 1 0 04e0fa1308b32d0c1ddb563095857ddc
+
+% 4 1 0 09c25b0a37ed7917185ffd2ca28549c5
+
+% 5 1 0 12974115ea32b0c90a700bc2c3167bd0
+
+% 6 1 0 1d710eb5a6126874062951bbd695b6fc
+
+% 7 1 0 0a482b5b279372d60144814f35526198
+
+% 8 1 0 0a10037415fdb3750d742bebb9bda887
+
+% 9 1 0 06950b3ae6f7ce65155ea9428eeb96ce
+
+% 10 1 0 0645438ca7b7cbcb023bab3bb4594a08
+
+% 11 1 0 14d7775b913c8fde0297217f53f7c2dc
+
+% 0 1 0 07b49c87e2f5febb021c779dfd9946ec
+
+% 1 1 0 0764c51678fcf8411684a59902ff8044
+
+% 0 1 0 01638f983ab43bc51bcbf9078bdfa268
+
+% 1 1 0 1f2638d8a9695fa902d9414c3e89f32d
+
+% 1 1 0 186f7a4c1ef85c2d173df45010f39b65
+
+% 0 1 0 118c04c921b2c40a0f022775153749bc
+
+% 0 1 0 12afd83aa5bd02d617bd439a2e0be8da
+
+% 0 1 0 0a284ee05bbf4d0d0a6ffe8419d21326
+
+% 1 1 0 0f06efa503abc2c8011c11a72f56e148
+
+@ 0 13 0 1bf641e5a96f6eaf178537965afb2d3a
++       `.assemble` 是 `jarEdges` 的工具所运行的 JAR 组装过程，供需要打包自己的类路径的工具使用。
++   entry .assemble   把类路径上的一切写入一个 JAR，如果给出了 `Main-Class` 则一并写入
++       目录条目中的文件会被加入，但不包括任何 `MANIFEST.MF` 或 `plugin.properties`；JAR 条目中的条目按原样重新写出，但不包括它的清单；当两个条目路径相同时，保留第一个。
++       清单记录 `Created-By: Soundness`。
++       `Abscission` 的 `Shrunk.Jar` 边就是用它来打包封闭世界的。
++   entry .applicationClasspath   正在运行的应用程序的类路径，从它自己的类加载器读取
++       `LocalClasspath.of(Classloader[Bundler.type])`：从加载这个类的类加载器内省得到——是它自己的类加载器，而不是线程的上下文加载器，因为池化的线程可能从最先运行的任意代码那里继承了上下文加载器——并回退到 `java.class.path` 属性。
++       在测试运行器这类把代码隔离在 `URLClassLoader` 中的宿主下，这就是代码实际来自的类路径。
+
+@ 0 1 0 07ba521275f264d2103473d2d2f581b6
++ entry .Library   一个 universe 的未链接编译输出组成的 JAR，供下游组装使用：每个 universe 一个节点
+
+% 1 1 0 117511d71a01e9691c09d5adc0c9ad0a
+
+@ 0 7 0 0cf0490c80d308400e0aef957f16370e
++       `Library(universe)` 是 id 为 `library-<universe>` 的应用程序节点（`library-classfile`、`library-sjsir`、`library-nir`），通过 `jarEdges()` 从其 universe 到达。
++       它只打包编译自身的输出——类文件，以及与之并列的任何 `.sjsir` 或 `.nir`，连同它们的 TASTy——而不打包类路径，并且不记录入口点，因此入口点会被忽略。
++       库的 universe 必须与其编译的 universe 匹配：`Toolchain(jarEdges()).path(Toolchain.Universe.Sjsir, Library(Toolchain.Universe.Nir))` 会抛出 `NoPath`。
+
+% 2 1 0 16e9056b76e4370d0251a9f1eebe27eb
+
+% 3 1 0 17cadf9b1c6d44a109243ba4d7260435
+
+% 4 1 0 05e85d2d73b7bf3f1a504d9bdea43451
+
+% 5 1 0 1778f9899950ea9c0c59be29a85f5f6b
+
+% 6 1 0 13bd2161fc24b9780a19ff1c9b06367e
+
+% 7 1 0 028f11721d9029e808784a2707f828c3
+
+% 8 1 0 15a2800451b0bbf903587afd5ebd515a
+
+% 9 1 0 04544301dfc12c400762e8ed19697ba8
+
+% 10 1 0 1d6d0fd17d385df306d53f3626c71d62
+
+% 11 1 0 09989d124070c51317f59e53677f359f
+
+% 13 1 0 1a21405f6824d7ea154d33bed1150769
+
+% 14 1 0 15a89684197114d309e5da2f373713cb
+
+% 15 1 0 124690bcc2f59df1137ac59aa6f5e25e
+
+% 17 1 0 07fd7187ea7c844015cc2d058ae013e8
+
+% 1 1 0 11f0948af202fa07109b1b6459c0d691
+
+% 0 1 0 096e0943ddaa4bb7149c5cb43aa3b593
+
+% 1 1 0 08c544500e7b060e0ac8f293d45de9dd
+
+@ 0 1 0 14377d3b2acdaaf003d9a367743773cd
++       除非 `jarOptions.name` 另有规定，JAR 命名为 `main.jar`。
+
+% 0 1 0 1cec89d1243fcb9b169636d0d7d4d79e
+
+@ 0 1 0 0b1b40c9fed912aa0111e943b868c620
++   entry #universe   库所打包的输出所属的 universe
+
+@ 0 1 0 04ee5ffa084c3fb30b4a260bffa06063
++ entry .jarOptions   JAR 打包边的设置
+
+% 1 1 0 090cf8392815041f112cd46e935df412
+
+@ 0 4 0 0497ba20bf0e983d0f6246548967ff02
++       只有文件名：`jarOptions.name(t"app.jar")`，同样作用于 `Artifact.Jar` 和每个 `Library` 节点。
++   entry .name   JAR 在输出目录中的文件名，用于 `Artifact.Jar` 和 `Library` 节点
++       默认为 `main.jar`。
+
+@ 0 1 0 0eab1549de9b18f506ce10d231d68770
++ entry .jarEdges   JAR 打包边：从 `Classfile` 到 `Artifact.Jar`，以及从每个 universe 到其 `Library`
+
+% 1 1 0 1988fc767d6de20d0df8951a61e78924
+
+@ 0 4 0 00af02d6e73085da07abd85be017640a
++       `jarEdges()` 注册四条边，不需要任何外部工具：从 `Toolchain.Universe.Classfile` 到 `Artifact.Jar`，以及从 `Toolchain.Universe.Classfile`、`Toolchain.Universe.Sjsir` 和 `Toolchain.Universe.Nir` 各自到其 `Library`。
++       两种工具的设置都是 JAR 的文件名（`jarOptions.name`，默认为 `main.jar`）。
+
+@ 0 8 0 1a63ac3969cb0a180d577e25c6a6709c
++       `jar` 工具打包编译输出目录*以及整个类路径*：目录条目中的文件会被加入（省略任何 `MANIFEST.MF` 和 `plugin.properties`），JAR 条目中的条目逐字重新写出而不重新压缩（省略其清单），按路径重复的条目会被丢弃，以第一次出现的为准。
++       清单记录 `Created-By: Soundness`，并根据唯一的 `EntryPoint` 记录 `Main-Class`；没有入口点时得到不带 `Main-Class` 的 JAR，有两个入口点时抛出原因为 `ManyEntryPoints` 的 `Link.Error`。
++       `library` 工具只打包编译输出目录，并忽略入口点。
++       zip、路径、I/O、截断或文件名方面的故障都是原因为 `Packaging(detail)` 的 `Link.Error`。
+
+% 2 1 0 06ae6aa21f20d4ec14230f24075f6b29
+
+% 3 1 0 0fd18477968c7b5011f9ab9ebdace48b
+
+% 4 1 0 189c7090aeb4c3d8174ebe8de867a05e
+
+% 5 1 0 0eebdb8945ab2d07080779228ea71f3e
+
+% 6 1 0 11f051931f8a21700bd16814b0072a93
+
+% 7 1 0 0f43cafaee83905c0dff34e268a9abe7
+
+% 8 1 0 0fd86d7901f0b1fd1b271e52df127bca
+
+% 9 1 0 0a04dce752762fd70c752fb52f645460
+
+% 10 1 0 111a7a24d6feb30c0fa3dcb62fdfa083
+
+% 11 1 0 0a46608ea85c752d0f29f4fbac3e4897
+
+% 13 1 0 007373394c52e7cd06c2f14f29e41f19
+
+% 14 1 0 086359f581a047a217bb321c863947c6
+
+% 15 1 0 0389e371f7b81d4f0d98ab8caae4a7bb
+
+% 17 1 0 00c51760eacfe38911a3e05f2b3b53a3
+
+% 0 1 0 165e8320bf514c191a1a632c353fbd0b
+
+% 0 1 0 0ed71cad938583411afa0ce138c15c66
+
+% 0 1 0 0faa226560b3b74e1e3f99ff2c58b073
+
+% 0 1 0 08b2e678e0a1abe814cbcc7be90aa66f
+
+% 0 1 0 0f8ef6146b4cfe1c1d49a35b925e467c
+
+% 0 1 0 0538c36499e1c6570dc20ea1101da6d7
+
+% 0 1 0 140613f9e197d9fb19742eb448593864
+
+% 0 1 0 0359070cdf2df9d91c3be443d38d4fd9
+
+% 0 1 0 035b50401f34660801f276a741fabdf6
+
+% 1 1 0 1b7f2c844e9b462e02819ddcd4b8a7ba
+
+% 0 1 0 1911e334ae3c39740d91dd26202ab949
+
+% 0 1 0 13101da96eb979a707021a417c83f6dd
+
+@ 0 1 0 06dbef78737e1a3f125296533afccad5
++   entry .apply   四条打包边
+
+@ 0 1 0 10869736d71f52c8089d00c96af44ecb
++ entry .nativeOptions   原生二进制文件的设置：垃圾回收器、构建模式和链接时优化
+
+% 1 1 0 08993f36b5b4e7a1021bc7033d5f064f
+
+@ 0 3 0 02595b06027c37ef0a066022870941e1
++       每一项都是一个作用于每个 `Artifact.Binary` 节点的 `Toolchain.Setting`，用于编辑 Scala Native 的 `NativeConfig`；在不产生二进制文件的路径上，它会作为 `InapplicableSetting` 被拒绝。
++       默认值为 `gc.immix`、`mode.debug` 和 `lto.none`。
+
+% 2 1 0 0c10c8a751f3d8c209b78b889e3a7c8c
+
+% 3 1 0 161d2682437c9ea9099aa00374185e77
+
+% 0 1 0 15b1b6d6d33272a31b760a8bfd0f2891
+
+% 1 1 0 000584194cc5388c031318a4973d7eae
+
+@ 0 1 0 1b139e8f2e5373341eb3a8c4d350aa7e
++   entry .gc   垃圾回收器：`immix`、`commix`、`boehm` 或 `none`
+
+% 1 1 0 01e04f0c123121261dbd9cf97c59525c
+
+@ 0 7 0 00f63babad12178b1fe3f5ee2e669637
++         Immix 是默认值；Commix 是它的并发变体；Boehm 是保守式回收器；`none` 只分配而不回收。
++     entry .immix   Immix 回收器（默认值）
++     entry .commix   并发的 Commix 回收器
++     entry .boehm   Boehm 保守式回收器
++     entry .none   不进行垃圾回收
++   entry .mode   构建模式：`debug`、`releaseFast` 或 `releaseFull`
+
+% 1 1 0 0019bb1bf6e9a8011cc8ffab9f09a91f
+
+@ 0 6 0 0646b067fd2a6bf40ee550caaaa240d2
++         `debug` 是默认值，链接最快；发布模式会进行优化，其中 `releaseFull` 最为激进。
++     entry .debug   调试构建（默认值）
++     entry .releaseFast   优化构建，侧重于链接时间
++     entry .releaseFull   完全优化的构建
++   entry .lto   链接时优化：`none`、`thin` 或 `full`
+
+% 1 1 0 15811db183f7e8f90872c709bfdb07f2
+
+@ 0 2 0 14e9944b7dc9adb50ed58674590fb6f1
++         `none` 是默认值。
++     entry .none   不进行链接时优化（默认值）
+
+% 0 1 0 09c538363fd3780f09b45c87c65f9491
+
+@ 0 1 0 005240dd54a2946c066573ac1a3a823e
++     entry .full   完整 LTO
+
+@ 0 1 0 022a9ddfe7bff2940b033583c07203ef
++ entry .nativeEdges   原生链接边：经由 `clang`，从 `Nir` 到每个目标三元组的 `Artifact.Binary`
+
+% 1 1 0 1e7648fc9b6334711340525abb644fae
+
+@ 0 9 0 10a48d7032423c9c09bab3c53935d96a
++       `nativeEdges(triples*)` 在 `PATH` 上探测一次 `clang` 和 `clang++`（使用作用域中的 `WorkingDirectory` 和 `Environment`），如果缺少其中任何一个则抛出 `Toolchain.Error`，并为给出的每个三元组注册一条从 `Toolchain.Universe.Nir` 到 `Artifact.Binary(triple)` 的边——如果没有给出三元组，则为构建主机自己的三元组 `Toolchain.Triple.host` 注册。
++       该工具驱动 Scala Native 构建（随 `anthology.nir` 打包）处理编译输出目录及其类路径，要求恰好一个 `EntryPoint` 作为二进制文件的主类（否则为 `NoEntryPoint`），并把名为 `main` 的二进制文件写到输出目录之下。
++       构建主机以外的目标需要能够交叉编译到这些目标的 C 工具链和 sysroot。
+
+% 2 1 0 0239b20b6c7644e40dd9218a2189e004
+
+% 3 1 0 166fa80b43decaa814793d1281e07b8e
+
+% 4 1 0 0e9ae7c6e883e245045dea4d0ad7e7bc
+
+% 5 1 0 1d29fb912dedb8f709fead2e6ed10c19
+
+% 6 1 0 0656b988d84cbb66036367ebd991f803
+
+% 7 1 0 0448eea319bd00980febfc8df06b9067
+
+% 8 1 0 031f24a4c2a2d9600247237ae496dfc2
+
+% 9 1 0 1fb956e875c41842167b96b7c693d44f
+
+% 10 1 0 0a2450bb637785ca05559ca917d0726e
+
+% 11 1 0 1e4aeb2c31b418a503ac450c11407dc9
+
+% 13 1 0 1f39ff01853858551154f2ff87ff9d92
+
+% 14 1 0 04aeb66afa14d2901159cd1846ffc2d4
+
+% 15 1 0 027cd77129f8ed95102e8c9b4e723826
+
+% 17 1 0 0567596fb68aecd31e3fb0dfb554adba
+
+% 0 1 0 07e8d17aff5e42d21dca3041271ea709
+
+% 1 1 0 0787cab354a85dee03fb4c941c101051
+
+% 0 1 0 04245693ec507ffd0950c56eaeee444a
+
+% 0 1 0 046c35ab9be5442a197d41594a7d7e1c
+
+% 1 1 0 1775e012333399910e4419ed1f161df1
+
+% 0 1 0 0e2e0db736ea2e361cfe1bac711789e3
+
+% 1 1 0 034079658edf94c315584e874fbd9b25
+
+% 2 1 0 0738455bf29f29800123aa07ceadcf2c
+
+@ 0 5 0 012d9c2dccb100e50d5853d1442b11bc
++       编译输出必须已编译到 `Toolchain.Universe.Nir` 中——一个在给定 `NirPlugin` 时重定向的 `Scalac`——并针对 Scala Native 运行时 JAR 编译。
++       编译器自己的 JAR 只在编译类路径上，在原生运行时无法访问，这就是为什么只在宏内部使用编译器的代码仍然能够链接。
++       抛出异常的构建会抛出原因为 `Failed` 的 `Link.Error`。
+
+% 0 1 0 03186baae0321f3b1a71aac313e890a2
+
+% 0 1 0 1569ac098ad1c0500228f407bd013965
+
+% 0 1 0 025a4d3ac3d4f28f059fdba52f7e57f9
+
+@ 0 3 0 1d9200de069c81ec11c40347cd770762
++   entry .apply   探测 `clang` 和 `clang++`，然后为每个三元组（或主机的三元组）注册一条边
++       缺少编译器时抛出 `Toolchain.Error(t"clang")`；在没有指定三元组、而构建主机的三元组无法识别时，也抛出同样的错误。
+
+@ 0 1 0 1b523e83825a447909f9ba0d6515e628
++ entry .Dex   绑定到 Android 运行时的 Dalvik 字节码：由 `classes*.dex` 文件组成的归档
+
+% 1 1 0 006a073c21f53f680502a72e59ac7b37
+
+@ 0 5 0 0e073f86eafde74a0c95f91303565f5e
++       id 为 `dex` 的应用程序节点，通过 `dexEdges()` 从 `Toolchain.Universe.Classfile` 到达：一个 zip 归档 `main.dex.jar`，包含 `classes.dex`、`classes2.dex`……，ART 和 `DexClassLoader` 可以直接使用它，它也是从类文件到 `Apk` 的路径上的中间节点。
++       DEX 不携带入口点元数据——ART 在调用时才被告知主类——因此该边忽略入口点。
+
+% 2 1 0 1fcfa66b728cbdea0e52aae384d01b37
+
+% 3 1 0 13109ffc6140cbe81f027acee0223095
+
+% 4 1 0 1f6cc53a892985d507e4d02932dd80e2
+
+% 5 1 0 1692a6ac044145ab04bedd561d124a2d
+
+% 6 1 0 057fa0f5ce524f5c1ce5e2da81b6b1aa
+
+% 7 1 0 0a8ada0cc023ff4a07f8eec598f3806a
+
+% 8 1 0 17734aadd44a23291b51e9bc94c330bf
+
+% 9 1 0 01d2e126a2d19fde1c948bbcecfff95e
+
+% 10 1 0 165c66ba389897ae05b4278704b1f55b
+
+% 11 1 0 1e5804a98de5530c0d47a362d4520024
+
+% 13 1 0 1be66225120533a0104d1a38c18c9019
+
+% 14 1 0 18bf729c41026e1705b6c42259137467
+
+% 15 1 0 06ed58e649963c87106dcfdf395462a1
+
+% 17 1 0 1117892636e60f810355932a90b8782a
+
+% 0 1 0 098db4a3821f2b610ba3fd8f0871b515
+
+% 1 1 0 017c9008e601cd8d030458ed39a99413
+
+@ 0 4 0 1e090e5e8f0b51f103705ca01eeea97b
++       Scala 3 的输出可以干净地转换为 dex：编译器生成 Java 17 类文件，lambda 使用 `invokedynamic`，但没有 `ConstantDynamic`，也没有嵌套属性，因此不会触及 D8 脱糖最薄弱的部分，而 API 级别 26 不需要平台桩。
++       需要 Panama 或 `java.net.http` 的库没有可供运行的 Android 运行时，无论是否转换为 dex。
+
+% 0 1 0 0f17ba6deae1df1d1cf5c283842675f7
+
+% 0 1 0 014cba2b91456dfd0d24eb0c054c3d40
+
+% 1 1 0 19ac69457fda358d07014d1b2b4262b2
+
+@ 0 1 0 1ed49d5448edfba41ca2ae1673969c05
++ entry .dexOptions   dex 转换的设置：最低 API 级别、平台桩和 D8 的模式
+
+% 1 1 0 0e9a0f570f4b35d70503943ebe1bc02b
+
+@ 0 10 0 1b290876090ae54306943d421e5dc154
++       每一项都是一个作用于 `Dex` 节点的 `Toolchain.Setting`。
++       默认值为 API 级别 26、调试模式且没有平台桩。
++       `apkOptions.minApi` 同时在 `Dex` 和 `Apk` 上设置级别，APK 构建应优先使用它。
++   entry .minApi   输出必须能够运行的最低 Android API 级别（默认为 26）
++       级别越低，D8 需要脱糖的内容越多。
++       低于 24 的级别缺少原生的接口默认方法，而 Scala 3 会为特质成员生成这种方法，因此这些级别还要求提供 `.platform` 作为脱糖的依据。
++   entry .platform   Android SDK 的平台桩，`platforms/android-<n>/android.jar`
++       只在 API 级别低于 24，或程序引用了平台类型时才需要。
++   entry .mode   D8 的编译模式：`debug` 或 `release`
+
+% 1 1 0 032d98201509390300c6e5c43702d6f1
+
+@ 0 1 0 1d9c1f196eec60de175e800e966b1ebd
++         `debug` 是默认值。
+
+% 0 1 0 1d200bd92bb5c9621abe8079fee536c0
+
+% 0 1 0 09388589ab85e056158d4cd7e0bdd0b5
+
+@ 0 1 0 168feab37582220e1b4eef91d4b05435
++ entry .dexEdges   dex 转换边：从 `Classfile` 到 `Dex`，通过 R8 的 API 驱动其 D8
+
+% 1 1 0 119be04b14d9607d095b51f74ed3a7d3
+
+@ 0 7 0 1047cf8a9d54bec0073945ee1d33e1e5
++       `dexEdges()` 是只有一条边的列表。
++       名为 `dex` 的工具把编译输出目录中的类文件和整个类路径交给 D8（一个随 `anthology.dex` 打包的 JVM 库）——归档整体交付，目录则展开为其中的 `.class` 文件，并排除 `module-info.class`——然后把 `main.dex.jar` 写入输出目录。
++       D8 的错误和警告以 `warn` 级别的 `LinkEvent.Message` 记录到日志；抛出异常的运行会抛出原因为 `Failed` 的 `Link.Error`。
++   entry .apply   dex 转换边
+
+@ 0 1 0 0413c9671a0a596b1af40918b24a550e
++ entry .Apk   完整的、可安装的 Android 包：dex 化的代码、二进制清单，经过对齐和签名
+
+% 1 1 0 0b7211113ec574e002078a1bbb0456e8
+
+@ 0 7 0 1fce06496d08acc016bc40a6f50f95eb
++       id 为 `apk` 的应用程序节点，由 `Toolchain(dexEdges(), apkEdges())` 从 `Toolchain.Universe.Classfile` 经由 `Dex` 到达。
++       该工具编码一个二进制的 `AndroidManifest.xml`（`Axml`），以不压缩、4 字节对齐的方式存储 dex 文件，使运行时可以对其进行内存映射，并用 APK 签名方案 v2（`.Signer`）为包签名——产出一个可调试、可安装到模拟器上的 `app.apk`，无需任何 Android SDK 构建工具，只需要一个密钥库。
++       要求恰好一个 `EntryPoint`：它的类就是启动器 activity。
+
+% 2 1 0 01004cd2b2634cab008b6d159a04b555
+
+% 3 1 0 0c6afc49d79e0c4d1bb940b649bf7c27
+
+% 4 1 0 15c311c26775758217a7da513f7f893f
+
+% 5 1 0 0eb4bf06f354b7bd095f1abd328ed7a9
+
+% 6 1 0 03ce822cfe35ab151f5b8e02fd66dc12
+
+% 7 1 0 113c94e53f92564f0ed677561b2f05f8
+
+% 8 1 0 193428311f0bd814169cf1f0f667f2fc
+
+% 9 1 0 0a3a7da38de8ca1016706b7eb0273c80
+
+% 10 1 0 01dc1873ccf0e6a2011f508153dcb61a
+
+% 11 1 0 1b2022e7dd12271006ecbb44d0a37b56
+
+% 13 1 0 0861e781dd7a8f700b29461d1ca08f5b
+
+% 14 1 0 1c603d57cbe4fc74134a4993da5e8275
+
+% 15 1 0 16bedb80f046e5e2066c9acd9a6af601
+
+% 17 1 0 083fe95f978e27ec1ec64232b01b029b
+
+% 0 1 0 1c5a01f751f18f8014c111fba2522140
+
+% 1 1 0 11402526311369451d367eec63435878
+
+% 2 1 0 00b95b4e9465e67111dd6f0a75e0943c
+
+% 3 1 0 138f78d678351f8f032c7054f82788a9
+
+% 4 1 0 16c847c67cf7b63b10639613bf2c3445
+
+% 0 1 0 052e3579021c8f2615f75fe6e2e85751
+
+% 0 1 0 033c22466d29cbaa0ff54c9d3db16aeb
+
+% 0 1 0 15869da06d25118a1f2d400d9b31d798
+
+% 0 1 0 1be25ab62f899ddf00f4cc6c5cc9463b
+
+% 0 1 0 15093b90528ca58e0734f548cc901038
+
+% 1 1 0 17d19cca0c98fbc9123bc55ce559d5bf
+
+% 2 1 0 136f1ad7ff954ab404dd74d5053b4677
+
+@ 0 5 0 07187997c406ba8301cdd555bab906d8
++       配置的默认值（`Apk.Configuration.default`）使用 Android 惯用的调试密钥库 `~/.android/debug.keystore` 签名，Android Studio 也共用这个密钥库；发布构建用 `apkOptions.keystore` 指定自己的密钥库。
++       dex 归档落在 `staged/dex/` 中，包则位于 `staged/app.apk`，旁边是用于签名的 `unsigned.apk`。
+
+% 0 1 0 1c2781edbf4da9621482d3b491530227
+
+% 0 1 0 11a0968b570293fe010b1f16ba9f4dd6
+
+% 0 1 0 086ec2368cb757f306bb2204d51eb388
+
+% 0 1 0 099eb86e8478bdae1119d845afbb6208
+
+@ 0 1 0 0f6724e26a3016ac174a401496946955
++   entry .Configuration   包在代码之外所需的东西：API 级别、名称、权限和签名密钥
+
+% 1 1 0 198aef1793cda74609ce39866fcb1abe
+
+@ 0 21 0 1634f4e94c0282610c6459fffce79809
++         APK 工具的设置类型，由 `apkOptions` 编辑：API 级别范围、包名和面向人的标注、版本代码和版本名称、请求的运行时权限，以及 PKCS#12 密钥库、其密码、密钥的别名和密钥的密码。
++         启动器 activity 不在这里：它是路径的 `EntryPoint`。
++     entry .default   默认值：API 26 到 34，`dev.soundness.app`，版本 1 `1.0`，Android 调试密钥库
++         `minApi` 为 26，`targetApi` 为 34，包名 `dev.soundness.app`，版本代码 1，版本名称 `1.0`，标注 `Soundness App`，没有权限，以及调试密钥库 `~/.android/debug.keystore`，库密码为 `android`，别名为 `androiddebugkey`，密钥密码为 `android`。
++     entry #minApi   应用程序可运行的最低 Android API 级别
++     entry #targetApi   应用程序的目标 API 级别
++     entry #packageName   Android 包名
++     entry #versionCode   整数版本代码
++     entry #versionName   人类可读的版本
++     entry #label   应用程序的标注
++     entry #permissions   请求的运行时权限，按名称列出
++     entry #keystore   用于签名的 PKCS#12 密钥库的路径
++     entry #storePass   密钥库的密码
++     entry #alias   签名密钥在密钥库中的别名
++     entry #keyPass   签名密钥的密码
++   entry .Manifest   构建 Android 清单的 `Axml.Element` 树
+
+% 1 1 0 192a43b3e367168e0982b9af6e4599cd
+
+@ 0 8 0 02939fe5ea290be00ad7755fa5062f47
++         `Apk.Manifest(packageName, versionCode, versionName, minSdk, targetSdk, label, activity, permissions)` 返回 `manifest` 元素——`uses-sdk`、每个权限一个 `uses-permission`，以及一个 `application`，其中包含导出的启动器 `activity` 及其 `MAIN`/`LAUNCHER` intent 过滤器——可直接交给 `Axml.encode`。
++         属性资源 ID 是稳定的公开 `android.R.attr` 常量，因此不需要查阅任何平台 `android.jar`。
++     entry .apply   给定包、版本、API 级别、标注、activity 和权限的清单元素
++   entry .Signer   APK 签名方案 v2，作用于已完成的未签名包
+
+% 1 1 0 0ad830875e11a35708e59774d40ae4f1
+
+@ 0 9 0 1b60b72a9a5d29401f7879390f7846b7
++         通过在条目与中央目录之间插入一个 APK 签名块，为一个已对齐的未签名 ZIP 签名；签名覆盖以 1 MiB 为数据块的整个文件的 SHA-256 摘要，因此之后任何字节的改动都会使签名失效，这就是签名必须是最后一步的原因。
++         RSA 签名（`SHA256withRSA`）、密钥库和证书直接使用 `java.security`，因此密钥必须是 PKCS#12 库中的 RSA 密钥。
++         不涉及任何 Android SDK 工具：它取代了 `apksigner`。
++     entry .sign   用密钥库中的密钥和证书为未签名包的字节签名
++         `Apk.Signer.sign(unsigned, keystore, storePass, alias, keyPass)` 返回已签名包的字节。
+
+@ 0 1 0 02ae2524ccd93da702b849bdd0a69982
++ entry .Axml   Android 二进制 XML：包内 `AndroidManifest.xml` 的编码
+
+% 1 1 0 08376fdfa442cd2607e783df51d9a52a
+
+@ 0 6 0 0e96eae56efdae4d0b32f03d8b768598
++       Android 以二进制 XML 而不是文本读取包的清单，其中有字符串池、资源映射和带类型的属性值。
++       `Axml` 把文档建模为带有 `.Attribute` 的 `.Element`，属性的值是一个 `.Value`——字符串、整数或布尔值，因为 Android 以特定类型读取每个属性——而 `.encode` 写出二进制形式。
++       `Apk.Manifest` 构建应用程序所需的树；`Axml` 是公开的，供需要更多内容的清单使用。
+
+% 2 1 0 17873d7d651f6bc7147dfd0188c0d29c
+
+% 3 1 0 0152ab6a72f96f7b1a27d071c84b7756
+
+% 0 1 0 14961cc2dda55942110cd2286cf6b49d
+
+% 0 1 0 0747a5ba53b79ca0097a0ba3878b48e8
+
+% 0 1 0 1b90cfe4e08f52e60d248aef06095987
+
+% 0 1 0 03c249c4079b9cf00c636425a9bf3f8d
+
+% 0 1 0 0b6156dd96c7065d15ce8f8599d1aed5
+
+% 0 1 0 18777be31127c6bd07535d47692f247f
+
+% 1 1 0 16321c51011a981116d5a503c28b4651
+
+% 1 1 0 0d2e85865c1222b116791756f0fab8f0
+
+@ 0 7 0 0ff553e9c112dfc703c5073a09a3469c
++   entry .androidUri   Android 资源命名空间，`http://schemas.android.com/apk/res/android`
++   entry .androidPrefix   清单按惯例绑定到该命名空间的前缀，`android`
++   entry .Value   带类型的属性值：`Str(text)`、`Num(value)` 或 `Bool(flag)`
++       Android 以特定的 `TypedValue` 类型读取每个属性，因此编码器会确定一种类型，而不是把每个值都作为字符串写出：字符串引用字符串池，整数或布尔值则内联存储。
++   entry .Attribute   一个属性：它的命名空间、局部名称、公开资源 ID 和带类型的值
+
+% 1 1 0 1c91b315ddc47a0612d8df19cbd26fc8
+
+@ 0 9 0 178f7a9ef4597e211ce67543ea700d4d
++         `Axml.Attribute(namespace, name, resourceId, value)`：对于 `android:` 属性，命名空间是 `.androidUri`，对于 `package` 这样没有命名空间的属性则为 `Unset`；资源 ID 是 Android 用来识别该属性的公开 `android.R.attr` 常量，或为 `Unset`。
++     entry #namespace   命名空间 URI，或 `Unset`
++     entry #name   局部名称
++     entry #resourceId   公开资源 ID，或 `Unset`
++     entry #value   带类型的值
++   entry .Element   一个元素：它的名称、属性和子元素
+
+% 1 1 0 06c798d95ea57ffc119a8196f77f876d
+
+@ 0 8 0 1b5ec9e015bfdfbd1a6ad824cbb09303
++         `Axml.Element(name, attributes, children)`。
++     entry #name   元素的名称
++     entry #attributes   元素的属性，按顺序排列
++     entry #children   子元素，按顺序排列
++   entry .encode   元素树对应的二进制 XML 文档，作为 `Data`
++       写出数据块头、字符串池（每个名称、命名空间和字符串值，按首次使用的顺序驻留）、属性 ID 的资源映射、`android` 命名空间声明以及元素树，每个数据块都 4 字节对齐。
+
+@ 0 1 0 1a7a78a9fc7b7b0815359e90e39cc798
++ entry .apkOptions   Android 包的设置：API 级别、包名、标注、版本、权限、密钥库
+
+% 1 1 0 0ef420562bb2ea6f0269018cdc73f4df
+
+@ 0 4 0 0d85026c3c1c889608d47fcdbf109940
++       每一项都是一个在 `Apk` 节点上编辑 `Apk.Configuration` 的 `Toolchain.Setting`；只有 `.minApi` 同时作用于 `Dex`，因为这个级别既决定 D8 如何脱糖，也决定清单声明什么。
++       级别以外的 dex 设置（`dexOptions.mode`、`dexOptions.platform`）作用于 `Dex` 节点。
+
+% 2 1 0 13230623721467ed1d9a5635fa9d1280
+
+% 3 1 0 1cfcc597af27602c055e7753a4496d78
+
+% 5 1 0 03349d882e3b6d9208a1533ebe79c5b2
+
+% 6 1 0 13a4e59421ca135e1d22c5160b4b9469
+
+% 0 1 0 02651bd544b3afea1ca463f54cc326a0
+
+% 0 1 0 178d396a357c79d70ceb08e953075685
+
+% 0 1 0 03d84b0843568a77056d6d9ee901b518
+
+% 0 1 0 06fd3b5796f6043503c4d827ecdf81c7
+
+% 1 1 0 192a345e67e3abe0070cad31c39ed8b8
+
+@ 0 10 0 02649e1e405fdb6f1ce1bcc689a15ffd
++   entry .minApi   最低 API 级别，同时应用于 `Dex` 和 `Apk`
++       根据所应用的格式分派：在 `Dex` 上是 `DexConfiguration`，在 `Apk` 上是 `Apk.Configuration`。
++   entry .targetApi   应用程序的目标 API 级别
++   entry .packageName   Android 包名
++   entry .label   应用程序面向人的标注
++   entry .version   版本代码和版本名称，一起设置
++   entry .permission   添加一项请求的运行时权限，例如 `android.permission.VIBRATE`
++       可重复：每次调用追加一项。
++   entry .keystore   PKCS#12 密钥库路径、其密码、密钥别名和密钥密码
+
+@ 0 1 0 1f336ca6082230c804406cc28f6f6476
++ entry .apkEdges   打包边：从 `Dex` 到 `Apk`
+
+% 1 1 0 1b95294e04293b2b09828f7f5154d174
+
+@ 0 8 0 028e2d99354b2c770f22ad7cabed49c2
++       `apkEdges()` 是只有一条边的列表，它使用路径上位于它之前的 `Dex` 边所产生的 dex 归档，因此通常搭配为 `Toolchain(dexEdges(), apkEdges())`。
++       名为 `apk` 的工具要求恰好一个 `EntryPoint`（否则为 `NoEntryPoint` 或 `ManyEntryPoints`），编码清单，以不压缩、4 字节对齐的方式存储归档中的每个 `classes*.dex`，写出 `unsigned.apk`，为它签名，然后写出 `app.apk`。
++       无法读取的 dex 归档或无法写出的包，都是原因为 `Packaging(detail)` 的 `Link.Error`。
++   entry .apply   打包边
+
+@ 0 1 0 0aff9641fc32b56414b1d49a05d7e6c8
++ entry .OciConfiguration   写入 OCI 制品配置的元数据：架构、操作系统、作者、注解
+
+% 1 1 0 15847d21bdafc0400f12662cc5eab4b0
+
+@ 0 5 0 18aa2cfe4147aa9d1ca1c799fd799e76
++       OCI 工具的设置类型，由 `ociOptions` 编辑；默认值为架构 `wasm`、操作系统 `wasip2`，没有作者，也没有注解。
++       `#os` 指明组件构建时所针对的 WASI 世代：容器运行时根据这个字段进行分派，它随 WASI 而变化——`wasip1` 对应 preview-1 系统调用 ABI，`wasip2` 对应组件模型，`wasip3` 则在原生异步落地之后使用。
+
+% 2 1 0 0c2927b5ea9ac45305a84be23102b852
+
+% 3 1 0 0a6ecd2615cfcf8d1affbdec9693fe0e
+
+% 0 1 0 18a5198cce5a7b7c12552eb2004d4c86
+
+% 0 1 0 097ba3832ef71b5514782c3a03c7e633
+
+% 1 1 0 1ddf5c763a2fced504d7f5a268ed505b
+
+@ 0 4 0 0b5b502a7e9e5737168c978dcc8a8a70
++   entry #architecture   平台架构，默认为 `wasm`
++   entry #os   平台操作系统，即 WASI 世代：默认为 `wasip2`
++   entry #author   制品的作者，或 `Unset`
++   entry #annotations   OCI 注解，作为映射
+
+@ 0 10 0 1f027631c103c0891f9caed79fcdb102
++ entry .OciImage   打包为 Wasm OCI 制品的 WASI 组件，写为 `oci-archive`
++     id 为 `oci` 的应用程序节点，由 `Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())` 从 `Toolchain.Universe.Sjsir` 经由 `wasip2` 组件到达：这是带有 Wasm shim（`io.containerd.wasmtime.v1`）的容器运行时所调度、由镜像仓库分发的形式。
++     该工具把 `image.tar` 写入输出目录，组件位于它旁边的 `linked/wasip2/` 中。
++     它的 `component` 元数据——工作负载导入和导出的接口——从组件链接时所针对的 `Wasi.World` 读取，而不是从二进制文件读取；导出 `wasi:http/incoming-handler@0.2.0` 的 world 会被标记为目标 `wasi:http/proxy@0.2.0`，正是这一点让宿主知道该组件可以提供服务。
+
+@ 0 1 0 04610546023663ad08dd0f51dfc08e34
++ entry .ociOptions   OCI 镜像的设置：架构、操作系统、作者和注解
+
+% 1 1 0 11bd2c1d7073623e1fe59204ac6e57c6
+
+@ 0 1 0 11144e62dd75b6dc0265b3e607fcba95
++       每一项都是一个在 `OciImage` 节点上编辑 `OciConfiguration` 的 `Toolchain.Setting`。
+
+% 2 1 0 1bae4957a291e1be0353cada3b1ce63a
+
+% 3 1 0 1feb58087ca7592d1db1d0fe1b117bf2
+
+% 5 1 0 05b93819edda9dba19938fdeb073fac1
+
+% 6 1 0 1095569b0bcc5db1158eaae6aef6439a
+
+% 0 1 0 1506fe343d5baa6f07d6b53c3647c691
+
+% 0 1 0 19b962048c90c63f0de6234b4e9e38ee
+
+% 1 1 0 03e9f00c7649b4f40d267072a91931e2
+
+@ 0 5 0 0d16c739f81b03df0bc706bbad3ed287
++   entry .architecture   平台架构（默认为 `wasm`）
++   entry .os   平台操作系统，即 WASI 世代（默认为 `wasip2`）
++   entry .author   制品的作者
++   entry .annotation   按键和值添加一个 OCI 注解
++       可重复：每次调用再定义一个键。
+
+@ 0 1 0 11ac0c1a0c2a4c8919f93614a2d5a8f5
++ entry .ociEdges   包装边：从 `wasip2` 组件到其 `OciImage`
+
+% 1 1 0 1d09cf93fcac8fa30f35e462287207cd
+
+@ 0 10 0 100403ce67ee8708112f950c460b66dc
++       `ociEdges()` 是只有一条边的列表，从 `Wasi(Wasi.Version.Wasip2)` 到 `OciImage`，以 given 的形式接受 `Wasi.World`。
++       名为 `oci` 的工具使用前一条边（`sjsEdges.wasi()`）链接的组件，通过 embarcadero 的 `Image.wasm` 构建镜像，其中 world 的导入和导出从 world 目录顶层的 `.wit` 文件读取（只搜索这一层：`deps/` 中存放的是 world 所依赖的包，其中没有一个声明 world 本身；找不到的 world 不贡献任何接口，而不是导致失败），然后写出 `image.tar`。
++       这条边本身只需要 world——由组件边的提供者去探测 WASI 工具链——因此不安装 `wasm-tools` 也能检查它的图形状。
++       抛出异常的写入会抛出原因为 `Failed` 的 `Link.Error`。
+
+% 2 1 0 10468ae43dbbd49b050862605204ca00
+
+% 3 1 0 0061f3491b12e7950b5e7a727c402a89
+
+% 4 1 0 04ff4e7ff24727e111e62f3c89fe9636
+
+% 0 1 0 077c78bdbf9b3dd40dfc2fcce5e945b7
+
+% 0 1 0 10a7d292ac57b1230f4303a7be5decfb
+
+% 0 1 0 18405e7ebef15e7f12d79cda6de59615
+
+% 1 1 0 1613e4cba1aba10d05b7363b8237d7af
+
+% 1 1 0 1caa4d516486d7d808fdf18095e9bcae
+
+% 1 1 0 0642cb25da4aad2e16615e8be236405d
+
+@ 0 1 0 13d9850eef3bbae705f04e6fdaf2619b
++   entry .apply   包装边，需要给定一个 `Wasi.World`

@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 12449672bad8caa5135a98b985856cd2
+
+@ 0 2 0 0f86df0190823637185b3a16f206f4c9
++ 当 Distillate 无法把文本值解码为数值类型时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 6 0 1de50e6ec4b54fa31d0b7bf1e8b7a114
++ Distillate 为数值基本类型提供的 `Decodable in Text` 实例通过 JDK 的数字解析器解析输入，然后依据目标类型的边界检查范围。
++ 构造器记录出错的 `text`、`specializable`（目标类型）以及一个 `reason: Reason`；渲染出的消息为 `$text is not a valid $specializable because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 19dda8f4ff93aeb90f0ad888562693f9
+
+@ 0 3 0 072d9c0b4e25b328176cac9230332bc1
++ 输入对目标类型而言不是语法上有效的数字——`Integer.parseInt`（或同类方法）抛出了 `NumberFormatException`。
+
+@ 0 1 0 0afd67c4ebdb5629042434081fece0a6
++ **示例。** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
+
+@ 0 2 0 1e23c6696f04df8a1c033034332ba597
++ **解决方法。** 在解码之前清理输入，或对非数值的值加以防范。
+
+% 0 1 0 0c7f9fca9e9f0a991c8d833e612afa8e
+
+@ 0 4 0 0e0b05467c4746ef1f29597c64f8bc93
++ 输入是语法上有效的数字，但超出了目标类型可表示的范围——目前由 `Byte` 和 `Short` 解码器在整数超出其边界时抛出。
+
+@ 0 1 0 1728082eede3e2230f82632e059fa5e3
++ **示例。** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
+
+@ 0 2 0 0ccfab37794347bb1580fe375ec042ef
++ **解决方法。** 解码为更宽的类型（例如 `Int`），或在解码之前截断该值。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1dfb810349e636350de39c82796e9678
++ - 源代码：`lib/distillate/src/core/distillate.Number.scala`

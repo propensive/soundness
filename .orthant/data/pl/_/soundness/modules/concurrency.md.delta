@@ -1,0 +1,760 @@
+orthant 2 language
+
+@ 0 1 0 1f9771ce7643c4160c56db762ec2dc19
++ ## Współbieżność
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 2 0 18705431cb02e522159a7d8d23b57ca5
++ Współbieżność jest ustrukturyzowana. Zadanie uruchamia się wewnątrz nadzorowanego zasięgu,
++ który jest jego właścicielem, a zasięg nie kończy się, dopóki nie skończą się jego zadania:
+
+@ 0 3 0 11204b38de44e33f0f62840f22f7e339
++ - Zadanie wykonuje obliczenie na wątku i daje wynik, na który się oczekuje.
++ - Niepowodzenie w zadaniu propaguje się do zasięgu. Nie znika.
++ - Anulowanie zasięgu anuluje wszystko, co znajduje się pod nim.
+
+@ 0 4 0 1d9d5ba97c2c0c1e14ca9261c7e4f656
++ To, czy zadania działają na wątkach platformowych JVM, czy na jej lekkich wątkach
++ wirtualnych, jest wyborem dokonywanym w zasięgu.
++ [Współbieżność ustrukturyzowana](../../philosophy/structured-concurrency.md) przedstawia
++ uzasadnienie tego kształtu.
+
+@ 0 1 0 1b1cf6a6e5b760d8095321aec593b64b
++ ### O współbieżności
+
+@ 0 5 0 19aca4d1cedeebbd0dd858cd1ae9f366
++ Współbieżność nieustrukturyzowana przecieka. Wątek uruchomiony bez właściciela może przeżyć
++ kod, który go uruchomił. Wyjątek rzucony na nim znika, chyba że ktoś pomyślał o jego
++ przechwyceniu. Anulowanie fragmentu pracy oznacza wytropienie każdego wątku, który ten
++ fragment uruchomił. Czasy życia współbieżnych zadań nie mają związku ze strukturą kodu, więc
++ trudno wnioskować o tym, co nadal działa i co się z tym stało.
+
+@ 0 4 0 0d4fc0d3d17df1d31ef53744e071175f
++ Tutaj praca współbieżna ma ten sam kształt co zwykłe bloki. Każde zadanie jest dzieckiem
++ zasięgu, który je uruchomił, a zasięg czeka na swoje dzieci, zanim się zakończy, więc żadne
++ zadanie nie przeżywa swojego zasięgu. Niepowodzenie wędruje w górę do zasięgu, a anulowanie
++ zasięgu anuluje jego dzieci. Program współbieżny jest więc zagnieżdżony, a jego struktura
++ jest widoczna.
+
+@ 0 2 0 015c2c782156b90718b33c7d4c8c67e8
++ Wszystko pochodzi z pakietu `soundness`. W zasięgu są model wątków i polityka dla
++ niedokończonych zadań, a ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 12917706db95ec15052a93f6f8c02551
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0d2e9d8fdc8c8ced03df979d8a4622a3
++ ### Nadzorowany zasięg
+
+@ 0 3 0 1eeea3a7115242be1ef014c968115327
++ `supervise` otwiera zasięg, który jest właścicielem zadań uruchomionych w jego obrębie. Nie
++ zwraca sterowania, dopóki te zadania się nie rozstrzygną, więc praca współbieżna ma wyraźną
++ granicę. Poza takim zasięgiem nie można uruchomić żadnego zadania:
+
+% 2 1 0 187866a0857f217c0347746b8c32ebd5
+
+% 3 1 0 05cbad36b1d6255d1de7288015e7e3ec
+
+% 4 1 0 081a6b812bd423bb0c23d73238bc6d8d
+
+% 5 1 0 1acb89f06ad3587918774ccb9f5199e9
+
+% 0 1 0 0293ccc30ced8aa31fecc05275a509eb
+
+% 1 1 0 1d2300ace5f65a6f05eed8275ce0a638
+
+@ 0 1 0 08c2041206cc6a400cd2a0e028a55cdd
++ ### Uruchamianie zadania
+
+@ 0 2 0 10e733cf4bdf0eee14af540242894be5
++ `async` uruchamia zadanie, które działa współbieżnie. `await` czeka na zadanie i daje jego
++ wynik:
+
+% 3 1 0 1c1b32c8a68bca7d10b86f8bc9e3f1cd
+
+% 0 1 0 141a1d3443662aed0439b6bb0b239ec5
+
+% 0 1 0 12281f90b1d3e07400dca4f552cf3795
+
+% 0 1 0 07cd9ac03896cf9c015986e4620b4511
+
+% 0 1 0 1d6a4e77d6cc606a18ab9b5720d390a6
+
+% 1 1 0 0f9b87e5556b4fac10a4bf94702bf041
+
+% 3 1 0 1ce563473a272b1616facfdcece6066a
+
+% 4 1 0 06a2a581ebce0cae0d4ffd78841963d8
+
+% 5 1 0 084cc51511ef89fb11a05654781a13cb
+
+% 0 1 0 104e999933729ef41bc9ab1ea8942e77
+
+% 1 1 0 01fe61f03220e025032a32786c5cfe00
+
+@ 0 2 0 037c02e77a9cbc551ed9b4f42b0e7e9c
++ Zadanie należy do otaczającego zasięgu, więc zasięg je uwzględnia, niezależnie od tego, czy
++ jawnie na nie oczekiwano.
+
+@ 0 6 0 015f7ba91377ad41048574302a5ffcbe
++ Rodzicielstwo przekazuje `Monitor`. Zarówno `supervise`, jak i `async` wprowadzają go do
++ swoich ciał, ale `async` także go _konsumuje_, a `supervise` nie. To czyni `supervise`
++ korzeniem hierarchii, a `async` gałęzią pod nim, i dlatego każde `async` musi ostatecznie
++ wywodzić się z `supervise`. Gdy w zasięgu jest kilka monitorów, wygrywa najbardziej
++ wewnętrzny, więc zadanie zagnieżdżone trzy poziomy w głąb jest dzieckiem zadania, które
++ bezpośrednio je otacza, a nie zasięgu na szczycie.
+
+@ 0 1 0 0a63e9587dcb5675126f47895c5479d0
++ ### Dlaczego rodzic czeka
+
+@ 0 5 0 0b47d6bf34a761bc01b9e0499bdc7b2b
++ Zadanie nie może się zakończyć, ani przez wytworzenie wyniku, ani przez anulowanie, dopóki
++ nie zakończą się jego dzieci. To sprawia, że o zakończonym zadaniu można bezpiecznie
++ wnioskować. Weźmy rodzica, który zwraca wynik niemal natychmiast, podczas gdy dziecko dalej
++ liczy. O losie dziecka decyduje [postępowanie spadkowe](#cancellation-in-both-directions)
++ w zasięgu, a przy `awaitProbate` rodzic na nie czeka:
+
+% 2 1 0 02d8301e1f9bebfb1b3ab1d0256dc97c
+
+% 0 1 0 01859fdee6f50d440f514cc618c8f9e2
+
+% 0 1 0 1e09e85043cbd7450c18fc0657de5ba5
+
+% 0 1 0 092b0b0e1d9d73ac1e500ae4f2f94c95
+
+% 0 1 0 122be381deb3ea3e071349aa600f4a8c
+
+% 0 1 0 157af0964109f14614af7e895c0e076c
+
+% 0 1 0 15208b0de636e0020cbb792b9e05a998
+
+% 0 1 0 170c83660dd53373070ade442146f17e
+
+% 0 1 0 139928aed070e75c06390efa344ed95c
+
+% 0 1 0 146268c16901dfa80f99c8238bbb0d22
+
+% 0 1 0 0c1d40e55f31223a19d144115bb0ba9f
+
+% 0 1 0 076e970f40ba894901aad0783ac7cf1f
+
+% 1 1 0 0ea0d6fe7511fe47098881197a9d899a
+
+@ 0 5 0 0c878cc3edda94cb1ea4d3416fa4ef1f
++ Nic nie stoi między rodzicem a jego wynikiem. Gdyby `await` zwracało od razu, `written`
++ zostałoby odczytane, gdy dziecko nadal liczy. Zamiast tego `parent.await()` nie zwraca, dopóki
++ dziecko się nie rozstrzygnie. Przy `awaitProbate` oznacza to, że wykonano wszystkie jedenaście
++ inkrementacji. Przy `cancelProbate` dziecko zostaje zamiast tego anulowane, a rodzic nadal się
++ nie kończy, dopóki to nie nastąpi.
+
+@ 0 3 0 074caba4a233ef3413e99344c8262794
++ Taki jest ogólny niezmiennik. Gdy na zadanie już oczekiwano, na zasobach przechwyconych w jego
++ ciele nie może odbywać się żadne dalsze wykonanie, także na tych, które uciekły przez dziecko.
+
+@ 0 1 0 1e87d393b4f617331391043ba6d5350d
++ ### Łączenie zadań
+
+@ 0 2 0 0dbaf5effdeec0800c4083aa5bb222c4
++ Zadania dają się składać. Na kolekcję zadań oczekuje się razem przez `sequence`. Pierwsze,
++ które się zakończy, bierze się przez `race`. `map` i `bind` wyprowadzają jedno zadanie
++ z innego:
+
+% 2 1 0 17d70323ff153a191c5e7c0c52ec43bc
+
+% 0 1 0 0fc979378c7ec4dd08f74ca2620a2285
+
+% 0 1 0 16241756a5e2054214041c6faa49e0de
+
+% 1 1 0 0f2abdb269b8ba280f20c000e39de2da
+
+% 3 1 0 016458c7101727af0dda5a3bb0c744b0
+
+% 4 1 0 197adb4ce99c21d601902ae143defd83
+
+% 5 1 0 10c5fce14475af7908f273499f231606
+
+% 0 1 0 06bd7bbcce1a1d6212e9faedb0224a6d
+
+% 0 1 0 0bfe48cfb2c20731139a12e0727e9d0e
+
+% 1 1 0 1375de724767257918e252cfec9c7cd8
+
+@ 0 4 0 1d64d8c1d031d3fa045f72d485683c35
++ `sequence` uruchamia swoje zadania równolegle i zbiera wyniki _po kolei_, więc kolejność
++ wyników nie mówi nic o kolejności, w jakiej zadania się zakończyły. `race` daje wynik
++ pierwszego, które się zakończy, a pozostałe są anulowane, ponieważ ich wyniki nie były
++ potrzebne.
+
+@ 0 1 0 0c06c8083c0405de17dae687e0a9bcc9
++ ### Ograniczona równoległość
+
+@ 0 4 0 034e5c77efa2317914c58411a11e5afd
++ Zadanie to wątek, a jego uruchomienie kosztuje kilka mikrosekund, więc tysiąc tanich prac nie
++ powinno stać się tysiącem zadań. `concurrently` wykonuje ponumerowane prace na stałej liczbie
++ zadań. Każde zadanie bierze następną pracę ze wspólnego licznika, a wyniki są zwracane
++ w kolejności prac, gdy wszystkie zadania się zakończą:
+
+% 2 1 0 0f4e1a025689b9ac1e741dfe0c922666
+
+% 0 1 0 0804afc3f8646139176c84caee46854b
+
+% 1 1 0 1045e34294b8ffd2078be5aa3cf9d1ce
+
+% 3 1 0 0cbeb1a70d8257ff0efcaf02c6ea50b7
+
+% 4 1 0 1fa6fc2b5f9a04f315dece1c4953fe03
+
+% 5 1 0 182f05794cfa29aa150eff29dae59e34
+
+% 0 1 0 1e60a31cbf23d9430910a6c5daee6643
+
+% 1 1 0 1b63c56830ed3c68019a869220390ad5
+
+@ 0 4 0 082c9e8756d446e9045ef2e0459cad5e
++ Koszt uruchamiania płaci się osiem razy, a nie tysiąc. Żadna praca nie rusza, zanim nie
++ zostanie pobrana wcześniejsza, więc obciążenie równoważy się samo: powolna praca po prostu
++ zajmuje swoje zadanie, a pozostałe przechodzą przez resztę. Wyjątek w pracy powoduje
++ niepowodzenie zadania, na którym się wykonywała, i jest rzucany ponownie, gdy czeka się na
++ zadania.
+
+@ 0 1 0 08dad375620ba89e183ed81a53764077
++ ### Nazywanie zadań
+
+@ 0 4 0 0cda19fa2c157d4f167024a06c3cb912
++ `task` to `async` z nazwą. Nazwa jest sprawdzana w [czasie kompilacji][czas kompilacji]
++ względem reguł dla [nazwy](names.md) zadania. Nie zawiera separatorów ścieżki, ponieważ nazwy
++ składają się w hierarchię, która odzwierciedla drzewo zasięgów. Wewnątrz zadania
++ `monitor.name` to własna nazwa zadania, a `monitor.stack` to pełna ścieżka:
+
+% 2 1 0 0b7353172a08504c1709c51cd86cacd1
+
+% 0 1 0 052755a73ca1e7590925e554a95bf7f9
+
+% 0 1 0 07bcb2eb1f1228951b187c555be09f19
+
+% 1 1 0 01c9523553ba6b9118e019e1285b280d
+
+% 3 1 0 198d3a03ef9684bf09515c490e33a347
+
+% 4 1 0 064aa7b488ecff681e00fd645f2d6eef
+
+% 5 1 0 15879d00cad8dff61545d3172cb82e05
+
+% 0 1 0 02fccc0000ab980312ce5ee9371b57d2
+
+% 1 1 0 1fc9e4f095ef543c16554eb51d4e56ef
+
+@ 0 3 0 0d986e445dd50bc601d0f1176adc77e3
++ Nazwane zadania czynią działający program czytelnym. [Ślad stosu](stack-traces.md), zrzut
++ monitorów albo [debuger](debugging.md) pokazuje `server/connection-4/reader`, a nie
++ anonimowy numer wątku.
+
+@ 0 1 0 19167f39cd895172140283cd65116a9e
++ ### Anulowanie
+
+@ 0 3 0 0e4ae093ca50aa3b06a27baf266d451e
++ Zadanie anuluje się przez `cancel`. Zadanie, które można anulować, współpracuje, zatrzymując
++ się w punktach, w których może zostać przerwane. `snooze` jest takim punktem, więc zadanie,
++ które w nim śpi, budzi się na swoje anulowanie i nie działa dalej:
+
+% 2 1 0 00cd1791f0ac6f10039ac810fbab4003
+
+% 0 1 0 110538a70a9bb033126ab250afa68e7f
+
+% 1 1 0 077ed1c40e96d3730d6dbd7bb779de14
+
+% 0 1 0 11a9873003828c4f17bbe45e628fb375
+
+% 0 1 0 1c85da4c359d20f5019392b30386b53f
+
+% 2 1 0 1aa1cae3c7249b231b21f1b64baa06f0
+
+% 0 1 0 03c9b4547e2833481b1855a577fa82e5
+
+% 1 1 0 095c4a1b3a88ca2e1f460eb9d1aff8c3
+
+% 3 1 0 00042c387c2f3c891edc8cec202c7595
+
+% 4 1 0 13d1655d16074aec0ce7233300f342f8
+
+% 5 1 0 1ef3773f2959df9c044002606b8bc763
+
+% 0 1 0 05ac6353c9e2e28d138b15f67c5e2bdb
+
+% 1 1 0 0b8686263d6f8eeb1efe86049696a176
+
+@ 0 4 0 0ac884463421aa9513296bea9a9ed34d
++ Praca, która się nie zatrzymuje, musi sama zgłaszać swoje punkty anulowania. `relent()` jest
++ takim punktem. Gdy zadanie działa normalnie, nic nie robi. Jeśli zadanie zostało anulowane,
++ zatrzymuje się tam, nie wytwarzając wartości. Zadania, którego ciało nigdy nie wywołuje
++ `relent()` i nigdy się nie zatrzymuje, nie da się w ogóle anulować i musi ono dobiec końca.
+
+% 2 1 0 0405aa4ab4594c44085a3b4aea9e6de8
+
+% 3 1 0 1078c5fcd8c196880261b18efec6199f
+
+% 4 1 0 1f32752476ee44f9070a6f566323a467
+
+% 5 1 0 0b5efaa3dc7d51ad053c3200c26b6457
+
+% 1 1 0 0bef7e92673ed0c9081bab8ed9a5eafe
+
+% 0 1 0 13e86b9ca094d29902791dbead6c58f7
+
+% 0 1 0 1c36b60b12c7b6490d1af0af57754fe6
+
+% 0 1 0 179b1c7504cfc78a069779c69446953b
+
+% 0 1 0 1343933051a71fdb138329113e5bdbec
+
+% 2 1 0 0e7809b0dc76dd2a0b915e692c13a019
+
+% 1 1 0 1ad1692b00e482a51706afd3f45a7087
+
+@ 0 3 0 14208b1aec1155cb17011a2e8b88b70d
++ Zadanie anulowane w `relent()` nigdy nie dociera do inkrementacji w następnym wierszu. Nadal
++ jednak najpierw odczekuje pauzę, ponieważ `sleep` nie da się przerwać, i właśnie tej różnicy
++ dotyczy następna sekcja.
+
+@ 0 1 0 1f69f3e9d3a9991d0bc662e6b0469089
++ ### Pauzowanie
+
+@ 0 2 0 0645297e7905acba0ee1f1a7f4ecca28
++ Dwie metody tymczasowo zatrzymują bieżące zadanie. Różnią się w jednym: czy pauza może
++ skończyć się wcześniej, ponieważ zadanie zostało anulowane.
+
+% 2 1 0 11ea85fc9d92609519e525896cff2a07
+
+@ 0 4 0 008fa2d9b69e0ea70a49873cac0ac179
++ column  Metoda
++ column  Gdy zadanie zostanie anulowane w trakcie pauzy
++ row  `snooze`  zadanie budzi się od razu: to punkt anulowania
++ row  `sleep`  pauza trwa przez pozostały czas, więc zawsze trwa pełną długość
+
+% 1 1 0 01bda9aa92050be31f55474f467d2c05
+
+@ 0 2 0 11c28d28f53bbbb31214f5ae2f4bed19
++ Nazwy wybrano tak, by je zapamiętać, a nie sprawdzać. _Snooze_ to przycisk drzemki
++ w budziku, który może zostać przerwany drugim alarmem, a _sleep_ to sen, który przesypia się
++ do końca.
+
+@ 0 2 0 1945cb0fc641461414935d4e4ef3c6f6
++ Każda z nich przyjmuje albo _czas trwania_, albo _chwilę_, a typ argumentu mówi, o które
++ chodzi. Czas trwania wstrzymuje na tak długo, a chwila – do momentu jej nadejścia:
+
+% 2 1 0 128dfddc8f1002700582e693de9e213c
+
+% 3 1 0 1858be2389c3613a03e2b4ac2217b377
+
+% 4 1 0 05e0d58002388b5d1fb81fc7917ad99f
+
+% 5 1 0 013eed0aa88c281e1df3d20e009aadf3
+
+% 0 1 0 0e97a1a16558265500bc0a7de10a4d5a
+
+% 0 1 0 17f8e3a71ba2a2e30ec1e3b81a41e618
+
+% 0 1 0 19035d76541fe4c518c1ce197bd8fc69
+
+% 0 1 0 1e7ae6d1dd3579ad1fe9aa1ecf561b50
+
+% 1 1 0 0c2ac1115c0394030a20e83978b9003b
+
+@ 0 4 0 1d8162c783ffb6ab1018fea9ee5cade8
++ Ograniczenie wspólne dla obu to `Schedulable`, które spełnia każdy typ będący
++ `Abstractable across Durations` albo `Abstractable across Instants`.
++ [Wielkość](quantities.md) czasu, [`Timespan`](time.md#durations-and-timespans)
++ i [`Instant`](time.md#instants) są więc akceptowane bez przeliczania.
+
+@ 0 1 0 1e5e244fdb968dac0600df2281844823
++ #### Jednostki
+
+@ 0 3 0 0c5149cf0b38ec5e0f529a3851a52a42
++ Obie przyjmują _typowany_ czas trwania albo chwilę, na przykład `0.2*Second` albo
++ `10*Minute`, a wartości typowanej nie można źle odczytać. Gołą `Long` można, więc nic jej nie
++ interpretuje, dopóki jednostka nie zostanie wybrana po nazwie:
+
+% 2 1 0 082748727bb5c24b0211ca0855f61b15
+
+% 3 1 0 0699cfe69c2bc2da194be457059ed30e
+
+% 4 1 0 1355ca0321b574fc15d8546a9bbe1e72
+
+% 5 1 0 0d9eab65e92ee9c014b7dc0ee0b4d4cd
+
+% 2 1 0 0b4358bacbe92e5b03a19bf87e22d143
+
+% 3 1 0 02b8830fc7bdf4811f67cea26431f03d
+
+% 1 1 0 07b6af20d8e0d0f11a3e1cfe1d984852
+
+@ 0 1 0 153189b9537dbf2d197374168398b176
++ Pakiet `abstractables` ma cztery odczyty `Long`:
+
+% 2 1 0 0e1f85375ac8f0c01124d423a747db03
+
+% 3 1 0 1590d8950821d3d60db7de824156bd09
+
+@ 0 5 0 13aa84d458fe1ab30ddaeb89a206dd3e
++ column  Odczytuje `Long` jako
++ row  `nanosecondsAbstractable`  czas trwania w nanosekundach
++ row  `microsecondsAbstractable`  czas trwania w mikrosekundach
++ row  `millisecondsAbstractable`  czas trwania w milisekundach
++ row  `epochMillisecondsAbstractable`  chwilę, w milisekundach od początku epoki
+
+% 1 1 0 1b1b1f2346b7148c074573610853b48e
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 1053b7f4d00925d113a294eb36bd355e
+
+% 1 1 0 1334d90e5c6fd7a004c8b159c3e423ee
+
+% 3 1 0 19567ce6fe9c42861a6b987dfa95d113
+
+% 4 1 0 104b8b0bc0dd725a12882564c7a531cd
+
+% 5 1 0 07be78ae7dd77669134615c653271756
+
+% 2 1 0 1a368bfc188036401f33932dc0a45427
+
+% 3 1 0 12ad434aa2ad53c90316913a799f8c2d
+
+% 0 1 0 1f758951ad44e7c10009f2d9d7532662
+
+% 1 1 0 07928d2144f19d560e93dea8ac54e529
+
+@ 0 5 0 0e682f5c06b785c90ca2f7def43f5c4e
++ Trzy odczyty jako czas trwania mają wspólny typ, więc do pliku można zaimportować dokładnie
++ jeden z nich. Pakiet `instantiables` odzwierciedla wszystkie cztery, dla przeciwnego
++ kierunku. Odczyt jako czas trwania i odczyt jako chwila nie mogą być jednocześnie w zasięgu
++ tam, gdzie przekazuje się gołą `Long`, ponieważ nic w wywołaniu nie mogłoby wtedy wskazać,
++ o który chodzi, i oba są zgłaszane jako niejednoznaczne.
+
+@ 0 3 0 04a1ed52e66e679009c1c57ed7fdb7ff
++ To rozróżnienie ma znaczenie, ponieważ wewnętrzną reprezentacją czasu trwania są
++ _nanosekundy_. Niekwalifikowane `snooze(200L)`, odczytane w nanosekundach, wraca niemal
++ natychmiast, a pętla wokół niego jest pętlą aktywnego oczekiwania, przy czym nic w wywołaniu
++ tego nie sygnalizuje.
+
+@ 0 1 0 063dc3dee3650bb31a79020a7e255be0
++ ### Ponawianie
+
+@ 0 5 0 1c81ecc9b07582c602f1f1ca6af7050b
++ Pracę, która zawodzi z przejściowego powodu, należy spróbować ponownie. _Harmonogram_, według
++ którego się ją ponawia, jest wartością, a nie pętlą pisaną przy każdym użyciu. `retry`
++ wykonuje blok przy `Tenacity` w zasięgu, które decyduje, jak długo czekać przed każdą próbą
++ i kiedy przestać. Blok otrzymuje w pożyczce dwie operacje: `persevere()` prosi o kolejną
++ próbę, a `surrender()` od razu się poddaje.
+
+% 2 1 0 06099b77f0ebda240ea65b41619edc8f
+
+% 0 1 0 041f58525b124e6a1e2ea54b00b4cad7
+
+% 0 1 0 12ec514cb3890b791fa33ee5710105ee
+
+% 0 1 0 0fb8bf7f261f9609063e9408cc17ae19
+
+% 0 1 0 026292ca2031575815b8a6cfe1da71f8
+
+% 0 1 0 1b9a9eedabe0709e08b863225c90138e
+
+% 0 1 0 04059eb0cbace45805db0a20c76792d3
+
+% 0 1 0 1d6cc1aac4c0c96f0bc18b9a40a2e900
+
+% 0 1 0 0c9fb078691400de0acfee61c9e13104
+
+% 1 1 0 03181cc24233f765064181dbc5507f93
+
+% 3 1 0 1c8a6529701510cb0c1ca15fe3554856
+
+% 4 1 0 135cb23b1effc0d41ff21f332a6a659d
+
+% 5 1 0 0713795e0e631a4402cdce14a5584431
+
+% 0 1 0 00be904f0fbcd3781eca1d2f08cec8d7
+
+% 0 1 0 01dad929d215e46b1e4f73dd3f68187c
+
+% 1 1 0 1495032e80f389830077539fea1e7c98
+
+@ 0 1 0 09a4218ef806f37b1240ca9373507df4
++ Harmonogramy dostępne w pakiecie `retryTenacities` obejmują zwykłe wybory:
+
+% 2 1 0 186a5af5072195391f23ab17e9ab86a3
+
+% 3 1 0 1bfdaff7559f497c1484787d80b87cab
+
+@ 0 8 0 00d3acf27033b6e7074727d84eb4365f
++ column  Opóźnienie przed ponowieniem
++ column  Próby
++ row  `exponentialForeverTenacity`  10ms, rosnące za każdym razem 1,2 raza  bez ograniczeń
++ row  `exponentialFiveTimesTenacity`  10ms, rosnące za każdym razem 1,2 raza  5
++ row  `exponentialTenTimesTenacity`  10ms, rosnące za każdym razem 1,2 raza  10
++ row  `fixedNoDelayForeverTenacity`  brak  bez ograniczeń
++ row  `fixedNoDelayFiveTimesTenacity`  brak  5
++ row  `fixedNoDelayTenTimesTenacity`  brak  10
+
+% 1 1 0 0ff18d01461853d9187384fb9a4832ee
+
+@ 0 2 0 080c83fd900d6f940a3c67722e3446d7
++ `Tenacity.exponential` i `Tenacity.fixed`, z `limit`, budują inne. Wyczerpanie prób zgłasza
++ `Tenacity.Error`, który podaje, ile ich wykonano.
+
+@ 0 2 0 1d3ba74486bacef81c5ca34c2f77dd27
++ Ciało odróżnia więc niepowodzenie, które warto ponowić, od takiego, które nigdy się nie
++ powiedzie, a harmonogram decyduje o reszcie.
+
+@ 0 1 0 01580e5910c0078a1da3f9225b44e8c2
++ ### Obietnice
+
+@ 0 3 0 0f347fd304c8b95f1827124fc302cd76
++ `Promise` to wartość, która zostanie dostarczona później, być może przez inny wątek. Jedna
++ strona na nią oczekuje, a druga ją spełnia, i w ten sposób praca wykonywana gdzie indziej
++ oddaje wynik:
+
+% 3 1 0 197282a21bd6cbbe1a742b7d4d049a5f
+
+% 0 1 0 1c38052a3a66e47f0ad84c6a6ea352ae
+
+% 0 1 0 006d0a2fa114b02a03202eb6b5a5320f
+
+% 0 1 0 102e0bd1352b637c144113c5025fefbf
+
+% 0 1 0 01aa8d9f86be9fdc098f8c7d9ca35be7
+
+% 1 1 0 0048eaddda0a456211e948511355387a
+
+% 3 1 0 17e1d5d73c4e80911b26ac6016b0ebe5
+
+% 4 1 0 0e144ce8a47acf780e0b928b2adcbc92
+
+% 5 1 0 15a8392a486a482700902c12924e9ce3
+
+% 0 1 0 1c80607a9be3c0fd050bfabec604f7ad
+
+% 1 1 0 078e543c8764fbed0084b2a2b7b4669f
+
+@ 0 1 0 0442b2def44dd4cb0493e6eaf40703a6
++ ### Demony
+
+@ 0 3 0 037b981005435aac1569b82c54452f4b
++ `daemon` to praca, którą się uruchamia i zostawia: pętla w tle albo listener. Zasięg nie
++ czeka na nią i anuluje ją, gdy się kończy. Działa przez czas życia swojego zasięgu i nie
++ dłużej.
+
+@ 0 6 0 027d39c7b73e49a50ec87a9cb11fb4a7
++ Ciało demona jest _higieniczne_: nie może przechwycić handlera błędów z kodu, który je
++ uruchomił. Jest to celowe. Kod uruchamiający już poszedł dalej, więc handler w nim w żadnym
++ sensownym znaczeniu nie obejmuje demona, a dostarczenie mu błędu oznaczałoby wznowienie
++ obliczenia, które się zakończyło. Demon, który zawodzi, eskaluje więc jako `Fault`, który
++ program przechwytuje tam, gdzie obsługuje nieoczekiwane. Nigdy nie trafia po cichu do
++ handlera, który nie był dla niego przeznaczony.
+
+@ 0 1 0 1aae990c81c58f2e0dfeb8273290074f
++ Długo działająca usługa to coś innego i opisują ją [Demony](daemons.md).
+
+@ 0 1 0 16f45a28a00c602b0daf790ea2641681
++ ### Limity czasu
+
+@ 0 3 0 12db8325849c4464131a296fe11d6ca0
++ `await` może otrzymać czas trwania, po którym zgłasza `Async.Error`, zamiast dalej czekać.
++ Zadanie, które trwa zbyt długo, zostaje w ten sposób porzucone, w punkcie wybranym przez kod:
+
+% 2 1 0 1f14dfcb0f744640177634c133101aca
+
+% 0 1 0 0cf1ceb4d66646ff04f7de0ef36c0f97
+
+% 0 1 0 1bc3433a8a7d75f4167698fbc60f0550
+
+% 0 1 0 143a003d7c6514da109bf6df25502192
+
+% 1 1 0 0731e35079b42d6b064c1635f5c8f08e
+
+@ 0 2 0 0d5fcf7aaec1f825091b46ac07f3ff68
++ `safely` zamienia błąd w `Unset`, więc wywołujący widzi brak wyniku, gdy termin upłynie,
++ zanim zadanie się zakończy.
+
+@ 0 1 0 0a4f58e5ef23deda1baed55ead369647
++ ### Anulowanie w obu kierunkach
+
+@ 0 2 0 11866219fe471ba5025d00c4f3048f0a
++ Anulowanie zasięgu anuluje jego dzieci. _Postępowanie spadkowe_ decyduje, co dzieje się
++ z dzieckiem, które nadal działa, gdy ciało jego rodzica się kończy:
+
+% 2 1 0 1442aa2d408bca010bb88cabbc0909d8
+
+@ 0 6 0 03d8451127d35e9d1228253d046422af
++ column  Postępowanie spadkowe
++ column  Niedokończone dziecko
++ row  `cancelProbate`  zostaje anulowane
++ row  `awaitProbate`  jest wyczekiwane
++ row  `failProbate`  sprawia, że `await` rodzica zgłasza sprawdzany `Async.Error`
++ row  `panicProbate`  sprawia, że `await` rodzica wpada w panikę
+
+% 1 1 0 02706a5075b95ec90099104317003c59
+
+@ 0 1 0 0a1d0e6b3d78aba714bc8da8155ab7f3
++ Wybór wynika z tego, co robią dzieci:
+
+@ 0 8 0 11773bf43da341a7110549524ba42789
++ - Praca, która zmienia stan, wymaga `awaitProbate`, aby każde dziecko dobiegło końca.
++   Przykładem jest zapis na dysk, gdzie zapis zakończony w połowie pozostawia niespójny stan.
++ - Czysta praca, bez efektów ubocznych, może przyjąć `cancelProbate` i zatrzymać się
++   w dowolnym miejscu, ponieważ nic nie obserwuje różnicy.
++ - Kod zaprojektowany tak, by oczekiwać na każde uruchomione przez siebie zadanie, chce, aby
++   zapomniane `await` było błędem, a nie cichym czekaniem. Do tego służą `failProbate`
++   i `panicProbate`, sprawdzany albo niesprawdzany, zależnie od tego, jak program obsługuje
++   nieoczekiwane.
+
+@ 0 4 0 0974a0f13662fc480aa5cc09483a66ac
++ Anulowanie biegnie też w górę. Zadanie, które zawodzi, propaguje swoje niepowodzenie do
++ zasięgu, który jest jego właścicielem, a zasięg anuluje swoje pozostałe dzieci. Praca, która
++ straciła sens, zatrzymuje się więc i nie zużywa dalej zasobów na rzecz obliczenia, które już
++ zawiodło.
+
+@ 0 1 0 196fef05ed7e63510d54b55e04550f4c
++ ### Wątki
+
+@ 0 1 0 0c6ee9a10b3e460216ca40fe784e1dea
++ Model wątków wybiera się importem z pakietu `threads`:
+
+% 2 1 0 07591f5c23f4f2b70172a4f62a0ac505
+
+@ 0 7 0 08c082ec6bd4d86016597594364866ec
++ column  Model wątków
++ column  Wykonuje każde zadanie na
++ row  `platformThreads`  własnym wątku platformowym
++ row  `virtualThreads`  własnym wątku wirtualnym; przed Javą 21 zawodzi w czasie wykonania
++ row  `adaptiveThreads`  wątku wirtualnym tam, gdzie istnieją, a wątku platformowym tam, gdzie nie
++ row  `pooledThreads`  wielokrotnie używanym wątku nośnym: wirtualnym na JVM, platformowym w Scala Native
++ row  `javascriptThreads`  pętli zdarzeń Scala.js
+
+% 1 1 0 0a8b4548b715806e0bdf9e0461a5a725
+
+@ 0 4 0 1ff1d84b05da54f10a53ceeb02955089
++ Wątki wirtualne są na tyle tanie, że można je uruchamiać w wielkich liczbach.
++ `adaptiveThreads` to import dla aplikacji, która nie może narzucić swojej JVM. Przy
++ `javascriptThreads`, gdzie w ogóle nie ma wątków, ten sam kod, z `supervise`, `async`
++ i `await`, działa bez zmian.
+
+@ 0 8 0 03328abf701f1980051972f23afa6fe8
++ `pooledThreads` przekazuje każde nowe zadanie bezczynnemu nośnikowi, jeśli któryś czeka,
++ a nowy uruchamia tylko wtedy, gdy żadnego nie ma. Przekazanie zadania kosztuje kilkaset
++ nanosekund, podczas gdy uruchomienie wątku i czekanie na niego kosztuje kilka mikrosekund,
++ więc pasuje to do drobnoziarnistej pracy: zadania dla każdego elementu albo uruchomienia
++ i oczekiwania wewnątrz pętli. Zadanie, które się blokuje, zatrzymuje swój nośnik, a pula
++ rośnie, więc nigdy nie dochodzi do zagłodzenia, a anulowanie jest dostarczane do zadania,
++ nie do nośnika. Ceną jest to, że zadanie nie ma już własnego wątku. Zmienne lokalne wątku
++ utrzymują się między zadaniami, które wykonuje nośnik, a zrzut wątków pokazuje nośniki,
++ podczas gdy drzewo monitorów pokazuje zadania.
+
+@ 0 1 0 0731f34f496f5eb4150033acac19622d
++ ### Przechwytywanie zdarzeń maszyny wirtualnej
+
+@ 0 4 0 0b097c15e893a6c70c2520e65add6aaf
++ Niektóre zdarzenia nie należą do żadnego zasięgu: zamykanie maszyny wirtualnej, wyjątek
++ uciekający z wątku, którego nikt nie jest właścicielem, działanie odśmiecacza. Przechwytuje
++ się je na `Vm`, które reprezentuje działającą maszynę wirtualną. Akcja wykonuje się za każdym
++ razem, gdy zachodzi zdarzenie, dopóki zwrócony `Hook` nie zostanie anulowany:
+
+% 2 1 0 154a634600ae70f612597ee3edc29f5b
+
+% 3 1 0 1aca97eb99eddba10705e6cb7a38368d
+
+% 4 1 0 1542a457e6b01ab00390b73d83e74f5e
+
+% 0 1 0 193bb5f45c008cdf1e8c72f855308f3c
+
+% 0 1 0 1656060f1572b1631fc9646f44908628
+
+% 0 1 0 11e574a6c06464f20ddebe6ab9b19bd1
+
+% 1 1 0 0f086421a358df040e699cbd2e61b250
+
+@ 0 6 0 1c7cf7b67d62a5bf126989c056fb56c7
++ `Vm.intercept[Shutdown]` wykonuje swoją akcję raz, gdy maszyna wirtualna kończy działanie,
++ czy to przez `System.exit`, czy przez zakończenie ostatniego wątku niebędącego demonem, czy
++ po `SIGINT` albo `SIGTERM`. Właśnie tam serwer usuwa plik gniazda, na którym nasłuchiwał,
++ aby przestarzały plik nigdy nie powitał następnego procesu. Akcje zamknięcia wykonują się na
++ własnych wątkach, współbieżnie i w dowolnej kolejności. Wyjątek w jednej z nich jest
++ połykany, aby nie mógł przeszkodzić w wykonaniu pozostałych:
+
+% 2 1 0 08b01df4f6df89620e49b9cd3a635691
+
+% 3 1 0 08587cc970f1ee03062af82749d7985d
+
+% 4 1 0 0c418e6436f0354c1e69241fd417b6de
+
+% 0 1 0 13304ae640579838001802acfe4ee594
+
+% 0 1 0 1341b543162e06e91d66914643c1a6b1
+
+% 1 1 0 0b41d9f5b222472c0996e3f7fb14fa37
+
+@ 0 1 0 0e17e3886fd946961ebfa5ba9e34b588
++ [Środowisko](environment.md#the-machine) opisuje pozostałe fakty o maszynie.
+
+@ 0 1 0 04745d80c31a35e3107af20ae1f58444
++ ### Wstrzymanie jako efekt
+
+@ 0 4 0 0afee7f702ef2909123294f875c4c4e5
++ Czekanie nie jest darmowe ani niewidoczne. Oczekiwanie na zadanie albo obietnicę, spanie
++ i ustępowanie – wszystko to _wstrzymuje_ działające zadanie, a każde z nich wymaga w zasięgu
++ [zdolności][zdolność] `Monitor`. Metoda, która może się zablokować, mówi więc o tym w swojej
++ sygnaturze, dokładnie tak, jak metoda, która może zawieść, mówi o tym przez
++ [`raises`][raises].
+
+@ 0 5 0 13e19d2df0639a8701303ea0abadbc6a
++ To, że wstrzymanie może być _blokujące_, jest samo w sobie decyzją projektową wartą obrony,
++ ponieważ blokowanie ma złą reputację. Zaczęło się jako wygoda: jeśli wartość nie jest gotowa,
++ poczekaj na nią, zamiast zawodzić albo wypisywać zarówno przypadek gotowy, jak i niegotowy.
++ Ta wygoda jest prawdziwa. Kod, który się blokuje, to kod pisany w kategoriach wartości, a nie
++ callbacków, czyli [styl bezpośredni](../../philosophy/direct-style.md).
+
+@ 0 3 0 05ff2b0dc88434851d3589aced3fe5c2
++ Blokowanie zasłużyło na swoją reputację kosztem. Czekający wątek platformowy to wątek, który
++ nie pracuje, a aplikacja, która trzyma ich tysiące, więcej swojej mocy zużywa na czekanie
++ niż na obliczenia.
+
+@ 0 6 0 1f0f2aff25324c9b1649685f411e1c1c
++ Wątki wirtualne zmieniają ten rachunek. O rzędy wielkości więcej wywołań może jednocześnie
++ pozostawać w stanie zablokowania bez istotnego narzutu. Wygodę można więc mieć za cenę,
++ której miały uniknąć alternatywy oparte na callbackach. Blokowanie tam, gdzie czyta się
++ najjaśniej, na wątkach na tyle tanich, że blokowanie nie ma znaczenia, to kształt
++ wszystkiego tutaj. To także kształt [strumieniowania](streams.md), które z tego samego powodu
++ pobiera dane na własnym wątku konsumenta.
+
+@ 0 5 0 1ffccae41403f2481eb4a1f2f6a0b72b
++ Pod spodem jednostką wykonania jest `Strand`, a nie wątek. Pasmo to abstrakcja z czterema
++ operacjami, których potrzebuje wstrzymanie: przerwaniem, oczekiwaniem na zakończenie,
++ zaparkowaniem i odparkowaniem. Pasma dostarcza nadzorca, a nadzorca jest wartością. Planistę,
++ który w ogóle nie jest zbudowany na wątkach, na przykład pętlę zdarzeń nad zbiorami
++ oczekiwalnymi WebAssembly, podłącza się więc jako nadzorcę, bez żadnej zmiany w kodzie, który
++ uruchamia zadania i na nie oczekuje.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 1c5e645db26c5b5604476be89d3d081b
++ - [Strumienie](streams.md#combining-and-replicating-streams) scalają i replikują strumienie
++   między zadaniami.
++ - [Serwer HTTP](http-server.md) obsługuje każde połączenie w zadaniu.
++ - [Błędy](errors.md) opisują, jak obsługuje się niepowodzenie w zadaniu.
++ - [Demony](daemons.md) utrzymują program w działaniu jako usługę.
++ - [Buforowanie](caching.md#an-expiring-value) oblicza wartość raz dla wielu współbieżnych
++   wywołujących.

@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 2 0 07fe400905129e5c09ca3a130de28d35
++ Zdefiniowano trzydzieści sześć walut, każdą jako wartość, która konstruuje kwoty. Kwotę zapisuje
++ się jej symbolem albo kodem ISO, zależnie od stylu w zasięgu.
+
+@ 0 2 0 0521150f08d80306145fc8161d1d3d86
++ Podatek zaokrągla się do najbliższej jednostki drobnej, a połowę zaokrągla się w górę.
++ Dwadzieścia procent z 2,94 £ to 0,588 £, co nalicza się jako 0,59 £:

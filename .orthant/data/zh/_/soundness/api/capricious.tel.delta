@@ -1,0 +1,599 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 181e713bd164067a112027022659fc01
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 196e14d071a74be00e61c574f76af100
++ info   任意类型的随机值，来自显式选定的随机源和显式选定的分布
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 06be611800f40986172c58bf94c90260
++     _Capricious_ 通过 `Randomizable` 类型类生成任意类型的随机值——而不仅仅是数字；该类型类会根据 case class、枚举和密封层次结构的结构为它们派生，因此一整棵测试数据树只需一次调用。
++     随机性的*来源*与数字的*形状*是两个独立的显式选择：来源是从 `randomization` 包中按名称导入的 `Randomization`——有种子且可复现的、无种子的，或密码学安全的——而 `Double` 的形状则是作用域中的 `Distribution`。
+
+@ 0 3 0 007ce71f2cf107930a5d9b0ac116c732
++     `Random` 是一种能力：从生成器中抽取会推进其状态，因此消耗随机性的代码以上下文值的形式接受一个 `Random`，而 `stochastic` 会打开一个带有 `Random` 的作用域。
+
+% 2 1 0 07e3736a26dd26281269241bea15db71
+
+% 3 1 0 00142a1fd3a5ebec0deb1713c92fccfd
+
+% 4 1 0 0b3444134009a7260319821130a262b5
+
+% 0 1 0 0364961f182994221b55e5b6413f0a16
+
+% 0 1 0 1a6eca581030b9901f7e2764e06cef5b
+
+% 0 1 0 0f89d94dc37ab05d02c8a66d28202c08
+
+% 2 1 0 021e0c7b64ed4f150707e57ad8adcd3d
+
+% 0 1 0 16d04c9792fb6e5e0bd26a4b8a8fa617
+
+% 0 1 0 04fb970488ca014f145bafb5104ad55b
+
+% 1 1 0 17c526d4342129d81c63dc08e279b9a7
+
+@ 0 5 0 089e47680870520d025163c23c5e5e92
++     四个选择包存放着需按名称导入的 given，因为 `import soundness.*` 不会导入 given：`randomization`（来源）、`randomDistributions`（`Double` 的形状）、`randomSizes`（随机集合的大小）和 `randomTexts`（棘手字符串的来源）。
++     选择总是写在导入处，因此模拟程序和令牌生成器不会被混淆。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     该库有两个源集：
+
+@ 0 5 0 005283de214cef4c017f82606d9dcc7a
++     - `capricious.core`——除 WASI 熵源外的一切。可编译到 JVM、Scala.js 和 Scala Native，基于 `java.util.Random` 和 `java.security.SecureRandom`。
++     - `capricious.wasi`——`randomization.wasiRandomization`，它从 WebAssembly 组件的 `wasi:random/random` 接口中抽取，并附带它所需的 `WasiRandom` 和 `wasiApis.wasiRandomApi` 绑定。
+
+@ 0 2 0 1cd65b0a612b10741dad45de501cc5f6
++     所有内容都导出到 `soundness` 总括包，每个选择包都会与总括包中的同名包合并。
+
+% 0 1 0 0fd500fbc764c72d1f070930de4ce8a5
+
+% 0 1 0 1af70b861161a0ea1cb4f32c46594218
+
+% 0 1 0 11bbafb0d5618f060c57fe8749214812
+
+% 0 1 0 0577bfbd90369549178bd0b6af7f458e
+
+% 0 1 0 1dac6565e898604919c9dd51e6c6e433
+
+% 0 1 0 1609897fe6bb87d205f8470f50d7561b
+
+@ 0 6 0 13c7b05fe3a3dc960f298b88dc434084
++ entry .stochastic   用作用域中的 `Randomization` 产生一个全新的 `Random`，并以之运行一个代码块
++     `stochastic(block)` 根据 `Randomization` given——它必须从 `randomization` 包中按名称导入——初始化一个新的生成器，并以它作为上下文 `Random` 运行 `block`。
++     在 `seededRandomization` 下，若作用域中有 `Seed`，整个代码块就是种子的函数，因此一个失败的随机化测试可以通过再次提供同一个种子来重放；`Seed#stochastic` 与之相同，只是种子由它自己提供。
+
+% 2 1 0 1081326bef80a6e611997fff440912b4
+
+% 3 1 0 06b15cbcbacccd540df6f0a8fcf80ebc
+
+% 4 1 0 140c750129963e3417dedf955ea75133
+
+% 0 1 0 1f7114c4ade944db09a9d6bd2bf8e78c
+
+% 0 1 0 09fbe5d4a894b58a1b2b84c16e813e6b
+
+% 1 1 0 12838e53483b676215a2ebb29c11cb68
+
+@ 0 4 0 1ccdda3cadc158dd07ad7fe196cac6a5
++     每个 `stochastic` 块都会启动一个新的生成器，因此同一种子下的两个块抽取出相同的序列；而在同一个块*内部*，相继的抽取各不相同。
++     确定性针对的是抽取的顺序：从同一个块中抽取的并发线股每次运行的交错方式都不同，因此必须可复现的并发计算需要为每条线股各准备一个块和一个种子。
+
+@ 0 4 0 0f52186b85ca8b1400350909f44af2bc
++ entry .arbitrary   来自作用域中 `Random` 的任意 `Randomizable` 类型的随机值
++     `arbitrary[T]()` 就是 `T` 的 `Randomizable.apply`，从上下文 `Random`（例如 `stochastic` 提供的那个）中抽取。
++     `Double` 需要作用域中有 `Distribution`，集合则需要 `Random.Size`。
+
+% 2 1 0 1b95fbf1f9d623fa1bc6c419b36055e9
+
+% 3 1 0 0de0a4e204c74c7f092fd395813a0adf
+
+% 4 1 0 0f0a509c5bb6eb2116756a7ec91d7212
+
+% 0 1 0 140f0e79da797a0a12dd27c072bdb780
+
+% 0 1 0 159865ffdef41d7c1d322962d93179a4
+
+% 2 1 0 198fd3f9b1c6c0200e1554a4ddb04469
+
+% 0 1 0 0b180ece7c0bf8cb01f185954db7e678
+
+% 1 1 0 013f1940532534cd0cba15d3d03d605e
+
+@ 0 5 0 03ed340535a669bc08f1a9ed3f3af8e6
++ entry .random   来自共享全局生成器的任意 `Randomizable` 类型的随机值
++     `random[T]()` 从 `Random.global` 中抽取，作用域中无需 `Random`、`Randomization` 或 `Seed`。
++     它适用于脚本和一次性的值：全局生成器没有种子且是共享的，所以从中抽取的任何值都无法复现。
++     应当可测试的代码接受一个 `Random` 并使用 `arbitrary`。
+
+% 2 1 0 1be0702c7fd4d76a0f2ad76d9a8b98aa
+
+% 3 1 0 0c7b04dda2b9cd8c02e6804511fdc34a
+
+% 0 1 0 0ced440b73c0eae6198b46ae54521c0f
+
+% 1 1 0 0c6117c79477eb99163f852ac2324e9f
+
+@ 0 4 0 178dc0fcceed0002073f2b514c783b90
++ entry .toss   公平的抛硬币：等概率地给出 `true` 或 `false`
++     `toss()` 需要作用域中有 `Random`，以表明代码是随机的，但它从 `scala.math.random`（JDK 的共享生成器）而不是从该 `Random` 中抽取：因此抛硬币无法通过 `Seed` 复现。
++     要得到可复现的硬币，请使用 `arbitrary[Boolean]()`。
+
+% 2 1 0 1a2c6a4a6fba6c6b0e559fb7993a78cc
+
+% 3 1 0 0f01c0576e063d810f3b7874725ad0ad
+
+% 4 1 0 0c4474d5781a44f407a6c97a6ca29579
+
+% 2 1 0 049195e463e1a2ac0c1f3562f144472c
+
+% 0 1 0 18a1a208d3d74fc30e85f184eaf33732
+
+% 1 1 0 13f5e17638d997460a56ab2cc49d045e
+
+@ 0 1 0 1d7f150ffe54a4d5077b1b728f5e6f02
++ entry .Random   伪随机生成器，作为一种能力，其状态随每次抽取而推进
+
+% 1 1 0 0adc7e830fe963e90b6308a767ada66d
+
+@ 0 4 0 03a15fa7b816176d0e6934f08a654864
++       `Random` 包装了一个 `scala.util.Random`。
++       它是一种能力（`caps.Unscoped`），因此从中抽取的代码会在其捕获集中携带它；它也是 `Findable`，因此以上下文值的形式获得。
++       它由 `stochastic` 或 `Seed#stochastic` 根据作用域中的 `Randomization` 创建，或直接以 `Random.global` 的形式获得。
+
+% 2 1 0 179ac045a546dbff1bd8e217dc46f739
+
+% 3 1 0 119f0945d45113c319bd86011f25dbf1
+
+% 4 1 0 170330b07f53917a0950cebe7fa304be
+
+% 0 1 0 11705c07fc9bfd1d1af71a4c1fb59870
+
+% 0 1 0 0742d131887234b611fdbfc5aa732902
+
+% 0 1 0 120524797497016118563ce60b5e96c1
+
+% 1 1 0 0a71f56701713b900585618f1520aae3
+
+% 1 1 0 0fdea20a5ffdc3b00fc6e9dc5fb05f19
+
+% 0 1 0 1b111da11a3c7a9b02b0f3c8d22f70df
+
+% 0 1 0 1dda38a94ef24d9207cf47a218523414
+
+@ 0 10 0 0e1cc27987f81d930beb200889589444
++   entry .global   基于一个共享的无种子生成器的 `Random`，无需作用域即可使用
++       每次调用都包装同一个进程级的生成器，该生成器由 `randomization.unseededRandomization` 惰性创建，因此从中抽取的值永远不可复现。
++       `random` 使用它。
++   entry .apply   根据作用域中的 `Randomization` 创建的新 `Random`
++       `Random(seed)` 根据上下文 `Randomization` 初始化一个生成器。
++       `seed` 参数并不会传给它：有种子的生成器从 `seededRandomization` 本身所要求的 `Seed` given 中获取种子，因此 `Seed#stochastic` 才是为作用域设定种子的可靠方式。
++   entry .Size   随机集合有多少个元素，作为上下文值
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 3 0 1e2185d9421b55e4050844dc706a2e27
++         单方法特质：`generate(random)` 抽取一个大小。
++         `Randomizable.list`、`Randomizable.set` 和 `Randomizable.frozenArray` 需要它，`randomSizes` 包中存放着上限为 10、100、1000、10000 和 100000 的均匀大小，需按名称导入。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 11af71d73b1dd0e81bbc64b527c681bc
+
+% 0 1 0 1f88d98bf2f82f3f1429b6a97804d852
+
+% 0 1 0 11fb94c46285c89818909245b414bb3f
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 7 0 053c6e29e99c0629122b7e63083c1d18
++     entry #generate   从 `Random` 中抽取一个大小
++   entry #long   抽取一个均匀随机的 `Long`
++   entry #gaussian   从标准正态分布中抽取一个 `Double`：均值 0，标准差 1
++   entry #unitInterval   从 `0.0`（含）到 `1.0`（不含）之间均匀抽取一个 `Double`
++   entry #apply   抽取任意 `Randomizable` 类型的值：`random[Point]()`
++   entry #shuffle   元素按随机顺序排列的 `List`，从该生成器中抽取
++       在种子下可复现：同一种子会以同样的方式打乱同一个列表。
+
+% 2 1 0 05be232c05ff54cd13d335a65f264446
+
+% 3 1 0 0ecb7d3b3797a4e50423572de74a4ab8
+
+% 4 1 0 0db8045d71e4fc45021ac6c969316157
+
+% 6 1 0 1e9aaad3f1e4cc8901e7189970733448
+
+% 0 1 0 03a1a3f632314c25189f49fd448252e8
+
+% 1 1 0 14c41c97604cca701dee051bb78cf273
+
+@ 0 1 0 0c6b197a9a5c6ae412cd594a9191c5e8
++ entry .Randomizable   其值可以被随机抽取的类型的类型类，写作 `T is Randomizable`
+
+% 1 1 0 0567cf831b39bc2707e6a4d6445bc93b
+
+@ 0 7 0 0d5863df923609ba1ed797eb13125a1e
++       单方法类型类：`#randomize` 接受一个 `Random` 并抽取一个值。
++       伴生对象为 `Long`、`Int`、`Short`、`Byte` 和 `Char`（各取一个随机 `Long` 的低位）、`Boolean`（取其符号）、`Seed`、`Double`（由作用域中的 `Distribution` 决定形状）、`List`、`Set` 和冻结数组（大小由作用域中的 `Random.Size` 决定）提供实例，并提供一种派生：由可随机化字段组成的 case class 会抽取每个字段，枚举或密封层次结构会均匀地选取其中一个变体并抽取它。
++       其值需要更多处理的类型可以定义一个实例，通常是对现有实例进行 `#map`。
+
+% 2 1 0 1b589a2ef7e8fa7b02d7d2acf95fb0ce
+
+% 3 1 0 1bc404e77ac4cac710378ff95e90a921
+
+% 0 1 0 1a649c8aa7891ff31aff1bbab297d881
+
+% 0 1 0 008fa88923917f0e04d1dd57d51dba63
+
+% 0 1 0 0e6f3cadadc94d8a1bc7426097e8d7db
+
+% 0 1 0 04d1a468a540fa0a07780279e1958cd7
+
+% 1 1 0 1eafe33f3f7467891b0fb28f608e8334
+
+@ 0 4 0 0a189001f2cdbdd1154f02ba1065422b
++       派生的实例不是从给定的 `Random` 中抽取其字段，而是从一个新的生成器中抽取，该生成器根据实例展开处找到的 `Randomization` 初始化。
++       在 `seededRandomization` 下，该生成器会从种子重新开始，因此同一个 `stochastic` 块中相继派生出的值可能相同。
+
+% 0 1 0 119c52d824b9c09a02b9ca11d2699d0b
+
+% 0 1 0 10d6a72daa8dec761bd8e73b76e2dcf2
+
+% 0 1 0 18ecb6a3244c347a11129b8522d04816
+
+@ 0 24 0 0986a5dbab2aa4961fa58e4ed8928988
++   entry #randomize   从 `Random` 中抽取一个值
++   entry #apply   从上下文 `Random` 中抽取一个值：`summon[Int is Randomizable]()`
++   entry #map   另一类型的实例，变换每个抽取出的值
++       `randomizable.map(lambda)` 通过本实例抽取并应用该 lambda；结果会捕获两者。
++   entry .long   抽取一个均匀随机的 `Long`
++   entry .byte   抽取一个 `Byte`，即随机 `Long` 的低八位
++   entry .short   抽取一个 `Short`，即随机 `Long` 的低十六位
++   entry .int   抽取一个 `Int`，即随机 `Long` 的低三十二位
++   entry .char   抽取一个 `Char`，即随机 `Long` 的低十六位
++       任何 UTF-16 码元，包括不成对的代理项和控制字符。
++   entry .seed   根据一个随机 `Long` 抽取一个六十四位的 `Seed`
++   entry .boolean   抽取一个 `Boolean`：随机 `Long` 为负时为 `true`
++   entry .list   抽取一个 `List`，其大小来自作用域中的 `Random.Size`
++   entry .set   抽取一个最多含作用域中 `Random.Size` 个元素的 `Set`，重复项会合并
++   entry .frozenArray   抽取一个冻结的 `Array[element]^{}`，大小由作用域中的 `Random.Size` 决定
++       除 `Random.Size` 外，还需要元素类型的 `ClassTag`。
++   entry .double   通过作用域中的 `Distribution` 抽取一个 `Double`
++       没有默认分布：在代码说明它指的是哪种 `Double` 之前，无法抽取 `Double`，这可以防止把均匀抽取当作正态抽取。
++       可以从 `randomDistributions` 导入一个，或把 `Gaussian`、`PolarGaussian`、`UniformDistribution` 或 `Gamma` 声明为 given。
++   entry .conjunction   积类型的派生实例：依次抽取每个字段
++   entry .disjunction   和类型的派生实例：均匀选取一个变体，然后抽取它
+
+@ 0 1 0 1f0ec1c1b20375310f031fa829443d38
++ entry .Randomization   伪随机生成器的来源：有种子、无种子或安全的，通过导入选择
+
+% 1 1 0 0606a02f8a4efeb4129ce0006536cc48
+
+@ 0 3 0 16d45b33e516adb00ba679e5b3952df7
++       单方法特质：`#initialize` 创建一个新的 `scala.util.Random`。
++       `stochastic` 需要作用域中有一个，而 `randomization` 包中的 given 是标准的选择，各自按名称导入。
++       它是 `Findable`，因此以上下文值的形式获得。
+
+% 0 1 0 1ed377f17f5ab4730c0b4973c469c4fa
+
+% 1 1 0 115665c21feed4c4046f12794d4977b1
+
+@ 0 1 0 06d0e1d5812d205a0545e2e7bee612e1
++   entry #initialize   创建一个新的生成器
+
+@ 0 1 0 03289c1a6fc466db0cd839eff66d40c8
++ entry .Seed   可复现生成器的种子：一些字节，通常来自一个 `Long`
+
+% 1 1 0 0d474059ede1fe7104e762308f97b9f8
+
+@ 0 3 0 02ae320ac479e51a0f649618b78eca00
++       以 `Data` 形式保存种子字节的 case class。
++       `Seed(42L)` 用一个 `Long` 的八个字节创建种子。
++       `randomization.seededRandomization` 和 `randomization.secureSeededRandomization` 正是根据作用域中的 `Seed` 来初始化它们的生成器。
+
+% 2 1 0 11969f7942adfaab0e8ae508b4d67b3d
+
+% 3 1 0 02f2fe53a26256bf12b8407f0b802fc1
+
+% 4 1 0 14a9fac61a4b730a0f7c483234e57d36
+
+% 0 1 0 00d64ec5e7d60ddf043ec264906c2d95
+
+% 1 1 0 00cc0d71cc2308e106cc7bbd7fca9f2c
+
+@ 0 2 0 19b8d33c190bc0250a840044a37c4e29
++       由同一个 `Long` 创建的两个种子并不 `==`，因为 `Data` 是数组；应通过 `#long` 比较它们。
+
+% 0 1 0 10f5e2a5639bc3e7150a1013409170d2
+
+@ 0 7 0 10ecc9010a3bf5531a4ed0889099cc80
++   entry .apply   由一个 `Long` 的八个字节构成的种子
++   entry #value   种子的字节
++   entry #entropy   种子的位数：每字节八位
++   entry #long   种子的前八个字节作为 `Long`，还原创建它所用的 `Long`
++   entry #stochastic   用以该种子设定的 `Random` 运行一个代码块
++       与 `stochastic` 相同，以该种子作为上下文 `Seed`；作用域中仍须有一个有种子的 `Randomization`，例如 `randomization.seededRandomization`。
+
+@ 0 1 0 1033d09d5aa95eb51df0b21185b77982
++ entry .Distribution   随机 `Double` 所服从的形状：高斯、均匀、伽马……
+
+% 1 1 0 094d4d2320b4ee5f1d4273083ffa40d6
+
+@ 0 4 0 0e3962994c25288f19559aa39817d94a
++       单方法特质：`#transform` 从 `Random` 中抽取一个 `Double`。
++       随机 `Double` 需要作用域中有一个（`Randomizable.double`）。
++       `Gaussian`、`PolarGaussian`、`UniformDistribution` 和 `Gamma` 是内置的形状，`randomDistributions` 中有四个现成的 given。
+
+% 2 1 0 1ac0632ab63882a51b472c736f21bc13
+
+% 3 1 0 012583ec9c590b150b92e134a8a395de
+
+% 4 1 0 09775adb8380b5e306764017845c1d7d
+
+% 6 1 0 16f02b51cf19c2d411a9716495740a1a
+
+% 0 1 0 024b5ce951c5aace1f3f9d4d858b2d30
+
+% 0 1 0 07df08e98603e9cc10092fec475c6cce
+
+% 1 1 0 0e63dde73ba5964a1bfab094c187e0e1
+
+% 0 1 0 1d9e7bf3b863e2ef0c597bd5a12807a2
+
+@ 0 1 0 0e89372dcfe504d10c7c8d4c626fd326
++   entry #transform   按本分布的形状从 `Random` 中抽取一个 `Double`
+
+@ 0 1 0 177c6954d4f8629803b0c54067b2ce12
++ entry .Gaussian   由均值和标准差确定的正态分布，采用 Box–Muller 变换
+
+% 1 1 0 0d4e77c11a64693912b95bd42b4c8d21
+
+@ 0 3 0 09cecf169a814583033779c0270f764b
++       由 `mean`（默认 0）和 `std`（默认 1）组成的 case class，每个样本从单位区间抽取两个均匀值。
++       `PolarGaussian` 是用极坐标法得到的同一分布。
+
+% 2 1 0 082de5e039073c0c1c74c1fb6698231f
+
+% 3 1 0 171e4dc4601c778b02ffd7b332e2b44c
+
+% 4 1 0 0b13f521af334d6d1cac480ff0f36e16
+
+% 6 1 0 0b50c45f62cc83bb0b972d222fd687a9
+
+% 0 1 0 0870782e2bb72c361a015b5672c61e07
+
+% 1 1 0 0efb29e563faa9961d91f857e5c4bc43
+
+% 2 1 0 06437a55dabd92ed13914638e8464277
+
+@ 1 2 0 0b91d20aec8e9ac10fd505fe975886e8
++   entry #mean   分布的均值
++   entry #std   分布的标准差
+
+@ 0 1 0 021d7ec6423e88a905cd8b4768c99261
++ entry .PolarGaussian   由均值和标准差确定的正态分布，采用极坐标法
+
+% 1 1 0 14c9753ff8ac72dc02c39c434d12ecbe
+
+@ 0 5 0 13045096529d1e6c0ec314342ffe8af1
++       由 `mean`（默认 0）和 `std`（默认 1）组成的 case class。
++       Marsaglia 极坐标法从对称单位区间中成对抽取值，拒绝落在单位圆之外的值，从而避免了 `Gaussian` 的 Box–Muller 变换中的三角函数运算。
++   entry #mean   分布的均值
++   entry #std   分布的标准差
+
+@ 0 1 0 185cce843ee942800435db6f6af44e55
++ entry .UniformDistribution   起点与终点之间的平坦分布
+
+% 1 1 0 09a5ec218543ff3402f30f454194f5b9
+
+@ 0 5 0 08ee1db3498fb962165c2d55da724485
++       由 `start` 和 `end` 组成的 case class：范围内的每个值出现的可能性相同。
++       `randomDistributions.uniformUnitIntervalDistribution` 的范围是 0 到 1，`uniformSymmetricUnitIntervalDistribution` 的范围是 −1 到 1。
++   entry #start   范围的下端
++   entry #end   范围的上端
+
+@ 0 1 0 00fb0a4c829bf29d0f9db64f18b1a2a1
++ entry .Gamma   由形状参数和尺度参数确定的伽马分布，采用 Marsaglia–Tsang 方法
+
+% 1 1 0 1e3544cd8c4969b5077e021f47153d78
+
+@ 0 3 0 13515fd6399a1425028d5e63cf8c9e0b
++       由 `#shape`（k）和 `#scale`（θ）组成的 case class。
++       `Gamma.approximate(mean, std)` 求出具有给定均值和标准差的形状参数和尺度参数，适用于时长或大小这类为正、右偏的量。
+
+% 2 1 0 0cdc7313d16b1b4903d21568c1c8de5e
+
+% 3 1 0 0840b5b25b161f1c015632a7554d48f1
+
+% 4 1 0 0ef6ce460094046f0f093a8f3500d4e9
+
+% 6 1 0 1f1bdfbe9b527fd00064a5db9d98d476
+
+% 0 1 0 1feef384701d77fc0c44195b56ed14f9
+
+% 1 1 0 01f9b540372c191e0388a046e8b20cab
+
+% 2 1 0 0e17cf6114133e6e1e646333b285f0f5
+
+@ 0 8 0 0b64a016539c15371cd6053215ca6190
++   entry .approximate   具有给定均值和标准差的伽马分布
++       形状参数为 均值² ÷ 方差，尺度参数为 方差 ÷ 均值。
++   entry #shape   形状参数 k
++   entry #scale   尺度参数 θ
++   entry #mean   分布的均值，形状 × 尺度，类型为 `F64`
++   entry #variance   分布的方差，形状 × 尺度²，类型为 `F64`
++   entry #variationCoefficient   变异系数，1 ÷ √形状，类型为 `F64`
++   entry #skewness   分布的偏度，2 ÷ √形状，类型为 `F64`
+
+@ 0 1 0 1821bf3ea8c75e2f1a22ffac7b6771b3
++ entry .randomization   标准的随机性来源，每个都是需按名称导入的 given
+
+% 1 1 0 0527078ead9ab4460550a40be01ad39c
+
+@ 0 3 0 0df985e460de8f700a2d6880d66c06c8
++       `stochastic` 需要作用域中有 `Randomization`，而默认情况下没有：在可复现的生成器与不可预测的生成器之间的选择总是写在导入处。
++       `import soundness.*` 不会导入 given，因此每个都需按名称导入。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1d7da3a95913fbde02d6edc212c063d5
+
+% 1 1 0 047508f6f21b4e841c1dd76b85d7c54d
+
+% 2 1 0 0fff74a4484dd27f1555be3998712390
+
+% 0 1 0 03222c961758f255198c042ff0819c7a
+
+% 0 1 0 15265b8fee62906f1c3e2a334c7252e5
+
+% 0 1 0 035e7b70e3a5fd77149cab2bb8c0dd49
+
+% 0 1 0 1f00d206e9915b0f0ba9a829579f5aab
+
+% 1 1 0 1d8ea19b3a7cf05208a0dee82e8ed6ee
+
+% 2 1 0 1c687f3252c39e9903fd5a595f3fd503
+
+% 0 1 0 123a399c104913f11548a8b3771df93c
+
+% 0 1 0 021519b26bb517ba16ac3e586a819138
+
+% 0 1 0 1ae2516e089b4ecc02a6226faa55fcd3
+
+% 1 1 0 04f178c5f3af614d06aec53c88a33043
+
+% 2 1 0 063ac6a25efa6bd1177012d7389ae176
+
+% 0 1 0 0451b951c295fa8d07e71927f27dbb7d
+
+% 0 1 0 136e80c09d8c5fbd00d9ec76fa513e0f
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 16 0 0ea3c4ba38288b69082756b904ab6685
++   entry .unseededRandomization   每次都是一个全新的 `java.util.Random`：速度快，每次运行都不同
++   entry .secureUnseededRandomization   由平台设定种子的 `SecureRandom`，用于不得被预测的值
++   entry .stronglySecureRandomization   `SecureRandom.getInstanceStrong`：平台最强的来源，可能会阻塞
++       适用于长期使用的密钥；在系统收集熵时，强来源可能会阻塞，因此不适合批量生成。
++   entry .seededRandomization   以作用域中的 `Seed` 设定种子的 `java.util.Random`：完全可复现
++       需要一个 `Seed` given。
++       它初始化的每个生成器都从同一个种子开始，因此其下的两个 `stochastic` 块会抽取出相同的序列。
++   entry .secureSeededRandomization   以作用域中的 `Seed` 设定种子的 `SecureRandom`
++       需要一个 `Seed` given。
++       `SecureRandom` 可能会把种子与自身的熵混合，因此在大多数平台上序列不可复现；用它来补充安全来源，而不是用来重放。
++   entry .wasiRandomization   从 Wasm 组件的 WASI `wasi:random/random` 接口中抽取
++       位于 `capricious.wasi` 中。
++       这是一个 inline given，在召唤处展开，通过 `WasiRandom` 调用 `get-random-u64`；它需要作用域中有 `wasiApis.wasiRandomApi`，并且只在为 Wasm 目标编译的代码中有效。
+
+@ 0 1 0 1f07f91f2e8664b50670a12262b9e6be
++ entry .randomDistributions   随机 `Double` 的现成分布，每个都是需按名称导入的 given
+
+% 1 1 0 1989a3280706db21185902ff31fb8eb9
+
+@ 0 3 0 0063d28b8504839407767d041a634862
++       随机 `Double` 需要作用域中有 `Distribution`。
++       这些覆盖了常见情况；也可以改为把任何 `Gaussian`、`PolarGaussian`、`UniformDistribution` 或 `Gamma` 声明为 given。
++       `import soundness.*` 不会导入 given，因此每个都需按名称导入。
+
+% 2 1 0 00a832f34031891d1a2e087f7b4a68e8
+
+% 3 1 0 1b54de4eef141b5e07c1a73f042ad398
+
+% 4 1 0 04d58c9de07c99f20b998ba6476535be
+
+% 0 1 0 09eb6b68918ef5cc19b059fed8a8aec5
+
+% 0 1 0 17c5a5d4b188a03f1b8cdf83aebf0242
+
+% 1 1 0 056a7498ceb8848c0d3dc2473b845ced
+
+@ 0 4 0 0b8d0a0a95745e6314ea884e90de5d9c
++   entry .gaussianDistribution   标准正态分布：均值 0，标准差 1
++   entry .uniformUnitIntervalDistribution   0 到 1 之间的均匀分布
++   entry .uniformSymmetricUnitIntervalDistribution   −1 到 1 之间的均匀分布
++   entry .binaryDistribution   由六十四个随机位构成的 `Double`，量级任意
+
+@ 0 1 0 054e94f0734d19981a79c27e330b5180
++ entry .randomSizes   随机集合的均匀大小，每个都是需按名称导入的 given
+
+% 1 1 0 006aee18bac8ba350fe7a9cb61b3881a
+
+@ 0 3 0 0d0e926a3cb9efa415a99f0663527367
++       随机的 `List`、`Set` 或冻结数组需要作用域中有 `Random.Size`。
++       其中每一个都从零到其上界（不含）之间均匀地抽取一个大小。
++       `import soundness.*` 不会导入 given，因此每个都需按名称导入。
+
+% 2 1 0 1c1121579411f4c8089a67d106046133
+
+% 3 1 0 0bca859cc743a0c01a92ba7792d63bc6
+
+% 4 1 0 0f456c361e8f2dba0b15219d0c49971e
+
+% 0 1 0 146246bc4ea6a0e916ec77b3b820c5be
+
+% 0 1 0 181764bd1db29e7715252d3c14826c0a
+
+% 1 1 0 164048cabb875d240e2916e7d280cded
+
+@ 0 5 0 111d5f09361148500dc691993c960943
++   entry .uniformSizeUpto10   0 到 9 之间的大小
++   entry .uniformSizeUpto100   0 到 99 之间的大小
++   entry .uniformSizeUpto1000   0 到 999 之间的大小
++   entry .uniformSizeUpto10000   0 到 9999 之间的大小
++   entry .uniformSizeUpto100000   0 到 99999 之间的大小
+
+@ 0 1 0 1b2b1a3687e4f5be09b5e41226c2d585
++ entry .randomTexts   用于测试的随机 `Text`，每个都是需按名称导入的 given
+
+% 1 1 0 055827a1d729304f1d812cebf9e343bd
+
+@ 0 6 0 06becaf36d8bc9de0b6bbc7903f99abc
++       没有默认的 `Text is Randomizable`，因为没有哪一种字符串分布适合所有测试。
++       `import soundness.*` 不会导入 given，因此它需按名称导入。
++   entry .naughtyStringsText   从 Big List of Naughty Strings 中抽取：常常会让解析器出错的文本
++       每次抽取都会从随附的 Big List of Naughty Strings 中选取一行——保留字、Unicode 边界情况、注入尝试、不寻常的空白——这些内容在首次使用该 given 时从类路径资源 `/capricious/blns.txt` 中读取。
+
+% 2 1 0 19894699195e2ec515f69f7d70277e8e
+
+% 3 1 0 1cf7aa9a6e15c7a70212ef6973c2f825
+
+% 4 1 0 0b1fcfc99fe363f11542b39783048d84
+
+% 0 1 0 1c420bed603cee2a1f9e2892010cc98f
+
+% 0 1 0 1b532402e6116e241d9c6503f5cabd30
+
+% 1 1 0 1b598259e6d967170d4118efa640afa5
+
+@ 0 5 0 0a8fb902c8c50e361b4a93fa86daf1f3
++ entry .WasiRandom   由外部 64 位熵源（例如 WASI 的熵源）驱动的 `java.util.Random`
++     位于 `capricious.wasi` 中。
++     `WasiRandom(entropy)` 把一个返回随机 `Long` 的函数适配到 `java.util.Random` 的 `next` 约定，取每个值的高位，因此它可以作为 `scala.util.Random` 的底层，进而作为 `Randomization` 的底层。
++     它继承来的种子从不被使用。
++     `randomization.wasiRandomization` 构建在它之上。
+
+@ 0 4 0 127784b0a74e33d9008b28077ebe59ba
++ entry .WasiRandomApi   WIT 接口 `wasi:random/random` 的类型，即 capricious 所绑定的形式
++     位于 `capricious.wasi` 中：一个由随附于 `/capricious/random.wit` 的 WIT 定义确定类型的 `Interface in Wit`，`randomization.wasiRandomization` 通过它进行调用。
++     对应的 given 是 `wasiApis.wasiRandomApi`。
+
+@ 0 1 0 0e5fd6d44c60655614723ec074eff613
++ entry .wasiApis   capricious 在 WASI 上所需的 WIT 接口绑定，每个都是需按名称导入的 given
+
+% 1 1 0 0649621e299f0fbb0c9582c26d8d2bbe
+
+@ 0 4 0 1b3036917c9d6a89177000e99e2fdfa2
++       位于 `capricious.wasi` 中。
++       `randomization.wasiRandomization` 在召唤处展开，需要该绑定在那里可见。
++       `import soundness.*` 不会导入 given，因此它需按名称导入。
++   entry .wasiRandomApi   `wasi:random/random` 接口，从 `/capricious/random.wit` 读取

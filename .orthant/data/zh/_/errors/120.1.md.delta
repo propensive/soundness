@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 1b1d6a757d000fcc1dfa76818cb26777
+
+@ 0 2 0 1de5bcf5e64369040a0732f5ab5c333b
++ 当 Austronesian 无法从与类加载器无关的“Pojo”表示形式中反序列化某个值时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 7 0 1e4b23b2b6122f390c37a9e09ca24fe4
++ Austronesian 把 Scala 值编码为只由 JDK 标准类型——装箱的基本类型、`String` 和 `Array[Object]`——构建的表示形式，使它们能够跨越类加载器或进程的边界。
++ 此错误在解码时抛出，此时某个 Pojo 值与目标类型所期望的形状不符：期望字段数组的地方出现了标量，数组长度错误，或者和类型的值不是 `(label, payload)` 二元组。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0c1cf7585d5b46f21825f7394302ce6d
+
+% 1 1 0 0619e4d2b8f18a5f1e4e204afcf3226c
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 4 0 06e0bb50b55bf5530508721f2da71e2f
++ 确认该值是从与解码目标相同的类型编码而来的，并且两侧对该类型的定义一致——字段顺序和变体名称都是编码的一部分。
++ 随着模块的发展，可能会加入更具体的原因。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 10391fc3129dbc2209245896adaec4bd
++ - 源代码：`lib/austronesian/src/core/austronesian.internal.scala`

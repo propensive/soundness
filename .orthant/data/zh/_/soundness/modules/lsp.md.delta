@@ -1,0 +1,498 @@
+orthant 2 language
+
+@ 0 1 0 08dfad901f55c09f0c39e048807ce9f7
++ ## 语言服务器协议
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 6 0 0bd9c65c85424855031b0ce109c5f11f
++ 一个[语言服务器协议](https://microsoft.github.io/language-server-protocol/)服务器就是一次 `Lsp.listen` 调用。
++ 它的代码块为服务器提供的每项功能注册一个处理函数，然后服务器通过标准输入和输出提供服务。
++ 底层的协议——包括它的 JSON-RPC 消息、带长度前缀的分帧、已打开文档的簿记，以及向编辑器宣告的能力——都已处理好。
++ 剩下的代码就是语言本身的逻辑。
+
+@ 0 5 0 0e2ecb87dcda044602b08debcb2a3110
++ 协议的词汇被建模为普通类型。
++ `Position` 是一个行号加一个字符位置。
++ `Range` 是两个位置。
++ `Diagnostic` 是一个带严重程度和消息的范围。
++ 悬停响应、补全列表和一组文档符号各有其类型。
++ 处理函数以带类型的值接收这些内容，并以带类型的值返回它们，从不使用手工拼装的 JSON。
+
+@ 0 1 0 1ced7b89cdccf3c4047999f4e675a627
++ ### 关于该协议
+
+@ 0 6 0 174798dfb74418400676627eeb942660
++ 理解 LSP 的编辑器可以使用任何语言的服务器，而提供了服务器的语言可以在任何这样的编辑器中工作。
++ 这种杠杆作用正是该协议存在的原因。
++ 这也是该协议如此庞大的原因：数十种请求和通知类型，每种都有自己的 JSON 形状，通过分帧的流交换。
++ 手工实现它意味着要编组 JSON 并跟踪文档的版本，而这些工作与所服务的语言毫无关系。
+
+@ 0 6 0 1a35f1a350b1628d1c563574c54bbc03
++ 这些工作在这里只做一次。
++ 每种消息类型都是一个带有派生 JSON 编解码器的 Scala 类型。
++ 每个请求都被分派给匹配的已注册处理函数。
++ 已打开的文档会被跟踪，并应用增量编辑。
++ 剩下要写的是特定于某种语言的部分：悬停显示什么、提供哪些补全、报告哪些诊断信息。
++ 把服务器的方法声明为带类型的处理函数，能让实现对其所支持的内容保持[诚实](../../philosophy/honest-signatures.md)。
+
+@ 0 3 0 17d775b0062efd990241b34681798768
++ 一切都来自 `soundness` 包。
++ LSP 词汇本身，即处理函数的注册、环境中的文档和协议类型，来自 `Lsp`，在服务器自己的对象内部导入，在那里它优先于总括包导出的任何名称：
+
+% 2 1 0 09faea4b76a0ae440dc7dd2ef35e4e43
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 15108db9c092389807062bc8690bee00
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 1 1 0 0047eb56d51cb8181210a7ce0fa442bb
+
+@ 0 1 0 01aebeea891c9d990ecbc87a04ecf525
++ 本页的示例会提供或启动语言服务器，因此只编译而不运行。
+
+@ 0 1 0 1710265f28d374fe1ccd7fcd717fa670
++ ### 定义服务器
+
+@ 0 5 0 0daa9d1d9e0ca1550600762c5325294d
++ 服务器在传给 `Lsp.listen` 的代码块中注册其功能。
++ 无需维护任何能力记录。
++ 每项能力恰好在其处理函数注册时向编辑器通告，因此声明永远不会与实现不一致。
++ 能力在其存在之外还需要的选项，例如补全触发字符或语义词法单元的图例，是注册时的参数。
+
+@ 0 2 0 02cc7c193914765a0bb79afdbf3b75ee
++ 在处理函数内部，请求的上下文是环境式的，因此无需手工传递 URI 或参数：
+
+% 2 1 0 15a99b71f313253c02a475c7cc208afc
+
+@ 0 6 0 1ebb70777842660e17bd154748fee50f
++ column  名称
++ column  含义
++ row  `document`  请求所涉及文档的实时视图：其文本、按行访问、位置与偏移量的转换，以及某个位置下的单词
++ row  `workspace`  其他已打开的文档，以及编辑器在初始化时报告的内容
++ row  `client`  通往编辑器的回传通道
++ row  `position`, `range`, `newName`, …  请求的载荷
+
+% 1 1 0 00fae8f6828acef510c065bdbc09d65c
+
+@ 0 1 0 15eba6bda283510d102aeb8be0153429
++ 下面是一个完整的服务器，其 `main` 采用下文所述的常驻守护进程惯用写法：
+
+% 2 1 0 1913abe648d991fb0ea565c8aabe0aa2
+
+% 0 1 0 19818980aa24a4161145124e606105d3
+
+% 1 1 0 1753debf3ad6938f0989a1fac560dfda
+
+% 3 1 0 011af586e1ef500d102a3b8f2d46eddd
+
+% 4 1 0 1e9304658067c30a11d0e7085ba29e07
+
+% 5 1 0 1d8c2172b8e916e0199a75d96f35a4d9
+
+% 0 1 0 0dec00a8881e2e7d1166df2df1f69d3e
+
+% 0 1 0 1949dfc92ead961e185f927675a9a259
+
+% 0 1 0 1ef85c3ee36597df1df7b6e37a2163d3
+
+% 0 1 0 0f9083c9ad9a7754164f12794914bb6e
+
+% 0 1 0 00f02d2474dd02a21433413e69810ca4
+
+% 0 1 0 1be12f930888322b06aebd084ed4d7fb
+
+% 0 1 0 1b326f4456474bfe0d38ced70271c7bf
+
+% 0 1 0 10f747410ff2ee6f0d377f1ec34d3890
+
+% 0 1 0 1454be983575571e181a6454ac3c25d9
+
+% 0 1 0 1a19e4e4e35d73340bd4dea71f776009
+
+% 0 1 0 0366afb6f78ecf10163f5e8a12f54486
+
+% 0 1 0 051514f4ba2a401c14190170f167c8d7
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 0493c741dca554f40ee6ec6b760236cb
+
+% 0 1 0 07db2162dd91a09d12826cc4c2addb35
+
+% 0 1 0 05954c76bfdb18dd03ba79e0fd6b9711
+
+% 0 1 0 1c3aecafd66fd99d08fc303e2aac9a9d
+
+% 0 1 0 018616ff86caf8bd1b6d7600d1c76db1
+
+% 0 1 0 12fb7336a161b8930dbf0fd43dca39cd
+
+% 0 1 0 129cde3dc77afda01c3485e8ba83b907
+
+% 1 1 0 1608b4852d4c24db1b004894bc5690c7
+
+% 2 1 0 01f5ab78dcddd8d40f9c7e117fb1a1c9
+
+@ 0 1 0 0af7dd17c1b830641f19b045d72e99fa
++ 接下来的各个片段都应放在这样一个 `listen` 代码块之中。
+
+@ 0 4 0 1c0fdbc98e7b543207644b70b7a2a921
++ 协议的全部表面都有对应的注册。
++ 定义、引用、文档符号、格式化、重命名、代码操作、签名帮助、折叠、语义词法单元、调用层次与类型层次、工作区符号、文件操作以及 `*/resolve` 系列都遵循相同的形状：载荷是环境式的，产出的是带类型的结果。
+
+@ 0 1 0 14de52ca9648f9f8069bab181dca8f05
++ ### 文档与诊断信息
+
+@ 0 6 0 1e03913e17f660ab10d0564d48b483bf
++ 服务器按编辑器的报告跟踪每个已打开的文档，并在协议的 UTF-16 偏移量处应用增量更改。
++ 通过注册 `opened`、`changed`、`saved` 和 `closed` 处理函数来观察其生命周期，每个处理函数都能看到文档的当前状态。
++ 在任何处理函数中，`client` 都是通往编辑器的回传通道。
++ 服务器正是通过它主动推送诊断信息，即错误和警告，而不是等待被询问，就像上面的 `opened` 注册所做的那样：
+
+% 2 1 0 0a256506e04c3a181472ea22862868a2
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 08f58015323d2e820ed9bc77c4c6da19
+
+% 1 1 0 050ad7a4f6573ddd18c4a2108108e6d6
+
+% 3 1 0 15c3cd443183b74411410bee3336c72f
+
+% 0 1 0 108a9c3ecb92be1108c0d39de3ff0cda
+
+% 0 1 0 16b3725abdacc1a307623642dc73e4d6
+
+% 0 1 0 0b0216958913690405123fa1d9641cef
+
+% 0 1 0 1ef5aaf120b4e32904ca23fd8dc5b684
+
+% 0 1 0 052e3579021c8f2615f75fe6e2e85751
+
+% 0 1 0 1726f66f756720dc1294b2c69016dac7
+
+% 0 1 0 1d71556b716719b615e7729701b8c134
+
+% 0 1 0 05a218cd1b97ab630911014864c4160b
+
+% 0 1 0 0d86bcd4d29cb2791e0975ff8ea09e41
+
+% 1 1 0 080deb15a102151d08eb18b20d2483cd
+
+@ 0 2 0 0c1b081995d45804050dfa0195e81875
++ `client` 还带有 `showMessage` 和 `logMessage`，分别用于向用户显示的通知和写入编辑器日志的行。
+
+@ 0 1 0 1454169bde32493d10631baeb2c9f4df
++ ### 观察通信
+
+@ 0 4 0 0f6a48f4ca08c18913d57be2fc053331
++ 服务器的标准输出保留给线上协议使用，因此服务器无法打印它正在交换的内容的记录。
++ 取而代之，`Lsp.listen` 接受一个可选的观察者。
++ 它看到的每条消息都是承载该消息的 JSON 正文：入站消息在解析之前被观察，因此解码失败的消息也会被观察到；出站消息在分帧之前被观察：
+
+% 2 1 0 1dd905bd15fc277d095bbee3d58bd51f
+
+% 0 1 0 07ddc421342d0bf61cfcf0d5700289c9
+
+% 0 1 0 1af52de6c82e9a901f8bdb345e6a7329
+
+% 0 1 0 10ef5b998565f36f0f50fc3320b62a16
+
+% 1 1 0 164457721fdb4e230f0d58f386b35b1c
+
+@ 0 1 0 0b4678dc539af9181b760ce928787572
++ 以 `Lsp.listen(t"Demo", t"0.1.0", observer)` 的形式传入它，就会在标准错误上跟踪这次交换。
+
+@ 0 3 0 1e510cd6adff23721968b8183867bcb3
++ 观察者如何处理消息是服务器自己的事。
++ 它可以把消息流式传送给第二个进程，写入跟踪文件，或者什么都不做。
++ 省略该参数则不观察任何内容。
+
+@ 0 1 0 03de3a396147e38f01fe902d3295cccb
++ ### 报告错误
+
+@ 0 2 0 1d5fe0f045cbaf800035d0ee95c3f184
++ 无法作答的处理函数会抛出一个带类型的故障，然后继续执行，正如上面的 `demo.run` 命令用 `Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run")` 所做的那样。
+
+@ 0 4 0 172c4e7411922d13023eec88095a64a5
++ 抛出的故障会取代处理函数的结果。
++ 对于请求，它变成一个 JSON-RPC 错误响应，带有该原因的线上代码和请求的 id。
++ 对于不可回复的通知，它通过 `window/logMessage` 报告。
++ 针对未打开文档的请求，以及从未注册过的命令，也以同样的方式作答。
+
+@ 0 1 0 0bdbf4facf0b02eb09640d535d08e3c8
++ ### 与服务器对话
+
+@ 0 5 0 1164435580d440ad08b292dbf9ce380c
++ 同样的词汇也可以反向使用。
++ `Lsp.Server` 描述本进程可以与之对话的语言服务器：一条用于启动的命令，或者一对已连接到它的流。
++ `session` 打开通道，在一个代码块的持续期间借出一个连接，之后将二者一并释放。
++ 连接无法逃出该代码块，因此它永远不会比回应它的服务器存活得更久：
+
+% 2 1 0 0057fccf03a5a17d1d6d45e641320fd3
+
+% 0 1 0 1bf742c37dfed11a187c1e72a1c63ab3
+
+% 0 1 0 0b83d66fcc9afd920ed9fcbd17f68c51
+
+% 0 1 0 05e86a3de469967111db9cf0e01faba2
+
+% 0 1 0 1cb8c12b98b3cf050502660a6a20848a
+
+% 0 1 0 00eede1b926d27151de4274bf123aabd
+
+% 0 1 0 0e7e04c25801d6dd133c12a9e099ed97
+
+% 1 1 0 0ba7c4c3ae9aab810cc17bea1f25fe9e
+
+@ 0 5 0 0db956b8b9e2f88c0be5e7681acea75e
++ 请求返回的类型与服务器的处理函数所返回的类型相同：`Optional[Hover]`、`CompletionList`、`List[Location]`。
++ 通知，即 `open`、`edit`、`save` 和 `close`，不返回任何内容。
++ 来自服务器的错误响应会作为 `Lsp.Error` 抛出，它携带其线上代码所指明的原因，并且不会被无限期等待。
++ 请求在各自的任务上得到回复，因此可以同时有多个请求在进行中，并且它们可能以任意顺序返回。
+
+@ 0 3 0 1abc53481a3901931fcf5adbb2883cda
++ 服务器主动发出的内容，例如诊断信息、窗口消息和进度，会到达一个 `Lsp.Listener`。
++ 它的方法默认都什么也不做，因此客户端只需实现它要响应的部分。
++ 监听器以上下文方式提供：
+
+% 2 1 0 01007d1a98e36bd005997b6bd768ff11
+
+% 0 1 0 1ddd5dcd48c59ca019cc4019297281da
+
+% 0 1 0 040e457561e6f4f9037105a04a730084
+
+% 0 1 0 09af8910e51ad1bb14d35a45e184af42
+
+% 0 1 0 180a5fd699b6c8f51f29b5b15059e120
+
+% 1 1 0 0e4522c0dfb69d9e12752e2628820a27
+
+@ 0 1 0 0deaecabea55bc6700bc53843d0861b3
++ ### 代理服务器
+
+@ 0 4 0 0fe8e742b9701ea7136aefccf1d04de6
++ 代理同时扮演两端。
++ 它通过自己的标准输入和输出为编辑器提供服务，同时与真正的语言服务器保持一个会话。
++ 它在二者之间转发一切，并修改它选择修改的内容。
++ `Lsp.proxy` 运行这一交换，其代码块注册各项修改：
+
+% 2 1 0 1b4a471791316798169b5761aa2e6dd9
+
+% 0 1 0 1d4342ca4cd904a90e63fc4fbaa1d7a5
+
+% 1 1 0 1bb5bbf9d2331d951bcdd9096ad2b9c5
+
+% 3 1 0 0e77b9317b838cd50cd9f171703d8e1a
+
+% 4 1 0 0ca70bc2663ced471a483a8e38eb6199
+
+% 5 1 0 0c2c134bddca44a31c1217b3f5bb83aa
+
+% 0 1 0 1f371d1a8b4fa01e13f9eb97373920e1
+
+% 0 1 0 0ba9e7e9094042730f4394ec10336976
+
+% 0 1 0 0b354b055b5a380b07433702b914be12
+
+% 0 1 0 0d7e10a6752e9e911dd60ebb3d704e62
+
+% 0 1 0 11b0afb3fa0d00771bffa7ec36ac10c1
+
+% 1 1 0 0531ee11cafd477515922f5126beef10
+
+% 2 1 0 09723d2af9ee33d2064edebf3092a5a2
+
+@ 0 4 0 0fad1fd3edf6f8ef0ca3ed0aea9a473d
++ 未注册的一切都按字节原样转发：本库未建模的方法、它不认识的能力，以及编辑器自己的请求 id，后者永远不会被改写。
++ 中继在两个方向上都是异步的，因此代理改变的是交换的内容，而不是交换的行为。
+
+@ 0 2 0 1ec5371fcc025d4d1a9e5f98229d3490
++ 每个 `rewrite` 组合子都把载荷解码为服务器一侧所使用的同一类型，应用函数，然后重新编码：
+
+% 2 1 0 10cb037c930fd03301ab38a5a7b20537
+
+@ 0 15 0 11e1dc891a2bd8140646fc08e31186cd
++ column  组合子
++ column  修改对象
++ column  类型
++ row  `rewrite.capabilities`  `initialize` 的结果  `ServerCapabilities`
++ row  `rewrite.hover`  `textDocument/hover` 的结果  `Hover`
++ row  `rewrite.completions`  `textDocument/completion` 的结果  `CompletionList`
++ row  `rewrite.definitions`  `textDocument/definition` 的结果  `List[Location]`
++ row  `rewrite.symbols`  `textDocument/documentSymbol` 的结果  `List[DocumentSymbol]`
++ row  `rewrite.codeActions`  `textDocument/codeAction` 的结果  `List[CodeAction]`
++ row  `rewrite.codeLenses`  `textDocument/codeLens` 的结果  `List[CodeLens]`
++ row  `rewrite.inlayHints`  `textDocument/inlayHint` 的结果  `List[InlayHint]`
++ row  `rewrite.signatureHelp`  `textDocument/signatureHelp` 的结果  `SignatureHelp`
++ row  `rewrite.diagnostics`  `textDocument/publishDiagnostics` 中的报告  `List[Diagnostic]`
++ row  `rewrite.result`  指定方法的结果  `Json`
++ row  `rewrite.notification`  服务器发出的指定通知的参数  `Json`
+
+% 1 1 0 0630113b45866d33103a3d2841566d36
+
+@ 0 3 0 028cda2c3f58b8a20a80ed9d23427813
++ 服务器因无话可说而以 `null` 发送的结果会原样传递，因此改写函数永远不必写出空的情形。
++ 针对整条消息还有两个钩子，`rewrite.outbound` 和 `rewrite.inbound`，各自返回该消息应当如何处置：
+
+% 2 1 0 18fd34693a251f9c080cbd0ba56bee8e
+
+% 3 1 0 0849d2d66f313ca20a54195e5bd19611
+
+% 4 1 0 15ca622c4e8c09281b61e51ddffe4c56
+
+% 0 1 0 1bc22a3802f600d91b6dfb4cfe5b79e0
+
+% 1 1 0 00eff1b8ef550c4219e980851074b3ff
+
+% 3 1 0 157b91d8e134643217b28999ea209c9d
+
+% 0 1 0 0346282a35bc458f00755102dd23e8a5
+
+% 0 1 0 1fa4ecd06c010031191be1c127209223
+
+% 0 1 0 0dadf2e3e08a78430ffb5e72b4cac410
+
+% 1 1 0 1ecedb3885f4df891d41fecf4712d708
+
+@ 0 1 0 15801aa01d01ed920cfad4294d7b0677
++ 钩子以四个 `Transit` 值之一作答：
+
+% 2 1 0 0fce050a6bdbd8b317e9046c40781b9a
+
+% 0 1 0 0c294758cc213edb04f8ed48fcc443fa
+
+@ 0 5 0 192540c1c3dffd0411870b470f597b7c
++ column  作用
++ row  `Transit.Forward`  原样传递消息
++ row  `Transit.Rewrite`  传递另一条消息
++ row  `Transit.Drop`  吞掉消息
++ row  `Transit.Answer`  在此处回复请求，使上游服务器永远看不到它
+
+% 1 1 0 0ceb13b4beb369ee0bfbd32b8203b129
+
+@ 0 4 0 08e8efef71b8075f0e840f5a16b16214
++ 代理并不局限于编辑器所询问的内容。
++ 与上游服务器的会话在整个注册代码块中以 `upstream` 的名称处于作用域中，因此钩子可以提出自己的问题，通常是询问只有服务器才知道的项目状态。
++ `rewrite.connected` 在该会话一打开时就在自己的任务上运行一次：
+
+% 2 1 0 1d50f151f99baa481528b2e881a63d5f
+
+% 3 1 0 1b608506bf76564206d3d64f3aeabee8
+
+% 4 1 0 090412348b5d9c641511cc8d92399dcb
+
+% 0 1 0 160c925580db4b301c7b7c33a3d01c41
+
+% 1 1 0 17daa8944dc255981cd8c87531cde57c
+
+% 0 1 0 1885e22d605caecc1adc91ca82e0e4a4
+
+% 2 1 0 1992d36943bf6de90ac7e3400515f130
+
+% 0 1 0 00e0c08cbea4883f020550fe3638cae1
+
+% 0 1 0 09d820457abade6f01ce39cd70640881
+
+% 0 1 0 05a960406136437d00515eac074ef826
+
+% 0 1 0 06a7958a50932403029acdea7b9be499
+
+% 0 1 0 15becb6b056400e0082f2707cb2f6d54
+
+% 0 1 0 1e272bc0f77338da137759edf2496df9
+
+% 0 1 0 1e1adab39abca30903fe72cd37043e57
+
+% 0 1 0 1501d224e1fe07e418b793d3e12e91fd
+
+% 1 1 0 1da4fdd354241f9a0634adce83e0f43f
+
+@ 0 2 0 1e36ab409658112d0ddf0e20941c1e4d
++ 答复会回到提出询问的调用者，永远不会到达编辑器。
++ 对代理自己发出的请求的响应，会被路由给等待它的一方，而不会被中继。
+
+@ 0 2 0 1d46a0314b218d7002d2d3ac19d046ed
++ 要注意每个钩子运行在哪个线程上。
++ 在读取服务器消息的任务上等待一个请求——而该任务正是会递送答复的任务——将会永远等待下去：
+
+% 2 1 0 07e2dbb22a04a41c1a8dffb78e4e4dd7
+
+@ 0 6 0 0b254eb80e90404812f14bca79a62595
++ column  钩子
++ column  运行于
++ column  能否等待
++ row  `rewrite.inbound`  读取服务器消息的任务  否；应如上所示在 `async` 代码块中发出请求
++ row  `rewrite.outbound`  读取编辑器消息的循环  能，但编辑器会随之等待
++ row  `rewrite.connected`  它自己的任务  能，可以随意等待
+
+% 1 1 0 0c3ae39bb6c7f68a0030d0e06439ded9
+
+@ 0 1 0 19b1eeacf1d110270a8660ff8f0733df
++ ### 运行服务器
+
+@ 0 5 0 12d606d999468b410d52e8f64ee8312a
++ `Lsp.listen` 持续服务标准输入，直到其耗尽。
++ 因此，服务器对象以常驻守护进程的惯用写法提供一个小小的 `main`，正如上面的 `DemoServer` 所做的：`cli` 入口点、一个 `execute` 代码块，以及用于服务器所运行任务的 `supervise`。
++ 配置为把该对象作为语言服务器启动的编辑器，会通过管道与它交换 JSON-RPC，每个请求都会到达匹配的处理函数。
+
+@ 0 1 0 18606afbbea7f6f7173205d18de53495
++ ### 快速启动
+
+@ 0 7 0 10b8c4062f59ed470c6b6522811b8b04
++ `cli` 入口点把服务器作为常驻[守护进程](daemons.md)运行。
++ 第一次调用会启动一个后台 JVM，此后的每次调用都连接到已在运行的进程。
++ 编辑器经常启动和重启语言服务器，因此避免每次启动都付出 JVM 的启动开销，并保留即时编译器已积累的优化，就显得很重要。
++ 用来自 [propensive/xek](https://github.com/propensive/xek) 的 `xek` 构建工具打包服务器的 JAR，会组装出一个小型原生启动器，它启动守护进程或连接到守护进程，并把标准输入、输出和信号转发给它：
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0dce14cc2768362501147377ba39a167
+
+% 1 1 0 01f81a279ca95d5f18e2fee1cf2d0d34
+
+@ 0 1 0 14391749b873465c0b98100d652ef5bf
++ ### 精简启动器
+
+@ 0 7 0 0b724382813f7f890f6cfd4ba920f312
++ 默认情况下，启动器把所有依赖捆绑进一个胖 JAR。
++ 添加对按需依赖加载器的依赖，并用 `externalize` 包裹入口点的主体，就会改为以精简启动器的形式分发服务器。
++ 它的依赖会在首次需要时获取并缓存。
++ `externalize` 在服务器自身的模块编译时对每个依赖计算哈希，并把列表记录在编译产物中。
++ 之后重新打包该产物时，每个已在某处发布的依赖都以 URL 和哈希引用，而不是内联，因此启动器保持小巧。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 7 0 125b7b3223a3de461a3608b20562eaa7
++ - [守护进程](daemons.md)描述 `cli` 用来运行服务器的常驻进程。
++ - [CLI](cli.md) 描述 `cli` 和 `execute` 入口点。
++ - [RPC](rpc.md) 描述该协议所使用的 JSON-RPC 和 `Content-Length` 分帧。
++ - [调试](debugging.md)提供与之并列的调试适配器协议。
++ - [并发](concurrency.md)描述 `supervise`、`async` 和 `Promise`。
++ - [进程](processes.md)描述启动服务器的 `sh"…"` 命令。
++ - [语法高亮](syntax-highlighting.md)和 [TEL](tel.md) 描述服务器所报告的树，[打包](packaging.md)描述服务器发布时所用的精简启动器。

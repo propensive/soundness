@@ -1,0 +1,55 @@
+orthant 2 language
+
+% 0 1 0 0175068990ac4ec90175f87c94d87198
+
+@ 0 1 0 082d27b5813492f414cda6558a358c0b
++ 当 Enigmatic 无法读取 DER 编码的 ASN.1 值时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 10 0 17415dccb299e5c9142cc15cf69c24c0
++ DER（Distinguished Encoding Rules，可辨别编码规则）是 BER 的规范子集：每个值恰好有一种有效编码。
++ Enigmatic 的解码器是严格的，因此 BER 允许而 DER 不允许的一切——不定长度、过长的长度和标签号、非最小整数、构造型字符串、无序集合——都是错误，而不是可以容忍的东西。
++ 正是这种严格性，使读回的值可以重新编码为它原来的字节，而验证证书 `TBSCertificate` 上的签名正依赖于此。
++ 消息为 `could not process the ASN.1 value because $reason`，每个原因都带有发现问题时的字节偏移。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 24 0 0a1e3ba2a4d9ab901c74026ef83dbfd4
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.105.4.1`  `Truncated`  输入在当前值结束之前就结束了。  `[↯/s.105.4.1] could not process the ASN.1 value because the input was truncated at byte 42`  确认输入完整；常见原因是 PEM 正文被截断，或从错误的偏移读取了长度前缀。
++ row  `↯/s.105.4.2`  `IndefiniteLength`  某个值使用了 BER 的不定长度形式，而 DER 禁止这种形式。  `[↯/s.105.4.2] could not process the ASN.1 value because an indefinite length was found at byte 1`  将输入重新编码为 DER；`openssl asn1parse` 会显示不定长度所在的位置。
++ row  `↯/s.105.4.3`  `NonMinimalLength`  某个长度没有用尽可能少的字节写出：要么对小于 128 的长度使用了长形式，要么其首字节为零。  `[↯/s.105.4.3] could not process the ASN.1 value because an overlong length was found at byte 1`  将输入重新编码为 DER。
++ row  `↯/s.105.4.4`  `NonMinimalTag`  小于 31 的标签号以高标签号形式写出，或者高标签号带有前导零组。  `[↯/s.105.4.4] could not process the ASN.1 value because an overlong tag number was found at byte 1`  将输入重新编码为 DER。
++ row  `↯/s.105.4.5`  `NonMinimalInteger`  某个整数带有多余的前导 `0x00` 或 `0xFF` 字节。DER 要求最短的二进制补码表示。  `[↯/s.105.4.5] could not process the ASN.1 value because an overlong integer was found at byte 0`  将输入重新编码为 DER。
++ row  `↯/s.105.4.6`  `EmptyInteger`  某个整数没有内容八位组；ASN.1 要求至少一个。  `[↯/s.105.4.6] could not process the ASN.1 value because an integer with no content was found at byte 0`  检查输入的生成方：零必须编码为单个字节 `0x00`。
++ row  `↯/s.105.4.7`  `Overflow`  某个长度或标签号太大而无法表示：需要超过四个字节的长度、大于 `Int.MaxValue` 的长度，或大于 `Int.MaxValue` 的标签号。  `[↯/s.105.4.7] could not process the ASN.1 value because an unrepresentable length was found at byte 1`  如此大的值几乎总是表明输入根本不是 DER，或者解析从错误的偏移开始。
++ row  `↯/s.105.4.8`  `Trailing`  读取了一个完整的值，但其后还剩余字节。一个 DER 文档恰好包含一个值。  `[↯/s.105.4.8] could not process the ASN.1 value because unexpected trailing bytes were found from byte 2`  如果输入包含多个串联的值（例如证书链），请在解码前将其拆分。
++ row  `↯/s.105.4.9`  `InvalidUtf8`  某个字符串的内容八位组不是有效的 UTF-8。  `[↯/s.105.4.9] could not process the ASN.1 value because invalid UTF-8 was found at byte 12`  检查源文本的编码；`UTF8String` 以外的 ASN.1 字符串类型可能使用不同的字符集。
++ row  `↯/s.105.4.10`  `ReservedTag`  发现了通用标签号 0；它被 X.690 保留。  `[↯/s.105.4.10] could not process the ASN.1 value because the reserved tag number 0 was found at byte 0`  输入不是有效的 ASN.1；检查解码是否从某个值的开头开始。
++ row  `↯/s.105.4.11`  `BadOid`  某个对象标识符格式错误：它没有内容，或其最后一个子标识符设置了后续位，或某个子标识符以填充字节 `0x80` 开头。  `[↯/s.105.4.11] could not process the ASN.1 value because a malformed object identifier was found at byte 3`  将输入重新编码为 DER。
++ row  `↯/s.105.4.12`  `OidArcOverflow`  某个对象标识符的弧对 `Int` 来说太大。如此大的弧出现在 UUID 弧 `2.25` 之下，而 Enigmatic 的 `Asn1.ObjectId` 尚未对其建模。  `[↯/s.105.4.12] could not process the ASN.1 value because an arc too large for Int was found at byte 3`  目前请将该值作为原始字节读取；更宽的弧是计划中的扩展。
++ row  `↯/s.105.4.13`  `UnsortedSet`  `SET` 的成员没有按其编码的升序排列，而 X.690 §11.6 要求如此。  `[↯/s.105.4.13] could not process the ASN.1 value because the set at byte 5 was not in ascending order`  将输入重新编码为 DER；输出 BER 的编码器常常让 `SET` 成员保持声明顺序。
++ row  `↯/s.105.4.14`  `BadTime`  `UTCTime` 或 `GeneralizedTime` 不是 DER 唯一允许的形式（分别为 `YYMMDDHHMMSSZ` 和 `YYYYMMDDHHMMSSZ`），或指明了一个不存在的日期。  `[↯/s.105.4.14] could not process the ASN.1 value because a malformed time value was found at byte 0`  将输入重新编码为 DER：小数秒、相对 UTC 的偏移和省略秒数都是禁止的。
++ row  `↯/s.105.4.15`  `BadBoolean`  布尔值的内容八位组既不是 `0x00` 也不是 `0xFF`。BER 允许任何非零字节表示 `true`；DER 不允许。  `[↯/s.105.4.15] could not process the ASN.1 value because a boolean with the content byte 1 was found at byte 0`  将输入重新编码为 DER。
++ row  `↯/s.105.4.16`  `BadLength`  某个值的长度不是其类型所允许的：带内容的 `NULL`、长度不为 1 的布尔值，或没有内容的 `BIT STRING`。  `[↯/s.105.4.16] could not process the ASN.1 value because the tag 5 had the invalid length 1 at byte 0`  检查输入的生成方。
++ row  `↯/s.105.4.17`  `BadUnusedBits`  `BIT STRING` 的首个八位组声明了超过七个未用位，或为空串声明了未用位，或其声明为未用的位不为零。  `[↯/s.105.4.17] could not process the ASN.1 value because a bit string declaring 8 unused bits was found at byte 0`  将输入重新编码为 DER。
++ row  `↯/s.105.4.18`  `NotPrimitive`  DER 要求为基本形式的类型（字符串类型、整数、`BIT STRING`、`OCTET STRING`、`NULL`、对象标识符以及两种时间类型）以构造形式编码。  `[↯/s.105.4.18] could not process the ASN.1 value because the tag 4 was encoded in constructed form at byte 0`  将输入重新编码为 DER；分段（构造型）字符串是 BER 的特性。
++ row  `↯/s.105.4.19`  `NotConstructed`  `SEQUENCE` 或 `SET` 以基本形式编码。  `[↯/s.105.4.19] could not process the ASN.1 value because the tag 16 was encoded in primitive form at byte 0`  输入不是有效的 ASN.1；检查解码是否从某个值的开头开始。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 3 0 07b83881075914fe1c1efc2980698422
++ - 源代码：`lib/enigmatic/src/asn1/enigmatic.Asn1.scala`
++ - `↯/s.105.1` — `PemError`，当 DER 内容外层的 PEM 铠装无法解析时抛出

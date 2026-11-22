@@ -1,0 +1,519 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a8319544e2ec9d2084ea275fc7a7f38
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f58a0ebe9d5c3a91c97303a289457f4
++ info   货币类型体现在类型中的金额、含税价格，以及经过检查的 ISIN
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 072311343e49fde908023c89339ff466
++     _Plutocrat_ 把金额表示为某种货币辅币单位的定点计数，并把货币放在类型中：`Money in "EUR"` 和 `Money in "GBP"` 不能相加，因为把欧元加到英镑上是一个错误，而不是一个和。
++     在同一种货币内，金额可以相加、相减、缩放、相除、比较，并拆分为总和恰好等于整体的若干份；`Price` 把本金和税额分开保存；金额按作用域中的 `Currency.Style` 渲染，带有货币的符号或其 ISO 代码。
+
+% 2 1 0 12ea31803aa7bc00049db7000afb7f1f
+
+% 3 1 0 107dbe5c22ecff6f09c9a97b8bc0696f
+
+% 0 1 0 1164ae0ce1c1e0780026602ddf1809d8
+
+% 0 1 0 0ab865311279c5950b2f577701c35259
+
+% 0 1 0 1963cc3860b02ebf19c038fbc976ac3b
+
+% 0 1 0 1b0e879f71c09d2612d01a43a2162264
+
+% 0 1 0 12b9839401583e9e1dd867c544a48872
+
+% 0 1 0 190b65b085c485730f2b926c2a81c211
+
+% 0 1 0 19f15d0d8ec2a3670d30dda38163d685
+
+% 1 1 0 1fe4d9857851971e1a7605c7e1b18799
+
+@ 0 5 0 1c1c9d76c2880f3c18b058038f83602b
++     货币是一个 given，`"EUR" is Currency of "Euro" in "€" over 100`，它记录货币的 ISO 代码、名称、符号以及一个主币单位所含的辅币单位数；交易最多的三十六种货币位于 `currencies` 包中，再添加一种只需一行。
++     货币之间没有兑换：兑换有汇率、时间和来源，留给程序处理。
+
+@ 0 4 0 17cd92fe2450746d1de460d4da6e434f
++     该库还检查金融领域的标识符：`Isin`（证券的国际标识符）在编译时由 `isin"…"` 验证其校验位，或在运行时由 `Isin(…)` 验证，而 `Luhn` 计算并检查银行卡号所用的 Luhn 校验位。
+
+@ 0 5 0 02e791b3f4ae9e361b120f3d479a72d7
++     该库是单个与平台无关的源集 `plutocrat.core`。
++     所有内容都导出到 `soundness` 总括包。
++     货币和货币样式是 `currencies` 和 `currencyStyles` 选择包中的 given，需要按名称导入，因为 `import currencies.*` 不会导入 given；两者都会与总括包中同名的包合并。
+
+% 0 1 0 00ca4d00e25e636d07df6d8f3ecc2eb1
+
+% 0 1 0 0b335e9646b20e460c7e8f3f060d9742
+
+% 0 1 0 140f839de7dcf12b1f1873c1e3871845
+
+% 0 1 0 0407b75b72c7255a13c49bdc658a87bd
+
+% 0 1 0 16188c92c7a93f7310513636768a82ab
+
+@ 0 6 0 1d75488114cfa7de05341ea50c1241cf
++ entry .Money   一笔金额：某种货币辅币单位的整数计数，货币体现在其类型中
++     `Money` 是基于 `Long` 的不透明类型 `plutocrat.internal.Money`，在此导出。
++     `Money in "EUR"` 是一笔欧元金额；裸的 `Money` 是未指定货币的金额，每个 `Money in c` 都会拓宽为它。
++     金额通过应用货币来创建，如 `Eur(3.01)`，它会舍入到最接近的辅币单位；也可以用 `Money["EUR"](301L)` 从辅币单位计数创建。
+
+% 2 1 0 069fd1743bf6f6121e128bd5ef26ab52
+
+% 3 1 0 16beb947864a6b670d15bee52b43612b
+
+% 0 1 0 01dc4217f16c12d019d17434c549e87d
+
+% 0 1 0 1216f5221388d2b605ad749e51aa65a1
+
+% 0 1 0 01fabbb535b521600810044462bdb158
+
+% 0 1 0 078bb1b9e07184db07af6549ced46163
+
+% 0 1 0 177471f0797195ed018a1d7244447240
+
+% 0 1 0 0288b3880aad582416d984b1fc33aa31
+
+% 0 1 0 07ce89a41bc6f05c1a90e5f353d1400d
+
+% 0 1 0 1ff48870a96827d0178ff31df9a5554c
+
+% 1 1 0 1afdcff569adf52915afcf4fd9030c84
+
+@ 0 3 0 1a7b636ba8e1287a02b668915a4974e5
++     运算符接收两笔同一货币的金额，因此混用货币是编译错误。
++     除以一个数时向零截断到整数个辅币单位；`share` 是不损失任何东西的除法。
+
+@ 0 6 0 17334a2e6a3aa87d012e03250c52fc90
++     三字母的货币代码打包在 `Long` 的最高十五位中，以辅币单位计的金额打包在低四十九位中，因此即使金额的类型已被拓宽，也能将其恢复为货币（`money.currency` 给出 `t"EUR"`），最大金额约为 2.8 × 10¹⁴ 个辅币单位。
++     由于其表示是一个 `Long`，`toString` 给出的是打包后的数字：应在 `Currency.Style` 下用 `show` 渲染金额，或用 `inspect`，它给出 `¤EUR301ₘ`。
+
+@ 0 2 0 1febf784e4ad48c50a4db5a6c60237bd
++     金额上的扩展方法位于 `plutocrat.internal` 中，包括 `currency`、`value`（辅币单位计数）、`tax` 和 `share`。
+
+@ 0 5 0 0c4ebd3d911b0b52000f8e6422fc116a
++ entry .Isin   国际证券识别码，经过验证并打包为一个 `Long`
++     `Isin` 是不透明类型 `plutocrat.internal.Isin`，在此导出。
++     ISIN 由十二个字符组成：两个字母的国家代码、由数字和大写字母组成的九个字符的国家编号，以及用 Luhn 算法计算的校验位。
++     该类型的值已通过所有检查，其存储或比较的开销不超过一个 `Long`。
+
+% 2 1 0 1200ca50f5c2aac00c8d80a975217d2a
+
+% 3 1 0 0025a716fe19c8b81250997e6fc36c1b
+
+% 0 1 0 15ad72895dd42c88120f5a09481f0629
+
+% 0 1 0 1351b04171e3afcb0f386871f1dfba09
+
+% 0 1 0 0171c3de4cb892a2016e294d570445ca
+
+% 0 1 0 0ae9f55f6147226a0996daba9ad07a40
+
+% 1 1 0 072882ec4e9de8030f5e269dc38fbb0c
+
+@ 0 3 0 000ff2979d7d5521195461cc31d768cc
++     `isin"…"` 在编译时检查字面量；`Isin(text)` 在运行时检查，抛出 `Isin.Error`。
++     `Isin` 的检视结果是能够生成它的插值器，即 `isin"US0378331005"`。
+
+@ 0 5 0 06532bc8bb79ee8c0e9ad07b1875d8fa
++ entry .isin   `isin"…"` 插值器：在代码编译时检查的 ISIN
++     `isin"GB00BH4HKS39"` 在代码编译时验证其字面量，检查内容与 `Isin(…)` 相同，并把失败报告为带有 `Isin.Error` 消息的编译错误，例如 _the ISIN number is not valid because its last digit failed the Luhn check_。
++     它不接受替换。
+
+% 2 1 0 10df69c657e63a6c01f1096a3c2d6bbb
+
+% 3 1 0 153a89c038b8f1981de8507607aa166b
+
+% 0 1 0 144fbb38b24240c50ce3e39aea7d43ec
+
+% 0 1 0 09586dd5ab0825b70af51fe9327cf8b8
+
+% 1 1 0 1f1e6328df86edd213dbea74fc0e67c0
+
+@ 0 1 0 01831c8991a7e38e0fe19715df4b1a44
++ entry .Currency   一种货币：其 ISO 代码、名称、符号和辅币单位数，作为一个 given
+
+% 1 1 0 0c6be9c9c2073f810b9ab7f5652ec20a
+
+@ 0 2 0 1e7a7bc6905d278807dfa209e7fe7c4d
++       货币是一个 given，其类型以字面量类型携带所有相关事实，并且它能构造金额：
+
+% 2 1 0 04ab162c9281b05014f8908ea1284ecc
+
+% 3 1 0 1e794cb913b847ec16f5189ae2227a49
+
+% 0 1 0 03f12f5b933b3ba61d93b1ceeb5a3f74
+
+% 0 1 0 0fecaae7e647a20315dc4a0792ea0d0e
+
+% 1 1 0 001f5516721d229e1e81bb8b2f420d8b
+
+@ 0 5 0 1b59296c1f16d54002d52234cfe67c0c
++       `Self` 是 ISO 4217 代码，`Topic` 是名称，`Form` 是符号，`Transport` 是一个主币单位所含的辅币单位数。
++       代码必须是三个大写 ASCII 字母，因为它会被打包进每笔金额中。
++       标准货币位于 `currencies` 包中，每个都按名称导入；`Money` 的 `show` 及其零值也需要作用域中的 `Currency`。
+
+% 0 1 0 102c4a76074a50ab1ef295378874df39
+
+% 1 1 0 0effa39d9276bc6712ab1332871b58e4
+
+@ 0 4 0 1457b760255672801ebd54e9a9fddde3
++   entry .apply   根据 given 声明类型中的字面量类型创建货币：`= Currency()`
++       全部四项事实都从结果被标注的类型中读取，因此货币仅凭其类型即可声明。
++   entry .Style   金额的渲染方式：带货币符号，或带货币代码
+
+% 1 1 0 1b45d43a557b96c00d85a80512634ffc
+
+@ 0 2 0 19f3e41d26350ad30d04a587a22c7a3a
++         `Money` 的 `Showable` 使用作用域中的 `Currency.Style`。
++         `currencyStyles` 包中有两种，按名称导入：
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 0118ebd67e1219af1a4264c3a2de9e69
+
+% 1 1 0 180a769c3046e25701bad0523f9c07e6
+
+% 2 1 0 1025f2323b2e21a41976b178bc3c2302
+
+% 3 1 0 0f78730de4b6c9231674dce4692f4d94
+
+% 0 1 0 13e3386dba5b3e8110ba19dc0120e2e2
+
+% 0 1 0 0bee76bb669c391902e6b36372b1f539
+
+% 0 1 0 07434e86b03c90c91689bd92ec6aba0f
+
+% 1 1 0 0738e958c04f39f1096742a4456ff383
+
+% 2 1 0 0e98568a18ad1215116f356288293e2f
+
+% 3 1 0 1de633305294273604af3a65910a7f63
+
+% 0 1 0 0a2553b4c2edfe4d1f7e9b3f93042ba1
+
+% 0 1 0 1f87a0ff687ace38186611d3e968db02
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 15 0 0dae81d14fad4ac81abebcb741157a25
++         自定义样式是一个 lambda，从代码、符号、主币单位和两位数的辅币单位映射到文本。
++     entry #format   根据货币的代码和符号以及金额的主币单位和辅币单位渲染金额
++   entry #Self   货币的 ISO 4217 代码，作为字面量类型：`"EUR"`
++   entry #Topic   货币的名称，作为字面量类型：`"Euro"`
++   entry #Transport   一个主币单位所含的辅币单位数，作为字面量类型：`100`
++   entry #Form   货币的符号，作为字面量类型：`"€"`
++   entry #code   货币的 ISO 4217 代码，`EUR`
++   entry #name   货币的名称，`Euro`
++   entry #symbol   货币的符号，`€`
++   entry #modulus   一个主币单位所含的辅币单位数，`100`
++   entry #apply   此货币的一笔金额，由一个十进制数舍入到最接近的辅币单位得到
++       `Eur(3.01)` 是 301 欧分的 `Money in "EUR"`。
++       该数是一个 `Double`，乘以模数后舍入，因此小数位数多于货币所具有位数的字面量会被舍入，而不是被拒绝。
+
+@ 0 1 0 0568f88a0236c43c0d000da17316c4ce
++ entry .Price   一笔把税额单独保存的金额：本金和税额
+
+% 1 1 0 1f534c8251af0aa61f393d141e51c1b1
+
+@ 0 3 0 181759afed15d71f0421febd4b32b32e
++       `Price in "GBP"` 持有不含税金额和税额本身，因此卖方、买方和税务机关的数字都各自精确，而不是通过除法重建。
++       它通常通过对金额调用 `tax` 来创建。
+
+% 2 1 0 0cb0b052865635530570135caa84d680
+
+% 3 1 0 00979ed76d035a9d075699d73425efac
+
+% 0 1 0 00b4528a81acc269157e07486f526390
+
+% 0 1 0 044e8b694921fbbf12e40fed821427c4
+
+% 0 1 0 03ea397c6d634b2a1d21167a93f8b4c1
+
+% 0 1 0 1c81e2a88f9b554a195ac3b82d61a5d4
+
+% 0 1 0 02bfbeed0dde6f801c9db8d58bab19ad
+
+% 1 1 0 1fb58cc8b82d31f81217ba3d6cf754a5
+
+@ 0 5 0 0cf2d2dba6b5950a0a05c9b627fe4bc7
++       税额是本金乘以税率，舍入到最接近的辅币单位（四舍五入），因此 £2.94 的百分之二十，即 £0.588，为 £0.59。
++       同一货币的价格可以逐个分量地相加、相减和取负，也可以除以一个 `Double`（伴生对象中的一个匿名 given）。
++       价格没有 `Showable`：显示含税金额还是不含税金额，由程序通过显示 `#inclusive` 或 `#principal` 来决定。
+
+% 1 1 0 0b46b1d3b0847dbb07c38d03ee95304b
+
+@ 0 9 0 11c000fe43abc8870ca156a1c3973941
++   entry .apply   由同一货币的本金和税额构成的价格
++   entry .addable   把同一货币的两个价格相加，本金加本金，税额加税额
++   entry .subtractable   从同一货币的另一个价格中逐个分量地减去一个价格
++   entry .negatable   对价格的本金和税额同时取负
++   entry #Form   货币，以其字面量 ISO 代码表示
++   entry #principal   不含税金额
++   entry #tax   本金上的税额
++   entry #effectiveTaxRate   税额占本金的比例
++   entry #inclusive   含税金额：本金加税额
+
+@ 0 1 0 1e70b1267fbc5abc0c17e6e92dc9691e
++ entry .Luhn   Luhn 校验位，用于银行卡号和 ISIN
+
+% 1 1 0 1b8dc4e991103ed41b4aaa22777c9b2b
+
+@ 0 2 0 1520ef51b8ff62f418d90892181dbe4a
++       [Luhn 算法](https://en.wikipedia.org/wiki/Luhn_algorithm)能检测出任何单个输错的数字，以及大多数相邻数字的调换。
+
+% 2 1 0 174c99efd07b9f3c1f8d85915fca8134
+
+% 3 1 0 073829a3772f8c160d893f61bf53a5fe
+
+% 0 1 0 0ac121678d77c58515dc75ef3b695f8d
+
+% 0 1 0 1a2e1d82e45fb9000180495ec51434df
+
+% 0 1 0 1c369713365170791f8401651d624fa7
+
+% 1 1 0 0345ce4bcde5c82b0f2c7071c1e7b2f0
+
+@ 0 4 0 17e20effad3a35e118d93298102ec3a1
++   entry .digit   要附加到一串十进制数字之后的校验位
++       输入必须只包含十进制数字；其他字符会给出无意义的结果。
++   entry .check   一个数的最后一位是否是其余部分的正确 Luhn 校验位
++       以 `Text` 或 `Long` 形式接收该数。
++       空文本为 `false`。
+
+@ 0 1 0 10a331e90017a96519734aa653a88229
++ entry .currencyStyles   提供的货币样式，每个都是需按名称导入的 given
+
+% 1 1 0 1a20b65a6d0e3e5c08221cd6191c12fc
+
+@ 0 3 0 0a5a5086bacf717014da69a3ed0b9881
++       一个选择包，与总括包的 `currencyStyles` 合并。
++       金额需要作用域中有一个 `Currency.Style` 才能显示，而隐式作用域中没有：需要按名称导入一个。
+
+% 2 1 0 1eca638f4d71cd6006a029a2ebbd2448
+
+% 3 1 0 19156eef4f1b9b7a10a1328edf87fcd7
+
+% 0 1 0 06d41685fa561a5811edd26c1a90cdb0
+
+% 0 1 0 060e2cd692e3c85317dd006cb74bec53
+
+% 0 1 0 10ac8f77233ea1e205e49d81d81e2403
+
+% 1 1 0 1838d7ffb106d69c16849f785b563a7f
+
+@ 0 5 0 02e98da6acf6197e145844679591cfe5
++   entry .localCurrencyStyle   货币符号位于金额之前：`€3.01`
++       适用于货币不言自明的上下文，不过有几种货币共用同一个符号（`$`、`kr`、`¥`）。
++   entry .genericCurrencyStyle   金额之后跟 ISO 代码：`3.01 EUR`
++       没有歧义，因此适用于涉及多种货币的上下文。
+
+@ 0 1 0 0a8b4427c5575ec910bde6fb27b471f1
++ entry .currencies   交易最多的三十六种货币，每个都是需按名称导入的 given
+
+% 1 1 0 06a47bdf28897714114cb94341f9c6f0
+
+@ 0 4 0 1e02e611b0536e780230b2a4294c4112
++       一个选择包，与总括包的 `currencies` 合并。
++       每个成员都是一种货币的 given `Currency`，以首字母大写的 ISO 代码命名，并按名称导入：它既是金额的 `show` 所需的证据，也是创建金额的值。
+
+% 2 1 0 078cd85e91f957dc08207328503beec0
+
+% 3 1 0 19de69d00d6a6f7f1b8a006be91246ae
+
+% 0 1 0 1754e9540216fe6f0bdcd5ce036a37b0
+
+% 0 1 0 187e1e520abafe1b12aedacc4b1b39c8
+
+% 1 1 0 0d8bab419972968f117dd32cbdac2e84
+
+@ 0 39 0 0a9990234708bb220b9f6f10c3b339da
++       这里的每种货币的模数都是 100，包括日元和韩元等实际上没有辅币单位的货币。
++       不在这里的货币用 `Currency()` 声明。
++   entry .Usd   美元，`USD`，以符号 `$` 显示
++   entry .Eur   欧元，`EUR`，以符号 `€` 显示
++   entry .Jpy   日元，`JPY`，以符号 `¥` 显示
++   entry .Gbp   英镑，`GBP`，以符号 `£` 显示
++   entry .Cny   人民币，`CNY`，以符号 `¥` 显示
++   entry .Aud   澳大利亚元，`AUD`，以符号 `A$` 显示
++   entry .Cad   加拿大元，`CAD`，以符号 `C$` 显示
++   entry .Chf   瑞士法郎，`CHF`，以符号 `CHF` 显示
++   entry .Hkd   港元，`HKD`，以符号 `HK$` 显示
++   entry .Sgd   新加坡元，`SGD`，以符号 `S$` 显示
++   entry .Sek   瑞典克朗，`SEK`，以符号 `kr` 显示
++   entry .Krw   韩元，`KRW`，以符号 `₩` 显示
++   entry .Nok   挪威克朗，`NOK`，以符号 `kr` 显示
++   entry .Nzd   新西兰元，`NZD`，以符号 `NZ$` 显示
++   entry .Inr   印度卢比，`INR`，以符号 `₹` 显示
++   entry .Mxn   墨西哥比索，`MXN`，以符号 `$` 显示
++   entry .Twd   新台币，`TWD`，以符号 `NT$` 显示
++   entry .Zar   南非兰特，`ZAR`，以符号 `R` 显示
++   entry .Brl   巴西雷亚尔，`BRL`，以符号 `R$` 显示
++   entry .Dkk   丹麦克朗，`DKK`，以符号 `kr` 显示
++   entry .Pln   波兰兹罗提，`PLN`，以符号 `zł` 显示
++   entry .Thb   泰铢，`THB`，以符号 `฿` 显示
++   entry .Ils   以色列新谢克尔，`ILS`，以符号 `₪` 显示
++   entry .Idr   印度尼西亚盾，`IDR`，以符号 `Rp` 显示
++   entry .Czk   捷克克朗，`CZK`，以符号 `Kč` 显示
++   entry .Aed   阿联酋迪拉姆，`AED`，以符号 `AED` 显示
++   entry .Try   土耳其里拉，`TRY`，以符号 `₺` 显示
++   entry .Huf   匈牙利福林，`HUF`，以符号 `Ft` 显示
++   entry .Clp   智利比索，`CLP`，以符号 `$` 显示
++   entry .Sar   沙特里亚尔，`SAR`，以符号 `SR` 显示
++   entry .Php   菲律宾比索，`PHP`，以符号 `₱` 显示
++   entry .Myr   马来西亚林吉特，`MYR`，以符号 `RM` 显示
++   entry .Cop   哥伦比亚比索，`COP`，以符号 `$$` 显示
++   entry .Rub   俄罗斯卢布，`RUB`，以符号 `₽` 显示
++   entry .Ron   罗马尼亚列伊，`RON`，以符号 `lei` 显示
++   entry .Pen   秘鲁索尔，`PEN`，以符号 `S/` 显示
+
+@ 0 1 0 1f4baac04c5838f51f408c61fab914cc
++ entry .internal   不透明类型 `Money` 和 `Isin`、它们的伴生对象和扩展方法，以及 `isin"…"` 宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 19a7a8bc08547bff0351715e562a74ef
++       该对象的存在是为了让 `Money` 和 `Isin` 能够成为基于 `Long` 的不透明类型：只有在这里其表示才是可见的。
++       两个类型都导出到 `plutocrat` 包，该包中 `Money` 和 `Isin` 的页面有完整说明；它们的扩展方法是此对象的成员，对任何金额或 ISIN 都处于隐式作用域中。
++   entry .Money   一笔金额，基于 `Long` 的不透明类型；参见 `plutocrat.Money`
+
+% 1 1 0 187b2ab5c6298a3a0f69b94b9eee46a7
+
+@ 0 12 0 1ba6a14c57908a331358bd5522137581
++         货币代码和辅币单位计数，打包在一个 `Long` 中。
++         其伴生对象持有同一货币金额的算术、比较和渲染 given，因此都无需导入；每个 given 都接收两笔同一货币的金额，正是这一点使混用货币成为编译错误。
++     entry .apply   由辅币单位计数得到的金额，货币作为类型参数
++         无论 `Currency` 的模数是多少，`Money["EUR"](301L)` 都是 €3.01；不需要 `Currency` given。
++     entry .underlying   证明金额的表示是一个原始数值的证据，供泛型数值代码使用
++     entry .showable   按作用域中的 `Currency.Style` 显示金额，带有其货币的符号或代码
++         需要该金额的 `Currency` given（来自 `currencies` 或自行声明）和一个 `Currency.Style`（来自 `currencyStyles`）。
++         辅币单位始终以两位数字书写。
+
+% 2 1 0 1503271d71976630038d9e272351e6b3
+
+% 3 1 0 08efdcfd224dfe910d2fe9fc2743774e
+
+% 0 1 0 07fbac1b8ae16fc2092051a828ebfad1
+
+% 0 1 0 03436b954cc0bdbc0d734708c58a20ec
+
+% 0 1 0 03e4708d7d1498121d244820ce86f387
+
+% 1 1 0 1541aa25dc4f56001be2c0dd9c44f068
+
+@ 0 18 0 0d90dd75d95697180df2f6a99b32a790
++         负数金额无法正确渲染：其主币单位和辅币单位各自都带一个负号。
++     entry .inspectable   精确地检视金额，以其货币代码和辅币单位表示：`¤EUR301ₘ`
++         既不需要 `Currency` 也不需要样式，因为代码已打包在值中。
++         `ₘ` 标明该计数是辅币单位，因此 €3.01 不会被误读为三百零一欧元。
++     entry .addable   把两笔同一货币的金额相加
++     entry .subtractable   从同一货币的另一笔金额中减去一笔金额
++     entry .multiplicable   把金额乘以一个 `Double`，舍入到最接近的辅币单位
++     entry .divisible   把金额除以一个 `Double`，截断到整数个辅币单位
++     entry .divisible2   把一笔金额除以同一货币的另一笔金额，以 `Double` 给出两者之比
++     entry .divisible3   把金额除以一个 `Int`，截断到整数个辅币单位
++         如需精确地分成若干份，请使用 `share`。
++     entry .orderable   用 `<`、`<=`、`>` 和 `>=` 比较两笔同一货币的金额
++     entry .zeroic   一种货币的零金额，需要 `Currency` given
++         使金额可以求和，如 `List(…).total`，空集合之和为零。
++     entry .negatable   对金额取负：`-Eur(1.99)`
++   entry .Isin   一个 ISIN，基于 `Long` 的不透明类型；参见 `plutocrat.Isin`
+
+% 1 1 0 07939a7caff2bb761951da63ed507d61
+
+@ 0 6 0 1b4bf02234fabad616b7a6d1225e373c
++         两个字母的国家代码和九个字符的国家编号，打包在一个 `Long` 中；校验位在渲染 ISIN 时重新计算。
++     entry .apply   检查文本中的 ISIN，无效时抛出 `Isin.Error`
++         需要一个 `Tactic[Isin.Error]`。
++         检查的内容包括长度、国家代码（两个大写字母）、国家编号的字符（数字和大写字母）以及 Luhn 校验位。
+
+% 2 1 0 15dc9d1a1d81ad4c02ea03bd917f8811
+
+% 3 1 0 1d6f623489d826691b4d25a8a001e81d
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0f625644990da65c152ae19e0e5182f6
+
+% 1 1 0 00fac05d1213193b07636911a397942d
+
+@ 0 2 0 04af04bc776c64bf0f62f592a6c32faf
++     entry .inspectable   以能够生成它的插值器检视 ISIN：`isin"US0378331005"`
++     entry .Error   当文本不是有效的 ISIN 时抛出，说明它违反了哪条规则
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 6 0 1fdeb46fa8111afc12ce9486eeb80657
++           错误 `↯/s.50.1`：_the ISIN number is not valid because …_，后接原因：长度错误（_it had length 11, but it should be 12 characters long_）、国家代码无效、某个字符不是数字或大写字母（附其位置），或最后一位未通过 Luhn 校验。
++           由 `Isin(…)` 抛出，并由 `isin"…"` 报告为编译错误。
++       entry .Reason   无效 ISIN 违反了哪条规则
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 1 0 0777515db4777fcb044e1deabe572334
++             以错误的子编号编号（长度错误为 `↯/s.50.1.3`）：
+
+% 0 1 0 17a12efcb5b524961abe798015d06fdd
+
+@ 0 4 0 0d5ef2efde2ee57f0e6d08d8d6cee859
++             column  分支
++             column  代码
++             column  消息
++             column  说明
+
+% 0 1 0 1189da36231d059b0e3363ff5fcf143b
+
+% 0 1 0 1d1fbb07ce716a7315a09850dc2efd7f
+
+% 0 1 0 1a096cb0522653e701cfd480ca073ee2
+
+% 0 1 0 09cf0767c8f8abe618d5f8ccc3395ffe
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 18 0 019f7805f21d2a27119bc63a56e17ea1
++         entry #number   原因的编号，即错误的子编号
++       entry .communicable   把原因描述为补全错误消息的从句
++       entry .InvalidCharacter   某个索引处的字符不是数字或大写字母时的原因
++       entry .BadCountryCode   国家代码不是两个大写字母时的原因
++       entry .WrongLength   文本长度不是十二个字符时的原因
++       entry .LuhnCheck   最后一位不是其余部分的 Luhn 校验位时的原因
++       entry #reason   文本违反了哪条规则
++   entry .currency   金额所属货币的 ISO 代码，从金额本身读取：`t"EUR"`
++       `Money` 上的扩展方法，即使金额的类型已被拓宽为裸的 `Money` 也可用。
++   entry .value   以辅币单位计数表示的金额：€3.01 为 301
++       `Money` 上的扩展方法。
++   entry .tax   由此金额及按某一税率计算的税额构成的 `Price`：`Gbp(2.30).tax(0.2)`
++       `Money in c` 上的扩展方法。
++       税额是金额乘以税率，舍入到最接近的辅币单位。
++   entry .share   把金额分成若干份，各份之和恰好等于该金额
++       `Money in c` 上的扩展方法。
++       各份之间最多相差一个辅币单位，较大的份排在前面：
+
+% 2 1 0 049140896ec2d40b1034f1325807bc2c
+
+% 3 1 0 14921e32d8d51b830d025cea9cc2e93f
+
+% 0 1 0 03feb3af7b834e61019156afa08e8cb8
+
+% 0 1 0 18774c9f070da0bc073c2258924050c5
+
+% 0 1 0 1e82a914c7a7e155058342857a77bb86
+
+% 1 1 0 1df8220b9a4e09f6056783fcacdaa247
+
+@ 0 5 0 13a4e8866d47071c0e8b6152942e9411
++       份数必须至少为一。
++   entry .countryCode   ISIN 的两个字母的国家代码：`t"US"`
++   entry .nsin   ISIN 的国家编号及其校验位：最后十个字符
++   entry .isin   以十二个字符表示的 ISIN：`t"US0378331005"`
++   entry .interpolator   `isin"…"` 背后的宏

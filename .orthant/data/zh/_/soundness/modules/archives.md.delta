@@ -1,0 +1,447 @@
+orthant 2 language
+
+@ 0 1 0 05cd70bfca7ffb9007b0bc90cbc05e4c
++ ## 归档
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 8 0 0fed22f9e3bbe85603bf10d71d814a13
++ 日常计算中的两种归档格式，[ZIP](https://en.wikipedia.org/wiki/ZIP_(file_format)) 和 [tar](https://en.wikipedia.org/wiki/Tar_(computing))，都以带类型的值读写。
++ `Zipfile` 或 `Tarfile` 是一个条目序列，每个条目都有一个经过验证的、相对于归档的路径和流式的内容。
++ 任意大小的归档都按条目逐个读取，写入时也无需在内存中组装。
++ ZIP 条目在读取时解压缩，tar 条目直接从底层源解析。
++ tar 条目以带类型的值携带该格式存在的意义所在的 Unix 元数据，即模式、属主和修改时间。
+
+@ 0 1 0 1f322894d685df2916faeca708b2f14f
++ ### 关于归档
+
+@ 0 5 0 042f832ec967263a16c3c57796371603
++ 归档是假装成文件系统的流，处理它们的 API 往往把这两种伪装之一暴露得很糟：要么是一个可变的随机访问对象，必须打开、修改并记得关闭；要么是由头部和字节组成的原始流。
++ 条目名称是普通字符串，因此没有什么能阻止那些经典错误，即绝对路径和 `..` 遍历，而元数据只是事后补上的一堆整数。
+
+@ 0 5 0 04c7c43b8b18e8b51bfdc8d4a8447db6
++ 在这里，归档就是数据。
++ 条目是[不可变]的值。
++ 它们的路径是带类型的、相对于归档的[路径](paths.md)。
++ 读取、写入和压缩，与其他地方使用的流式操作完全相同。
++ 通过一个拥有文件的作用域惰性地读取归档，正是[界定作用域](../../philosophy/delimited-scopes.md)中所描述的形态。
+
+@ 0 4 0 0c6d17384013986c00332734c704a68f
++ 一切都来自 `soundness` 包。
++ 从磁盘读取归档会记录一个事件，而读写归档都可能失败，因此作用域内有一个错误[策略]和一个日志选择。
++ 最后一个导入让示例能够打印结果，并且示例在各自的目录中工作：
+
+% 2 1 0 103643eb178ce0b01bd49add993ac95a
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 0e29fdb93f7639341f79f55d2ccb9309
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0327a639101f3806141ed98db7255285
+
+% 0 1 0 178b4e793a31e649108ea3f4a409e84b
+
+% 1 1 0 0e11ca250b48eb671528e7881688a247
+
+@ 0 1 0 1eaf15b6bcb7345701fa804e97d95f9f
++ 每种格式都有自己的归档类型和条目类型、打开时自己的句柄，以及自己的错误：
+
+% 2 1 0 017451cb6e6c9b980ea84862d45312f5
+
+@ 0 11 0 0034085c705ae3fb1ea92185d832b2ad
++ column  格式
++ column  归档
++ column  条目
++ column  打开为
++ column  句柄
++ column  打开标志
++ column  错误
++ row  ZIP  `Zipfile`  `Zip.Entry`  `Zip`  `zipfile`  无  `Zip.Error`
++ row  JAR  `Zipfile`  `Zip.Entry`  `Jar`  `zipfile`，带 `manifest`  无  `Zip.Error`
++ row  tar  `Tarfile`  `Tar.Entry`  `Tar`  `tar`  `Tar.Flag.Gzip`、`Zlib`、`Deflate`  `Tar.Error`
++ row  ar  `Arfile`  `Ar.Entry`  `Ar`  `ar`  无  `Ar.Error`
+
+% 1 1 0 15edff0173d6d60b18709df7afde5844
+
+% 0 1 0 0e0d0c6a318ed9ba040f44553ddbeab7
+
+@ 0 4 0 0095adee3248f4f30ee4df7e3a1c0331
++ ZIP 归档是由条目组成的 `Zipfile`。
++ 每个条目是一个相对于归档的路径和一个内容源。
++ 归档以字节流的形式传输，因此把它写到磁盘与写入任何其他值无异。
++ 压缩是作用域内的一项方针，默认使用 deflate，在 deflate 无益时则直接存储：
+
+% 2 1 0 14274774d02226db0e00af72a44c639e
+
+% 0 1 0 1e19a9d446325c2418599de1be6babbc
+
+% 0 1 0 1777a636647be95e12148d0969a00657
+
+% 0 1 0 165bccbed33307d60e8d42357ca1c79e
+
+% 1 1 0 05aaf01fcedb89130f4750e9f3a8b0f2
+
+@ 0 1 0 0a41709dd612968b0722f6af48cfeee2
++ 条目的路径是 `Path on Zip`，它相对于归档的根。
+
+@ 0 2 0 0207d18fb72d872f1d9dd973dfa2755f
++ 归档可以从路径或字节中读取。
++ 条目按路径查找，其内容可以读作任何类型：
+
+% 2 1 0 044684dfb3c0f32e026e31c7589f75f5
+
+% 3 1 0 161827be7b03229616dab4a51af10873
+
+% 4 1 0 15336d6fb12979e811dbb83afc642587
+
+% 0 1 0 1892d02d6f5d6b3d116fa18d23f86df3
+
+% 0 1 0 195aa0b67acea0cc02237f6b1e5e4863
+
+% 0 1 0 122e80ce5030443b1b5870ed29c8a3dd
+
+% 1 1 0 17d5a3715e6d593a000f427cc57675fd
+
+@ 0 3 0 146e1f46382cf209097a74a2be8acbbe
++ 从归档中读取的条目，除内容之外还携带其头部的元数据。
++ 把它写回去会逐字节重现原来的归档，只有 ZIP64 记录会被重建：
+
+% 2 1 0 0a1bcdbaf82225b20ae3a90acef90f36
+
+@ 0 10 0 0943679e96107f2a17e2bdd1178c16ab
++ column  字段
++ column  内容
++ row  `flags`  通用标志
++ row  `versionMadeBy`  “version made by”
++ row  `localVersion`  本地头部的“version needed”
++ row  `centralVersion`  中央目录的“version needed”
++ row  `internalAttributes`  内部属性
++ row  `externalAttributes`  外部属性，Unix 模式位于其中
++ row  `localExtra`  本地头部的扩展字段
++ row  `centralExtra`  中央目录的扩展字段
+
+% 1 1 0 1d523668201dbc3505018224580f6f01
+
+@ 0 4 0 15d4ce1e3aac017c1d8f9cdd2c3f8837
++ 在新条目上，这些字段都默认为 `Unset`，表示由库自行选择的值。
++ `flags` 的第 3 位把条目标记为*流式*的。
++ 它的 CRC 和大小在载荷之后的数据描述符中重复出现，归档正是这样被写入无法定位的数据汇的。
+
+@ 0 6 0 1598c73941f8941402637aedcd9f55e9
++ `Zipfile` 还接受一个可选的 `prefix`，即放在归档本体之前的原始字节。
++ ZIP 格式从文件末尾而不是开头定位自己的目录，因此拼接在任意前导字节之后的归档仍然能被正确读取。
++ 自解压或可直接执行的归档就是这样制作的，[打包](packaging.md)生成的启动器也是这样携带自己的 JAR 的。
++ `Zipfile.rebase` 修正非常大的（ZIP64）归档中会被前缀弄错的那一个字段。
+
+@ 0 3 0 0b79c909acddb4bb1d558a45752722f8
++ 归档也可以被*打开*，这使其条目在一个作用域的持续期间内可用，并在作用域结束时关闭底层源，就像[文件](filesystem.md#reading-and-writing)那样。
++ 在作用域内，`zipfile` 就是打开的句柄：
+
+% 2 1 0 1a4a9f93388a65461a5d2a69256154e3
+
+% 3 1 0 11a334b5453e44ff0c64cc9dff52adc9
+
+% 4 1 0 0bd6e8c1965471da137678979b75c2a3
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 05eb5d18e9dc85bc1f784f48b72d31d6
+
+% 0 1 0 04622c3b319e43e516c967703f2f48f2
+
+% 1 1 0 122104a81e1201540df1b3e80e010acd
+
+@ 0 3 0 1e22122973d3a4a31a81833885cebb12
++ JAR 是带有清单的 ZIP。
++ 以 `Jar` 打开它会得到同样的句柄，并细化为带有从 `META-INF/MANIFEST.MF` 解析出的主属性，续行按规范要求重新连接。
++ 没有清单的归档就只是没有属性：
+
+% 2 1 0 113b6b2c4224c7261447367639736bdf
+
+% 3 1 0 1e7d197b662341441720e034b03b440b
+
+% 4 1 0 0da25a3e04f066b50cd14ac381f2290f
+
+% 0 1 0 1f4a1d8aa407f512029028e5c9b73992
+
+% 0 1 0 0431a66deb5b0b4a1a88bcbb333fcec0
+
+% 0 1 0 11142a6c2f0f1f2504019ad85482f4ad
+
+% 0 1 0 19a0fa165affa30313ec0f58babc8159
+
+% 0 1 0 1147f5af79876500176859b72066dea7
+
+% 1 1 0 0ae8b30424c18d4f0a516b2f3b9e7a83
+
+@ 0 3 0 1673e0e53864bc330d069895a71c683d
++ 错误是 `Zip.Error`，其原因说明了出了什么问题：条目不存在时为 `NotFound`，两个条目共用一个路径时为 `DuplicateEntry`，字节根本不是 ZIP 归档时为 `MissingEocd`：
+
+% 2 1 0 0082486eb24a4d9e108053e973b0a2d5
+
+% 3 1 0 1b2666f62158aa8a082c06b582d08d5b
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 03aefb2e8b838a6a1d3f4d26b25ece7e
+
+% 1 1 0 1d2728306f0061461d2a7b5b44d9e25d
+
+% 0 1 0 0bbf743fe50e5a8711fe629c60118a71
+
+@ 0 5 0 11e519b05a737eee1f1fd348748e4cec
++ tar 条目是该格式的带类型分支之一：文件、目录、硬链接或符号链接、字符设备或块设备，或 FIFO，并明确写出其 Unix 元数据。
++ `Tar.Entry` 构建最常见的分支，即文件，带有默认的模式和属主，并以当前时间作为时间戳。
++ `Tar.Entry.at` 接受任何瞬时类型作为时间戳。
++ case class 则明确接收所有内容：
+
+% 2 1 0 0710286efa77ee4d154ac27dd530c1fe
+
+% 0 1 0 0fe0595a652c7a7817f710f35ccd9910
+
+% 0 1 0 0be9aa7274af355c0ddb8d6a02f3a0af
+
+% 0 1 0 003cdb8bdf5b988907496e495434df70
+
+% 0 1 0 18fba8aae2462aae0f880e43b92b52c5
+
+% 0 1 0 00f7ff4babf544181019c8eac7dc8fbe
+
+% 0 1 0 00d4d024d97fa3681fae8cb7701d79d9
+
+% 0 1 0 026511dbca77ba34050c48b4d4f82a5e
+
+% 0 1 0 1b1f09dce711822b0f9fb91f7f22e5dd
+
+% 1 1 0 19c1f154d45d038a1dbb247fe05e2e93
+
+@ 0 2 0 136d5f702debc3a4052498da2263cb4a
++ 由条目组成的 `Tarfile` 以 tar 块的形式流式传输，或者以该格式通常采用的压缩形式传输：
+
+% 2 1 0 1b69164e1d66cc541e390da6f8fd262a
+
+% 0 1 0 036a7af8d43243e514c4e72ed49b7707
+
+% 0 1 0 172b35e53c865ce019b4a71f3cd2bba7
+
+% 0 1 0 0aa1efabc86048f515304878cf76745b
+
+% 0 1 0 081019d6a917d09b15a3c1fecaeb8bb4
+
+% 1 1 0 1367ce1d8fdba39c0eca6cc5a90de0ea
+
+@ 0 3 0 059c2e4b1e9d95c9098d7345a5ef5399
++ 读取则反向进行。
++ `Tarfile.read` 直接从字节流中惰性地解析条目。
++ 消费一个条目会使源越过它，因此归档从不被物化。
++ 压缩的归档只是一个解压缩后的流，以同样的方式读取：
+
+% 2 1 0 0317e1889ef27b311157ae14d502a742
+
+% 3 1 0 13ce55584f1ffb2b0136fd77f30ecdd7
+
+% 4 1 0 199ec1565bc3e9db1251180e7cabc6ba
+
+% 0 1 0 035c9cb414d33ad10402f761f6839b09
+
+% 0 1 0 0b1b5620bcd5186b029fc8f27c3597b3
+
+% 1 1 0 0fc9dccddf493de208ec781e84163586
+
+@ 0 3 0 0d88209141dc710a16fe4ee415fc8e50
++ 以这种方式读取归档是单遍、单一所有者的。
++ 应在一个线程上按顺序消费条目。
++ 被跳过的条目仍然可读，因为序列推进时它的正文会被 memoize，但序列本身无法重放。
+
+@ 0 2 0 141bedcba46e4a3d1c1d23830cd257df
++ 以 `Tar` 打开归档会像 ZIP 归档那样为底层源限定作用域，并以标志的形式接收压缩方式。
++ `tar` 就是打开的句柄：
+
+% 2 1 0 19817a5e2b1fa37c0654f069dfb030f9
+
+% 3 1 0 183718434880087014143a631e97b534
+
+% 4 1 0 1b91977ee29c82cb06f6937bb3ee1fd6
+
+% 0 1 0 1457d728a5aeb6060472e82c5f5537bb
+
+% 0 1 0 1b10022bce8f3bc70db688959101c23a
+
+% 0 1 0 1d87d05a510c91bb0f2146c892d13a32
+
+% 0 1 0 11779ed34044615200cb89b7485c48eb
+
+% 0 1 0 0160047e065365a81af126effa1950d5
+
+% 1 1 0 1743a5a001743ade0fbe2b0715a70ff1
+
+@ 0 1 0 0729cb89f29cf0ad117657e810dee579
++ tar 包用 `extractTo` 解包到[文件系统](filesystem.md)上：
+
+% 2 1 0 078ae18ccb506dee0b10095f0bcb2fcd
+
+% 3 1 0 10b9fcb4e60766ed02486575ab3b1079
+
+% 4 1 0 1689910103136f0a0e5363045f96b8b5
+
+% 0 1 0 08d16bffb95237a007bc4b7ebbc92606
+
+% 0 1 0 0a3f24b15b3fb74a15358e7f79bb1f65
+
+% 0 1 0 02078f434ebbd4a119e1cafce21df4c1
+
+% 1 1 0 1b1032193773150b0486c71ab49d3bad
+
+@ 0 4 0 0ece488bd73c64fa1a55739428b9191b
++ 长名称默认以 POSIX 的 pax 形式处理，也可以用 GNU 的形式，在构建归档时选定，写作 `Tarfile(entries, LongNameFormat.Gnu)`。
++ 稀疏文件和 pax 扩展头部都能如实地往返转换。
++ 格式错误的归档会抛出一个指明故障的 `Tar.Error`：校验和错误、无法解析的头部字段，或被截断的正文。
+
+@ 0 1 0 1826b3ad35b8b6ac198e67e404a80cf5
++ ### 归档一个目录
+
+@ 0 2 0 1a6edf73bbdc1b571a66a579c590d68c
++ 目录树可以用 `archive` 归档为任何一种格式，格式以类型的形式选定：
+
+% 2 1 0 0f4ab353402319211e288108d3c8046f
+
+% 0 1 0 01b9b7bb3a8b9e6810adbf97a9f6b81a
+
+% 1 1 0 0681481a9a6b0615115f137c67678122
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 06b4e27e45b5bce81077ee7d047385a7
+
+% 0 1 0 0dc8eb85d442cb341a7fef884bee97c9
+
+% 0 1 0 156b2ad9b14d2582022cc37168de4b74
+
+% 1 1 0 044fe2b7f4b1509212297d5a17f44490
+
+@ 0 5 0 1dfee016a8de68ee1e980423aa7ce18b
++ 结果是内存中的归档，即 `Tarfile`、`Zipfile` 或 `Arfile`，可以流式传输、压缩或写到任何需要的地方。
++ 每个后代都按固定顺序访问，每个目录的子项都经过排序，因此同一棵树总是产生相同的字节。
++ tar 把每个条目记录为它自己的种类，带有文件系统报告的模式、属主和时间戳。
++ 各种格式能存储的内容不同：
+
+% 2 1 0 0c0b6bee6a7d65c01e4de5554ccd4031
+
+@ 0 8 0 11d92d895eee86600573e4e583d45722
++ column  格式
++ column  结果
++ column  符号链接
++ column  目录
++ column  标志
++ row  `Tar`  `Tarfile`  按 `filesystemOptions` 的符号链接方针存储或跟随  存储为条目  `Archive.Flag`、`LongNameFormat`
++ row  `Zip`  `Zipfile`  跟随  存储为条目  `Zip.Compression`
++ row  `Ar`  `Arfile`  跟随  展平，每个文件以斜杠连接的相对路径命名  `Archive.Flag`
+
+% 1 1 0 0861448f35ceef6a152e8ff65e3ec4ce
+
+@ 0 4 0 16fe5c6c534a73c40477484d9f378ecc
++ 标志用于调整归档过程。
++ `Archive.Flag.Owner` 和 `Archive.Flag.Mtime` 替换每个条目的属主和时间戳。
++ 它们就是 `tar --owner`、`--group` 和 `--mtime`，即可重现构建的调节参数。
++ `LongNameFormat` 选择 tar 的长名称约定。
++ ZIP 则接受一个 `Zip.Compression`：
+
+% 2 1 0 157a08108356537a0fc15c75af410b7a
+
+% 0 1 0 06ec5c5417d30940189489764934e7c7
+
+% 0 1 0 12df9e4e1a549a021ac050518894f420
+
+% 1 1 0 03cdb269abe1df4c0c7191bacd50e3ab
+
+% 0 1 0 09875d46d4bd1c4e16e0dd9f71a1c344
+
+@ 0 5 0 0300945c7aedaef20739bd64f5c10d03
++ `ar` 是每个 `*.deb` 软件包和每个 `*.a` 静态库的容器：一个八字节的魔数，然后是一串平铺的成员，每个成员是一个六十字节的头部，后面紧跟其载荷。
++ 它不携带条目类型、校验和或归档结束标记，因此成员只是一个名称、它的 Unix 元数据和一个正文。
++ `Ar.Entry` 构建一个成员。
++ `mode` 是原始的八进制字段，例如 `100644`，因为 `ar` 把文件类型位与权限存放在一起：
+
+% 2 1 0 13c9060b5f96adaf10e7597c4b201252
+
+% 0 1 0 1a63300e02a3ebb919e174c3dbc76883
+
+% 0 1 0 1a63f6a756f82a720fbd6eab0d924e05
+
+% 0 1 0 1f485e5d218a344f01f18c95b2a6fded
+
+% 1 1 0 084eb078697603ad1b8aedc6ab92b78b
+
+@ 0 4 0 09a64092282856231aed970c2ab78c8c
++ 读取与 `Tarfile.read` 相似。
++ 条目从字节流中惰性地解析，单遍且按顺序，每个成员的正文以有界的数据块流式传输，如果序列越过了它，则会被 memoize。
++ 以 `Ar` 打开会像 `Tar` 那样为源限定作用域，句柄是 `ar`。
++ 没有标志，因为 `*.deb` 就是普通的 `ar`，只有它的成员是压缩的：
+
+% 2 1 0 19c29f2e7043b175004fd4d828b79dbb
+
+% 3 1 0 114020c9944f512b0e94028c953fd117
+
+% 4 1 0 1e3a31bcd5cca1710c3d6c16fe3305e8
+
+% 0 1 0 0cf8959b6d3c764306484fa6ec138775
+
+% 0 1 0 140574e7931a83a61fbbaeb58cef30d9
+
+% 0 1 0 066b397a501d1a6614a2ae9edae1e335
+
+% 0 1 0 0fb8522d11b054620066bdc80838da1f
+
+% 0 1 0 06cee4590bd1b2521548888835f0481c
+
+% 0 1 0 06438b523dff86d814ad7cf0be2d31e6
+
+% 1 1 0 0f15b7ba532d08381fdab4f7e8c6a278
+
+@ 0 7 0 1aa8f0e5a934839e1806bcf339efaef8
++ GNU 归档把长于十五个字符的名称存放在一个 `//` 名称表成员中，并按偏移量引用它们。
++ 读取器会解析这些引用，并去掉 SysV 的结尾 `/`，结果放入 `name`。
++ `rawName` 保留字面字段，因此解析后的归档可以再次逐字节序列化，写作 `Arfile.from(stream).source[Data]`。
++ 每个条目的 `role` 说明它是 `Regular` 成员、`NameTable`，还是 `SymbolTable`（即 `/` 或 `/SYM64/`）。
++ 格式错误的归档会抛出 `Ar.Error`：缺少魔数、头部终止符损坏、非数字字段、流被截断，或无法解析的长名称引用。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 9 0 011032db34f1f8290ffa63fce0667681
++ - [压缩](compression.md)介绍 tar 包传输时所用的 gzip、zlib 和 deflate。
++ - [文件系统](filesystem.md)介绍读取、写入和解包归档时所涉及的文件、目录和句柄。
++ - [路径](paths.md)介绍条目的相对于归档的路径。
++ - [打包](packaging.md)构建 JAR 文件和启动器，它们都是 ZIP 归档。
++ - [容器](docker.md)从 tar 归档构建镜像层。
++ - [流](streams.md)介绍读取条目所用的惰性流。
++ - [版本管理](versioning.md)介绍 JAR 所携带的清单。

@@ -1,0 +1,199 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06562905e99fab72131bd8cdc5dc656a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 191f5c47ae476c8315ebd94bdf845c5b
++ info   以有类型的文档树表示的 Unix 手册页，序列化为正确转义的 roff
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1f5000e31f89543b1bd717c6c473d82c
++     _Virility_ 把 Unix 手册页构建为一个值：一个由带标题的节、段落、带标签的段落、示例和缩进块组成的 `Roff` 文档，含有粗体和斜体游程；并使用 man 宏包（`.TH`、`.SH`、`.SS`、`.P`、`.TP`、`.EX`/`.EE`、`.RS`/`.RE`）将其序列化为 `man` 所渲染的 roff 源码。
+
+@ 0 5 0 14eca3cdcb1c4c7a00e0d43680c364a1
++     转义是这个库存在的理由：手工写入 roff 文档的文本很容易被误读为标记。
++     正文中的每个 `-` 都变成 `\-`，使 `--verbose` 这样的选项在渲染出的页面中仍可搜索、可复制；每个 `\` 都变成 `\[rs]`；以 `.` 或 `'` 开头、会被 roff 当作控制行的行，用 `\&` 加以保护；行内的换行符变成空格。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 06fd7c3732f9b38e0978880242cd4b75
+
+% 0 1 0 1971fb6fdff5c85c0b46d3f40555a9a2
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 0f8bd7b4e74b432904b1c46105a11685
+
+% 0 1 0 17bdfbae78c37db113c8deb4c82feda9
+
+% 0 1 0 009d850715cc550a1520b319b75ee172
+
+% 0 1 0 1dc09c07682b520516f528a29c19fe11
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 1e987cb7719ebbb1107899c5ab15a25b
+
+% 0 1 0 09b05a5367acd98e0f7bfced010bc903
+
+% 0 1 0 177c315e378d99e60b2361e1b4a42185
+
+% 0 1 0 1ae0477d94da20240f6cdb53292509d3
+
+% 0 1 0 14f98e6f1ba318e20b1c53802fd5a08a
+
+% 0 1 0 1072917e9c55263a172a24bf6a17feec
+
+% 0 1 0 1e448bf5421592c81299436fad8a5b07
+
+% 0 1 0 0df06f87942f510f1f640b3a246bf2e1
+
+% 0 1 0 0fd4c46719e6757016e0b5c33feaa608
+
+% 0 1 0 0a5413908b6447e605ee4780fc4270ff
+
+% 0 1 0 187ee86dc0a8927c1709d7d2a9c37afc
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 019ae1017e865c7904384a4fee815414
++     Exoskeleton 的手册页支持通过这个库，根据程序自身的命令行定义生成页面。
++     Virility 只有一个源集 `virility.core`，所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 008c746b5bd31cef04c583614389c524
+
+% 0 1 0 0f00b820f8a0117a1d0cb24afd9a0eb3
+
+% 0 1 0 118e3f9a71c0b01e122f18a574fb4cfa
+
+@ 0 1 0 04ba6ff3899deabc08e9d19eca78aa46
++ entry .Roff   一个 Unix 手册页：其 `.TH` 标题行和一组块，序列化为 roff
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 4 0 0742a97fd5e788bc0c957e7ef092c923
++       一个 `Roff` 就是一个手册页。
++       它的字段成为页面开头 `.TH` 行的参数：`#title`（以大写渲染）、`#section` 编号，以及可选的 `#date`、`#source`（程序及其版本）和 `#manual`（所属手册的标题，例如 `User Commands`）。
++       它的 `#blocks` 是正文。
+
+% 2 1 0 1ae52a075d1a6665126844f1e602f345
+
+% 3 1 0 187409dfaaea47510d150875324119da
+
+% 0 1 0 0a635894ded961811991631df9b7b841
+
+% 0 1 0 166a4715d83eb1b901b8035b439e74d2
+
+% 0 1 0 043f0f7e2f3dd65400cbb4cb3176867c
+
+% 1 1 0 18dd2c791d3ec8a905cea710dbc9f513
+
+@ 0 3 0 1236d665aa07a6940973423e29155804
++       末尾未设置的参数从 `.TH` 行中省略，位于已设置参数之前的未设置参数写成空的带引号参数。
++       `Roff` 显示为、并编码为其 `#serialize` 所得的源码 `Text`，因此可以用 `write` 写入文件。
+
+% 0 1 0 112329b882b74d0b04cc94c5d8deb2ee
+
+% 0 1 0 1db2d2b50643db6f1d5d120097e5a476
+
+@ 0 6 0 0b486e15195d84e603f7dd8fbb49d38b
++   entry .showable   将页面显示为其 roff 源码
++   entry .encodable   将页面编码为其 roff 源码文本
++   entry .escape   转义文本，使之可用于 roff 文本行
++       每个 `-` 变成 `\-`，`\` 变成 `\[rs]`，换行符变成空格。
++       它不保护开头的 `.` 或 `'`：这由各个块对它们输出的每一行完成，因此仅经过 `.escape` 处理并写在行首的文本仍需要 `\&`。
+
+% 2 1 0 04eb90a98edc8269120d8a2a66c51592
+
+% 3 1 0 0b4887d72c23d52b1e27789c8cb1cb29
+
+% 0 1 0 0d17328f2083b1da06fed240c2a9b5fc
+
+% 1 1 0 0979fb72fcb0377b00a1870455407dbb
+
+@ 0 4 0 1e320c064134fbbe0b49689362c1b794
++   entry .quote   转义文本并加上双引号，用作宏参数
++       用于 `.TH`、`.SH` 和 `.SS` 的参数。
++       在引号内，`"` 变成 `\[dq]`，`\` 变成 `\[rs]`，但 `-` 保持不变：标题或日期中的连字符是正文，而 `.TH` 日期中被转义的连字符会使 `mandoc` 的日期解析失败。
+
+% 2 1 0 1b495a85e3e9b6d60a44a6c82e04a6c6
+
+% 3 1 0 1277a10f25335b67165f009f1d4ab0b8
+
+% 0 1 0 017ad8c0894f64df14fcd7038f0fddae
+
+% 1 1 0 07a629f0052c8618045826d1ef2258a9
+
+@ 0 1 0 0a993f9b2159092e0f897bc36c166d87
++   entry .Inline   行内的一段文本游程：普通、粗体或斜体
+
+% 1 1 0 0de0d7c5d4d4253c1937946f617497ef
+
+@ 0 4 0 083333e70ac657fa0faf47b7688a5c59
++         一个有三个分支的枚举。
++         `Plain(text)` 是转义后的文本；`Bold(inlines)` 和 `Italic(inlines)` 用 `\fB…\fP` 和 `\fI…\fP` 字体切换包裹一组更多的游程，因此样式可以嵌套。
++         伴生对象的 `plain`、`bold` 和 `italic` 构造常见的单游程形式。
+
+% 2 1 0 158f842d810dd6b71e30d85ef35f4d15
+
+% 3 1 0 1f684d954814f8461643c413d698aeb3
+
+% 0 1 0 139c11efba42b4130410ae4317caafdc
+
+% 0 1 0 142469118c1d7d2719cf60cf3cc81fb5
+
+% 1 1 0 1d4f51e31f74c7620fe742a7d5096b70
+
+@ 0 5 0 0841fc3682ed3cf81c1b7f940d8364ed
++     entry .plain   只含一个普通文本游程的列表，即段落正文所采用的形式
++     entry .bold   一个由普通文本构成的粗体游程
++     entry .italic   一个由普通文本构成的斜体游程
++     entry #serialize   该游程的 roff 文本，已转义并带有字体切换
++   entry .Block   手册页中的一个块：节、段落、带标签的段落、示例或缩进
+
+% 1 1 0 17c75931a837f1fa08f546479ae50a27
+
+@ 0 1 0 00fadf1f4b79a37a10ee9f0a114f7f76
++         man 宏各种块结构的枚举：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 188e84704d2e71361957917d750e514b
++         column  分支
++         column  宏
++         column  块
++         row  `Section(title, blocks)`  `.SH`  一个节，例如 `Name`、`Synopsis` 或 `Options`
++         row  `Subsection(title, blocks)`  `.SS`  一个小节
++         row  `Paragraph(prose)`  `.P`  由行内游程组成的段落；作为节或小节的第一个块时，省略多余的 `.P`
++         row  `Tagged(tag, body)`  `.TP`  选项条目的形状：标签占一行，其描述缩进在下方；正文为空时只输出标签
++         row  `Example(lines)`  `.EX`, `.EE`  字面量行，每行都经过转义和保护
++         row  `Indented(blocks)`  `.RS`, `.RE`  缩进的块
+
+% 1 1 0 06e035ecc20ff5951b483a5308814210
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 0 1 0 01246ac97dbd57bd0310858cfe204f70
+
+% 0 1 0 0d4156af82670a3402e1e5f4806801e7
+
+% 1 1 0 050f9320d81c09911fa055695197b539
+
+@ 0 10 0 1d5565edffaf45670398c3909f024993
++     entry #serialize   该块的 roff 源码行
++         每个以 `.` 或 `'` 开头的文本行都用 `\&` 保护，因此正文绝不会被当作控制行。
++   entry #title   页面名称，通常是命令名，在 `.TH` 行上以大写渲染
++   entry #section   手册节号：1 表示用户命令，5 表示文件格式，8 表示系统管理
++   entry #date   页面最后一次修改的日期，以文本表示
++   entry #source   程序的来源，通常是其名称和版本
++   entry #manual   页面所属手册的标题，例如 `User Commands`
++   entry #blocks   页面的正文
++   entry #serialize   整个页面的 roff 源码，以换行符结尾

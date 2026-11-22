@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 9 0 1a241fe6c66dbd9507172f836d70279f
++       Kolejka i demon zapisujący należą do **miejsca wywołania** i miejsca docelowego: każdy
++       `Logger` zbudowany w tym samym miejscu w źródle dla równego miejsca docelowego
++       współdzieli jeden, więc given obliczany ponownie przy każdym przywołaniu nie uruchamia
++       za każdym razem nowego wątku, a funkcja pomocnicza, która buduje `Logger(path)` dla
++       różnych ścieżek w jednym wierszu, dostaje kolejkę dla każdej z nich.
++   entry #accepts   czy logger rejestruje zdarzenia na danym poziomie: na poziomie progu lub wyższym
++   entry #submit   kolejkuje przepisane zdarzenie do formatowania i zapisu, z poziomem i znacznikiem czasu
++       Wywoływane przez `Loggable.fanOut` po pomyślnym sprawdzeniu `#accepts` i `admits`;
++       zdarzenie jest formatowane w wątku wywołującym, a jego rekord kolejkowany dla demona
++       zapisującego. Zwykle nie wywołuje się go bezpośrednio.
+
+@ 0 4 0 1f408433dcd1404302e9905c86c98c22
++ entry .dateFormat   wzorzec daty i godziny formatów ze znacznikiem czasu: `2026-Nov-04 09:30:00.250`
++     `java.time.format.DateTimeFormatter` dla `yyyy-MMM-dd HH:mm:ss.SSS` w domyślnej strefie
++     czasowej JVM, używany przez `timestampedLogFormat` i `ansiTimestampedLogFormat`. Jest
++     niemutowalny, więc można go bezpiecznie używać z kilku wątków.
+
+@ 0 18 0 04ccd8bc38e978cb08d9b89461024798
++       `timestampedLogFormat` i `untimestampedLogFormat` formatują dowolną wartość
++       `Communicable`, a `ansiTimestampedLogFormat` i `googleCloudPlatformLogFormat` tylko
++       `Message`, na który `Logger[…, Message]` przepisuje każde zdarzenie.
++       `textLevelLogFormat` i `teletypeableLogFormat`, które przedstawiają `Log.Level`, są
++       używane przez pozostałe.
++   entry .timestampedLogFormat   wiersz tekstu: data i godzina, poziom w nawiasach i komunikat
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, zakończony znakiem nowego
++       wiersza, dla dowolnego zdarzenia `Communicable`, ze znacznikiem czasu sformatowanym
++       przez `dateFormat`.
++   entry .untimestampedLogFormat   wiersz tekstu: poziom w nawiasach i komunikat
++       `[INFO] server listening on 8080`, zakończony znakiem nowego wiersza, dla dowolnego
++       zdarzenia `Communicable`. Pasuje do miejsca docelowego, które dodaje własny znacznik
++       czasu, takiego jak `Syslog`.
++   entry .textLevelLogFormat   przedstawia `Log.Level` jako `FINE`, `INFO`, `WARN` lub `FAIL`
++       `Showable` dla `Log.Level`, które interpolują formaty tekstowe.
++   entry .ansiTimestampedLogFormat   teletype: przygaszona data i godzina, poziom na kolorowym tle, `>` i komunikat
++       `Message is Inscribable in Teletype`, dla terminali, w `eucalyptus.ansi`. Wymaga
++       `LogPalette` w zasięgu dla swoich kolorów. Komunikaty są dzielone na wiersze o długości
++       co najwyżej 76 znaków, a każdy wiersz kontynuacji jest wcinany tak, by wyrównać go pod
++       komunikatem pierwszego wiersza. Z `Out` jako miejscem docelowym wymaga także
++       `writables.outTeletypeWritable` i `Stdio`.
+
+@ 0 11 0 190478ab175d462714e45d0774375a5a
++       Każdy rekord kończy się znakiem nowego wiersza.
++   entry .teletypeableLogFormat   przedstawia `Log.Level` jako pogrubioną etykietę na kolorze `LogPalette` dla jego poziomu
++       `Teletypeable` dla `Log.Level`, którego używa `ansiTimestampedLogFormat`, w
++       `eucalyptus.ansi`. Wymaga `LogPalette`.
++   entry .googleCloudPlatformLogFormat   jeden zwarty obiekt JSON na zdarzenie, z `severity` i `message`
++       `Message is Inscribable in Text`, w `eucalyptus.gcp`, który zapisuje
++       `{"severity":"WARNING","message":"…"}`, ustrukturyzowaną postać, którą agent logowania
++       Google Cloud czyta ze standardowego wyjścia kontenera. Poziomy odwzorowuje się na
++       `DEBUG`, `INFO`, `WARNING` i `ERROR`; komunikat to jego zwykły tekst, bez stylizacji.
++       Znacznik czasu nie jest zapisywany, ponieważ agent rejestruje własny. Każdy rekord kończy
++       się znakiem nowego wiersza: jeden obiekt na wiersz.

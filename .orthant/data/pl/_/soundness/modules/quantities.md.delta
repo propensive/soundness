@@ -1,0 +1,1083 @@
+orthant 2 language
+
+@ 0 1 0 125b92d15292ae1206f313da0afdfda8
++ ## Wielkości
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 2 0 052c1f8c7a10edda1e65db5eb99bf473
++ Wielkości fizyczne, takie jak odległość, masa czy prędkość, to wartości, które niosą swoje
++ [jednostki](https://en.wikipedia.org/wiki/Units_of_measurement) w typie:
+
+@ 0 4 0 0808668e2c9474491a0863d069eeecee
++ - Dodanie odległości do czasu jest błędem kompilacji.
++ - Pomnożenie odległości przez siłę daje wielkość, której jednostki wyznaczane są
++   automatycznie.
++ - Wielkość nie kosztuje w [czasie wykonania][czas wykonania] nic ponad `Double`, które opakowuje.
+
+@ 0 2 0 159d7eb3d0b6d4d615be479f13b65a65
++ Ta ostatnia własność jest ograniczeniem projektu, a nie optymalizacją, jak wyjaśnia
++ [zerowy koszt](../../philosophy/zero-cost.md).
+
+@ 0 1 0 1ea8ee302bae9ddd13e0ae3a74652fbb
++ ### O wielkościach
+
+@ 0 6 0 16019373113d723d028d87b2fa02397d
++ Gola liczba nie ma jednostek. Wartość `5` nie mówi nic o tym, czy liczy metry, stopy,
++ sekundy czy kilogramy. Kod, który traci to z oczu, powodował prawdziwe katastrofy. Jedną
++ z nich była [utrata sondy marsjańskiej](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure):
++ jeden komponent pracował w niutonach, a inny w funtach-siła. Zwykłe zabezpieczenia to
++ konwencje nazewnicze, komentarze i klasa opakowująca dla każdej jednostki. Opierają się na
++ dyscyplinie i niczego nie wychwytują automatycznie.
+
+@ 0 6 0 150c625f7ee8ed0119b5ed6893d47a76
++ Tutaj jednostki każdej wielkości są zapisane w jej typie, a
++ [analiza wymiarowa](https://en.wikipedia.org/wiki/Dimensional_analysis) jest wykonywana
++ w [czasie kompilacji][czas kompilacji]. `Quantity` ma parametr typu dla swoich jednostek, więc
++ długość i czas trwania są różnymi typami, a kompilator odmawia ich dodania. Arytmetyka
++ poprawnie łączy jednostki: podzielenie długości przez czas trwania daje prędkość. Wielkości
++ o zgodnych jednostkach automatycznie przekształcają się jedna w drugą.
+
+@ 0 2 0 1c191e0a4f3c750413b08b039490d760
++ Nic z tego nie istnieje w czasie wykonania. `Quantity` jest [typem nieprzezroczystym][typ nieprzezroczysty] nad `Double`, a jego operacje są
++ rozwijane w miejscu wywołania, więc za bezpieczeństwo płaci się w całości w czasie kompilacji.
+
+@ 0 5 0 130020d1b6c23b6e19c86372c05bbf32
++ Jednostki, przedrostki i operacje na wielkościach pochodzą z pakietu `soundness`. Arytmetyka
++ między zwykłą liczbą a wielkością opiera się na konwersjach _into_ kompilatora, więc ta
++ funkcja języka również jest włączona. `Decimalizer` w zasięgu ustala, z iloma cyframi
++ znaczącymi pokazuje się wielkość, a ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1983cda2abcdd53d0362a0ccc635b790
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 1 1 0 094aca692f9a6d410ad91b7490aef935
+
+@ 0 1 0 1faa2f5ba90a678f18d6515627504b21
++ ### Wielkości i jednostki
+
+@ 0 2 0 1eea59371441c373028be1eec4a1a794
++ Wielkość to liczba pomnożona przez jednostkę. Jednostki podstawowe SI są wartościami: `Metre`,
++ `Second`, `Gram`, `Kelvin`, `Ampere`, `Candela` i `Mole`. Wartościami jest też wiele innych
++ jednostek.
+
+% 2 1 0 0acc9bcc8d4bf9d40927ac0a4af11eaa
+
+% 0 1 0 0cd4c3c42e1f8cd10a04f94c64dca0ec
+
+% 0 1 0 17a5fd00c104fbaa0a25d334c506ba8b
+
+% 1 1 0 130e80faa302798c143f1691ea678018
+
+@ 0 1 0 028ba1b63f60fba610c4c5c3f49f75fa
++ `show` zapisuje wielkość wraz z jej jednostką:
+
+% 2 1 0 1ec9518b28d62d19039ae72394124b2c
+
+% 3 1 0 07e179027ac9be3715c7db17b177224c
+
+% 4 1 0 13d01926750a132e064018b18e6fa01d
+
+% 0 1 0 0229260b2ca7e93c0aaa984e08783356
+
+% 0 1 0 08cdb05d28d076491944cefc7654dfff
+
+% 1 1 0 0539ba9b2a47761302079a594b9e824c
+
+@ 0 4 0 16854c28f530bc721cf9c845e03b9d43
++ Jednostka żyje w typie. `5*Metre` to `Quantity[Metres[1]]`, w którym `1` jest potęgą, do
++ której podniesiono jednostkę. Pole powierzchni miałoby typ `Metres[2]`, a częstotliwość
++ `Seconds[-1]`. Te typy są wnioskowane, więc rzadko trzeba je pisać, ale to je sprawdza
++ kompilator.
+
+@ 0 1 0 0d759fc38f9356f60c1ac8290b4a1094
++ ### Arytmetyka i wymiary
+
+@ 0 2 0 1348b04eee293a6b0727359def8dd138
++ Wielkości o tej samej jednostce można dodawać i odejmować. Mnożenie i dzielenie łączą
++ jednostki i dają wielkość, której typ zapisuje nowe wymiary:
+
+% 2 1 0 155f38f0274104900be348be9e1b852c
+
+% 3 1 0 0ec29d0182ec52131e6bc0e3c1c4e344
+
+% 4 1 0 1edea32f18f92ad7197f3b53980b1914
+
+% 0 1 0 1a24e13b68843f9400f2014b1a1ccb72
+
+% 0 1 0 15e79071ba1cb51813d4868059bf1959
+
+% 0 1 0 052e36d1e2a207831f9497af5f19ca13
+
+% 0 1 0 0565e9af0bfc4ec012f9f40571e5d423
+
+% 1 1 0 160ceb54c04aca350996a7454144d454
+
+@ 0 2 0 06aa56a187e702591892783b08b21e90
++ Dodanie wielkości o niezgodnych wymiarach jest błędem kompilacji. Komunikat nazywa
++ niezgodność zwykłymi słowami, a nie w kategoriach typów:
+
+% 2 1 0 1fb285c4b6d268e01b7efe3a605bac3a
+
+% 3 1 0 0076956ac7456bad0ec9ad5ff946026e
+
+% 4 1 0 017ddaa994b8d4121868f3642bb1c8a5
+
+% 5 1 0 09ee56f22379b13712a17d7d9c0ffa9c
+
+% 0 1 0 0b16cf3167dacdee1f3abe13e2114fef
+
+% 1 1 0 0f17beecd42085351fd00c6c3284ac83
+
+@ 0 1 0 1a7ba65ecd3dc36a0de07d91fa833e38
++ Sprawdzenie dotyczy wymiaru, a nie tylko jednostki, więc długości nie można dodać do energii:
+
+% 2 1 0 0c72806a9256923f13018c99c6227c29
+
+% 3 1 0 171b3713fb3c3fa7127d7050e785bacf
+
+% 4 1 0 0f6856c5a37ad4370529d3f4b137d868
+
+% 5 1 0 0ad937dee546ec4506d2a90002733146
+
+% 0 1 0 0b5975422ad2515210ae222d3547c22d
+
+% 1 1 0 12d458dff357a7d50488b6c2d9a3df10
+
+@ 0 1 0 09bf1df64f1bbf6b1afc9dfe697a6190
++ Nawet dwie potęgi tego samego wymiaru pozostają rozdzielne. Długość nie jest polem
++ powierzchni:
+
+% 2 1 0 07112ab7295b997102f583716d3c13a1
+
+% 3 1 0 10b2059a83c74471148293a4ef3e3733
+
+% 4 1 0 06b2ca237c075be219095f7a53f0f599
+
+% 5 1 0 16a5245f8ec3398b1d592e6da426c935
+
+% 0 1 0 10d11c7d252c2df4044c534c4617c79e
+
+% 1 1 0 0d5daa862cfaf8641bd7f3af8448f9b3
+
+@ 0 1 0 07d352c4e9e39f02086808c15a67b7a3
++ ### Mieszanie jednostek
+
+@ 0 2 0 1d3095cc2d72c3c006919c37777c8703
++ Różne jednostki _tego samego_ wymiaru łączą się swobodnie i są automatycznie przeliczane.
++ Wynik przyjmuje jednostkę operandu głównego, którą tutaj jest jednostka SI:
+
+% 2 1 0 02505400f2638f861f4d978afd247ff8
+
+% 3 1 0 1a086ead2d3e035e0d4e95fa8f069163
+
+% 4 1 0 0351a5f9e4346979152f3761230517e1
+
+% 0 1 0 0b14815a09f3dc03066d85dd21d6f543
+
+% 0 1 0 04ab92c4a4e3ead00065f497c0e5762a
+
+% 1 1 0 03493891316fb005128d2e3794e9b2a7
+
+@ 0 2 0 1bc4f110a502381f0e795a14e695c8ca
++ Przeliczanie dotyczy także mnożenia i dzielenia. Wyrażenie można zapisać w dowolnych
++ naturalnych jednostkach i nadal otrzymać spójny wynik:
+
+% 2 1 0 0bc5d6278b72f25a1712bbdf39fd4a5c
+
+% 0 1 0 17cce91f79ab28de152168e740d3b68f
+
+% 0 1 0 1ba94482539270ca17ad737a417355aa
+
+% 1 1 0 07653412fcd68e45185159bb28a92730
+
+% 3 1 0 13d1a30ddc93831f0c86fdf5f5410e02
+
+% 4 1 0 0bff4b1142426f340e36548e8f361755
+
+% 5 1 0 0888951c94d83a4e1d9ba22cf9dada1a
+
+% 0 1 0 17c29443884b9c0a1ba1c93610578ea5
+
+% 1 1 0 157b2bd317a2cb2e1975bb3fde982585
+
+@ 0 1 0 0006b947aa5d92a60dc48cd773afd0f3
++ ### Przeliczanie
+
+@ 0 2 0 1120f389beccad9f0fdd738da9bbeb50
++ `convert` jawnie przelicza wielkość na inną zgodną jednostkę, nazywając rodzinę jednostki
++ docelowej:
+
+% 2 1 0 112461bbe6b8407f10cae10360d24a18
+
+% 3 1 0 0dc970b9db52fd2817898e9379f9ed78
+
+% 4 1 0 13452e84b1935968059da4e024e24dba
+
+% 0 1 0 1827a910160705841b66a266b0645c26
+
+% 0 1 0 103f78634b1d9b101574cca9d4fb80c5
+
+% 1 1 0 067cdd739a39ccd2135b2b27797bcddc
+
+@ 0 3 0 05a7f47283e186771ba9e4179f36b046
++ `normalize` robi to samo, z typem jednostki zapisanym wraz z jego potęgą. Godzina nie należy
++ do predefiniowanych wartości jednostek, ale jednostka to tylko wielkość równa jeden, więc
++ definiuje się ją w jednym wierszu:
+
+% 2 1 0 1454df2400a5fd40161b95b14ab93f0e
+
+% 0 1 0 19b6d3d7caefe9f51d25ddcf13c080d4
+
+% 1 1 0 1c3bc2d9a75a09541740089b128dc887
+
+% 3 1 0 1a810abd76a926c515ff33971fdb0eb2
+
+% 4 1 0 1f7436f4076dada412b436338fc60e15
+
+% 5 1 0 05e60b55d94154bb010df597b8c7f9d8
+
+% 0 1 0 01fa12c6a7a9e2db08765962c78186c9
+
+% 0 1 0 100da813196aa32c02d53452e7b420c6
+
+% 1 1 0 1456a6407e42ef5a07be9d89800f8978
+
+@ 0 6 0 06ee29d89337c29b1b3eafa46e95134a
++ `normalize` działa tylko na wymiar jednostki, którą nazywa. Składowe mierzone w tym wymiarze
++ są przeliczane na jednostkę docelową, a składowe każdego innego wymiaru pozostają dokładnie
++ takie, jakie były. Normalizacja prędkości do sekund przeskalowuje więc jej czas, a odległość
++ zostawia nietkniętą. Wynika z tego, że przeliczenie na jednostkę wymiaru, którego wielkość
++ nie ma, nie jest błędem. Po prostu nic nie robi, ponieważ nie ma pasującej składowej do
++ przeskalowania.
+
+@ 0 1 0 063a24c0d51ecad4192853b0b2c3579d
++ ### Przedrostki metryczne
+
+@ 0 4 0 1c6cfcdaf7dc164c086f930eda8b4836
++ [Przedrostek metryczny](https://en.wikipedia.org/wiki/Metric_prefix) skaluje jednostkę.
++ `Kilo`, `Mega`, `Giga`, `Milli`, `Micro`, `Nano` i pozostałe stosuje się do jednostki, by
++ otrzymać większą albo mniejszą. Przedrostki binarne, `Kibi`, `Mebi` i `Gibi`, skalują
++ o potęgi dwójki zamiast dziesiątki, dla ilości informacji:
+
+% 2 1 0 14f954f1476eca5b09a536380b8b1c1f
+
+% 3 1 0 179eb94b0f9fda1c1207670e79fbc5ac
+
+% 4 1 0 0f5ff15883a34abc09f09d5686153f2c
+
+% 0 1 0 16803c1613d12dbd1c35ea03f2e2fce0
+
+% 0 1 0 122d7701f0c430cf1de61ad1fa5f5a61
+
+% 0 1 0 097c0733f90f50d1021bc43bcc6cfe01
+
+% 1 1 0 1f49922f002e6cce03418ab496617f1a
+
+@ 0 1 0 0763ae30a2a806401bbf723255a9c8ac
++ Pełny zestaw, dziesiętny i binarny:
+
+% 2 1 0 05506478624c58d40dd8688c28804ef7
+
+@ 0 1 0 01d6579af0fccf2504f3576e27d776cc
++ column  Przedrostek
+
+% 0 1 0 15d0e48ab569644c0c3f94b1db89dfc5
+
+@ 0 1 0 1daa809983721004105b9ce0fb7a22a0
++ column  Mnożnik
+
+% 0 1 0 0192b5c1cf43908f0143c0d5fd585d8b
+
+% 0 1 0 069dbd6e541cb8d3092b1863fc3e2adf
+
+% 0 1 0 1f65abee5556bb561f97c60a4096d558
+
+% 0 1 0 0f84f43a0219c3f017d78e46719ef0c9
+
+% 0 1 0 179400b2ed15d03d1a4b07d27cd26b6e
+
+% 0 1 0 08d82c80922770eb050dcd665cb4c97d
+
+% 0 1 0 11610a47c27026d807567e562b9aac5c
+
+% 0 1 0 0a0378a3b6f9c8da0d150385767a1746
+
+% 0 1 0 11749c2503b9bf16026761a4bc3e2670
+
+% 0 1 0 02b2ce70bc2cc1ef0e551fe5a5a09578
+
+% 0 1 0 14d42ab19994ea6e09626193f4ac8c45
+
+% 0 1 0 0e9db757fcec861c0bea6db0f6298c93
+
+% 0 1 0 1c7c5245de3c27ee0284904230464408
+
+% 0 1 0 06eb3cfc007a85a70546ebdba81497d9
+
+% 0 1 0 09eedd9320ade04d1e6c1abc051a3cf9
+
+% 0 1 0 01da68425efa09d71a92b62a5dd80253
+
+% 0 1 0 179246455d636c120744d8c4006cdb6e
+
+% 0 1 0 15fd5e59a0d700fe1418d0c00b20e09d
+
+% 0 1 0 07ded282573fab4408ff3da8dec80e9f
+
+% 0 1 0 0d126eac02db523f107d9591e080e83c
+
+% 0 1 0 124f83436ca7acbf1c921d762ee98dab
+
+% 0 1 0 10e68c2a8e6aa7b518c33bacfc256980
+
+% 0 1 0 06d490373582bc3a0231f0b19d8b76c9
+
+% 0 1 0 1da6251b55ef44941ef31f7934418457
+
+% 0 1 0 155fa9f0a98d4dba16ed80442efa25fd
+
+% 0 1 0 15211e5b251f396c156fa6e00686da4f
+
+% 0 1 0 0e1d660cb3a6a62e09928839ff737a08
+
+% 0 1 0 1726bfdd4984b1bb1a310bcfa4f4ffcf
+
+% 0 1 0 152350c9ed51a6650999240f324ccf5d
+
+% 0 1 0 03ff2351ffee5f351f33f76afd490f59
+
+% 0 1 0 00dda13e93e4fc350b9cef263498e66c
+
+% 0 1 0 03027a3778179c161b5a90921535c25f
+
+% 1 1 0 1f3bf28ac2bfecf517c5b4a748a2c342
+
+@ 0 5 0 18725d2d80fec0ce09926f7eda94df32
++ Masa jest jedynym kłopotliwym przypadkiem wśród jednostek podstawowych, ponieważ jej jednostka
++ podstawowa SI sama jest jednostką z przedrostkiem: kilogramem, a nie gramem. Jednostka nadal
++ nazywa się `Gram`, dla spójności z każdą inną jednostką, a jednostkę podstawową zapisuje się
++ z przedrostkiem jako `Kilo(Gram)`. Wymiarem jest jednak `Kilograms`, a masy są zawsze
++ normalizowane i wyświetlane w kilogramach. Tak więc `Kilo(Gram)` to jeden cały `kg`, a goły
++ `Gram` to jego tysięczna część:
+
+% 2 1 0 166504e4a430dc8a1f595b3303ca7e17
+
+% 3 1 0 0362863e4532d7c61bc665238a7ea3fb
+
+% 4 1 0 0cc35ae60baff40d117859b15895e8a8
+
+% 0 1 0 068f1b0f71747da707cfd96a99748aa3
+
+% 0 1 0 045898685c58dcfe1ae27b680b6a532f
+
+% 1 1 0 05189307e9a40bfb04a08474c5275bc2
+
+@ 0 1 0 14a3ec71647f137805dbc484dfcd92aa
++ ### Porównywanie
+
+@ 0 2 0 047bf0c9d1a8d2470a653be8b32bacad
++ Wielkości o zgodnych jednostkach porównuje się zwykłymi operatorami, a porównanie przelicza
++ jednostki tak jak arytmetyka:
+
+% 2 1 0 170db8a0c58102f6066fb918e5385b5d
+
+% 3 1 0 18f819d2d677be9a0dbe59d19da0f74f
+
+% 4 1 0 19e6e8b676bb5e80085419cc3d748071
+
+% 0 1 0 0df449ec08a0cc8119e91a69cf70a577
+
+% 0 1 0 1c4f5c4fe3e4b44600afe5719b2824e8
+
+% 1 1 0 06d1bcea83700e590fc529dda4efd352
+
+@ 0 2 0 06ff798e32ada1eb0bc10cd4a7d22580
++ Równość między różnymi jednostkami jednego wymiaru wyraża `===`, które sprawdza, czy dwie
++ wielkości mierzą tę samą ilość:
+
+% 2 1 0 17b8fdbef906f39e193cf6c65f118907
+
+% 3 1 0 0ac9ce405d6fb9b503aeebf567578dc4
+
+% 4 1 0 1c7d660427d708350a60276c534d4d11
+
+% 0 1 0 027344f1f7dd7a621bad7de1724d41cf
+
+% 0 1 0 156f05e1526c43551ba40939c684e82f
+
+% 1 1 0 13fcf75f7570395e15e95fb2906e2e75
+
+@ 0 1 0 1f0ede3735e153930707317680d125cc
++ Podobnie jak w arytmetyce, porównanie niezgodnych wymiarów się nie kompiluje.
+
+@ 0 5 0 0deb7d6afb0341b90561ad09484c0646
++ Równość jest dokładna, zarówno przez `===`, jak i przez `==`. Dwie wielkości są równe tylko
++ wtedy, gdy ich wartości bazowe zgadzają się co do ostatniego bitu. Przeliczenie, które
++ wprowadza [różnicę zaokrąglenia](https://en.wikipedia.org/wiki/Floating-point_arithmetic),
++ może więc sprawić, że wielkości równe na papierze okażą się nierówne. Dla wartości
++ przeliczonych lepszym testem są zwykle `<` i `>` albo jawna tolerancja.
+
+@ 0 4 0 029eab75da67450c1828d9aac529c122
++ Zwykłe `==` jest zarezerwowane dla wielkości, które już mają wspólny typ jednostki, i wtedy
++ porównuje bezpośrednio te wartości bazowe. Między dwiema wielkościami o różnych jednostkach
++ nie ma `==`. Przy ścisłej równości, z `import language.strictEquality`, takie porównanie się
++ nie kompiluje, i właśnie tę lukę wypełnia `===`.
+
+@ 0 1 0 059ac6f91abca671084070e79be6f895
++ ### Jednostki pochodne
+
+@ 0 4 0 0ef3a7a51430c4da07a693b34c60a8ea
++ Nazwane jednostki SI, takie jak `Newton`, `Joule`, `Watt`, `Pascal` i `Volt`, są
++ zdefiniowane przez jednostki podstawowe, więc współpracują z nimi. Siła w niutonach
++ pomnożona przez długość w metrach daje energię. Każda wielkość potrafi też nazwać swój
++ wymiar, wyznaczony z jej jednostek, i nawet nietypowa kombinacja rozwiązuje się do swojej
++ nazwy fizycznej:
+
+% 2 1 0 15eac769ecfdaac408d1b96fffde9394
+
+% 3 1 0 0407c280ef9882660b85b86c1eb0d526
+
+% 4 1 0 0cc7b189af3b743a0a1d1ec76019c117
+
+% 0 1 0 1bf6f28d8c3d73c7055c06791c66c528
+
+% 0 1 0 1cf4890fd53978ab054962f0be8f30d5
+
+% 0 1 0 1998d3c159d02cfd0cc1d2407c77a8cb
+
+% 0 1 0 1bda75b2ddb2e2fe03e7020941ee23d8
+
+% 1 1 0 1231319ee0df64f61cbf06c74a2aa97b
+
+@ 0 1 0 0addb500a3cd39291580cb6c64ee2316
++ ### Jednostki SI
+
+@ 0 2 0 0b44092fb7cffb9410d0df7510089bb0
++ Zdefiniowano siedem wymiarów podstawowych, każdy z własnym typem jednostek i wartością, która
++ nazywa jedną z nich:
+
+% 2 1 0 086fa737e04bd6e316027bdc2391c190
+
+@ 0 3 0 123497b35520743d192ae1cf328fc723
++ column  Wymiar
++ column  Jednostki
++ column  Jednostka
+
+% 0 1 0 0a062db3fac04b590d892b63882dea8e
+
+% 0 1 0 0bf860a4e2ad04e90d1af81a585f7972
+
+% 0 1 0 0ff35ffd767660ee1f6ff7cee531921a
+
+% 0 1 0 0232fc18e213c2140dd039c26469ad55
+
+% 0 1 0 113decade8e5638e18cc43d6d9d8c4d1
+
+% 0 1 0 04373eda781787ef0da8a6d63e7eda2a
+
+% 0 1 0 1550530f93d8eeaa08edd8c3ea7538cf
+
+% 1 1 0 02e90b8114ccb53808934fc9583019af
+
+@ 0 2 0 1cf3526ed5628154158219578230f584
++ Nazwane jednostki pochodne są zdefiniowane przez nie, więc każda ma pełne wymiary i nie jest
++ odrębnym rodzajem bytu. Ostatnia kolumna to nazwa, którą zgłasza jej `dimension`:
+
+% 2 1 0 08dfb5713eab7a3e0e1c4d0795526c55
+
+@ 0 21 0 0a57f01e1a6e42241f21c33dffdb3df6
++ column  Jednostka
++ column  Definicja
++ column  Wymiar
++ row  `Hertz`  jeden na sekundę  frequency
++ row  `Newton`  metr razy kilogram na sekundę do kwadratu  force
++ row  `Pascal`  niuton na metr kwadratowy  pressure
++ row  `Joule`  niutonometr  energy
++ row  `Watt`  dżul na sekundę  power
++ row  `Coulomb`  sekunda razy amper  electric charge
++ row  `Volt`  wat na amper  electric potential
++ row  `Farad`  kulomb na wolt  capacitance
++ row  `Ohm`  wolt na amper  impedance
++ row  `Siemens`  amper na wolt  electric conductance
++ row  `Weber`  woltosekunda  magnetic flux
++ row  `Tesla`  weber na metr kwadratowy  magnetic flux density
++ row  `Henry`  weber na amper  inductance
++ row  `Lux`  kandela na metr kwadratowy  illuminance
++ row  `Becquerel`  jeden na sekundę  frequency
++ row  `Gray`  dżul na kilogram  specific energy
++ row  `Sievert`  dżul na kilogram  specific energy
++ row  `Katal`  mol na sekundę
+
+% 1 1 0 02f53505e0b78f58073c6760a70c101c
+
+@ 0 2 0 1a281808d14c4acd0acef301cb2336e6
++ Obok nich dostępne są układy CGS i imperialny: `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`,
++ `Furlong`, `Stone` i pozostałe.
+
+@ 0 1 0 00b009db04f77122087a225fd1ba3662
++ ### Wyświetlanie
+
+@ 0 3 0 08bec867ed67e3ff1f6593fd106aba33
++ `show` wypisuje wielkość i wymaga w zasięgu `Decimalizer`, który ustala liczbę cyfr
++ znaczących. Jednostki złożone zapisuje się z kropką środkową i potęgami w indeksie górnym,
++ a bardzo duże albo bardzo małe wartości przechodzą na notację naukową:
+
+% 2 1 0 1b48af1c7aa102911edcb0c10b584366
+
+% 3 1 0 100b1c37319700431c5283b28d5e3f7a
+
+% 4 1 0 0e0f280e490cb7871b263baba730e273
+
+% 0 1 0 1ad5efe10f13764c0f4f48569ab4c4de
+
+% 0 1 0 002690e0eda88e911ca6b35f9cd245d4
+
+% 0 1 0 17a9852c5033b6c81b005808509a779f
+
+% 0 1 0 1156a5ec078ce69e05992cf2bde4a9a6
+
+% 0 1 0 12d0f1c7d98141cc0ad46fd240444973
+
+% 1 1 0 17d25591114be0d11953b4962c831449
+
+@ 0 4 0 1b319f77c62f7ee3074cdd347993b2aa
++ `show` to jedyny poprawny sposób wypisania wielkości. `Quantity` jest typem
++ nieprzezroczystym nad `Double`, więc jej `toString` to `toString` typu `Double`: goła liczba,
++ bez żadnych jednostek. Wielkość wstawiona do zwykłego napisu traci więc bez ostrzeżenia
++ właśnie to, co ją wyróżnia. [Tekst](text.md#rendering-numbers) opisuje `Decimalizer`.
+
+@ 0 3 0 13ffed21503096da139dc27ac9200df9
++ Zamiast notacji naukowej wielkość może do wyświetlenia przeskalować się do przedrostka
++ metrycznego. Instancja `Prefixes` wymienia przedrostki do wyboru, a `show` wybiera ten,
++ który utrzymuje liczbę czytelną:
+
+% 2 1 0 1c82c094f2cef7541e7b1c955c5c1726
+
+% 0 1 0 17013c27adad6cda0c63d9dc0cb69560
+
+% 0 1 0 0b6dc8096767510712863b8ceac213f0
+
+% 0 1 0 09d6ec8522ad0b360a4d2ae08154ead1
+
+% 0 1 0 06d108c1a25948261b99efe9fc0136ca
+
+% 0 1 0 0fa6930cb94cec5917ce74e4e0ab7016
+
+% 1 1 0 13cc7396d56caef90265eb58cf9b33ee
+
+% 3 1 0 146f4208aff703d71e4a9dd0964640c8
+
+% 4 1 0 1f0ded76087b010a1b2f74ba94882bed
+
+% 5 1 0 002f7db08a47f4ba124bb3fa64e1fdc4
+
+% 0 1 0 1d6fb25b99b8cc4808c0bfa2adea09dc
+
+% 0 1 0 07a37eb441e8641a1ff5ce2b4cfd61a7
+
+% 1 1 0 0bf429c4266e8ab50121ca38f0714372
+
+@ 0 2 0 0793483cff0ddbeb1d00f493a72c3406
++ Ten przykład pokazuje też, jak deklaruje się nowy wymiar i jednostkę: `Dimension`, typ
++ `Units` indeksowany swoją potęgą, wartość jednostki i `Designation`, która podaje jej symbol.
+
+@ 0 1 0 1a73507de4d6c47c0d1015eb9535cf83
++ ### Definiowanie własnej jednostki
+
+@ 0 3 0 0b117ba073db12a9192cf600ec12cdb9
++ Jednostka, która mierzy coś, dla czego SI nie ma wymiaru, potrzebuje zarówno wymiaru, jak
++ i typu jednostek. Weźmy FLOPS, czyli liczbę instrukcji zmiennoprzecinkowych procesora na
++ sekundę. Definicję buduje się w czterech krokach:
+
+% 2 1 0 17b7d8f374e4d4630b97d7db9403ee0c
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 13ff0eac4c184efa0985eda35b3efc51
++   label Goły współczynnik, w odwrotności sekundy
+
+% 1 1 0 13fd971515b9b3c8003f1e74231fd4cc
+
+% 0 1 0 0fb466695bd7db040788c1974df5f257
+
+% 1 1 0 09b0bee2ca5d310004360042e598e0f1
+
+@ 0 1 0 13ebec7334854ea713c2055b619a42f2
++   label Jednostka metryczna, aby stosowały się przedrostki
+
+% 1 1 0 1c230f03f95a6302190ebd98794521b7
+
+% 0 1 0 143ef0bee1964b981ec4a2345aeb9b94
+
+% 0 1 0 0d8d8d91ff751147033a76672a9b7f89
+
+% 1 1 0 01e686a6106f04be016611d091dbe92b
+
+@ 0 1 0 02b339a3d16da8060e745f9a839b8f57
++   label Własny wymiar
+
+% 1 1 0 06be5947d5f92054095405ee27491498
+
+% 2 1 0 0571bf5c0d3766771dec34176585e2d5
+
+% 3 1 0 0111a236644865a40e2f29b494afdc78
+
+% 5 1 0 1c50872cb944d3ac1ea5fded315602a7
+
+% 2 1 0 155a4646aa65fd4b188b0ef3aa9f6223
+
+% 1 1 0 0abeb98ddb1b4f700e9e7ba4d4dcb2b2
+
+@ 0 1 0 0061ea59b31c98e00bbb8f2ccb92e975
++   label Z symbolem do wyświetlania
+
+% 1 1 0 13e7c597dcd039c01ef8c0bc37c55cf0
+
+% 2 1 0 0837bcfadff837f901a88d203f699ee5
+
+% 3 1 0 0e3cb06d1b9cc449159fc149e87c4395
+
+% 5 1 0 173ad6b781c4eb8e1ec8b0560da56919
+
+% 0 1 0 1dcb828646f7ae2712ae16370e6a3b2c
+
+% 2 1 0 08a28894e1f003011a7f134ff84e1b2f
+
+% 1 1 0 0efefccfe7e4584d0a13eeb37717a4a2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 7 0 1d1bb0cd450a25e110e51873e9af3555
++ Zapisana jako goła wartość, `1.0/Second` nadaje się do arytmetyki, ale nie mówi nic o tym,
++ co liczy. Opakowanie jej jako `MetricUnit` sprawia przynajmniej, że stosują się przedrostki
++ metryczne, więc można napisać `Mega(Flop)`, ale wynik nadal jest tylko liczbą w jednostkach
++ odwrotności sekundy. Nadanie jej własnego wymiaru odróżnia ją od każdej częstotliwości.
++ Parametr `power` jest wymagany i ograniczony przez `Nat`, będący aliasem
++ `Int & Singleton`. `Mega(Flop)*Second` ma wtedy typ `Quantity[Flops[1] & Seconds[1]]`,
++ a `Designation` nadaje mu symbol do wyświetlania.
+
+@ 0 1 0 04f2a0661bae244400b33ab623ba9d88
++ Oba traity mogą być `sealed`, ponieważ w czasie wykonania nic ich nie implementuje.
+
+@ 0 1 0 137fd9654fd1b166065731a1a2f80e40
++ ### Współczynniki przeliczeniowe
+
+@ 0 3 0 1c3dda7ee359a0690943ab23353b7d5f
++ Przeliczenie między dwiema jednostkami wymaga współczynnika między nimi. Pochodzi on
++ z kontekstowego `Ratio` dla tej pary, z jedną jednostką w potędze `1`, a drugą w potędze
++ `-1`, i współczynnikiem jako literałowym typem singletonowym `Double`:
+
+% 2 1 0 0b4d6483f00cc7e615342732625b83d7
+
+% 0 1 0 01e257112d1091e70ee78cf2e063b667
+
+% 1 1 0 1ea35b6a7c9e8a1003578c2815018c6f
+
+@ 0 4 0 0076f7cbe759a86c1db16e85a109bb5a
++ Współczynnik jest _typem_, a nie wartością, i to sprawia, że przeliczenie nic nie kosztuje.
++ Jego wartość jest znana w czasie kompilacji, więc arytmetykę na nim wykonuje się podczas
++ kompilacji kodu, a sam given można wymazać. Przeliczenie między dwiema jednostkami nie
++ wnosi więc w czasie wykonania żadnej pracy ponad mnożenie, które faktycznie oznacza.
+
+@ 0 1 0 0fd83346cf99ed4309ee08334b815512
++ ### Podstawy mieszane i niedziesiętne
+
+@ 0 4 0 0f04acec8333c28d04a8b7d6507b8f80
++ Nie każdy pomiar jest pojedynczą liczbą w pojedynczej jednostce. Przed systemem metrycznym
++ wielkości wyrażano jako _kaskadę_ jednostek, w dokładnych wielokrotnościach, które nie były
++ potęgami dziesiątki: stopy i cale albo kamienie, funty i uncje. Niektóre nadal się tak
++ wyraża. Dokładnie tym są godziny, minuty i sekundy, podobnie jak wzrost człowieka w większości
++ krajów anglojęzycznych.
+
+@ 0 3 0 1c21a1f16a81e7500d307e05f6bb8031
++ `Quanta` reprezentuje jedną taką wartość: liczbę całkowitą każdej jednostki w malejącej
++ kaskadzie, z automatycznym przenoszeniem. Typ podaje kaskadę, z najmniejszą jednostką jako
++ parametrem typu, a większymi po `in`:
+
+% 2 1 0 0314890159e35089143d55574e0d1da3
+
+% 0 1 0 137767fe222a195d0c18aa5478e69409
+
+% 0 1 0 1fea3cd9b21363d10e2e93befa650ffc
+
+% 1 1 0 123034de860537711440d9f575f5f2f6
+
+@ 0 2 0 0a34008f51a20a161b885f0cf4fee89f
++ Wartość zapisuje się od największej jednostki, tak jak się ją wypowiada, a każdą składową
++ odczytuje się, nazywając jej jednostkę. Ta waga to 1 kamień, 3 funty i 2 uncje:
+
+% 2 1 0 1ad7bd52a25319c509e5fcff7421122b
+
+% 0 1 0 002b52707875dc8e1e02a4f157a3dc3c
+
+% 1 1 0 1cbff642be5ed9cb1799a1c6d07fefae
+
+% 3 1 0 01b3f997fbcb1d2e0de57b6de310b2ed
+
+% 4 1 0 18932729b55abdf70566fed0678564ab
+
+% 5 1 0 1850b0c709ac9c1215c2acb75616bd87
+
+% 0 1 0 1fe92e63ccf3c1a810b8e40a819e6def
+
+% 0 1 0 1172917018f99eb30004a0e9c547c887
+
+% 0 1 0 12926216140764090dff0fb5784e50e3
+
+% 1 1 0 18dd633cf2c873941da28b47b0c01a67
+
+@ 0 2 0 06d2b96d753408fa0bd2ea769c6edc81
++ Arytmetyka przenosi między jednostkami tak, jak wymagają tego współczynniki. Dodanie
++ piętnastu uncji do 3 funtów i 2 uncji daje 4 funty i 1 uncję, a nie 3 funty i 17 uncji:
+
+% 2 1 0 1b73981a6b31b8510c6dea16a7f2a188
+
+% 0 1 0 12170067d03527170efdbc6bcac81fb4
+
+% 1 1 0 1700476e4dd807680879569327f06753
+
+% 3 1 0 137b6c8b55b7cfc20975470b5be2d0f1
+
+% 4 1 0 081f090475a90902164511f9cb6a635e
+
+% 5 1 0 07fd2a23bc83b72c1c903efa7b36ed0a
+
+% 0 1 0 16cadc23e48c339508e1fb6915892cb1
+
+% 0 1 0 17eaacc9df99f8eb16dc6a34c88fb50d
+
+% 1 1 0 06d432bbc63ffb0f038142b611c6d8b1
+
+@ 0 4 0 1bec9720034db7321d06062754047f3c
++ Kaskadę sprawdza się w chwili jej zapisania. Każda jednostka w niej musi mieć ten sam
++ wymiar, więc wmieszanie sekund do kaskady długości się nie kompiluje, a podstawa musi być
++ jednostką, a nie dowolnym typem. Dostępne są `TimeSeconds` i `TimeMinutes`, dla dwóch
++ kaskad, których potrzebuje każdy.
+
+@ 0 2 0 0510dc339d4e36700d25ef830fdfdbb7
++ Jednostki są prawdziwymi jednostkami, więc `Quanta` przekształca się w zwykłą `Quantity`
++ i z powrotem, i w ten sposób pomiar przechodzi między tymi dwoma światami:
+
+% 2 1 0 01c94a2a8e2b9d84106b3effdf951c8f
+
+% 0 1 0 1977b87a7eb9f92300e3ee8f6a9c825a
+
+% 0 1 0 0d8e47ee69416e09173e54cfc5e11a60
+
+% 1 1 0 00cd24bfaab2627415ebac6a2747e1e0
+
+% 3 1 0 02f738ca06d32c17142c56a8303d998a
+
+% 4 1 0 06d6f04cd99bb9f41666fee2ec69f78e
+
+% 5 1 0 0beef0af9d33ec1a073d95ace17dfab1
+
+% 0 1 0 03922bd66be8137c0eb1f890d8990139
+
+% 0 1 0 0cdf91c36938045c09a5b5d23d3e2b62
+
+% 0 1 0 0c166ac4fbff583b163fa15af82a904f
+
+% 1 1 0 0ae0b6590046e3530027b0578aa7ac37
+
+@ 0 3 0 1b6c8cf6d28599040e4923103f05fb03
++ Wyświetlanie `Quanta` używa symbolu każdej jednostki, jak w `1st 3lb 2oz`. Given
++ `UnitsNames` nadpisuje symbole tam, gdzie kaskadę zwyczajowo zapisuje się inaczej, tak by
++ wzrost można było pokazać jako `5' 9"`.
+
+@ 0 1 0 0388133111f1e7f418b60af6f2d2bcd4
++ ### Temperatura
+
+@ 0 5 0 031475e044d29f0806a0dee25d6aad91
++ Temperaturę mierzy się od umownego zera, a nie od niczego, więc zachowuje się inaczej niż
++ długość czy masa. Trzydzieści stopni plus trzydzieści stopni to nie sześćdziesiąt stopni
++ czegokolwiek sensownego. Modeluje się ją jako osobny typ, `Temperature`, a skale z umownym
++ zerem są oddzielone od bezwzględnej wielkości w kelwinach, której używa się dla różnic.
+
+@ 0 5 0 15aade46fc8391ed0dcb2eb6b5d96a79
++ Występują cztery skale, należące do dwóch rodzajów. Kelvin i Rankine mierzą od zera
++ bezwzględnego, więc są zarówno zwykłymi wielkościami, jak i skalami. Celsius i Fahrenheit
++ umieszczają swoje zero gdzie indziej, w punkcie zamarzania wody i jeszcze niżej, więc
++ odczyt na którejkolwiek z nich ma sens tylko jako `Temperature`. Bezpośrednie mnożenie albo
++ dodawanie dwóch takich odczytów nie miałoby sensu, a typy na to nie pozwalają.
+
+@ 0 1 0 18aa2a0fda1fd5150438cc8a294068e1
++ Temperaturę tworzy się na nazwanej skali, a wyświetla na tej skali, która jest w zasięgu:
+
+% 2 1 0 0aae5bc6dba2502108d65aba16f68b87
+
+@ 0 1 0 17f75ff859390a261ad2d8b01876bf17
++ column  Skala
+
+% 0 1 0 1c092b200c6172850f74dafe80e5e1b5
+
+@ 0 7 0 098d266ef853b75812beac2a5db3e4e2
++ column  Odczyt
++ column  Jako wielkość
++ column  Import wyświetlania
++ row  Kelvin  zero bezwzględne  `Kelvin(…)`  jednostka `Kelvin`  `temperatureScales.kelvinScale`
++ row  Rankine  zero bezwzględne  `Rankine(…)`  jednostki `Rankines`  `temperatureScales.rankineScale`
++ row  Celsius  punkt zamarzania wody  `Celsius(…)`  brak  `temperatureScales.celsiusScale`
++ row  Fahrenheit  poniżej zamarzania  `Fahrenheit(…)`  brak  `temperatureScales.fahrenheitScale`
+
+% 1 1 0 179b6da80db02ea201a7cbec703e4862
+
+% 3 1 0 112e636a1db928241897ed31b74a3c56
+
+% 4 1 0 0bd99478d2600ab90628a36ba03a395f
+
+% 5 1 0 08f44a1cab9c73ce0a06d333981fbfd7
+
+% 5 1 0 0878aa023d7892ac0b4217f1d5b2c1c7
+
+% 6 1 0 027b99c641b38bcb012438dbbf367b0d
+
+% 1 1 0 1576df5793c1633816a6a51cc01de81c
+
+% 2 1 0 1be0e0d4c67f1e2b1d2d459aee24126f
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 1cf3c3ef00ed8c011e7a7d7ad1ca813f
+
+% 1 1 0 0973406e28f9a397008e9b8cd3aed0c0
+
+% 2 1 0 0fd230a5f1f5df0e1782d3dd80c4ddd7
+
+% 1 1 0 03e0e3063a05da9d1feefe53ff65d801
+
+@ 0 2 0 08cd632a205bb4d5111218957ac31fa7
++ Odczyt tej samej temperatury na innej skali sprowadza się więc do zaimportowania innej
++ skali, bez ręcznie pisanego przeliczenia.
+
+@ 0 3 0 00eb6a2427af3e650114490ea4ca047b
++ Do `Temperature` dodaje się i od niej odejmuje _wielkości_ w kelwinach albo rankinach, co daje
++ inną temperaturę. Różnica dwóch temperatur jest wielkością, która przelicza się jak każda
++ inna:
+
+% 2 1 0 0c79f337e425d72b1aa00428dbe0db22
+
+% 3 1 0 18ba52150d074a1b14e3b3cde73e0c83
+
+% 4 1 0 116c1fd14d1ffcb10928214caf9348c6
+
+% 5 1 0 16709ba44911e44300de70550b42696c
+
+% 6 1 0 08f89671ea2aa69406b4a250dc8a362b
+
+% 0 1 0 16c232f85778a9da1b3da0987af1af4e
+
+% 0 1 0 18d4f776e4753c2d12588b455e1dc8c2
+
+% 1 1 0 15fe0acba657e65410c75bf2c41743fe
+
+@ 0 1 0 130315e87e7d8f0d1ae0bad49cfbe777
++ ### Agregowanie
+
+@ 0 2 0 1d0ff3429e41154c193b0d523d4c646c
++ Kolekcja wielkości o wspólnej jednostce redukuje się do wielkości, a każda redukcja rozumie
++ jednostki:
+
+% 2 1 0 018dc278759f22f713bd62a7d45282be
+
+@ 0 7 0 061ef0781b9719bd1cb11d5a2744f293
++ column  Metoda
++ column  Wynik
++ column  Dla pustej kolekcji
++ row  `total`  suma, w tej samej jednostce  zero
++ row  `mean`  średnia, w tej samej jednostce  `Unset`
++ row  `variance`  wariancja, w jednostce do kwadratu  `Unset`
++ row  `std`  odchylenie standardowe, w tej samej jednostce  `Unset`
+
+% 1 1 0 01582840014d0a1a1044af9a13f5fabc
+
+@ 0 2 0 1c0e2f30a543cfe806c2e39227a206ea
++ Wariancja listy sekund jest więc w sekundach do kwadratu, a odchylenie standardowe wraca do
++ sekund:
+
+% 2 1 0 178e6425bbd4da5217836e1c4ea537f2
+
+% 0 1 0 1a11e6a5a63bf1cd0cc1025ee19819f7
+
+% 1 1 0 034299d6a13a9edb15ee8fd253e26fe0
+
+% 3 1 0 0527e0293bb99e910d4bd875d8a51cfb
+
+% 4 1 0 103984e5095d73890f4d22af3a63b7ff
+
+% 5 1 0 0863c212f96e13f01e58a7ab595836d0
+
+% 0 1 0 061602812d2e5cc506e7c9b4d3712fa4
+
+% 0 1 0 061ba6b92cb5105206cf58ec2bfffbc4
+
+% 0 1 0 1c8844df5acfb57404c10f04aac15bd3
+
+% 1 1 0 1ad60bf7621fd194118ccfe70c5b03b3
+
+@ 0 2 0 10c53ca3feef0a640339d6f77c83d740
++ [Matematyka](mathematics.md#elements-that-are-not-numbers) buduje wektory i macierze
++ wielkości, których iloczyny także niosą jednostki.
+
+@ 0 1 0 11ffedd4f536784d0c259c2b51d7f223
++ ### Kwantyfikowanie własnych typów
+
+@ 0 3 0 010ef99a83b03380114df2aa99f167eb
++ Typ, który reprezentuje pomiar, można nauczyć dawania wielkości przez instancję
++ `Quantifiable`. Uczestniczy on wtedy w tej samej arytmetyce wymiarowej. Punkt typograficzny,
++ który jest jedną siedemdziesiątą drugą cala, staje się prawdziwą długością:
+
+% 2 1 0 0c6fc5722791cfb70572642f822a61a8
+
+% 0 1 0 1967a2dd4f5b5c3e0d8aa099fb824bd6
+
+% 0 1 0 0395cf5704ae267607d30c61aeb65699
+
+% 1 1 0 0e0e899573e0602a15c4f2fb22ce0a11
+
+% 3 1 0 06bb25a0462e40f60bec7d2023cf1af5
+
+% 4 1 0 0e8d7158b7d1e7b01771cc3cc4229c13
+
+% 5 1 0 15a8fccb70a16b73075b1faefb9fecd3
+
+% 0 1 0 0b7c5800c2bcdeaa19db4d9e92b0a158
+
+% 0 1 0 112ab2723535b3d80a97bf8b8ffd9c3c
+
+% 1 1 0 1a3edae6a8f2cf4e17609b5a35fe6341
+
+@ 0 1 0 0761642a4e636df201fd5b7c544fb323
++ ### Obliczenia
+
+@ 0 5 0 089d08f0e947af8d10b2b3d8ae722880
++ Wzór zapisany w wielkościach jest sprawdzany w chwili zapisania. Każdy krok musi spójnie
++ łączyć swoje jednostki, a jednostki wyniku oblicza się z jednostek danych wejściowych, więc
++ wymiary obliczenia są weryfikowane, zanim kiedykolwiek się ono wykona.
++ [Przemieszczenie ciała przy stałym przyspieszeniu](https://en.wikipedia.org/wiki/Equations_of_motion#Constant_translational_acceleration_in_a_straight_line),
++ `s = ut + ½at²`, czyta się bezpośrednio:
+
+% 2 1 0 04893c539957a4f21f801cf86d4adcd0
+
+% 0 1 0 08587b413de912fb1740e01b0fa905db
+
+% 0 1 0 0bd72fd524f01ded0f3e6a25a450609c
+
+% 0 1 0 12dcaa370104ae7e14b6f895080175d7
+
+% 0 1 0 192c7b6a32bb589010fb608001ab5eb5
+
+% 0 1 0 0cdae38f35fcf74316d1a9e7c74d8b1f
+
+% 0 1 0 0315ed95e1726869115c6f6ac3045972
+
+% 1 1 0 04507a954e90e7bd1c16d5945eb9c06b
+
+% 3 1 0 0bea8511ee39271704afd8012ea47981
+
+% 4 1 0 016b0f370b4b9fe911357167f98f02ce
+
+% 5 1 0 1035011c1bcf1d4f03d852cee81168e0
+
+% 0 1 0 0ea6d35721b6a6a91035eeaa7c98e75c
+
+% 1 1 0 14bab3843121d4d81735c574dd23d4eb
+
+@ 0 4 0 1da64dc7b477131b1d4d4ba5236f23aa
++ Oba składniki sumy wychodzą jako odległość: prędkość razy czas oraz przyspieszenie razy czas
++ do kwadratu. Dodawanie przechodzi więc sprawdzanie typów, a wynik jest odległością.
++ Przekazanie argumentu w złych jednostkach jest błędem kompilacji, a nie liczbą, która po
++ cichu jest błędna:
+
+% 2 1 0 037a2ef0696a76950a6333e1ee334eb4
+
+% 3 1 0 02ceea93cff41412079ca149f88a3a46
+
+% 4 1 0 04517120ff2763c31ed729d9995fadbe
+
+% 5 1 0 0d8e53cee97014bb00975608ed11eefb
+
+% 0 1 0 085163819b39d61618ddf185a2b5df9d
+
+% 1 1 0 009415b785e8555911c3a91ce4061a14
+
+@ 0 5 0 0094d2bd281f7f591d0e4752b7504b39
++ To samo obliczenie można zapisać raz dla dowolnego spójnego wyboru jednostek, zamiast wiązać
++ je z metrami i sekundami. `transparent inline def` rozwiązuje swoje jednostki przy każdym
++ wywołaniu, więc jego parametry mogą pozostać abstrakcyjne. Zależności, na których opiera się
++ wzór, wyraża się wtedy jako ograniczenia: że prędkość razy czas oraz przyspieszenie razy czas
++ do kwadratu dają się utworzyć, a oba wyniki dają się dodać.
+
+% 2 1 0 0bbb84ce65ac1a970ff70bb79037948f
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 114ee0f3c2aa797213a52a37d8385329
+
+% 0 1 0 02a69aeff057dbc00ace7c1ce232e7a1
+
+% 0 1 0 1783fe5a7b56d0d21053140479de08d3
+
+% 0 1 0 074615e9ca593afc0722aba603742a27
+
+% 0 1 0 0796d7561e9642f001c4e2f101b4dc21
+
+% 0 1 0 1856ea22288a4b121d1c724d46b22855
+
+% 0 1 0 1cbf45b7b58016f31b7b08822d4c6494
+
+% 0 1 0 020c9b62c922fca419e75cd04c6ec601
+
+% 0 1 0 1f027e2097a1c6f40ac1066d33d1c260
+
+% 0 1 0 06cc37d6c30fe5350f84b8bb320b9383
+
+% 0 1 0 195a73ad5456986609b4f6afae0fcc1d
+
+% 0 1 0 100d0532e46c8cbc1476464bfac803c3
+
+% 0 1 0 1c40418a091eae191ee6ea832dde7f96
+
+% 1 1 0 1a41f3a10e70cdcc03c6f99c09cd6ee1
+
+@ 0 3 0 054553f2f4d0495d11a627268cd85438
++ Te ograniczenia to nic innego jak stwierdzenie, że wymiary równania się zgadzają, wyrażone
++ w typach. Wywołanie, którego jednostki nie mogą ich spełnić, się nie kompiluje.
++ [Liczby](numbers.md#overloading-the-operators) opisują `Multiplicable` i `Addable`.
+
+@ 0 1 0 0255b9d1642f19d6147782131a972905
++ ### Ile to kosztuje w czasie wykonania
+
+@ 0 4 0 0b66312746709984140b851d84b202d5
++ Nic z tego nie przetrwa do bajtkodu. `Quantity` jest typem nieprzezroczystym nad `Double`,
++ jej jednostki istnieją tylko w typie, a każda operacja jest `inline`. Obliczenie wymiarowe
++ kompiluje się więc do tych samych instrukcji arytmetycznych, co równoważna arytmetyka na
++ gołych `Double`, bez boxingu, bez obiektów opakowujących i bez wirtualnego wywołania klasy
++ typów.
+
+@ 0 4 0 1ed7d695123d161819944509d6b859d4
++ To własność, którą warto sprawdzać, a nie tylko deklarować, i jest ona sprawdzana. Zestaw
++ testów bada skompilowany bajtkod reprezentatywnych obliczeń i kończy się niepowodzeniem, jeśli
++ tam, gdzie powinna być rozwinięta arytmetyka, pojawia się wywołanie klasy typów. Gwarancja
++ wydajności, która jest jedynie deklarowana, zwykle przestaje być prawdziwa.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 5 0 068bd71c847c53f304e0b0265e2bfae0
++ - [Liczby](numbers.md) opisują typy liczbowe i operatory, których używają wielkości.
++ - [Czas](time.md#durations-and-timespans) mierzy `Duration` jako wielkość w sekundach.
++ - [Matematyka](mathematics.md) przenosi jednostki przez wektory, macierze i liczby zespolone.
++ - [Pieniądze](money.md) stosują tę samą ideę jednostki w typie do walut.
++ - [Geografia](geography.md) i [Chemia](chemistry.md) budują na wielkościach.

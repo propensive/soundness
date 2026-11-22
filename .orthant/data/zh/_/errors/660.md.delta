@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 1e31b6c8ad7c9e9614d5038f040041fd
++ # `SN-660` — 插值器扩展方法必须是 `inline`（已退役）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ 此错误已不复存在。
++ 保留本页是为了不重复使用该代码，并使旧版本中对它的引用仍可解析。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## 后来如何
+
+@ 0 3 0 0b492283b067c74e0a1ec9e5a330d239
++ 这项检查属于 Contextual 的 `Interpolator` API，该 API 已被 `Interpolable` 类型类取代。
++ 前缀方法现在作为该模式的一部分被声明为 `transparent inline`，这一要求由签名强制执行，而不是由检查来强制执行。

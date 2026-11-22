@@ -1,0 +1,327 @@
+orthant 2 language
+
+@ 0 1 0 005d7fa09445bfe10f069ac9767876cb
++ ## DOM przeglądarki
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 074b97cf54f2228d1017f87c3fd2a3c4
++ Strona internetowa jest drzewem żywych obiektów: dokumentu, jego elementów i otaczającego je
++ okna. Przeglądarka publikuje ich interfejs w
++ [WebIDL](https://en.wikipedia.org/wiki/Web_IDL), który określa, jakie składowe ma `Document`,
++ co przyjmuje `getElementById` i co zwraca.
+
+@ 0 4 0 09bb2b19f705827e1c0236a92471a633
++ Te definicje są odczytywane w [czasie kompilacji][czas kompilacji]. Wyrażenie operujące na
++ stronie, które odnajduje element, ustawia na nim aktywność albo przewija okno, pisze się w
++ Scali. Jest ono sprawdzane, składowa po składowej, względem własnych deklaracji przeglądarki i
++ zapisywane jako JavaScript do wykonania przez stronę.
+
+@ 0 5 0 17efadc0699315e31d41cdb47b0f25f8
++ Globalne obiekty strony, `document` i `window`, są obcymi wartościami *ekosystemu* `Browser`.
++ Nawiguje się po nich tak, jakby interfejsy DOM były typami Scali, a każdy krok daje kolejną
++ obcą wartość, zadeklarowanego typu. Wynikowe wyrażenie można serializować do tekstu
++ JavaScriptu albo umieścić bezpośrednio w atrybucie obsługi zdarzeń elementu
++ [HTML](html.md), takim jak `onclick`.
+
+@ 0 1 0 01adf852a6ee47a70481b1a5a8f72f5d
++ ### O skryptowaniu przeglądarki ze Scali
+
+@ 0 5 0 14325381f9e11b1004f9e38a108dd2d7
++ Program w Scali, który generuje stronę, działa na JVM, ale zachowanie, które dołącza do
++ strony, działa w przeglądarce. Zwykle tę przepaść pokonuje się napisem: `onclick="…"`,
++ zawierającym JavaScript, którego kompilator nigdy nie widzi. Literówka w nazwie metody,
++ argument złego typu albo wywołanie na czymś, co nie jest elementem – każde z nich przetrwa
++ kompilację i zawiedzie, po cichu lub głośno, w czyjejś przeglądarce.
+
+@ 0 3 0 080c8e6dab96e43801baaf1dce892686
++ Nic tutaj nie uruchamia DOM na JVM. Nawigacja po `document` buduje *wyrażenie*: typowane
++ drzewo referencji, selekcji i aplikacji. Samo z siebie niczego nie wykonuje. Wyrażenie jest
++ serializowane do JavaScriptu i przekazywane stronie.
+
+@ 0 4 0 05c1bb138f9d1ff30aab6cb5e579b291
++ Kompilator sprawdza konstrukcję. Składowa musi istnieć w obcym typie, a argument musi być
++ wartością Scali o znanym obcym odpowiedniku. Mechanizm jest ogólnym mechanizmem
++ [obcych interfejsów](foreign-interop.md), z przeglądarką jako ekosystemem i WebIDL DOM jako
++ plikiem definicji.
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Wszystko pochodzi z pakietu `soundness`. Drugi import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12e4e53cf6e0a6e815e89a2efd82eafd
++ ### Globalne obiekty strony
+
+@ 0 5 0 108248b68baa6735045df86f6348bb80
++ `document` i `window` są wartościami typów `Foreign of "Document" from Browser` i
++ `Foreign of "Window" from Browser`. Każda z nich jest obcą wartością, której *tematem* jest
++ nazwa interfejsu WebIDL, a *pochodzeniem* ekosystem `Browser`. Każda odpowiada globalnemu
++ obiektowi JavaScriptu o tej samej nazwie i niczemu więcej: jest referencją, która zostanie
++ rozwiązana, gdy strona zostanie uruchomiona.
+
+% 2 1 0 0fecee226bfa72b8067130a78fc84780
+
+% 0 1 0 189bb719b9ed07de0b3a2290d41fac0b
+
+% 0 1 0 059572b12f787fe70c067e7f7bd09f38
+
+% 1 1 0 1d8ca1de5060d65c1fc5bc332dfdf845
+
+@ 0 2 0 0713f4fc34cde3e61b8e2fa4980d27ba
++ Ekosystem `Browser` ma własne definicje interfejsów, więc do nawigacji z którejkolwiek z tych
++ wartości nie jest potrzebny żaden dodatkowy import.
+
+@ 0 1 0 11bfb84158a274d41257ac8f3f182b31
++ ### Nawigacja po DOM
+
+@ 0 5 0 093d0757a91a1f551add1f0cbebaa886
++ Składowe obcej wartości to składowe, które deklaruje jej interfejs WebIDL, a wybranie jednej
++ z nich daje obcą wartość zadeklarowanego typu wyniku. `Document` deklaruje `getElementById`,
++ które zwraca `HTMLElement`. Po wyniku nawiguje się więc dalej, do składowych `HTMLElement`,
++ takich jak `focus`, `click` i `blur`. Dziedziczenie jest spłaszczone, więc `HTMLElement`
++ oferuje też wszystko, co deklarują `Element` i `Node`:
+
+% 2 1 0 092ec0c8e919d4a70d62734eaf40bf47
+
+% 0 1 0 11548e735f2931c70958ff45c93e124f
+
+% 0 1 0 194571ed9b4e548b0094724c99251f48
+
+% 0 1 0 1f0cc5383f98c252120d31767ef24956
+
+% 1 1 0 008d3320131677aa0a0e882bb2439fa8
+
+@ 0 3 0 109b4582561f0f561d5c846b51743b11
++ `querySelectorAll` zwraca sekwencję, a sekwencję indeksuje się liczbą całkowitą, co daje
++ element jej zadeklarowanego typu. `Window` deklaruje atrybut `document`, więc do tej samej
++ strony można dotrzeć każdą z tych dróg:
+
+% 2 1 0 0cc432b92e86d8ee0976f68b1287947f
+
+% 0 1 0 12af19e48d1f2f0417099fa428940385
+
+% 0 1 0 01e423a5f90f50150f930f16d0da3440
+
+% 1 1 0 16661b3cc5db2f0405125a1f51bd30cb
+
+@ 0 3 0 186e67708d38129812f54995d2da60f3
++ Składowa, której interfejs nie deklaruje, jest błędem kompilacji. Jest to pomyłka, którą
++ przeglądarka zgłosiłaby w przeciwnym razie jako `undefined is not a function`, wychwycona tam,
++ gdzie pisze się wyrażenie:
+
+% 2 1 0 030766fb5497fb250918eac65e9dc760
+
+% 3 1 0 15c58706c8c08a6418e36f9bdfc7fc42
+
+% 4 1 0 0e33c72d16c47d8e16b5db2a9d5f1349
+
+% 5 1 0 1f1b5a920d5fec7d0da4d6d0f86f21e3
+
+% 0 1 0 0c0a58052422079b10fb8980a27b0d57
+
+% 1 1 0 081802b71e030752191e33cd18f4c631
+
+@ 0 1 0 0546aa46f8fb8fee10adcd7f30efaa58
++ Podobnie argument złego typu:
+
+% 2 1 0 11863798d40b39440e3d7b67d02602d0
+
+% 3 1 0 1dc8d933b46e11190eb27bb2f8eed8f0
+
+% 4 1 0 0329856f89cf99b00d144f931f7254ee
+
+% 5 1 0 19519a08a6ab684e09c8316e2e6f13fc
+
+% 0 1 0 1ffe2fa8ebaa38740ae1ea4321d63818
+
+% 1 1 0 1d167dbe8b33cf2d09e562fd0e332683
+
+@ 0 1 0 08831c81a048652c18e78a48ce133b50
++ ### Wartości przekraczające granicę
+
+@ 0 2 0 06ac5e93440a33b40f63e369493113f1
++ Wartość Scali przekazuje się jako argument tylko wtedy, gdy instancja `Interoperable`
++ określa, jakiemu obcemu typowi odpowiada:
+
+% 2 1 0 0ec669421c7d2d8d1fdbb739ceb23903
+
+@ 0 2 0 1082ebf8cc39d7150eeb471297135337
++ column  Typ Scali
++ column  Typ WebIDL
+
+% 0 1 0 1126ec99012c6af807be25ecc0f32ed9
+
+% 0 1 0 07dc4de44152fbf01f6b04d80962e18f
+
+% 0 1 0 10e507d18880d15814c070f3660ac305
+
+% 0 1 0 18ce2f012a33b4c30382e700c19b586e
+
+% 0 1 0 02b0b30713d242bf0edc6f6d029f8702
+
+% 0 1 0 0d0c02386db5d5a20fa8b440e74f1590
+
+% 0 1 0 01dd63dd599abe5d132aabc320a3b4ec
+
+% 0 1 0 004a452c7b6294fd0345f8975c79e627
+
+% 0 1 0 0ed0fc42ec3b3f4106cb215dc9cdbf28
+
+% 0 1 0 1f3a0e5d4ba1a8b01ba7c30f3cb23f6a
+
+% 0 1 0 1bbcc59ea0d9367502c81f8eccd75374
+
+% 0 1 0 060bafbbcfa44864077a1a65f16a1f6b
+
+% 0 1 0 06ace1e01976b47f11de60fb9ec11a15
+
+% 0 1 0 097e521a2a6095d71db3a353e88bf847
+
+@ 0 1 0 0d634fa96910c27e0e3f3e4585ec6bd2
++ row  `Optional[T]`  `T?`, z `Unset` jako `null`
+
+% 1 1 0 0495b2129035d5e01b41f0e3c782fda6
+
+@ 0 2 0 0b7737f7eb94111201697f9c2d127bdc
++ Liczby mają [określony rozmiar](numbers.md#numeric-types), więc parametr zadeklarowany jako
++ `long` przyjmuje `S32`, a nie `Int` bez określonego rozmiaru:
+
+% 2 1 0 153844ded7d683a7003ad4988942e09f
+
+% 0 1 0 1d89add1113ca3730afcf506b4740a1c
+
+% 0 1 0 11e352aaed20d95f024f4a119f3d52cd
+
+% 0 1 0 0992721f4226753f11b278ca1a7ecee9
+
+% 1 1 0 17ba4efbdda109a810ab936a6a5fe6c7
+
+@ 0 3 0 16655e9245f934461c26cf9ff8135684
++ Każdy argument jest sprawdzany względem zadeklarowanego typu swojego parametru, w kategoriach
++ samego obcego systemu typów. `scrollTo` oczekuje dwóch wartości obcego typu `s32`, a `S32`
++ jest wartością Scali, która ją dostarcza.
+
+@ 0 1 0 061543aab79d3b421ab9f676ffb1f2fb
++ ### Serializacja do JavaScriptu
+
+@ 0 2 0 0b64b1f9d664d0cb0b471dd3294e63ec
++ `expr` obcej wartości to jej wyrażenie, `Foreign.Expression`, czyli małe drzewo z takich
++ węzłów:
+
+% 2 1 0 16adbe11a3836520115f14e5bd0dc68e
+
+@ 0 8 0 110e475be4671e6319481ac066455902
++ column  Węzeł
++ column  Odpowiada
++ column  Przedstawiany jako
++ row  `Reference(name)`  obiektowi globalnemu  `document`
++ row  `Select(target, member, owner)`  składowej wartości  `target.member`
++ row  `Apply(target, arguments)`  wywołaniu  `target(arguments)`
++ row  `Index(target, index)`  dostępowi przez indeks  `target[index]`
++ row  `Literal(value)`  stałej  `'text'`, `42`
+
+% 1 1 0 1746897799a706c1138e2dfa22ab9395
+
+@ 0 1 0 1335f65964cbc8a8000268c505a978a4
++ `Javascript.serialize` zapisuje drzewo jako tekst źródłowy JavaScriptu:
+
+% 2 1 0 04842bd69f461128149605c5ce9b0352
+
+% 3 1 0 10481ec2f312ec0b10a9b835734694b6
+
+% 4 1 0 1c00c0d3e42a1c3706c8ace1c4c7050e
+
+% 0 1 0 1aeff8b033bbde6317de96c1e415def5
+
+% 0 1 0 0fbcf02b250e51170fdfeefd369c4fe4
+
+% 0 1 0 13296006bb9760a3147e8e72dd1d4ff7
+
+% 1 1 0 0753306c92fda43a0f3b351ac46d9023
+
+@ 0 3 0 108f2ebb5de6a375172c3d6874816275
++ Literały napisowe są zapisywane w pojedynczych cudzysłowach, więc wynik czysto zagnieżdża się
++ w podwójnych cudzysłowach atrybutu HTML. Ukośnik wsteczny, cudzysłów lub złamanie wiersza w
++ tekście są poprzedzane znakiem ucieczki:
+
+% 2 1 0 08566c130eb30cd1069318f82721aa1e
+
+% 3 1 0 1dbc507f5a751c9b1c0e4a48e2f96cd1
+
+% 4 1 0 04ed83142694d603031e8075b9ceacae
+
+% 0 1 0 0e9e133d6f34e209160a9c9219d17e7d
+
+% 1 1 0 116cd498faa0906b1f824fc1a8671de5
+
+@ 0 4 0 1e99741084085f1114ac73aa881477e1
++ Samo wyrażenie to zwykłe dane, które można badać lub dopasowywać do wzorca. Pierwszy przykład
++ powyżej to `Apply` z `Select` z `Reference` o nazwie `document`, z jednym argumentem
++ `Literal`, a [testy](testing.md) generowanych skryptów mogą formułować asercje dokładnie o tej
++ strukturze.
+
+@ 0 1 0 150605148ec3f18405e53c45403b02f1
++ ### Skrypty w atrybutach HTML
+
+@ 0 4 0 171927562969e0b503a1412bdd26766a
++ Atrybut obsługi zdarzeń elementu HTML, taki jak `onclick` lub `onchange`, oczekuje
++ *skryptu*. Jest to odrębny typ atrybutu, którego zwykły tekst nie spełnia. Obce wyrażenie DOM
++ go spełnia i jest serializowane do JavaScriptu, gdy strona jest wyświetlana:
+
+% 2 1 0 1f277e16b752848511c4a01f206895c9
+
+% 0 1 0 10a015fbb549ff8011f948ce95f0e5d2
+
+% 0 1 0 052609c9df6005f31476d42073da1093
+
+% 1 1 0 04e4d53ee1034b651a88645d9ae06439
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 078de6bd1092872f1a63ab7518f04b20
+
+% 1 1 0 18e3835743be51e51e547f787d676989
+
+@ 0 3 0 14f9c93d623d92df117425fd9305eea6
++ Napis w tym samym miejscu jest odrzucany, i właśnie o to w tym rozróżnieniu chodzi.
++ JavaScript, który trafia na stronę, został skonstruowany przez nawigację po własnych
++ definicjach DOM i żaden niesprawdzony tekst nie może zająć jego miejsca:
+
+% 2 1 0 0b21f50d36ac2f2c0110c50d00cad919
+
+% 3 1 0 1e3021151723d87d1ee55db30517c6ac
+
+% 4 1 0 0bf4de4ff38f5d1a0343f67c76f969c1
+
+% 5 1 0 14eb40d0eb14a03c116e143d85fb064f
+
+% 0 1 0 08f1a5c1d6f0fac9044110bbe0a13a29
+
+% 1 1 0 13a6df30577858c618a3147047bcff3c
+
+@ 0 3 0 1d4daf4891a70cf113732bc4777d6168
++ Akceptowana jest tylko obca wartość z ekosystemu `Browser`. Obce wyrażenie z innego
++ ekosystemu, takie jak deklaracja TypeScriptu czy interfejs WebAssembly, ma ten sam kształt, ale
++ nie ma jak zostać wykonane na stronie. Nie może być handlerem zdarzenia, niezależnie od tego,
++ jak dobrze jest otypowane.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 4 0 1a01601560f03d7b1517463f38bccfa3
++ - [HTML](html.md#attributes) buduje elementy, do których dołącza się skrypty.
++ - [Obce interfejsy](foreign-interop.md) opisują ogólny mechanizm dla innych
++   ekosystemów.
++ - [Automatyzacja przeglądarki](web-automation.md) steruje prawdziwą przeglądarką spoza strony.

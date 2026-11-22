@@ -1,0 +1,1036 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 020e9af13aaabefd037e0c106d73c906
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0122281df872933d11bbbe64e55428e0
++ info   CSV、TSV 及其他分隔文本：按所选格式解析行，并与 case class 相互解码和编码
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0b90bbdc36bec69907e2da5a854f3769
++     _Caesura_ 读写分隔值——CSV、它的制表符分隔近亲 TSV，以及空格分隔的数据——其引号、转义和表头约定由作用域中选定的 `Dsv.Format` 决定，而不是靠猜测。
++     文本解析为 `Sheet`，即一个已物化的行数组；每一行是一个 `Dsv`，即一个单元格数组，在数据带有表头时它知道自己的列名；行通过从类型派生出的编解码器解码为 case class，case class 也以同样方式编码为行，因此列到字段的映射从不需要手写。
+
+% 2 1 0 157faad6c82e52c50bf58b529fdeb7b4
+
+% 3 1 0 1db1e66a5d0b97031899cd30ccbcd243
+
+% 4 1 0 160216c1a1e0dcb80dd50ad18540fbfb
+
+% 5 1 0 05c6384ba52fc12e16323a3799a2523f
+
+% 2 1 0 14c39385ba74b21405046ae62c5ce01d
+
+% 0 1 0 17a61f7822ba883218d25c74b7a0ca86
+
+% 0 1 0 055b5394d0d16f731c844c2e2be3a093
+
+% 0 1 0 16a7d9be2959183a011edd33c632f9a9
+
+% 0 1 0 1fe12e8ad6210e681ccc4e41bf354214
+
+% 0 1 0 1eb272f55d9b8c7c1d3977de6d265cbb
+
+% 1 1 0 1f3448ae4af0427603cab0510db1523a
+
+@ 0 4 0 06ae211399ab16a404d1e52b5520b32b
++     嵌套的 case class 会展开到与其字段数一样多的列上（即它的_跨度_，由 `Spannable` 类型类给出），`Optional` 字段将过短的行读取为 `Unset`，而在带表头的格式下，每个字段都与同名的列匹配，因此列的顺序无需与字段的顺序一致。
+
+@ 0 8 0 16146c939335515d1e5bc9526aeefb1c
++     从文本到值有两条途径。
++     **行解码器**为每一行构建一个 `Dsv`，并用 `Decodable in Dsv` 对其解码，每个积类型都会派生它；在累积式策略下，它会报告每一个有问题的单元格，每个都以一个 `CellRef` 为焦点。
++     **直接解析器**直接从解析器可复用的行缓冲区中读取具有 `Dsv.Parsable` 的类型，完全不构建 `Dsv`，这是处理大文件的快速路径。
++     `codecs` 模式（`codecs.direct`、`codecs.derived`、`codecs.strict`）在两者之间进行选择，就像它们对其他所有格式所做的那样。
++     大到无法整体保存的文件，用字符流上的 `rows` 或 `rowsOf` 读取，它们一次产出一行。
+
+@ 0 2 0 1d0fdc96dcc78fe1102834540490ffed
++     这些选择都是包中的 given，各自需要按名称导入，因为 `import soundness.*` 不会导入 given：
+
+@ 0 12 0 11ed7652cc4a67ba007e87faf2b6dd0a
++     - `dsvFormats`——格式：`csvFormat`、`tsvFormat` 和 `ssvFormat`，各自有一个 `…WithHeaderFormat` 变体。没有格式，什么都无法解析或渲染。
++     - `dsvRedesignations`——在动态访问中，驼峰式成员名如何映射为表头名，例如 `capitalizedWordsRedesignation`（`targetPerson` 映射为 `Target Person`）。
++     - `dynamicAccess`——`dynamicDsv`，它使行的单元格可以作为成员读取，即 `row.age[Int]`。
++     - `optionalityOptions`——`Optional` 字段将缺失或格式错误的单元格视为 `Unset` 还是错误。
++     - `optics`——作用于行的单元格和表格的行的透镜，供 `panopticon` 的 `lens` 使用。
++     - `construables`——将媒体类型 `text/csv` 和 `text/tab-separated-values` 解释为 `Sheet`，供 HTTP 客户端使用。
+
+@ 0 4 0 14a735e060de17a30a39c17ba8fdea89
++     该库有两个组件。
++     `caesura.core` 包含除媒体类型映射以外的一切，且与平台无关。
++     `caesura.http` 添加了 `construables` 包，并依赖 `gesticulate`。
++     所有内容都导出到 `soundness` 总括包，而这些选择包会与总括包中同名的包合并。
+
+% 0 1 0 014d286e745d74f914bcc9be0dd95fda
+
+% 0 1 0 16642a3698bb01fb0dd8211931d94a1e
+
+% 0 1 0 1e5fc3d62f56cee60ce69937f7479516
+
+% 0 1 0 0228b5520494dbe50e2865c7ca8a49e8
+
+% 0 1 0 0b9ac194a85040510cf6b6af99485961
+
+% 0 1 0 0fcfd56bf7af14880b149c12eda5f072
+
+@ 0 1 0 04580a743ebd61310a91feab0ee86cac
++ entry .Dsv   分隔数据中的一行：一个单元格数组，在数据带有表头时还有列名
+
+% 1 1 0 1cdddb4d89b044290c456c6c352102f7
+
+@ 0 6 0 027398ee00ef8d81132cac0fc0082d5b
++       `Dsv` 是单独的一行：它的 `#data` 是该行按顺序排列的 `Text` 单元格，而当该行是在带表头的格式下解析时，它的 `#columns` 将每个列名映射到其索引（否则为 `Unset`）。
++       它是 `Sheet` 的行所由组成的值，是 `rows` 从流中产出的值，也是每个行编解码器的 `Form`：能从行中读取的类型是 `Decodable in Dsv`，能写成行的类型是 `Encodable in Dsv`。
+
+% 2 1 0 1765863041372b2b1aaa5d6c51c6346d
+
+% 3 1 0 15b383ec5e0e57f20c49028b9883f244
+
+% 4 1 0 187337b17e9510bf09b8495083d4cc79
+
+% 5 1 0 03b2440034291db808f7723a839a129e
+
+% 7 1 0 127aca9201509d670a0233f460bcc869
+
+% 0 1 0 09203616bb9e165d142ffbb5ba4ecb9e
+
+% 0 1 0 0682035aa3b4758b0c1c5be2cf71ceea
+
+% 0 1 0 0811167fe2934f4509162a573d8cd081
+
+% 0 1 0 10f3898c3d36d10a1353813c16f528f7
+
+% 1 1 0 01bdead578251831156519239552625a
+
+@ 0 8 0 1f7a0704a63c1f2b0fc881a719ed4d17
++       伴生对象持有所有编解码器，因此都无需导入：`Int`、`Long`、`Double`、`Float`、`Boolean`、`Text` 和 `String` 的单元格解码器；将行的第一个单元格读取为任何 `Decodable in Text` 类型的回退实例（位于 `Dsv2`）；`Optional` 字段；将任何 `Encodable in Text` 的类型编码为单单元格行；每个积类型的行解码器和行编码器的派生；以及 `read[Play in Dsv]` 和 `read[List[Play] in Dsv]` 背后的 `Aggregable` given（部分位于其父特质 `Dsv1` 和 `Dsv2` 中）。
++       它还包含 `Format`、`Error`、`Redesignation`，以及直接解析的类型类 `Parsable` 和 `Field`。
+
+@ 0 4 0 1337022ad5e3f6de18db43ece8981125
++       基本类型的单元格解码器不会因为一个有问题的单元格而中止：它们抛出 `Dsv.Error` 并以占位值继续，这样当一行在累积式策略（`Validate[…, CellRef]`）下解码为积类型时，每一个格式错误或缺失的单元格都会被报告，每个都以其所在列的 `CellRef` 为焦点，而不是只报告第一个。
+
+@ 0 2 0 18f53452490d48f5003f1fee965f9ad2
++       导入 `dynamicAccess.dynamicDsv` 并且作用域中有 `Dsv.Redesignation` 时，单元格就是行的成员：`row.age[Int]`（参见 `#selectDynamic`）。
+
+% 0 1 0 0d4b17993e3918591a071121ce79cbb8
+
+% 1 1 0 067dc4c3cfd1cbd207b592932154fce8
+
+% 1 1 0 0d33899b04fc59110e9cf1c241ac3412
+
+% 0 1 0 0fd4d7af4eca3bd91377666fbf8322e0
+
+@ 0 34 0 0f4d889be2c6b2e2026d1ae6900e3e0e
++   entry .apply   由单元格构造一行，单元格以参数或 `Iterable[Text]` 的形式给出
++       `Dsv(t"a", t"b")` 和 `Dsv(cells)` 构造没有列名的行。
++       带列名的行来自在带表头的格式下的解析，或来自 case class 构造器 `Dsv(data, columns)`。
++   entry .optionalDecodable   解码 `Optional` 字段：缺失的单元格为 `Unset`，存在的单元格由内部类型解码
++       没有单元格的行——过短的按位置行，或缺少某个表头列的行——解码为 `Unset`；存在的单元格，即使为空，也由内部类型的 `Decodable in Dsv` 解码。
++       这两种结果都是在 `optionalityOptions` 中选定的方针：严格的 `Decodable.Absence in Dsv` 对缺失的单元格抛出 `Dsv.Error.Reason.Absent`，宽松的 `Decodable.Fault in Dsv` 将内部解码器拒绝的单元格读取为 `Unset`。
++       默认是宽松的缺失处理和严格的错误处理。
++       需要一个 `Dsv.Format` 和一个 `Tactic[Dsv.Error]`。
++   entry .encoder   将任何 `Encodable in Text` 的类型写成单单元格行
++   entry .int   将行的第一个单元格解码为 `Int`，无法解码时抛出 `Dsv.Error` 并继续
++       与每个基本类型的单元格解码器一样：缺失的单元格抛出 `Dsv.Error.Reason.Absent`，无法解析的单元格抛出 `Dsv.Error.Reason.Unparseable(cell, t"Int")`，都通过 `raise` 进行，这样累积式策略会收集错误，解码则以 `0` 继续。
++       需要一个 `Dsv.Format` 和一个 `Tactic[Dsv.Error]`。
++   entry .long   将行的第一个单元格解码为 `Long`，无法解码时抛出 `Dsv.Error` 并继续
++   entry .double   将行的第一个单元格解码为 `Double`，无法解码时抛出 `Dsv.Error` 并继续
++   entry .float   将行的第一个单元格解码为 `Float`，无法解码时抛出 `Dsv.Error` 并继续
++   entry .boolean   将行的第一个单元格解码为 `Boolean`：只接受 `true` 和 `false`
++       其他任何文本，包括 `TRUE` 或 `1`，都会抛出 `Dsv.Error.Reason.Unparseable`，解码则以 `false` 继续。
++   entry .text   将行的第一个单元格解码为 `Text`；仅在单元格缺失时抛出 `Dsv.Error`
++   entry .string   将行的第一个单元格解码为 `String`；仅在单元格缺失时抛出 `Dsv.Error`
++   entry .decodableDerivation   为任意积类型派生行解码器，依次取其各字段的单元格
++       每个字段占用与其跨度（`Spannable`）一样多的单元格：`Decodable in Text` 的字段占一个，嵌套的 case class 则占其自身各字段跨度之和。
++       在带表头的格式下，每个字段改为按与字段拼写完全相同的列名查找，列缺失的字段得到一个空行，因此 `Optional` 字段为 `Unset`。
++       在累积式策略下，每个字段都在 `focus(CellRef(…))` 中解码，只有当每个字段都顺利解码时才构造记录。
+
+% 2 1 0 00488595a3a51ca40884ff78214c1662
+
+% 3 1 0 1b846d63d0a3c37a0918cdac167cf329
+
+% 4 1 0 01c029e0a41c687d052761c964781278
+
+% 5 1 0 06d957eef4eebc2f179d276d874c953a
+
+% 7 1 0 01802095551cf21700b11848593c8d8a
+
+% 3 1 0 191e8d1fe301741a04bb0961fc6afae6
+
+% 0 1 0 15e110ebd34f929f014bf88d99401893
+
+% 1 1 0 198bcec437302afb148e60e19f0841ff
+
+@ 0 20 0 12c656c981dfcb9908152ea15da00c1f
++   entry .encodableDerivation   为任意积类型派生行编码器，拼接其各字段的单元格
++       嵌套的 case class 就地贡献其自身的单元格，因此编码是 `.decodableDerivation` 按位置读取的镜像。
++   entry .showable   以作用域中的 `Dsv.Format` 将一行渲染为一行分隔文本
++       单元格以格式的分隔符连接。
++       只有当单元格包含引号字符、分隔符、换行符或回车符时才加引号，加引号的单元格中的引号会被双写。
++   entry .aggregableDerived   在 `codecs.derived` 下，即使 `Play` 有 `Dsv.Parsable`，也通过行解码器读取 `Play in Dsv`
++       由 `import codecs.derived` 选中，对于作用域中有 `Dsv.Parsable` 的类型，它优先于直接路径，因此程序可以比较两者，或在某次读取中保留累积式的行解码器。
++   entry .aggregableStrict   在 `codecs.strict` 下，通过作用域中的 `Dsv.Parsable` 直接读取 `Play in Dsv`
++       与 `Dsv1#aggregableStrictFailure` 配对：在 `import codecs.strict` 下，具有 `Dsv.Parsable` 的类型被直接解析，没有的类型则是一个指明该类型的编译错误，而不是回退到行解码器。
++   entry .aggregableParsedList   `read[List[Play] in Dsv]`：通过 `Play` 的 `Dsv.Parsable` 直接解析每一行
++       整个表格没有对应的行解码器版本，因此在每种 `codecs` 模式下这次读取都是直接的，并且需要元素类型的 `Dsv.Parsable`（`codecs.direct` 会为任意积类型派生它）。
++       需要一个 `Dsv.Format`、一个 `Tactic[Dsv.Error]` 和一个 `Buffering`。
+
+% 2 1 0 02dd1ffe816e148e0c6e67d925d3e0d2
+
+% 3 1 0 02f0534548654ae30438d2403850b721
+
+% 4 1 0 148cd4ca52d52fae17f73ec1a0495ac5
+
+% 5 1 0 152f39525e327d1a145dff0260a517e9
+
+% 0 1 0 14e82097fcd5855d1bde4f5045b26a28
+
+% 0 1 0 125b6790ea8071fb0fda2447dc3e0ac7
+
+% 0 1 0 000aa57660abbcc30ef7a39a20048446
+
+% 1 1 0 1b6cf42032db80f0071a1371f08424bc
+
+@ 0 1 0 026f971a1005b2e60487db67fe405655
++   entry .Parsing   `Dsv.Parsable` 和 `Dsv.Field` 的共同父类型：从 `DsvReader` 读取值
+
+% 1 1 0 0d565a598aa815771904323f722eb84f
+
+@ 0 5 0 00121d9ed0eaa4c007ae4cfd9f449540
++         一个 `distillate.Parsable`，其 `#Transport` 为 `Dsv`，其 `#Reader` 为 `DsvReader`。
++         实例占用当前行的 `#width` 个单元格，并用 `#parse` 从给定偏移处读取它们。
++         `Parsable` 和 `Field` 都不是对方的子类型：`Parsable` 是将读取切换到直接路径的选择启用接口，`Field` 则是每个字段类型都会解析到的操作性接口。
+
+% 1 1 0 1b6fea3da392583c1acea222db5f1bfe
+
+@ 0 5 0 030c9a6b98f83632090390b353c6dd43
++     entry #Transport   传输格式：`Dsv`
++     entry #Reader   实例从中解析的词法单元读取器：`DsvReader`
++     entry #width   值在按位置行中占用的单元格数；除非被覆盖，否则为 `1`
++     entry #parse   从 `DsvReader` 的当前行、从某个单元格偏移（默认 `0`）处读取值
++   entry .Parsable2   `Dsv.Parsable.generated`（即 `codecs.direct` 派生）所在的低优先级位置
+
+% 1 1 0 043f73f10d7c484c13cc078f3c222dc7
+
+% 2 1 0 1add02e9fbc850f11d02230e690d0442
+
+@ 0 7 0 0f7bbcac27d705591ba5576f66831a22
++         `Dsv.Parsable` 伴生对象的父特质，持有 `codecs.direct` 所启用的 given。
++         不供直接使用。
++     entry #generated   在 `codecs.direct` 下，为每个积类型派生的 `Dsv.Parsable`
++         拥有自己 `Dsv.Parsable` 的类型会改用它自己的。
++         该派生通过 `Dsv.Field` 读取每个字段，因此具有非 `Decodable in Text` 字段的积类型（或由这类字段组成的积类型）会派生失败，而不是回退。
++   entry .Parsable   直接从来源解析某个类型的选择启用类型类，不为每一行构建 `Dsv`
+
+% 1 1 0 130c991831fbd6f00042c6667a7cd691
+
+@ 0 4 0 1f4db59a85ed474f1c5cfd3c1e4ad41a
++         `Dsv.Parsable` 的类型由 `read[Play in Dsv]`、`read[List[Play] in Dsv]` 和 `rowsOf[Play]` 直接从解析器可复用的行缓冲区读取，其单元格就地寻址，因此不会为每条记录构建 `Dsv` 行值。
++         声明一个实例就会切换路径；没有实例的类型保留行解码器，除非导入了 `codecs.direct`。
+
+% 2 1 0 19bae06f36a5d40712d700157cd6ef7a
+
+% 3 1 0 0820bb5d8dde7b6f032620c50756ffba
+
+% 4 1 0 052eae230db21f7f0cf8cd9a01d0da29
+
+% 1 1 0 0f4120b9c78c1c640477f4b6e8c52dba
+
+% 0 1 0 0ee076335a2ce1b50dbecfd94e91347a
+
+% 0 1 0 1a420fa516684915025cd96bcf71b983
+
+% 0 1 0 0a6296f1de4ba6b11f6a21b4a8789f79
+
+% 0 1 0 1363b44f2d71f53c10ffde66e7f57b3b
+
+% 0 1 0 0875568724b97aa30ec5c29c342a5a3f
+
+% 1 1 0 0a0c128ae8398bdf1afce9baa8b501cd
+
+@ 0 3 0 10f04dfa4cb680cf037499a0a7060920
++         在带表头的格式下，字段按表头匹配，否则按位置匹配，行未覆盖到的 `Optional` 字段为 `Unset`。
++         直接解析会快速失败：它不会像行解码器那样累积每一个有问题的单元格。
+
+@ 0 2 0 11a99a903b67a58f0d251489c0c8df3a
++         伴生对象从其父特质 `Dsv.Parsable2` 继承了 `codecs.direct` 派生 `generated`。
+
+% 0 1 0 0b6b4643cf11d3fd0ffddf9f1ceec9d3
+
+% 1 1 0 153a1942a39a5aa60126f8fb8702b960
+
+@ 0 6 0 04d8754eabd7b8ca01fe8e282d015ab3
++     entry .derived   为积类型派生 `Dsv.Parsable`，每个字段通过其 `Dsv.Field` 读取
++         `given Play is Dsv.Parsable = Dsv.Parsable.derived`，或 `derives Dsv.Parsable`。
++         每个字段都必须有 `Dsv.Field`，任何 `Decodable in Text` 的类型、任何此类类型的 `Optional`，以及任何由此类字段组成的积类型都有。
++     entry .fromField   由 `Dsv.Field` 构造 `Dsv.Parsable`，保留其宽度
++   entry .Field   直接解析的积类型的一个字段如何从 `DsvReader` 读取其单元格
+
+% 1 1 0 197c710d8baca0681b6130ac05f958fd
+
+@ 0 17 0 1e493acbd351f5bb1da3a92a7e1a6b09
++         `Dsv.Parsable` 派生为每个字段召唤的类型类。
++         对于 `Decodable in Text` 的类型，它总能解析，读取一个单元格；嵌套的积类型是宽度为其自身各字段宽度之和的 `Field`（通过 `Dsv.ParsableDerivation`）；`Optional` 字段也是。
++         缺失的单元格会通过读取器的战术以 `Dsv.Error.Reason.Absent` 中止，除非 `.optional` 拦截了它。
++     entry .decodable   任何 `Decodable in Text` 的类型，从一个单元格读取
++     entry .optional   `Optional` 字段：缺失的单元格为 `Unset`，按 `optionalityOptions` 方针的规定
++         与行解码器的 `Dsv.optionalDecodable` 一样：除非缺失处理是严格的，否则缺失的单元格为 `Unset`；内部字段拒绝的单元格会抛出错误，除非错误处理是宽松的，此时为 `Unset`。
++     entry .parseField   在以中性引用持有的读取器上调用字段的 `#parse`；供生成代码使用
++         不供直接使用：派生出的解析 lambda 不能将读取器能力作为参数接收，因此它以 `AnyRef` 携带读取器，并通过此方法调用。
++     entry .fieldColumn   在以中性引用持有的读取器上取得某个表头的列索引；供生成代码使用
++         不供直接使用。
++         在按位置模式下为 `Unset`。
++   entry .ParsableDerivation   `Dsv.Field` 的积类型派生，位于 `Dsv.Parsable.derived` 背后
+
+% 1 1 0 0317bd52bdd4192d10b6aa4591875375
+
+% 2 1 0 06ad95e4f518f6db0cd3d358817bdfe6
+
+@ 0 8 0 0482e9c34516771b116b8528099f4028
++         不供直接使用：由 `Dsv.Parsable.derived` 调用。
++         在带表头的格式下，字段按列名查找；否则每个字段从一个累进的偏移处读取其跨度。
++     entry .DsvProductParser   派生产生的 `Dsv.Field`：一个宽度和一个解析函数
++       entry #width   积类型各字段的总跨度
++       entry #parse   从当前行、从某个单元格偏移处读取积类型
++     entry .conjunction   为积类型派生 `Dsv.Field` 的宏
++   entry .DecodableDerivation   `Decodable in Dsv` 的积类型派生，位于 `Dsv.decodableDerivation` 背后
+
+% 1 1 0 1a6fa2c1341de2d410c68e7a3db604b7
+
+% 2 1 0 114973f0417b16e71f167160dcec98fc
+
+@ 0 10 0 16efdf4e1997a3e10b120fc094d4086e
++         不供直接使用：由 given `Dsv.decodableDerivation` 调用。
++         它遍历字段一次，从每个字段的跨度（或在有表头时从其具名列）解码该字段，并在累积式策略下以 `CellRef` 为每个字段设置焦点，只有当每个字段都成功时才构建记录。
++     entry .DsvProductDecoder   派生产生的 `Decodable in Dsv`，包装其解码函数
++       entry #Self   被解码的积类型
++       entry #Form   解码的来源形式：`Dsv`
++       entry #decoded   将一行解码为积类型
++     entry .conjunction   为积类型派生行解码器的宏
++   entry .EncodableDerivation   `Encodable in Dsv` 的积类型派生，位于 `Dsv.encodableDerivation` 背后
+
+% 1 1 0 021f318b6341b87f044301015fadfcc2
+
+% 2 1 0 00d3e8ff363eac591fba724d3ad4aa23
+
+@ 0 3 0 07ca8c2f086a7852097d9798f2f303c9
++         不供直接使用：由 given `Dsv.encodableDerivation` 调用。
++     entry .conjunction   为积类型派生行编码器的宏，拼接其各字段的单元格
++   entry .Error   分隔文本无法解析，或一行无法解码时抛出
+
+% 1 1 0 0eaef628a277e2dc16d98a64493b878b
+
+@ 0 8 0 093cfd6ca3fea84d0f92e17ed6fb5545
++         错误 `↯/s.83.1`，其子代码来自 `#reason`。
++         **解析**失败，即在未加引号的单元格开始之后发现引号，其消息为 _could not parse row data at row `row`, column `column` because a quote was found after the start of a cell_，并携带从 1 开始的行号和列号，以及在输入中的字符偏移。
++         **解码**失败的消息为 _could not decode the cell because the cell was absent_，或 _because the value `value` could not be parsed as `expected`_；其位置不在错误本身中（`#row` 和 `#column` 为 `Prim`，`#offset` 为 `0`），而在累积式策略随错误一起记录的 `CellRef` 焦点中。
+
+% 2 1 0 033d2bae05b5636f121c39a5c0865243
+
+% 3 1 0 0cd2971282f7001f1a5e4790c8900af1
+
+% 4 1 0 0673b0a7296cf7b4033d7ac8f3503688
+
+% 0 1 0 1beda05b355ecc71182945a9c5f0608f
+
+% 0 1 0 0deca616a9f105d20ed9bf8e6a0e8f16
+
+% 1 1 0 10db13c5b24fcaf801a0b490c4f1e01c
+
+@ 0 7 0 1a101b7e8479d11e19383548a7c0bf14
++         由 `read[Sheet]`、`read[Play in Dsv]`、`rows`、`rowsOf` 和 `Dsv#as` 通过作用域中的 `Tactic[Dsv.Error]` 抛出。
++         `Reason` 是枚举，其分支为 `MisplacedQuote`（子代码 1，解析失败）、`Absent`（2，过短的行中缺失的单元格，或行所缺少的表头列）和 `Unparseable(value, expected)`（3，被其解码器拒绝的单元格，带有单元格的文本和所期望类型的名称）。
++     entry .communicable   将 `Dsv.Error.Reason` 渲染为错误消息结尾的从句
++     entry .Reason   分隔数据失败的原因：`MisplacedQuote`、`Absent` 或 `Unparseable(value, expected)`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 16 0 049a46177a45dd0d1080474b8da42a2c
++           `MisplacedQuote`（子代码 1）是解析失败：在未加引号的单元格开始之后发现了引号字符。
++           `Absent`（2）是解码失败：行中没有该单元格。
++           `Unparseable(value, expected)`（3）是解码失败：单元格的文本 `value` 无法读取为 `expected` 所指明的类型。
++       entry #number   原因的子代码，跟在错误编号 364 之后
++     entry .apply   由格式和原因构造一个解码阶段的错误，不带位置
++         位置以占位值（`Prim`、`Prim`、`0`）填充，因为解码器的位置由其焦点所在的 `CellRef` 携带。
++     entry #format   读取数据时所用的 `Dsv.Format`
++     entry #reason   失败的 `Dsv.Error.Reason`
++     entry #row   解析失败时从 1 开始的行号；解码失败时为 `Prim`
++     entry #column   解析失败时从 1 开始的列号；解码失败时为 `Prim`
++     entry #offset   解析失败在已解码文本中的字符（UTF-16 码元）偏移；解码失败时为 `0`
++         字节偏移不可用：解析器读取的是已从字节解码的文本。
++   entry .Format   分隔格式的约定：表头行、分隔符、引号字符和转义字符
+
+% 1 1 0 09c8b8fa0679f57902b05ae786bd84d1
+
+@ 0 5 0 0a0b9daa9ce0269b1957edb54c6531dc
++         `Dsv.Format` 说明数据的第一行是否为表头（`#header`），哪个字符分隔单元格（`#delimiter`），哪个字符为单元格加引号（`#quote`），以及哪个字符转义引号（`#escape`）。
++         作用域中没有格式时，什么都无法解析或渲染；标准格式位于 `dsvFormats` 中，需按名称导入，其他任何格式都是绑定为局部 given 的值：
+
+% 2 1 0 1386790ec791d4a71506647e55ff3cff
+
+% 3 1 0 1366d5230773448c0f19618bb7d7c73d
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 142599fd82657df1155bea3a07d75a89
+
+% 0 1 0 1ebbf2d116d2f8d31903e7360e28fefd
+
+% 1 1 0 1e8529da1a7749d2125c82fe9dcb94be
+
+@ 0 4 0 06030242dba683e41a95a656300a0ee7
++         在带表头的格式下，`read[Sheet]` 将第一行作为列名，因此每一行的单元格都可以按名称寻址，派生的解码器也按名称将字段与列匹配。
++         解析器和渲染器都通过双写来转义加引号的单元格中的引号，这是每个标准格式都使用的约定。
+
+% 0 1 0 1508125cf7fef7f61d8319dcd87dbc34
+
+@ 0 9 0 05f96a31b55a3bf90e96bf37f82813d4
++     entry #header   第一行是否为列命名
++     entry #delimiter   单元格之间的字符：标准格式中为 `,`、制表符或空格
++     entry #quote   包围含有分隔符、引号或换行的单元格的字符
++     entry #escape   在加引号的单元格中转义引号的字符；每个标准格式中都与 `#quote` 相同
++     entry #Delimiter   作为稳定标识符的分隔符，供模式中使用
++     entry #Quote   作为稳定标识符的引号字符，供模式中使用
++     entry #Escape   作为稳定标识符的转义字符，供模式中使用
++     entry #doublingEscapes   引号是否通过双写来转义：即 `#escape` 是否就是 `#quote`
++   entry .Redesignation   驼峰式成员名如何映射为表头名，用于动态访问行的单元格
+
+% 1 1 0 11cd38295d1d015c117110509dcb50ec
+
+@ 0 5 0 192670bbe17c5d8d0878b9f66b75c786
++         单方法特质：`#transform` 将 `targetPerson` 这样的 Scala 名称映射为它应匹配的表头文本，例如 `Target Person`。
++         `Dsv#selectDynamic` 需要作用域中有一个，这样 `row.targetPerson[Text]` 就会读取列 `Target Person`。
++         标准的映射位于 `dsvRedesignations` 中，需按名称导入；没有默认值，从 `Text` 到 `Text` 的 lambda 就是一个映射。
+
+% 2 1 0 12019cebb5fdea621250e3893b73b001
+
+% 3 1 0 1036662d75223c0419881d80edb0792a
+
+% 0 1 0 08a16e738ce0b07f01f65c41faa924b3
+
+% 0 1 0 0ec4837b87acc86700c2d1b88ea599ba
+
+% 1 1 0 0ba0b79a0ca1c2eb0d87a700aeea01fb
+
+@ 0 2 0 0d730f68a43a319c165c12d34afa24d6
++         映射只作用于动态成员访问：派生的解码器将每个字段与名称和字段名完全相同的列匹配。
+
+% 0 1 0 16788863de4161b602ada6917fe546f9
+
+@ 0 6 0 19631abb3598dca9189703a34a565806
++     entry #transform   将成员名映射为它应匹配的表头文本
++   entry #data   行的单元格，按顺序排列
++   entry #columns   数据带有表头时，按名称给出的每列索引；否则为 `Unset`
++   entry #as   将行解码为 `Decodable in Dsv` 的类型，例如任意 case class
++       需要一个 `Tactic[Dsv.Error]`，并通过作用域中的 `Foci[CellRef]` 进行累积；除非 `Validate[…, CellRef]` 这样的累积式策略提供了一个，否则使用默认值。
+
+% 2 1 0 05970c840df65a1211fdaa027e91b053
+
+% 3 1 0 16044d9e5b8964131425d98c26c7a592
+
+% 4 1 0 1e7ccc08fd641dd715b50b689a382515
+
+% 5 1 0 1f7e6312b5e3ef060bb5a0e23562ec96
+
+% 7 1 0 0d8adab957b7c5331fe023d56149815d
+
+% 0 1 0 13e8407d633ef8f1026090b05ae905df
+
+% 1 1 0 17c2ea0fb67613db15d90aa25470a3c0
+
+@ 0 9 0 0785dcaf6d37236a0141d5cb9fe76379
++   entry #header   行中有列名时，按顺序排列的列名；否则为 `Unset`
++   entry #apply   读取具名列的单元格，解码为任何 `Decodable in Text` 的类型
++       若行没有列名或没有该列，`row[Int](t"age")` 为 `Unset`，否则为由该类型的 `Decodable in Text` 解码的单元格，后者可能通过其自身的战术抛出错误。
++   entry #selectDynamic   在启用动态访问时，将列的单元格作为成员读取，即 `row.age[Int]`
++       需要 `Dsv is Dynamical`——`import dynamicAccess.dynamicDsv`，或一个 `dynamically[Dsv]:` 块——以及一个将成员名映射为列名的 `Dsv.Redesignation`。
++       结果是 `Optional`，行中没有该列时为 `Unset`。
+
+% 2 1 0 17e458d5e1d65e921c0c121aa9947411
+
+% 3 1 0 11bafae62ee783b7044b8a376b273ae7
+
+% 4 1 0 0fbce4b5001b9e9f19f94b9b161eedfd
+
+% 5 1 0 0ac6fe0c9d69b88800e44575fe6eb673
+
+% 6 1 0 0fa50f3806b9226b18681f9ab43bce81
+
+% 7 1 0 156620f48034ad181908abb65e9722d3
+
+% 0 1 0 0df91fec60d1f5f70c49b13e37b33673
+
+% 0 1 0 14235b01f51171170bb5112bf0b6f865
+
+% 1 1 0 0526d609e51556ff059d1e8427f4a8b3
+
+@ 0 1 0 08f02878ccbc0ad90ad7cda2def8abbe
++ entry .Dsv1   `Dsv` 伴生对象中的中等优先级 given：`Play in Dsv` 的直接读取，以及 `codecs.strict` 的失败
+
+% 1 1 0 0ce44a0378205b25195ad7cea083ed24
+
+% 2 1 0 119bf8f3c54ff5b20d8fbbbb4f3e5a75
+
+@ 0 10 0 1ccf62aefd16c89e0a3590c8b85ec4e1
++       `Dsv` 伴生对象的父特质，因此其 given 位于 `Dsv` 的隐式作用域中，优先级低于伴生对象自身的 given。
++       不直接引用。
++   entry #aggregableParsed   通过 `Play` 的 `Dsv.Parsable` 进行的 `read[Play in Dsv]`：直接解析第一行
++       优先于 `Dsv2` 中的行解码器，因此声明一个 `Dsv.Parsable` 就会切换路径。
++       没有数据行的输入会抛出 `Dsv.Error.Reason.Absent`。
++       需要一个 `Dsv.Format`、一个 `Tactic[Dsv.Error]` 和一个 `Buffering`。
++   entry #aggregableStrictFailure   在 `codecs.strict` 下，对没有直接编解码器的 `Play in Dsv` 读取给出编译错误
++       一个在错误中指明该类型的内联 given，在选中后于使用处报错，使得 `codecs.strict` 报告直接路径无法读取的类型，而不是让行解码器接手。
+
+@ 0 1 0 18510e87faae352a102428eab697a273
++ entry .Dsv2   `Dsv` 伴生对象中优先级最低的 given：文本回退、单条记录的写出，以及行解码器读取
+
+% 1 1 0 1fa65211ffde180e119459a123f0f944
+
+% 2 1 0 1aa5b644b00ed99618c1007834e9e150
+
+@ 0 6 0 0118444651c330ed14fc3fe8298bf5c0
++       `Dsv` 伴生对象的父特质，位于 `Dsv1` 之下，持有任何类型只在没有更具体的实例适用时才采用的实例。
++       不直接引用。
++   entry #decoder   任何 `Decodable in Text` 的类型，从行的第一个单元格解码
++       位于会累积错误的基本类型单元格解码器之下，因此 `Int` 等类型使用那些解码器；这个解码器在遇到有问题的单元格时通过文本解码器中止。
++   entry #encodableOver   `play.in[Text over Dsv]`：以作用域中的 `Dsv.Format` 将一个值写成一条文本记录
+
+% 1 1 0 07ae3233eddc7483030a25f8778bf48f
+
+% 2 1 0 0eb63a6b29751e2718c8cfd9d8f1d9ef
+
+% 3 1 0 015a458bf73e25b60ed648a53a043704
+
+% 2 1 0 140bb1e6d6131e840715f8716d009e9f
+
+% 0 1 0 0b4f7e87ead7069f16ba6279e3e1aa44
+
+% 1 1 0 0dff37059cb07f470f9edb7ba5778ed8
+
+@ 0 5 0 122d108e3a2814bd1cbe35b183bb6b88
++   entry #encodableOverData   `play.in[Data over Dsv]`：将一个值写成一条记录，并以作用域中的 `Codepage` 编码为字节
++   entry #aggregableIn   通过行解码器进行的 `read[Play in Dsv]`：取第一行，用 `Play` 的 `Decodable in Dsv` 解码
++       用于没有 `Dsv.Parsable` 的类型，以及 `codecs.derived` 下的任何类型。
++       从流中读取时，只解析到第一条记录的结束处。
++       需要一个 `Dsv.Format`、一个 `Tactic[Dsv.Error]` 和一个 `Buffering`。
+
+@ 0 1 0 13536bc052ff43501e350a2c50457b3c
++ entry .Sheet   保存在内存中的分隔数据：所有行，以及读取时所用的格式和列名
+
+% 1 1 0 0f6d2863cc87fc751363ac7b1d72d0ed
+
+@ 0 5 0 1e0f4dff69edede91c5631f7aae92667
++       `Sheet` 是分隔数据的物化形式：它的 `#rows` 是一个 `Dsv` 行的数组，可重放、可索引、比较代价低廉，并附带解析时所用的 `#format`，以及有表头行时由其命名的 `#columns`。
++       在某个 `Dsv.Format` 下，文本用 `read[Sheet]` 读取为表格，表格用 `show` 渲染回文本；可编码值的列表用 `dsv` 变为表格。
+
+% 2 1 0 1158a1154d8f0d801308bcfbfed42de3
+
+% 3 1 0 1c043fa19308c0f31f941d86007a2c3b
+
+% 4 1 0 0f107fca50d42ed5128cc217bc40a733
+
+% 5 1 0 1fee0d22ec33a8aa0da8565ae0c7638e
+
+% 7 1 0 00dee516bc40d1231ca03d8c87fdd3df
+
+% 2 1 0 15c1a2751ab5a203004df30e4a8d19bf
+
+% 0 1 0 08080e3360115f3b1b0bd7f74c746ad0
+
+% 0 1 0 19ee054e69d3539a1cc2d6d5c96a352d
+
+% 0 1 0 08b0e42f537763cf00bac963357c57c3
+
+% 1 1 0 045cd0790bc49a1b0808a947ca62a4ab
+
+@ 0 3 0 1f1ab31e0637677e141ec848e6de6a46
++       格式决定同样的行如何写出，并为包含其分隔符的单元格加引号：在 CSV 中逗号需要加引号，在 TSV 中什么都不需要，空格分隔的值则为空格加引号：
+
+% 2 1 0 0defa960a51dce610569b7ccb3872c5d
+
+% 0 1 0 01ab4f889598d811064f397710341cb9
+
+% 1 1 0 07e75f02f257fec61b5a384ef8447304
+
+% 2 1 0 15243dae0c5a169f058356bfbae2df1b
+
+% 3 1 0 1862135d2616f7991ffb5e227672322b
+
+% 0 1 0 034a5b5220d489590ed65b54edfcfd7f
+
+% 0 1 0 03b4caee985343971c47c291192576c1
+
+% 1 1 0 1f4512e25051fd1111a773e6a7679fbb
+
+% 2 1 0 08e62befa4060add1c9c57603df77a65
+
+% 0 1 0 0d167756f2131c341a39913ce51e1b4b
+
+% 0 1 0 1a784c8c157e8cd10d6b9fc0ef00df2b
+
+% 0 1 0 177be68b0bac4162093bae7f116dafad
+
+% 1 1 0 05f10c1a154d3d54131e9e0f274ca813
+
+% 2 1 0 021a4f48664b9d5913bbee0bae4642b6
+
+% 0 1 0 0731817d8d62d9a518b6f52d2f0e1911
+
+% 0 1 0 1ce4df4d66962429177cc169f899ade3
+
+% 1 1 0 095601b44a52bd211e55bc3b635febd1
+
+% 2 1 0 16ec5372c633881a165f61c385fb5ac1
+
+@ 0 5 0 18de68e0232c49f70a6c45c8f2265d52
++       大到无法整体保存的文件不需要表格：字符流上的 `rows` 通过同一个解析器一次产出一行，`rowsOf` 则将每一行直接解析为某个类型。
++       表格也是 `Tabular` 的，因此 `escritoire` 会将它渲染为每个表头（或每个位置）一列的表；它也可以作为 HTTP 响应的正文，以 `text/csv` 发送，或在其格式的分隔符为制表符时以 `text/tab-separated-values` 发送。
+
+% 0 1 0 1f87c5b90c2233991edaef1e4c4457fe
+
+% 1 1 0 0153037c83c75fea08b2a437adec6ca0
+
+% 0 1 0 1fa04fb8bf3302ff028eba98d45a2b21
+
+@ 0 31 0 054fcf3c4ce0817016dee5292d8bc574
++   entry .aggregable   以作用域中的 `Dsv.Format` 将文本读取为 `Sheet`
++       `read[Sheet]` 背后的 given。
++       加引号的单元格可以包含分隔符、换行和双写的引号，并且可以跨越流的多个数据块。
++       在带表头的格式下，第一行被作为列名：它不在 `#rows` 之中，每一行的 `Dsv#columns` 将名称映射到索引，表格的 `#columns` 列出这些名称。
++       需要一个 `Tactic[Dsv.Error]`，在未加引号的单元格开始之后发现的引号会通过它以 `Dsv.Error.Reason.MisplacedQuote` 抛出。
++   entry .showable   以作用域中的 `Dsv.Format` 将表格渲染为分隔文本，每行一行
++       各行以换行符连接，末尾没有换行符；每一行都像 `Dsv.showable` 那样渲染，只为需要的单元格加引号。
++       不写出表头：表格的 `#columns` 不会被渲染。
++   entry .streamable   将表格渲染为文本流，每个数据块是一行加一个换行符
++       需要一个 `Dsv.Format`。
++       正是它使表格可以写入任何接收 `Text` 流的数据汇。
++   entry .inspectable   表格的格式、列名和单元格的调试渲染，不需要格式
++       `Sheet(format:○ ╱ columns:○ ╱ rows:⟦⟨ t"hello" t"world" ⟩⟧)`：每个单元格都作为 `Text` 检视，因此包含分隔符的单元格不会像在 `show` 渲染中那样被误认为两个。
++   entry .tabular   将表格渲染为 `escritoire` 表，每个表头名或每个位置一列
++       在表格有 `#columns` 时，列就是它们，否则是数字 `1`、`2`……直到第一行的宽度；每一列都可折叠，行中缺少的单元格为空。
++   entry .abstractable   将表格作为 HTTP 正文发送，类型为 `text/csv`，分隔符为制表符时为 `text/tab-separated-values`
++       需要一个用于编码文本的 `Codepage` 和一个 `Dsv.Format`；媒体类型根据表格自身 `#format` 的分隔符选择。
++   entry #rows   各行，按顺序排列，每一行都是 `Dsv`；表头行不在其中
++   entry #format   解析表格时所用的 `Dsv.Format`，手工构建的表格为 `Unset`
++   entry #columns   来自表头行的列名，按顺序排列；数据没有表头时为 `Unset`
++   entry #as   将每一行解码为 `Decodable in Dsv` 的类型，放入 `List`
++       需要一个 `Tactic[Dsv.Error]` 和一个 `Foci[CellRef]`；除非累积式策略提供了一个，否则后者使用默认值。
+
+@ 0 1 0 139cb53e270976ed1b38478d4e90cb89
++ entry .DsvReader   `Dsv.Parsable` 从中读取的词法单元读取器：一次一行，其单元格就地寻址
+
+% 1 1 0 0759b9f730f47ddb1434a5f7f0f1884c
+
+@ 0 6 0 00585776e8727ac31cbf49b3d3a07757
++       `DsvReader` 是直接解析器对输入的视图：它用 `#nextRow` 一次前进一个数据行，并通过 `#cell` 按索引、通过 `#column` 按表头公开当前行的单元格，这些单元格保存在解析器可复用的缓冲区中，因此 `Dsv.Parsable` 读取记录时无需构建 `Dsv` 行值。
++       它携带格式和错误战术，因此实例两者都不需要。
++       它是一种独占的、有状态的能力，在读取期间归该次读取所有：解析出的值中不得保留它的任何部分。
+
+@ 0 4 0 0b024023b80c3de90f5d3dc9c62d63aa
++       读取器只由 caesura 自身为 `read[Play in Dsv]`、`read[List[Play] in Dsv]` 和 `rowsOf` 创建；只有在手写而不是派生 `Dsv.Parsable` 或 `Dsv.Field` 时，程序才会遇到它。
++       该类没有导出到 `soundness` 总括包，其名称为 `caesura.DsvReader`。
+
+% 1 1 0 1c136326d7284fa1122de92f5454350a
+
+% 0 1 0 0948d4ac44fa986c083dfd2441aa2599
+
+@ 0 5 0 1f6bb735002ebcde14a097017848dce4
++   entry #absent   以 `Dsv.Error.Reason.Absent` 中止读取，用于行中缺少的单元格
++   entry #nextRow   前进到下一个数据行，在带表头的格式下先消耗表头行；到达末尾时为 `false`
++   entry #cells   当前行中的单元格数
++   entry #cell   当前行中某个索引处的单元格，若行较短则为 `Unset`
++   entry #column   某个表头的索引，在按位置模式下或表头未知时为 `Unset`
+
+@ 0 1 0 1931793dec8d672b03b2b55089f6fd6b
++ entry .CellRef   正在解码的单元格的位置：每个被累积的 `Dsv.Error` 随之记录的焦点
+
+% 1 1 0 1f30695f7697d1c40242750c0b64652b
+
+@ 0 4 0 165da680e10f171013cc9d643576cef2
++       当一行在累积式策略下解码为积类型时，每个字段都在 `focus(CellRef(…))` 中解码，因此策略收集的每个错误都附带发现它的那一列的 `CellRef`。
++       `Validate[…, CellRef]` 将它指定为焦点类型，其处理函数以 `prior` 读取它。
+
+% 2 1 0 0ff9dbbc069ecef503621642b15b52ab
+
+% 3 1 0 03c85318deb830c0034635b363d0a068
+
+% 4 1 0 0539795e4efb96620e18b4d97423bcaf
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 0ca2412ef5c2001f05dc584802c06612
+
+% 0 1 0 1298b5d778c7614201a05ffed7767653
+
+% 0 1 0 0da089cb780e8f1f06dba8037296c453
+
+% 0 1 0 116dc653125986ba021eae5756b2fd3b
+
+% 0 1 0 1004a4a8589cfa250475be3357ffdd9b
+
+% 0 1 0 10efafb5be8d28cd0cc24230709a1448
+
+% 0 1 0 08dca152ea5077170041192da16dc639
+
+% 0 1 0 15b235bf75e7d4bc04bb90ea6c30447e
+
+% 0 1 0 1c506d8dfe4cc7340ee3e690c0821d1d
+
+% 0 1 0 031ae2d0e8306390179a6a855f2a6122
+
+% 1 1 0 04fe748f63e5a01315ed451888f4c3f6
+
+% 0 1 0 041e1e20608328be0401aa07d9c07fba
+
+@ 0 2 0 165c1de9e975f6fa19b1e889c329d3cf
++   entry #ordinal   单元格所在的行；派生的解码器只看到一行，因此总是记录 `Prim`
++   entry #column   正在解码的字段的名称，在有表头时即为列名
+
+@ 0 1 0 01de81d3f7d339cf1219c8854b4f889a
++ entry .Spannable   一个类型在按位置行中逐字段占用多少个单元格
+
+% 1 1 0 01980d2628a59e971275facd80ffa23d
+
+@ 0 5 0 09c3b8a250168932144faee5d824c41b
++       `Spannable` 给出一个类型各字段的跨度：`Decodable in Text` 的字段为一个单元格，`Optional` 字段为其内部类型的跨度，嵌套的 case class 为其自身各字段跨度之和。
++       行解码器和直接解析器用它来得知按位置行中每个字段从哪里开始，而无需在解析时才发现。
++       `Spannable.derived` 为任意积类型给出实例。
+
+% 2 1 0 004667344b776ea1164d9f9bc26ce8b7
+
+% 3 1 0 1e28fe5f7086e83c001b2b75f9079b45
+
+% 2 1 0 093da510b04cedbd0acf2b1b15087cc2
+
+% 3 1 0 1369de36ee640c7d01b6fb9559bca1af
+
+% 0 1 0 07703d6ec2f03d1c07a217e99199b859
+
+% 1 1 0 0c4d52369903207507494f4bbbe3db85
+
+@ 0 8 0 1bbb74d9a0f844e9006ad0a2d72f1acc
++       按位置解码本质上是脆弱的：向嵌套的 case class 添加一个字段，会使其后的每一列都发生移动，而文件中没有任何东西说明这一点。
++       按名称将字段与列匹配的带表头格式可以避免这一问题。
++   entry .conjunction   派生积类型各字段跨度的宏，每个字段一个
++   entry .decoder   一个单元格的跨度，用于任何 `Decodable in Text` 的类型
++   entry .optional   `Optional` 字段的跨度与其内部类型的单元格数完全相同
++       存在的值占用内部跨度，缺失的值则使这些单元格为空。
++   entry #spans   每个字段的跨度，按顺序排列；对于单单元格类型为 `Array(1)`
+
+@ 0 3 0 0454ceb3db1bb50004c96a3612a8d82f
++ entry .dsv   将值编码为 `Dsv` 行，或将值的列表编码为 `Sheet`
++     作用于任何 `Encodable in Dsv` 的值（每个积类型都会派生它）及其 `List` 的扩展方法。
++     结果在某个 `Dsv.Format` 下用 `show` 渲染为文本。
+
+% 2 1 0 030990b77ed369061a54f53af83d0976
+
+% 3 1 0 0f4ea8d1f2a1736618fa534c11a82f83
+
+% 4 1 0 0ba827392f31c7450050d7659975a26f
+
+% 2 1 0 1fda446533af28140dcbbfb059d4c789
+
+% 0 1 0 113f786de134340f1f84189fdc8eb036
+
+% 0 1 0 12970b3f06b32ada1429f4b631d9e1bf
+
+% 0 1 0 1805ed7ee2b7154a0697753c63d176a4
+
+% 1 1 0 0932fe5a4a36552216fb013cc6ab22b1
+
+@ 0 7 0 0e4b93953df60d311fce91ff9c13a478
++ entry .rows   字符流中的各行，一次解析一行，作为一次性的 `Iterator[Dsv]`
++     保存所有行的 `read[Sheet]` 的流式对应版本：一个作用于 `Stream[Text] over Credit` 的扩展方法，它消耗该流，每解析出一行就产出一行。
++     加引号的单元格可以跨越数据块和行的边界，因为解析器在重新填充时会保持其状态。
++     在带表头的格式下，不会产出表头行，但每一行都知道自己的列名。
++     需要一个 `Dsv.Format`、一个 `Tactic[Dsv.Error]` 和一个 `Buffering`。
+
+% 2 1 0 12fe13ba470fe7591478f8a403b1d4e5
+
+% 3 1 0 1671c95e1823939f08b7371d4d1ba631
+
+% 0 1 0 1b1812d8c43d37cd028fd0909b36432e
+
+% 1 1 0 10548205dea2c975137bb30dde7bcd8b
+
+% 0 1 0 1ef2adb272067c72102c8e0d39e42945
+
+% 0 1 0 0c583d633053fb8b1dd5e78a78d870fd
+
+% 1 1 0 189da9506320136b055b400612e91a28
+
+@ 0 5 0 1ab7c2d6c93b15ed19757138e2c5084b
++ entry .rowsOf   字符流中的各行，每一行通过其 `Dsv.Parsable` 直接解析为某个类型
++     `stream.rowsOf[Play]` 消耗该流，为每个数据行产出一个 `Play`，直接从解析器的缓冲区读取，不构建 `Dsv`：这是处理大文件最快的方式。
++     `Play` 需要一个 `Dsv.Parsable`，可以是声明的，也可以是（在 `codecs.direct` 下）派生的。
++     需要一个 `Dsv.Format`、一个 `Tactic[Dsv.Error]` 和一个 `Buffering`。
+
+% 2 1 0 0040e41791771ff3135cf06324929aa7
+
+% 3 1 0 1a9cd7004e47e5f50aeee5336f134f52
+
+% 4 1 0 071ba7be3b426a7608a34e8d7815eb83
+
+% 5 1 0 18838c979750591d03bd0773b788be94
+
+% 0 1 0 038939ef05b829b20b6e6b23852fcba4
+
+% 0 1 0 15e612278eac352704bd92db529db0d7
+
+% 0 1 0 06c8a7c6b17ef6060b319816997e447e
+
+% 1 1 0 03ede130fbe75fbe0a1dc6d6ecebf869
+
+@ 0 1 0 121c3cc575e8f6e7036bd0b7bbdaebf6
++ entry .dsvFormats   标准分隔格式——CSV、TSV 和空格分隔，带或不带表头——需按名称导入
+
+% 1 1 0 15dbb7b02ef428991a823afabd794124
+
+@ 0 3 0 1b1d9cb682dc5b6002a451691d5e073c
++       每次解析和每次渲染都需要作用域中有一个 `Dsv.Format`，而这个选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，需要按名称导入一个。
++       每种格式都以 `"` 加引号，并通过双写来转义引号。
+
+% 2 1 0 0828e7fe4ad6c8a5080b73f1579913a8
+
+% 0 1 0 15baee82b66ca01c0cc2759e1bfb8499
+
+% 1 1 0 05706e03e4e3cb0604e400e3e010c263
+
+% 2 1 0 01fe32038b0aed550012d85c634ce7a9
+
+% 3 1 0 181106b8d20b34cd0de2869f7771dbd2
+
+% 1 1 0 16720c4f54ccae8f09079eaafc42d606
+
+% 0 1 0 112deb5090e0cbbf016672c40d132477
+
+% 0 1 0 16c0380d96e7de8906fe122a62155355
+
+% 1 1 0 1401044f7d6ff1890fb7e344d723ec06
+
+% 2 1 0 0c1a033f829067ef0c619d7665eeef70
+
+% 0 1 0 18999b3f2807e2c81a66eac3e863e836
+
+% 1 1 0 0ce980cd582d348d087a1ff84eabd63e
+
+% 0 1 0 171b428a80a049ad0abf184e98a68f0f
+
+% 1 1 0 191b1eb9611956ca14e3df0b19352edc
+
+% 2 1 0 1d5c641360f2b3e111b1dc01a426c551
+
+@ 0 1 0 0b75032617ebd57813b43350fc0dcbda
++       使用其他分隔符的格式是绑定为局部 given 的 `Dsv.Format` 值。
+
+% 1 1 0 0ef38f4e95b04bc604ac605ba9ea3cbc
+
+@ 0 6 0 0016deded6241ef60f63adf921af07ac
++   entry .csvFormat   逗号分隔值，没有表头行
++   entry .csvWithHeaderFormat   第一行为列命名的逗号分隔值
++   entry .tsvFormat   制表符分隔值，没有表头行
++   entry .tsvWithHeaderFormat   第一行为列命名的制表符分隔值
++   entry .ssvFormat   空格分隔值，没有表头行
++   entry .ssvWithHeaderFormat   第一行为列命名的空格分隔值
+
+@ 0 1 0 0f191be03215c3741655db7feb5c2359
++ entry .dsvRedesignations   用于动态访问的、从驼峰式成员名到表头名的映射，需按名称导入
+
+% 1 1 0 1308e876ad4fb5a90087e49d3467d4e1
+
+@ 0 4 0 05d2c465af20c50903387e56f6af70cc
++       `Dsv#selectDynamic`，即成员形式 `row.targetPerson[Text]`，需要作用域中有一个 `Dsv.Redesignation` 来找到成员所指明的列，而且没有默认值：需要按名称导入一个，或者将从 `Text` 到 `Text` 的 lambda 绑定为局部 given。
+
+% 2 1 0 1cf437d0a4c61d5c0386e7cb196d2e67
+
+% 0 1 0 0b1c5ecccbde06fc1cb978cdeada645b
+
+% 1 1 0 0aa61bc8d0956d81147cdf053d62ec89
+
+% 2 1 0 07099bc4a59de9b3138d3976559d95ec
+
+% 0 1 0 1583d89760b8025c1c4f252613bee528
+
+% 0 1 0 0cbfd9e66366fec91f5a14e20ca42e72
+
+% 0 1 0 1a8a19951c50e59c018b467b17a72234
+
+% 1 1 0 11614d7621d245cf049a93fea2003c18
+
+% 2 1 0 1d4979988c6275c90544f51c4a439f5d
+
+% 0 1 0 02b9369023a65146045439d57c443ae7
+
+% 0 1 0 1f2ab3609fef787117fdd28e3f4b940f
+
+% 0 1 0 0fe7cd51128e28e8140ecc3140075280
+
+% 1 1 0 00484666919677250ec9e9f15705d14c
+
+% 2 1 0 028ce89b580e1a0c00a8cdc7a0b67c67
+
+% 0 1 0 05f99a0f9517a7651dae4a7614ad62c4
+
+% 0 1 0 08ea52c8ab28d7221247da3d29981442
+
+% 1 1 0 0f47adc1389072fe07c54198ffb1be59
+
+% 2 1 0 18e5dd43c86cf5ea04cadf84c2af8c8f
+
+% 0 1 0 1acfed3c19209eeb1822be049e9c0a78
+
+@ 0 9 0 0d6bba026558f2d300226bde8ffe5672
++   entry .unchangedRedesignation   成员名保持原样：`targetPerson` 匹配表头 `targetPerson`
++   entry .capitalizedWordsRedesignation   以空格分隔的首字母大写单词：`targetPerson` 匹配 `Target Person`
++   entry .lowerWordsRedesignation   以空格分隔的小写单词：`targetPerson` 匹配 `target person`
++   entry .lowerDottedRedesignation   小写单词，本意用于 `target.person` 这样的点分表头
++       按目前的实现，单词以空格连接，因此结果为 `target person`，与 `lowerWordsRedesignation` 相同。
++   entry .lowerSlashedRedesignation   小写单词，本意用于 `target/person` 这样的斜杠分隔表头
++       按目前的实现，单词以空格连接，因此结果为 `target person`，与 `lowerWordsRedesignation` 相同。
+
+@ 0 1 0 06bfc2b1399100e51531ea791d69a42e
++ entry .dynamicAccess   使行的单元格可以作为成员读取的 given，需按名称导入
+
+% 1 1 0 061f2533603fccca1a7e9395e1731027
+
+@ 0 3 0 01cc9f508d542ea8029f1784b5969702
++       除非作用域中有 `Dsv is Dynamical`，否则动态成员访问是关闭的，因此拼错的成员名不会悄无声息地变成一次列查找。
++       `import dynamicAccess.dynamicDsv` 在作用域的其余部分授予它；`dynamically[Dsv]:` 则只为一个代码块授予它。
+
+% 2 1 0 075bbb1cdd305a8c182b36c1542925d1
+
+% 3 1 0 17a840fcf43a624c11d6a619b8121639
+
+% 4 1 0 165d8cc6691fa74e08dd9797ea79b7d0
+
+% 5 1 0 19892d40cd812a211a75d78c32b5a025
+
+% 6 1 0 0dc61b4e065ae0710abe7c48e79277f3
+
+% 7 1 0 0630f9f820b0b4b808acc33750d3fbfe
+
+% 0 1 0 06a8869839236aca104fdf7742a6a841
+
+% 1 1 0 1c87405818aab70808bbf15552359a39
+
+@ 0 3 0 1356470e9648df5b09892d075ffd9094
++   entry .dynamicDsv   `Dsv is Dynamical`：为作用域中的每一行启用 `row.column[T]`
++       一个被擦除的见证；它在运行时没有任何开销。
++       `optics.dsvCellLens` given 也需要它。
+
+@ 0 1 0 07d1c11eda3de78f19012ce9a92eb8b2
++ entry .optionalityOptions   `Optional` 字段的单元格缺失或格式错误时的方针，需按名称导入
+
+% 1 1 0 18cbb7ad67251d181753607ed331a5e1
+
+@ 0 5 0 0fc1bd85d2a6fe8f1ae99667ab600722
++       解码行中的 `Optional` 字段会遇到两种情况：它的单元格**缺失**（过短的按位置行，或行中缺少某个表头列），或者单元格存在但其内部解码器**拒绝**了它。
++       默认情况下，缺失的单元格为 `Unset`，被拒绝的单元格为错误；按名称导入这些 given 之一就可以改变其中一种处理方式。
++       空单元格是存在的值，而不是缺失的值。
+
+% 2 1 0 04550645d7799cc11264aa4e6591b383
+
+% 0 1 0 184d48e7399fe047179e0899a9dba6bf
+
+% 1 1 0 0dc5c595e538b6cd19dfdb1c478872c5
+
+% 2 1 0 08bb033480a2a44c0fc67c6001ac56f3
+
+% 3 1 0 13f812eb2dad90891bf95d2ec369d2a4
+
+% 1 1 0 1a716b0e2fb67de1163741fa20a636f0
+
+% 0 1 0 1b2b260396b5378b194f065a2b7011b5
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 10a4fbd25ff64e7b09f4b2c7aef93aea
+
+% 3 1 0 0c77cf296db4ae7e0e2d7a7974ed51dd
+
+% 0 1 0 0ffeae2d400649fe004291da41f91b6d
+
+% 1 1 0 1d8e25ffeb603a3b0fe51a2986770be7
+
+% 0 1 0 02e8ec173f7dc04d06962da03a17219d
+
+% 1 1 0 1b157a04c68531240619097d0ebac7b1
+
+% 2 1 0 10d2d0f3cb7ee63d0b2df1d57e1f8575
+
+@ 0 7 0 1b57f79601c43b941f990820858b3e5e
++       它们同时支配行解码器（`Dsv.optionalDecodable`）和直接解析器（`Dsv.Field.optional`）。
++   entry .strictDsvAbsence   `Optional` 字段的单元格缺失时抛出 `Dsv.Error.Reason.Absent`
++   entry .lenientDsvAbsence   `Optional` 字段的单元格缺失时为 `Unset`；这是默认方针
++   entry .strictDsvFaults   内部解码器拒绝的单元格抛出 `Dsv.Error`，即使对 `Optional` 字段也是如此；这是默认方针
++   entry .lenientDsvFaults   对于 `Optional` 字段，内部解码器拒绝的单元格为 `Unset`
++       内部解码在 `tolerate` 下运行，因此其错误被丢弃，而不是抛出。
+
+@ 0 1 0 024b6476007288d51368465d6af936dd
++ entry .optics   按列名作用于行的单元格、以及作用于表格的行的透镜，需按名称导入
+
+% 1 1 0 052b9d8cb2704b7500e5037948f86563
+
+@ 0 4 0 1b6d6a125bffe2be062532233b2e8fca
++       用于表格数据的 `panopticon` 光学组件，它们与行和单元格的结构相对应：带表头的行中的单元格按列名寻址，表格的行则按位置、全部一起或按谓词寻址。
++       导入它们后，`lens` 就可以更新表格，取代手写的复制代码。
+
+% 2 1 0 19a6aaebd8a4135a19a16a448d9608c7
+
+% 3 1 0 139dab432b4b2f5a099e24429bba4a11
+
+% 4 1 0 119b09b7cbd3a7490b634ebe755fb6c3
+
+% 1 1 0 13c625ff44364bc10ad00fb737250f51
+
+% 0 1 0 1c9505469b96240e06c6eb5f3418f13d
+
+% 1 1 0 096f4a69a56b769b1bf777fc5e54165d
+
+% 2 1 0 0db35588c2151ea91d53e7698935c8c3
+
+% 0 1 0 1123cfa9b6b7a2aa1af514c6cdce3fd7
+
+% 0 1 0 12eefb93f02dbbd41badfc1d137b99df
+
+% 0 1 0 1de68d6c5614ea650ccf818e98af4a10
+
+% 1 1 0 0bfa5b4fb5eff0fd1548b1655ff4507f
+
+@ 0 7 0 005fa9bdf9d9564a1a92779016e2a1ac
++   entry .dsvCellLens   从一行到某个具名列的单元格的透镜，`_.name`
++       需要 `Dsv is Dynamical`（`dynamicAccess.dynamicDsv`）。
++       读取行中缺少的列得到空文本，写入这样的列则保持行不变。
++       列名就是所写的成员名：不会应用任何 `Dsv.Redesignation`。
++   entry .dsvRowOptical   寻址表格中位于某个 `Ordinal` 的行：`_(Sec)` 是第二行
++   entry .dsvRowEachOptical   寻址表格的每一行：`_(Each)`
++   entry .dsvRowFilterOptical   寻址表格中匹配某个谓词的行：`_(Filter[Dsv](…))`
+
+@ 0 1 0 1e55c4c3ef201ba70dac2b2a3c4bda1e
++ entry .construables   解释为 `Sheet` 的媒体类型 `text/csv` 和 `text/tab-separated-values`，需按名称导入
+
+% 1 1 0 15c0a1e896c81a5613d5c98cf346586f
+
+@ 0 4 0 1896b27d0878d4aa09e2442211897b4f
++       位于 `caesura.http` 组件中。
++       `Construable` 告诉 HTTP 客户端应将给定媒体类型的响应正文读取为哪种类型；没有经过刻意选择，什么都不会被解释，因此每个映射都需要按名称导入。
++       作用域中有一个映射时，`apoplexy` 客户端会将 CSV 响应读取为 `Sheet`。
+
+% 2 1 0 12089d89c4e416cb138af6737850a06e
+
+% 3 1 0 00d33b9fdcd5cd8112c4114dd825dfba
+
+% 0 1 0 10e05a85a698ba8512baa178efd7990c
+
+% 1 1 0 0e5513c9d853c595032fcf9d0f2b31a6
+
+@ 0 2 0 0607b29e4e0b75420cc59b27f5eb5602
++   entry .csvConstruable   `text/csv` 正文是一个 `Sheet`
++   entry .tsvConstruable   `text/tab-separated-values` 正文是一个 `Sheet`

@@ -1,0 +1,488 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 09f9b3580b93958b12c3b3f6816f2dd0
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 164b271f5c6c84e113b0375784e19f44
++ info   odchudzone pliki JAR aplikacji: zależności nazwane haszem treści, pobierane, weryfikowane i buforowane przy uruchomieniu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0d22614a4426a84705af0707c7336625
++     _Burdock_ zmniejsza plik JAR aplikacji, nie czyniąc go kruchym. JAR, który niesie każdą
++     potrzebną mu zależność, zawiera dziesiątki megabajtów kodu bibliotek, w większości już
++     gdzieś publicznie opublikowanego; Burdock zastępuje każdą opublikowaną zależność
++     odwołaniem do niej, nazwanym skrótem SHA-256 dokładnie tych bajtów, które odczytał
++     kompilator, a niewielki program ładujący pobiera je, weryfikuje i buforuje przy starcie
++     aplikacji.
+
+@ 0 1 0 139226c9051e22730df2cf8677630385
++     Praca odbywa się w trzech etapach:
+
+@ 0 11 0 131f44ef7edf332015a82411ee735ea4
++     - **w czasie kompilacji** `externalize` opakowuje punkt wejścia aplikacji; jego makro
++       haszuje każdy plik JAR zależności ze ścieżki klas kompilacji, tworzy dla każdego
++       dowiązanie twarde w pamięci podręcznej Burdocka i osadza listę haszy w skompilowanym
++       wyniku jako zasób META-INF/burdock.deps;
++     - **po kompilacji** punkt wejścia `soundness.repackage` (tutaj metoda `repackage`)
++       przepisuje plik JAR w miejscu: każdy hasz, który rozwiązuje się do publicznego URL-a –
++       poprzez zasoby wydań wskazanych repozytoriów GitHub (`GitHub`) lub poprzez deps.dev
++       (`DepsDev`) – staje się odwołaniem `Burdock-Require`, a wszystko inne jest wstawiane
++       z pamięci podręcznej;
++     - **przy uruchomieniu** `Bootstrap`, jedyna klasa dodawana przez przepakowany JAR, pobiera
++       każde wymaganie, którego nie ma jeszcze w pamięci podręcznej, sprawdza każde względem
++       jego hasza i uruchamia aplikację na ścieżce klas w kolejności z manifestu.
+
+% 2 1 0 0b2da459aa70eb6b0973908a153dce34
+
+% 3 1 0 06c0ff0a23330d70059e2d9cec06abf0
+
+% 4 1 0 0a83c018dfabd88b1220ace28c621fd0
+
+% 5 1 0 0166f0d4ee644fac1807ae5402293925
+
+% 7 1 0 1e49be2a5d47ef1a1ef7bdf9a38b136a
+
+% 8 1 0 11837241d1e97b8105d88523e0b43e90
+
+% 9 1 0 0f8e1858a617a1711ff47f04adca2465
+
+% 10 1 0 0f5d07125506a414159da9fc56eb961e
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 14a5bda1ec07d949162b52ecd9e9b0a0
+
+% 0 1 0 068d187c050d033b11ee166b57afb891
+
+% 1 1 0 0eb3a4d2a3dd1c65154b2914098fa517
+
+@ 0 6 0 1d7611d41d71ca2603bac864b3baf66b
++     **Pamięć podręczna.** Pliki JAR zależności są przechowywane według hasza jako
++     `~/.cache/soundness/jars/<sha256>.jar`. Makro `externalize` i repackager używają tego
++     katalogu w katalogu domowym użytkownika; program ładujący respektuje `XDG_CACHE_HOME`,
++     używając `$XDG_CACHE_HOME/soundness/jars`, gdy zmienna jest ustawiona i niepusta.
++     Wcześniejsze wydania używały `~/.cache/burdock`; nic go nie migruje, więc pierwsze
++     uruchomienie po aktualizacji pobiera ponownie każde wymaganie, a stary katalog można
++     usunąć.
+
+@ 0 3 0 0db1b1d06f2e38551f35c8aa3dc05df9
++     Ponieważ odwołanie nazywa dokładne bajty, zachodzi niezmiennik kompletności: każda
++     zależność jest albo przywołana odwołaniem, albo obecna, hasz, który nie jest ani jednym,
++     ani drugim, przerywa przepakowanie błędem `Repackager.RepackageError`, a pobranie, którego
++     suma kontrolna się nie zgadza, przerywa uruchomienie.
+
+@ 0 5 0 19228348add8886c161275291d3054aa
++     Biblioteka ma dwa zbiory źródeł tylko dla JVM: `burdock.core`, z `externalize`, klasą
++     `Repackager` i jej resolverami, eksportowany do modułu zbiorczego `soundness` razem
++     z punktem wejścia wiersza poleceń `soundness.repackage`; oraz `burdock.boot`, pojedynczą
++     klasę Javy `Bootstrap`, która nie zależy od niczego poza JDK, dzięki czemu może działać,
++     zanim zostanie pobrana jakakolwiek zależność.
+
+% 0 1 0 0931b7e60dd25bf3150928dd9f610638
+
+% 0 1 0 08d48c5e1e07dc071b37cab7daf96619
+
+% 0 1 0 0e945906d49b33771688ae210349e6cb
+
+% 0 1 0 11e972ab47fd639e11d49653b8ae1b22
+
+@ 0 7 0 16486a260e83ba770327f3b30a9eb78e
++ entry .externalize   opakowuje punkt wejścia aplikacji, aby Burdock mógł wyprowadzić jej zależności na zewnątrz
++     `externalize(block)` zwraca `block` bez zmian w czasie wykonania. Jego makro podczas
++     kompilacji kodu odczytuje ścieżkę klas kompilatora, oblicza SHA-256 każdego pliku JAR
++     zależności na niej, tworzy dla każdego dowiązanie twarde w pamięci podręcznej
++     `~/.cache/soundness/jars/<sha256>.jar` (kopiując, gdy pamięć podręczna leży na innym
++     systemie plików) i zapisuje hasze, po jednym w wierszu, do zasobu META-INF/burdock.deps
++     w wyniku kompilacji, dzięki czemu trafia on do pliku JAR jak każdy inny zasób.
+
+% 2 1 0 0e99dbb96856deed1bfe34487250c571
+
+% 3 1 0 1cf760a014630032131a351affb02874
+
+% 4 1 0 183a17f8ee5a4f341299c037e83c6902
+
+% 5 1 0 11afc1d17b0751970ddb8203f166e35a
+
+% 7 1 0 0eb60e62c7ebec2b089703a773e8545b
+
+% 8 1 0 11c34d50498e175a0ae47790ad0b317e
+
+% 9 1 0 0020bdcc58fd239e1c109a8146c402cd
+
+% 10 1 0 1f497d8dd48e6f14067cd3eceb07978f
+
+@ 0 5 0 0bd499fda97382a51126a28c9e2f2725
++     Nic więcej w aplikacji się nie zmienia: jest budowana, testowana i uruchamiana jako
++     zwykły JAR, a zasób pozostaje bezczynny, dopóki nie odczyta go `repackage`. O tym, czy
++     każda zależność jest opublikowana, decyduje później repackager; pamięć podręczna pokrywa
++     wszystko, czego nie da się rozwiązać. Dowiązania twarde istnieją na maszynie, na której
++     odbyła się kompilacja, więc JAR z nieopublikowanymi zależnościami musi zostać przepakowany
++     tam, gdzie go zbudowano.
+
+@ 0 1 0 1cbada924fd2db7f021fb2ded0eba203
++ entry .repackage   przepisuje w miejscu plik JAR działającej aplikacji, wyprowadzając na zewnątrz jej opublikowane zależności
+
+% 1 1 0 09d270df3b7fb84c0d386c61854fa3ca
+
+@ 0 2 0 1b4b49ab38566914077fe73aca394571
++       Logika wiersza poleceń stojąca za `soundness.repackage`, uruchamiana z plikiem JAR
++       aplikacji i Burdockiem na ścieżce klas:
+
+% 0 1 0 0ea4573b9a94b84305f895477a981119
+
+% 0 1 0 1f73723a902ae2b60b45da869918b11d
+
+% 1 1 0 0deb161ba903856c05416f7294440c5c
+
+@ 0 6 0 1210980a5882d1a8167043c059c3b4d2
++       Odnajduje plik JAR aplikacji jako wpis ścieżki klas zawierający META-INF/burdock.deps
++       (zgłaszając `Repackager.UserError`, jeśli takiego nie ma lub jeśli ten wpis jest
++       katalogiem), odczytuje klasę `Bootstrap` z własnego pliku JAR Burdocka, buduje resolver,
++       który sprawdza wskazane repozytoria GitHub przed deps.dev, i wywołuje
++       `Repackager.repackage` do tymczasowego pliku obok, który następnie atomowo zastępuje
++       oryginał. Zmienna środowiskowa `GITHUB_TOKEN`, jeśli jest ustawiona, znosi limit
++       zapytań GitHuba dla nieuwierzytelnionych klientów.
+
+@ 0 6 0 0d6e3521b62ba700041e60902c480ed2
++       Akceptowane są tylko argumenty postaci `--github owner/repo`, `--github=owner/repo` lub
++       lista dowolnych z nich rozdzielona przecinkami (zob. `parseArguments`). Podczas
++       rozwiązywania pasek postępu jest rysowany w miejscu, gdy standardowe wyjście jest
++       terminalem, i pomijany, gdy jest przekierowane; na końcu wypisywane jest podsumowanie:
++       wpisy odczytane i zapisane, klasy zachowane, wstawione i usunięte, zindeksowane zasoby
++       GitHuba oraz każde wyprowadzone na zewnątrz wymaganie. Każdy błąd jest wypisywany,
++       a proces kończy się ze statusem 1.
+
+@ 0 3 0 043f76f9a1fdedab16e284d8ce3204bd
++       Ta metoda nie jest eksportowana do modułu zbiorczego `soundness`: punktem wejścia do
++       uruchomienia jest własne `soundness.repackage` modułu zbiorczego, metoda `@main`
++       przyjmująca argumenty jako `Text*`, która wywołuje `burdock.repackage`.
+
+% 1 1 0 1f48e5804c979b4d11c0beb9ab7884e8
+
+% 0 1 0 0cae827af171905f05384bd36fc64a12
+
+@ 0 6 0 0e92cb8c46f91d70033296e7458121fb
++ entry .parseArguments   parsuje wskazówki `--github` na repozytoria GitHub
++     Akceptuje `--github owner/repo`, `--github=owner/repo` oraz listy rozdzielone przecinkami
++     w obu postaciach, dowolną liczbę razy. Nierozpoznany argument, `--github` bez operandu
++     lub repozytorium niebędące postaci owner/repo zgłasza `Repackager.UserError` z wierszem
++     użycia, _usage: soundness.repackage [--github owner/repo]..._. Nie jest eksportowana do
++     modułu zbiorczego `soundness`, więc sięga się do niej jako `burdock.parseArguments`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 09533f74603f57ba0eacded4b81f0b69
+
+% 1 1 0 0c001e31ec66b99703edeb8f5962d164
+
+@ 0 1 0 1df4c03f584521611a01eea0b7ce0efb
++ entry .Repackager   przepisuje plik JAR: opublikowane zależności stają się odwołaniami, pozostałe są wstawiane z pamięci podręcznej
+
+% 1 1 0 163607676bda89480bf3cc6f644ecb38
+
+@ 0 6 0 1a44ada56dd335181a71c52953b2efed
++       Rdzeń repackagera, wolny od wejścia-wyjścia poza odczytem wejściowego pliku JAR
++       i zapisem wyjściowego. `.repackage` zachowuje własne klasy aplikacji, odrzuca dołączone
++       klasy każdej zależności, którą potrafi rozwiązać do URL-a (wymieniając ją zamiast tego
++       w atrybucie manifestu `Burdock-Require`), wstawia klasy pozostałych z pamięci
++       podręcznej, dodaje klasę `Bootstrap` i przepisuje manifest tak, aby `Main-Class`
++       wskazywał `burdock.Bootstrap`, a `Burdock-Main` – pierwotny punkt wejścia.
+
+@ 0 2 0 1336e017d37f61d80a6bcd49ef6957a2
++       Resolver, odczyt pamięci podręcznej i wywołanie zwrotne postępu są wstrzykiwane, więc
++       logikę można testować bez sieci i bez systemu plików:
+
+% 2 1 0 0abc498caa38428c1ef8691940e4480f
+
+% 3 1 0 0edfd905c3610aa213587d3de558b097
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 139ea05eb8cdf49d09fa72d435c9020e
+
+% 0 1 0 1cc1242f9ac8b87412cbe382eb11e3f0
+
+% 0 1 0 190d1b8975778ff21be5ad9f287382c9
+
+% 0 1 0 057eefc8822dbc30041c7fca98195e4d
+
+% 1 1 0 0f2c90f5e812666d15f7bc909ca1683f
+
+@ 0 5 0 03bf209784f976f009bdeddb1c8b3e76
++       Wpisy są kopiowane dosłownie, nadal skompresowane, więc wpis Stored pozostaje Stored,
++       a wpis Deflated zachowuje swoje CRC i rozmiar po kompresji; od nowa kompresowane są
++       tylko nowy manifest i klasa programu ładującego. Wpisy katalogów są odrzucane, a gdy dwa
++       wpisy mają tę samą nazwę, zachowywany jest pierwszy: wymuszona klasa programu
++       ładującego przed każdą dołączoną kopią, a klasa aplikacji przed klasą z pamięci
++       podręcznej.
+
+% 0 1 0 0f95ff38b7c458c0135a8c2b9bdfdb18
+
+% 0 1 0 04f876c8ceebf2f60af4923eff4509bb
+
+% 0 1 0 19073802cd2eecf011a26563eff4be06
+
+@ 0 36 0 14bcbb8670b1636302daa60f33a3bbf9
++   entry .partition   dzieli hasze zależności na wymagania do przywołania i wpisy z pamięci podręcznej do wstawienia
++       `partition(hashes, resolve, cached, progress)` klasyfikuje każdy hasz: ten, który
++       `resolve` odwzorowuje na URL, staje się `Requirement`, ten, który znajduje `cached`,
++       wnosi swoje wpisy, a ten, który nie jest ani jednym, ani drugim, zgłasza
++       `Repackager.RepackageError`, _dependency `hash` is neither published nor cached_.
++       Wyszukiwania działają współbieżnie na wątkach wirtualnych, po szesnaście naraz,
++       a `progress` jest wywoływane z `(completed, total)` po każdej grupie, w wątku
++       wywołującym. Wyniki są w kolejności `hashes`, czyli w kolejności ścieżki klas.
++   entry .repackage   przepisuje `inputJar` do `outputJar`, zwracając `Repackager.Summary`
++       Przyjmuje ścieżki wejściową i wyjściową, `Resolver`, `CacheReader`, bajty klasy
++       `Bootstrap` i opcjonalne wywołanie zwrotne `Progress`, a zgłasza
++       `Repackager.RepackageError`, gdy JAR nie ma manifestu, zasobu META-INF/burdock.deps
++       lub `Main-Class`, gdy zależność nie jest ani opublikowana, ani w pamięci podręcznej,
++       oraz przy każdej awarii systemu plików, strumienia lub archiwum. Opublikowanym
++       zależnościom znalezionym w pamięci podręcznej usuwa się dołączone wpisy; zależności
++       nieobecnej w pamięci podręcznej nie da się zidentyfikować, więc jej wpisy pozostają
++       dołączone: nadal poprawnie, tylko bez odchudzenia.
++   entry .Resolver   rozwiązuje hasz zależności do jej publicznego URL-a pobierania lub `Unset`
++       `Text => Optional[HttpUrl]`. Wiersz poleceń składa `GitHub.index`
++       z `DepsDev.mavenUrl`.
++   entry .Progress   wywołanie zwrotne otrzymujące `(completed, total)` po sklasyfikowaniu każdej grupy zależności
++   entry .CacheReader   wyszukuje hasz zależności w lokalnej pamięci podręcznej, dając jej wpisy lub `Unset`
++       `Text => Optional[List[Zip.Entry]]`. Katalogi i manifest są wyłączone, a ładunki
++       pozostają leniwe, więc usuwanie po nazwie wpisów opublikowanej zależności nie odczytuje
++       zawartości pliku JAR z pamięci podręcznej.
++   entry .Requirement   zależność wyprowadzona na zewnątrz: jej URL i SHA-256, z którym musi się zgadzać
++     entry #url   skąd program ładujący pobiera zależność
++     entry #digest   SHA-256 zależności, w postaci szesnastkowej małymi literami
++     entry #text   wymaganie w postaci, w jakiej występuje w `Burdock-Require`: `<sha256>:<url>`
++   entry .Summary   co zrobiło przepakowanie, do zgłoszenia przez wywołującego
++     entry #inputEntries   ile wpisów miał wejściowy plik JAR
++     entry #directoriesSkipped   ile wpisów katalogów odrzucono
++     entry #ownKept   ile własnych wpisów aplikacji zachowano
++     entry #externalized   wymagania zapisane w `Burdock-Require`, w kolejności ścieżki klas
++     entry #inlined   ile wpisów wstawiono z zależności z pamięci podręcznej
++     entry #stripped   ile dołączonych wpisów opublikowanych zależności usunięto
++     entry #outputEntries   ile wpisów ma wyjściowy plik JAR, wliczając manifest
++   entry .UserError   błąd w sposobie wywołania repackagera
+
+% 1 1 0 028a4557d562a6470e673d9403605f9d
+
+@ 0 5 0 077be3f129bfcc5211f6354e94c2296b
++         Zgłaszany dla pliku JAR, który nie został zbudowany z Burdockiem (_this JAR was not
++         built with Burdock (no META-INF/burdock.deps)_), dla takiego, który jest katalogiem,
++         a nie plikiem, dla niepoprawnego argumentu lub wskazówki repozytorium oraz gdy nie uda
++         się wylistować wydań wskazanego repozytorium.
++     entry #detail   co było nie tak
++   entry .RepackageError   plik JAR, którego nie dało się przepakować
+
+% 1 1 0 1715383ca4c1cb8d0e9fa2561e886ad6
+
+@ 0 12 0 157f2f3b67450e2315685c592df4269a
++         Zgłaszany przez `Repackager.repackage` i `Repackager.partition`: brak manifestu, brak
++         `Main-Class`, brak zasobu META-INF/burdock.deps, zależność ani opublikowana, ani
++         w pamięci podręcznej, albo awaria systemu plików, strumienia, archiwum lub
++         współbieżności.
++     entry #detail   co poszło nie tak
++   entry .BurdockMain   atrybut manifestu `Burdock-Main`: własny punkt wejścia aplikacji
++   entry .BurdockRequire   atrybut manifestu `Burdock-Require`: zależności wyprowadzone na zewnątrz
++   entry .BurdockVerbosity   atrybut manifestu `Burdock-Verbosity`: ile wypisuje program ładujący
++       Jedna z wartości `silent`, `error` (domyślna), `info` lub `debug`; repackager zapisuje
++       `silent`. Każda inna wartość przerywa uruchomienie ze statusem 2.
++   entry .burdockMain   zapisuje `Burdock-Main` jako w pełni kwalifikowaną nazwę klasy
++   entry .burdockRequire   zapisuje `Burdock-Require` jako rozdzielone spacjami elementy `<sha256>:<url>`
++   entry .burdockVerbosity   zapisuje `Burdock-Verbosity` jako tekst
+
+@ 0 1 0 017efeb28fc711ee18dd3b77cc5e33cf
++ entry .Bootstrap   punkt wejścia przepakowanego pliku JAR w czasie wykonania: pobiera, weryfikuje i ładuje jego zależności
+
+% 1 1 0 1b2efb5ce38b59a01b91d974e97160ba
+
+@ 0 3 0 10b8d8d9e9437cfd015bb1d44b8a8af3
++       Klasa Javy w `burdock.boot` i jedyna klasa dodawana przez przepakowany JAR: musi działać,
++       zanim będzie obecna jakakolwiek zależność, więc używa wyłącznie JDK i kompiluje się do
++       pojedynczego pliku klasy. `java -jar app.jar` uruchamia ją jako `Main-Class` manifestu.
+
+@ 0 7 0 0d8eff739504d6c1003ade7398abfe85
++       Odczytuje `Burdock-Require`, pobiera każde wymaganie, którego nie ma jeszcze w pamięci
++       podręcznej – `$XDG_CACHE_HOME/soundness/jars`, jeśli ta zmienna jest ustawiona
++       i niepusta, w przeciwnym razie `~/.cache/soundness/jars` – po osiem naraz, z limitami
++       czasu połączenia i odczytu, i sprawdza SHA-256 każdego pobrania względem hasza
++       z manifestu (a także pliku z pamięci podręcznej). Następnie buduje classloader nad
++       plikiem JAR i wymaganiami, w kolejności z manifestu, ustawia go jako kontekstowy
++       classloader wątku i wywołuje `main` w klasie, którą wskazuje `Burdock-Main`.
+
+@ 0 6 0 15e52b37128aac2f1c01490edb7c4575
++       Niezgodność sumy kontrolnej kończy proces ze statusem 1; niepoprawny element
++       `Burdock-Require`, nieprawidłowe `Burdock-Verbosity`, brak manifestu lub punktu wejścia
++       albo jakakolwiek inna awaria uruchomienia kończy go ze statusem 2. Launcher nadzorujący
++       start może ustawić właściwość systemową `burdock.progress` na ścieżkę pliku: podczas
++       pobierania program ładujący utrzymuje w nim jeden wiersz,
++       `<completed> <total> <bytes>`, zapisywany atomowo, i usuwa go po zakończeniu.
++   entry .main   uruchamia aplikację wskazaną przez `Burdock-Main` po pobraniu jej wymagań
+
+@ 0 1 0 0a1dd24d114dcf4f049b632f34ddc683
++ entry .DepsDev   rozwiązuje SHA-256 zależności do jej URL-a w Maven Central poprzez deps.dev Google'a
+
+% 1 1 0 094237d50d6ea78c037a9c5204273668
+
+@ 0 10 0 0606d3b6dc8cc72d004e43c862373cfb
++       deps.dev („Open Source Insights”) indeksuje opublikowane artefakty według haszu treści.
++       `.mavenUrl` pyta jego API zapytań, który artefakt Mavena ma dany hasz, i buduje URL
++       artefaktu na repo1.maven.org; wszystko, czego deps.dev nie zna jako artefaktu Mavena,
++       daje `Unset`, a repackager wstawia wtedy zależność z pamięci podręcznej. Klasy case
++       modelują istotną część odpowiedzi JSON tego API.
++   entry .mavenUrl   URL w Maven Central pliku JAR o danym SHA-256 lub `Unset`
++       Przyjmuje hasz w postaci szesnastkowej, wysyła go zakodowanego w base64, jak oczekuje
++       API, i wybiera pierwszy wynik, którego system to `MAVEN`. Loguje `DepsEvent.Querying`
++       na poziomie `fine` i `DepsEvent.Resolved` na poziomie `info`, więc potrzebuje
++       w zasięgu `DepsEvent is Loggable`. Każda awaria – sieci, nieoczekiwanej odpowiedzi,
++       nieznanego artefaktu – daje `Unset`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 07da053f9c0b2b5d15bbdce39289346e
+
+% 1 1 0 0d03016d6659f3b713f59404cbd2bc34
+
+@ 0 12 0 14b089f0af61a84e0a6aa897dd9cd1d5
++   entry .Unresolved   hasz, który nie jest znanym artefaktem Mavena
++       _not a known Maven artifact_. Zgłaszany i przechwytywany wewnątrz `.mavenUrl`, która
++       odpowiada `Unset`.
++   entry .VersionKey   tożsamość artefaktu w odpowiedzi deps.dev
++     entry #system   system pakietów, na przykład `MAVEN`
++     entry #name   nazwa artefaktu, dla Mavena `group:artifact`
++     entry #version   wersja artefaktu
++   entry .Version   jedna wersja w odpowiedzi deps.dev
++     entry #versionKey   tożsamość wersji
++   entry .Result   jedno dopasowanie w odpowiedzi deps.dev
++     entry #version   pasująca wersja
++   entry .QueryResult   odpowiedź na zapytanie o hasz w deps.dev
++     entry #results   każda wersja artefaktu z danym haszem
+
+@ 0 1 0 19be9a02a8c15fbe0f88da33ea825730
++ entry .GitHub   rozwiązuje hasze zależności względem zasobów wydań wskazanych repozytoriów GitHub
+
+% 1 1 0 17f9e09ca091045a1e889963e5a216d1
+
+@ 0 5 0 02ad2c4537e855e1066affc77c88fe10
++       GitHub nie prowadzi globalnego indeksu według haszy, ale jego REST API listuje wydania
++       repozytorium, a każdy zasób niesie `digest` (`sha256:<hex>`). Dlatego repozytoria
++       wskazane opcją `--github` są indeksowane z góry – po kilka żądań na każde, zamiast
++       jednego na zależność – a indeks jest sprawdzany przed deps.dev, ponieważ repozytorium
++       wskazane przez użytkownika powinno mieć pierwszeństwo.
+
+% 2 1 0 12cc9fc3fd5a47a30e05c0e877e99d06
+
+% 3 1 0 0bc8a46706f4aefb0293b15d762a9e70
+
+% 0 1 0 04929fe2ec184346089b9ceb60c2cddd
+
+% 0 1 0 1370d09ab79aaed3047b32fdced57f66
+
+% 0 1 0 17a7dadad77c147101f325e4b938634e
+
+% 1 1 0 0dbfe35bd647f2d61156c655c9c7bb60
+
+% 1 1 0 09b5503bf82ce0101b4475ce543429d7
+
+@ 0 27 0 1721ed627c7bf6d51beff5c2ec3585f3
++   entry .Repository   repozytorium GitHub jako właściciel i nazwa
++     entry .parse   odczytuje `owner/repo`, zgłaszając `Repackager.UserError` dla czegokolwiek innego
++         Dokładnie jeden ukośnik, z obiema częściami niepustymi: `t"owner"`, `t"owner/"`,
++         `t"/repo"` i `t"a/b/c"` są odrzucane z komunikatem _`text` is not a GitHub repository
++         of the form owner/repo_.
++     entry .showable   pokazuje repozytorium jako `owner/repo`
++     entry #owner   użytkownik lub organizacja, do której należy repozytorium
++     entry #name   nazwa repozytorium
++     entry #text   repozytorium jako `owner/repo`
++   entry .Asset   jeden zasób wydania, w postaci opisanej przez API wydań
++     entry #name   nazwa pliku zasobu
++     entry #url   URL pobierania zasobu, odczytany z pola JSON `browser_download_url`
++     entry #digest   skrót zasobu, `sha256:<hex>`, lub `Unset` dla zasobu przesłanego, zanim GitHub zaczął je obliczać
++   entry .Release   jedno wydanie repozytorium wraz z jego zasobami
++     entry #assets   zasoby wydania
++   entry .indexReleases   indeksuje zasoby `.jar` listy wydań według ich SHA-256
++       Czysta, więc nie potrzebuje sieci. Każdy zasób, którego nazwa kończy się na .jar,
++       a skrót jest SHA-256, jest kluczowany szesnastkową postacią małymi literami; pozostałe
++       zasoby są pomijane. API listuje najnowsze wydanie jako pierwsze, więc gdy jeden hasz
++       występuje w kilku wydaniach, wygrywa pierwszy, najnowszy URL.
++   entry .releases   listuje każde wydanie repozytorium poprzez API GitHuba
++       Przechodzi przez API stronami po sto wydań, dopóki nie wróci pusta strona. Opcjonalny
++       token jest wysyłany jako token typu bearer. Loguje `DepsEvent.Indexing` i zgłasza
++       `Repackager.UserError` dla błędu HTTP, nieudanego połączenia lub odpowiedzi, która nie
++       jest oczekiwanym JSON-em.
++   entry .index   jeden indeks, od SHA-256 do URL-a pobierania, obejmujący wszystkie wskazane repozytoria
++       Listuje i indeksuje kolejno każde repozytorium, logując `DepsEvent.Indexed` z liczbą
++       znalezionych zasobów, i zachowuje pierwszy URL dla hasza znalezionego w więcej niż
++       jednym.
+
+@ 0 1 0 04842bb705db60c01f87b5ada4e0042d
++ entry .DepsEvent   co Burdock loguje podczas rozwiązywania zależności
+
+% 1 1 0 0763ed18cdc8a14b0d8386e188c00069
+
+@ 0 15 0 18cbd6384e3439bf16decde4337da731
++       Każde zdarzenie ma tag `Log.Dependency`, a dwa, które wykonują żądania, także
++       `Log.Network`. `DepsDev.mavenUrl` loguje `Querying` na poziomie `fine` i `Resolved` na
++       poziomie `info`; `GitHub.releases` loguje `Indexing` na poziomie `fine`, a
++       `GitHub.index` loguje `Indexed` na poziomie `info`. W zasięgu musi być
++       `DepsEvent is Loggable`; `logging.silentLogging` je odrzuca.
++   entry .communicable   przedstawia każde zdarzenie jako komunikat
++   entry .Querying   rozpoczęto wyszukiwanie w deps.dev: _querying deps.dev for the artifact with hash `hash`_
++     entry #hash   SHA-256 zależności
++   entry .Resolved   hasz został rozwiązany: _resolved hash `hash` to `url`_
++     entry #hash   SHA-256 zależności
++     entry #url   URL, do którego go rozwiązano
++   entry .Indexing   trwa listowanie wydań repozytorium: _listing the GitHub releases of `repository`_
++     entry #repository   repozytorium jako `owner/repo`
++   entry .Indexed   repozytorium zostało zindeksowane: _indexed `assets` release assets of `repository`_
++     entry #repository   repozytorium jako `owner/repo`
++     entry #assets   ile zasobów zindeksowano
+
+@ 0 1 0 09753f9634f20c980accdb31157b1222
++ entry .ProgressBar   pasek postępu repackagera: czterdziestokomórkowy wskaźnik w kolorach żaru
+
+% 1 1 0 080c4cb16041d332079db3be3fccaddf
+
+@ 0 7 0 0a708a6472d2d7ad1e857d6be97faaef
++       Rysunek to wskaźnik z ultimatum, z płynnym paskiem z ósemkowych bloków, glifami Unicode
++       i ustaloną paletą żaru; przerysowywanie go w miejscu pozostawia się wywołującemu.
++   entry .width   szerokość paska w komórkach: 40
++   entry .render   przedstawia ułamek ukończenia jako pasek `Teletype`
++       Ułamek jest przycinany do przedziału od 0 do 1. Pusty pasek składa się z samych spacji,
++       pełny – z samych pełnych bloków, a ułamek wypadający między komórkami kończy się jednym
++       częściowym blokiem; pasek ma zawsze czterdzieści komórek szerokości.
+
+% 2 1 0 12cb43780e486d7c0d6709debba2bb98
+
+% 3 1 0 1c1918cfca42c7ed05bb103b3c17ac4a
+
+% 0 1 0 013da7fb3e51e78f0bd6f66a48e0df8d
+
+% 1 1 0 0b20bd6c3600f261049392c2e2b1b9c9
+
+@ 0 1 0 04485c9a00a1b20217d526b8244d9b98
++ entry .internal   implementacja makra stojąca za `externalize`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0df719edce35862903cfa6461d90de0a
++       Nie do bezpośredniego użytku: część Burdocka działająca w czasie kompilacji, napisana
++       wyłącznie z użyciem JDK, ponieważ działa w JVM kompilatora.
++   entry .ResourcePath   zasób zawierający hasze zależności: `META-INF/burdock.deps`
++   entry .externalize   makro: haszuje i buforuje pliki JAR ze ścieżki klas, zapisuje zasób, zwraca blok

@@ -1,0 +1,773 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f334669e90a494c0f78f350d43958f5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0665e32f8fce328d036a93997d5c89ca
++ info   drzewa i skierowane grafy acykliczne rysowane jako tekst: kafelki obliczane przez diagram, znaki wybierane przez styl
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 117f500f2ba958561d8b986c69da0183
++     _Dendrology_ rysuje hierarchie w terminalu – listę plików, graf zależności, hierarchię klas,
++     historię systemu kontroli wersji – znakami ramek, takimi jak `└─` i `├─`, i rozdziela dwie
++     rzeczy, z których składa się taki rysunek. **Diagram** oblicza układ: dla każdej linii jej
++     _kafelki_ (elementy łączące, które ją przecinają) oraz węzeł, do którego linia należy.
++     **Styl** odwzorowuje kafelki na tekst, więc ten sam układ renderuje się znakami ramek albo
++     zwykłym ASCII, jako `Text` albo jako stylizowane wyjście terminala, po zmianie jednego
++     importu. `TreeDiagram` rysuje drzewo, a trzy diagramy DAG rysują każdy graf, który dopuszcza
++     porządek topologiczny – `Dag` z acyclicity, zamrożoną `Topology` albo `Hasse` – a którego
++     węzły mogą mieć kilku rodziców, czego drzewo nie potrafi pokazać.
+
+% 2 1 0 0b898a562ce00e1e165955fc4a05864b
+
+% 3 1 0 1a3498a63ca8e13510a2c72e6522f4d7
+
+% 0 1 0 0af70e80fa4ad64e1d117fcbeb40296b
+
+% 0 1 0 0820ae4d363e7fe2046b5c5bc9c1bf63
+
+% 0 1 0 07155c1b8c03ef03027e380a8ed0b5c4
+
+% 0 1 0 1b57927ee2f1b9520681fb213b51a8cc
+
+% 0 1 0 0a836080ff536113149150147ee58ed2
+
+% 0 1 0 12db5a83beb263be0d19d942177c6342
+
+% 0 1 0 1c621932b933926c0f911dba5f472a99
+
+% 0 1 0 18d655a7612588741dcc0bcfd9083a43
+
+% 0 1 0 1ee761de552167b608a82d759817342d
+
+% 0 1 0 0c21ca7fff1b71b804b0cb247754d517
+
+% 1 1 0 164ae009f486524011e4dd0dcacb6e5e
+
+@ 0 7 0 0e0adf2b1a04ab11124918a36f155cb7
++     Trzy układy grafów odpowiadają na różne pytania. `DagDiagram` jest gęsty: każdą krawędź
++     rysuje się w siatce kafelków łączących, po jednej linii na węzeł, co pasuje do małego grafu
++     o skomplikowanych krawędziach. `LaneDagDiagram` umieszcza każdy węzeł jako punktor na
++     pionowym torze, a krawędzie płyną między torami, tak jak `git log --graph` rysuje historię,
++     co pasuje do długiego grafu z niewieloma równoległymi gałęziami. `LayeredDagDiagram`
++     układa węzły w poziomy według głębokości, uporządkowane w obrębie poziomu tak, by krzyżowało
++     się jak najmniej linii łączących, co pasuje do pokazania, co od czego zależy, a nie co
++     wydarzyło się w jakiej kolejności.
+
+% 2 1 0 0d3ba9d037bd30f91b00d292fec73c9e
+
+% 3 1 0 0266fbe8bf407d66168db2d46c1e9e31
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0a252e9fb29da47506084762266a9a9f
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 07fbbbde4f9068d6129148ee9ed805b3
+
+% 0 1 0 15f35e3234555baa19e5d603ec214289
+
+% 0 1 0 0d272dcd65e5c187071dc8eeef3d2103
+
+% 1 1 0 14e1644a14369c14170556c1b1aa49c9
+
+% 0 1 0 0d272dcd65e5c188071dc8eeef3d2104
+
+% 1 1 0 18ea9c6c3dd5cde41f34515a9df8b652
+
+% 0 1 0 0d272dcd65e5c189071dc8eeef3d2105
+
+% 1 1 0 0004e7845d7051a814fb1833080bf5bf
+
+@ 0 9 0 16c8ae738141214e03425433d1541ac5
++     Styl jest givenem, wybieranym przez import po nazwie – `import soundness.*` nie wprowadza
++     żadnego, ponieważ `import pkg.*` nie importuje givenów – z jednego z trzech pakietów wyboru:
++     `treeStyles` (`squareTreeStyle`, `roundedTreeStyle`, `asciiTreeStyle`) dla `TreeDiagram`,
++     `dagStyles` (`boxDrawingDagStyle`, `asciiDagStyle`) dla `DagDiagram` oraz `laneDagStyles`
++     (`boxDrawingLaneDagStyle`, `asciiLaneDagStyle`) dla `LaneDagDiagram` i
++     `LayeredDagDiagram`. Style torów mierzą glify w komórkach wyświetlania, więc potrzebują też
++     w zasięgu `Text is Measurable`, na przykład `textMetrics.uniformMetric`. Każdy styl jest
++     sparametryzowany typem linii, który renderuje, więc diagram renderuje się wprost do
++     stylizowanego tekstu terminala, z elementami rysunku w jednym kolorze, a etykietami w innym.
+
+@ 0 6 0 0701bb5629edc10908bf85a3e65ff4cf
++     Biblioteka ma dwa zbiory źródeł. `dendrology.tree` zawiera `TreeDiagram`, `TreeDiagram.Tile`,
++     `TreeDiagram.Style`, `TreeDiagram.TextualStyle`, `Expandable` i `treeStyles`;
++     `dendrology.dag` zawiera trzy diagramy DAG, `DagDiagram.Tile`, `DagDiagram.Style`,
++     `LaneDagDiagram.Style`, ich implementacje `Textual…` oraz pakiety `dagStyles` i
++     `laneDagStyles`, i zależy od `acyclicity`. Oba są eksportowane do modułu zbiorczego
++     `soundness`, gdzie trzy pakiety wyboru łączą się z własnymi pakietami modułu zbiorczego.
+
+% 0 1 0 06bbc774ae7fdbc61de0343e47c15934
+
+% 0 1 0 08b2db919f72a5df0801a6484c644506
+
+% 0 1 0 035db606ae51c516159178415c1228de
+
+% 0 1 0 188c29f62fec82591cb4969a4e79f618
+
+% 0 1 0 10382b91050fba2518137db1ad1d00c7
+
+% 0 1 0 0c0b51cac88f77d614a500d8d654f29d
+
+@ 0 1 0 0780ba6e8d824256076536a815c22697
++ entry .TreeDiagram   drzewo ułożone w linie kafelków, renderowane przez `TreeDiagram.Style`
+
+% 1 1 0 00c931fd5745e7181695f5beba5f9993
+
+@ 0 6 0 07ab527d2b4eec2c0036b49dbf2f848a
++       `TreeDiagram[node]` to układ drzewa: jedna linia na węzeł, w kolejności w głąb, każda
++       z kafelkami (`Tile`) swojego prefiksu – gałęzią albo ostatnią gałęzią dla samego węzła,
++       a dla każdego przodka przedłużaczem (jeśli ten przodek ma dalsze elementy siostrzane) albo
++       spacją. Buduje się go z korzeni i sposobu dotarcia do dzieci – funkcji, przez `by`, albo
++       instancji `Expandable` dla typu węzła, przez `apply` – a renderuje funkcją z węzła na
++       etykietę i stylem (`Style`) w zasięgu.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1d8a23d6a11d6ea503b696f232fa1031
+
+% 1 1 0 172c73d914bec8cc06e00d83314fd4ca
+
+% 2 1 0 14bf2a0fee83411819292640a1081dbb
+
+% 0 1 0 02e81fb51ebbaa8a010c47f9c99f4d83
+
+% 1 1 0 0b1433e1f32fe11603d2839fbd64f75a
+
+% 2 1 0 1cdce820c477016d011813ea9284e22b
+
+% 3 1 0 1b1aff0537ce56660b668a8738726dee
+
+% 0 1 0 1d5c4a982af3caad12d316f0577b6562
+
+% 0 1 0 02b5e675c4cbe1651df43444f0c4165c
+
+% 0 1 0 041020412b11fa63078ba015c6b4e4ac
+
+% 1 1 0 0f214fdcc95a9f881a475c3ee31a631a
+
+% 2 1 0 174cb40d3e57f2890c554e414234081f
+
+% 0 1 0 165f494df68731db05637c088c0a7db9
+
+% 1 1 0 124913126072a5c70fb72f1204572a98
+
+% 2 1 0 04249946e0b440271b0c888fd415be8a
+
+% 3 1 0 1ebb6e1f4a604b3610270a25faf48174
+
+% 0 1 0 19e31c38e9a52e8618351c706bad4a1a
+
+% 0 1 0 02dbf9e8244cfe671466e2fd5974f83b
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 0802712a9f7a76450f73c24bad18c5e0
+
+% 1 1 0 0fc71f7fa9a48c621f841cbbb09c3321
+
+% 2 1 0 1dbda23303f4967a0078b7059c2c8ae6
+
+% 0 1 0 0951c603af19bed809b5327120fa2929
+
+% 0 1 0 0b523f9c7621838b0cc5cfa9a5497037
+
+% 0 1 0 00b1e83da28cfbd11467bf6f03a4e39e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 11472c8473b5b2641d310407a71153b2
++       Linie są łańcuchem `Chain` wytwarzanym leniwie: duże albo głębokie drzewo rysuje się
++       tylko na tyle, na ile jest konsumowane, a drzewo nieskończone nadal się rysuje, ponieważ
++       wyrenderowanie linii wymaga jedynie liczby elementów siostrzanych przodków, nigdy
++       potomków późniejszych węzłów. Diagram jest też `Printable` (przy `Style[Text]` w zasięgu
++       i węźle `Showable`), więc można go wypisać bezpośrednio do `Out`, a każdy węzeł pokazuje
++       się jako `▪ node`.
+
+@ 0 3 0 060e86d157a0b6a10fb5b9a697ac4468
++       Wiersze są udostępnione – `nodes`, `tiles` i `map` – więc konsument może sam renderować
++       linie: kolorową etykietę dla jednego rodzaju węzła, adnotację przy innym, a znaki ramek
++       nadal pozostają sprawą stylu.
+
+% 0 1 0 0abd66b646a5c82d0cebdf7d2216d754
+
+% 0 1 0 194141aa304dced20ae531329d08516c
+
+% 0 1 0 143523fd146ddb861fa278aa357a6ee0
+
+% 0 1 0 1f2e77b0f34cb35d0b9138fac91c55a3
+
+@ 0 4 0 19db8aec390451b103bc24e87aef9de0
++   entry .apply   diagram podanych korzeni, z dziećmi znajdowanymi przez instancję `Expandable` typu węzła
++       `TreeDiagram(roots*)` dla typu węzła z `given node is Expandable`: właściwa postać, gdy
++       dzieci typu węzła są tym, co ten typ rozumie przez dzieci – ścieżka w systemie plików,
++       zależność, węzeł składni.
+
+% 2 1 0 18bf1c7bd331e0650126e567995ca122
+
+% 3 1 0 09b9420ebeed85cc145340f19d9beb45
+
+% 2 1 0 0990919c0d1a050b01de5e3a6d54a7a0
+
+% 0 1 0 097add2b36cdb59e056d0fcbfc689ea5
+
+% 0 1 0 072495fb837d7e6c0789c1f7965bf4e5
+
+% 1 1 0 02dd0e853fd250f416402fb71da24b12
+
+@ 0 17 0 0e3c526da2cb7b670b1392d34788c93d
++   entry .by   diagram podanych korzeni, z dziećmi znajdowanymi przez funkcję
++       `TreeDiagram.by[node](node => children)(roots*)`: właściwa postać, gdy struktura jest już
++       pod ręką albo gdy ten sam typ rysuje się według różnych relacji.
++   entry .printable   wypisuje diagram do terminala, każdy węzeł pokazany jako `▪ node`
++       Wymaga `Style[Text]` w zasięgu (jednego z `treeStyles`) i typu węzła `Showable`; linie
++       łączy się znakami nowego wiersza.
++   entry #lines   kafelki i węzeł każdej linii, jako leniwy `Chain`
++   entry #render   linie jako wyrenderowany tekst: etykieta każdego węzła poprzedzona jego kafelkami przez `TreeDiagram.Style` w zasięgu
++       `diagram.render(node => label)`, z etykietą tego typu linii, który renderuje styl –
++       `Text` przy givenach z `treeStyles` albo stylizowany typ terminala przy stylu dla niego.
++   entry #flow   linie z każdą etykietą zawiniętą do szerokości, a wiersze kontynuacji przyjmują kafelki kontynuacyjne stylu
++       `diagram.flow(width)(node => label)`: treść każdego węzła rozkłada się na wiersze nie
++       szersze niż `width`, łącznie z prefiksem kafelków, a wiersze kontynuacji przyjmują kafelki
++       `Style#followOn` – przedłużacz biegnie dalej pod gałęzią, a spacja następuje po ostatnim
++       dziecku – więc linie drzewa ciągną się za zawiniętą etykietą. Wymaga w zasięgu
++       `Text is Measurable` (na przykład `textMetrics.uniformMetric`) i `Hyphenation` oraz typu
++       etykiety, który jest `Textual` nad znakami.
+
+% 2 1 0 0a43bc05565e878d194094868adeb35f
+
+% 3 1 0 13822e8cc962803f122eb87cd3752714
+
+% 0 1 0 18ce7c3e0a0994cb1e5cef2e9db10256
+
+% 1 1 0 1c1f6c4810f8e7410b33584f00e545dc
+
+% 2 1 0 1cb4a5950d7cd45c08ef4de921ea830f
+
+% 0 1 0 192fe055434ef8531e65551e898946a8
+
+% 0 1 0 08c25fad3e8b9c4500c16de8370a96f2
+
+% 0 1 0 111a6fa455a31de2169a5bfe39f2ca72
+
+% 1 1 0 1b125b505306846b0d3d112c1c47c6d2
+
+@ 0 7 0 0b05470c231ff6e20290e69244ec8302
++       Styl, którego kafelki kontynuacyjne są szersze niż zwykłe, mierzy się na oba sposoby,
++       a treść zawija się według ciaśniejszego limitu, więc żaden wiersz nie może przekroczyć
++       `width`.
++   entry #map   każda linia wyrenderowana funkcją jej kafelków i jej węzła
++       `diagram.map(tiles => node => row)`: ogólna postać `render`, dla konsumenta, który sam
++       renderuje linie.
++   entry #nodes   węzeł każdej linii, w kolejności rysowania
++   entry #tiles   kafelki każdej linii, w kolejności rysowania
+
+@ 0 6 0 1a502b6324cd290b1ce0fa399057102b
++   entry .Tile   jeden element prefiksu linii drzewa: gałąź, ostatnia gałąź, przedłużacz albo spacja
++       Wyliczenie z czterema przypadkami. `Branch` (`├─`) oznacza węzeł z dalszymi elementami
++       siostrzanymi, a `Last` (`└─`) ostatni z elementów siostrzanych; na lewo od nich
++       `Extender` (`│ `) prowadzi linię przodka w dół obok węzła, gdy ten przodek ma dalsze
++       elementy siostrzane, a `Space` wypełnia kolumnę, gdy ich nie ma. `Style` określa, czym
++       każdy z nich staje się jako tekst.
++   entry .Style   klasa typów, która renderuje linię kafelków drzewa i etykietę w jedną linię
+
+% 1 1 0 1db10213c8e9dce0110cabcee221dc18
+
+@ 0 7 0 0fd7c245ed42499c06fd06f3ec33d3ec
++         `Style[line]` zamienia `List[Tile]` i etykietę węzła typu `line` w jedną wyrenderowaną
++         linię i jest tym, co `TreeDiagram#render` oraz `#flow` biorą z zasięgu. Jest
++         sparametryzowana typem linii, więc diagram może renderować zarówno do `Text`, jak i do
++         stylizowanego wyjścia terminala. `TextualStyle` implementuje ją dla dowolnego typu linii
++         `Textual` z czterech krótkich fragmentów tekstu, czyli wszystkiego, czego potrzebuje nowy
++         styl; pakiet `treeStyles` zawiera trzy gotowe. Styl jest `Findable`, więc instancja
++         `Printable` diagramu znajduje go w zasięgu.
+
+% 0 1 0 0acff1f4781516081c0fe2a074fffa02
+
+% 1 1 0 12b2711ff1817d521143f742bfa12be7
+
+@ 0 6 0 10abcaab3a97e6f7119430f46aead6af
++     entry #serialize   kafelki linii i jej etykieta jako jedna wyrenderowana linia
++     entry #followOn   wiersz kontynuacji węzła wielowierszowego: te same tory, bez glifu gałęzi
++         Używane przez `TreeDiagram#flow` dla drugiego i dalszych wierszy zawiniętej etykiety:
++         przedłużacz biegnie dalej, a gałąź ostatniego dziecka ustępuje miejsca spacji. Domyślnie
++         powtarza `serialize`, dla stylu, który nie rysuje osobnego prefiksu kontynuacji.
++   entry .TextualStyle   `TreeDiagram.Style` dla dowolnego typu linii `Textual`, z czterech fragmentów tekstu
+
+% 1 1 0 10fdfc421539f76400aa7a0eeca9c1f0
+
+@ 0 3 0 18c40d5257f1d1b70485cf5e4d055926
++         `TextualStyle(space, last, branch, extender)` podaje tekst każdego kafelka (`Tile`);
++         linia to połączone teksty kafelków, a po nich etykieta. Fragmenty mają zwykle szerokość
++         dwóch znaków, aby kolumny się wyrównywały, ale nie muszą.
+
+% 2 1 0 071221007e0aa6c00182f4fa9bf4c402
+
+% 3 1 0 04ae79e3753c97f5064060fd509e466b
+
+% 0 1 0 08026cfc0bf8fe2d0efb1d1495635dad
+
+% 1 1 0 1ca0a8551b1fca4c190865f5284c73d0
+
+@ 0 2 0 0c912ff2506bf95a19065e7068d8db58
++         W wierszu kontynuacji `branch` renderuje się jako `extender`, a `last` jako `space`,
++         więc pionowe linie ciągną się pod zawiniętą etykietą.
+
+% 0 1 0 0d3798c8daa025960d108dcb3277a25e
+
+% 1 1 0 05b4e57e74ed1a6016ad97a906327b95
+
+@ 0 8 0 1a4f066511896ad71f5cecbc232ed818
++     entry #space   tekst kafelka `Space`: pod ostatnim dzieckiem
++     entry #last   tekst kafelka `Last`: gałąź do ostatniego dziecka węzła
++     entry #branch   tekst kafelka `Branch`: gałąź do dziecka z dalszymi elementami siostrzanymi
++     entry #extender   tekst kafelka `Extender`: linia przodka prowadzona w dół obok węzła
++     entry #serialize   połączone teksty kafelków, a po nich etykieta
++     entry #followOn   połączone teksty kontynuacyjne kafelków, a po nich etykieta
++     entry #text   tekst jednego kafelka
++     entry #followOnText   tekst jednego kafelka w wierszu kontynuacji: `extender` dla gałęzi, `space` dla ostatniej
+
+@ 0 4 0 1d2361cdaf71fdb912fbd917112cc68f
++ entry .Expandable   klasa typów typu węzła, który zna własne dzieci
++     `given node is Expandable = _.children` pozwala `TreeDiagram(roots*)` znajdować dzieci
++     każdego węzła przez typ, a nie przez funkcję przekazaną w wywołaniu. `children` zwraca
++     `List` elementów samego typu węzła.
+
+@ 0 1 0 075642825a22014e0bf7b7839dfa74c6
++ entry .treeStyles   trzy gotowe style drzew, każdy jako given do zaimportowania po nazwie
+
+% 1 1 0 03157ac1c0980b991f369a740dcbff24
+
+@ 0 2 0 0dfa476c754beb0414a3840d62d5a226
++       `import soundness.*` nie wprowadza żadnego z nich; jeden importuje się po nazwie, a daje on
++       `TreeDiagram.Style` dla dowolnego typu linii `Textual`.
+
+% 2 1 0 16a68449831e16840d752e138e701052
+
+% 3 1 0 16925aba1a19bd1f1717ce59f377efa7
+
+% 0 1 0 14d9b15a0f712180194822fc61a44203
+
+% 1 1 0 03d9f4a02ba63bc31f1772da5a0055ff
+
+@ 0 3 0 0676e7f23acd29b41eafdae98347898c
++   entry .squareTreeStyle   `├─`, `└─` i `│ `: narożniki pod kątem prostym
++   entry .roundedTreeStyle   `├─`, `╰─` i `│ `: ostatnia gałąź jest zaokrąglona
++   entry .asciiTreeStyle   `|-`, `+-` i `| `: tylko ASCII, dla wyjścia, które musi przetrwać w każdym terminalu
+
+@ 0 1 0 0de0077fd444077d07bb853faff8b0fd
++ entry .DagDiagram   gęsty rysunek grafu: jedna linia na węzeł, każda krawędź w siatce kafelków łączących
+
+% 1 1 0 0211904a07c9994b043d190e39f50f33
+
+@ 0 6 0 0d1e07230571d1c515a10cabf675cab2
++       `DagDiagram(graph)` układa każdy graf, który dopuszcza porządek topologiczny – `Dag`,
++       zamrożoną `Topology[node]^{}` albo `Hasse` – z jedną linią na węzeł, w porządku
++       topologicznym (najpierw zależności), a na lewo od każdej linii kolumną dla każdego
++       wcześniejszego węzła, zawierającą kafelki krawędzi, które się tam zaczynają, przechodzą
++       albo kończą. Wynik nie może zawieść: `Digraph`, który może zawierać cykl, nie ma rysunku,
++       dopóki `acyclic` go nie przekształci. Renderuje się przez `Style` w zasięgu, z pakietu
++       `dagStyles`.
+
+% 2 1 0 19bcd9faae6fc5fe14cb5088d5299bbd
+
+% 3 1 0 0b028d6b16c820c80f13e56d08f7dc0e
+
+% 4 1 0 141f4adbd65cb70c08746fd981f3840c
+
+% 1 1 0 1c02b8b1353d1e7b16793973b181a857
+
+% 0 1 0 0066612ddb1c1ec41d6049406cf7e1b3
+
+% 0 1 0 1aa7d22e928966770a377aa71762f507
+
+% 0 1 0 0d446be4798dc4180048d00208ed27a4
+
+% 0 1 0 194e4e4a3e3f6fe010750cce4dd0e1f3
+
+% 0 1 0 150d56a39a24275f0c8b86d50d9f1882
+
+% 0 1 0 116ec5e9e250b775100d5e8cd9a4e107
+
+% 0 1 0 1671092abd97b57114eab42538e5112a
+
+% 0 1 0 0e3450b1c21f1d4b04bef1b3d8b14a20
+
+% 1 1 0 088d4f2cd1c77e1100267392d563684d
+
+@ 0 4 0 1ae31b90d3c2ced80651243ab34f8297
++       Cały układ oblicza się przy tworzeniu diagramu, jako siatkę o rozmiarze kwadratu wielkości
++       grafu, co czyni go właściwą postacią dla małego grafu o skomplikowanych krawędziach,
++       a niewłaściwą dla długiej historii; dla niej właściwą postacią jest `LaneDagDiagram`.
++       Diagram jest `Printable` przy `Style[Text]` w zasięgu i węźle `Showable`.
+
+% 0 1 0 03052f1d99dd8911037f0509daf775ec
+
+% 0 1 0 17bf87312473321b024665cc3824f67e
+
+% 0 1 0 1542ba2eaaf3e6a80a09ff74f7a28db0
+
+% 1 1 0 0d234d39e1e3d3a20a698a746636b6c9
+
+@ 0 10 0 087633732ce5077c00197432f8560c10
++   entry .apply   gęsty układ dowolnego grafu `Nodal` i `Topological`
++       Bierze z zasięgu instancje `Nodal` i `Topological` grafu, które `Dag`, zamrożona
++       `Topology` i `Hasse` dostarczają ze swoich obiektów towarzyszących, więc wywołanie nie
++       wymaga importu.
++   entry .printable   wypisuje diagram do terminala, każdy węzeł pokazany jako `▪ node`
++       Wymaga `Style[Text]` (jednego z `dagStyles`) i typu węzła `Showable`.
++   entry #lines   kafelki i węzeł każdej linii, w porządku topologicznym
++   entry #size   liczba linii: po jednej na węzeł
++   entry #render   linie jako wyrenderowany tekst, etykieta każdego węzła po jego kafelkach, przez `DagDiagram.Style` w zasięgu
++   entry #nodes   węzeł każdej linii, w kolejności rysowania
++   entry #tiles   kafelki każdej linii
+
+@ 0 9 0 0b3be08743fc38140b4412f568b1d42b
++   entry .Tile   jedna komórka rysunku DAG: węzeł, tor, narożnik, trójnik, skrzyżowanie albo spacja
++       Wyliczenie z czternastoma przypadkami, nazwanymi od kierunków świata, w które biegną ich
++       ramiona. `Space`; tory `Vertical` i `Horizontal`; narożniki `CornerNe`, `CornerNw`,
++       `CornerSe` i `CornerSw`; trójniki `TeeN`, `TeeS`, `TeeE` i `TeeW`; `Crossing`, czyli tor
++       poziomy przechodzący nad biegnącym dalej torem pionowym bez łączenia się z nim;
++       `Junction`, gdzie tory schodzą się ze wszystkich czterech stron; oraz `Node`, punktor węzła
++       na diagramie torów. `DagDiagram` używa pierwszych ośmiu; `LaneDagDiagram`
++       i `LayeredDagDiagram` używają wszystkich czternastu. `Style` albo `LaneDagDiagram.Style`
++       określa, czym każdy z nich staje się jako tekst.
++   entry .Style   klasa typów, która renderuje linię gęstego `DagDiagram`
+
+% 1 1 0 0758779b853b145f086d306139efc446
+
+@ 0 5 0 07618b000ae4d7d61626d6d600947e98
++         `Style[line]` zamienia `List[Tile]` linii i etykietę węzła w jedną wyrenderowaną linię
++         typu `line` i jest tym, co `DagDiagram#render` bierze z zasięgu. `TextualStyle`
++         implementuje ją dla dowolnego typu linii `Textual` z ośmiu fragmentów tekstu; pakiet
++         `dagStyles` zawiera styl ze znakami ramek i styl ASCII. Jest `Findable`, więc instancja
++         `Printable` diagramu go znajduje.
+
+% 0 1 0 0e2197ac044d89b41803924668c24785
+
+% 1 1 0 1469f3cfb0bffdb01e4d25d0f0499828
+
+@ 0 2 0 037834f6a0cc86d900e4e1a68bbb1127
++     entry #serialize   kafelki linii i jej etykieta jako jedna wyrenderowana linia
++   entry .TextualStyle   `DagDiagram.Style` dla dowolnego typu linii `Textual`, z ośmiu fragmentów tekstu
+
+% 1 1 0 09fdaa9b5d3e2db906b0139a2626f2f9
+
+% 0 1 0 1d9c899db60a699a162173ef39664dd4
+
+@ 0 2 0 0650605fc3bbb8250eb528f77812fa18
++         podaje tekst każdego z kafelków, które rysuje `DagDiagram`; każdy inny `Tile` renderuje
++         się jako `space`. Linia to połączone teksty kafelków, a po nich etykieta.
+
+% 2 1 0 00936060487783930cc1c3fff8e3a630
+
+% 3 1 0 101a3b58c20831ec1d5d64c783920e81
+
+% 0 1 0 13e34be9c88dfd901b8d6da902aa5452
+
+% 0 1 0 14f158ff6e096c380c8099438cbd56c6
+
+% 1 1 0 05013786c247157d1cbc06dbb1708a24
+
+% 0 1 0 12875549150dd68906f2c58d35fdb947
+
+% 1 1 0 1eff0fb1a4e77ef20f98887bf6102de3
+
+@ 0 11 0 00c7214cbbd4f2170a480803f18e2c03
++     entry #space   tekst kafelka `Space`
++     entry #cornerNe   tekst kafelka `CornerNe`: krawędź skręcająca z toru w linię węzła
++     entry #vertical   tekst kafelka `Vertical`: tor mijający linię
++     entry #teeE   tekst kafelka `TeeE`: tor z odgałęzieniem w prawo
++     entry #horizontal   tekst kafelka `Horizontal`: krawędź biegnąca wzdłuż linii
++     entry #teeN   tekst kafelka `TeeN`: krawędź dołączająca do linii z góry
++     entry #crossing   tekst kafelka `Crossing`: tor przecięty przez krawędź
++     entry #junction   tekst kafelka `Junction`: tor, do którego krawędź dołącza z obu stron
++     entry #serialize   połączone teksty kafelków, a po nich etykieta
++     entry #text   tekst jednego kafelka
++     entry #followOnText   tekst jednego kafelka w wierszu kontynuacji: tor biegnie dalej, wszystko inne jest spacją
+
+@ 0 1 0 1c6a9f634ecd15ab0e5e6327f572c9da
++ entry .dagStyles   dwa gotowe style dla gęstego `DagDiagram`, każdy jako given do zaimportowania po nazwie
+
+% 1 1 0 196a078c36b2e6ff02049c9365a81557
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 182ebf4dbe9c492618ebc3331433fad5
+
+% 1 1 0 11707fba0431780c048f7cf6e5eadc13
+
+@ 0 2 0 03cd80877f9f6f781935e26f13e25ec0
++   entry .boxDrawingDagStyle   znaki ramek: `└─`, `│ `, `├─`, `──`, `┴─`, `│─`, `┼─`
++   entry .asciiDagStyle   tylko ASCII: `+-`, `| `, `--`, `|-`
+
+@ 0 1 0 18f82f9b622fd645058061be9c8bf859
++ entry .LaneDagDiagram   rysunek grafu w torach: węzły jako punktory na pionowych torach, krawędzie płynące między nimi
+
+% 1 1 0 0d32c43fc7f442490d78a6b587bf4a8f
+
+@ 0 7 0 0b99bf5fe0bfdb650d87f656903435b0
++       `LaneDagDiagram(graph)` układa każdy graf, który dopuszcza porządek topologiczny – `Dag`,
++       zamrożoną `Topology[node]^{}` albo `Hasse` – tak, jak rysuje się historię systemu
++       kontroli wersji: każdy węzeł jest kafelkiem `Node` na jednym z kilku pionowych torów,
++       w porządku topologicznym od góry (najpierw zależności), a między każdymi dwoma wierszami
++       węzłów wiersz łączący prowadzi każdą krawędź w dół jej toru, zaginając ją do kolumny
++       węzła, do którego dociera. Krawędź do bezpośrednio następnego węzła biegnie prosto;
++       dłuższa krawędź dostaje własny tor, wybrany najbliżej jej węzła, a tor biegnący dalej
++       za wierszem rysuje się jako `Vertical`.
+
+% 2 1 0 0c9ac9b40cbd25140537343825a3d87e
+
+% 3 1 0 0fa52ba20face9bc1114900eab2cb109
+
+% 4 1 0 060b517ea48502ac068cbf8c5a76d962
+
+% 5 1 0 09520b37c88e073315cc5d800f3938f1
+
+% 6 1 0 0c53dcc50cfa62d41db6fa5a526c3e40
+
+% 8 1 0 19f94674433d89d11483d9525de5098e
+
+% 0 1 0 053e074e454ac70a0762e8d11f8922a1
+
+% 0 1 0 109979bff7d2453a1185fd71f291c56e
+
+% 1 1 0 14435a31bb9532ad1462aabb5f9bd6d1
+
+@ 0 3 0 05adfb2cfd1fe930078ede187b497b6b
++       Glif dla poszczególnych węzłów oznacza wybrane węzły – bieżący commit, nieudaną
++       kompilację – przez dwufunkcyjny `render`, którego kolumny poszerzają się, by zmieścić
++       najszerszy glif, mierzony w komórkach wyświetlania, więc szeroki znak układa się
++       poprawnie:
+
+% 2 1 0 0dfa7066e80e44e10522fa6910938b4e
+
+% 3 1 0 1c9779c976db50ea0da6f0947d06ff82
+
+% 4 1 0 1adba957929452ab02f45e189b2735b6
+
+% 5 1 0 0765b2514ea026f2138f2701f83b5bbf
+
+% 6 1 0 1d6d96eb49268893000dd512a5fe6909
+
+% 0 1 0 1841869fabc7534b0ec69b5a5e688c3c
+
+% 0 1 0 1006ef1a1bf1b33603e908eed06a409c
+
+% 0 1 0 17232ad95f7174a8019d5861cb63381e
+
+% 1 1 0 089e6b13652466531a1f1e531497838d
+
+@ 0 4 0 1beebeb840282b811f112ab0d143e30a
++       Rysunek nie może zawieść: `Digraph` nie ma rysunku, dopóki `acyclic` go nie przekształci.
++       Renderuje się przez `Style` w zasięgu, z pakietu `laneDagStyles`, który wymaga też
++       `Text is Measurable`; diagram jest `Printable` przy `Style[Text]` w zasięgu i węźle
++       `Showable`, a każdy węzeł ma etykietę ` node`.
+
+% 1 1 0 1f0995fbb9aa9c291b69f1779a7c2c02
+
+% 2 1 0 12f2ecb5ff53a24d15657617b6473907
+
+% 0 1 0 0a355cba2b21775b042055b7241a29d9
+
+% 1 1 0 0e2a7f8640eb2027014918bed32b5bfb
+
+@ 0 19 0 146dec3bbcbe137701a2efc9cedae3ab
++   entry .apply   układ torów dowolnego grafu `Nodal` i `Topological`
++       Bierze z zasięgu instancje `Nodal` i `Topological` grafu; `Dag`, zamrożona `Topology`
++       i `Hasse` dostarczają je bez importu. Pusty graf nie ma linii.
++   entry .printable   wypisuje diagram do terminala, każdy węzeł z etykietą ` node`
++       Wymaga `Style[Text]` (jednego z `laneDagStyles`, z `Text is Measurable`) i typu węzła
++       `Showable`.
++   entry #lines   kafelki każdego wiersza i, dla wiersza węzła, jego węzeł; `Unset` dla wiersza łączącego
++   entry #size   liczba wierszy, łącznie wiersze węzłów i wiersze łączące
++   entry #render   wiersze jako wyrenderowany tekst, z etykietą po każdym węźle albo dodatkowo z glifem dla poszczególnych węzłów
++       `render(label)` rysuje każdy węzeł glifem `node` stylu (`● ` w stylu ze znakami ramek)
++       i dołącza `label(node)` do jego wiersza. `render(glyph, label)` rysuje zamiast tego każdy
++       węzeł glifem `glyph(node)`, poszerzając kolumnę węzła do najszerszego glifu w niej,
++       mierzonego w komórkach wyświetlania przez `width` stylu, więc wiersze łączące pozostają
++       wyrównane.
++   entry #compact   diagram bez czysto przelotowych wierszy łączących
++       Wiersz łączący złożony wyłącznie z torów `Vertical` (więcej niż jednego) i spacji nie mówi
++       nic, czego nie mówią otaczające go wiersze, więc `compact` go usuwa; wiersz z dokładnie
++       jednym torem – bezpośrednią krawędzią do następnego węzła – pozostaje, podobnie jak każdy
++       wiersz, w którym coś się zagina.
++   entry #nodes   węzeł każdego wiersza węzła, w kolejności rysowania
++   entry #tiles   kafelki każdego wiersza, łącznie z wierszami łączącymi
+
+@ 0 1 0 166e3430296b44ea00069f28d6ecf524
++   entry .Style   klasa typów, która renderuje wiersz `LaneDagDiagram` albo `LayeredDagDiagram`
+
+% 1 1 0 0f2a1c7ccf7098f61090fba5de33f31c
+
+@ 0 6 0 12932abe54e170141691dff723a84aec
++         `Style[line]` zamienia `List[DagDiagram.Tile]` wiersza, glify do narysowania w
++         określonych kolumnach, szerokość każdej kolumny i opcjonalną etykietę w jedną
++         wyrenderowaną linię typu `line`, a także mierzy szerokość wyświetlania glifu, aby kolumny
++         można było dopasować rozmiarem. `TextualStyle` implementuje ją dla dowolnego typu linii
++         `Textual` z czternastu fragmentów tekstu; pakiet `laneDagStyles` zawiera styl ze znakami
++         ramek i styl ASCII. Jest `Findable`, więc instancje `Printable` diagramów go znajdują.
+
+% 0 1 0 0d6fa53f124066ee0a813b224a8a3ca5
+
+% 1 1 0 14e55338eaf0c40101cf3c46420e6419
+
+@ 0 3 0 026e14c0dd1d80c10008885a78cab0ed
++     entry #serialize   kafelki wiersza, jego glify według kolumn, szerokości kolumn i opcjonalna etykieta jako jedna linia
++     entry #width   szerokość wyświetlania glifu, do ustalenia rozmiaru jego kolumny
++   entry .TextualStyle   `LaneDagDiagram.Style` dla dowolnego typu linii `Textual`, z czternastu fragmentów tekstu
+
+% 1 1 0 198626dac4131de215ebc7f58904da98
+
+% 0 1 0 0ec1275ddb38a46717988f2c88cdf8b4
+
+@ 0 5 0 04184bb0b71e3e1313d98a8fefe8c527
++         teeN, teeS, teeE, teeW, junction, crossing, node)` podaje tekst każdego `DagDiagram.Tile`
++         i przyjmuje `Text is Measurable`, by mierzyć glify w komórkach wyświetlania, a nie
++         w jednostkach kodu, więc szerokie znaki i znaki łączące układają się poprawnie. Każdy
++         fragment ma dwa znaki: pierwszy jest komórką, a drugi powtarza się, by dopełnić kolumnę do
++         jej szerokości, więc poziomy `──` się rozciąga, a tor `│ ` nie.
+
+% 2 1 0 038e2b8b06bd0e12007ce4617004e66d
+
+% 3 1 0 1b272ee4939d0e7219fc45c64f29f9fc
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 11c57b17ae0ec3551131daca41701825
+
+% 0 1 0 0aa5f2be5178474602a84622c80b976e
+
+% 0 1 0 0d664198e814ff7c08c4faa76e3492c4
+
+% 1 1 0 0a931c1da1fa82371cc42e4970fecb9f
+
+% 0 1 0 19bae180d50b69740f071bbc31c0ad17
+
+% 1 1 0 055ff67c06d14938100632222f6a4af6
+
+@ 0 17 0 156974dcad9728a91333fbab67ab0e0b
++     entry #space   tekst kafelka `Space`
++     entry #vertical   tekst kafelka `Vertical`: tor mijający wiersz
++     entry #horizontal   tekst kafelka `Horizontal`: krawędź biegnąca wzdłuż wiersza
++     entry #cornerNe   tekst kafelka `CornerNe`: krawędź z góry skręcająca w prawo
++     entry #cornerNw   tekst kafelka `CornerNw`: krawędź z góry skręcająca w lewo
++     entry #cornerSe   tekst kafelka `CornerSe`: krawędź z prawej skręcająca w dół
++     entry #cornerSw   tekst kafelka `CornerSw`: krawędź z lewej skręcająca w dół
++     entry #teeN   tekst kafelka `TeeN`: poziomy odcinek, do którego dołącza krawędź z góry
++     entry #teeS   tekst kafelka `TeeS`: poziomy odcinek z odgałęzieniem w dół
++     entry #teeE   tekst kafelka `TeeE`: tor z odgałęzieniem w prawo
++     entry #teeW   tekst kafelka `TeeW`: tor, do którego dołącza krawędź z lewej
++     entry #junction   tekst kafelka `Junction`: tory schodzące się ze wszystkich czterech stron
++     entry #crossing   tekst kafelka `Crossing`: poziomy odcinek przechodzący nad biegnącym dalej torem
++     entry #node   tekst kafelka `Node`: domyślny punktor, używany, gdy dla węzła nie podano glifu
++     entry #width   szerokość wyświetlania glifu, przez `Text is Measurable`, z którym utworzono styl
++     entry #serialize   komórka każdego kafelka dopełniona do szerokości jego kolumny, glif w miejscu punktora węzła, a po nich etykieta
++     entry #text   tekst jednego kafelka
+
+@ 0 1 0 1abd654fc15f027c00c92ca6d25dda8e
++ entry .laneDagStyles   dwa gotowe style dla diagramów torów i warstwowych, każdy jako given do zaimportowania po nazwie
+
+% 1 1 0 1b13a9fd135a926f193c6e128c0ec886
+
+@ 0 3 0 1fc38e1134f496fc05d38f6cea1cfaa1
++       Każdy z nich, by się rozwiązać, wymaga w zasięgu `Text is Measurable`, na przykład
++       `textMetrics.uniformMetric` (jedna komórka na znak) albo
++       `textMetrics.wideCharacterWidthMetric` (dwie dla szerokiego znaku wschodnioazjatyckiego).
+
+% 2 1 0 0175b5f98f3925ad198568a65c0299d5
+
+% 3 1 0 06630d130c039d590ca62747c9034f96
+
+% 1 1 0 09e77b8c253dc539029e46591e96f1fe
+
+% 2 1 0 0eae6388424b52131e60219eb2082a22
+
+% 1 1 0 1f103ce10b1066681522dd8b9c845e2f
+
+@ 0 2 0 0daad4ee44dbcfc71f85fb93412c4b6d
++   entry .boxDrawingLaneDagStyle   znaki ramek z zaokrąglonymi narożnikami oraz `● ` dla węzła
++   entry .asciiLaneDagStyle   tylko ASCII: `| `, `--`, `+ ` dla każdego narożnika i trójnika oraz `* ` dla węzła
+
+@ 0 1 0 1e521d75e420412200583ba3b038576c
++ entry .LayeredDagDiagram   warstwowy rysunek grafu: węzły na poziomach według głębokości, uporządkowane tak, by niewiele krawędzi się krzyżowało
+
+% 1 1 0 06115fdb7075ef4c1c21326c729f7cb6
+
+@ 0 7 0 0460af5ccd2de3530fc6b1d34e1078ec
++       `LayeredDagDiagram(graph)` układa każdy graf, który dopuszcza porządek topologiczny –
++       `Dag`, zamrożoną `Topology[node]^{}` albo `Hasse` – według warstwowego rozmieszczenia
++       grafu (`layered`): każdy węzeł na pewnym poziomie, zależności nad węzłami zależnymi,
++       węzły w obrębie poziomu uporządkowane tak, by zminimalizować skrzyżowania, a krawędź
++       rozciągająca się na kilka poziomów przechodzi prosto przez poziomy pośrednie. Każdy poziom
++       jest wierszem kafelków `Node` w ich kolumnach, a między poziomami wiersz łączący zagina
++       każdą krawędź od jej górnej kolumny do dolnej. Węzeł zajmuje medianę kolumn swoich
++       sąsiadów z poziomu wyżej, więc prosta krawędź pozostaje prosta.
+
+% 2 1 0 09659f94e5f713f019d86312f8dc25d0
+
+% 3 1 0 1c1a75830820168f1b71c85c7f49c82a
+
+% 4 1 0 151785a6a42b89c019e2a3b4cff4b615
+
+% 5 1 0 1945b4b790273bf10d0610bbd002e087
+
+% 6 1 0 1da72a54d1b626a5053d46b2585ff803
+
+% 8 1 0 1a37899868cf3c8f001616a7d4bf7850
+
+% 0 1 0 0eda4dd176f925900b2d270c2eba6d1c
+
+% 1 1 0 14cc69ec0210ddbe0c60c2ec340b76a7
+
+@ 0 8 0 19e562c7cbf0687d0fbd85d531369e37
++       O poziomach decyduje `Ranking` w zasięgu: domyślnie węzeł znajduje się jeden poziom
++       poniżej swojej najgłębszej zależności, więc wszystkie węzły, które od niczego nie zależą,
++       dzielą pierwszy wiersz; `import rankings.balancedRanking` przesuwa każdy węzeł mający węzły
++       zależne w dół, na poziom nad jego najpłytszym węzłem zależnym, co skraca długą krawędź od
++       źródła, które zasila jedynie coś głęboko położonego. Wyrenderowane wiersze danego grafu
++       zależą więc od rankingu i od minimalizacji skrzyżowań, a zapisane oczekiwanie trzeba
++       wygenerować ponownie, gdy zmieni się którekolwiek z nich. Renderuje się przez
++       `LaneDagDiagram.Style` w zasięgu, tak jak `LaneDagDiagram`, i jest `Printable` przy
++       `LaneDagDiagram.Style[Text]` i węźle `Showable`, a każdy węzeł pokazuje się jako
++       `● node`.
+
+% 1 1 0 019484f43722048f085d07b5e780b01d
+
+% 2 1 0 1c91c253edc06c0c1a85e2ed9a399c94
+
+% 0 1 0 13d604bce2dc305e142226ae17590555
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+@ 0 16 0 188f98a6d8b5238d0b36b3fd4c991ee6
++   entry .apply   warstwowy układ dowolnego grafu `Nodal` i `Topological`, według `Ranking` w zasięgu
++       Bierze instancje `Nodal` i `Topological` grafu oraz `Ranking` (`Ranking.LongestPath`
++       z obiektu towarzyszącego, chyba że zaimportowano `rankings.balancedRanking`). Pusty graf
++       nie ma wierszy.
++   entry .printable   wypisuje diagram do terminala, każdy węzeł pokazany jako `● node`
++       Wymaga `LaneDagDiagram.Style[Text]` (jednego z `laneDagStyles`, z `Text is Measurable`)
++       i typu węzła `Showable`.
++   entry #rows   kafelki każdego wiersza i węzły w jego kolumnach; wiersz łączący nie ma żadnych
++   entry #size   liczba wierszy, łącznie wiersze poziomów i wiersze łączące
++   entry #render   wiersze jako wyrenderowany tekst, każdy węzeł narysowany funkcją glifu, kolumny poszerzone, by się zmieścił
++       `render(glyph)`: każdy węzeł rysuje się jako `glyph(node)` w jego kolumnie, a każda
++       kolumna jest tak szeroka jak najszerszy glif w niej, mierzony w komórkach wyświetlania
++       przez `width` stylu, więc wiersze łączące pozostają wyrównane. Nie ma osobnej etykiety:
++       niesie ją glif, taki jak `t"● $node  "`.
++   entry #tiles   kafelki każdego wiersza, łącznie z wierszami łączącymi
++   entry #nodesAt   dla każdego wiersza węzły według kolumn; pusto dla wiersza łączącego

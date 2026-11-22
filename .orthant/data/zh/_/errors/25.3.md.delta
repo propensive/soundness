@@ -1,0 +1,31 @@
+orthant 2 language
+
+% 0 1 0 0d0c72f6e402301f11c88f2e682182df
+
+@ 0 2 0 06ce82b8b41c65a21fc4d260223726e0
++ 当一段文本被解码为某个 Scala 枚举的值、却不是其中任何值的名称时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0b87946ea6f5cf921c7600b988e1ba48
++ `distillate.Decodable.enumeration` 按名称（可能经过重新标注）解码 `reflect.Enum`。
++ 渲染出的消息为 `the specified variant ($inputLabel) is not one of the valid variants ($validVariants) of the enumeration $sum`。
+
+@ 0 2 0 0510886676b4c5d206ee79a7820b7ff9
++ **示例。** `[↯/s.25.3] the specified variant (blue) is not one of the valid variants (red, green) of the enumeration Colour`
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 144ec8bac241d0d00d765e3e2a5764d9
++ 使用所列名称之一；如果传输形式与 Scala 名称不同，就用 `@name` 或一个 `Identifiable` 实例重新标注该值。
+
+@ 0 1 0 0adad908e6756fa1054b3eb0b9c760c1
++ 在此错误出现之前，同样的失败会抛出 `wisteria.Variant.Error`。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1e54a1f5ad32b4081c004d9c958b8eaf
++ - 源代码：`lib/distillate/src/core/distillate.Enumerable.scala`

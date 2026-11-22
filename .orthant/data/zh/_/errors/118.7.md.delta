@@ -1,0 +1,55 @@
+orthant 2 language
+
+% 0 1 0 0d732cd604759eeb102c3ca6b11f2975
+
+@ 0 1 0 034a4cd50136bf7802cdbe48e8865c6a
++ 当 TEL 文档的 schema 标识无法解析为一个 schema 时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 6 0 03df0f80b32d8b3e185364ef3e788594
++ schema 解析（TEL §8.2）经由内嵌、内置、存储库、库和 LIRA 几个步骤，把编译指示中的标识（一个 LIRA 引用、若干层选择，和/或一个 BASE-256 签名）转换为一个组合而成的 schema。
++ 它的失败是运行时的解析错误，处于文档的 E1xx–E3xx 分类体系之外（唯一的例外是 E124，即层选择顺序错乱，它是在解析期间抛出的 `Tel.Error`，因为它需要 schema 的声明顺序）。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 031a42b18eac33591cfc45d15ce59c1c
+
+% 0 1 0 16e2fd676f9cd22516d0f50bbf147a64
+
+% 0 1 0 05aad12f2ea0b5c6190140f88cf89c6c
+
+% 0 1 0 1dfb78821acdbc840c49553a2faa5789
+
+% 0 1 0 0dafdee2e17d4e671b90b889d3a70acf
+
+% 0 1 0 05c39885c454dedd0dc302e25edb1dbd
+
+% 0 1 0 041dd0be0b2ed2680cb6a82c363fca81
+
+% 0 1 0 0a1cfd06b887110c11b307c88982b702
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 6 0 01a43e698ca05aee1bb9bfcbf2ba5031
++ 签名具有权威性：当层选择位于它之前时，它必须恰好分解为基础哈希加上所选各层的哈希，且顺序一致。
++ 裸引用（没有选择符，没有签名）在设计上只针对本地状态解析；要让文档可移植，可以附加一个签名，或者发布 schema 并使用 `:version` 或 `:tag` 选择符。
++ 不联网的解析器对本地存储库中缺失的任何内容，都在 LIRA 步骤给出 `Unresolved`。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 147592062f0ad7570d1867d2e016f67a
++ - 源码：`lib/stratiform/src/core/stratiform.Tels.scala`（`Tels.Resolution`），引擎位于 `lib/stratiform/src/core/stratiform.SchemaResolver.scala`

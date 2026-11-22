@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 6 0 1c1adabd3cdeaea802a09a80d2ad9b65
++       `jacinta.optics`。
++       正是它们让 `json.lens(…)` 得以工作：用于具名字段的 panopticon 透镜，以及深入数组的光学器件。
++       它们位于一个包中而不是 `Json` 的伴生对象中，这样缺少导入就是编译错误，而不是行为的悄然改变；`import optics.given` 引入全部（或 `import soundness.optics.given`，所有库的光学器件都在那里合并）；通配符导入不会导入 given。
++       透镜赋值还需要启用动态访问，而要赋一个普通值，还需要 `conversions.encodableToJson`。
+
+% 0 1 0 03cc38314ff6e76d1e4c3887cbc40ab7

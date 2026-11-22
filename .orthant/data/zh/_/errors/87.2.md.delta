@@ -1,0 +1,34 @@
+orthant 2 language
+
+% 0 1 0 134faaa6e4fc207c05e99ded56dc1638
+
+@ 0 1 0 1c747699f5130d9a192424fe02581c07
++ 当 Legerdemain 无法读取查询参数时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0acec0fe67d4caa61f865789b72e0ced
++ Legerdemain 把具名查询参数解码为带类型的值。
++ 构造器接受一个 `reason: Reason`；呈现的消息为 `the query parameter could not be read because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0251a757dd170689116e576cfc585821
+
+@ 0 4 0 14c8be31c16086b101a3945369f62ac9
++ 查询字符串中不存在该参数。
++ （当目标类型有 `Default` 实例时，会用默认值代替缺失的值，但仍会抛出该错误，以便调用方的 `Tactic` 能够观察到它。）
+
+@ 0 1 0 1070e7e9cace714f1121cbd9d05e8df6
++ **示例。** `[↯/s.87.2.1] the query parameter could not be read because the parameter was not present in the query string`
+
+@ 0 3 0 13989b7382383b8a15257851b65cf7d2
++ **解决方法。** 确认查询字符串中包含该参数；提供一个 `Default[T]` 实例，以便在参数缺失时回退。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 13b1329eeb7591731217af78d070afed
++ - 源代码：`lib/legerdemain/src/query/legerdemain.Query.scala`

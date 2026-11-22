@@ -1,0 +1,1076 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d2664b1fd6b52671d24729266aa2d10
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 158a5447100585aa08c8ff8f0afbb26f
++ info   每个 Soundness 模块编译时所依赖的前导部分：它的集合、标记和钦定名称
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 050f76f2a07941861955473af4949891
++     _Proscenium_ 是 Soundness 的默认命名空间。
++     构建中的每个模块都以 `-Yno-predef -Yimports:java.lang,proscenium` 编译，因此 `scala.Predef` 和 `scala` 包都不会被隐式导入；源文件无需导入即可看到的只有 `java.lang`、本包，此外别无其他。
++     构建之外的使用者通过 `import soundness.*` 获得同样的名称，因为这里的一切都被重新导出到总括包中（集合的伴生对象作为稳定的 `val` 导出，从而其成员可以通过转发器解析）。
+
+@ 0 1 0 043c4facf2edffec1aef4502abbe8d12
++     本包有三类内容。
+
+@ 0 12 0 0c5bdc9c25cb13c31ff6ec9dfa5f3c0f
++     **集合。** `List`、`Sequence`、`Set`、`Map`、`Ledger`、`Chain` 和 `Array` 是标准库结构的*不透明*别名，分别对应链表、`Vector`、哈希集合、哈希映射、按插入顺序排列的 `VectorMap`、`LazyList` 和 JVM 数组；包装它们没有任何开销，也不暴露标准库的任何成员。
++     它们的伴生对象负责构造（`apply`、`empty`、`from`、`fill`、`tabulate`、`range`）、模式支持、宏提升，以及便于 grep 的 `stdlib` 桥接；其他所有操作，如 `map`、`filter`、`fold`、`head`、`at`、`size`、`sort`，都是由类型类驱动的扩展，定义在更上层的库中（`murmuration`、`denominative`、`concordance`、`rudiments`），通过 `import soundness.*` 获得。
++     一套全函数的词汇取代了偏函数的词汇：除非接收者被证明为 `Populated`，`head` 返回 `Optional`；而那些代价与名称不符的操作（`List` 的 `size`、`Chain` 的 `size`）则需要从 `dysasymptotics` 中按名称导入才能使用。
+
+% 2 1 0 0b3f6b2e51469730013433e6846415ea
+
+% 3 1 0 0f4a7a02b0127c7f021f88484540c3c1
+
+% 0 1 0 11d4115c6364271214c20c20c69458c5
+
+% 0 1 0 087b59081ca597d01298802de44e5b1d
+
+% 0 1 0 10a4230b3215b7730d524ee0dbcdb5e8
+
+% 0 1 0 14c34801777ec6ee065b7f506ef2c71b
+
+% 0 1 0 0802df5c05f9f51b19c9f8c33028e8de
+
+% 0 1 0 05cb92f327a83f2a12f868881e412b47
+
+% 1 1 0 107a238dd673960c07a1c7e33a762083
+
+@ 0 9 0 1863d11ff87dcaab0685dd461e73160f
++     不透明集合与其标准库形式之间刻意没有任何方向的隐式转换：转换在成员选择时也会生效，从而悄无声息地恢复整个偏函数 API。
++     跨到标准库或 Java API 时写作 `xs.stdlib`，这是一个零拷贝的视图，也是每个接缝处便于 grep 的标记；返回时使用伴生对象的 `from` 或 `.to(List)`。
++     可变参数拼接 `f(xs*)` 通过每个集合旁边的 `Spreadable` given，直接作用于不透明集合。
++     不要用 `stdlib` 来规避代价门控：`xs.stdlib.length` 隐藏的正是 `dysasymptotics.linearSize` 所要确认的代价；应当打开门控并附上注释说明为何该代价可以接受，或者重新组织代码。
+
+@ 0 6 0 1ddfdfb05da873ea13332287794fe24a
++     **标记。** `Populated` 是一个结构化细化，记录非空性的证明（`List[Int] & Populated`），由固定元数的字面量构造器和 rudiments 的 `occupied` 产生；`Sized[n]` 记录长度的证明，由带字面量计数的 `fill` 和 `tabulate` 产生；而 `Comparison`（`Less`、`Same`、`More`）是 Soundness 中每次三路比较的结果，也是 symbolism 的 `Comparable` 所使用的通货。
+
+@ 0 12 0 14a007c3151a08aa0d34665ac292a121
++     **钦定名称。** `proscenium.prelude.scala` 只从 `scala` 中重新导出 Soundness 代码无需导入就需要的内容：基础类型和原始类型、中缀的 `&`/`|`/`<:<`/`=:=`、`Option`/`Either` 以及元组类型、`CanEqual`、`Conversion`、`PartialFunction`、`StringContext`、数值抽象、注解、`Iterable`，以及（目前的）`StringBuilder`。
++     `proscenium_core.scala` 加入值得保留的 Predef 成员（`nn`、`summon`、`identity`、`locally`、`valueOf`、`is`、`ArrowAssoc`、原始类型包装器和数组操作、`assert`、`???`），`ClassTag`、`Typeable`、`TreeMap`、`TreeSet`、`TrieMap`、`NonFatal`、`boundary`/`break`、`…HasAsScala`/`…HasAsJava` 转换器、`tailrec`/`targetName`/`switch`/`missingContext`、`unchecked…` 注解，以及一些它自己的定义：`classOf`（一个经由导出仍然正确的内联版本）、`absolve`（即 Predef 的 `runtimeChecked`）、`Void`、`Nat`、`Label`、`Zero`、`Mono`、`~>`、`prohibits`、`infer`、`provide`、`->` 和 `unexported` 注解。
+
+@ 0 10 0 0aa34812ddb87a3f0cc3d47a1a35cd77
++     哪些名称*不*被钦定，与哪些被钦定同样是刻意的。
++     标准库的具体集合（`Seq`、`Vector`、`IndexedSeq`、`Range`、`LazyList`）不在其中，因此互操作接缝处的标准库集合必须以 `import scala.collection…` 表明身份；`Ordering` 和 `Ordered` 不在其中，因为比较由 `Comparable` 负责，少数仍接受 `Ordering` 的 API 会显式导入 `scala.math.Ordering`；`Iterator` 不在其中，因此在 `import soundness.*` 下裸写的 `Iterator` 是 murmuration 的经过分离检查的迭代器，标准库迭代器则写作 `scala.collection.Iterator`；`Precise` 也不在其中，因为它的导出别名无法抑制联合类型的拓宽，而且不会给出任何提示，所以应写作 `scala.Precise`。
++     包（`scala.caps`、`scala.math`、`scala.compiletime`、`scala.annotation`、`scala.util`）无法导出，需要在每个文件中分别导入。
+
+@ 0 4 0 1ae1cf1fd4e4e1af18075628ee5e1bc8
++     宏作者需要注意两个陷阱。
++     `Unit` 在这里是类型别名，而不是导出（它的伴生对象无法导出），因此它是与 `scala.Unit` *不同的符号*：在宏中比较类型时应使用 `=:=` 或在 `.dealias` 之后比较，切勿使用 `typeSymbol ==`。
++     同样，`Array` 是不透明别名，因此 `TypeRepr.of[Array[Byte]]` 也不是 `scala.Array` 的符号。
+
+@ 0 3 0 154da37d6f18db25010236500d9b0223
++     该库只有一个源代码集 `proscenium.core`，没有依赖，为 JVM、Scala.js 和 Scala Native 编译。
++     在每个平台上，集合底层都是相同的标准库结构；`Array` 是该平台的原生数组。
+
+% 0 1 0 1b9990bfac03a71e17729fedbf261a96
+
+% 0 1 0 05e05b00e848d8ed0ccfeae4ed82015b
+
+% 0 1 0 0404a025b3f9fb5d0176f57c421d11a9
+
+% 0 1 0 0914e3c694ed28791d9f2729b13dc012
+
+% 0 1 0 0781d542afba5dde153443ba2e41cf49
+
+@ 0 1 0 141424f4b52455ca17e0182aca5c3402
++ entry .Array   一个固定大小的数组，其写访问由分离检查跟踪
+
+% 1 1 0 0e1101995bd1b5ca05d033ccb54cff01
+
+@ 0 8 0 0b321c7c97d26682116653dea3edddfa
++       `Array[element]` 是平台原生数组的不透明别名，因此使用它没有任何开销，但它的访问权限体现在它的捕获集中：任何引用都可以*读*，只有独占引用 `Array[element]^` 才能*写*，别名化的写者会被拒绝，而 `freeze` 消耗一个独占数组，在不拷贝的情况下产生其**冻结**形式 `Array[element]^{}`。
++       冻结形式并不是一个平行的不可变类型：没有任何捕获集能够通过其写入的数组*就是*不可变的，所以 `^{}` 就是全部内容，而 anticipation 中表示字节的类型 `Data` 恰好就是 `Array[Byte]^{}`。
+
+% 2 1 0 0e2bcade98c0467404d18e0f454687cd
+
+% 3 1 0 14d2bbb799d87370092e40d85e86be72
+
+% 0 1 0 1108c4c42b9df7d1190f0faa6e2be41a
+
+% 0 1 0 08dc9a082cd385830126607e81a64050
+
+% 0 1 0 1caa110e883faae11c0c49a4d0d84327
+
+% 0 1 0 1dd32d8b8034c9eb0165df44f25c8ed2
+
+% 0 1 0 114e2de9f77c2d4a005452edfda64d9f
+
+% 0 1 0 0def5f711f656fb610b0013482fd94c7
+
+% 0 1 0 1566f05c30275033167092d9003993c1
+
+% 1 1 0 1c0239970c87cc2f1a3c60529014b88a
+
+@ 0 7 0 1658e61f1c23a1d011aba4faaf5da1df
++       由于 `denominative` 的 `Ordinal` 位于本模块之上，这里的读取以 `Int` 为索引：独占数组用 `apply(index)` 读取、用 `update(index, value)` 写入，两者都内联为 JVM 自身的数组访问；共享或冻结的引用用 `readUnchecked(index)` 读取，它在边界上是偏函数，concordance 中全函数的、返回 `Optional` 的 `at` 以及 rudiments 中以序数为索引的 `apply` 都构建在它之上。
++       在普通的调用点应使用这些操作，或者受限序数；裸写的 `readUnchecked` 要附带一条注释，指明其证明。
+
+@ 0 6 0 0382e2f7c25f15d8012c102120536429
++       编辑冻结数组的方式是拷贝后再冻结：要写入多个位置，用 `thaw` 得到一个独占副本；要拼接，则用 `concat` 连接各段（`Array.concat(xs.before(i), replacement, xs.after(i))`）；要修改一个位置，则用 rudiments 的 `define`。
++       有两种情况允许使用原始的 `scala.Array`：用 `raw` 和 `unsafeJvm` 对接 JDK 的字节数组接口（`OutputStream.write`、`MessageDigest.update`），以及类型由外部定义固定的字段。
++       除此之外，新代码应一律使用 `Array`。
+
+@ 0 7 0 05d37c449edafaff1022bd399764c307
++       数组上的相等性是引用同一性，因为不透明别名无法覆盖 `==`；因此内容相等性由 `Array.same` 判断，测试则通过 `to[List]` 进行比较。
++       `val` 无法持有一个随后被消耗并替换（`grow`）的独占缓冲区，因此累积式构建器通过递归，在 `consume` 参数之间传递其缓冲区。
++       有一个陷阱：`import rudiments.*` 会引入一个 `Applicable` 的 `apply`，它会遮蔽独占数组的内联 `apply`；整体导入 rudiments 的文件应改为通过序数或 `readUnchecked` 读取缓冲区。
+
+@ 0 5 0 1dbdc9b6676887d31b6e75172080688a
++       模式匹配只读不写，因此 `case Array(a, b, c)` 适用于任何引用。
++       冻结数组经 `map` 得到冻结数组（`map` 需要结果元素的 `ClassTag`，这就是它是伴生对象扩展而不是 `Mappable` 实例的原因），而通用的集合词汇，即 `to[List]`、`each`、`fold`、`extent`、`at`，来自更上层的库。
+
+% 0 1 0 1b2c47f0df2a1c2b12564a7edcafe2d6
+
+% 1 1 0 06f29e29e3bb2cf10d71dddeace197dc
+
+@ 0 50 0 0f1684d7498c4bfd024fb89847a1ce5e
++   entry .allocate   一个给定大小的新独占数组：`Array.allocate[Int](3)`
++       之所以命名为 `allocate` 而不是 `apply`，是为了让 `Array(3)` 无歧义地表示单元素字面量。
++       元素是该类型的零值（`0`、`false`、`null`），结果是 `Array[element]^`，可通过 `update` 写入。
++       需要 `ClassTag`。
++   entry .apply   `Array(a, b, c)`，冻结的字面量；以及 `buffer(index)`，独占读取
++       有两个成员共用这个名称。
++       在伴生对象上，`Array(elements*)` 构建一个任何写者都无法别名化的新数组，因此它在构造时就是冻结的（`Array[element]^{}`）；它需要 `ClassTag`。
++       作为独占 `Array[element]^` 上的扩展，`buffer(index)` 读取一个位置，内联为 JVM 自身的数组访问（没有装箱）：独占所有权意味着其他人不可能修改过其内容。
++       共享或冻结的引用上没有 `apply`；应使用 `readUnchecked` 读取，或者通过 concordance 的全函数 `at` 读取。
++   entry .update   `buffer(index) = value`：写入独占数组的一个位置
++       仅是 `Array[element]^` 上的内联扩展，冻结或共享的引用没有 `update`；编译为 JVM 自身的数组存储。
++       接收者是内联的，因此它在索引和值之后、在其被使用的地方求值。
++   entry .empty   冻结的空数组：`Array.empty[Int]`
++   entry .from   从任意 `IterableOnce` 拷贝得到的冻结数组
++       `Array.from(elements)` 把标准库可迭代对象或迭代器的元素拷贝到一个新数组中，由于其他任何东西都无法访问它，该数组是冻结的。
++       需要 `ClassTag`。
++   entry .fill   `Array.fill(n)(element)`：由 `n` 个副本组成的冻结数组；以及 `buffer.fill(value)`
++       在伴生对象上，`Array.fill(count)(element)` 为每个位置求值一次 `element` 并冻结结果；当 `count` 是字面量时，结果还会额外带上 `Sized[count]` 品牌，因此 `Array.fill(512)(0.toByte)` 是 `Array[Byte]^{} & Sized[512]`，小于 512 的字面量序数可以全函数式地读取它。
++       计数为 `val` 时得到普通数组。
++       作为独占 `Array[element]^` 上的扩展，`buffer.fill(value)` 原地覆盖每个位置。
++   entry .tabulate   `Array.tabulate(n)(index => …)`：按索引计算得到的冻结数组
++       与 `.fill` 类似，只是位置的索引会传给 lambda；当 `n` 是字面量时带上 `Sized[n]` 品牌。
++   entry .range   `Array.range(start, end)`：从 `start` 到 `end`（不含）的整数
++       冻结的；空范围（`end <= start`）得到空数组。
++   entry .concat   由两个或三个可读数组依次连接而成的冻结数组
++       `Array.concat(left, right)` 把两者拷贝到一个新数组中并冻结；当两个参数都是 `Sized` 时，结果是 `Sized[left + right]`，在类型层面确定。
++       三操作数形式 `Array.concat(left, middle, right)` 用于拼接：`Array.concat (xs.before(i), replacement, xs.after(i))` 一趟即可重建一个替换了某一段的数组。
++       元数是固定的而不是可变的，因为作为可变参数 `Seq` 元素的冻结数组在捕获检查下会被重新新鲜化，于是各段的元素类型无法统一。
++       需要 `ClassTag`。
++   entry .same   两个可读数组的逐元素相等性
++       `Array.same(left, right)` 判断两者是否长度相同且每个索引处的元素相等。
++       数组上的 `==` 是引用同一性，不透明别名无法覆盖它，因此内容相等性是一个具名操作。
++   entry .freeze   消耗一个独占数组，不经拷贝地将其冻结后返回
++       `Array.freeze(buffer)` 以 `consume` 参数接收 `buffer`：分离检查器静态地注销所有写者，因此留存下来的引用可以放弃写能力，在不拷贝的情况下成为 `Array[element]^{}`。
++       这是从可变数组得到冻结数组的唯一可靠方式；调用之后，`buffer` 不能再被使用。
+
+% 2 1 0 10b37f2136a5da92119fcc92d4acdf12
+
+% 3 1 0 1b83b57fd7c4352c09decebcb7b777b8
+
+% 0 1 0 1ce0fe57f6dafb4c02e147e030e70cd8
+
+% 0 1 0 08fa8e115065f4601308bfaa89927272
+
+% 0 1 0 1117fea6796ba4ea15b411b5514c9cc0
+
+% 0 1 0 08cccf4cdc2579491ce374c7bf90d09f
+
+% 1 1 0 1a6754d416be699302f1da71c4884505
+
+@ 0 66 0 0827e94e556f8ee31c8824c1df7761e2
++   entry .thaw   任意可读数组的独占副本，是 `freeze` 的逆操作
++       `Array.thaw(array)` 分配一个新的独占数组并把源数组拷贝进去，从而调用者可以写入多个位置（`copy(i) = value`）后再次 `freeze`。
++       它总是副本，从不是源数组本身：源数组可能是冻结的或共享的，因此其他读者看到的它保持不变。
++       修改一个位置用 rudiments 的 `define`；拼接用 `.concat`。
++       需要 `ClassTag`。
++   entry .grow   一个更大的独占数组，容纳某个独占缓冲区的内容，并消耗该缓冲区
++       `Array.grow(buffer, size)` 是线性累积式构建器的一步：它消耗 `buffer`，把能容纳的部分拷贝到大小为 `size` 的新数组中（更小的大小会截断），然后以独占形式返回该数组。
++       由于旧缓冲区被消耗，惯用写法是通过递归在 `consume` 参数之间传递缓冲区，因为 `var` 无法持有独占缓冲区。
++   entry .place   把一个可读数组拷贝到一个独占数组中的某个偏移处
++       `Array[element]^` 上的扩展：`buffer.place(source)` 把 `source` 拷贝到开头，`buffer.place(source, at)` 拷贝到偏移 `at` 处，而 `buffer.place(source, sourceStart, targetStart, count)` 拷贝一个窗口。
++       冻结和共享的源都可以。
++       其底层是 `System.arraycopy`，每个冻结构造器都用它来填充结果。
++   entry .length   位置的数量，适用于任何引用
++   entry .readUnchecked   读取共享或冻结数组的一个位置，不做边界检查
++       内联的、边界上是偏函数的读取：在任何可读引用上调用 `array.readUnchecked(index)`。
++       通过共享引用读取是可靠的，因为只要读者之间存在别名，分离检查就排除了活跃的写者。
++       它是 concordance 全函数 `at` 之下的原语；在普通调用点应优先使用后者或受限序数，裸调用要附带一条注释，指明索引在范围内的证明。
++   entry .raw   独占引用底层的 JVM 数组，用于互操作
++       `buffer.raw` 是独占数组背后的 `scala.Array[element]^`，供填充它的 Java API 使用（`random.nextBytes`、`stream.read`）。
++       结果与该数组互为别名，并共享其独占性，而不是让它逃逸。
++   entry .stdlib   任意可读数组的零拷贝、只读 `ArraySeq` 视图
++       通往需要 `Seq` 的标准库和 Java API 的、便于 grep 的桥接，正如 `List.stdlib` 之于列表。
++       不用于元素访问：它的泛型 `apply` 会装箱，而且是集合词汇所不提供的偏函数读取。
++   entry .map   从任意可读数组得到的、由函数结果组成的冻结数组
++       在任何可读引用上，`array.map(lambda)` 给出一个新的冻结数组；它需要结果元素的 `ClassTag`，这就是它是伴生对象扩展而不是 `Mappable` 实例的原因（没有任何类型类槽位能够承载这一义务）。
++       lambda 的结果类型是一个显式的类型参数，这样嵌套冻结数组的捕获就不会在调用处被重新铸造。
++   entry .scratch   一个裸 JVM 数组，用于独占性规则之下的内部临时存储
++       `Array.scratch[element](size)` 就是 `new scala.Array[element](size)`，经由伴生对象提供，以便 `caps.Mutable` 状态机的字段以及其他处于 `Array` 能力范围之下的代码共用这套词汇，而无需写出 `new`。
++       它不是 `Array`；独占的互操作视图参见 `.raw`。
++   entry .unsafeFrozen   断言一个 JVM 数组没有写者，并将其以冻结形式返回
++       供无法传递 `consume` 的互操作边缘使用的受信任边界转换：调用者断言自己对所传入的 `scala.Array` 不保留任何写者。
++       之所以命名为 `unsafe…`，是因为该断言未经检查。
++   entry .unsafeJvm   可读引用背后的 JVM 数组，供只读的 Java API 使用
++       `Array.unsafeJvm(array)` 把一个 `scala.Array[element]` 交给 JDK 的字节数组接口（`OutputStream.write`、`MessageDigest.update`、`SecretKeySpec`），这些接口只读取而从不写入其参数。
++       这一侧不做任何断言；全部主张都关于被调用者，而 Java 签名无法表达这一点，因此它是一个便于 grep、可以对照一份 Javadoc 检查的调用，而不是一个环境中的 `Unsafe`。
++   entry .unapplySeq   `case Array(a, b, c)`：任意可读数组的模式支持
++       模式只读不写，因此冻结、共享和独占的接收者都能匹配；元数不对的模式匹配失败。
++   entry .quoted   把由 `Expr` 组成的列表或冻结数组提升为单个冻结数组的 `Expr`
++       `Expr.ofList` 的原生对应物，供持有 `List[Expr[element]]` 或 `Array[Expr[element]]^{}` 的宏代码使用：`Array.quoted(elements)` 拼接出一个 `Expr[Array[element]^{}]`，在类型具体的展开位置解析元素的 `ClassTag`，若没有则以 _no ClassTag is available for the elements of the array_ 使展开失败。
++   entry .arrayIsSpreadable   让冻结数组可以拼接到可变参数中：`f(array*)`
++       一个 `Spreadable` given（来自 proscala 编译器的 `scala.Spreadable`），让 `f(array*)` 无需经过 `stdlib` 即可作用于 `Array[element]^{}`。
+
+@ 0 1 0 09d18963e11a4ecf1e478817d822bb13
++ entry .List   一个不可变链表，是标准库 `List` 的不透明别名
+
+% 1 1 0 0048787b3fd8fbf715c8616485f40f2e
+
+@ 0 7 0 001e8a112f193f0c0163a66aa0b74af9
++       `List[element]` 是最常用的集合：在头部添加元素和遍历的代价低，索引和计数的代价是线性的。
++       它是 `scala.collection.immutable.List` 的不透明别名，因此没有任何开销，但标准库的成员在它上面都不可见；它的 API 是更上层的库中由类型类驱动的词汇（`map`、`filter`、`bind`、`fold`、`each`、`head`、`at`、`sort`，等等），这套词汇是全函数的。
++       伴生对象负责构造、模式支持、`stdlib` 桥接和宏提升。
+
+% 2 1 0 1d89eb89ae08b3d51641625c2ea1b878
+
+% 3 1 0 101dc7b1edd215ca1901ed039868f313
+
+% 0 1 0 0c4cd95b906c1565144e759f31dc3772
+
+% 0 1 0 0a9d16e35b4f35e607d9c976b82e8787
+
+% 0 1 0 136a7b9393855710075bcdd333032b5c
+
+% 0 1 0 0d1f9ab9c50772b5079dd9851656c6b7
+
+% 1 1 0 0cc1c01f8c744cf0141b1ccc69310546
+
+% 0 1 0 1f0acf1b6b20ed510b9fadaa3c73e397
+
+% 0 1 0 0424258c50af2c0316386b2d7896b668
+
+% 1 1 0 0d48fcb6fb70a057113c9d6d1ca9d5d8
+
+@ 0 6 0 159bcfd196fb89b21615d681feec3a9a
++       一到十二个元素的字面量带有 `& Populated` 品牌，因为调用的元数*就是*非空性的证明，所以 `head`、`last`、`tail` 和 `reduce` 在其上是全函数。
++       十三个元素的字面量、来自 `Seq` 的 `List(elements*)`，以及任何变换的结果，都是普通的 `List[element]`，其上的 `head` 是 `Optional`；rudiments 的 `occupied` 只需一次检查即可恢复该证明。
++       带品牌的列表可以与普通列表比较（`.populatedEquality`）。
+
+@ 0 6 0 082db4d835e1ce051a9d422bbcba84e0
++       `Nil` 是空列表，通过相等性匹配（`case Nil =>`）；`head :: tail` 用于构造和解构（分别通过 `consConstructor` 和 `::` 提取器）；`case List(a, b)` 通过 `.unapplySeq` 匹配。
++       对列表计数（`size`）和索引（`at`、`sec`、`ter`）都是从头部开始的遍历，因此分别只有在 `import dysasymptotics.linearSize` 和 `linearAccess` 之下才可用；这些导入陈述的是事实，不应通过 `stdlib` 规避。
+
+@ 0 6 0 0917a7d4a6810f9304c6707071764fea
++       跨到标准库写作 `list.stdlib`，这是一个不拷贝的类型转换；返回时，在任意标准库集合上使用 `List.from` 或 `.to(List)`（通过 `.factory`）；两个方向都没有隐式转换。
++       可变参数拼接 `f(list*)` 可以直接使用。
++       伴生对象的原语操作（`.size`、`.head`、`.at`、`.map`，等等）是普通方法，供上层的类型类实例调用；在普通调用点应使用扩展词汇。
+
+% 0 1 0 17c38c312565a7bb07eda4d2e165e7f5
+
+% 1 1 0 07277e6266d82d141d79c20bad99dc10
+
+% 0 1 0 08ce98464f08b75c0a79b18555c870f6
+
+% 0 1 0 0e7a2dcfc3ef0b6a0767134d2dd9384b
+
+@ 0 27 0 0043d546375c112a1bfcef38cca08fc3
++   entry .apply   `List(a, b, c)`：由其参数组成的列表，至多十二个时带有 `Populated` 品牌
++       从一到十二的每种元数各有一个固定元数的重载，返回 `List[element] & Populated`；可变参数形式由 `Seq` 拼接或超过十二个元素时使用，返回普通的 `List[element]`。
++       之所以存在固定元数的重载，是因为 `(head, tail*)` 重载与 `(elements*)` 有歧义，而宏则意味着在活跃的类型变量下进行隐式搜索。
++   entry .empty   有类型的空列表：`List.empty[Int]`
++   entry .from   从任意 `IterableOnce` 拷贝得到的列表
++       `List.from(elements)` 是从标准库返回的途径：它把标准库集合或迭代器拷贝为 `List`。
++       `scala.collection.immutable.List` 会被直接包装，不经拷贝。
++   entry .fill   `List.fill(n)(element)`：对 `element` 求值 `n` 次
++   entry .tabulate   `List.tabulate(n)(index => …)`：按索引计算的 `n` 个元素
++   entry .range   `List.range(start, end)`：从 `start` 到 `end`（不含）的整数
++   entry .unapplySeq   `case List(a, b)`：模式支持
++   entry .stdlib   底层的 `scala.collection.immutable.List`，不经拷贝
++       通往标准库或 Java API 的、便于 grep 的桥接，实现为内联的类型转换。
++       它是到达偏函数式标准库接口的唯一途径，每次使用都是一个可见的接缝；不应用它绕过代价门控（例如用 `xs.stdlib.length` 代替受门控的 `size`）。
++   entry .factory   在标准库集合上用 `.to(List)` 构建 `List`
++       一个从伴生对象类型 `List.type` 到标准库 `Factory` 的 `Conversion`，使 `scalaSeq.to(List)` 可以工作。
++       它只定义在伴生对象的类型上，因此不会暴露 `List` 值的成员。
++   entry .populatedEquality   `CanEqual[List[a] & Populated, List[b]]`：带品牌的列表可与普通列表比较
++       `CanEqual` 在被比较类型的伴生对象中查找，而 `Populated` 品牌不提供任何实例，因此该相等性定义在这里；`.populatedEqualityReversed` 是另一种顺序。
+
+% 0 1 0 0994fb1c2b0f221100c7eaeacb6f56a3
+
+@ 0 30 0 0b602a323ada873c0556280fef8a49aa
++   entry .toExpr   在宏中把由可提升元素组成的 `List` 提升为 `Expr`
++       对于元素具有 `ToExpr` 的 `List[element]`，`Expr(list)` 可以工作；提升得到的树是 `List.from(…)`。
++   entry .fromExpr   反提升一个由提升产生的 `Expr[List[element]]`
++       识别常量标准库列表的 `List.from(…)`、`List.empty` 和 `Nil`；其他任何产生列表的树都无法进行常量折叠，给出 `None`。
++   entry .quoted   把 `List[Expr[element]]` 提升为单个 `Expr[List[element]]`
++       `Expr.ofList` 的原生对应物，供持有由已提升元素组成的原生列表的宏代码使用；用 `List.from` 包装的 `Expr.ofList(xs.stdlib)` 就是 `List.quoted(xs)`。
++   entry .size   通过遍历得到的长度：`Countable` 的原语
++       伴生对象的原语操作是普通方法而不是扩展，供上层库中的类型类实例使用；调用点代码应改用受门控的 `size` 扩展。
++   entry .nil   列表是否为空：供类型类实例使用的原语
++   entry .head   第一个元素，偏函数：受 `Populated` 门控的 `head` 的原语
++   entry .tail   第一个元素之后的所有元素，偏函数：原语
++   entry .last   最后一个元素，偏函数：原语
++   entry .lead   最后一个元素之前的所有元素，偏函数：原语
++   entry .at   位于某个 `Int` 索引处的元素，偏函数：`Indexable` 的原语
++   entry .define   替换了某个索引处元素的列表：`Definable` 的原语
++   entry .has   某个元素是否存在：`Inclusive` 的原语
++   entry .drop   去掉前 `n` 个元素的列表：原语
++   entry .append   在末尾添加一个元素的列表，带有 `Populated` 品牌
++       追加使列表非空，因此构造本身就是证明。
++   entry .prepend   在开头添加一个元素的列表，带有 `Populated` 品牌
++   entry .concat   连接起来的两个列表：`concat` 的原语
++   entry .invert   反转的列表：`Reversible` 的原语
++   entry .map   对每个元素应用一个函数后的列表：`Mappable` 的原语
++   entry .slice   两个 `Int` 索引之间的元素：`excerpt` 的原语
++   entry .iterator   列表上的标准库迭代器：`Traversable` 的原语
+
+@ 0 4 0 0be255a117eac55b01fe9793b7d21bca
++ entry .Nil   空列表，`List[Nothing]`
++     它是一个值，而不是提取器对象，因此 `case Nil =>` 通过相等性匹配，现有语法无需修改即可编译。
++     凭借协变，它符合每个 `List[element]`，而 `Default[List[element]]` 就是 `Nil`。
+
+@ 0 7 0 1681b889e9192e7b1148fdd2182937a0
++ entry .listIsSpreadable   让列表可以拼接到可变参数中：`f(list*)`
++     一个 `Spreadable` given（来自 proscala 编译器的 `scala.Spreadable`），让 `f(list*)` 无需经过 `stdlib` 即可作用于不透明的 `List`。
++     它对子类型是参数化的，因此带品牌的 `List[a] & Populated` 也可以拼接。
++     与其他集合的 `Spreadable` given 不同，它位于包的顶层而不是伴生对象中，这对于解析是等价的：顶层不透明类型的隐式作用域包括它旁边的定义。
+
+@ 0 12 0 1e24a8734612143315d82c891937ded2
++ entry .listGatherable   让重复参数在其方法体中成为 `List`
++     一个 `Gatherable` given（来自 proscala 编译器的 `scala.Gatherable`），以 `-Zgatherable-varargs` 编译的模块通过它接收重复参数：`def join(parts: Text*)` 的方法体看到的 `parts` 是 `List[Text]`，在进入时转换一次，而语言本身交给它的会是标准库的 `Seq`。
++     每个 Soundness 模块都以这种方式编译，因此可变参数方法直接针对 `List` API 编写，第一行无需写 `parts.to(List)`。
++     调用者不受影响：签名仍然是 `Text*`，`join(texts*)` 仍像以前一样拼接。
++     它位于包的顶层，因为 `Gatherable[element]` 没有一个其伴生对象可以容纳它的主体类型；`-Yimports` 把它引入作用域。
++     使用 `soundness.*` 但没有该根导入或没有该标志的项目，保留标准库的 `Seq`。
++     类参数（`case class Path(segments: Text*)`）、`inline` 参数和宏不受该标志影响，仍然是 `Seq`。
+
+@ 0 8 0 1e4da9a9a5dcec5101ee021ba465618a
++ entry .consConstructor   在不透明的 `List` 上提供 `head :: tail` 的 given
++     `::` 是右结合的，因此扩展的接收者是头部，即调用点的左操作数，而参数是尾部。
++     该扩展依附于一个 given 而不是位于顶层，因为这个名称属于提取器对象 `::`；该 given 通过 `-Yimports` 处处可见，因此 `1 :: List(2, 3)` 可以直接使用。
++     结果是普通的 `List[element]`，而不是 `& Populated`：在链式的 `a :: b :: c` 中，右操作数先被定型，而在那里无法从带品牌的结果推断出元素类型。
+
+@ 0 1 0 1680da40fbb0fb281fdae4e9e53fb93e
++ entry .::   不透明 `List` 上 `case head :: tail =>` 的提取器
+
+% 1 1 0 123b10e3b753f11a0272736398cae6b2
+
+@ 0 3 0 1a81cf562ada10a8198748dfe7c2ca6c
++       一个基于名称的提取器，不分配 `Option`：`::.unapply(list)` 产生一个 `ConsView`，其 `isEmpty` 与列表相同，`_1` 和 `_2` 分别是头部和尾部。
++       构造器 `head :: tail` 是 `consConstructor` 中的扩展。
+
+% 2 1 0 0aac297cd2c9614704bbe21acf0589ae
+
+% 3 1 0 1adb2827409b9716073173d9a526c091
+
+% 0 1 0 1fe3258f9447f5500b9c6006f4985192
+
+% 1 1 0 1b26a2593c4f00e61169d4db97270499
+
+% 0 1 0 04338267c7f6e0ba06ed6020a1d696a1
+
+% 1 1 0 1a72faadab7cb41b12c152918bf26d38
+
+@ 0 6 0 05bbb55af5c8b6a00ba7f8af972e11a5
++   entry .ConsView   `::` 模式读取的视图：`isEmpty`、`_1`（头部）、`_2`（尾部）
++     entry #isEmpty   列表是否为空，若为空则模式失败
++     entry #get   视图本身
++     entry #_1   头部
++     entry #_2   尾部，作为 `List`
++   entry .unapply   `case head :: tail`：列表上的视图
+
+@ 0 1 0 1329cf30a8d6d0051a73e11955cdfdfe
++ entry .Sequence   一个不可变的索引序列，是标准库 `Vector` 的不透明别名
+
+% 1 1 0 0aeb52fc32ef28b517a781a48dbf9644
+
+@ 0 6 0 0b245731226eaf110e476ba98c75d249
++       `Sequence[element]` 在任意位置读取和在末尾追加的代价都很低，因此与 `List` 不同，索引（`at`、`sec`、`ter`）和 `size` 无需确认代价。
++       它是 `scala.collection.immutable.Vector` 的不透明别名，设计与 `List` 相同：成员不可见，词汇来自上层的类型类扩展，构造和 `stdlib` 桥接位于伴生对象中，与 `Vector` 之间没有任何方向的隐式转换。
+
+% 2 1 0 10b13facfc4bf6a40ab128a2eb2d7c59
+
+% 3 1 0 1fd7a65f39db11ef17962adb3fca1ce6
+
+% 0 1 0 1f8b8b9e42e73a361c93cb374d59a53a
+
+% 0 1 0 0a23c1ea5659a8f119da65dacc817163
+
+% 0 1 0 145fa846e6fa7e2416bd5e06c445fa1e
+
+% 0 1 0 1870f28a2e8f6a90099b9fba67f64d8c
+
+% 0 1 0 10f7416a50c3ced31f0663f88dce35f2
+
+% 0 1 0 0fe3f39e14ed92181e463fa8280dd6fb
+
+% 1 1 0 07df35eb84f1d25d066e8ac95b55c98b
+
+@ 0 3 0 1198839c92b859ee030cd382f111331d
++       一到十二个元素的字面量带有 `& Populated` 品牌，与 `List` 字面量一样。
++       `Sequence` 没有 `factory` 转换，因此标准库集合应用 `Sequence.from(elements)` 转换，而不是 `.to(Sequence)`。
+
+% 1 1 0 093b747c72e7e97c0c4180ba281125dc
+
+@ 0 8 0 15f7395535fea6961b2a7241342d5195
++   entry .apply   `Sequence(a, b, c)`：由其参数组成的序列，至多十二个时带有 `Populated` 品牌
++   entry .empty   有类型的空序列：`Sequence.empty[Int]`
++   entry .from   从任意 `IterableOnce` 拷贝得到的序列
++       从标准库返回的途径，也是唯一的途径：`Sequence` 没有用于 `.to(Sequence)` 的 `factory` 转换。
++   entry .unapplySeq   `case Sequence(a, b)`：模式支持
++   entry .stdlib   底层的 `scala.collection.immutable.Vector`，不经拷贝
++       通往标准库或 Java API 的、便于 grep 的桥接。
+
+% 0 1 0 112ebee3be4211771c78891c066cb277
+
+% 0 1 0 1ce11bbd8282b8771faebabf7674c360
+
+@ 0 23 0 0c9a576f725aa7b404631650b461264b
++   entry .toExpr   在宏中把由可提升元素组成的 `Sequence` 提升为 `Expr`
++   entry .fromExpr   反提升一个由常量列表的 `Sequence.from` 产生的 `Expr[Sequence[element]]`
++   entry .sequenceIsSpreadable   让序列可以拼接到可变参数中：`f(sequence*)`
++       对子类型是参数化的，因此带品牌的 `Sequence[a] & Populated` 也可以拼接。
++   entry .size   长度，常数时间：`Countable` 的原语
++       伴生对象的原语操作是普通方法，供上层的类型类实例使用；调用点代码使用扩展词汇。
++   entry .nil   序列是否为空：原语
++   entry .head   第一个元素，偏函数：受 `Populated` 门控的 `head` 的原语
++   entry .tail   第一个元素之后的所有元素，偏函数：原语
++   entry .last   最后一个元素，偏函数：原语
++   entry .lead   最后一个元素之前的所有元素，偏函数：原语
++   entry .at   位于某个 `Int` 索引处的元素，偏函数：`Indexable` 的原语
++   entry .define   替换了某个索引处元素的序列：原语
++   entry .has   某个元素是否存在：原语
++   entry .drop   去掉前 `n` 个元素的序列：原语
++   entry .append   在末尾添加一个元素的序列：原语
++   entry .prepend   在开头添加一个元素的序列：原语
++   entry .concat   连接起来的两个序列：原语
++   entry .invert   反转的序列：`Reversible` 的原语
++   entry .map   对每个元素应用一个函数后的序列：原语
++   entry .slice   两个 `Int` 索引之间的元素：原语
++   entry .iterator   序列上的标准库迭代器：`Traversable` 的原语
+
+@ 0 1 0 1f719da4edcb03db1104fca05b008bd9
++ entry .Set   一个不可变集合，是标准库 `Set` 的不透明别名
+
+% 1 1 0 1ce17897ce11145f0656e8e6ac6ca746
+
+@ 0 7 0 0175c36f37da7437192213aaca11b00f
++       `Set[element]` 中每个元素只出现一次，且没有顺序，因此它不能被排序、截取或索引：这些操作不存在，而不是给出任意的结果。
++       它通过上层的类型类扩展支持成员判断（`has`）、插入（`:+`）、并集（`concat`）、`intersect` 和 `except`，并且与标准库的集合一样，在元素上是不变的。
++       它是 `scala.collection.immutable.Set` 的不透明别名，设计与 `List` 相同：成员不可见，构造和 `stdlib` 桥接位于伴生对象中，没有隐式转换。
+
+% 2 1 0 1490f2d922d2a9b1179a4a0b3f2c7132
+
+% 3 1 0 067ce1ca1f263b331a7237f38b51e6f1
+
+% 0 1 0 0edade6d66df18b11d9120d6f4b4e61b
+
+% 0 1 0 1f47c47269e358b208d6d7b86acdb3d5
+
+% 0 1 0 0926549a6584eb711bfdb594c81ddb62
+
+% 0 1 0 1f3b7a9ef4e42cec1e338067c2e10035
+
+% 0 1 0 13bf17425eb854221f26e6733ae7f083
+
+% 1 1 0 10d061b792b0d1fa115db3a96d8a2fc5
+
+@ 0 2 0 1adcc6c46ab527b21edf9ff04a88c90b
++       与 `List` 和 `Sequence` 不同，`Set` 字面量不带 `Populated` 品牌；需要时用 `occupied` 证明。
+
+% 1 1 0 1fbc6005cf5f00381eb38323a7be2124
+
+@ 0 6 0 00c85acd98a9b8a012ddc7e8a58cd316
++   entry .apply   `Set(a, b, c)`：由其参数组成的集合，重复项被丢弃
++   entry .empty   有类型的空集合：`Set.empty[Int]`
++   entry .from   从任意 `IterableOnce` 构建的集合，重复项被丢弃
++   entry .stdlib   底层的 `scala.collection.immutable.Set`，不经拷贝
++   entry .factory   在标准库集合上用 `.to(Set)` 构建 `Set`
++   entry .populatedEquality   `CanEqual[Set[a] & Populated, Set[b]]`：已证明非空的集合可与普通集合比较
+
+% 0 1 0 19098121b80c0de11e6c60f07741b58e
+
+@ 0 13 0 149ad74612c5ae5d1b7ba59803b62023
++   entry .toExpr   在宏中把由可提升元素组成的 `Set` 提升为 `Expr`
++   entry .fromExpr   反提升一个由常量列表的 `Set.from` 产生的 `Expr[Set[element]]`
++   entry .size   元素的数量，常数时间：`Countable` 的原语
++       伴生对象的原语操作是普通方法，供上层的类型类实例使用；调用点代码使用扩展词汇。
++   entry .nil   集合是否为空：原语
++   entry .has   某个元素是否存在：`Inclusive` 的原语
++   entry .insert   添加了一个元素的集合：`:+` 的原语
++   entry .concat   两个集合的并集：原语
++   entry .intersect   同时属于两个集合的元素：原语
++   entry .except   属于左侧集合而不属于右侧集合的元素：原语
++   entry .map   函数作用于各元素所得结果的集合：`Mappable` 的原语
++   entry .iterator   元素上的标准库迭代器：`Traversable` 的原语
+
+@ 0 1 0 1e7296a6d184f96d1d801c6bcf6bffce
++ entry .Map   一个从键到值的不可变映射，是标准库 `Map` 的不透明别名
+
+% 1 1 0 0966c2963d5702d915367fae9e786db6
+
+@ 0 8 0 0901467aa7547fae0e098831a22c4853
++       `Map[key, value]` 把键与值配对，不承诺任何迭代顺序（`Ledger` 承诺插入顺序）。
++       通过上层的类型类扩展，它用 `at` 按键读取值，由于键可能不存在，结果是 `Optional`；用 `defines` 判断键是否存在；用 `define` 添加或替换；用 `omit` 移除；提供 `keys`（一个 `Set`）和 `values`；`map` 映射其值而保留其键，而 `remap` 把条目作为键值对进行变换。
++       它是 `scala.collection.immutable.Map` 的不透明别名，在值上是协变的，构造和 `stdlib` 桥接位于伴生对象中，没有隐式转换。
+
+% 2 1 0 16584f550f5e81a60b1f3d987cb80a9b
+
+% 3 1 0 18acc47cbbae030d017e21125e42e8cf
+
+% 0 1 0 0e8a216ad2d662781cbead46d96c033b
+
+% 0 1 0 1730e35ec28e6736174220ef1b404cc3
+
+% 0 1 0 070a781b0790bd18088d59e43de92663
+
+% 0 1 0 1b0dc95d9a09b7241e7d361e5541ab3e
+
+% 0 1 0 1c0da5016afa0d731212aac1ddeb0880
+
+% 1 1 0 068dccee447577bc19f8815bca2765c0
+
+% 0 1 0 1e5ea8bd22f4d3ba1394ab7bace24f85
+
+% 0 1 0 185033876a0149bc189459227beb1747
+
+@ 0 23 0 1470dd7239e483d80bdf1e235a8cf242
++   entry .apply   `Map(k1 -> v1, k2 -> v2)`：由其键值对组成的映射；同一个键以后出现的键值对为准
++   entry .empty   有类型的空映射：`Map.empty[Text, Int]`
++   entry .from   从任意由键值对组成的 `IterableOnce` 构建的映射
++   entry .stdlib   底层的 `scala.collection.immutable.Map`，不经拷贝
++   entry .factory   在由键值对组成的标准库集合上用 `.to(Map)` 构建 `Map`
++   entry .toExpr   在宏中把由可提升的键和值组成的 `Map` 提升为 `Expr`
++   entry .fromExpr   反提升一个由常量列表的 `Map.from` 产生的 `Expr[Map[key, value]]`
++   entry .size   条目的数量，常数时间：`Countable` 的原语
++       伴生对象的原语操作是普通方法，供上层的类型类实例使用；调用点代码使用扩展词汇。
++       `.read` 对应标准库中返回 `Option` 的 `get`；返回 `Optional` 的 `at` 位于更上层，在了解 `vacuous` 的库中。
++   entry .nil   映射是否为空：原语
++   entry .defines   某个键是否存在：`Applicable` 的原语
++   entry .at   某个键对应的值，偏函数：原语
++   entry .read   某个键对应的值，作为 `Option`：原语，对应标准库的 `get`
++   entry .define   把某个键设为某个值的映射：`Definable` 的原语
++   entry .omit   去掉某个键的映射：`Omissible` 的原语
++   entry .keys   键，作为 `Set`：原语
++   entry .values   值，作为 `List`：原语
++   entry .concat   合并的两个映射，右侧的条目优先：原语
++   entry .map   对每个值应用一个函数、键保持不变的映射：`Mappable` 的原语
++   entry .iterator   以键值对形式遍历条目的标准库迭代器：`Traversable` 的原语
+
+@ 0 1 0 012a3b3941659182155893ea234beaa5
++ entry .Ledger   一个按插入顺序排列的不可变映射，是 `VectorMap` 的不透明别名
+
+% 1 1 0 161f4579a72de036091d433b41fd57ef
+
+@ 0 8 0 0714139e45648e4416f0c68d1d722ef7
++       `Ledger[key, value]` 就是一个承诺按条目首次加入的顺序迭代的 `Map`，而 `Map` 刻意不做这一承诺。
++       它以 `scala.collection.immutable.VectorMap` 为底层：与 `ListMap` 一样按插入顺序排列，但查找和追加实际上是常数时间，因为保存在账簿中的注册表（方言成员表、属性列表、测试报告）会增长到数百项。
++       其词汇与 `Map` 相同：`at`、`defines`、`define`、`omit`、`keys`、`values`，以及保持顺序地对值进行 `map`。
++       `Ledger` 不是 `Map`，也不会转换为 `Map`。
+
+% 2 1 0 03643c76e04d4372036cf6b7db82e01c
+
+% 3 1 0 051a4f1fc9183f5200462dce079951fe
+
+% 0 1 0 1703707ffb6dc7a51ad67a299d2289e8
+
+% 0 1 0 049e771ee6dec63c0916a95744bc07d6
+
+% 0 1 0 083f51415925aea31a76b70b2c6789f9
+
+% 0 1 0 0662807ca44269260ed90ea767b1f0fc
+
+% 1 1 0 097294b4c7dd28450fd424c714d8e83a
+
+% 1 1 0 1938ee5bfae9e6940b984abdcc05c449
+
+@ 0 21 0 1d492f4cff90c41a06cc9af69a41dfd9
++   entry .apply   `Ledger(k1 -> v1, k2 -> v2)`：由其键值对按顺序组成的账簿
++   entry .empty   有类型的空账簿：`Ledger.empty[Text, Int]`
++   entry .from   从任意由键值对组成的 `IterableOnce` 按其顺序构建的账簿
++   entry .stdlib   底层的 `scala.collection.immutable.VectorMap`，不经拷贝
++   entry .factory   在由键值对组成的标准库集合上用 `.to(Ledger)` 构建 `Ledger`
++   entry .toExpr   在宏中把由可提升的键和值组成的 `Ledger` 提升为 `Expr`
++   entry .fromExpr   反提升一个由常量列表的 `Ledger.from` 产生的 `Expr[Ledger[key, value]]`
++   entry .size   条目的数量：`Countable` 的原语
++       伴生对象的原语操作是普通方法，供上层的类型类实例使用；调用点代码使用扩展词汇。
++   entry .nil   账簿是否为空：原语
++   entry .defines   某个键是否存在：原语
++   entry .at   某个键对应的值，偏函数：原语
++   entry .read   某个键对应的值，作为 `Option`：原语，对应标准库的 `get`
++   entry .define   把某个键设为某个值的账簿，若该键已存在则保持其位置：原语
++   entry .omit   去掉某个键的账簿：原语
++   entry .keys   键，作为按插入顺序排列的 `List`：原语
++   entry .values   值，作为按插入顺序排列的 `List`：原语
++   entry .concat   合并的两个账簿，右侧的条目被追加或覆盖原有条目：原语
++   entry .map   对每个值应用一个函数、保持顺序的账簿：原语
++   entry .iterator   按插入顺序遍历条目的标准库迭代器：原语
+
+@ 0 1 0 0f384386c617344e0f2c54a36e46fa3e
++ entry .Chain   一个惰性的、可能无限的序列，是标准库 `LazyList` 的不透明别名
+
+% 1 1 0 09a8c4fdd67b1917008869fa488b6017
+
+@ 0 8 0 1b05607ae323d0b601d160d4fffd44ed
++       `Chain[element]` 在元素被需要时才计算它们，并记住它们，因此它可以描述每一个自然数，或者某个进程将要打印的每一行，只要只有有限的前缀被强制求值。
++       `head #:: rest` 在头部添加元素而不强制求值 `rest`；`Chain.iterate`、`Chain.unfold` 和 `Chain.continually` 从一个种子或一个值生成元素；`keep` 和 `skip` 惰性地取出和丢弃一个前缀；`prefix #::: suffix` 连接而不强制求值后缀；`case head #:: tail =>` 匹配时只强制求值头部。
++       `size`、`last` 和 `lead` 会强制求值整个链，可能永远不会返回，因此它们受 `import dysasymptotics.unboundedSize` 门控。
+
+% 2 1 0 1f3172bd37f96c27197a6c5fd7e04a5c
+
+% 3 1 0 10988ed01a1b25851f4f590a8874dff0
+
+% 0 1 0 0c22caba38d2f40308eb4f75d3fac780
+
+% 0 1 0 0c2788fceb2c93be1cdb1c85a01ae81f
+
+% 0 1 0 18010585782e457c1d2969dadbe0181d
+
+% 0 1 0 1ecc262fe4a6d38401ca52ca425e9a69
+
+% 0 1 0 122c7f21f9bf98691cc8a76573e5606c
+
+% 0 1 0 18a00fa20046663f0c55867153bb4be9
+
+% 0 1 0 0e45c6ff18db7fa215da31d4199922f5
+
+% 1 1 0 16e891bdeef6bd6f02819062b12d0b6e
+
+@ 0 9 0 05d7511c201db4d608310acf0a114544
++       它是 `scala.collection.immutable.LazyList` 的不透明别名，设计与 `List` 相同，即成员不可见、`stdlib` 桥接位于伴生对象中、没有隐式转换，只有一处不同：`Chain` 字面量从不带 `Populated` 品牌，因为流式的形状不能让透明展开进入经过捕获检查的调用点；应通过 `occupied` 或 `#::` 匹配来证明非空性。
++       它有 `ToExpr` 但没有 `FromExpr`，因为及早的反提升会歪曲惰性的形状。
++       `Chain` 刻意没有 `Segmentable` 实例：它所拥有的是 `chainSegments` 中惰性的 `keep`/`skip`，而严格的实例会强制求值无界的链。
+
+% 0 1 0 1d2e075886fab2c016b8c32f88d1ac86
+
+% 0 1 0 1ffc516ebe5403d203a73365b8a64683
+
+% 1 1 0 16cc4b7d6e2193aa14a75042ec9fc264
+
+@ 0 18 0 1fda87fdfd39ef991d696fc0116f36df
++   entry .apply   `Chain(a, b, c)`：由其参数组成的有限链，不带品牌
++   entry .empty   有类型的空链：`Chain.empty[Int]`
++   entry .from   基于任意 `IterableOnce` 的链，在源允许时惰性求值
++   entry .continually   重复一个传名值的无限链：`Chain.continually(7)`
++   entry .iterate   由种子和步进函数得到的无限链：`Chain.iterate(0)(_ + 1)`
++       种子是传名的；在被强制求值之前什么都不会求值。
++   entry .unfold   由一个函数从状态生成的链，该函数产生 `Option[(element, state)]`
++       `Chain.unfold(init)(state => …)` 在函数返回下一个元素和状态的 `Some` 时继续，在 `None` 时结束。
++   entry .range   `Chain.range(start, end)`：从 `start` 到 `end` 的整数值
++   entry .cons   原语的惰性 cons：`Chain.cons(head, tail)`，其中 `tail` 是传名的
++       `#::` 的方法形式。
++   entry .defer   求值被推迟到强制求值时的链
++       `Chain.defer(chain)` 让传名的 `chain` 保持未求值，直到结果被需要，用于方法体不得及早运行的递归定义。
++   entry .unapplySeq   `case Chain(a, b)`：模式支持，会强制求值整个链
++   entry .stdlib   底层的 `scala.collection.immutable.LazyList`，不经拷贝
++   entry .factory   在标准库集合上用 `.to(Chain)` 构建 `Chain`
+
+% 0 1 0 0de985d32f9291470f2b4af7ca755374
+
+% 0 1 0 1950c01ed13c29c60055d1ac5ae64b83
+
+@ 0 18 0 112ec622ccebc0dd037c62e566a49063
++   entry .toExpr   在宏中把有限的 `Chain` 提升为 `Expr`，会完全强制求值
++       常量树不可能是惰性的，因此提升会强制求值整个链；它只适用于宏已经物化了的有限链。
++       刻意没有 `FromExpr`。
++   entry .chainIsSpreadable   让链可以拼接到可变参数中：`f(chain*)`，会强制求值
++   entry .size   长度，会强制求值整个链：受 `unboundedSize` 门控的 `size` 的原语
++       伴生对象的原语操作是普通方法，供上层的类型类实例使用；`size`、`last` 和 `lead` 会强制求值整个链，在无限链上会发散，这就是它们的扩展受门控的原因。
++   entry .nil   链是否为空，只强制求值第一个节点：原语
++   entry .head   第一个元素，偏函数：受 `Populated` 门控的 `head` 的原语
++   entry .tail   第一个元素之后的链，不强制求值尾部的内容：原语
++   entry .last   最后一个元素，会强制求值整个链：原语
++   entry .lead   最后一个元素之前的所有元素，会强制求值整个链：原语
++   entry .append   惰性追加了一个元素的链：原语
++   entry .prepend   惰性地在开头添加了一个元素的链：原语
++   entry .concat   惰性连接的两个链：原语
++   entry .map   惰性地对每个元素应用一个函数后的链：原语
++   entry .iterator   链上的标准库迭代器：`Traversable` 的原语
+
+@ 0 6 0 09b20207d110c4831b73c34668282d79
++ entry .lazyCons   为不透明的 `Chain` 提供 `head #:: tail` 的 given
++     惰性 cons 构造器：`head #:: tail` 把 `head` 前置到 `tail` 之前，而不对 `tail` 求值；`tail` 是传名参数，因此 `head #:: recur()` 不会调用 `recur()`。
++     与 `::` 一样，扩展方法的接收者是头部（右结合性交换了两个操作数），而它之所以借助 given 提供，是因为这个名称属于提取器对象 `#::`；通过 `-Yimports`，这个 given 处处可见。
+
+% 2 1 0 01a9b538e6a06ea3071c959ce336165e
+
+% 3 1 0 07361b1c626a79d0112b90e673d9f1f6
+
+% 0 1 0 1d3d0f03b870115a17b2a45b52643fd9
+
+% 0 1 0 0db8f7f5c299279b1b02764894cfa962
+
+% 1 1 0 10f1127cf1463ee61f696072f301d6ef
+
+@ 0 1 0 18f611d6de25050101c7f38b41810beb
++ entry .#::   `Chain` 上 `case head #:: tail =>` 的非强制求值提取器
+
+% 1 1 0 1af949b5e9bf714b0f9cd469dc98cac6
+
+@ 0 4 0 0ab3fd8dbb6220b51a92161c2d75e834
++       一个基于名称的提取器：它的 `isEmpty` 和 `_1` 只强制求值第一个节点，`_2` 则是通过 `LazyList#tail` 得到的尾部，不会强制求值尾部的元素——因此匹配一个链来读取其头部，恰好只计算一个元素。
++       构造器 `head #:: tail` 是 `lazyCons` 中的扩展方法。
+
+% 2 1 0 0cd28a1f3cf3dd7b10e2caf3cfff3b40
+
+% 3 1 0 0d52ca440cd465041845ac2a3a0a4eb9
+
+% 0 1 0 170d981b680f2e791c5ae037bf674ad6
+
+% 0 1 0 01e995f04e2242e80697f0caf1318503
+
+% 1 1 0 11f976b314ee01f71f6bfd94d49cf46f
+
+@ 0 6 0 11d513dc096ce68e04925cc90e7c8f97
++   entry .ConsView   `#::` 模式读取的视图：`isEmpty`、`_1`（头部）、`_2`（惰性尾部）
++     entry #isEmpty   链是否为空，只强制求值第一个节点
++     entry #get   视图本身
++     entry #_1   头部
++     entry #_2   尾部，作为 `Chain`，未经强制求值
++   entry .unapply   `case head #:: tail`：链上的视图
+
+@ 0 4 0 0fcaddbf3c302b64093e6a724f83f35c
++ entry .#:::   `prefix #::: suffix`：两个链的惰性连接
++     `Chain[element]` 上的扩展方法：后缀是传名参数，在前缀耗尽之前不会被强制求值，因此一个链可以定义为一个有限的前缀，后接一个递归或无限的后缀。
++     后缀的元素类型可以拓宽前缀的元素类型。
+
+@ 0 9 0 08fe99d67132198b1c9645bd124bb046
++ entry .chainSegments   为 `Chain` 提供惰性 `keep` 和 `skip` 的 given
++     `chain.keep(n)` 和 `chain.skip(n)` 按数量取出和丢弃前缀，`chain.keep(p)` 和 `chain.skip(p)` 则按谓词；四者都不强制求值——只在结果被需要时才对元素求值——因此在无界的链上都是安全的，而严格集合上由 `Segmentable` 驱动的 `keep`/`skip` 则会计数并重建。
++     按数量的形式是全函数：超出范围的数量会被截断。
++     没有从右到左的形式，因为它不会有非强制求值的含义。
++     它们借助 given 提供，从而只有在通用候选者对 `Chain` 接收者失败之后才会被考虑，而通用候选者总会失败。
+
+% 2 1 0 13fec9d63b671ba206fdb2150cc18876
+
+% 3 1 0 01161dcd817ef6b8040efc6b78d89b62
+
+% 0 1 0 1a31ead7a959358c0e81e612a0ff3f72
+
+% 1 1 0 0d9102faf7d302e00d0b404914800304
+
+@ 0 1 0 0e23d3460027522b189e2519c88509cd
++ entry .Comparison   三路比较的结果：`Less`、`Same` 或 `More`
+
+% 1 1 0 04f140f27407d3a607cad13ae38e9ec7
+
+@ 0 6 0 1400bcf3d639d65a0ca4a50c478dc026
++       symbolism 的 `Comparable` 所使用的通货，其 `compare(left, right)` 返回一个 `Comparison`。
++       它是一个枚举而不是 `Int` 符号：三个分支都是单例，因此不分配任何内存，同时仍可进行模式匹配，并把查询作为成员携带——而名为 `also` 或 `more` 的扩展方法若要做到这一点，就不得不与总括包中的通用扩展方法相竞争。
++       `Less` 表示左操作数较小，`More` 表示较大，`Same` 表示两者都不是。
+
+% 2 1 0 1fb7b92459b9c36018218973e124cfc9
+
+% 3 1 0 1353418de04264ac07e1d2377bc287ed
+
+% 0 1 0 1ef3b271c9eae6ec16bcb7cbb5f29426
+
+% 0 1 0 0952fefe69e4f09d1d4e409c8d6bb810
+
+% 0 1 0 06fed8c792a64f4a1fa93ce991e39deb
+
+% 0 1 0 18173e74aafb40720bebcfb0afe4a2d4
+
+% 0 1 0 0c68d4ed4afea3fc005fd9c8d8c3b700
+
+% 1 1 0 1d939bce6fd548ef1607b8ea60cd4f2e
+
+@ 0 15 0 0ce05807859d42bb1050c62e2008397a
++       `also` 按字典序组合比较——结果是当前比较，除非它是 `Same`，这时才是下一个比较；下一个比较是传名参数，因此当第一个比较已有定论时不会被求值——而 `sign` 和 `.apply` 在接缝处与 `java.util.Comparator` 和 `scala.math.Ordering` 的符号约定相互转换。
++   entry .apply   由 `compareTo` 风格的符号（负数、零或正数）得到的 `Comparison`
++       数值大小被归并为三个分支，因此每个 `Comparison` 都是规范的。
++   entry #less   是否为 `Less`
++   entry #same   是否为 `Same`
++   entry #more   是否为 `More`
++   entry #flip   以相反顺序比较同样两个值的结果
++       `Less` 与 `More` 互换；`Same` 不变。
++   entry #sign   `-1`、`0` 或 `1`：`Comparator`/`Ordering` 的约定，用于标准库和 JDK 接缝
++   entry #also   字典序组合：结果是当前比较，除非它是 `Same`，否则是下一个比较
++       第二个比较是传名参数，因此一串 `also` 在第一个有定论的结果处停止，之后的一切都不求值。
+
+@ 0 8 0 1e8deb8aa36d571506e41972298b69dc
++ entry .Populated   值类型中的非空性证明：`List[Int] & Populated`
++     一个幻影结构化细化 `Any { type Occupied = true }`，与集合类型取交集，以记录该集合至少有一个元素。
++     这个证明有两种产生方式：固定元数的字面量构造器（`List(1, 2, 3)`、`Sequence(t"a")`）在构造时就给结果打上品牌，而 rudiments 的 `occupied` 对一个值检查一次，并产出 `Optional[self & Populated]`。
++     那些只在非空接收者上才是全函数的操作——`head`、`last`、`tail`、`reduce`——于是要求 `Populated` 接收者，否则退化为 `Optional` 结果，从而偏函数性在代码编译之处就得到了处理。
+
+% 2 1 0 004e9ee0f2534a2003791531ffb4eadb
+
+% 3 1 0 0029bef0567745cf168a5ed61e29453d
+
+% 0 1 0 1179e202b554c63412c981a6ee87197f
+
+% 0 1 0 13f828ecf056ba6f09271638657f46c1
+
+% 0 1 0 176406681aaff0b31ebd5324919bcd4f
+
+% 0 1 0 054f7349de7ce0b01f4096c62d332b93
+
+% 1 1 0 13edbb0411ae22f11f3ad40a11053f4e
+
+@ 0 5 0 03138b6c7bcbd9c2078c28b00d167267
++     它是细化而不是特质，因此会被擦除：`Text & Populated` 在运行时仍然是 `String`，而名义上的标记会插入会失败的类型转换。
++     任何变换以及对普通类型的类型标注都会丢失这个品牌。
++     它位于这里，在所有集合之下，因此伴生对象可以给它们的字面量打上品牌；`rudiments.Populated` 是它的别名。
+
+@ 0 12 0 13bac30ce0c5fc2d0bfa042d6a7ad98c
++ entry .Sized   值类型中的长度证明：`Array[Byte]^{} & Sized[512]`
++     `Populated` 在固定布局数据上的对应物——512 字节的 tar 头部、八个方位的罗盘方位图。
++     `Sized[length]` 是细化 `Any { type Length = length }`，有三种产生方式：带*字面量*数量的 `Array.fill` 和 `Array.tabulate`（以及 `Data.fill`）在构造时给结果打上品牌；固定某种布局的生产者在其结果上声明该品牌；而 concordance 的 `sized[n]` 对一个值的长度检查一次并记录下来，就像 `occupied` 记录非空性一样。
++     于是，小于该长度的字面量序数在构造上就是受限的：在 `Sized[n]` 接收者上以字面量序数调用 `apply`，会在编译时判定边界，因此读取是全函数，而超出范围的字面量是编译错误。
++     长度是类型层面的 `Int`，因此 `scala.compiletime.ops.int` 可以组合证明：两个有长度证明的数组经 `Array.concat` 得到 `Sized[left + right]`。
+
+@ 0 5 0 12837202508de26d0a9eaf4751580f67
++ entry .Unit   `Unit` 类型，作为 `scala.Unit` 的别名
++     `Unit` 无法被 `export`（源代码中禁止使用它的伴生对象），因此前导部分声明了 `type Unit = scala.Unit`，它是一个*不同的符号*。
++     代码不受影响，但一个把 `TypeRepr.of[Unit].typeSymbol` 与方法返回类型的符号相比较的宏会发现两者不相等；应使用 `=:=` 比较，或在 `.dealias` 之后比较。
+
+@ 0 5 0 0a36b7f44546fb94131013d229bfb609
++ entry .classOf   一个类型的类，经由导出仍然正确：`classOf[Text]`
++     Predef 的 `classOf` 只有在调用携带具体类类型时才是编译器内建函数，因此经由导出转发器，每次调用都产出 `Class[Object]`。
++     这个内联版本在每个调用点召唤 `ClassTag`——那里的类型参数是具体的——并从中取出 `runtimeClass`。
+
+@ 0 3 0 14ea10a65c0984390376c70d70f63377
++ entry .absolve   `Predef.runtimeChecked` 的改名：把一个匹配标记为有意不穷尽
++     `value.absolve match …` 告诉编译器这个匹配不必穷尽，取代 `@unchecked` 注解。
++     用于在宏中匹配已知形状的情形。
+
+@ 0 3 0 1db4078fe6fd46ff000e5d20797dc649
++ entry .Nat   `Int & Singleton`：字面量自然数的类型
++     类型层面整数参数的上界，例如 quantitative 中单位的幂次（`Units[power <: Nat, …]`）。
+
+@ 0 4 0 11b46f800f05a8e910a8d556bf880960
++ entry .Label   `String & Singleton`：字符串字面量的类型
++     必须是字符串字面量的类型参数的上界，例如字段名、标签名或属性名（`Typeface of "sans-serif"`、`AnnotatedField[…, target <: Label]`）。
+
+@ 0 2 0 089fa7c2fa4006f8085fc0168b419b0d
++ entry .Zero   `EmptyTuple` 的改名：元组的末尾
++     `Zero` 就是 `scala.EmptyTuple`；单元素元组是 `Mono[value]`，即 `value *: Zero`。
+
+@ 0 3 0 0e7e0c7176f2d0f512e07c1c7bb82e3f
++ entry .Mono   单元素元组：`Mono[value]` 即 `value *: Zero`，`Mono(x)` 构造一个
++     通用元组代码所产生的退化元组的名称，带有构造器 `Mono(value)`。
+
+@ 0 3 0 1f919a7b35bc8aa01ab71008029aa510
++ entry .~>   `domain ~> range`：`PartialFunction[domain, range]` 的中缀别名
++     让偏函数参数读起来像一个箭头：`lambda: (Optional[focus], accrual) => Exception ~> accrual`。
+
+@ 0 6 0 0395f9eefbfdb66f1de23784176eb1da
++ entry .prohibits   `result prohibits prohibited`：只有在不存在 `prohibited` given 时才会被选中的 given
++     `prohibits[result, prohibited]` 就是 `NotGiven[prohibited] ?-> result`，一个纯上下文函数：这种类型的 given 会为 `result` 选中，并在选中时于使用处解析它的 `NotGiven[prohibited]`，因此 `given choice: Choice prohibits Policy = …` 读起来正是它所表达的守卫。
++     箭头是纯的，因此普通对象可以把这个 given 作为字段持有。
+
+@ 0 5 0 19988f00d1382ab40f68877cff2a1be8
++ entry .unexported   把顶层定义标记为有意不出现在 `soundness` 总括包中
++     一个注解，用于这样的模块、扩展方法或辅助函数：其简单名称会与总括包中另一个库的名称冲突，或者它是一个通过自身库的导入访问的编译时或内部辅助函数。
++     生成导出的工具读取它，并跳过被注解的定义。
+
+@ 0 4 0 15ce4112cade28ee1bd686aaf2b2b325
++ entry .infer   `infer[context]`：以内联方式召唤一个 given
++     `transparent inline def infer[context] = summonInline[context]`：本项目对 `summonInline` 的惯用写法，用于在内联方法中召唤实例，使得搜索发生在展开处。
++     `summon` 是非内联的形式。
+
+@ 0 6 0 0ab1896d9afbeba81f87fad2b851fb27
++ entry .provide   以一个从调用处提供的、指定类型的 given 运行一个代码块
++     `provide[Context](block)` 在展开处召唤一个 `Context`，并把它传给上下文函数 `block`，从而需要 `Tactic[Error]` 的方法可以在拥有它的内联代码中调用：`provide[Tactic[Pojo.Error]]: …`。
++     `Void` 参数是一个占位符，使结果类型参数可以在上下文类型参数给定之后再被推断。
+
+@ 0 3 0 028399e97fb800ba120f87888749626f
++ entry .->   `left -> right`：二元组 `(left, right)`
++     元组箭头。之所以在这里提供，是因为 `scala.Predef` 把它做成了内联方法，否则在 `-Yno-predef` 下会丢失。
++     `Map(t"a" -> 1)` 依赖于它。
+
+@ 0 4 0 10b73227975b56d70016bddd8b6657b4
++ entry .Void   `scala.DummyImplicit` 的改名：一个占位的 using 参数
++     一个 `(using erased void: Void)` 参数让方法能够把调用者给出的类型参数与编译器推断的类型参数分开：`safely[error](using erased void: Void)[success](…)`。
++     它也以原名 `DummyImplicit` 导出。
+
+@ 0 4 0 07a17781527f55d415e50f0fa60dccca
++ entry .is   `subject is Typeclass`：把类型类的 `Self` 细化为其主体
++     Predef 的中缀 `is`，重新导出：`Text is Showable` 即 `Showable { type Self = Text }`，每个 Soundness 类型类都以这种短语被召唤和声明，它也是那些介词（`in`、`by`、`to`……）所扩展的根。
+
+@ 0 4 0 1bbcb2ae5539855b182ed3eeba37ed47
++ entry .nn   断言一个可空值不是 `null`：`javaResult.nn`
++     Predef 的 `nn`，用于来自 Java API、其文档承诺会有值的 `T | Null`；如果承诺被打破，则抛出 `NullPointerException`。
++     在 `null` 是合理结果的地方，应改用 `Optional(value)`。
+
+@ 0 2 0 02cdf7682ca0fd710b4f063bb266abe3
++ entry .summon   `summon[T]`：某个类型的 given，来自 Predef
++     非内联的召唤；`infer[T]` 是在内联方法中使用的内联形式。
+
+@ 0 1 0 1cab9aff39b82d2e03144630d7e68ef4
++ entry .identity   `identity(x)` 就是 `x`，来自 Predef
+
+@ 0 3 0 02ac6a3e8816d5621d60acc31432c317
++ entry .locally   `locally { … }`：作为表达式的代码块，来自 Predef
++     主要用于以 `given` 导入开头、且该导入的作用域应随代码块结束的代码块，例如在 `alphabets` 或 `dysasymptotics` given 之间作出选择。
+
+@ 0 1 0 00e7bbb37a1d706b15bcb53f18fe60a4
++ entry .valueOf   `valueOf[literal]`：单例类型的值，来自 Predef
+
+@ 0 1 0 096bee411e2a9468082f41b8a3b42663
++ entry .assert   Predef 的 `assert(condition)` 和 `assert(condition, message)`
+
+@ 0 1 0 1f5bc36bc4b406cf1e089c5f3f750cad
++ entry .???   Predef 的 `???`：一个抛出 `NotImplementedError` 的占位符
+
+@ 0 3 0 0868c8a240d8ec131103fed9ca182fc2
++ entry .ArrowAssoc   Predef 的 `ArrowAssoc`：`->` 背后的类
++     保留它是为了让标准库代码与这里的 `->` 扩展方法一致；二元组箭头本身是 `->` 扩展方法。
+
+@ 0 1 0 1b3730ffd68f6bb21686e1e9f5eb324f
++ entry .$conforms   Predef 的 `$conforms`：每个 `A <:< A` 证据背后的 given
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 0ab07d3a929fcab00a1b71be8748751d
++       从 Predef 重新导出，使得子类型证据（`<:<`）在 `-Yno-predef` 下仍能解析；不供直接使用。
+
+@ 0 1 0 0ab9049af9c4913004774bcc9b74dbbb
++ entry .augmentString   Predef 从 `String` 到 `StringOps` 的转换，用于少数 `String` 接缝
+
+@ 0 7 0 18c3af71c0020bef1c8654c8b45a8be1
++ entry .intWrapper   Predef 从 `Int` 到 `RichInt` 的转换，用于 `Int` 上的 `until`、`to`、`max`、`min`
++ entry .longWrapper   Predef 从 `Long` 到 `RichLong` 的转换
++ entry .shortWrapper   Predef 从 `Short` 到 `RichShort` 的转换
++ entry .byteWrapper   Predef 从 `Byte` 到 `RichByte` 的转换
++ entry .charWrapper   Predef 从 `Char` 到 `RichChar` 的转换，用于 `isDigit`、`toUpper` 等
++ entry .doubleWrapper   Predef 从 `Double` 到 `RichDouble` 的转换
++ entry .floatWrapper   Predef 从 `Float` 到 `RichFloat` 的转换
+
+@ 0 13 0 0f29cde99bd451d30b189f84062377b8
++ entry .refArrayOps   Predef 针对引用类型 `scala.Array` 的 `ArrayOps` 转换
++     数组操作转换适用于 JDK 接缝处的原始 `scala.Array`，而不适用于不透明的 `Array`，后者的词汇是类型类的词汇。
++ entry .genericArrayOps   Predef 针对任意元素 `scala.Array` 的 `ArrayOps` 转换
++ entry .byteArrayOps   Predef 针对 `scala.Array[Byte]` 的 `ArrayOps` 转换
++ entry .shortArrayOps   Predef 针对 `scala.Array[Short]` 的 `ArrayOps` 转换
++ entry .intArrayOps   Predef 针对 `scala.Array[Int]` 的 `ArrayOps` 转换
++ entry .longArrayOps   Predef 针对 `scala.Array[Long]` 的 `ArrayOps` 转换
++ entry .floatArrayOps   Predef 针对 `scala.Array[Float]` 的 `ArrayOps` 转换
++ entry .doubleArrayOps   Predef 针对 `scala.Array[Double]` 的 `ArrayOps` 转换
++ entry .charArrayOps   Predef 针对 `scala.Array[Char]` 的 `ArrayOps` 转换
++ entry .booleanArrayOps   Predef 针对 `scala.Array[Boolean]` 的 `ArrayOps` 转换
++ entry .unitArrayOps   Predef 针对 `scala.Array[Unit]` 的 `ArrayOps` 转换
+
+@ 0 3 0 0ad6f539404f7a2e1c839661ed814534
++ entry .ClassTag   `scala.reflect.ClassTag`，重新导出：数组元素所需的运行时类令牌
++     每个 `Array` 构造器都带有 `ClassTag[element]` 上下文界定，因此构建数组的泛型方法要带上 `[element: ClassTag]`。
+
+@ 0 1 0 0fab35fa4b7f7e770aa8790a9bb4f00b
++ entry .Typeable   `scala.reflect.Typeable`，重新导出：针对类型模式的运行时类型测试
+
+@ 0 3 0 0877992a88bd660510c42efd8a99a4bb
++ entry .TreeMap   `scala.collection.immutable.TreeMap`，重新导出：一个有序的标准库映射
++     为少数需要键顺序的地方而保留的标准库结构，代价是需要为其键显式 `import scala.math.Ordering`。
++     它不是不透明的 Soundness 集合。
+
+@ 0 1 0 1c23aa27cb84ab9a18d01a94ef268d4c
++ entry .TreeSet   `scala.collection.immutable.TreeSet`，重新导出：一个有序的标准库集合
+
+@ 0 1 0 1e9914fdc77530761a24adc5846c561c
++ entry .TrieMap   `scala.collection.concurrent.TrieMap`，重新导出：一个并发的标准库映射
+
+@ 0 1 0 0b85d701ae361a641c26b16153a1aa01
++ entry .NonFatal   `scala.util.control.NonFatal`，重新导出：可恢复异常的提取器
+
+@ 0 2 0 04f217bfeb17743a045c876a39c27dad
++ entry .boundary   `scala.util.boundary`，重新导出：一个可以用 `break` 跳出的带标号代码块
++ entry .break   `scala.util.boundary.break`，重新导出：带着一个值离开外围的 `boundary`
+
+@ 0 8 0 0a508d055a9319671bc8e9546d21fe86
++ entry .IteratorHasAsScala   `java.util.Iterator` 上的 `.asScala`，来自 `CollectionConverters`
++     Java 互操作转换器被重新导出，因此 JDK 接缝无需额外导入；结果是标准库集合，再通过伴生对象的 `from` 转回。
++ entry .ListHasAsScala   `java.util.List` 上的 `.asScala`，来自 `CollectionConverters`
++ entry .MapHasAsScala   `java.util.Map` 上的 `.asScala`，来自 `CollectionConverters`
++ entry .EnumerationHasAsScala   `java.util.Enumeration` 上的 `.asScala`，来自 `CollectionConverters`
++ entry .SeqHasAsJava   标准库 `Seq` 上的 `.asJava`，来自 `CollectionConverters`
++ entry .MapHasAsJava   标准库 `Map` 上的 `.asJava`，来自 `CollectionConverters`
+
+@ 0 10 0 15e1d1a2925ecdd11d5efba91ba4f8db
++ entry .tailrec   `scala.annotation.tailrec`，重新导出
++ entry .targetName   `scala.annotation.targetName`，重新导出
++ entry .switch   `scala.annotation.switch`，重新导出
++ entry .StaticAnnotation   `scala.annotation.StaticAnnotation`，重新导出：用户注解的基类
++ entry .missingContext   `scala.annotation.implicitNotFound` 的改名：缺少 given 时的消息
++     在类型类或 given 的类型上标注 `@missingContext("…")`，设定找不到实例时报告的错误。
++ entry .uncheckedVariance   `scala.annotation.unchecked.uncheckedVariance`，重新导出
++ entry .uncheckedCaptures   `scala.annotation.unchecked.uncheckedCaptures`，重新导出
++ entry .uncheckedStable   `scala.annotation.unchecked.uncheckedStable`，重新导出
+
+@ 0 1 0 1f9e9713eaa114e817330d3e79608d4f
++ entry .into   `Conversion.into`，重新导出：把参数标记为接受隐式转换
+
+@ 0 76 0 08c2d9f6cc5918a203ef02072e11255f
++ entry .Any   `scala.Any`，重新导出
++ entry .AnyKind   `scala.AnyKind`，重新导出：容许任意种类类型的上界
++ entry .AnyRef   `scala.AnyRef`，重新导出
++ entry .AnyVal   `scala.AnyVal`，重新导出
++ entry .Matchable   `scala.Matchable`，重新导出
++ entry .Nothing   `scala.Nothing`，重新导出
++     永不产出值的表达式的类型——`panic`、`abort` 以及战术的 `raise` 都返回它——因此它符合每一种类型。
++ entry .Null   `scala.Null`，重新导出
++     显式空值下 `null` 的类型；Java API 的可空 `T | Null` 用 `Optional(value)` 转成 `Optional`，或用 `nn` 断言。
++ entry .Singleton   `scala.Singleton`，重新导出：字面量类型参数的上界
++ entry .&   中缀交集类型 `A & B`，重新导出
++ entry .|   中缀联合类型 `A | B`，重新导出
++ entry .<:<   子类型证据 `A <:< B`，重新导出
++ entry .=:=   类型相等证据 `A =:= B`，重新导出
++ entry .Boolean   `scala.Boolean`，重新导出
++ entry .Byte   `scala.Byte`，重新导出
++ entry .Char   `scala.Char`，重新导出
++ entry .Double   `scala.Double`，重新导出
++ entry .Float   `scala.Float`，重新导出
++ entry .Int   `scala.Int`，重新导出
++ entry .Long   `scala.Long`，重新导出
++ entry .Short   `scala.Short`，重新导出
++ entry .Either   `scala.Either`，重新导出
++ entry .Left   `scala.Left`，重新导出
++ entry .Right   `scala.Right`，重新导出
++ entry .Option   `scala.Option`，重新导出，用于与使用它的代码之间的边界
++     Soundness 代码用 `Optional` 表示缺失；保留 `Option` 是为了标准库和第三方 API，在接缝处用 `optional` 和 `option` 转换。
++ entry .Some   `scala.Some`，重新导出
++ entry .None   `scala.None`，重新导出
++ entry .Tuple   `scala.Tuple`，重新导出
++ entry .EmptyTuple   `scala.EmptyTuple`，重新导出；也可写作 `Zero`
++ entry .NonEmptyTuple   `scala.NonEmptyTuple`，重新导出
++ entry .Tuple1   `scala.Tuple1`，重新导出
++ entry .Tuple2   `scala.Tuple2`，重新导出
++ entry .*:   元组 cons 类型和提取器 `head *: tail`，重新导出
++ entry .CanEqual   `scala.CanEqual`，重新导出：严格相等证据
++ entry .Conversion   `scala.Conversion`，重新导出：隐式转换的类
++ entry .Dynamic   `scala.Dynamic`，重新导出：`selectDynamic` 成员的标记
++ entry .Function   `scala.Function`，重新导出
++ entry .PartialFunction   `scala.PartialFunction`，重新导出；也可中缀写作 `~>`
++ entry .Product   `scala.Product`，重新导出
++ entry .Selectable   `scala.Selectable`，重新导出：结构化选择
++ entry .StringContext   `scala.StringContext`，重新导出：插值器所扩展的类
++ entry .BigDecimal   `scala.BigDecimal`，重新导出
++ entry .BigInt   `scala.BigInt`，重新导出
++ entry .Fractional   `scala.Fractional`，重新导出
++ entry .Integral   `scala.Integral`，重新导出
++ entry .Numeric   `scala.Numeric`，重新导出
++     保留这些数值抽象是为了接受它们的标准库接缝；`Ordering` 和 `Ordered` 则刻意不保留，因为 Soundness 中的比较由 `Comparable` 负责。
++ entry .deprecated   `scala.deprecated`，重新导出
++ entry .unchecked   `scala.unchecked`，重新导出
++ entry .volatile   `scala.volatile`，重新导出
++ entry .transient   `scala.transient`，重新导出
++ entry .native   `scala.native`，重新导出
++ entry .main   `scala.main`，重新导出：程序入口方法的注解
++ entry .unsafeExceptions   `scala.unsafeExceptions`，重新导出：`import unsafeExceptions.canThrowAny`
++     该对象的 `canThrowAny` given 允许在没有 `CanThrow` 的情况下抛出任何异常，适用于已决定不追踪异常的代码。
++ entry .CanThrow   `scala.CanThrow`，重新导出：抛出某个异常类型的能力
++ entry .DummyImplicit   `scala.DummyImplicit`，重新导出；也可写作 `Void`
++ entry .MatchError   `scala.MatchError`，重新导出
++ entry .NamedTuple   `scala.NamedTuple`，重新导出
++ entry .Specializable   `scala.Specializable`，重新导出
++ entry .ValueOf   `scala.ValueOf`，重新导出：单例类型的值，作为证据
++ entry .NoSuchElementException   `scala.NoSuchElementException`，重新导出
++ entry .Iterable   `scala.Iterable`，重新导出：唯一保留的标准库集合接口
++     这个抽象接口是集合类型类内部使用的通货（`compact`、`entire` 以及 rudiments 中以 `Iterable` 为接收者的操作都接受它）；具体的标准库集合不会被重新导出。
++     `Iterator` *不*在这里：在 `import soundness.*` 下，它属于 murmuration。
++ entry .StringBuilder   `scala.StringBuilder`，重新导出，暂时作为可变的文本累加器
++     在前导部分中被标为临时，有待对可变文本累积进行审查。

@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     布局还说明了它是否打算被写入：对于 `/boot`、`/efi`、`/sys`、`/usr` 及其下的一切，以及 `/proc` 下的各进程目录，`readOnly` 为 `true`。
++     XDG Base Directory 规范允许用户移动的五个 `Home` 布局遵循其变量：`Home.Config` 是 `$HOME/.config`，除非 `XDG_CONFIG_HOME` 被设置为绝对路径，此时它就是该路径。
+
+@ 0 25 0 00cbd246801ef52a1510286dae4d794c
++         布局的 `BaseLayout.Dir` 作为上下文值传递给其嵌套布局，嵌套对象正是由此知道它所在的目录。
++         路径段按由内到外的顺序保存。
++     entry #home   路径是否相对于用户主目录
++     entry #path   路径的各段，由内到外
++     entry #/   某个子目录的目录，按其名称
++     entry #render   给定主目录的路径后，以文本形式表示的绝对路径
++         既不相对于主目录、又没有路径段的 `Dir` 呈现为 `/`。
++   entry #readOnly   该目录按约定是否不由程序写入
++       对于 `/boot`、`/efi`、`/sys`、`/usr` 及其下的一切，以及 `/proc` 的各目录，为 `true`；对于 `Home` 下的每个布局，为 `false`。
++   entry #Topic   从该节点到其根的各级目录名，以元组类型表示
++   entry #absolutePath   布局的绝对路径，以文本表示
++       需要 `Environment` 和 `System`。
++       指名了 `#variable` 的布局，在该变量的值是绝对路径时，就是该值。
++       否则，`Home` 下的布局读取 `HOME` 环境变量（不带结尾的 `/`），若未设置则抛出 `Environment.Error`。
++   entry #variable   重新定位该布局的环境变量（如果有）
++   entry #relocation   `#variable` 把布局放在何处：其值，如果它被设置为绝对路径
++   entry #dir   该布局的 `BaseLayout.Dir`，提供给嵌套在其中的布局
++   entry #apply   布局的绝对路径，以调用方选择的路径类型表示
++       `layout[Path on Linux]()` 由 `#absolutePath` 构造任何 `Instantiable across Paths from Text` 类型的值。
++       需要 `Environment` 和 `System`，并会抛出 `Environment.Error`（对于 `HOME` 未设置的 `Home` 布局）和 `Property.Error`。
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`、`Config`、`Local.Bin`、`Local.Share` 和 `Local.State` 是 XDG Base Directory 规范允许用户移动的目录，当各自的变量被设置为绝对路径时，每个目录就位于该变量所指之处：`Home.Config` 是 `$XDG_CONFIG_HOME`，否则是 `$HOME/.config`。
++       按照规范的要求，相对值或空值会被忽略。
++       其他布局是固定的。
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   用户的缓存目录，`$XDG_CACHE_HOME` 或 `~/.cache`
++   entry .Config   用户的配置目录，`$XDG_CONFIG_HOME` 或 `~/.config`
++   entry .Local   用户的本地安装前缀，`~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         `/usr` 的按用户对应物，存放用户自己的程序、库、数据和状态。
++     entry .Bin   用户自己的可执行文件，`$XDG_BIN_HOME` 或 `~/.local/bin`
++     entry .Lib   用户自己的库，`~/.local/lib`
++     entry .Share   用户自己的应用程序数据，`$XDG_DATA_HOME` 或 `~/.local/share`
++     entry .State   用户的应用程序状态，`$XDG_STATE_HOME` 或 `~/.local/state`

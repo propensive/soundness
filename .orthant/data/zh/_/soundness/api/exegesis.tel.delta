@@ -1,0 +1,2281 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cc810470cd6afba122df81c9322cbb6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c321ee2df17494216b450ab82f76241
++ info   以类型化值表示的语言服务器协议：由处理函数构成的服务器、作为会话的客户端，以及两者之间的代理
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 03d5e98a24a431a61c2abf0900a4d7f4
++     _Exegesis_ 从三个方向实现[语言服务器协议](https://microsoft.github.io/language-server-protocol/)。
++     **服务器**是对 `Lsp.listen` 的一次调用，其代码块为语言提供的每项特性注册一个类型化的处理函数，随后通过标准输入和输出提供以 `Content-Length` 分帧的 JSON-RPC 服务，直到编辑器关闭管道。
++     **客户端**是与某个 `Lsp.Server`（一条要启动的命令，或一对已连接到服务器的流）之间的会话，它在一个代码块执行期间借出一个 `Lsp.Connection`，为编辑器发送的每个请求和通知各提供一个类型化方法。
++     **代理** `Lsp.proxy` 同时兼具两者：它为编辑器提供服务，同时与一个真实服务器保持会话，转发一切内容，并修改 `rewrite` 组合子所注册的部分。
+
+@ 0 8 0 07ae692186b83c0e19a11db4020b6e16
++     协议的词汇被建模为 `object Lsp` 中的普通 case class 和枚举：`Lsp.Position`、`Lsp.Range`、`Lsp.Diagnostic`、`Lsp.Hover`、`Lsp.CompletionList`、`Lsp.ServerCapabilities` 等，每个都带有派生的 JSON 编解码器，因此处理函数接收类型化值、返回类型化值，从不手工拼装 JSON。
++     传输层接口本身是七个 `@rpc` trait（`LspLifecycle`、`LspLanguage`、`LspNavigation`、`LspEditing`、`LspAdvanced`、`LspWorkspace`、`LspResolve`），在 `Lsp` trait 中合并；`Lsp.Dispatch` 将它的任意实现变成 JSON-RPC 分发器，`Lsp.Connection` 则为每个 trait 持有生成的客户端代理。
+
+% 2 1 0 0e0e6e69189fd5b70116b3734886599c
+
+% 3 1 0 112bfad9b91ada8406410077eb445581
+
+% 0 1 0 1aa05f11c17f63e30d5bb160adc03709
+
+% 0 1 0 0eef447a7950324718eb36afb77fd276
+
+% 0 1 0 08c7f00dd9208f390009f73a3cdf697e
+
+% 0 1 0 02a57c8420bac1e31d073b19d12e24b0
+
+% 0 1 0 09447586849c1c59027fa70d4e1aff8c
+
+% 0 1 0 1547a6ee2d14948e1c2a9eb14ce23f10
+
+% 0 1 0 048fd973c07dd78d1d3ecec1f719e927
+
+% 0 1 0 106b16fdbfa0b94c1bc7565e42dc7e91
+
+% 0 1 0 1c8d001c6c78a47b129da179c8f8ae3e
+
+% 0 1 0 0ddf53bbec95052918c9e306f1cfc33e
+
+% 0 1 0 1008c452dd585fee1703b1010b6772c2
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 1 1 0 1b49628c0e22547713c550d4ff6c7fdc
+
+@ 0 8 0 189bc276752a87a209f4b784c826d076
++     服务器的形态是**注册表**：传给 `Lsp.listen` 的代码块会借得一个 `Lsp.Registry`，每个组合子（`hover`、`complete`、`opened`、`command`……）都在其中记录自己的处理函数。
++     服务器的 `ServerCapabilities` 由已注册的内容派生，因此向编辑器宣告的能力永远不会与实际存在的处理函数不一致；某项能力除存在与否之外还需要的选项（补全触发字符、语义标记图例、诊断选项）是注册时的参数。
++     代码块一旦返回，注册表即被消耗：服务开始后不能再注册任何内容。
+
+@ 0 10 0 034c05f96525a37115e059110df862f6
++     **处理函数**是一个上下文函数。
++     文档作用域（`Focused`）的处理函数借得当前的 `Document`、`Workspace` 和一个 `Emit[Lsp.Error]`；工作区作用域（`Ambient`）的处理函数只借得工作区和发射器；每个请求的载荷作为带标签的上下文参数到达，通过同名访问器读取（`position`、`range`、`options`、`arguments`、`item`……）。
++     这些句柄是限定于单次分发的能力，因此处理函数无法把 `document` 或 `client` 藏起来留待以后使用（捕获检查会拒绝），而它从中读取的纯值，如 `document.text` 或一个 `Hover`，可以自由离开。
++     无法作答的处理函数会抛出 `Lsp.Error`：对于请求，它变成一个带有该原因传输代码的错误响应；对于通知，它变成一条 `window/logMessage`。
+
+@ 0 5 0 0fa2caec5032850217c57d1ee08932e2
++     访问器 `document`、`workspace`、`client`、`position`、`context`、`arguments`、`query` 以及类型 `Document` 与其他 Soundness 库的成员同名，因此 `soundness` 总括包不会展开 `Lsp` 的成员：应在服务器自己的对象**内部**写 `import Lsp.*`，如上面的 `DemoServer` 那样，嵌套的通配导入在那里合法地遮蔽总括包的名称。
+
+@ 0 7 0 14d1f486ae823df80bbe5cacc8c9dcbb
++     同一套词汇也可以反向使用。
++     `Lsp.Server(command)` 或 `Lsp.Server.streams(in, out)` 描述一个服务器，`session`（aperture 的 `Sessional` 扩展，由 `Lsp.Server.sessional` 提供）打开通道并借出一个 `Lsp.Connection`；请求返回 `Optional[Hover]`、`CompletionList` 和 `List[Location]`，与处理函数一样，错误响应则作为 `Lsp.Error` 抛出。
++     服务器主动发出的内容到达一个以上下文方式提供的 `Lsp.Listener`，而 `Lsp.Observer` 能看到两个方向上的原始流量。
+
+% 2 1 0 18098fc29d09e07206cb265601460b82
+
+% 3 1 0 01ab08a6ec5c5d870604dd80bde2d461
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 18d9b46ca13dd19e1944675028f38782
+
+% 0 1 0 1741688c07b6d9150acfce3feacfba0e
+
+% 0 1 0 175b24fcc0a4b7dd0fab3c6ba8dac660
+
+% 0 1 0 0f981e368c1deb17145d1a1f7813f6d6
+
+% 0 1 0 0d229f22cb4036921387f711dea7678a
+
+% 0 1 0 0e031022ef04df2316b8d371659d5a0e
+
+% 1 1 0 0636ac6bd80f77f41cb3dae835455500
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     该库有两个组件：
+
+@ 0 6 0 18e3533597adb3ae146e534505d84444
++     - `exegesis.core`：上述全部内容，即 `Lsp`、七个传输 trait、`LspSessional`、`rewrite` 和 `upstream`。仅限 JVM（它依赖 `obligatory.json`，后者没有 Scala.js 构建）。
++     - `exegesis.demo`：`DemoLspServer` 和 `DemoLspProxy`，两个采用常驻守护进程惯用法（ethereal 的 `cli`/`execute`）的完整程序，一个是最小的语言服务器，另一个是启动其参数所指定服务器的代理。
+
+@ 0 5 0 00ed8b6e5fb5ddbf190b28417d9e1bd9
++     `Lsp`、`LspSessional`、`rewrite` 和 `upstream` 被导出到 `soundness` 总括包。
++     传输 trait 和演示程序则没有，需通过 `import exegesis.*` 访问。
++     会话所需的 given，即 `Lsp.Listener.quiet`、`Lsp.Observer.silent` 和 `Lsp.Server.sessional`，位于其主题类型的伴生对象中，因此无需按名称导入；自己的监听器或观察者可绑定为局部 `given`，其优先级高于它们。
+
+% 0 1 0 09f4f14b56f236a20f082955fe2d71a4
+
+% 0 1 0 011c5c9a13697ccd1a1abffadd0f53e1
+
+% 0 1 0 0777938784819126077a50b6de7635e6
+
+% 0 1 0 1952fe1b1b3fdd9d1258b07e91749ca2
+
+% 0 1 0 15ffbe15dc74649f0d00d300c0a79e13
+
+% 0 1 0 11a21a92fed618c101ee666bd4a88091
+
+% 0 1 0 1586f40001c12b700f776b33c37b88ec
+
+@ 0 1 0 083cbe68ee8b31dd0d27d3044b2fd91c
++ entry .Lsp   协议：其类型、处理函数注册表、`listen`、`proxy`，以及客户端一半
+
+% 1 1 0 07c81b808275b48401e2ee8c5852ef88
+
+@ 0 6 0 17da59a998cf97010aeece197c6524fc
++       `Lsp` 是同名的两样东西。
++       作为 **trait**，它是完整的语言服务器协议传输层接口：`LspLifecycle`、`LspLanguage`、`LspNavigation`、`LspEditing`、`LspAdvanced`、`LspWorkspace` 和 `LspResolve` 的合并，混入 obligatory 的 `JsonRpc` 并将 `#Origin` 固定为 `Lsp.Client`，由 `Lsp.listen` 的会话实现、由 `Lsp.Dispatch` 提供服务。
++       也可以自行实现它（由 `dispatcher` 路由），但注册 API 才是构建服务器的预期方式。
+
+@ 0 1 0 1a81df26a0faa92316d9e51f4b88a3aa
++       作为**对象**，它是词汇表。
++       这里有三组成员：
+
+@ 0 12 0 08a8e25adf81ef20185fbc437f8d9ad1
++       - **协议类型**，每个 LSP 结构对应一个 case class 或枚举，各带 JSON 编解码器：`Position`、`Range`、`Location`、`Diagnostic`、`Hover`、`CompletionItem`、`CompletionList`、`TextEdit`、`WorkspaceEdit`、`ServerCapabilities`、`SymbolKind`、`DiagnosticSeverity` 等；
++       - **服务器端**：处理函数类型（`Focused`、`Ambient`、`HoverHandler`……）、处理函数读取的环境访问器（`document`、`workspace`、`client`、`position`……）、注册组合子（`hover`、`complete`、`opened`、`command`……）、它们写入的 `Registry`、提供服务的 `listen`，以及处理函数抛出的 `Error`；
++       - **客户端**：描述要对话的服务器的 `Server`、会话借出的句柄 `Connection`、`Listener` 和 `Observer`、服务器发给编辑器的通知 `Client`；以及把一个进程置于编辑器与服务器之间的 `Proxy` 和 `proxy`。
+
+% 2 1 0 0aafc00fae589bab1cd66aa79b7a0acc
+
+% 3 1 0 1347fef257597af51b339ad52d72e4f5
+
+% 5 1 0 11853d9cf286480d012ac485cbc36000
+
+% 6 1 0 12fa3238bd1ded7c088d1f3d996a81c2
+
+% 8 1 0 080c321809c8600d06b45a559f9a04ba
+
+% 9 1 0 0660c98f4003de03116c07af10a91ea3
+
+% 10 1 0 096700d9cb0c9f7808cc9ece64df64a1
+
+% 0 1 0 133cd2f10de3e46c0a070192c753dcb8
+
+% 0 1 0 040442f9949fc651076d26dc6bd14193
+
+% 1 1 0 1c8c74f70fa3f3840881bf5db3311459
+
+% 2 1 0 1e741c340c21475b1082a29a88add546
+
+% 3 1 0 0ec45109e01ac4911fc1782c57150825
+
+% 4 1 0 1857f130283f07fe018711786f0a4023
+
+% 5 1 0 1d3b25797407f8450dee834d72e374d8
+
+@ 0 3 0 0165d58b991d3eb615c4f1f9a6e52e3b
++       凡是作用域中有 `Lsp.Registry^` 的地方都可以注册，即 `listen` 的代码块，或像上面的 `register` 这样接收一个注册表的辅助方法，因此大型服务器可以把特性分散到多个方法中。
+
+@ 0 3 0 13a5c5728e3076de0009a78e19856b13
++       在使用 `Lsp.*` 的对象内部导入它：它的若干成员（`document`、`context`、`arguments`、`query`、`Document`）与 `soundness` 总括包中其他库的名称冲突，这正是总括包导出 `Lsp` 而不导出其内容的原因。
+
+% 0 1 0 033ece319d80b85e01daa275b853f81c
+
+% 1 1 0 1e21d980519065cc170782cdc9b18a4c
+
+% 1 1 0 1f9d4847cf3942010711c04fdfe5dba4
+
+% 1 1 0 0e01538b0859f32617d45472977f6054
+
+% 1 1 0 0fd74705f93b0dda1e2eafeccc17cac5
+
+@ 0 4 0 086eec1efc86891b1073c9473f40b0bc
++   entry #Origin   从服务器角度看协议的另一端：`Lsp.Client`
++       `JsonRpc` 的来源类型：`Lsp` 实现可以对向其发送消息的对端回调的方法所在的接口。
++       服务器的 `client` 句柄就是其中之一。
++   entry .Position   一个行号和一个字符位置，都从零开始，以 UTF-16 码元计
+
+% 1 1 0 0deaae0e87cf915c146e7d62ae87194f
+
+@ 0 12 0 1f55f4699b14aa2f0e8db21cd13e2b26
++         协议中的位置：`line` 和 `character` 从零开始计数，`character` 是以 UTF-16 码元计的偏移量，这是协议的默认编码，也是 `Text` 底层字符的单位，因此库中任何地方都不发生转码。
++         `Document#offset` 和 `Document#position` 在位置与文档文本中的偏移量之间转换，并按协议要求进行截取。
++         `#span` 和 `.from` 与 zephyrine 的 `Span` 相互转换，后者同样从零开始。
++     entry .from   从 `Span` 的起点得到一个位置；如果该跨度没有行号，则为 `Unset`
++         取跨度的起始行和起始列（缺失时为零）。
++     entry #line   从零开始的行号
++     entry #character   行内从零开始的偏移量，以 UTF-16 码元计
++     entry #span   该位置在其所在行上表示为零宽度的 `Span`
++   entry .Range   两个位置，起点包含在内，终点不包含在内
+
+% 1 1 0 11974fcd911257f710a3899af908aa34
+
+@ 0 12 0 0ea4ac1f16ea66091d7d272fe2f90c2b
++         协议中的范围。
++         `Document#apply(range)` 读取范围内的文本，`Document#fullRange` 是整个文档的范围。
++         `.from` 转换一个 `Span`，终点缺失时使用起始行和起始列，`#span` 则反向转换。
++         伴生对象的 `encodable` 和 `decodable` 是 JSON 编解码器，在此派生一次，供所有使用处共享。
++     entry .from   从 `Span` 得到一个范围；如果该跨度没有起始行，则为 `Unset`
++     entry .encodable   为范围派生的 JSON 编码器
++     entry .decodable   为范围派生的 JSON 解码器；格式错误的范围会抛出 `Json.Error`
++     entry #start   范围的起点
++     entry #end   范围的终点，不包含在内
++     entry #span   以 `Span` 表示的该范围所覆盖的区域
++   entry .Location   由 URI 指定的文档中的一个范围
+
+% 1 1 0 0765b6ce320403631fb9d22e8e261afa
+
+@ 0 7 0 1422d7841ff9b63800e8cbf820577a50
++         `definition`、`declaration`、`references`、`typeDefinition` 和 `implementation` 返回的列表中的元素。
++         伴生对象持有派生的 JSON 编解码器。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的位置会抛出 `Json.Error`
++     entry #uri   文档的 URI，按编辑器的写法（`file:///…`）
++     entry #range   该文档中的范围
++   entry .Envelope   任一 JSON-RPC 消息中决定其处理方式的两个成员
+
+% 1 1 0 094453f1eb948e921e6465e9678dfe6e
+
+@ 0 11 0 0990bb33e899c2941215f65808347d47
++         只读取 `method`（响应没有）和 `id`（通知没有）的消息。
++         两者都是可选的，因此任何消息都能解码；代理用它在不了解消息结构的情况下对消息分类：没有方法表示响应，没有 id 表示通知。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #method   消息指定的方法；对于响应为 `Unset`
++     entry #id   消息用于关联的 id，以原始 JSON 表示；对于通知为 `Unset`
++   entry .TextDocumentIdentifier   由 URI 指定的文档
++     entry #uri   文档的 URI
++   entry .VersionedTextDocumentIdentifier   由 URI 和版本指定的文档
+
+% 1 1 0 0eb4bf58ca53684e16f050aa01c46289
+
+@ 0 5 0 1cdbdfcb2e68078718442b84a1aab941
++         `textDocument/didChange` 携带的内容：版本是编辑器对编辑次数的计数，会话将其记录为 `Document#version`。
++     entry #uri   文档的 URI
++     entry #version   编辑器为该文档给出的版本号
++   entry .TextDocumentItem   一个完整的已打开文档：URI、语言、版本和文本
+
+% 1 1 0 1a4cda347f26513008a6e369857dd811
+
+@ 0 7 0 032162b68103606b1ba32bb85ce67be1
++         `textDocument/didOpen` 携带的内容，也是 `Workspace#document` 作为会话所持文档的快照返回的内容。
++     entry #uri   文档的 URI
++     entry #languageId   编辑器的语言标识符，如 `scala` 或 `rust`
++     entry #version   编辑器为该文档给出的版本号
++     entry #text   文档的全部文本
++   entry .TextDocumentContentChangeEvent   一次编辑：用文本替换一个范围，或替换全部文本
+
+% 1 1 0 1d3f786d8670f25a1781167e126e6beb
+
+@ 0 10 0 033be843badda27a1922ed8c9a7fefc4
++         带有 `range` 的事件在该范围的 UTF-16 偏移处拼接文本；不带 `range` 的事件替换整个文档，使用完全同步的编辑器就是这样报告每次更改的。
++         `Connection#edit` 发送一组这样的事件，`Connection#replace` 发送不带范围的形式。
++     entry #range   被替换的范围；为 `Unset` 时替换整个文档
++     entry #text   替换文本
++   entry .ClientInfo   初始化时报告的编辑器名称和版本
++     entry #name   编辑器的名称
++     entry #version   编辑器的版本（如果提供了）
++   entry .ServerInfo   在 `initialize` 结果中宣告的服务器名称和版本
+
+% 1 1 0 0605eb6c8c0742231331f7c457fe497b
+
+@ 0 8 0 02b0e836544bedab07250ec70e074524
++         `Lsp.listen(name, version)` 发送这些信息；`Connection#initialize` 在 `InitializeResult` 中返回它们。
++     entry #name   服务器的名称
++     entry #version   服务器的版本（如果提供了）
++   entry .Folder   一个工作区文件夹：它的 URI 和显示名称
++     entry #uri   文件夹的 URI
++     entry #name   文件夹的显示名称
++   entry .CompletionOptions   服务器如何补全：触发字符，以及条目是否可解析
+
+% 1 1 0 1ac3c60071f3ad0213d815046b4d1a03
+
+@ 0 11 0 1a281ec47fae715a1aa47a6945e66145
++         由 `Registry#capabilities` 从 `complete(triggers*)` 注册派生；如果同时注册了 `resolveCompletion`，则设置 `resolveProvider`。
++     entry #triggerCharacters   键入时会请求补全的字符（如果有）
++     entry #resolveProvider   是否提供 `completionItem/resolve` 服务
++   entry .SignatureHelpOptions   触发签名帮助的字符
++     entry #triggerCharacters   触发字符（如果有）
++   entry .DocumentLinkOptions   文档链接是否延迟解析
++     entry #resolveProvider   是否提供 `documentLink/resolve` 服务
++   entry .CodeLensOptions   代码透镜是否延迟解析
++     entry #resolveProvider   是否提供 `codeLens/resolve` 服务
++   entry .DocumentOnTypeFormattingOptions   键入时触发格式化的字符
+
+% 1 1 0 1ac9e032554279db0d9a0b609ec769cc
+
+@ 0 5 0 1382f48c85468d771cfcf9d80e9c7d04
++         由 `formatOnType(first, more*)` 派生：协议要求一个触发字符，并允许更多。
++     entry #firstTriggerCharacter   必须触发格式化的字符
++     entry #moreTriggerCharacter   其他触发字符（如果有）
++   entry .SemanticTokensOptions   服务器的语义标记所用的图例，以及它提供哪些请求的服务
+
+% 1 1 0 10841ac69d37e1e7002c91403c24a467
+
+@ 0 6 0 1e81ba4ba33dec4412afbf3fa739403e
++         由 `semanticTokens(legend)` 派生；存在该处理函数时设置 `full`，注册了 `semanticTokensRange` 时设置 `range`。
++     entry #legend   服务器的标记数据所索引的标记类型和修饰符
++     entry #range   是否提供 `textDocument/semanticTokens/range` 服务
++     entry #full   是否提供 `textDocument/semanticTokens/full` 服务
++   entry .DiagnosticOptions   服务器的拉取式诊断如何运作
+
+% 1 1 0 12e1d0b84943a6910462f7decb01fc68
+
+@ 0 7 0 08db8dbc8aa23d12029254b6ebbcf6f2
++         `diagnostics(options)` 在注册时接收的选项：协议要求服务器说明一个文档的诊断是否依赖其他文件，以及它能否为整个工作区报告诊断。
++     entry #identifier   客户端保存结果时所用的标识符（如果有）
++     entry #interFileDependencies   一个文件的更改是否可能改变另一个文件的诊断
++     entry #workspaceDiagnostics   服务器是否为整个工作区报告诊断
++   entry .ExecuteCommandOptions   服务器执行的命令
+
+% 1 1 0 0b318d732622af281e7c0e8689d29f48
+
+@ 0 3 0 0a22787d85ed650d125a8a61864a2a88
++         由每个 `command(name)` 注册派生；没有任何注册时缺省。
++     entry #commands   已注册的命令名称
++   entry .ServerCapabilities   服务器告诉编辑器它能做什么
+
+% 1 1 0 17b8db6a248ad58506523bc659836471
+
+@ 0 6 0 01586a9c75c8717801a4cfae2251a2a4
++         在 `initialize` 结果中发送的记录。
++         用 `Lsp.listen` 构建的服务器从不手写它：`Registry#capabilities` 从已注册的处理函数派生它，每个提供者标志恰好在其处理函数存在时设置，`textDocumentSync` 总是 `Incremental`，而 `capabilities(adjust)` 注册最后修改派生出的记录。
++         代理用 `rewrite.capabilities` 修改上游服务器的记录，客户端则从 `Connection#initialize` 读取它。
+
+% 2 1 0 0a9b7b28d74ca6bf005bf64723c32d6d
+
+% 3 1 0 0b116db7fe0ebb4405e1ab16ad884ee1
+
+% 0 1 0 05f3f18729d91c431d1da6b341e36773
+
+% 0 1 0 18e06184449b199013aa1af8d1767c64
+
+% 0 1 0 0cdd36f399563c62133e203508d9c721
+
+% 1 1 0 15e979bcbf392c3509c401b07a387086
+
+@ 0 33 0 1e9d6c7f1ed822180803b8233b76728f
++         每个字段都是可选的，默认为 `Unset`，编解码器会将其省略。
++     entry #textDocumentSync   服务器希望如何报告文档更改
++     entry #completionProvider   补全及其选项
++     entry #hoverProvider   悬停
++     entry #definitionProvider   转到定义
++     entry #referencesProvider   查找引用
++     entry #documentSymbolProvider   文档符号
++     entry #documentFormattingProvider   整个文档的格式化
++     entry #renameProvider   重命名
++     entry #codeActionProvider   代码操作
++     entry #signatureHelpProvider   签名帮助及其触发字符
++     entry #declarationProvider   转到声明
++     entry #typeDefinitionProvider   转到类型定义
++     entry #implementationProvider   转到实现
++     entry #documentHighlightProvider   文档高亮
++     entry #foldingRangeProvider   折叠范围
++     entry #selectionRangeProvider   选择范围
++     entry #colorProvider   文档颜色和颜色表示
++     entry #documentRangeFormattingProvider   范围格式化
++     entry #documentLinkProvider   文档链接及其选项
++     entry #codeLensProvider   代码透镜及其选项
++     entry #documentOnTypeFormattingProvider   键入时格式化及其触发字符
++     entry #callHierarchyProvider   调用层次结构
++     entry #typeHierarchyProvider   类型层次结构
++     entry #semanticTokensProvider   语义标记及其图例
++     entry #inlayHintProvider   内嵌提示
++     entry #inlineValueProvider   内联值
++     entry #linkedEditingRangeProvider   联动编辑范围
++     entry #monikerProvider   名字标记（moniker）
++     entry #diagnosticProvider   拉取式诊断及其选项
++     entry #workspaceSymbolProvider   工作区符号
++     entry #executeCommandProvider   命令及其名称
++   entry .InitializeResult   服务器对 `initialize` 的回答：它的能力和身份
+
+% 1 1 0 10d51af5abb576220ebd73ae2e19ed1a
+
+@ 0 7 0 0b98865e07cfa9a902d2b30b478cec00
++         由 `Connection#initialize` 返回，也是代理中 `rewrite.capabilities` 所修改的载荷。
++         伴生对象持有派生的 JSON 编解码器。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的结果会抛出 `Json.Error`
++     entry #capabilities   服务器能做什么
++     entry #serverInfo   服务器的名称和版本（如果提供了）
++   entry .MarkupContent   用于显示的文本，除非其种类另有说明，否则为 Markdown
+
+% 1 1 0 051a3345236cdb990206b0f9f4447b1b
+
+@ 0 5 0 0cd7de541061bd0c0ea78f90cbc4e66f
++         `Hover` 和 `CompletionItem` 的文档所携带的内容。
++         `kind` 默认为 `markdown`；`plaintext` 是协议认识的另一个值。
++     entry #kind   `markdown`（默认）或 `plaintext`
++     entry #value   文本
++   entry .CompletionContext   编辑器为何请求补全
+
+% 1 1 0 16b6bad6f068596d0954a6396445a870
+
+@ 0 6 0 0909a51e203048c8078a6b68d41ce522
++         `triggerKind` 是协议中的数字：1 表示显式请求，2 表示触发字符（此时由 `triggerCharacter` 给出），3 表示对不完整列表的再次请求。
++         `complete` 处理函数以 `context` 读取它；编辑器没有发送时为 `Unset`。
++     entry #triggerKind   协议中表示触发种类的数字
++     entry #triggerCharacter   由触发字符请求补全时所键入的字符
++   entry .CompletionItem   一个补全项：标注、种类、详情、文档和插入文本
+
+% 1 1 0 1de14105d72edd77070e69c137a9b709
+
+@ 0 3 0 1f7235018a9c082813434e0f8c9a6132
++         `CompletionList` 中包含的内容，也是 `resolveCompletion` 延迟填充的内容：按需计算文档的服务器从 `complete` 返回一个空白条目，再在 `resolveCompletion` 中补全它，所需的任何信息都放在 `data` 中携带。
+
+% 2 1 0 1ac53f4df635e7c508f9e44cc5c13dc0
+
+% 3 1 0 1501487f40b4d9670dc6e0319c9ce682
+
+% 0 1 0 0e460df07746c85506a1fc77fb0c44c8
+
+% 1 1 0 03202d9800b2296e04459beee3edbe1e
+
+@ 0 9 0 185027609091ad9c000f1b17d1efe518
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的条目会抛出 `Json.Error`
++     entry #label   列表中显示的文本；除非 `insertText` 另有说明，也是插入的文本
++     entry #kind   条目的种类，编辑器将其渲染为图标
++     entry #detail   简短的类型或签名，显示在标注旁边
++     entry #documentation   较长的文档，以标记形式表示
++     entry #insertText   与标注不同时插入的文本
++     entry #data   服务器希望在 `completionItem/resolve` 时取回的任何内容，以原始 JSON 表示
++   entry .CompletionList   补全请求返回的条目，以及是否还有更多
+
+% 1 1 0 0dad51dc7ffd7605029ccf1433732e1c
+
+@ 0 7 0 0454fce04485c4c012c3ce2844e240f3
++         `complete` 处理函数返回的内容。
++         `isIncomplete` 告诉编辑器在用户键入时再次请求，而不是过滤已有的列表。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的列表会抛出 `Json.Error`
++     entry #isIncomplete   继续键入时是否应再次请求服务器
++     entry #items   补全项
++   entry .Hover   悬停显示的内容：标记文本，以及它所适用的范围
+
+% 1 1 0 089e54ec651ca1d40547f2349c53d041
+
+@ 0 9 0 0e327d7a59929ae61c342c577c4bbb03
++         `hover` 处理函数在 `Optional` 中返回的内容：`Unset` 表示没有可显示的内容，在线上表示为 `null`。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的悬停会抛出 `Json.Error`
++     entry #contents   显示的标记文本
++     entry #range   悬停所描述的范围，编辑器可以将其高亮（如果提供了）
++   entry .ReferenceContext   引用请求是否希望包含声明
++     entry #includeDeclaration   符号自身的声明是否算作一个引用
++   entry .DocumentSymbol   文档中的一个符号，带有其种类、范围和子符号
+
+% 1 1 0 08b62d9d325271fa10566d15c6a4c527
+
+@ 0 16 0 1bccd600e985fd13110635eabed24612
++         `documentSymbols` 处理函数返回的列表中的元素，是协议中符号的层次化形式（相对于扁平的 `WorkspaceSymbol`）：符号嵌套其 `children`，其 `range` 包住整个定义，而 `selectionRange` 选出其名称。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的符号会抛出 `Json.Error`
++     entry #name   符号的名称
++     entry #kind   符号的种类
++     entry #range   整个定义
++     entry #selectionRange   定义中符号的名称
++     entry #detail   类型或签名（如果有）
++     entry #children   嵌套的符号（如果有）
++   entry .FormattingOptions   编辑器的格式化偏好：制表符宽度，以及使用空格还是制表符
++     entry #tabSize   制表符的宽度
++     entry #insertSpaces   缩进是否使用空格而非制表符
++   entry .TextEdit   用新文本替换的文档中的一个范围
+
+% 1 1 0 0efcd25d5f179d980e549cab24f703b3
+
+@ 0 7 0 19e552dfe419f7631e32a7750463bcab
++         `format`、`formatRange`、`formatOnType` 和 `savingEdits` 返回的列表中的元素，也是 `WorkspaceEdit` 按文档持有的内容。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的编辑会抛出 `Json.Error`
++     entry #range   被替换的范围
++     entry #newText   替换文本
++   entry .WorkspaceEdit   跨文档的编辑，以 URI 为键
+
+% 1 1 0 0b5502bde7997e671494a548beea0f65
+
+@ 0 8 0 0ca30f4c757104ad013e09ba931c14ec
++         `rename` 返回的内容，也是 `creatingFiles`、`renamingFiles` 和 `deletingFiles` 处理函数为在文件操作发生前修改它而可以返回的内容。
++         只建模了协议中编辑的 `changes` 形式，没有建模带版本的文档更改。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的编辑会抛出 `Json.Error`
++     entry #changes   按 URI 给出的对每个文档的编辑（如果有）
++   entry .CodeActionContext   请求代码操作的范围处的诊断
+
+% 1 1 0 1731ef674e3bf0da109e145fdee067fe
+
+@ 0 4 0 1e56933b8c88b1e103fe5efdfcbdbf21
++         `codeActions` 处理函数以 `context` 读取它；快速修复通常由这些诊断计算得出。
++     entry #diagnostics   编辑器在该范围处显示的诊断
++   entry .CodeAction   编辑器可以提供的一个带标题的操作：某一种类下的一项编辑
+
+% 1 1 0 1b3131017c331b9417900155c8b8f239
+
+@ 0 16 0 16bcda28eb75d90d18f75a4581c71071
++         `codeActions` 处理函数返回的列表中的元素。
++         `kind` 是协议中以点分隔的字符串，如 `quickfix` 或 `refactor.extract`；`edit` 可以保留为 `Unset`，由 `resolveCodeAction` 填充，所需内容放在 `data` 中携带。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的操作会抛出 `Json.Error`
++     entry #title   向用户显示的标题
++     entry #kind   操作的种类，如 `quickfix`
++     entry #edit   操作所应用的编辑（如果已计算）
++     entry #data   服务器希望在 `codeAction/resolve` 时取回的任何内容，以原始 JSON 表示
++   entry .ParameterInformation   签名中的一个参数，以其标注表示
++     entry #label   参数的标注，即它在签名中的写法
++   entry .SignatureInformation   一个签名：它的标注、文档和参数
++     entry #label   以文本表示的签名
++     entry #documentation   以标记形式表示的文档（如果有）
++     entry #parameters   参数（如果列出了）
++   entry .SignatureHelp   调用处的各个签名，以及哪个处于活动状态
+
+% 1 1 0 189021e05e73e1fc0f19b030e24812d6
+
+@ 0 7 0 0ae5dad27a9fd59106ea5667f1dca553
++         `signatureHelp` 处理函数在 `Optional` 中返回的内容：`Unset` 表示没有可显示的内容。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #signatures   候选签名
++     entry #activeSignature   首先显示的签名的索引（如果有）
++   entry .DocumentHighlight   要高亮的范围，作为读取、写入或纯文本
+
+% 1 1 0 19b46a408b59ccbb0417cc1b0130d024
+
+@ 0 7 0 08533b117d3e88bb0daf5ba94bc2e471
++         `documentHighlights` 处理函数返回的列表中的元素：光标下符号的每一处出现。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的高亮会抛出 `Json.Error`
++     entry #range   要高亮的范围
++     entry #kind   该处出现是读取、写入还是纯文本
++   entry .FoldingRange   可折叠的一段行，可带有种类
+
+% 1 1 0 01bc93c2a2783b7a0465dd42e53ee52a
+
+@ 0 11 0 0b2ead50dcc4bc391dba05b1666bc0cb
++         `foldingRanges` 处理函数返回的列表中的元素。
++         `kind` 是协议中的字符串，如 `comment`、`imports` 或 `region`。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的范围会抛出 `Json.Error`
++     entry #startLine   第一个被折叠的行
++     entry #startCharacter   折叠在第一行上开始的字符位置（如果不是行尾）
++     entry #endLine   最后一个被折叠的行
++     entry #endCharacter   折叠在最后一行上结束的字符位置（如果不是行尾）
++     entry #kind   `comment`、`imports`、`region`，或服务器自定义的种类
++     entry #collapsedText   代替被折叠行显示的文本（如果有）
++   entry .SelectionRange   一个范围，以及它扩展到的外层范围
+
+% 1 1 0 1943a7bba71096cd0cfe5b2598d9639e
+
+@ 0 8 0 049ae03ab403a0941fd406395ab9dbb5
++         `selectionRanges` 处理函数返回的内容，每个所请求的位置对应一个：一串越来越宽的范围，每个都是前一个的 `parent`，编辑器的扩展选择命令沿此逐级扩展。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的范围会抛出 `Json.Error`
++     entry #range   此范围
++     entry #parent   下一个更宽的范围（如果有）
++   entry .Command   带标题、参数任意的命令，如代码透镜或代码操作所携带的那种
+
+% 1 1 0 16b90d01cc1f2ad914fa854346a17651
+
+@ 0 7 0 1a9f8c7a10036d511044cfa8aad76c7c
++         `arguments` 是协议中的 `LSPAny[]`，保留为原始 `Json`。
++         编辑器通过发送 `workspace/executeCommand` 运行该命令，由 `command(name)` 注册来响应。
++     entry #title   向用户显示的标题
++     entry #command   命令的名称
++     entry #arguments   参数，以原始 JSON 数组表示（如果有）
++   entry .CodeLens   在某个范围处内联显示的命令
+
+% 1 1 0 174ded89327152dd1e43009a47e1d83b
+
+@ 0 8 0 0d0f48672b28c64204363723364227e6
++         `codeLenses` 处理函数返回的列表中的元素。
++         `command` 可以保留为 `Unset`，由 `resolveCodeLens` 填充，所需内容放在 `data` 中携带。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的透镜会抛出 `Json.Error`
++     entry #range   透镜显示的位置
++     entry #command   透镜运行的命令（如果已计算）
++     entry #data   服务器希望在 `codeLens/resolve` 时取回的任何内容，以原始 JSON 表示
++   entry .DocumentLink   链接到某个目标的范围
+
+% 1 1 0 0136c50863e60ea508c6e9bab311cc9c
+
+@ 0 14 0 0cc8551087d1498519094f7cdadc76f7
++         `documentLinks` 处理函数返回的列表中的元素。
++         `target` 可以保留为 `Unset`，由 `resolveDocumentLink` 填充。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的链接会抛出 `Json.Error`
++     entry #range   被链接的范围
++     entry #target   该范围链接到的 URI（如果已计算）
++     entry #tooltip   悬停在链接上时显示的文本（如果有）
++     entry #data   服务器希望在 `documentLink/resolve` 时取回的任何内容，以原始 JSON 表示
++   entry .Color   以红、绿、蓝和 alpha 表示的颜色，各自取值 0 到 1
++     entry #red   红色分量
++     entry #green   绿色分量
++     entry #blue   蓝色分量
++     entry #alpha   alpha 分量
++   entry .ColorInformation   文档中的一个颜色字面量：它的范围和值
+
+% 1 1 0 1d0d302ad3ee16621f413064badab3b4
+
+@ 0 7 0 116dc11e594c537c174b2eaa0b6938bc
++         `documentColors` 处理函数返回的列表中的元素；编辑器在每一处显示一个色样。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #range   颜色字面量所在的位置
++     entry #color   它所表示的颜色
++   entry .ColorPresentation   颜色的一种写法，作为带标注的编辑
+
+% 1 1 0 00144ee3e08302ce04e449d1c478e276
+
+@ 0 8 0 18a8dc698b4b3309177fea124c3dc122
++         `colorPresentations` 处理函数返回的列表中的元素：每一项都是用户所选颜色的一种写法（`#ff0000`、`rgb(255, 0, 0)`……），附带写出它的编辑。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #label   向用户显示的写法
++     entry #textEdit   写出它的编辑（如果与插入标注不同）
++     entry #additionalTextEdits   其他编辑，如一条导入（如果有）
++   entry .CallHierarchyItem   调用层次结构中的一个可调用项：带有位置的符号
+
+% 1 1 0 1becdebe912e47ae1f038dbf590d3d25
+
+@ 0 24 0 121ca0023ebc2bd90b6b2dabe7c9cb8e
++         `callHierarchy` 的准备处理函数返回的列表中的元素，也是其传入和传出处理函数以 `item` 接收的内容。
++         `data` 携带服务器在编辑器请求其调用者或被调用者时再次找到该可调用项所需的任何内容。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的条目会抛出 `Json.Error`
++     entry #name   可调用项的名称
++     entry #kind   符号的种类
++     entry #tags   符号的标签，如已弃用（如果有）
++     entry #detail   签名或类型（如果有）
++     entry #uri   定义该可调用项的文档
++     entry #range   整个定义
++     entry #selectionRange   定义中可调用项的名称
++     entry #data   服务器希望随条目取回的任何内容，以原始 JSON 表示
++   entry .CallHierarchyIncomingCall   条目的一个调用者，以及调用者中发生调用的位置
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #from   发起调用的条目
++     entry #fromRanges   调用者中发生调用的范围
++   entry .CallHierarchyOutgoingCall   条目的一个被调用者，以及条目中发生调用的位置
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #to   被调用的条目
++     entry #fromRanges   调用者中发生调用的范围
++   entry .TypeHierarchyItem   类型层次结构中的一个类型：带有位置的符号
+
+% 1 1 0 1cd6f2debc0cff801772c6f513a1e055
+
+@ 0 13 0 06d2b3152f6236881bffb0f7188ea50e
++         `typeHierarchy` 的准备处理函数返回的列表中的元素，也是其超类型和子类型处理函数以 `item` 接收的内容。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的条目会抛出 `Json.Error`
++     entry #name   类型的名称
++     entry #kind   符号的种类
++     entry #tags   符号的标签（如果有）
++     entry #detail   更多详情（如果有）
++     entry #uri   定义该类型的文档
++     entry #range   整个定义
++     entry #selectionRange   定义中类型的名称
++     entry #data   服务器希望随条目取回的任何内容，以原始 JSON 表示
++   entry .SemanticTokensLegend   服务器的标记数据所索引的标记类型和修饰符
+
+% 1 1 0 11f3ed5241f24dc6088f9a256f421982
+
+@ 0 6 0 06d9ecd997751ace1b65a340fcbce21e
++         在注册时由 `semanticTokens(legend)` 给出，并在能力中公布：`SemanticTokens#data` 中的每个标记都通过这些列表中的索引指明其类型和修饰符。
++     entry #tokenTypes   标记类型，按索引顺序排列
++     entry #tokenModifiers   标记修饰符，按位顺序排列
++   entry .SemanticTokens   文档的语义标记，以协议的扁平整数数组表示
+
+% 1 1 0 17de607efb6edc251b41b43ebac6406e
+
+@ 0 12 0 07033fd9efedacf91b9e69b1fb6fb51e
++         `semanticTokens` 和 `semanticTokensRange` 处理函数返回的内容。
++         `data` 是协议的编码：每个标记五个整数，即行增量、起始字符增量、长度、标记类型索引、修饰符位集，均相对于前一个标记。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #resultId   此结果的标识符，供以后的增量请求引用
++     entry #data   各个标记，每个五个整数，相对于前一个标记
++   entry .SemanticTokensEdit   对先前标记数组的一次拼接
++     entry #start   编辑在先前数据中开始的索引
++     entry #deleteCount   移除多少个整数
++     entry #data   插入的整数（如果有）
++   entry .SemanticTokensDelta   把先前的标记数组变为当前数组的编辑
+
+% 1 1 0 1124e2b60d5eed4d084813f6c6c0dc7e
+
+@ 0 6 0 18705961d4a78d551b51442ac47ae834
++         `semanticTokensDelta` 处理函数在给定 `previousResultId` 时返回的内容。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #resultId   应用编辑后结果的标识符
++     entry #edits   要应用的拼接
++   entry .InlayHint   在某个位置内联显示的标注，如推断出的类型
+
+% 1 1 0 1fa9bf6b9e0147971a64a5e89da18595
+
+@ 0 17 0 05a822aaf455def9130e8c5f22aea3c3
++         `inlayHints` 处理函数返回的列表中的元素。
++         `tooltip` 可以保留为 `Unset`，由 `resolveInlayHint` 填充。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的提示会抛出 `Json.Error`
++     entry #position   提示显示的位置
++     entry #label   提示的文本
++     entry #kind   提示是类型还是参数名
++     entry #tooltip   悬停在提示上时显示的文本（如果有）
++     entry #paddingLeft   是否在提示前填充
++     entry #paddingRight   是否在提示后填充
++     entry #data   服务器希望在 `inlayHint/resolve` 时取回的任何内容，以原始 JSON 表示
++   entry .InlineValueContext   发出内联值请求时调试器所处的状态
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #frameId   调试器停在其中的栈帧
++     entry #stoppedLocation   调试器停在的语句的范围
++   entry .InlineValueText   调试时在某个范围处内联显示的值
+
+% 1 1 0 16b938231d1db4410f2757135b7d1af5
+
+@ 0 19 0 1a28203a9717d146114b5d054350fa9e
++         `inlineValues` 处理函数返回的列表中的元素。
++         只建模了协议中内联值的字面文本形式。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #range   值显示的位置
++     entry #text   显示的文本
++   entry .LinkedEditingRanges   一起编辑的范围，如标签的两个名称
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #ranges   一起变化的范围
++     entry #wordPattern   联动文本必须匹配的正则表达式（如果有）
++   entry .Moniker   符号跨项目的稳定标识
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的 moniker 会抛出 `Json.Error`
++     entry #scheme   moniker 方案，如 `tsc` 或 `.NET`
++     entry #identifier   方案内的标识符
++     entry #unique   moniker 的唯一程度：`document`、`project`、`group`、`scheme` 或 `global`
++     entry #kind   `import`、`export` 或 `local`（如果提供了）
++   entry .DocumentDiagnosticReport   针对一个文档的拉取式诊断回答
+
+% 1 1 0 0b3054613efa892a0d0d4074479026e3
+
+@ 0 9 0 1fa4f7d7fcd980b119aa0c336fcd2d94
++         `diagnostics` 处理函数返回的内容，也是 `Connection#diagnostics` 请求的内容。
++         只建模了 `full` 种类：`kind` 默认即为它，未改变的报告通过返回相同的 `resultId` 来表示。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的报告会抛出 `Json.Error`
++     entry #kind   `full`，即默认值
++     entry #resultId   此结果的标识符，供以后的请求引用
++     entry #items   诊断
++   entry .WorkspaceSymbol   工作区中任意位置的符号，带有其位置
+
+% 1 1 0 0bd94553b78ea57a1af74fcebe1f7115
+
+@ 0 12 0 005830f09d1d1ca51227d71ba0470069
++         `workspaceSymbols` 处理函数为回答 `query` 而返回的列表中的元素；是 `DocumentSymbol` 的扁平对应物。
++         `resolveWorkspaceSymbol` 可以延迟填充位置。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的符号会抛出 `Json.Error`
++     entry #name   符号的名称
++     entry #kind   符号的种类
++     entry #tags   符号的标签（如果有）
++     entry #location   符号所在的位置
++     entry #containerName   符号容器的名称（如果有）
++     entry #data   服务器希望在 `workspaceSymbol/resolve` 时取回的任何内容，以原始 JSON 表示
++   entry .FileEvent   被创建、更改或删除的受监视文件
+
+% 1 1 0 1446d0dee6f1b3c714975da753cc4221
+
+@ 0 7 0 15dcdce70243c45e151e67275f7bc9c0
++         `watchedFiles` 处理函数以 `changes` 接收的列表中的元素。
++         该字段在 Scala 中写作 `` `type` ``，与协议中一致。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的事件会抛出 `Json.Error`
++     entry #uri   文件的 URI
++     entry #type   文件是被创建、更改还是删除
++   entry .WorkspaceFoldersChangeEvent   添加到工作区和从工作区移除的文件夹
+
+% 1 1 0 181ac064d8e05c721db513b81ffa1e18
+
+@ 0 6 0 140c6504347d29e5071b7ce9cba018f3
++         `foldersChanged` 处理函数以 `event` 接收的内容。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的事件会抛出 `Json.Error`
++     entry #added   添加的文件夹
++     entry #removed   移除的文件夹
++   entry .FileCreate   即将或刚刚创建的文件
+
+% 1 1 0 1c483b7fe62ce8ac1fdc8dcd0afca7a1
+
+@ 0 5 0 1685e1b9eb9515a713e9b7d69ee6ebae
++         `creatingFiles` 和 `createdFiles` 处理函数以 `files` 接收的列表中的元素。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #uri   文件的 URI
++   entry .FileRename   即将或刚刚重命名的文件
+
+% 1 1 0 043123ae2f4fa02302c5511d2021b565
+
+@ 0 6 0 0bc6901a1b32149b149e6fa5571a772a
++         `renamingFiles` 和 `renamedFiles` 处理函数以 `files` 接收的列表中的元素。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #oldUri   重命名前的 URI
++     entry #newUri   重命名后的 URI
++   entry .FileDelete   即将或刚刚删除的文件
+
+% 1 1 0 17878dd0477c936e0e18c63b6d9bf37f
+
+@ 0 5 0 17a90903bd9a093007e0a8b3d2dac6b2
++         `deletingFiles` 和 `deletedFiles` 处理函数以 `files` 接收的列表中的元素。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的值会抛出 `Json.Error`
++     entry #uri   文件的 URI
++   entry .Diagnostic   某个范围处的问题：它的严重程度、代码、来源和消息
+
+% 1 1 0 0ff878951b3c017b036e6c070d5aaccd
+
+@ 0 2 0 1a2416e32e80803e0ff4f09faa243eab
++         服务器用 `client.publishDiagnostics` 发布、从 `diagnostics` 处理函数返回、并到达客户端 `Listener#diagnostics` 的内容。
+
+% 2 1 0 11e7dbcdaf2aca7a00b21a02da98cc16
+
+% 3 1 0 166474dd48a55cbf1107e4c4a6a418bd
+
+% 0 1 0 1380e6796f1b26ad19ed9f56ef85fd06
+
+% 0 1 0 12cbd396243af70611d1b5d969d4904e
+
+% 0 1 0 00ac009b165f3756151ebe651e016b0c
+
+% 0 1 0 037ab3350a98f5bf09005031deb28e60
+
+% 1 1 0 1ceeef6e45cf698b1d18b0497f0f7ed1
+
+@ 0 10 0 05df4f0468ec0cca1bab3357ed235448
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的诊断会抛出 `Json.Error`
++     entry #range   问题所在的位置
++     entry #severity   错误、警告、信息或提示（如果提供了）
++     entry #code   问题的代码，以文本表示（如果有）
++     entry #source   报告它的来源，如编译器的名称（如果提供了）
++     entry #message   向用户显示的消息
++   entry .MessageActionItem   `window/showMessageRequest` 的一个按钮，以其标题表示
++     entry #title   按钮的标题
++   entry .DiagnosticSeverity   诊断的严重程度：`Error`、`Warning`、`Information` 或 `Hint`
+
+% 1 1 0 0924c7e0a7fa222f09123c223c63fdd5
+
+@ 0 7 0 190bcb73411267bc06ef763aa7d3b758
++         取整数值的协议枚举：在线上从 1 开始编号，因此 `Error` 编码为 `1`，`Warning` 编码为 `2`。
++         伴生对象的 `encodable` 和 `decodable` 是编解码器；解码器接收调用者的 `Tactic[Json.Error]` 并捕获它，因此解码需要作用域中有一个战术，超出范围的传输整数会通过它抛出错误。
++     entry .encodable   将严重程度编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .MessageType   窗口消息或日志消息的级别：`Error`、`Warning`、`Info` 或 `Log`
+
+% 1 1 0 1bec23ffcc77b52b05d6d5cab4bca272
+
+@ 0 6 0 04b0f2c123f910de14fbdc7097bcb3f0
++         在线上从 1 开始编号。
++         `Client#showMessage` 发送 `Info`，`Client#logMessage` 发送 `Log`；传输方法接受任何级别。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将级别编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .TextDocumentSyncKind   文档更改的报告方式：`None`、`Full` 或 `Incremental`
+
+% 1 1 0 1d757bf6570eab760f4f82bc2ce7c9e9
+
+@ 0 7 0 1877b98f6b42da8e0345298e7b9aea6f
++         唯一一个在线上从 0 开始编号的枚举，因此 `None` 为 `0`，`Full` 为 `1`，`Incremental` 为 `2`。
++         用 `Lsp.listen` 构建的服务器总是宣告 `Incremental`；在任一形式的更改事件下，文档状态都保持正确。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将种类编码为从 0 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .CompletionItemKind   补全项的种类：`Text`、`Method`、`Function`……`TypeParameter`
+
+% 1 1 0 12b31ab84b30dda00d2a2bb04cf511ed
+
+@ 0 10 0 1b308f53ffba5c051abbc6decce86255
++         协议的二十五种种类，按传输顺序从 1 开始：`Text`、`Method`、`Function`、`Constructor`、`Field`、`Variable`、`Class`、`Interface`、`Module`、`Property`、`Unit`、`Value`、`Enum`、`Keyword`、`Snippet`、`Color`、`File`、`Reference`、`Folder`、`EnumMember`、`Constant`、`Struct`、`Event`、`Operator`、`TypeParameter`。
++         其中一些与 Scala 类型同名（`Text`、`Unit`），作为枚举分支无害，但意味着 `CompletionItemKind.Unit` 必须加限定。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将种类编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .SymbolKind   符号的种类：`File`、`Module`、`Namespace`、`Package`、`Class`……`TypeParameter`
+
+% 1 1 0 13a117883daf552d0e85c1c6a5e651c2
+
+@ 0 9 0 1513cc3f252e8d58105a2a183578fdd4
++         协议的二十六种种类，按传输顺序从 1 开始：`File`、`Module`、`Namespace`、`Package`、`Class`、`Method`、`Property`、`Field`、`Constructor`、`Enum`、`Interface`、`Function`、`Variable`、`Constant`、`String`、`Number`、`Boolean`、`Array`、`Object`、`Key`、`Null`、`EnumMember`、`Struct`、`Event`、`Operator`、`TypeParameter`。
++         以 Scala 类型命名的分支在源代码中用反引号书写，并且必须加限定（`SymbolKind.String`）。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将种类编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .DocumentHighlightKind   一处出现做什么：`Text`、`Read` 或 `Write`
+
+% 1 1 0 09dc00ce562eae700c566de512429aa6
+
+@ 0 4 0 1f52e916d4fc15e51d67d1171b933019
++         在线上从 1 开始编号。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将种类编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .TextDocumentSaveReason   文档为何被保存：`Manual`、`AfterDelay` 或 `FocusOut`
+
+% 1 1 0 0ea8e8b5f500858a1419535881d66e61
+
+@ 0 5 0 0531de880e6acaa10fc3d7c27b143a7a
++         `saving` 和 `savingEdits` 处理函数以 `reason` 读取的内容。
++         在线上从 1 开始编号。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将原因编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .SymbolTag   符号上的标签；只定义了 `Deprecated`
+
+% 1 1 0 12c9611bcd9299ae07ac1b6e181e79f8
+
+@ 0 4 0 1d182ef0181866a5062fef8309aabe22
++         在线上从 1 开始编号。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将标签编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .InlayHintKind   内嵌提示显示什么：`Type` 或 `Parameter` 名称
+
+% 1 1 0 1f31d9a93d3c3f2603193f5e1dccec9b
+
+@ 0 4 0 19be0012e11f10f71adf537ed8b8daf6
++         在线上从 1 开始编号。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将种类编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .FileChangeType   受监视文件发生了什么：`Created`、`Changed` 或 `Deleted`
+
+% 1 1 0 080e0759c0cfb14a1455a96d5e947a6f
+
+@ 0 5 0 0a8f8283f5b0550115c675ecd7934678
++         `FileEvent` 的 `type`。
++         在线上从 1 开始编号。
++         解码器捕获调用者的 `Tactic[Json.Error]`。
++     entry .encodable   将更改编码为从 1 开始的协议数字
++     entry .decodable   解码协议数字，通过调用者的战术抛出 `Json.Error`
++   entry .Document   处理函数所涉及的已打开文档的实时视图，为一次分发借出
+
+% 1 1 0 10321c547fdd0aa802b5c70ebae0b033
+
+@ 0 7 0 0d58cf5967bf46d710b182c41ea51bca
++         文档作用域的处理函数以 `document` 读取的句柄：编辑器迄今为请求所指文档报告的文本，增量更改已按 UTF-16 偏移应用，另外还提供按行访问、协议位置与偏移量之间的转换，以及某个位置下的单词。
++         它是一个独占的能力，在一个处理函数执行期间借出并限定于其中：把 `document` 赋给外层变量，或在任务中捕获它，都是编译错误；而它返回的每个值（`Text`、`Position`、`Range`）都是可以离开的纯快照。
+
+% 2 1 0 0d34d435439ca74507908d39a06a730b
+
+% 3 1 0 0d8c8aeed391078a0b0a4a29b89529d2
+
+% 5 1 0 04401f72a07823b2068be4a302f803df
+
+% 6 1 0 0fa06b4a8ba87b160d84294f9d4ebe64
+
+% 8 1 0 0356dbea7d58d15d0c937980af2731dd
+
+% 0 1 0 19274639e54b221b19121d8b739c63b3
+
+% 0 1 0 1792055b29582ae70770bd06d1debc0b
+
+% 0 1 0 02e6b160d5ac3a3c041033911b1223f3
+
+% 0 1 0 075e9cd26be316de17a6b63ade28da36
+
+% 1 1 0 1cd3f5836c19e20211ef19536d1737af
+
+@ 0 4 0 16ca23a044b2e614065f8c6dbaa2d38a
++         位置和偏移量以 UTF-16 码元计，这既是协议默认的位置编码，也是 `Text` 字符的单位。
++         超出文本末尾或行末的位置会按协议要求被截取。
++         行以 `\n`、`\r\n` 或 `\r` 分隔。
+
+@ 0 3 0 1f517b9420a46c49064c5c6aba0c03fa
++         指向编辑器从未打开的文档的请求不会到达任何处理函数：会话记录一个原因为 `InvalidParams` 的 `Lsp.Error`（_the document `uri` is not open_），并以此作答。
+
+% 1 1 0 1af829cb09a2019f10571ff1f3fc14df
+
+% 0 1 0 01d5e0fe46cab8d111e3f32839b9d622
+
+@ 0 17 0 196c03cb22a5fcbd063f35f3167fde9e
++     entry #uri   文档的 URI
++     entry #language   编辑器为该文档给出的语言标识符
++     entry #version   编辑器最后报告的版本
++     entry #text   编辑器迄今报告的全部文本
++     entry #lineCount   行数，末尾未结束的行也计入
++     entry #line   按从零开始的行号得到的一行文本，不含行终止符；或为 `Unset`
++     entry #apply   某个范围内的文本：`document(range)`
++         终点被截取为不早于起点，因此颠倒的范围得到空文本。
++     entry #offset   某个位置在文本中的序数偏移量，截取在文档范围内
++     entry #position   文本中某个序数偏移量对应的位置
++     entry #word   某个位置下由字母、数字和下划线组成的连续串，或为 `Unset`
++         从该位置向左右扩展来找到单词；位于空白或标点上的位置得到 `Unset`。
++     entry #fullRange   从第一个位置到文本末尾的范围
++         覆盖整个文档的诊断使用它。
++   entry .Workspace   处理函数所见的会话状态：已打开的文档、编辑器的详情、客户端
+
+% 1 1 0 124c5be15b0dec5d0215ffc3964d4f2b
+
+@ 0 5 0 132c9a22d95e8ff50d21937eff8fdcc1
++         每个处理函数以 `workspace` 读取的句柄：已打开文档的 URI、其中任一文档的快照、编辑器在 `initialize` 时报告的内容（其进程 id、名称和版本、根目录、文件夹、能力和跟踪设置），以及 `#client`，即回到编辑器的通道。
++         它是一个独占的能力，与 `Document` 一样限定于单次分发；它返回的值都是纯快照。
+
+% 2 1 0 0cd36334fe1a86350911582b4b524e5f
+
+% 3 1 0 01527bf79a0702581d1953f3c94628c3
+
+% 5 1 0 1ca6cfc824b8a36a1ad135f3552c8757
+
+% 6 1 0 0f289bc42dcdb324137c5b23d3a9ab1f
+
+% 8 1 0 077be7f4564b628619763e7c1a269755
+
+% 0 1 0 1854822f7b2231d515f304075de2582d
+
+% 0 1 0 123cf29cffe533e31924003498bd33bb
+
+% 0 1 0 1a10c88bcd1ce3d700e16510e1011367
+
+% 1 1 0 0a4bf5e9e561d0b91524327f3cb60e06
+
+% 0 1 0 0a27b3f29b54626d185e91584e7788d5
+
+% 0 1 0 1451039b6f096e8f1d36f4e0ba7011d3
+
+@ 0 148 0 07fc5f0712e837ef0415331b97042c36
++     entry #documents   编辑器已打开且未关闭的每个文档的 URI
++     entry #document   按 URI 得到的已打开文档的快照，以 `TextDocumentItem` 表示，或为 `Unset`
++     entry #processId   编辑器的进程 id（如果报告了）
++     entry #clientInfo   编辑器的名称和版本（如果报告了）
++     entry #root   编辑器报告的工作区根 URI（如果有）
++     entry #folders   编辑器报告的工作区文件夹
++     entry #clientCapabilities   编辑器的能力，即它发送的原始 JSON
++         未建模，因为客户端能力记录很大，而服务器只读取它关心的部分；`dynamicAccess.dynamicJson` 导入可以深入其中。
++     entry #trace   编辑器最后用 `$/setTrace` 设置的跟踪级别（如果有）
++     entry #client   服务器可以发给编辑器的通知，以 `Lsp.Client` 表示
++         与工作区一同受限：它捕获读取它的句柄。
++   entry .Focused   不带载荷的文档作用域处理函数的形态
++       `(document: Document^, workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`。
++       处理函数借得请求所指的文档、工作区，以及 `raise(Lsp.Error(…))` 用于报告的发射器；结果是纯的，因此借出的任何东西都无法通过返回值、闭包或任务离开。
++       `OpenedHandler`、`ClosedHandler`、`DocumentSymbolsHandler`、`FoldingRangesHandler`、`DocumentLinksHandler`、`CodeLensesHandler`、`DocumentColorsHandler` 和 `SemanticTokensHandler` 都是其实例。
++   entry .Focused1   带一个带标签载荷的文档作用域处理函数
++       与 `Focused` 相同，另有第一个上下文参数 `payload: payload`，它带有一个标签（`Position aka "position"`、`Range aka "range"`……），通过同名访问器读取。
++       `HoverHandler` 即 `Focused1[Position aka "position", Optional[Hover]]`。
++   entry .Focused2   带两个带标签载荷的文档作用域处理函数
++       与 `Focused1` 相同，但有两个载荷；`CompleteHandler` 接收一个 `position` 和一个可选的 `context`，`RenameHandler` 接收一个 `position` 和一个 `newName`。
++   entry .Focused3   带三个带标签载荷的文档作用域处理函数
++       与 `Focused1` 相同，但有三个载荷；`FormatOnTypeHandler` 接收一个 `position`、所键入的 `character` 和格式化 `options`。
++   entry .Ambient   不带载荷的工作区作用域处理函数的形态
++       `(workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`：没有单一文档作为主题，因此只借出工作区和发射器。
++       `ReadyHandler` 和 `TerminatingHandler` 是其实例。
++   entry .Ambient1   带一个带标签载荷的工作区作用域处理函数
++       与 `Ambient` 相同，另有一个带标签的载荷；`WorkspaceSymbolsHandler` 读取 `query`，`CommandHandler` 读取其 `arguments`，`ResolveHandler` 读取其 `item`。
++   entry .ReadyHandler   `initialized` 的处理函数：`Ambient[Unit]`
++   entry .TerminatingHandler   `shutdown` 的处理函数：`Ambient[Unit]`
++   entry .OpenedHandler   `textDocument/didOpen` 的处理函数：`Focused[Unit]`
++   entry .ChangedHandler   `textDocument/didChange` 的处理函数，`changes` 已应用
++       `Focused1[List[TextDocumentContentChangeEvent] aka "changes", Unit]`；它运行时会话已应用了这些更改，因此 `document.text` 是最新的。
++   entry .SavedHandler   `textDocument/didSave` 的处理函数，编辑器发送了 `savedText` 时附带它
++   entry .ClosedHandler   `textDocument/didClose` 的处理函数：`Focused[Unit]`
++       处理函数执行期间文档仍可读取，之后被移除。
++   entry .SavingHandler   `textDocument/willSave` 的处理函数，附带 `reason`
++   entry .SavingEditsHandler   `textDocument/willSaveWaitUntil` 的处理函数：保存前要应用的编辑
++   entry .HoverHandler   `textDocument/hover` 的处理函数：由 `position` 得到可选的 `Hover`
++   entry .CompleteHandler   `textDocument/completion` 的处理函数：由 `position` 和 `context` 得到一个列表
++   entry .DefinitionHandler   `textDocument/definition` 的处理函数：由 `position` 得到位置
++   entry .ReferencesHandler   `textDocument/references` 的处理函数，附带 `includeDeclaration`
++   entry .DocumentSymbolsHandler   `textDocument/documentSymbol` 的处理函数
++   entry .FormatHandler   `textDocument/formatting` 的处理函数，附带编辑器的 `options`
++   entry .RenameHandler   `textDocument/rename` 的处理函数：由 `position` 和 `newName` 得到 `WorkspaceEdit`
++   entry .CodeActionsHandler   `textDocument/codeAction` 的处理函数：一个 `range` 及其 `context`
++   entry .SignatureHelpHandler   `textDocument/signatureHelp` 的处理函数
++   entry .DeclarationHandler   `textDocument/declaration` 的处理函数
++   entry .TypeDefinitionHandler   `textDocument/typeDefinition` 的处理函数
++   entry .ImplementationHandler   `textDocument/implementation` 的处理函数
++   entry .DocumentHighlightsHandler   `textDocument/documentHighlight` 的处理函数
++   entry .FoldingRangesHandler   `textDocument/foldingRange` 的处理函数
++   entry .SelectionRangesHandler   `textDocument/selectionRange` 的处理函数：由 `positions` 得到范围
++   entry .DocumentLinksHandler   `textDocument/documentLink` 的处理函数
++   entry .CodeLensesHandler   `textDocument/codeLens` 的处理函数
++   entry .DocumentColorsHandler   `textDocument/documentColor` 的处理函数
++   entry .ColorPresentationsHandler   `textDocument/colorPresentation` 的处理函数：一个 `color` 及其 `range`
++   entry .FormatRangeHandler   `textDocument/rangeFormatting` 的处理函数：一个 `range` 和 `options`
++   entry .FormatOnTypeHandler   `textDocument/onTypeFormatting` 的处理函数：`position`、`character`、`options`
++   entry .PrepareRenameHandler   `textDocument/prepareRename` 的处理函数：要重命名的范围，或 `Unset`
++   entry .CallHierarchyHandler   `callHierarchy` 的准备处理函数：由 `position` 得到层次结构条目
++   entry .IncomingCallsHandler   `callHierarchy` 的传入处理函数：由 `item` 得到其调用者
++   entry .OutgoingCallsHandler   `callHierarchy` 的传出处理函数：由 `item` 得到其被调用者
++   entry .TypeHierarchyHandler   `typeHierarchy` 的准备处理函数：由 `position` 得到层次结构条目
++   entry .SupertypesHandler   `typeHierarchy` 的超类型处理函数：由 `item` 得到其超类型
++   entry .SubtypesHandler   `typeHierarchy` 的子类型处理函数：由 `item` 得到其子类型
++   entry .SemanticTokensHandler   `textDocument/semanticTokens/full` 的处理函数
++   entry .SemanticTokensDeltaHandler   `textDocument/semanticTokens/full/delta` 的处理函数，附带 `previousResultId`
++   entry .SemanticTokensRangeHandler   `textDocument/semanticTokens/range` 的处理函数，附带 `range`
++   entry .InlayHintsHandler   `textDocument/inlayHint` 的处理函数，附带 `range`
++   entry .InlineValuesHandler   `textDocument/inlineValue` 的处理函数：一个 `range` 及其 `context`
++   entry .LinkedEditingRangeHandler   `textDocument/linkedEditingRange` 的处理函数
++   entry .MonikersHandler   `textDocument/moniker` 的处理函数
++   entry .DiagnosticsHandler   `textDocument/diagnostic` 的处理函数：`identifier` 和 `previousResultId`
++   entry .WorkspaceSymbolsHandler   `workspace/symbol` 的处理函数：由 `query` 得到符号
++   entry .CommandHandler   某个 `workspace/executeCommand` 名称的处理函数：由 `arguments` 得到可选结果
++   entry .ConfigurationHandler   `workspace/didChangeConfiguration` 的处理函数，附带 `settings`
++   entry .WatchedFilesHandler   `workspace/didChangeWatchedFiles` 的处理函数，附带 `changes`
++   entry .FoldersChangedHandler   `workspace/didChangeWorkspaceFolders` 的处理函数，附带 `event`
++   entry .CreatingFilesHandler   `workspace/willCreateFiles` 的处理函数：由 `files` 得到可选的编辑
++   entry .CreatedFilesHandler   `workspace/didCreateFiles` 的处理函数
++   entry .RenamingFilesHandler   `workspace/willRenameFiles` 的处理函数：由 `files` 得到可选的编辑
++   entry .RenamedFilesHandler   `workspace/didRenameFiles` 的处理函数
++   entry .DeletingFilesHandler   `workspace/willDeleteFiles` 的处理函数：由 `files` 得到可选的编辑
++   entry .DeletedFilesHandler   `workspace/didDeleteFiles` 的处理函数
++   entry .ResolveHandler   `*/resolve` 请求的处理函数：返回填充完毕的 `item`
++       `ResolveHandler[item] = Ambient1[item aka "item", item]`：编辑器送回它先前收到的一个条目，处理函数将其延迟计算的字段设置好后返回。
++       由于访问器是泛型的，应以 `item[CompletionItem]`（或相应的类型）读取该条目。
++   entry .document   文档作用域处理函数中的当前文档
++       `Document^` 上下文参数的透明内联访问器：`document.text`、`document.word(position)`、`document.uri`。
++       仅在 `Focused` 处理函数的参数处于作用域中时可用。
++   entry .workspace   任何处理函数中的工作区句柄
++       `Workspace^` 上下文参数的透明内联访问器。
++   entry .client   任何处理函数中的编辑器，以 `Lsp.Client` 表示
++       `workspace.client`：用于 `publishDiagnostics`、`showMessage`、`logMessage` 以及服务器主动发出的其他通知的通道。
++       它捕获工作区句柄，并与之一同受限。
++   entry .position   悬停、定义、重命名或类似请求的 `position` 载荷
++       `Position aka "position"` 上下文参数的内联访问器。
++   entry .range   代码操作、内嵌提示、范围格式化或类似请求的 `range` 载荷
++   entry .options   格式化请求的 `FormattingOptions` 载荷
++   entry .newName   重命名请求所要求的新名称
++   entry .character   键入时格式化请求中所键入的字符
++   entry .savedText   编辑器随 `didSave` 发送的文本（如果包含了）
++   entry .reason   在 `saving` 或 `savingEdits` 处理函数中，文档为何被保存
++   entry .color   颜色表示请求所涉及的 `Color`
++   entry .positions   选择范围请求所询问的位置
++   entry .previousResultId   语义标记增量请求所基于的结果 id
++   entry .identifier   拉取式诊断请求所指的诊断标识符（如果有）
++   entry .query   工作区符号请求的查询文本
++   entry .arguments   命令的参数，以原始 JSON 值的列表表示（如果有）
++   entry .settings   配置更改所传递的设置，以原始 JSON 表示
++   entry .event   文件夹更改事件
++   entry .includeDeclaration   引用请求是否希望包含声明
++   entry .item   解析、调用层次结构或类型层次结构请求所涉及的条目
++       对条目类型是泛型的，因此由处理函数指明类型：`item[CompletionItem]`、`item[CallHierarchyItem]`、`item[TypeHierarchyItem]`。
++   entry .context   补全、代码操作或内联值请求的上下文
++       泛型的：在 `complete` 处理函数中为 `Optional[CompletionContext]`，在 `codeActions` 中为 `CodeActionContext`，在 `inlineValues` 中为 `InlineValueContext`；类型由处理函数推断。
++   entry .changes   `changed` 处理函数中的内容更改，或 `watchedFiles` 中的文件事件
++   entry .files   文件操作处理函数所涉及的文件
++   entry .ready   注册编辑器发送 `initialized` 后运行的内容
++       每个注册组合子都接收一个处理函数，并需要作用域中有一个 `Lsp.Registry^`（即 `listen` 的代码块，或接收 `(using Lsp.Registry^)` 的方法），并把处理函数记录在其中；这些组合子是普通方法而非内联方法，因此处理函数的上下文函数在定义处只做一次类型检查。
++       对同一特性的第二次注册会取代第一次。
++       `ready` 是一个 `ReadyHandler`，在握手之后运行，服务器在此开始建立索引或向编辑器请求配置。
++   entry .terminating   注册编辑器发送 `shutdown` 时运行的内容
++       一个 `TerminatingHandler`；随后的 `exit` 通知会结束进程的输入，从而结束 `listen` 循环。
++   entry .opened   注册编辑器打开文档时运行的内容
++       一个 `OpenedHandler`：它运行之前文档已在存储中，因此为它发布诊断是常见的处理体。
+
+% 2 1 0 03334fa33a154d8f09222a73609a61ae
+
+% 3 1 0 00b8b15c0f979ed2161562b6682d885f
+
+% 5 1 0 1e755b8f9bb8d190095fe9dae3e72ddb
+
+% 6 1 0 0ca5d18d0b9f1fd70ea9caae9937e863
+
+% 8 1 0 1be5e71c0ed67b8004205da3917041f7
+
+% 0 1 0 1a19e4e4e35d73340bd4dea71f776009
+
+% 0 1 0 0366afb6f78ecf10163f5e8a12f54486
+
+% 0 1 0 051514f4ba2a401c14190170f167c8d7
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 0493c741dca554f40ee6ec6b760236cb
+
+% 0 1 0 07db2162dd91a09d12826cc4c2addb35
+
+% 0 1 0 05954c76bfdb18dd03ba79e0fd6b9711
+
+% 0 1 0 1c3aecafd66fd99d08fc303e2aac9a9d
+
+% 1 1 0 0a690ca90c9aa0fd0665540bb310a6fb
+
+@ 0 14 0 18dc6a13dbc1d55a1723400ba5be1983
++   entry .changed   注册编辑器对文档的更改应用之后运行的内容
++       一个 `ChangedHandler`；`changes` 是编辑器发送的那一批更改，`document.text` 已经反映了它们。
++   entry .saved   注册编辑器保存文档时运行的内容
++       一个 `SavedHandler`；如果编辑器包含了已保存的内容，`savedText` 即为该内容。
++   entry .closed   注册编辑器关闭文档时运行的内容
++       一个 `ClosedHandler`；它运行之后文档从存储中移除。
++   entry .saving   注册文档保存之前运行的内容
++       一个 `SavingHandler`，接收 `reason`。
++   entry .savingEdits   注册文档保存之前应用的编辑
++       一个 `SavingEditsHandler`：即 `textDocument/willSaveWaitUntil`，编辑器会等待它。
++   entry .hover   注册悬停处理函数，并宣告 `hoverProvider`
++       一个 `HoverHandler`：由 `position` 得到 `Optional[Hover]`，`Unset` 表示没有可显示的内容。
+
+% 2 1 0 18cb8cef23f7622511a055bf4b61b4e8
+
+% 3 1 0 03484bcd60158f661da7effb77baf037
+
+% 5 1 0 1fc195a9340a86dc1d19b98f01c260e3
+
+% 6 1 0 0b57385b8a81ac330f98a0c17ed3c3f7
+
+% 8 1 0 06e8710f411773e7147af394665adfbf
+
+% 9 1 0 1425cf1264a036900885ab718005243d
+
+% 10 1 0 1fae8fae79f4b0ed06031b94472e9b53
+
+% 0 1 0 0f9083c9ad9a7754164f12794914bb6e
+
+% 1 1 0 0a61419d48220f881c1276a0c26a82c1
+
+@ 0 4 0 08d67569fb7ba5ad0dd20f43b771fa2f
++   entry .complete   注册补全处理函数及其触发字符
++       `complete(triggers*)(handler)`：触发字符成为所宣告的 `CompletionOptions`，如果注册了 `resolveCompletion`，则设置 `resolveProvider`。
++       处理函数是一个 `CompleteHandler`，读取 `position` 和可选的 `context`。
+
+% 2 1 0 1321bfea5707b43b03186be3bb5337be
+
+% 3 1 0 0274fc900930e7311677445614d566fb
+
+% 5 1 0 10a37d7ad91f6dbe03cdc5f291c5dc6e
+
+% 6 1 0 123a9042ddb0fc28177f5217417ff3b5
+
+% 8 1 0 027cc9b6ce79912c0eeac1dd90d1137a
+
+% 0 1 0 16e2c933fd9a24810f5509c9a0961c88
+
+% 0 1 0 1ff8e315236d62950e3db754cb86ce02
+
+% 1 1 0 13fd52d64fdbcead1ddf93f9807b2483
+
+@ 0 61 0 12fbc3530e1c09a8083cb55d44d8d82d
++   entry .definition   注册转到定义处理函数
++       一个 `DefinitionHandler`：由 `position` 得到 `Location` 列表，没有时为空。
++   entry .references   注册查找引用处理函数
++       一个 `ReferencesHandler`，读取 `position` 和 `includeDeclaration`。
++   entry .documentSymbols   注册文档符号处理函数
++   entry .format   注册整个文档的格式化处理函数
++       一个 `FormatHandler`，读取编辑器的 `options`，返回要应用的编辑。
++   entry .rename   注册重命名处理函数
++       一个 `RenameHandler`，读取 `position` 和 `newName`，返回一个 `WorkspaceEdit`。
++   entry .codeActions   注册代码操作处理函数
++       一个 `CodeActionsHandler`，读取 `range` 以及持有其诊断的 `context`。
++   entry .signatureHelp   注册签名帮助处理函数及其触发字符
++       `signatureHelp(triggers*)(handler)`：触发字符成为所宣告的 `SignatureHelpOptions`。
++   entry .declaration   注册转到声明处理函数
++   entry .typeDefinition   注册转到类型定义处理函数
++   entry .implementation   注册转到实现处理函数
++   entry .documentHighlights   注册文档高亮处理函数
++   entry .foldingRanges   注册折叠范围处理函数
++   entry .selectionRanges   注册选择范围处理函数
++       一个 `SelectionRangesHandler`：`positions` 中的每个位置对应一条 `SelectionRange` 链。
++   entry .documentLinks   注册文档链接处理函数
++   entry .codeLenses   注册代码透镜处理函数
++       如果注册了 `resolveCodeLens`，则在所宣告的 `CodeLensOptions` 中设置 `resolveProvider`。
++   entry .documentColors   注册文档颜色处理函数，并宣告 `colorProvider`
++   entry .colorPresentations   注册颜色表示处理函数
++   entry .formatRange   注册范围格式化处理函数
++   entry .formatOnType   注册键入时格式化处理函数及其触发字符
++       `formatOnType(first, more*)(handler)`：协议要求一个触发字符；处理函数读取 `position`、所键入的 `character` 和 `options`。
++   entry .prepareRename   注册说明在某个位置重命名将覆盖什么的处理函数
++   entry .callHierarchy   同时注册三个调用层次结构处理函数
++       `callHierarchy(prepare)(incoming, outgoing)`：该能力是原子的，因此准备处理函数（由 `position` 得到条目）、传入调用处理函数和传出调用处理函数（各由 `item` 得到调用）一次性注册。
++   entry .typeHierarchy   同时注册三个类型层次结构处理函数
++       `typeHierarchy(prepare)(supertypes, subtypes)`，与 `callHierarchy` 相同。
++   entry .semanticTokens   注册完整语义标记处理函数及其图例
++       `semanticTokens(legend)(handler)`：`SemanticTokensLegend` 是必需的，因为标记数据通过索引引用它，它在 `SemanticTokensOptions` 中宣告。
++   entry .semanticTokensDelta   注册语义标记增量处理函数
++       一个 `SemanticTokensDeltaHandler`，读取 `previousResultId`。
++   entry .semanticTokensRange   注册按范围的语义标记处理函数
++       在所宣告的 `SemanticTokensOptions` 中设置 `range`，而后者仅在同时注册了 `semanticTokens` 时才存在。
++   entry .inlayHints   注册内嵌提示处理函数
++   entry .inlineValues   注册内联值处理函数
++   entry .linkedEditingRange   注册联动编辑范围处理函数
++   entry .monikers   注册 moniker 处理函数
++   entry .diagnostics   注册拉取式诊断处理函数及其选项
++       `diagnostics(options)(handler)`：协议要求提供 `DiagnosticOptions`，并按给定的内容宣告。
++   entry .workspaceSymbols   注册工作区符号搜索处理函数
++       一个 `WorkspaceSymbolsHandler`，读取 `query`。
++   entry .command   按名称注册命令
++       `command(name)(handler)`：`workspace/executeCommand` 请求在已注册的名称之间多路分发，这些名称在 `ExecuteCommandOptions` 中宣告。
++       处理函数是一个 `CommandHandler`，读取 `arguments`（一个可选的原始 JSON 列表），返回一个可选的 JSON 结果。
++       对未被注册的名称的请求会以一个 `InvalidParams` 错误作答：_the command `name` is not registered_。
+
+% 2 1 0 16241594d97982b803af8a07bf3e523a
+
+% 3 1 0 199a6611c763e30f1886fc5380ffc63f
+
+% 5 1 0 103959c885711af80d9ce0dbcf8b08b4
+
+% 6 1 0 0fb9d77cded6743b101688ae652dbab5
+
+% 8 1 0 162af4bb793453e40753cf66b1eccfeb
+
+% 1 1 0 0cdbec88e639b4340e81e744a9cf623a
+
+% 2 1 0 1a19f0ca1a1c9eaa1929520f71425082
+
+% 3 1 0 18570dcb539b76d40e82918d5369057c
+
+% 4 1 0 1cff1d835d12fd6d123b367d3203571d
+
+% 5 1 0 1f02f59b8c6a074802acb5a3f3e34f0f
+
+@ 0 14 0 07c1320446d98cc90d70b6cbc9f33467
++   entry .configuration   注册编辑器配置更改时运行的内容
++       一个 `ConfigurationHandler`，以原始 JSON 读取 `settings`。
++   entry .watchedFiles   注册受监视文件更改时运行的内容
++       一个 `WatchedFilesHandler`，读取 `changes`，即一个 `FileEvent` 列表。
++   entry .foldersChanged   注册添加或移除工作区文件夹时运行的内容
++   entry .creatingFiles   注册创建文件之前运行的内容，返回可选的编辑
++   entry .createdFiles   注册创建文件之后运行的内容
++   entry .renamingFiles   注册重命名文件之前运行的内容，返回可选的编辑
++   entry .renamedFiles   注册重命名文件之后运行的内容
++   entry .deletingFiles   注册删除文件之前运行的内容，返回可选的编辑
++   entry .deletedFiles   注册删除文件之后运行的内容
++   entry .resolveCompletion   注册按需填充补全项的处理函数
++       一个 `ResolveHandler[CompletionItem]`，以 `item[CompletionItem]` 读取；注册它会在所宣告的 `CompletionOptions` 中设置 `resolveProvider`。
+
+% 2 1 0 1616ca4c2dde8844082bbd65517b44a6
+
+% 3 1 0 0e519a29f9a819cd1777bbc6e23a81fb
+
+% 5 1 0 0f216965ffb54f32028e544aba5886f9
+
+% 6 1 0 0909d9920250f7b61b25916ffca6c434
+
+% 8 1 0 19718545d2b9ad9007b42bc1050f56c2
+
+% 0 1 0 0d608133bcaf7c6610d8a49a75eac6f5
+
+% 1 1 0 036c2b44c4b1f48403fdb2cf0a9e16f2
+
+@ 0 17 0 0bf9dc406ff50aee186bb5789c5e3129
++   entry .resolveCodeAction   注册按需填充代码操作的处理函数
++   entry .resolveCodeLens   注册按需填充代码透镜的处理函数
++       在所宣告的 `CodeLensOptions` 中设置 `resolveProvider`。
++   entry .resolveDocumentLink   注册按需填充文档链接的处理函数
++       在所宣告的 `DocumentLinkOptions` 中设置 `resolveProvider`。
++   entry .resolveInlayHint   注册按需填充内嵌提示的处理函数
++   entry .resolveWorkspaceSymbol   注册按需填充工作区符号的处理函数
++   entry .capabilities   注册对派生能力的调整，最后应用
++       `capabilities(adjust)`：用于派生未覆盖之处的逃生舱口。
++       该函数是纯的（`ServerCapabilities -> ServerCapabilities`），在 `initialize` 时对 `Registry#capabilities` 派生的记录运行一次。
++   entry .dispatcher   适用于 `Lsp` trait 任意实现的 JSON-RPC 分发器
++       `Lsp.Dispatch(server)`：一个 `Json => Optional[Json]`，把每条消息路由到 `server` 中由其方法名所指的传输方法，并返回响应；对于通知则返回 `Unset`。
++       这是为手工实现 `Lsp` 的类所写的服务器准备的低层逃生舱口；`listen` 自己的会话也以同样方式分发。
++   entry .Observer   原始流量上的钩子：每条消息穿过传输层时都会经过它
+
+% 1 1 0 07e8203d16a2a4a4008158af3c06ed92
+
+@ 0 7 0 1abbffacd2f23ba60b5cc218b1352a09
++         服务器的标准输出就是传输线路，因此它无法打印所交换内容的日志；观察者则看到每条消息，即承载它的 JSON 正文：入站消息在解析之前，因此解码失败的消息也会被观察到；出站消息在分帧之前，因此两个方向读起来一样。
++         `listen`、`proxy` 和 `LspSessional` 都接收一个观察者。
++         两个方法都是抽象的，并且观察者会同时被写入任务和读取任务调用，因此实现必须能安全地从两个线程调用。
+
+% 2 1 0 0b7520e3d3853914014718034208317d
+
+% 3 1 0 1ec7113406534eb00339196edc4142c1
+
+% 0 1 0 0e7d577587a86efd0cd4d71c3e25ae0c
+
+% 0 1 0 1d0b3b528ae9096c06dc99c6a9f1d14c
+
+% 0 1 0 165b1ebab8a216ec1f603e4ac86a1e61
+
+% 1 1 0 16302dfd130ab2a707735c23ae9fc12a
+
+@ 0 7 0 1a507d40128ec8fe0db021eedbf1553d
++         `Observer.Silent` 是默认值，`Observer.silent` 以上下文方式把它提供给会话。
++     entry .Silent   什么也不做的观察者，作为纯值
++     entry .silent   把 `Silent` 提供给 `LspSessional` 的 given；位于隐式作用域中
++     entry #received   以从传输线路读取的每条消息为参数调用，在解析之前
++     entry #sent   以写出的每条消息（即其编码后的正文）为参数调用，在分帧之前
++   entry .Listener   客户端如何处理服务器主动发来的消息
+
+% 1 1 0 1d012cd328c0e1671c53b233f9e01550
+
+@ 0 6 0 19fb56a7097870b91f9f916b96dcb7c3
++         客户端交互中的入站一半：服务器未经请求而发送的通知（诊断信息、窗口和日志消息、跟踪、遥测、进度、取消），以及服务器向其客户端发出的请求。
++         每个方法都有一个什么也不做的默认实现，因此监听器只需实现它要处理的部分，而 `Listener.Quiet` 是默认值，由 given `Listener.quiet` 提供。
++         监听器作为局部 given 绑定，并在会话打开时由 `Lsp.Server.sessional` 找到。
+
+% 2 1 0 052d661673a1c7f00a202da414f6535b
+
+% 3 1 0 17d052471a7b0fca00977bd4baffa3cf
+
+% 0 1 0 1f12497ea2fd8b711ff16574a4e48c25
+
+% 0 1 0 0a6c05271ef6805009e5de1df4c2190c
+
+% 0 1 0 00c81b158b0303d6103fb7a8cf906442
+
+% 0 1 0 037ebeb413dbe2860cb41d807c7f5b29
+
+% 1 1 0 107c8cf0bf6da4b00101df3f371e6f30
+
+@ 0 21 0 03d67dad85d512091f478adc5660f79b
++         监听器在会话的读取任务上运行，因此其方法不得等待同一连接上的请求：答复会到达它正在阻塞的那个线程。
++     entry .Quiet   忽略一切的监听器
++     entry .quiet   提供 `Quiet` 的 given；位于隐式作用域中
++     entry #diagnostics   服务器为某个文档发布的诊断信息，如有版本则附带版本
++     entry #message   一条 `window/showMessage`，用于展示给用户，附带其级别
++     entry #log   一条 `window/logMessage`，用于编辑器的日志，附带其级别
++     entry #trace   一条 `$/logTrace` 消息
++     entry #telemetry   一条 `telemetry/event`，以原始 JSON 表示
++     entry #progress   一条 `$/progress` 通知：其令牌和值，以原始 JSON 表示
++     entry #cancel   一条 `$/cancelRequest`，附带服务器希望取消的 id
++     entry #request   服务器向其客户端发出的请求，以原始形式作答
++         `workspace/applyEdit`、`workspace/configuration`、`window/showMessageRequest`、`client/registerCapability`，以及服务器所请求的其他任何东西：这个集合是开放的，因此方法和参数都是原始形式，答复是原始 JSON。
++         默认值 `Unset` 以 JSON `null` 作答，对于客户端从未声明的能力，服务器必须容忍这种答复。
++     entry #intercept   最先看到每条消息；`true` 表示已处理，不再继续路由
++         代理用它来转发消息（包括响应），而不是对消息作出处理；普通客户端保留默认值 `false`。
++   entry .Transit   代理如何处理展示给钩子的消息
+
+% 1 1 0 0f987421882c95b40d319e80db473630
+
+@ 0 7 0 1b0923b472a0bc951339bd0140503c50
++         `rewrite.outbound` 或 `rewrite.inbound` 钩子的结果。
++         `Forward` 原样传递消息，未被任何钩子看到的消息也都是如此；`Rewrite(message)` 改为传递另一条消息；`Drop` 吞掉它——在出站途中被丢弃的请求永远不会得到答复，因此应丢弃通知，或者改为答复该请求；`Answer(result)` 在此处答复一个出站请求，使服务器永远看不到它，对于不是请求的消息以及入站消息，它会被忽略。
+
+% 2 1 0 17347700a6c111e7193066d9011b9a8e
+
+% 3 1 0 0914a94f4a6e58991f78b16c8242c4ff
+
+% 4 1 0 1f6d71b4c1cd13ac12c36fb1e7b2147b
+
+% 1 1 0 0ee17493e9a2b8cc0e583160014e42c8
+
+% 2 1 0 01033e463435a3051703a6b25cf94dd9
+
+% 1 1 0 0834f02fd5d0356a182b833822d0389c
+
+@ 0 1 0 19f786c9cc563cc7014c8e91960cfb6d
++   entry .Server   本进程可以与之通信的语言服务器：一条命令，或一对流
+
+% 1 1 0 14b4e5a305afa4980cb26c95a99146ec
+
+@ 0 6 0 1f363ea6c56f0a2e1589b862c9435b46
++         一个描述服务器所在之处的普通值，本身不持有任何通道：`Server.Process(command)` 是作为子进程启动的服务器，其标准输入和输出承载协议，而 `Server.Streams(input, output)` 是已经在一对 `java.io` 流之后运行的服务器——在本进程中、在套接字之后，或者是测试中的夹具。
++         `Server(command)` 和 `Server.streams(input, output)` 分别构建二者，并拓宽为 `Server`。
+
+@ 0 5 0 0896ff13674425221a0db24a8f61dcf7
++         与它的会话由 aperture 的 `Sessional` 扩展方法 `session` 通过 given `.sessional` 打开：通道在会话打开时创建，在代码块执行期间借出一个 `Lsp.Connection`，之后二者都会被释放，因此连接不可能比服务器存活得更久。
++         会话结束时，子进程会被杀死，而不是等待它结束。
+
+% 2 1 0 0fda4c55f05c0c5201fa7142a53dd815
+
+% 3 1 0 09430e86edc01ecc09a981ff1ecf1ec6
+
+% 4 1 0 1f3a5ad13e9beb440d2824c53621051b
+
+% 5 1 0 0fccf37e2f7e7a0d01bed714b7e4fe0b
+
+% 6 1 0 1f2aac086b1a0ea91e2cb7c336aef8a5
+
+% 7 1 0 08c904c9985e628f10c081dae40ba8d4
+
+% 8 1 0 1008b480e0fbcccf013fd8ba98424239
+
+% 9 1 0 1c06717c426d125e1e519dedacfcd73c
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 1 1 0 06d5aff9c8db707b1ff46de5fa393322
+
+% 2 1 0 16e3982b1e0188831a9baadfd6e71959
+
+% 3 1 0 133808a6501b82bd103c1e7b4490535d
+
+% 0 1 0 1e688bf456239579158b966fde385b61
+
+% 0 1 0 19e212d379b14eec0053367c70b3279f
+
+% 1 1 0 0b91ea214f5d86e1000aed7287c6b299
+
+% 0 1 0 08c609db6451cb0f1f7b5e210eabd747
+
+% 0 1 0 1c67198f4eaff9790220baa21dd1e901
+
+@ 0 12 0 135aeea629a59a44048c38d82284bafd
++     entry .apply   作为子进程启动的服务器：`Lsp.Server(command)`
++     entry .streams   已经在一个输入流和一个输出流之后运行的服务器
++         哪个流是哪个，是从本进程的角度来说的：`input` 是服务器写出的内容，`output` 是它读取的内容。
++     entry .sessional   打开与 `Server` 的会话的 given；位于隐式作用域中
++         一个由上下文构建的 `LspSessional`：它需要一个 `Monitor`、一个 `Probate`、`Diagnostics`、一个 `WorkingDirectory` 和一个 `Environment`（用于启动子进程）、一个 `Tactic[Lsp.Error]`，以及一个 `Listener^` 和一个 `Observer^`——除非作用域中有自己的 given，否则就是安静的监听器和静默的观察者。
++         监听器或观察者通过绑定为 given 来提供，而从不通过传参提供：捕获了会话监视器的实例无法在使用处绑定到一个名称。
++   entry .proxy   通过 stdio 为编辑器提供服务，同时把一切转发给上游服务器
+
+% 1 1 0 118efc54647e9d030ec6d3ba3f805036
+
+@ 0 7 0 1729652e040f379d10deb6215c20da2a
++         `Lsp.proxy(upstream, observer)(register)`：本进程从其标准输入读取编辑器的消息，并写到其标准输出，持有与 `upstream` 的会话，并在二者之间转发每条消息，同时通过 `rewrite` 组合子修改代码块在借出的 `Lsp.Proxy` 上注册的内容。
++         转发在两个方向上都是异步的，因此可以有任意数量的请求同时进行，并以任意顺序得到答复，而请求 id 原样通过。
++         一切未注册的内容——本库未建模的方法、它不认识的能力——都逐字节通过。
+
+% 2 1 0 04c0e151decffc911f9fa44863fcc4be
+
+% 3 1 0 10e762dec02663d5152c71667de3368b
+
+% 4 1 0 051c790f759decfe11c12b0e74f507b8
+
+% 0 1 0 1f371d1a8b4fa01e13f9eb97373920e1
+
+% 0 1 0 0ba9e7e9094042730f4394ec10336976
+
+% 0 1 0 0b354b055b5a380b07433702b914be12
+
+% 0 1 0 14f1fe3111aaef9f146a11f2c1ca7bc5
+
+% 0 1 0 071ac86c8523db690178f84eeb48d5d3
+
+% 1 1 0 0743e4a03610271404c91f97fe7ac9f9
+
+@ 0 6 0 04eed49bdc5a99080446596aed8ade11
++         它需要一个 `Stdio^`、一个 `Monitor^`、一个 `Probate`、一个 `WorkingDirectory`、一个 `Environment`、`Diagnostics`，以及针对 `Lsp.Error`（启动失败的服务器为 `Reason.Unstarted`）、`Framing.Error`（格式错误的帧）和 `Truncation.Error`（被截断的流）的战术。
++         注册代码块在会话打开之前同步运行一次，并且可以捕获监视器。
++         `Lsp.Proxy.run` 是带有显式观察者的同一个调用。
+
+% 1 1 0 0d02c67c9275f88a1234b2b6a46613cb
+
+% 0 1 0 189a7320130ac64d142135fed43fe992
+
+% 1 1 0 0b733a69f665541b12a304d1001f2c1d
+
+@ 0 1 0 0dc3e29e3a8795971bad8b458c63b80d
++   entry .listen   根据已注册的处理函数，通过标准输入和输出提供语言服务器
+
+% 1 1 0 02aad66074733b311e55d14e1451bd4a
+
+@ 0 9 0 1ac352f74de99dd40f33e757a5d9f6dc
++         `Lsp.listen(name, version, observer)(register)`：代码块在借出的 `Lsp.Registry` 上注册服务器的处理函数；代码块返回后，注册表被消耗，从中派生出 `ServerCapabilities`，然后循环从标准输入读取以 `Content-Length` 分帧的 JSON-RPC，直到输入耗尽，并在读取线程上把每条消息分派给它的处理函数。
++         一个单独的写入任务清空出站通道——响应和处理函数通过 `client` 发送的通知都是如此——并把每条消息分帧写到标准输出，因此写入从不交错。
++         `name` 和 `version` 是 `initialize` 结果作为 `ServerInfo` 报告的内容；观察者（如果提供）会看到两个方向上的每条消息。
+
+@ 0 1 0 01964d6d8ef88cb215a07d412f04afc3
++         服务器通过注册而增长，其能力也随之增长：
+
+% 2 1 0 0cbf2aeca1005f621d9c4c1986b3a79c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 0454df2350dae15901103323ce368467
++           label 没有任何功能的服务器也会响应 initialize，并跟踪文档
+
+% 1 1 0 14850d9483d8e108122e21d0eaf93a51
+
+% 2 1 0 1526481ae2a43a83162247ee1dd46337
+
+% 4 1 0 1e298e6b50b98d891e06d427c9d8f27f
+
+% 5 1 0 15ba92caf11f4516040af6eb57ce267e
+
+% 0 1 0 127dfd1783380b721436ceac4554ba69
+
+% 1 1 0 1972fe720b5a76b01b2e8319e6c73f30
+
+@ 0 1 0 0a496198195670ff1cc9d805c51052e1
++           label 注册 hover 会宣告 hoverProvider
+
+% 1 1 0 00376128669414de1c798d3ba30b1aba
+
+% 2 1 0 085d6fa3cad68cf703481a40d6f2451f
+
+% 4 1 0 1db68548bf2e86fd1f8e1f3e4859651f
+
+% 5 1 0 14dbde92e83f04000bf0f85b802ae34b
+
+% 7 1 0 05dd4bf02c2262941554544c870e1043
+
+% 8 1 0 0be4dcc0584b641c16988a82bece1c47
+
+% 9 1 0 0f9bdfa18e6a4e540bf43db154af0e6d
+
+% 10 1 0 11a1ef430704a82e0de6eebbd548fbaa
+
+% 1 1 0 18e79dbcf2177a361b17cd0043d57163
+
+@ 0 1 0 1b1a944bec37f3250b8a850cc8ab33c1
++           label 注册 completion 会宣告 completionProvider 及其触发字符
+
+% 1 1 0 033bae419d20dc2201721a2a42a73e2b
+
+% 2 1 0 171214164bebf7d1124e9d7bf9dbdfdb
+
+% 4 1 0 0820dd1e707bb96e0a5726cc301723f1
+
+% 5 1 0 03bb1d31a3b24d7d18e6e635cc5e486f
+
+% 7 1 0 1ebcbe0a04cdaceb1cae19012b7f11f1
+
+% 8 1 0 033e85cf2f86490e192373a1b53bba75
+
+% 9 1 0 1dd33e72bb55fb320fb97fa24c11acf1
+
+% 10 1 0 0e9831b9722c2a0b13cd0b2df05f8ee8
+
+% 12 1 0 1cd10ce50f6c11261b59323ade1c4903
+
+% 13 1 0 157bfc9f6aaede371103cdf5474ee91e
+
+% 1 1 0 19c38b68fb5048db1b93e3bf5249ed21
+
+@ 0 1 0 0f446e4fabd4df391a5cd6fd57bcc302
++           label opened 处理函数在每个文档到达时发布诊断信息
+
+% 1 1 0 0bad3a2a8dd6f230078c1727af7c649e
+
+% 2 1 0 0fe6a024dadad07e0ad22a1417ade748
+
+% 4 1 0 01d95c4c1445bba516993971efc6ece6
+
+% 5 1 0 0702d78635251748051e59b3a51a7f7e
+
+% 7 1 0 14f27edcb196dddf0bb86dc2b6405535
+
+% 8 1 0 161ed44ebf943b2010a0ee3d90a67490
+
+% 9 1 0 0e37b57f63504e1e0326da1c30e35516
+
+% 10 1 0 1c7c77045b58f56401b1bb27f4a337f0
+
+% 12 1 0 1d6271df54c153031de12b0b8e54cb32
+
+% 13 1 0 0d10149a19cf36ed0890b09aa3431912
+
+% 0 1 0 1c2a962998584aba06b895d882d19062
+
+% 0 1 0 09b795548343e5740c0b35ad091df0ad
+
+% 0 1 0 0cecb9d671b793991268cdfba8302b14
+
+% 0 1 0 00022712d7b3a48e144e0db63bc5252f
+
+% 0 1 0 00ffa211450fbedb0cb973a7969144eb
+
+% 0 1 0 0410d44f398231dc014071be633dd149
+
+% 0 1 0 16740b2abc85031c0a4d0abff979a5fd
+
+% 0 1 0 022ce80379162f8f0812d2f3eef56708
+
+% 1 1 0 039a23ebea1f92c61ecb7ce27d8624ab
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 2 0 0471e39fd6207f561a6b400969e1138c
++         于是整个服务器就是一个采用常驻守护进程惯用法的 `main`，使经常重启其语言服务器的编辑器能够重新连接到一个已经在运行的 JVM：
+
+% 2 1 0 0c3ed027f65958271357831c610511c0
+
+% 3 1 0 002ce9a4631d59da01c87c24d1f39d72
+
+% 4 1 0 1aee365729636589000f2c8a1c15c146
+
+% 0 1 0 0853818f349b023003bb3bad9860badb
+
+% 0 1 0 0c332fad946d7e811c4c167bc5bf460b
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 05f3106ad4f8d4410c9c647c1794144f
+
+% 0 1 0 1d9724ee372a96b90c32bcca99559b44
+
+% 0 1 0 174a8f123f7a85c2153eefb4572f83a8
+
+% 0 1 0 08770c8d2d48ab3c1cecaf6dd69ac37e
+
+% 1 1 0 136c825de807cea601cfbb1cb9f7eea9
+
+@ 0 9 0 0849ee8d890988fe046901d02967d902
++         它需要一个 `Stdio`、一个 `Monitor` 和一个 `Probate`（写入者是一个任务），以及针对 `Framing.Error` 和 `Truncation.Error` 的战术。
++         故障会得到答复，而不是被抛出：不是 JSON 的消息得到 `-32700` 解析错误，无法解码的载荷得到 `-32602` 无效参数错误，处理函数中的任何其他异常得到 `-32603` 内部错误，而处理函数抛出的 `Lsp.Error` 得到一个带有该原因的线上代码和请求 id 的错误响应——对于通知，则是一条 `window/logMessage`。
++         注册表、会话和分发器都是该调用的局部变量：任何持有能力的东西都不会存放在生命周期与应用程序相同的对象中，而捕获检查会拒绝试图这样做的处理函数（参见 `Document` 和 `Workspace`）。
+
+% 1 1 0 0b788b8e3f79b82209d62678660a63be
+
+% 0 1 0 074486cf5dc3b5c50d443ce27c7e96da
+
+% 0 1 0 1244cd5c4a3610fe040c475b4db11e36
+
+% 0 1 0 10540b2f5fab4d2e15a7f9e83212a3ba
+
+% 1 1 0 1491c7ee695919fb0e724076c84237e9
+
+@ 0 1 0 19fd781253d050a213a1e7a1975e43d1
++   entry .Client   服务器发送给其编辑器的通知
+
+% 1 1 0 07b8cf75389e133411a6101b52ffe0c0
+
+@ 0 7 0 07fdc07bbd2b32e21824b627b71004dc
++         协议中从服务器到客户端的一半，按服务器调用它的方式呈现：处理函数以 `client` 取得它，并发送 `publishDiagnostics`、`showMessage`、`logMessage`、`telemetry`、`logTrace`、`progress` 或 `cancelRequest`。
++         只公开通知，从不公开请求：处理函数运行在读取编辑器消息的线程上，因此在其中等待一次往返，就会等待一个必须由该线程读取的响应，从而死锁。
++         需要编辑器对某件事作答的客户端，在 `ready` 中发出询问，并在编辑器的通知到达时读取结果。
+
+@ 0 6 0 118d2560ed96b831070be8b6148a1036
++         线上方法——`` `textDocument/publishDiagnostics` ``、`` `window/showMessage` ``、`` `window/logMessage` ``、`` `telemetry/event` ``、`` `$/logTrace` ``、`` `$/progress` `` 和 `` `$/cancelRequest` ``——是生成的代理所实现的 `@rpc` 接口；具名方法以常用的默认值包装它们（无版本、`Info` 和 `Log` 级别、无详细跟踪）。
++         *接收*这些消息的客户端——`LspSessional` 的读取者——把同一个特质分派给一个 `Lsp.Listener`。
+
+@ 0 4 0 167d958bf21dfaf4024da3665b843789
++         `Client` 是一种共享能力：从处理函数中派生的任务进行发布是合理的，因为出站通道支持多个生产者，但该句柄被限制在创建它的服务作用域之内，不能被藏起来供会话结束后使用。
+
+% 2 1 0 01053b29009ef078024b1499c65ed403
+
+% 3 1 0 1ccf052b950807f10744ce6e013e427b
+
+% 5 1 0 06804e1591bb55f30ffc43622ab1fef8
+
+% 6 1 0 0307ac1b42f723941808847edfc593ea
+
+% 8 1 0 08deb739b73d3da61565151292cd5ecf
+
+% 0 1 0 1be769be29548ae40a09ff67f8cec2b2
+
+% 0 1 0 031c084d92574c041dc4beffc3452d46
+
+% 0 1 0 1a1f83abc872849102db4b6e752255fe
+
+% 1 1 0 0b46d44493d958e0048c208b5d82d1d6
+
+% 1 1 0 085873e8b01f19ca1e80eb57afaec4cc
+
+% 1 1 0 1fbf7a2122f3cec806061bd0ebeee091
+
+@ 0 11 0 1383dcbfba0eb46718c37d789a4ea998
++     entry #publishDiagnostics   发送某个文档的诊断信息，替换当前显示的诊断信息
++         空列表会清除它们。
++         不发送文档的版本。
++     entry #showMessage   以 `Info` 级别向用户显示一条消息
++     entry #logMessage   以 `Log` 级别向编辑器的日志写入一行
++     entry #telemetry   发送一条带原始 JSON 载荷的 `telemetry/event`
++     entry #logTrace   发送一条 `$/logTrace` 消息，不含详细部分
++     entry #progress   发送一条 `$/progress` 通知：一个令牌和一个值，都是原始 JSON
++         进度令牌是字符串或整数，而值是协议特定的，因此二者都是原始形式。
++     entry #cancelRequest   按 id 请求编辑器取消它发出的一个请求
++   entry .Connection   客户端对运行中服务器的句柄，在会话期间借出
+
+% 1 1 0 1a5c5ff60ca0c42e0eaacc88adaa5bb5
+
+@ 0 8 0 14f13545e49e86d015d76cee64cd762e
++         服务器会话的镜像：会话打开期间，`session` 借给编辑器或代理的东西。
++         协议定义的每个请求都有一个方法——`#hover`、`#complete`、`#definition`、`#rename`…——接收文档的 URI 和请求的参数，返回与服务器处理函数所返回的相同的类型，而每个通知（`#open`、`#edit`、`#save`、`#close`、`#initialized`、`#exit`、`#configure`）都不返回任何东西。
++         请求会阻塞调用者，直到其响应到达，但从不阻塞读取任务，因此可以有多个请求同时从不同任务发出，并且可能乱序得到答复。
+
+% 2 1 0 08ae80dd6d601da419003671ac74b7d9
+
+% 3 1 0 0836aa669619b00014202a784e9ea79d
+
+% 4 1 0 063986b6adab519f02e58d76beae5513
+
+% 5 1 0 194c2b9a65f1eb720c3099d302010dfc
+
+% 6 1 0 1c66c31b70ca806d05b74135ecd8f8c0
+
+% 7 1 0 149ce61b1cee07a71065d5fcb67a4c1f
+
+% 8 1 0 10b3c975708323d20d0f424d1c69bc24
+
+% 9 1 0 1b1ee3f6dff265b81512a8141402cdda
+
+% 0 1 0 0dc3f8ebd3b4942c123f887505d415e0
+
+% 1 1 0 03a6525eefc2989801cc3b504dabe259
+
+% 2 1 0 17a2eb098e8b8a6b14740682acd4ba1a
+
+% 3 1 0 19b5133c3b99898e11b113ca3911af86
+
+% 0 1 0 03bb6ccd9e747a2d07e2047ea83afff9
+
+% 0 1 0 0f009b303b07ea0805cc4c54c5f0b4ec
+
+% 1 1 0 1b18d2658efd4fc11f52ff4bc55000f2
+
+@ 0 6 0 13332a385b3d6a68106b51d84e20b5fa
++         每个请求都需要一个 `Tactic[Lsp.Error]`：服务器的错误响应会作为一个 `Lsp.Error` 抛出，其原因是线上代码所指明的那个（`Lsp.Error.reason`），对于标准集合之外的代码，则为 `Internal`，并以服务器自身的消息作为详情，而不是永远等待下去。
++         连接是一种共享能力，同时由其写入者、读取者和调用者驱动，并且是一个 `JsonRpc`，因此 `#send` 把一条原始消息放到它的通道上。
+
+@ 0 5 0 060efc87ad2e06a10c4eb724ffab0946
++         方法背后生成的代理是公共的 `vals` `#lifecycle`、`#language`、`#navigation`、`#editing`、`#advanced`、`#workspace` 和 `#resolve`，每个线上特质一个，用于具名方法未覆盖的请求（选择范围、颜色、各种层次结构、resolve、文件操作）：每个线上方法接收协议自身的参数，并在调用的战术之下召唤其结果的解码器。
+
+% 0 1 0 11d44f593765ad63128f4769f78bacdb
+
+% 0 1 0 1f3ad2b097f1bd00027a72d8cef2d90d
+
+% 1 1 0 14beec1ed1f342940cb7a15172e3f932
+
+@ 0 48 0 0658bc2f4ad427b8058ee6dc7f5e1ec2
++     entry #Origin   连接的另一端：`Lsp`
++     entry #lifecycle   为 `LspLifecycle` 生成的客户端：初始化、关闭和文档同步
++     entry #language   为 `LspLanguage` 生成的客户端：补全、悬停、定义以及其余功能
++     entry #navigation   为 `LspNavigation` 生成的客户端：声明、折叠、链接、颜色
++     entry #editing   为 `LspEditing` 生成的客户端：范围格式化和键入时格式化、层次结构
++     entry #advanced   为 `LspAdvanced` 生成的客户端：语义词法单元、内嵌提示、诊断信息
++     entry #workspace   为 `LspWorkspace` 生成的客户端：符号、命令、文件操作
++     entry #resolve   为 `LspResolve` 生成的客户端：`*/resolve` 请求
++     entry #send   原样发送一条消息，不创建 id，也不等待答复
++         代理转发所经由的原始接缝，使编辑器自己的 id 和本库未建模的方法都能原样通过。
++     entry #initialize   握手：发送 `initialize` 并返回服务器的能力
++         `initialize(root, name, version, folders, capabilities)`：全部可选；除非另行指定，客户端报告自己为 `soundness`，无版本、无能力，而服务器的答复是一个 `InitializeResult`。
++         之后接着调用 `#initialized`。
++     entry #initialized   告诉服务器握手已完成
++     entry #shutdown   请求服务器关闭，并等待其确认
++     entry #exit   告诉服务器退出；即结束一个行为良好的服务器的通知
++     entry #open   告诉服务器某个文档已打开，附带其语言、文本和版本
++         `open(uri, language, text, version = 1)`。
++     entry #edit   向一个已打开的文档发送一批更改，附带其新版本
++     entry #replace   `#edit` 的整文档形式：以新版本替换文本
++     entry #save   告诉服务器某个文档已保存，如果服务器需要则附带其文本
++     entry #close   告诉服务器某个文档已关闭
++     entry #hover   某个位置上的悬停信息，或 `Unset`
++     entry #complete   某个位置上的补全，附带一个可选的 `CompletionContext`
++     entry #definition   某个位置上符号的定义位置
++     entry #references   某个位置上符号的引用，默认包括其声明
++     entry #symbols   文档的符号
++     entry #format   在给定选项下格式化文档的编辑
++     entry #rename   重命名某个位置上符号的工作区编辑
++     entry #codeActions   某个范围上的代码操作，给定其上下文
++     entry #signatureHelp   某个位置上的签名帮助，或 `Unset`
++     entry #declaration   某个位置上符号的声明位置
++     entry #typeDefinition   某个位置上符号的类型定义位置
++     entry #implementation   某个位置上符号的实现位置
++     entry #highlights   某个位置上符号的文档高亮
++     entry #foldingRanges   文档的折叠范围
++     entry #documentLinks   文档的链接
++     entry #codeLenses   文档的代码透镜
++     entry #semanticTokens   文档的完整语义词法单元
++     entry #inlayHints   某个范围内的内嵌提示
++     entry #diagnostics   文档的拉取式诊断信息，作为完整报告
++     entry #search   与查询匹配的工作区符号
++     entry #execute   按名称以原始 JSON 实参运行一条命令，返回其原始结果
++     entry #configure   告诉服务器配置已更改，并以原始 JSON 附带设置
++   entry .Dispatch   为 `Lsp` 实现构建 JSON-RPC 分发器
+
+% 1 1 0 16e046c099394b061eaa192e52160ad3
+
+@ 0 10 0 170cc971c87e25dc19ba5f2cf9ae3934
++         `Lsp.Dispatch(server)` 是一个 `Json => Optional[Json]`：它读取消息所指明的方法，把消息路由到声明该方法的线上特质所生成的分发器，并返回响应，对于通知则返回 `Unset`；没有方法的消息是响应，由生命周期分发器处理；未知方法得到 `Unset`。
++         分发按子特质分别生成，而不是为整个协议生成一次，因为 obligatory 的 `JsonRpc.serve` 会为每个方法内联一个编解码器，而为整个 LSP 生成一个类会超出 JVM 的常量池限制——这也是该特质被拆分为七个的原因。
++         `Lsp.dispatcher` 是同一个调用。
++     entry .apply   服务器的分发器，按声明方法的特质路由每条消息
++   entry .Error   处理函数抛出的故障，以及服务器用来作答的错误响应
+
+% 1 1 0 1edd8b3be46c791d1d05cc7b874ce431
+
+@ 0 7 0 19eb896038bc768d1a195f7ca79b6235
++         错误 `↯/s.114.1`：_the LSP operation failed because `reason`_，按原因编号（从 `Parse` 的 147.1 到 `Unstarted` 的 147.11）。
++         每个 `Reason` 都带有协议为它指定的 JSON-RPC 线上代码：`Parse` −32700、`InvalidRequest` −32600、`MethodNotFound` −32601、`InvalidParams` −32602、`Internal` −32603、`ServerNotInitialized` −32002、`RequestCancelled` −32800、`ContentModified` −32801、`ServerCancelled` −32802、`RequestFailed` −32803，以及本库自己的 `Unstarted` −32000，用于启动失败的服务器子进程。
+
+@ 0 5 0 0982444fdab0ed4b08320118abb2ce15
++         处理函数通过借给它的 `Emit[Lsp.Error]` 抛出这种错误，`Lsp.listen` 以一个错误响应答复该请求，其中带有该原因的代码，并以 `#response` 作为消息——对于通知，则是一条 `window/logMessage`。
++         对于关于未打开文档的请求，以及没有人注册的命令，会话自己会抛出 `InvalidParams`。
+
+% 2 1 0 0644a382edb9fa3516e481d69153d89c
+
+% 3 1 0 0e27b027e0fdc6bc03d05e7fbf5d1990
+
+% 1 1 0 108d7f683c90f3a204a6a908c9094992
+
+% 2 1 0 036c1c815340d144036e8063510f203e
+
+% 3 1 0 1c3745d5829aa7d818c77010d6bed788
+
+% 5 1 0 0b27f7a1c487fe470c1cfb4656f40099
+
+% 0 1 0 0e15f59c924c39861d75cf2d7d05b65b
+
+% 0 1 0 1c8109307b1404881b930e8eff3906e6
+
+% 0 1 0 10d77b885f3fbc410652ab48f8eeb12c
+
+% 1 1 0 1cce2f8e7a9a440c077b266de4e6e748
+
+@ 0 15 0 07cd998e7acba9f51fbeb7452a72a2a4
++         在客户端，`Connection` 的请求在遇到错误响应时抛出这种错误，其原因由 `.reason` 从线上代码恢复；当服务器的命令无法派生子进程时，`LspSessional` 抛出 `Unstarted`。
++         与每个 fulminate 错误一样，构造它需要作用域中有 `Diagnostics`。
++     entry .Reason   操作失败的原因，各自带有其 JSON-RPC 线上 `code` 和 `number`
++         上述十一个原因。
++         `code` 是线上代码，`number` 是错误 147 的子编号。
++     entry .reason   线上代码所指明的原因，标准集合之外的代码为 `Unset`
++         `Reason#code` 的逆运算，供读取错误响应的客户端使用；服务器可能以实现定义的代码作答，`Connection` 将其报告为 `Internal`。
++     entry .communicable   把原因渲染为其消息，例如 _the request failed_
++     entry #reason   操作失败的原因
++     entry #details   抛出错误时给出的消息（如果有）
++     entry #response   错误响应中发送的消息：详情，或原因的描述
++   entry .Registry   记录服务器处理函数之处，借给传入 `listen` 的代码块
+
+% 1 1 0 016ccb68a090ae5700635ae4a99aa78b
+
+@ 0 6 0 1f9deeb56b2bda8417e619465f6fe636
++         注册组合子的目标：`Lsp.listen` 创建一个注册表，以上下文参数的形式借给注册代码块，并在代码块返回时消耗它，因此在开始提供服务之后进行注册在构造上就是不可能的。
++         它是一种不能逃出该代码块的共享能力——捕获检查会拒绝把 `summon[Lsp.Registry]` 赋给外部变量的 `listen` 代码块——而 `#capabilities` 根据已注册的内容派生出服务器所宣告的 `ServerCapabilities`。
+
+% 2 1 0 0ffe0314e61fefa91ea6a9f99f3a7694
+
+% 3 1 0 0a0bd57c27d1e4cb1ae362289ef554f9
+
+% 5 1 0 079bc46bd6b0657519a449c257baa143
+
+% 6 1 0 1344a8cff4610c321005f87d41757908
+
+% 0 1 0 19e14c4110fb36931aff3dbd16aa0eb7
+
+% 0 1 0 0626b4911eb701e20f2d09574715e5cd
+
+% 0 1 0 010e9010fb5dca7a1bc71b6c899e531f
+
+% 2 1 0 1ed35fe2b3844cf70b435d77565c605e
+
+% 0 1 0 1bc805b7f681605f1c7517f93e00aadb
+
+% 0 1 0 0587dc15d27f3e2615c2f1b3cbe886ec
+
+% 1 1 0 0460980a0c23d3a902d7a5ad2f07f0a2
+
+@ 0 7 0 10e9d534e7f843601c18c469ef05336f
++         它的槽位——每个功能一个公共 `var`，以对应组合子的名称加上末尾的 `0` 命名，再加上与处理函数一同注册的选项——之所以公开，只是因为组合子要给它们赋值，而每个处理函数槽位的类型都是 `AnyRef | Null`：提及上下文函数类型的联合类型会在每次适配时新鲜化其捕获集，因此带类型的边界是组合子的参数，在那里闭包捕获了注册表的处理函数会被拒绝，而会话在分派时恢复其类型。
++         请通过对应的组合子读取槽位，而不要直接读取。
+
+% 0 1 0 073bc69dacded9bf09699d6e40b16635
+
+% 0 1 0 054515abb6b0eab110f6c8eb4a8e439f
+
+@ 0 1 0 08141d298360e799074715f67b9efc01
++     entry .Slot   存放已注册处理函数的盒子
+
+% 1 1 0 0ab9dab1c683023501c59a63f933ef5c
+
+@ 0 80 0 1ac1fc778d9a4f1a14e27472af2d161e
++           上下文函数值会通过被应用来适配任何不是上下文函数的期望类型，因此处理函数无法直接存放在 `Optional` 或 `AnyRef` 槽位中：`Slot[handler](value)` 完整地保存它，由会话将其取出。
++       entry #value   处理函数
++     entry #capabilities   各项注册所隐含的 `ServerCapabilities`，最后应用调整
++         每个提供者标志恰好在其处理函数被注册时设置；注册时给出的选项（补全和签名帮助的触发字符、键入时格式化的触发字符、语义词法单元图例、诊断选项、命令名称）填充结构化的提供者；`textDocumentSync` 总是 `Incremental`；如果注册了 `capabilities(adjust)`，它会在结果上运行。
++     entry #ready0   装箱后的 `ready` 处理函数，或 `null`
++     entry #terminating0   装箱后的 `terminating` 处理函数，或 `null`
++     entry #opened0   装箱后的 `opened` 处理函数，或 `null`
++     entry #changed0   装箱后的 `changed` 处理函数，或 `null`
++     entry #saved0   装箱后的 `saved` 处理函数，或 `null`
++     entry #closed0   装箱后的 `closed` 处理函数，或 `null`
++     entry #saving0   装箱后的 `saving` 处理函数，或 `null`
++     entry #savingEdits0   装箱后的 `savingEdits` 处理函数，或 `null`
++     entry #hover0   装箱后的 `hover` 处理函数，或 `null`
++     entry #complete0   装箱后的 `complete` 处理函数，或 `null`
++     entry #completeTriggers0   注册 `complete` 时所带的触发字符
++     entry #definition0   装箱后的 `definition` 处理函数，或 `null`
++     entry #references0   装箱后的 `references` 处理函数，或 `null`
++     entry #documentSymbols0   装箱后的 `documentSymbols` 处理函数，或 `null`
++     entry #format0   装箱后的 `format` 处理函数，或 `null`
++     entry #rename0   装箱后的 `rename` 处理函数，或 `null`
++     entry #codeActions0   装箱后的 `codeActions` 处理函数，或 `null`
++     entry #signatureHelp0   装箱后的 `signatureHelp` 处理函数，或 `null`
++     entry #signatureHelpTriggers0   注册 `signatureHelp` 时所带的触发字符
++     entry #declaration0   装箱后的 `declaration` 处理函数，或 `null`
++     entry #typeDefinition0   装箱后的 `typeDefinition` 处理函数，或 `null`
++     entry #implementation0   装箱后的 `implementation` 处理函数，或 `null`
++     entry #documentHighlights0   装箱后的 `documentHighlights` 处理函数，或 `null`
++     entry #foldingRanges0   装箱后的 `foldingRanges` 处理函数，或 `null`
++     entry #selectionRanges0   装箱后的 `selectionRanges` 处理函数，或 `null`
++     entry #documentLinks0   装箱后的 `documentLinks` 处理函数，或 `null`
++     entry #codeLenses0   装箱后的 `codeLenses` 处理函数，或 `null`
++     entry #documentColors0   装箱后的 `documentColors` 处理函数，或 `null`
++     entry #colorPresentations0   装箱后的 `colorPresentations` 处理函数，或 `null`
++     entry #formatRange0   装箱后的 `formatRange` 处理函数，或 `null`
++     entry #formatOnType0   装箱后的 `formatOnType` 处理函数，或 `null`
++     entry #formatOnTypeFirst0   注册 `formatOnType` 时所带的第一个触发字符
++     entry #formatOnTypeMore0   注册 `formatOnType` 时所带的其余触发字符
++     entry #prepareRename0   装箱后的 `prepareRename` 处理函数，或 `null`
++     entry #prepareCallHierarchy0   装箱后的 `callHierarchy` 的准备处理函数，或 `null`
++     entry #incomingCalls0   装箱后的 `callHierarchy` 的传入调用处理函数，或 `null`
++     entry #outgoingCalls0   装箱后的 `callHierarchy` 的传出调用处理函数，或 `null`
++     entry #prepareTypeHierarchy0   装箱后的 `typeHierarchy` 的准备处理函数，或 `null`
++     entry #supertypes0   装箱后的 `typeHierarchy` 的超类型处理函数，或 `null`
++     entry #subtypes0   装箱后的 `typeHierarchy` 的子类型处理函数，或 `null`
++     entry #semanticTokens0   装箱后的 `semanticTokens` 处理函数，或 `null`
++     entry #semanticTokensLegend0   注册 `semanticTokens` 时所带的图例
++     entry #semanticTokensDelta0   装箱后的 `semanticTokensDelta` 处理函数，或 `null`
++     entry #semanticTokensRange0   装箱后的 `semanticTokensRange` 处理函数，或 `null`
++     entry #inlayHints0   装箱后的 `inlayHints` 处理函数，或 `null`
++     entry #inlineValues0   装箱后的 `inlineValues` 处理函数，或 `null`
++     entry #linkedEditingRange0   装箱后的 `linkedEditingRange` 处理函数，或 `null`
++     entry #monikers0   装箱后的 `monikers` 处理函数，或 `null`
++     entry #diagnostics0   装箱后的 `diagnostics` 处理函数，或 `null`
++     entry #diagnosticOptions0   注册 `diagnostics` 时所带的选项
++     entry #workspaceSymbols0   装箱后的 `workspaceSymbols` 处理函数，或 `null`
++     entry #commands0   已注册的命令：每个名称及其装箱后的处理函数
++     entry #commandNames0   已注册的命令名称，为能力单独保存
++     entry #configuration0   装箱后的 `configuration` 处理函数，或 `null`
++     entry #watchedFiles0   装箱后的 `watchedFiles` 处理函数，或 `null`
++     entry #foldersChanged0   装箱后的 `foldersChanged` 处理函数，或 `null`
++     entry #creatingFiles0   装箱后的 `creatingFiles` 处理函数，或 `null`
++     entry #createdFiles0   装箱后的 `createdFiles` 处理函数，或 `null`
++     entry #renamingFiles0   装箱后的 `renamingFiles` 处理函数，或 `null`
++     entry #renamedFiles0   装箱后的 `renamedFiles` 处理函数，或 `null`
++     entry #deletingFiles0   装箱后的 `deletingFiles` 处理函数，或 `null`
++     entry #deletedFiles0   装箱后的 `deletedFiles` 处理函数，或 `null`
++     entry #resolveCompletion0   装箱后的 `resolveCompletion` 处理函数，或 `null`
++     entry #resolveCodeAction0   装箱后的 `resolveCodeAction` 处理函数，或 `null`
++     entry #resolveCodeLens0   装箱后的 `resolveCodeLens` 处理函数，或 `null`
++     entry #resolveDocumentLink0   装箱后的 `resolveDocumentLink` 处理函数，或 `null`
++     entry #resolveInlayHint0   装箱后的 `resolveInlayHint` 处理函数，或 `null`
++     entry #resolveWorkspaceSymbol0   装箱后的 `resolveWorkspaceSymbol` 处理函数，或 `null`
++     entry #adjust0   `capabilities(adjust)` 注册的纯能力调整（如果有）
++   entry .Proxy   记录代理的重写器和钩子之处，借给传入 `Lsp.proxy` 的代码块
+
+% 1 1 0 060409b47c49974a0641ad51c1c756d0
+
+@ 0 8 0 0b02770e318932040f3bc003d9bec1c4
++         `rewrite` 组合子的目标，正如 `Lsp.Registry` 是服务器端组合子的目标。
++         这里有两层拦截：带类型的重写器（`rewrite.hover`、`rewrite.capabilities`、`rewrite.diagnostics`…）以方法为键，作用于解码后的载荷；原始钩子（`rewrite.outbound`、`rewrite.inbound`）作用于整条消息，包括本库未建模的方法。
++         二者都未覆盖的内容会逐字节转发。
++         它是一种独占能力，被限制在注册代码块之内；它的公共槽位由组合子赋值，并在注册结束时由 `Proxy.run` 读取一次。
+
+@ 0 3 0 09de8f4ed59b77951161414e081dab99
++         与上游服务器的会话随代理一同到来，并通过 `upstream` 访问：重写器或钩子在会话存在之前注册，但在会话存在期间运行，因此代理可以向服务器询问编辑器从未询问过的东西。
+
+% 0 1 0 1f553d1071f1b70d184df0b8bf490462
+
+% 0 1 0 0977dda287fa43aa1518cc04908b8adc
+
+% 0 1 0 18fa3e638764a8d71a104bda16f48886
+
+@ 0 1 0 09973a0048af76470d6d9351c69e7105
++     entry .Rewriter   单个载荷的重写器，在代理的表中以方法为键
+
+% 1 1 0 0cb85bd8a0878dc30c7396cd561285b8
+
+@ 0 22 0 0b8b0f31335aff1b116fa32fd7424d5b
++           `rewrite.hover` 和其他带类型的组合子所构造的东西：`rewrite(json)` 在每次调用时从应用它的循环那里接收一个 `Tactic[Json.Error]`，因此代理所保留的实例本身不持有任何战术，而它无法解码的载荷会原样通过——例如，`null` 悬停信息就作为 `null` 原样转发。
++       entry #rewrite   修改后的载荷，或通过给定战术抛出的 `Json.Error`
++     entry .run   以显式观察者运行代理：即 `Lsp.proxy` 所调用的东西
++         `Proxy.run(upstream, observer)(register)`，其上下文要求与 `Lsp.proxy` 相同。
++         代码块运行一次；然后从代理中读出规则，打开与 `upstream` 的会话，`rewrite.connected` 的代码块在它自己的任务上开始运行，循环从标准输入读取编辑器的消息，直到输入耗尽。
++         编辑器的消息按方法分类，并以它们自己的 id 转发；服务器的消息由一个监听器拦截，它根据每个响应所答复的请求的方法重新确定响应的类型，应用匹配的重写器，并把结果写到标准输出。
++         对代理自己发出的请求（其 id 是 obligatory 创建的字符串）的响应，改为路由给正在等待它的调用者，因此永远不会到达编辑器。
++     entry #results   响应的重写器，按其所答复请求的方法索引
++     entry #notices   通知以及服务器到客户端请求的重写器，按方法索引
++     entry #outbound0   装箱后的 `rewrite.outbound` 钩子，或 `null`
++     entry #inbound0   装箱后的 `rewrite.inbound` 钩子，或 `null`
++     entry #connected0   装箱后的 `rewrite.connected` 代码块，或 `null`
+
+@ 0 10 0 0201fc521e3235c80c47ee5deb063068
++ entry .LspLifecycle   生命周期和文档同步方法的线上特质
++     七个 `@rpc` 特质之一，它们在 `Lsp` 中联合起来构成线上接口；之所以拆分出来，是为了让 obligatory 的 `JsonRpc.serve` 和 `JsonRpc.proxy` 为每个特质生成大小可控的类。
++     它声明了 `initialize`、`initialized`、`shutdown`、`exit`、`textDocument/didOpen`、`textDocument/didChange`、`textDocument/didSave` 和 `textDocument/didClose`，每个都使用协议自身的参数名和类型（`textDocument: Lsp.TextDocumentIdentifier` 等）。
++     `Lsp.Connection#lifecycle` 是为它生成的客户端，而 `Lsp.listen` 的会话实现了它。
++     不导出到 `soundness` 总括包：通过 `import exegesis.*` 访问，只有手工写成 `Lsp` 的服务器，或直接调用线上方法的客户端才需要它。
+
+@ 0 5 0 1a67f8a7654855cb0b0a27c39fe5a355
++ entry .LspLanguage   核心语言功能的线上特质
++     `textDocument/completion`、`textDocument/hover`、`textDocument/definition`、`textDocument/references`、`textDocument/documentSymbol`、`textDocument/formatting`、`textDocument/rename`、`textDocument/codeAction` 和 `textDocument/signatureHelp`。
++     关于接口为何拆分，参见 `LspLifecycle`；`Lsp.Connection#language` 是它的客户端。
+
+@ 0 6 0 1cce1ac4c8f2f5be0e557638c11fe060
++ entry .LspNavigation   导航、折叠、链接、代码透镜和颜色的线上特质
++     `textDocument/declaration`、`textDocument/typeDefinition`、`textDocument/implementation`、`textDocument/documentHighlight`、`textDocument/foldingRange`、`textDocument/selectionRange`、`textDocument/documentLink`、`textDocument/codeLens`、`textDocument/documentColor` 和 `textDocument/colorPresentation`。
++     `Lsp.Connection#navigation` 是它的客户端。
+
+@ 0 7 0 0905d1f7e0c90f4c1c9ac7ed0f83f1fc
++ entry .LspEditing   范围格式化和键入时格式化、重命名准备、保存以及层次结构的线上特质
++     `textDocument/rangeFormatting`、`textDocument/onTypeFormatting`、`textDocument/prepareRename`、`textDocument/willSave`、`textDocument/willSaveWaitUntil`、`textDocument/prepareCallHierarchy`、`callHierarchy/incomingCalls`、`callHierarchy/outgoingCalls`、`textDocument/prepareTypeHierarchy`、`typeHierarchy/supertypes` 和 `typeHierarchy/subtypes`。
++     `Lsp.Connection#editing` 是它的客户端。
+
+@ 0 5 0 1c651001363c5020052ae5d75108bd8d
++ entry .LspAdvanced   语义词法单元、内嵌提示、内联值、moniker 和拉取式诊断信息的线上特质
++     `textDocument/semanticTokens/full`、`textDocument/semanticTokens/full/delta`、`textDocument/semanticTokens/range`、`textDocument/inlayHint`、`textDocument/inlineValue`、`textDocument/linkedEditingRange`、`textDocument/moniker` 和 `textDocument/diagnostic`。
++     `Lsp.Connection#advanced` 是它的客户端。
+
+@ 0 5 0 1da566eecc0ae7f81a820b2f11becb07
++ entry .LspWorkspace   工作区符号、命令、配置和文件操作的线上特质
++     `workspace/symbol`、`workspace/executeCommand`、`workspace/didChangeConfiguration`、`workspace/didChangeWatchedFiles`、`workspace/didChangeWorkspaceFolders`、六个 `workspace/willCreateFiles`…`workspace/didDeleteFiles` 方法，以及 `$/setTrace`。
++     `Lsp.Connection#workspace` 是它的客户端。
+
+@ 0 5 0 19c48e233687a52004beef94350f0abe
++ entry .LspResolve   `*/resolve` 请求的线上特质
++     `completionItem/resolve`、`codeAction/resolve`、`codeLens/resolve`、`documentLink/resolve`、`inlayHint/resolve` 和 `workspaceSymbol/resolve`。
++     每个都以条目本身作为其 `params`，而不是一个带具名字段的对象，因此该参数被标记为 `@bare`。
++     `Lsp.Connection#resolve` 是它的客户端。
+
+@ 0 1 0 1a271315a2f1c15213cc209bd00bf55c
++ entry .LspSessional   打开与 `Lsp.Server` 的会话的 `Sessional` 实例
+
+% 1 1 0 16ea887c297fc7431eabdf63b03b6230
+
+@ 0 6 0 1afee598f39eae08037318bdc28fcdea
++       `session` 在 `Lsp.Server` 上运行的东西：它创建通往服务器的通道——对 `Server.Process` 是所派生子进程的管道，对 `Server.Streams` 是给定的流——启动一个把连接的出站消息写入通道的写入任务，以及一个路由返回内容的读取任务，把一个 `Lsp.Connection^` 借给代码块，之后取消两个任务，并中止子进程，而不是等待它结束。
++       它的 `Self` 是 `Lsp.Server`，`Result` 是 `Lsp.Connection^`。
+
+@ 0 5 0 1860c86f7429158808a64f072859fd8b
++       读取者把服务器发送的内容分派给构建该实例时所用的 `Lsp.Listener`：`Lsp.Client` 特质所建模的通知到达监听器的具名方法；任何其他方法都是服务器向其客户端发出的请求，由 `Listener#request` 作答；响应与正在等待它的请求相匹配。
++       观察者会看到两个方向上的每条消息。
+
+@ 0 3 0 145e3592cae0fcf21929915300711562
++       周遭实例是 given `Lsp.Server.sessional`，它由作用域中的监听器和观察者 given 构建；只有在需要以值的形式传入监听器或观察者时，才显式构造一个，并将其绑定为局部 given：
+
+% 2 1 0 1da39dd0f34a0899014da3237505c4a7
+
+% 3 1 0 1c991fbaddfbaf2f01e3c6b40d070c1f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 0 1 0 1127b14c14fb4ec81dbeb7f7a40648e7
+
+% 0 1 0 0a6f46602ce0cfc21eb2242da9e90df1
+
+% 0 1 0 0c60ac168c84c0b21d277c50f1b7a7cb
+
+% 0 1 0 0f12f01fd76c24ca122a442b6e8e8309
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 13cc264b0e9e75430f7e78525d9f0449
+
+% 0 1 0 03477018f7d3c1f3172accaec474d532
+
+% 0 1 0 190748b913b6447a073e2abd9ea0ebc5
+
+% 1 1 0 12b7177654d2a81c042be60082fca283
+
+@ 0 5 0 10874093d6c2343d113e2ca192a3bd4c
++       它需要一个 `Monitor`、一个 `Probate`、`Diagnostics`、一个 `WorkingDirectory`、一个 `Environment` 和一个 `Tactic[Lsp.Error]`：无法启动的子进程会通过该战术报告为 `Lsp.Error(Reason.Unstarted, details)`。
++       格式错误的帧或被截断的流是读取者或写入者的故障，会报告给遗嘱认证。
+
+% 1 1 0 18ebe41efc92d071032d030b5874455d
+
+% 1 1 0 18f732ae4e9d067004553b63837cd7d3
+
+% 0 1 0 13553857db4f71f017ab9f948adab767
+
+% 0 1 0 0ded34ea2a61e6c701e5d26195452abd
+
+@ 0 3 0 021683acfb84110a0d86ad7a0f76d19d
++   entry #Self   主体：`Lsp.Server`
++   entry #Result   会话所借出的东西：`Lsp.Connection^`
++   entry #session   打开通往服务器的通道，把连接借给代码块，之后将其关闭
+
+@ 0 1 0 05af13e05968858b0c1a94787abe1ceb
++ entry .rewrite   代理的注册组合子：修改上游服务器所说的内容
+
+% 1 1 0 10d0f551dd0b4c1e1a44aba3f0b8d50c
+
+@ 0 7 0 0b7870cd0c948ad403be468ee34d94d8
++       它自成一个命名空间，因此 `rewrite.hover`（修改服务器返回的悬停信息）与 `Lsp.hover`（提供悬停信息）永不冲突。
++       每个带类型的组合子以方法为键，把载荷解码为服务器端所用的同一个 `Lsp` 类型，应用函数，再重新编码；没有重写器的方法原样转发，而无法解码的载荷——服务器在没有悬停信息时发送的 `null`——按原样通过，因此重写器永远不必写出空的情形。
++       每个组合子都需要作用域中有一个 `Lsp.Proxy^`：即 `Lsp.proxy` 的代码块。
+
+% 2 1 0 1b87c04aca99c9e20becb6b63ba35a79
+
+% 3 1 0 03f2cac45f504f3414a1272fa6f71626
+
+% 4 1 0 09d3118c559d2882034f12530e6636d2
+
+% 0 1 0 14e653c0ce7803660ea4420dc55a6095
+
+% 0 1 0 0b20bfe3ef89853e0ea8baaa9c4fa618
+
+% 0 1 0 1ea56c684fd8f741053addd60dd67568
+
+% 0 1 0 1c26f3f967864300092b381e39a6e320
+
+% 0 1 0 0df7c86d58e81ebd0d0165e40c453d31
+
+% 1 1 0 1f03ec98160a34bf0df8854fc8f798a7
+
+% 2 1 0 1e21488fd04d885916b8f5f0c5eb2a73
+
+% 1 1 0 1e45d784727937141ffe9eb362eb8766
+
+@ 0 4 0 11290b8a85880bf50ee27d7f6f373f75
++       `.result` 和 `.notification` 是针对没有组合子的方法的逃生舱口，而 `.outbound`、`.inbound` 和 `.connected` 是作用于整条消息的钩子。
++       钩子运行在递送它所修改的消息的那个线程上，这决定了它可以如何使用 `upstream`：参见 `exegesis.upstream`。
+
+% 1 1 0 010054bc9edbe6e71476a951f0196f3c
+
+% 0 1 0 0cd5ab48f2e17d860ee2527ef40a310a
+
+% 1 1 0 04aae8c5d4b16dbd0877af345d6a0009
+
+% 0 1 0 1935ccc92138372a1e9d61bc29e69b69
+
+@ 0 37 0 1b7c3dab38632ab51845b1cc66061190
++   entry .capabilities   修改上游服务器所宣告的能力
++       重写 `initialize` 的结果：添加某项功能的代理必须声明它，移除某项功能的代理必须停止声明它。
++   entry .hover   修改服务器返回的每个悬停信息
++   entry .completions   修改服务器返回的每个补全列表
++   entry .definitions   修改服务器返回的每个定义位置列表
++   entry .symbols   修改服务器返回的每个文档符号列表
++   entry .codeActions   修改服务器返回的每个代码操作列表
++   entry .codeLenses   修改服务器返回的每个代码透镜列表
++   entry .inlayHints   修改服务器返回的每个内嵌提示列表
++   entry .signatureHelp   修改服务器返回的每个签名帮助
++   entry .diagnostics   修改服务器发布的诊断信息
++       带类型的重写器中唯一针对通知的一个：服务器报告的 `uri` 和 `version` 保持不变，代理只能修改报告列表。
++   entry .result   按方法以原始 JSON 修改任意请求的结果
++       `rewrite.result(method)(lambda)`：用于本库未建模的方法，或代理宁愿当作 JSON 处理的载荷。
++       该 lambda 在每次调用时从代理接收一个 `Tactic[Json.Error]`，因此它无法读取的载荷会原样通过。
++       带有 `error` 的响应保持不变。
++   entry .notification   按方法修改服务器所发送的任意通知的参数
++       `rewrite.notification(method)(lambda)`，相当于针对通知或服务器向其客户端发出的请求的 `params` 的 `.result`；消息会连同其 id（如果有）一起重建。
++   entry .outbound   在编辑器发送的每条消息被转发之前看到它
++       `rewrite.outbound { (method, message) => … }`，返回一个 `Transit`：转发、重写、丢弃，或在此处答复请求，使服务器永远看不到它。
++       它运行在读取编辑器消息的循环上，因此可以等待对 `upstream` 的请求，不过编辑器也会随之等待。
++   entry .inbound   在服务器发送的每条消息经过任何重写器之后、被转发之前看到它
++       `rewrite.inbound { (method, message) => … }`：方法是通知的方法，或响应所答复的请求的方法，或者是 `Unset`。
++       返回一个 `Transit`；`Answer` 在这里被忽略。
++       它运行在读取服务器消息的任务上，而这正是会递送对 `upstream` 所发任何请求的答复的任务，因此这样的请求必须在 `async` 代码块中发出，绝不能内联等待。
++   entry .connected   上游会话一打开，就在它自己的任务上运行一次代码块
++       代理在能够修改任何内容之前必须先向服务器询问的东西就放在这里，它也是唯一可以自由等待答复的钩子。
++       读取编辑器消息的循环不会等待它，因为编辑器的第一个请求可能在服务器完成启动之前就到达。
+
+% 2 1 0 1035467aa47cb9ba15e6e2e7de40366c
+
+% 3 1 0 0b022f1db3ed7d270b54fbfef9017369
+
+% 4 1 0 03eea4d67ce43ded0b0415b2c25aebe1
+
+% 0 1 0 0eb82e49ce6346bc0350c060e8a9a3cc
+
+% 0 1 0 070d5f043497d3d8176480697ea23d19
+
+% 0 1 0 0c642a30c01d343d047e1965f25812f6
+
+% 0 1 0 0c50126a661234090e58732bbafae7d2
+
+% 1 1 0 0ad251233b1defec05340de559f6c8af
+
+@ 0 7 0 1bab954bc1004bf202a78c5ead97cf13
++ entry .upstream   代理与上游服务器的会话，用于它自己的询问
++     `upstream`（需要作用域中有 `Lsp.Proxy^`）是代理对它所转发到的服务器持有的 `Lsp.Connection`：钩子借此向服务器询问编辑器从未询问过的东西，通常是只有服务器知道的项目状态。
++     答复返回给发出询问的调用者，永远不会到达编辑器。
++     它是一个方法而不是一个值，因为注册在代理有服务器可以通信之前运行：在注册代码块中、但在钩子之外调用它（此时会话还不存在）会导致 panic。
+
+@ 0 5 0 01016f36a8651cc30faa3ab2b4a52e1a
++     由哪个钩子调用它，决定了它是否可以等待答复。
++     `rewrite.connected` 有它自己的任务，可以自由等待；`rewrite.outbound` 运行在读取编辑器消息的循环上，因此等待是安全的，但会让编辑器停下来；`rewrite.inbound` 运行在读取服务器消息的任务上——也就是会递送响应的那个任务——因此在那里等待的请求会永远等下去，必须在 `async` 代码块中发出。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 00e0c08cbea4883f020550fe3638cae1
+
+% 0 1 0 1fa4ecd06c010031191be1c127209223
+
+% 0 1 0 114717083af5ecb108497712f7b97f45
+
+% 0 1 0 1a97cb6095ab2ac50cc43b4dc1b28b87
+
+% 0 1 0 18a7f376eca22d400ee057786049022b
+
+% 1 1 0 0cd28fbb870536b5120f93437cd1a43b

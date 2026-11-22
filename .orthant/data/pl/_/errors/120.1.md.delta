@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 1b1d6a757d000fcc1dfa76818cb26777
++ # `↯/s.120.1` – `Pojo.Error`
+
+@ 0 2 0 1de5bcf5e64369040a0732f5ab5c333b
++ Zgłaszany, gdy Austronesian nie może zdeserializować wartości z jej neutralnej względem
++ classloaderów reprezentacji „Pojo”.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 7 0 1e4b23b2b6122f390c37a9e09ca24fe4
++ Austronesian koduje wartości Scali do reprezentacji zbudowanej wyłącznie ze standardowych
++ typów JDK – opakowanych typów prostych, `String` i `Array[Object]` – tak aby mogły przekraczać
++ granice classloaderów lub procesów. Ten błąd jest zgłaszany podczas dekodowania, gdy wartość
++ Pojo nie ma kształtu oczekiwanego przez typ docelowy: wartość skalarna tam, gdzie oczekiwano
++ tablicy pól, tablica o złej długości albo wartość typu sumy, która nie jest parą
++ `(label, payload)`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0c1cf7585d5b46f21825f7394302ce6d
+
+% 1 1 0 0619e4d2b8f18a5f1e4e204afcf3226c
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 4 0 06e0bb50b55bf5530508721f2da71e2f
++ Należy potwierdzić, że wartość została zakodowana z tego samego typu, do którego jest
++ dekodowana, i że obie strony zgadzają się co do definicji typu – kolejność pól i nazwy
++ wariantów są częścią kodowania. W miarę rozwoju modułu mogą zostać dodane bardziej szczegółowe
++ przyczyny.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 10391fc3129dbc2209245896adaec4bd
++ - Źródło: `lib/austronesian/src/core/austronesian.internal.scala`

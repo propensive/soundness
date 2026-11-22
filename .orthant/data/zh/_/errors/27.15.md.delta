@@ -1,0 +1,52 @@
+orthant 2 language
+
+% 0 1 0 1ac284462187383109a09dd0276414ce
+
+@ 0 1 0 045c312c1dcfaa560812fe72fae69766
++ 当算术运算无法产生可表示的结果时抛出。
+
+@ 0 2 0 1e445dbeaa96a90810b92ee08e274393
++ 它不同于无法表示的*值*，后者视类型而定，是 `Decimal.Error` 或 `Rational.Error`。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 000e68e93e3e64bf00e6ce2b65809593
++ Hypotenuse 的检查除法在整数除以零或 `MinValue / -1`（会溢出正数范围）等情况下抛出此错误。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 139202f658cf802305415a82c62875d3
+
+% 1 1 0 1a6d749e730282fb187a0e8de0844cad
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 16cecf001828935f0cf594fda17190aa
+
+@ 0 2 0 0f68f9e8dcfa842b193e86bfcdc666d0
++ 除数为零。
++ 仅在 `import arithmeticOptions.checkedDivision` 下抛出；默认的不检查方式让平台自身的除法语义生效。
+
+% 0 1 0 011ca2852200d3010e938667025ca930
+
+@ 0 3 0 1d4fa29541cdd4880f2eca5d28f25dc4
++ 结果超出了其类型的范围。
++ 仅在 `import arithmeticOptions.checkedOverflow` 下抛出。
++ 在两者统一之前，这是 `SN-331`（`OverflowError`）。
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 1962d90b53da4c6912aece05fefdbfc0
++ 防范为零的除数；对于 `MinValue / -1` 的情况，在除法之前拓宽被除数。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 058561df40e5f36c17b6a42792798270
++ - 源代码：`lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`

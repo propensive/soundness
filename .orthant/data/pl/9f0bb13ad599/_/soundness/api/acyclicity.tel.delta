@@ -1,0 +1,23 @@
+orthant 2 language
+
+% 0 4 0 00c2b0b4755587fb158510c7379f9947
+
+@ 0 4 0 00e8b1f2d88a57b91a87591af6b117e0
++       Warstwy i połączenia to `Sequence`, odczytywane według `Ordinal`, a `rank` i `position`
++       to `Map`, więc każdy odczyt zwraca `Optional`: `Unset` dla warstwy, której nie ma, albo
++       węzła, którego nie ma w grafie. `LayeredDagDiagram` z `dendrology` przypisuje warstwom
++       kolumny i je rysuje; inny rysunek bierze bezpośrednio `layers` i `links`.
+
+@ 0 11 0 13b2ff4a59f011121d17e855e3ec1fcf
++   entry .Vertex   miejsce w warstwie: węzeł grafu albo punkt, przez który przechodzi dłuższa krawędź
++       Wyliczenie: `Real(value)` to węzeł grafu, a `Virtual(source, target)` to miejsce, w
++       którym krawędź od `source` do `target`, rozpięta na kilka warstw, przechodzi przez tę.
++       Rysunek nadaje wierzchołkowi wirtualnemu kolumnę i prowadzi przez nią krawędź.
++   entry #layers   warstwy, od góry, każda jako `Sequence` elementów `Layering.Vertex` w kolejności rysowania
++   entry #links   `links(i)` łączy warstwę `i` z warstwą `i + 1`, jako pary pozycji w każdej z nich
++       `Sequence` z jedną `List` połączeń dla każdej warstwy oprócz ostatniej. Każde połączenie
++       łączy sąsiednie warstwy: krawędź rozpięta na więcej warstw jest rozbijana na swoich
++       wierzchołkach wirtualnych.
++   entry #rank   warstwa każdego węzła, jako `Map`
++   entry #position   pozycja każdego węzła w jego warstwie, jako `Map`
++   entry #crossings   ile par połączeń się przecina, w całym ułożeniu warstw

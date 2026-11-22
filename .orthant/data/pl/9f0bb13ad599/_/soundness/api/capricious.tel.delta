@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   rzut uczciwą monetą: `true` albo `false`, z równym prawdopodobieństwem
++     `toss()` losuje z `Random` w zasięgu, według tej samej reguły co `arbitrary[Boolean]()`
++     (znak wartości `Long`), więc rzut da się odtworzyć z `Seed`.
+
+@ 0 9 0 0c63b6d6a010510f0f4d8dc6bca26ab7
++   entry .global   `Random` nad jednym współdzielonym generatorem bez ziarna, do użycia bez zasięgu
++       Każde wywołanie opakowuje ten sam generator, wspólny dla całego procesu, tworzony leniwie
++       przez `randomization.unseededRandomization`, więc losowań z niego nigdy nie da się
++       odtworzyć. Używa go `random`.
++   entry .apply   nowy `Random` z `Randomization` w zasięgu, z ziarnem z podanego `Seed`
++       `Random(seed)` inicjuje generator z kontekstowej `Randomization`, rozwiązywanej z `seed`
++       w zasięgu: przy `seededRandomization` generator zaczyna od `seed`, tak jak w
++       `Seed#stochastic`, a randomizacja bez ziarna je ignoruje.
++   entry .Size   ile elementów ma losowa kolekcja, jako wartość kontekstowa
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   losuje wartość z `Random`
++   entry #apply   losuje wartość z kontekstowego `Random`: `summon[Int is Randomizable]()`
++   entry #map   instancja dla innego typu, przekształcająca każdą wylosowaną wartość
++       `randomizable.map(lambda)` losuje przez tę instancję i stosuje lambdę; wynik przechwytuje
++       obie.
++   entry .long   losuje jednostajnie losowy `Long`
++   entry .byte   losuje `Byte`, osiem młodszych bitów losowego `Long`
++   entry .short   losuje `Short`, szesnaście młodszych bitów losowego `Long`
++   entry .int   losuje `Int`, trzydzieści dwa młodsze bity losowego `Long`
++   entry .char   losuje `Char`, szesnaście młodszych bitów losowego `Long`
++       Dowolną jednostkę kodu UTF-16, w tym niesparowane surogaty i znaki sterujące.
++   entry .seed   losuje `Seed` o sześćdziesięciu czterech bitach, z losowego `Long`
++   entry .boolean   losuje `Boolean`: `true`, gdy losowy `Long` jest ujemny
++   entry .list   losuje `List`, której rozmiar pochodzi z `Random.Size` w zasięgu
++   entry .set   losuje `Set` o rozmiarze do `Random.Size` w zasięgu, przy czym duplikaty się scalają
++   entry .frozenArray   losuje zamrożoną `Array[element]^{}` o rozmiarze z `Random.Size` w zasięgu
++       Wymaga `ClassTag` dla typu elementów, a także `Random.Size`.
++   entry .double   losuje `Double` przez `Distribution` w zasięgu
++       Nie ma rozkładu domyślnego: `Double` nie da się wylosować, dopóki kod nie powie, jaki
++       rodzaj `Double` ma na myśli, co zapobiega traktowaniu losowania jednostajnego tak, jakby
++       było normalne. Należy zaimportować jeden z `randomDistributions` albo zadeklarować jako
++       given `Gaussian`, `PolarGaussian`, `UniformDistribution` lub `Gamma`.
++   entry .conjunction   instancja derywowana dla produktu: każde pole losowane po kolei z tego samego `Random`
++   entry .disjunction   instancja derywowana dla sumy: wariant wybrany jednostajnie, a potem wylosowany z tego samego `Random`

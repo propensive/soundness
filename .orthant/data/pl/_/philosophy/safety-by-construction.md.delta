@@ -1,0 +1,151 @@
+orthant 2 language
+
+@ 0 1 0 0764d003b2d73399122ce3a270fcbfa4
++ # Bezpieczeństwo przez konstrukcję
+
+@ 0 5 0 12aadd03548ddd7a097194cf02e95c45
++ Soundness sprawia, że niepoprawnych wartości w ogóle nie da się skonstruować, sprawdzając je
++ podczas kompilacji kodu. Przewodnim przekonaniem jest to, że każdą analizę statyczną, którą
++ może wykonać programista, kompilator wykona lepiej – a każdą analizę, którą kompilator może
++ wykonać, powinien wykonać. Wartość, która istnieje, jest więc znana jako poprawnie
++ uformowana, a kod, który ją otrzymuje, nie musi jej sprawdzać ponownie.
+
+@ 0 5 0 050ba2c0784f05cf10341c2c3b696a0a
++ Najwyraźniej wyrażają to interpolatory. Każdy mały język osadzony w programie – adresy URL,
++ ścieżki, wyrażenia regularne, daty, typy mediów, JSON – ma gramatykę, a jego literały są
++ parsowane według tej gramatyki w czasie kompilacji, przez ten sam parser, który obsłuży dane
++ wejściowe w czasie wykonania. Niepoprawny literał jest błędem kompilacji wskazującym na
++ błędny znak:
+
+% 2 1 0 0bbec91b09000cd81ea0f69c75b4df45
+
+% 3 1 0 0a0239a309474f48171c8acf80f08a8c
+
+% 4 1 0 101ca460ec05283f0fb456c616de83cc
+
+% 0 1 0 1bb57990592a2cd601d4fcc1c8376afc
+
+% 0 1 0 1d56685db19c0b940cc591a734567bf6
+
+% 0 1 0 03b60f1eb8e5e7de025c577b0cc1df4c
+
+% 0 1 0 1354ba3c0bd04d301ed774709e8718ea
+
+% 1 1 0 080f5bd43c4309a716cfd395297700d5
+
+@ 0 7 0 09f886996a0fa8860f134f33e11b3f97
++ Ta sama zasada sięga poza literały. Data, która nie może istnieć – 31. dzień miesiąca
++ liczącego 30 dni – jest odrzucana tam, gdzie została zapisana; `Money in "EUR"` nie można dodać
++ do `Money in "GBP"`; relacja bazy danych, której nie deklaruje schemat, się nie kompiluje; a
++ `<br>` w HTML z elementami potomnymi jest błędem kompilacji, ponieważ tak mówi specyfikacja.
++ W każdym przypadku sprawdzenie nie jest walidacją z czasu wykonania przeniesioną wcześniej,
++ lecz konstrukcją, która dopuszcza tylko poprawne wartości – więc stan niepoprawny w ogóle nie
++ ma reprezentacji, a kod dalej w potoku dziedziczy gwarancję za darmo.
+
+@ 0 1 0 009da7f2e145b0bc178e41b0b27b76bb
++ ## Jeden parser, dwa momenty
+
+@ 0 4 0 1361fb180d65287b1d92cd54283e7703
++ Własnością, która czyni to godnym zaufania, jest to, że ścieżki czasu kompilacji i czasu
++ wykonania to *ten sam kod*. Logika parsowania interpolatora to zwykła Scala; działa w czasie
++ kompilacji na literale, dając błąd kompilacji, i w czasie wykonania na dynamicznych danych
++ wejściowych, dając typowany błąd:
+
+% 2 1 0 0a7c7d676b83db220b0d4ae7caeabb93
+
+% 3 1 0 1df291f82e0f4d7604485e60a19c2fa7
+
+% 4 1 0 105e313eb329d0e71cefb0330164f720
+
+% 0 1 0 06d43944fce464700b9c4ed728e2836a
+
+% 0 1 0 16c6c267601bf76d03cd63a6600b55ad
+
+% 1 1 0 1b8df6aaa8def2c11618aea93d46bd96
+
+@ 0 3 0 0aeae3130e9fe6121b9133a0bcab7a23
++ Te dwie ścieżki nie mogą się rozejść, ponieważ nie ma czego utrzymywać w zgodzie. Ręcznie
++ napisane makro plus osobny parser czasu wykonania to układ, którego się tu unika: dwie
++ implementacje jednej gramatyki, różniące się dokładnie w przypadkach brzegowych, których nikt
++ nie przetestował.
+
+@ 0 3 0 024cd703bb1958460b438daae9d71864
++ Konwencja jest więc taka, że każdy sprawdzany literał ma odpowiednik w czasie wykonania, a
++ wartość może przechodzić między nimi – konfiguracja odczytana z pliku i wartość domyślna
++ zapisana w źródle dają ten sam typ, z tymi samymi gwarancjami.
+
+@ 0 1 0 0db4f7a360e4e5a406d0815ddaface26
++ ## Precyzja w typie zwracanym
+
+@ 0 3 0 1cc38bc23600d848161e5dcdc186f858
++ Metoda prefiksu interpolatora jest `transparent inline`, więc może zwrócić coś bardziej
++ szczegółowego niż jej zadeklarowany typ. To pozwala literałowi przenieść to, czym *jest*, do
++ systemu typów, zamiast jedynie się walidować:
+
+% 2 1 0 07a358831606ac57130169022ac844c9
+
+% 3 1 0 13972933396c919f1c4df3b806db7c8f
+
+% 4 1 0 1af7f9b5938a440a0b69921924fc901b
+
+% 0 1 0 0e0e33ffd0034f4819ba4ea80e3177a6
+
+% 0 1 0 0d703fc43ae9608f0b5e0a2fb0cf04ab
+
+% 0 1 0 1698b4f0fc04b3bb1e159d5af11d02c4
+
+% 1 1 0 07d1bc6ef5ec6dd3083a1c2c3992e164
+
+@ 0 4 0 050ad6494fcaf1041d27097ddb74da24
++ Ostatni przypadek to najsilniejsza postać: nazwy elementów ścieżki są w jej typie, więc kod,
++ który ją otrzymuje, wie dokładnie, dokąd ona wskazuje. Ta precyzja jest dostępna tylko dla
++ literałów, co jest uczciwą granicą tej techniki – tekst uzyskany w czasie wykonania daje typ
++ ogólny, ponieważ nic więcej o nim nie wiadomo.
+
+@ 0 1 0 078c4179ff580cd81fb18bf30fb78d54
++ ## Co można, a czego nie można sprawdzić w ten sposób
+
+@ 0 3 0 12ef372b18b956a0095042ab71e587ea
++ Technika ma zastosowanie tam, gdzie poprawność jest własnością *wartości*, rozstrzygalną na
++ podstawie samej wartości. Składnia adresu URL, istnienie daty, rejestracja typu mediów,
++ zrównoważenie wyrażenia regularnego, kształt schematu: wszystko rozstrzygalne, wszystko
++ sprawdzane.
+
+@ 0 5 0 1e7304ed291048970a0af9879189cfa0
++ Nie ma zastosowania tam, gdzie poprawność zależy od świata. Czy `example.com` się rozwiązuje,
++ czy plik istnieje, czy port jest wolny, czy certyfikat jest nadal ważny – nic z tego nie jest
++ wiadome podczas kompilacji kodu, a typ, który twierdziłby inaczej, kłamałby. Te sprawdzenia
++ stają się typowanymi błędami w miejscu użycia, co oznacza, że pracę wykonują zamiast tego
++ [przejścia
++ totalne](total-transitions.md).
+
+@ 0 3 0 07e15608a1ea73aa16a0eb4b49fee918
++ Granicę między nimi warto wyznaczać starannie, ponieważ pokusą jest twierdzić za dużo.
++ `Hostname` obiecuje poprawność składniową i nic więcej, a dokumentacja mówi to wprost, zamiast
++ pozwolić czytelnikowi wywnioskować, że poprawnie typowana nazwa hosta jest osiągalna.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 3 0 10c64cbaf3bea6db08a3bf43cf1cce5d
++ **Czas kompilacji.** Każdy literał jest parsowany przez kompilator, a plik gęsto nimi wypełniony
++ kompiluje się wymiernie wolniej. Rozwijanie makr jest największym pojedynczym składnikiem czasu
++ kompilacji samego Soundness.
+
+@ 0 5 0 14e4d8fa704a752b096eefc5f044ae31
++ **Komunikaty o błędach są odpowiedzialnością makra.** Błąd kompilacji z nieudanego literału
++ jest tylko tak dobry jak komunikat, który wytwarza interpolator. Umieszczenie karetki pod
++ błędnym znakiem – zamiast podkreślenia całego wyrażenia – wymaga celowej pracy z pozycjami
++ w źródle, które interpolator otrzymuje, a interpolator, który na tym oszczędza, wytwarza
++ gorsze diagnostyki, niż wytworzyłby parser czasu wykonania.
+
+@ 0 5 0 0ea35d68ceb20fa1065d2c9acf34fb34
++ **Literały muszą być literałami.** Adres URL złożony z części w czasie kompilacji nie może
++ skorzystać ze sprawdzania przez interpolator, chyba że same części są literałami. Ścieżka
++ czasu wykonania jest zawsze dostępna, ale gwarancja jest słabsza, a kształt kodu inny – co
++ czasem popycha projekt w stronę zachowania jako literału czegoś, co w przeciwnym razie byłoby
++ obliczane.
+
+@ 0 2 0 08deaea14db629dc0fffffd511663b39
++ Zobacz [stany niemożliwe](impossible-states.md), by poznać regułę, której to służy, oraz
++ [interpolację](../en/modules/interpolation.md), by dowiedzieć się, jak buduje się taki literał.

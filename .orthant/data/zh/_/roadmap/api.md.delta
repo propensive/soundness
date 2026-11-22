@@ -1,0 +1,154 @@
+orthant 2 language
+
+@ 0 1 0 0fd2e87e833f49fa0c72249cef7f4c36
++ # API 一致性
+
+@ 0 6 0 099dac62941f927810f4a15670a335c4
++ 可预测性是一种安全属性。
++ 已经熟悉 Soundness 某个角落的开发者——或智能体——应当能够正确猜出下一个角落：相似的操作共用一套 API，变化体现在参数而非名称中，名称是诚实的。
++ 如果两个声明同名，它们就是同一事物；如果名称不同，它们的含义就不同。
++ 违反这些规则的导出接口会在每次查找时给每个用户增加负担，对智能体的负担最重，因为智能体会激进地从模式中归纳。
+
+@ 0 2 0 0da1f93dda59ac28064fe3498af8606d
++ 这个接口已经被测量过：`doc/api-reduction-candidates.md` 盘点了 `soundness` 包导出的每个标识符，并对精简候选项分类：
+
+% 2 1 0 1c43fe86fe8c8afd16e6cf1a9502033f
+
+@ 0 7 0 1ae256e673c1720216c5e272e9330776
++ column  类别
++ column  候选项
++ column  条目
++ row  C1  应嵌套在以其为前缀的类型之内的多词名称  api-1
++ row  C2  非约定俗成的缩写  api-3
++ row  C3  完全无需导出的类型类支撑实体  api-3
++ row  C4  同名异义表和异名同义表，即一个名称表示两件事物或两个名称表示同一件事物  api-2
+
+% 1 1 0 1acf6d947b1518e016a6995f0bb172ca
+
+@ 0 2 0 12a95f5dcc0b7186041afe001e87d055
++ 这份清单是脚手架，而不是文档：本路线逐个类别地应用它，最后将它删除。
++ 文件不复存在即为完成的信号。
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ 本路线的条目，及其时间范围和硬依赖；[`status.tel`](status.tel) 记录了每一项的进展：
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 11 0 0ebcb606c7d36f381ec85065c6f7f44f
++ column  条目
++ column  标题
++ column  时间范围
++ column  依赖
++ row  api-1  多词名称嵌套  近期
++ row  api-2  同名异义和异名同义得到解决  近期
++ row  api-3  支撑实体降级  中期
++ row  api-4  命名一致性受到检查  中期
++ row  api-5  删除清单  远期  api-1, api-2, api-3, api-7
++ row  api-6  接口变更遵循迁移约定  远期  dist-2
++ row  api-7  过于泛化的顶层名称嵌套  中期
+
+% 1 1 0 1be70d71efb92c520dd7ea88d4ac2330
+
+@ 0 1 0 16705ba005bdd02a1dbe8da07758db24
++ ## api-1：多词名称嵌套
+
+@ 0 2 0 1e3ce0f292c487fa0b43e79acf7acf3a
++ 时间范围：近期
++ 基线：4 个已改名的名称仍定义在顶层（`BlockCipherMode`、`BlockCipherPadding`、`SyntaxMatcher`、`TlsAcceptance`）；仍列有 61 个前缀族共 210 个名称，另有 216 个单例名称（2026-09-25 测得）
+
+@ 0 3 0 13b2efb3db234f731a2ff1292f43463a
++ C1 候选项——其前缀已是同一模块中某个类型名称的多词名称——移入该类型之内：写作 `Play.Scene`，而不是 `PlayScene`。
++ 一旦 `dist-2` 确立了约定，每次移动都附带迁移说明。
+
+@ 0 3 0 1ee3a054b22d2a5818dd6f479f11a981
++ 完成条件：`doc/api-nesting-proposal.md`（它取代了 C1 一节）中的改名表全部应用完毕，且清单的“Remaining names by prefix family”一节中不再列出“Reviewed items which should not be moved”之外的任何名称。
+
+@ 0 1 0 0c4a457a2e1c99811a66b6b4abe04d4c
++ ## api-2：同名异义和异名同义得到解决
+
+@ 0 2 0 1e39a898703f15640dc52e5ea04baea9
++ 时间范围：近期
++ 基线：列有 12 对同名异义和 1 个异名同义族（`*Parser`）；`etc/check-given-uniqueness.py` 只检查 given 名称，不检查同名即同一事物（2026-09-25 测得）
+
+@ 0 3 0 03c414d0ee1101070f87e3d81c2bd1e9
++ 每一对 C4 同名异义要么统一为一个声明，要么其中一方改名；每个 C4 异名同义族都收拢为该角色的单一术语。
++ 同名，即同一事物；异名，即不同事物。
+
+@ 0 2 0 01fd18934e953e080bdb10ae7bfb4d20
++ 完成条件：清单中的 C4 同名异义和 C4 异名同义两节为空，且一项同名即同一事物的检查在常规构建中运行（扩展 `make check-givens`）。
+
+@ 0 1 0 124e6f76556600961fb1aadca7950f4f
++ ## api-3：支撑实体降级
+
+@ 0 2 0 085981a7c3fd0a361607edba0351dc10
++ 时间范围：中期
++ 基线：列有 3 个 C2 缩写（`AddOp`、`CellRef`、`Err`）（2026-09-25 测得）
+
+@ 0 3 0 1789d8a3aba749290072629ea78dc782
++ C3 候选项——为被召唤而非被指名而存在的类型类支撑实体和嵌套派生对象——被降级、内联或取消导出，C2 缩写则写成全称或成为约定俗成。
+
+@ 0 2 0 0a736dcfc07d1a32179a5d0ace832da9
++ 完成条件：清单的 C2 一节为空。
++ （C3 和 C3b 已被 `doc/api-nesting-proposal.md` 取代，并随之关闭。）
+
+@ 0 1 0 08605781f446842b1821d3d2bd46738e
++ ## api-4：命名一致性受到检查
+
+@ 2 1 0 1fc03684022ff90113c0d28ffceafa6c
++ 时间范围：中期
+
+@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
++ `doc/standards/naming.md` 和 `doc/standards/given-naming.md` 中的命名标准获得一项一致性检查，使得退回不一致的偏移被机械地发现，而不是在评审中发现。
++ 由 `make build` 运行的 `etc/check-given-uniqueness.py` 覆盖了 given 命名这一半；没有任何东西检查 `naming.md`，不过 flare 的 `S1.1` 规则强制执行了其中关于 `unsafe…` 的那一条。
+
+@ 0 2 0 08fefa61d89716dd1a3e679a809c10f3
++ 完成条件：一个已签入的检查脚本报告与命名标准的偏差为零，并在常规构建中运行。
+
+@ 0 1 0 0002d08fb2e79861194126e271ac7e70
++ ## api-5：删除清单
+
+@ 0 2 0 0e65ef756e1be75f1716a1ce6d613a19
++ 时间范围：远期
++ 依赖：api-1, api-2, api-3, api-7
+
+@ 0 1 0 02d622796123c9fb11e262352782c6d7
++ 当每个类别都排空后，脚手架就拆除。
+
+@ 0 1 0 157f55259fa9405e02329e0c993f9b8e
++ 完成条件：
+
+% 0 1 0 00e326d1bb046aa11262e578534b4047
+
+@ 0 1 0 022a30e7eca7ed2e174de75b9d7a2026
++ ## api-6：接口变更遵循迁移约定
+
+@ 0 2 0 0a49a8e096d3c6010e19d4e574863b08
++ 时间范围：远期
++ 依赖：dist-2
+
+@ 0 3 0 1f5a0a1a9c59ae121baa8280a27a7539
++ 从此以后，一致性是被维护的，而不是被恢复的：对导出接口的任何变更都附带智能体可执行的迁移说明，遵循 `dist-2` 定义的约定。
++ 改进 API 无需顾虑，因为迁移代价很低。
+
+@ 0 2 0 02041d5135bab70106e709bcb181cf23
++ 完成条件：`dist-2` CI 检查已在连续十个版本中对每个改变接口的拉取请求强制执行。
+
+@ 0 1 0 1f2d90e4993dc19601ed5bc42de19ac7
++ ## api-7：过于泛化的顶层名称嵌套
+
+@ 0 2 0 14613aca5da6a5410ac59bcf83c82c1c
++ 时间范围：中期
++ 基线：6 个名称各由两个库导出到总括包中（`Namespace`、`Commandline`、`Pane`、`Arithmetic`、`Native`、`Bytes`）；2 个同名异义由 `@unexported` 隐藏（`Tag`、`Renderable`）；规则 R8 的表中约有 110 个单词候选项（2026-11-12 测得）
+
+@ 0 5 0 0cc1c293cc0a01f90ace0a9653e096d7
++ api-1 嵌套的是前缀重复其上下文的名称。
++ 本条目涵盖没有前缀可去除的情形：一个单词，其裸拼写宣称一个普遍的概念，而它命名的却是某个库自己的概念。
++ ultimatum 的布局树并不是*那个* `Frame`。
++ 每个候选项都依据 `doc/api-nesting-proposal.md` 中的规则 R8 逐个判断。
++ 只有当一个名称是该库的主要类型，或确实是一个普遍的概念时，便利性才让它留在顶层。
+
+@ 0 4 0 025914740a57bb9a0951ab7ea7e04906
++ 进展（2026-11-12）：没有名称由多于一个库导出；R8 高置信度表中，十九行已完成，三行推迟待裁定（ultimatum 的仪表、honeycomb 的属性值枚举、savagery 的 `Figure` 分类体系），xylophone 的 `Tag`/`Renderable` 被 `object Xml extends Tag.Container` 阻塞。
+
+@ 0 4 0 140bb92b0da5ef7304217ced05ff37fc
++ 完成条件：没有名称由多于一个库导出到 `package soundness` 中，不存在仅为规避冲突而设的 `@unexported`，且 `doc/api-nesting-proposal.md` 中 R8 表的每一行都已应用，或已移入其“Reviewed and kept top-level”列表。

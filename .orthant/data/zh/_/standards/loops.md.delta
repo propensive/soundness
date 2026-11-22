@@ -1,0 +1,196 @@
+orthant 2 language
+
+@ 0 1 0 11bbccb16729533509d0e4addc42c7f9
++ # 循环与索引
+
+@ 0 6 0 005a9f0cdaa9815001181e73d5ffa774
++ Soundness 依靠证明而不是计数器进行迭代。
++ 索引是限定于其所索引集合的 `Ordinal`，即 `Ordinal in xs.type`，只有已经确立了边界的组合子才能生成一个这样的索引。
++ 用受限索引读取会经过一个返回元素的全函数 `apply`；用未经证明的索引读取则返回 `Optional`。
++ 正在排空的模式是 `var i = 0; while i < xs.length`，其中的索引是不受任何约束的裸 `Int`（路线图 core-4，[#1666]）。
+
+@ 0 2 0 064f9ddd10f014bb1c678f2b4c35d3af
++ 由 `make build` 运行的 `etc/check-while-count.py` 守住这条线：任何文件中的 `while`、`readUnchecked` 或 `.charAt(` 都不得超过 `etc/while-baseline.tsv` 记录的数量。
+
+@ 0 1 0 144361c702019e661cb8fffac7cade8d
++ ## 用什么替换什么
+
+% 2 1 0 07781d3a6a565c640701402a0a79c361
+
+@ 0 15 0 17a311b31be14f5a0a8f3b6e3ee51e1c
++ column  形状
++ column  替换
++ row  循环体中从未使用的计数器  `repeat(n): …`
++ row  可计数接收者上的 `xs(i)`  `xs.extent.each: i => … xs(i) …`
++ row  由 `xs(i)` 构建集合  `xs.tabulate: i => … xs(i) …`（以及在任何带品牌的子区间上使用 `range.tabulate`）
++ row  `if i < xs.length then … xs(i) …`  `xs.pick(i): i => … xs(i) …`，循环体只需要元素时用 `xs.at(i)`
++ row  两个等长接收者上的 `xs(i)` 和 `ys(i)`  `xs.coextent(ys).let: shared => … ys(shared(i)) …`，或 `shared.each: (i, j) => …`
++ row  同上，但只遍历其中一部分  `xs.extent.capped(n).each`，或由受限端点构成的 `start thru end`
++ row  同上，以集合为锚点  `xs.iterate: i => …`，以及 `xs.iterate(range)`
++ row  降序  `xs.retrace: i => …`
++ row  调用者从 `i` 处恢复的带守卫扫描  `xs.prefix(p)` 和 `xs.prefix(after)(p)`；只需停止索引时用 `xs.spot(p)`
++ row  修剪尾部  `xs.pare(floor)(p)`
++ row  `iterator.hasNext`  在源上使用 `each` 或 `fuse`
++ row  逐字节游标  `xs.survey: cursor => …`
++ row  填充新数组  `Array.scribe(n): scribe => …`
+
+% 0 1 0 08f22b0bbd452b500b35b41a6b24fc16
+
+@ 0 1 0 1e064c07ba18f89c1de357862f184e1e
++ row  固定次数的副作用  `repeat(n): …`
+
+% 1 1 0 04f45b8924fc266c1d174dab121efc0c
+
+@ 0 1 0 1f4369b5c59aec7d04e8512656362910
++ ## 哪些接收者可以排空
+
+@ 0 3 0 115877c11981c568004887a5508de72c
++ 只有具有 `Countable` 实例的接收者才有 `extent`，也只有具有 `Applicable` 实例的接收者才能用序数读取。
++ 对其他任何对象的循环都没有受限形式，保持原样。
++ 常见的接收者如下：
+
+% 2 1 0 0d52858f0bd1600b114af813c976d110
+
+@ 0 9 0 0b37046c829deaa10ed8a23f4fa14a54
++ column  接收者
++ column  可排空
++ column  原因
++ row  冻结的 `Array[element]^{}`、`Data`  是
++ row  `Sequence`、`Text`、`IndexedSeq`、`Map`、`Set`  是
++ row  `List`、`Chain`  需要渐近复杂度确认
++ row  可变的 `scala.Array`  否  没有 `Countable` 或 `Applicable` 实例
++ row  可变参数 `Seq`（类参数；方法的重复参数是 `List`）  否  没有 `Countable` 或 `Applicable` 实例
++ row  元素携带能力的 `IndexedSeq`  否  `Countable` 实例不含捕获，能力无法流入其中
+
+% 1 1 0 1b681c630bd4daa8112ffcd76efd16b1
+
+@ 0 2 0 1b88c87827af6a3b0f9bfbd4cafbf5d1
++ 正在填充的可变缓冲区不是需要设法绕过的例外：通过 `Array.scribe` 写入它，其句柄会为自己的索引打上品牌。
+
+@ 0 1 0 1b36fdfd2299a02b1f63528371f0a54c
++ ## 已证明的长度
+
+@ 0 2 0 0c01d9e44829d7401d2f26a37aa4f8ad
++ 品牌既可以记录边界，也可以记录*长度*。
++ `Sized[n]`（位于 proscenium，与 `Populated` 并列）是一个幻影细化 `Any { type Length = n }`，有三种生成方式：
+
+@ 0 17 0 12aca934ad84c53b149787944b766098
++ - **通过构造**：以字面量为长度的 `Array.fill(512)(…)`、`Array.tabulate(8)(…)` 和 `Data.fill(16)(…)` 返回 `… & Sized[n]`，就像 `List(a, b)` 返回 `& Populated`；以 `val` 或表达式为长度则不打品牌（只有编译时常量才是宏能读取的证明）。品牌是值类型的细化：冻结数组的集合实例（`Traversable`、`Encodable`、`Streamable`、`Countable`、`Applicable`、`Terminable`，以及下游的 `Postable`、`Servable`、`Transmissible`、`Readable`、`Encodable in Protobuf`）都有 `Sized` 实例，品牌写在 `Self` 中，因为以捕获类型为上界的类型变量会获得 `any.rd`；但*介质*类型类（`Addressable`，位于 `stream`、`Cursor(…)` 和 `Stream(…)` 之后）指明的是流所基于的介质，品牌在那里没有意义，因此用作介质的 `Data` 要写明其类型：`val payload: Data = Data.fill(100)(_.toByte)`。新增 `Data is X` given 的规则是：如果 `Self` 只出现在参数位置，就在旁边加一个 `sized…` 孪生版本（`[length <: Int] => (Data & Sized[length]) is X`），使已证明的块在普通块被接受的任何地方都被接受；如果 `Self` 是结果或流元素（介质），则不加；
++ - **通过声明**：固定布局的生产者，如 512 字节的 tar 头部、8 字节的数据块头部，在其结果上声明 `Sized[n]`，并在边界处一次性兑现；
++ - **通过检查**：`xs.sized[512]` 返回 `Optional[xs.type & Sized[512]]`，是 `occupied` 的对应物。
+
+@ 0 9 0 19ff9efc772f99da0b55805b3371ab48
++ 在 `Sized[n]` 接收者上，`xs(156.z)`（或 `xs(Quat)`，因为序数字面量内联为其整数）由一个宏读取，该宏在展开时判定 `156 < n`：读取是全函数，超出长度的字面量无法编译。
++ 序数保持其普通类型（细化的字面量类型会被推断进每个绑定它的 `val`）；`Sized` 接收者上的变量序数返回 `Optional`，与 `at` 一样，而 `pick`/`extent` 仍然是计算所得索引的证明。
++ 长度在类型层面组合：两个已证明数组的 `Array.concat` 是 `Sized[n + m]`，两者都是字面量时化简，否则以符号形式携带。
++ 只要布局固定，就优先使用品牌，而不是带注释的 `readUnchecked`：字节探测测试（`header(156.z)`）正是这种情况。
+
+@ 0 1 0 0aa26bec63addfd9036ae4f60e8e0193
++ ## 编辑冻结数组
+
+@ 0 2 0 14e77fe83ae82fb508da1db997316c6a
++ 冻结数组（`Array[e]^{}`）从不被写入；编辑就是复制，复制的形状说明了编辑的内容：
+
+% 2 1 0 14eaae118bedd442052cba66c1c54488
+
+@ 0 6 0 04f705b328e6311d197ee636f85ca31e
++ column  编辑
++ column  复制
++ row  一个槽位  `xs.define(i, v)`
++ row  删除一个槽位  `xs.omit(i)`
++ row  替换一段  `Array.concat(xs.before(i), replacement, xs.after(i))`，三个部分各复制一次
++ row  同时修改多个槽位  `Array.thaw(xs)`，一个用 `copy(i) = v` 写入的独占副本，再由 `Array.freeze` 重新冻结
+
+% 1 1 0 087c70ec25b9e6180b3243ec22266c79
+
+@ 0 3 0 00122ffbfbff7ba419de9cd6a2c0d649
++ 段可以是围绕某个序数的 `before`/`upto`/`from`/`after`，也可以是按数量的 `keep`/`skip`。
++ 这些操作都不经过 stdlib 视图：它们取代的形状是 `xs.stdlib.updated`、`take ++ … ++ drop` 和 `ArrayBuffer.from(xs.stdlib)`。
+
+@ 0 1 0 0f2c650aa5ab1dc308d3f091699ef0ba
++ ## 何时可以保留 `while`
+
+@ 0 2 0 1b558b2d2a17cf530de15cb3105fd122
++ 只有当条件中没有任何表达式与循环体所索引集合的大小进行比较时，`while` 才可以保留。
++ 有三种形状符合条件。
+
+@ 0 8 0 1813e8d71ccdae690e66732f3487c1d2
++ 1. **由状态而非边界终止。** `while !settled do`、`while cursor.more do`、`while capacity < required do capacity *= 2`。
++ 2. **由数据派生的索引算术。** Knuth 除法、压缩器的反向引用、PNG 预测器、堆的筛选、按 `charCount` 前进的 UTF-8 遍历。循环上方用一条注释指明使每个索引都保持在范围内的不变式，读取使用 `readUnchecked`，以该注释作为证明。
++ 3. **词汇表自身的内部实现**，位于 denominative、concordance、zephyrine 和 proscenium 中，它们实现了库的其余部分所使用的组合子。
+
+@ 0 1 0 08a5c0a76a6963ce183e93c93f0eddc2
++ ## 何时 `Iterator` 才是诚实的类型
+
+@ 0 8 0 026156f9c1d01d6d1d30d15b83279cc9
++ `murmuration.Iterator[element]`（由 rudiments 和总括包导出）是一种一次性、有状态的拉取，它所表示的也应该恰好是这个：一个从外部世界读取一次的源（套接字的帧、HTTP 事件流、终端的按键、随每个条目的载荷打开而逐块序列化的归档），或者回溯搜索从中恢复的游标。
++ 它是一个 `caps.Stateful` 能力，因此推进它的方法是 `update def`，接管它的组合子是 `consume def`，编译器会拒绝第二次使用已被消耗的迭代器。
++ 没有 `hasNext`/`next()` 这一对：读取它的三种诚实方式是
+
+@ 0 13 0 11edaac9ded9cd190a8e34115bc82266
++ 1. **终结操作**：`each`、`fold`、`exists`、`all`、`count`、`size`、`seek`、`chain`、`to[result]`，它们就地排空迭代器。`each` 就是循环。
++ 2. **`next()`**，供在字段中持有迭代器的有状态消费者使用（`Stream` 的源、终端的事件泵）：一次调用前进一步并返回 `element | Iterator.Exhausted`，因此调用者必须先对 `Iterator.Exhausted` 进行匹配，才能得到元素。
++ 3. **移动风格** `pull`，供既需要元素、又需要在元素之间停止的手写循环使用：`iterator.pull` 消耗迭代器，返回 `Iterator.Exhausted` 或拥有它的 `Cursor[element]^`；`cursor.value` 读取元素，`cursor.pull` 消耗游标以前进。用类型模式分支（`case cursor: Iterator.Cursor[Int]`），每一步重新绑定句柄，并在同一个表达式中先读 `cursor.value` 再调用 `cursor.pull`。重用已被消耗的游标，或在没有游标时读取值，都无法编译。
+
+@ 0 7 0 112e05ca1fb52a3b05c338f406319366
++ 实现提供快速核心，即 `update def advance(): Boolean`（移动并把元素物化到一个 `var` 中）和 `def current: element`（普通读取），其余一切都通过继承获得。
++ 惰性组合子（`map`、`filter`、`sweep`、`keep`、`skip`、`zip`、`indexed`、`trace`、`excerpt`、`batched`、`distinct`、`concat`、`flatMap`）消耗其接收者，返回一个捕获集指明了 lambda 的新迭代器，因此捕获了独占值的 lambda 也会使结果成为独占的；`flatMap` 接受一个返回*集合*（`Traversable`）的 lambda，从不返回迭代器。
+
+@ 0 4 0 0f1df231c7ac7add1928aa9e5b70e9c3
++ 只有在边界处才会用到 `scala.collection.Iterator`：`Iterator.from(javaIterator)` 和 `Iterator.from(stdlibIterator)` 在进入时包装它，`iterator.stdlib` 则把它交给坚持要它的 stdlib 或 JDK API，并像每个桥接一样标记为 `[stdlib-boundary]`。
++ 以前用到 `xs.stdlib.iterator` 的所有地方都有原生形式：
+
+% 2 1 0 189001873ce2559308a2a10ac8480785
+
+@ 0 7 0 1ed24952c27b686305f8014cc6f966da
++ column  用途
++ column  原生形式
++ row  `Chain` 上的流或游标  `Stream(chain)`、`Cursor(chain)`
++ row  `Chain` 上的分帧器  `chain.frames[F]`
++ row  活动的链  用 `each` 排空
++ row  同步遍历  `zip(…).each` 或 `indexed.each`
++ row  惰性的首个匹配扫描  `fuse` 加上按名传递的 `or`
+
+% 1 1 0 1ade6af34ca3158513f2edadde24349f
+
+@ 0 1 0 1736df3749f7ea5619a360a8f9bd6f27
++ ## 证明注释
+
+@ 0 5 0 1d48f3163a6f3c340f73abb1361b7b0d
++ `attested` 和 `readUnchecked` 是边界无法跟随程序的两个地方。
++ 每个调用点都带有一条注释，位于同一行或上一行，指明证明该边界的构造，例如“`n = min(a.length, b.length)`, checked at :117”。
++ 注释就是证明，没有注释的 `attested` 会被棘轮拒绝。
++ 优先使用块形式 `xs.attested(i): i => …`，使证明的作用范围清晰可见。
+
+@ 0 1 0 160e0bac3849e02e11ce3cc3ed77dc58
++ ## 陷阱
+
+@ 0 4 0 088118e23b409c1816ccf19aea0a1842
++ 生存期超出其循环的计数器不能简单地删除。
++ 它可能与之后从第一个循环停止处恢复的循环共享，这时删除声明会悄悄改变第二个循环的运行次数；它也可能在重用前被重置，这时声明需要移动。
++ 两种情况都不会导致编译失败。
+
+@ 0 5 0 04f6d962ccc2f6cd089b7fd00e04a96c
++ `each` 是一个常用的名称。
++ 通过文件所导入类型的伴生对象找到的、不相关类型上的同名扩展方法，优先级高于区间的 `each`，并且在没有任何错误的情况下剥去品牌：读取只是重新变成了 `Optional`。
++ 这样的名称永远不会进入总括包，因此通常能捕获冲突的编译错误无法触发；解决方法是重命名另一个方法，就像 `hypotenuse.Bcd#each` 改名为 `eachNibble`。
+
+@ 0 6 0 01e22303c3fb0f591e98c77559352f5e
++ 进入 `package soundness` 的名称可能以三种方式失败，而它们都不是命名理念所说的能捕获冲突的编译错误：每一种都是悄无声息地失败。
++ 导出同一名称的两个模块会丢掉其中一个。
++ 通过隐式作用域可达的无品牌替代项优先于带品牌的版本，并且完全没有错误地剥去品牌。
++ 而*重载*扩展方法的 `export` 只转发其中一个重载，另一个就消失了：这就是 `thru`、`till` 和 `each` 在各自的总括包文件中手写而不是导出的原因。
+
+@ 0 8 0 0c8a196b5dbbcd8b1d3c03512074d41d
++ 扩展成员在带品牌的序数上可以解析：`i.n0`、`i.next`、`i.within(ys)` 等在 `Ordinal in xs.type` 上无需向上转型即可使用，`i + 1` 和 `i - j` 经由 `Ordinal` 伴生对象中品牌通用的 given（结果是普通的 `Ordinal`，因为算术会离开已证明的范围）。
++ 向上转型 `(i: Ordinal).n0` 在任何地方都不再需要。
++ 使这一切成立的机制在 `denominative.internal` 内部：那里的每个内联扩展方法都用一次擦除的类型转换（`ordinal.asInstanceOf[Int]`）拓宽其接收者，因为一旦调用跨越编译单元，内联器就无法针对品牌重新为裸接收者或带类型标注的接收者确定类型。
++ 添加新的扩展方法时要保持这一规程。
+
+@ 0 3 0 003b39ed536851310736cf643ab8dbd5
++ 一个品牌不能服务两个接收者：`Ordinal in xs.type & Ordinal in ys.type` 不是任何一方的子类型（同名的别名细化不会相交为一个），因此并行读取要经过 `coextent`，其令牌转而传递证明。
+
+@ 0 3 0 1f1708808cfac34c1aba05306026c57a
++ `extent` 和区间组合子位于 `denominative` 的包层级，因此首次用到它们的文件需要 `import denominative.*`；只有不透明类型自身伴生对象中的操作才通过隐式作用域到达。
+
+% 0 1 0 008df0fcc830bdcd0e955842dd357116

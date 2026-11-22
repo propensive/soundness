@@ -1,0 +1,109 @@
+orthant 2 language
+
+@ 0 9 0 0d52bfbd3f8c06af1604bc618e01e9e1
++       RaTEL 是 TEL 的随机访问编码。
++       BinTEL 是从前往后读取的，而 RaTEL 镜像是就地读取的：每个结构体类型都有一个定宽的*行*，其中每个成员都有一个*槽*，位于 schema 决定的偏移处；一个记录类型的实例组成一张*表*；变宽的值位于按偏移寻址的区域中；在带键成员和声明了 `index` 的成员之上建立的*索引*各是一棵 B+ 树，让查找成为穿过少数几个页面的一次下降。
++       `Ratel` 是作为值的镜像——它的字节，`data`——并且是 `Encodable in Data`，因此 galilei 的 `claim` 可以发布它。
++       对象 `Ratel` 负责写出镜像（`encode`）；读取镜像是用 aperture 的 `open` 把承载它的东西作为 `Ratel` 打开，为写入而打开它则可以就地修改它。
+
+@ 0 5 0 198128dbfdf7e814075d0cf618c1553c
++       镜像处于规范所定义的某一种状态。
++       写出的和发布的镜像是*已封存*的：紧凑、从不改变，并可由任意多个读取器共享。
++       拥有文档的那一个进程保留一个*未封存*的工作镜像，它就地修改这个镜像，并通过封存来发布。
++       正在被修改的镜像是*脏*的，任何读取器都不会打开它。
+
+@ 0 4 0 187696732fd02be50d880edc17213d9b
++       `Ratel of T` 是类型 `T` 的一个值的镜像，按从 `T` 派生的 schema 写出：即 `value.ratel` 给出的东西。
++       它以为它认领的名称发布，也作为它被打开，因此一个 case class 就是发布者与其读取器共享的唯一声明。
+
+@ 0 58 0 041d8a79c0f609020f6021c492d1c381
++       镜像总是携带其组合后的 schema 及其签名；已封存的镜像还携带文档的值哈希，并且可以携带其正文和头部的摘要。
++       工作镜像不是字节确定的，而已封存的镜像是：它的字节只取决于文档本身。
++   entry #Topic   镜像所对应的值的类型（如果已知）：`Ratel of Cast`
++   entry .encode   按规范的标准写出器，将一个已赋类型的 `Tel.Element` 根写成 RaTEL 镜像
++       `Ratel.encode(element, schema, codecs, digests)` 按 `schema` 对文档进行布局；`schema` 按其声明形式给出——连同其层——并以 BinTEL 形式嵌入在其签名旁边。
++       `codecs` 默认为 `Tel.Codec.Bindings.all`；`digests`（默认为 `true`）会添加摘要节。
++       它写出的镜像是已封存的。
++       它抛出 `Ratel.Error`：`SchemaUnlayoutable`（`↯/t.5.11`）、`CodecUnresolved`（`↯/t.5.19`）、当值的字节宽度不是其标量所声明的宽度时为 `WidthMismatch`（`↯/t.5.22`）、schema 未描述的模型为 `Unencodable`、2 GiB 或更大的镜像为 `Oversized`；当值被其编解码器拒绝时抛出 `Tel.Error(EncodingRejected)`。
++       扩展方法 `tel.ratel(schema)`、`element.ratel(schema)` 和 `value.ratel` 都调用它。
++   entry .openable   将任何 `Viewable` 的东西——路径、镜像、手中的 `Terrain`——作为 `Ratel` 打开，以便就地读取
++       `source.open[Ratel]()` 通过源的 `zephyrine.Viewable` 实例借出它的一个 `Terrain` 视图，复制并检查头部，解码嵌入的 schema，重新计算其签名，推导出布局并据此检查表目录和索引目录（`↯/t.5.1`–`↯/t.5.13`、`↯/t.5.19`、`↯/t.5.28`、`↯/t.5.29`），然后交给代码块一个 `Ratel.Reader`，由访问器 `ratel` 指称。
++       在被要求之前，它不读取任何其他内容。
++       读取器捕获了该视图，不能比代码块存活得更久。
++       标志是 `Ratel.Flag`。
++
++       当模式包含 `Write` 时，源通过 `Viewable#hold` 借出它的字节以供修改——文件在独占锁下被映射，`Holding` 则按原样取用——镜像由其拥有者打开：已封存的镜像被解封，在代码块执行期间被标记为脏，读取器接受 `Ratel.Row` 和 `Ratel.Rows` 所做的修改。
++       无法修改的源，例如 `Ratel` 值，会以 `Unwritable` 被拒绝。
++   entry .typedOpenable   将任何 `Viewable` 的东西作为 `Ratel of topic` 打开：类型 `topic` 的一个值的镜像，而不是别的
++       与 `openable` 相同，但如果镜像的 schema 签名不是从 `topic` 派生的 schema 的签名，就会在代码块运行之前以 `Mismatched` 被拒绝。
++   entry .surveyable   从别处借出的视图中就地读取镜像：已发布名称的 `Observer` 正是借此打开它
++   entry .typedSurveyable   与 `surveyable` 相同，用于类型 `topic` 的一个值的镜像，以 `Mismatched` 拒绝其他任何镜像
++   entry .State   读取镜像时它所处的状态：`Sealed` 或 `Unsealed`
++       已封存的镜像紧凑且不变，可以共享；未封存的镜像是其拥有者已关闭的工作镜像。
++       正在被修改的镜像是脏的，根本不会被读取。
++   entry .Flag   可以向 `open[Ratel]` 提出的要求：`Verify` 和 `Codecs(bindings)`
++       `Verify` 在代码块之前运行读取器的 `verify`，使其成为规范意义上的校验读取器。
++       `Codecs(bindings)` 为本模块未定义的编码绑定编解码器，优先于 `Tel.Codec.Bindings.all`。
++   entry .viewable   将镜像视为其字节在堆上所在之处的视图，使其能像文件一样被打开
++   entry .Reader   一个已打开的镜像：它的 schema、它的根行，以及作用于整个文档的操作
++     entry #Topic   此读取器的品牌：一个专属于它的类型，它给出的每一行都带有这个类型
++     entry #root   文档的根，作为 `Ratel.Row of reader.Topic`
++     entry #schema   镜像携带的组合后的 schema
++     entry #signature   镜像携带的 schema 签名，要求可信 schema 的读取器会对它进行比较
++     entry #valueHash   文档的值哈希，如果头部携带了它
++     entry #materialise   镜像所编码的语义模型，与 `Bintel.decode` 给出的相同
++     entry #verify   检查摘要、整个文档、每一行的头部、每个索引作为树的结构及其与行的一致性，以及值哈希
++     entry #state   镜像是以已封存状态打开的，还是作为工作镜像打开的
++     entry #seal   此镜像的文档，重新写成一个已封存的镜像：无论其历史如何，字节都相同
++     entry #sealAs   与 `seal` 相同，用于某个类型的一个值的镜像：给出 `Ratel of topic`，或 `Mismatched`
++     entry #repack   此镜像的文档，重新写成一个工作镜像，留有增长的空间且没有垃圾
++   entry .Row   一条就地读取的记录：`text`、`data`、`texts`、`flag`、`count`、`record`、`/`、`has`、`holds`、`as`
+
+@ 0 28 0 1dd4ed84314c571a05bb804f43e08b14
++         一个普通的值——一张表和一个记录索引——说明一条记录位于何处。
++         每个访问器都以上下文方式接收 `Ratel.Reader`，即 `open[Ratel]` 的代码块所给出的那个，因此行可以被保存、收集或返回，但只能在给出了读取器的地方被读取。
++         它的类型是 `Ratel.Row of brand`，其中 brand 是它所来自的读取器的 `Topic`，每个访问器都要求一个 `Ratel.Reader of brand`：当打开了多个镜像时，一行通过它自己的读取器读取，而不能通过另一个镜像的读取器读取，也不能在其代码块结束之后读取。
++
++         在为写入而打开的镜像中，`set`、`unset`、`delete` 和 `replace` 修改记录。
++         每个操作在写入任何内容之前都会经过检查——值对照其标量，键对照该记录的兄弟记录的键，以及不可缺失的成员——被拒绝的操作会抛出 `Tel.Error`，并让镜像保持原样。
++         通过未为写入而打开的读取器，每个操作都会以原因 `Unwritable` 抛出 `Ratel.Error`。
++     entry #Topic   此行所来自的读取器的品牌
++     entry #set   为标量成员赋一个值，为可重复标量赋其各个值，或使标志出现
++     entry #updateDynamic   `set`，写成对成员名称的赋值：`row.firstLine = value` 设置 `first-line`
++     entry #unset   使可缺失的标量成员没有值，或使标志不出现
++     entry #delete   将记录（它必须属于某个集合）连同其中的每条记录从集合中取出
++     entry #replace   将一个值放到记录在其集合中的位置上，并返回此时位于那里的记录
++   entry .Rows   可重复成员的记录：`size`、`apply`、`each`、`find`、`where`、`sorted`，以及 `insert` 和 `move`
++     entry #count   当前有多少条记录；对于正在被修改的镜像，它可能不等于 `size`
++     entry #insert   将一个值作为新记录放入集合，放在其他记录之后或某个位置之前，并返回该记录
++         镜像必须是为写入而打开的。
++         在写入任何内容之前，值会像该记录类型的文档那样接受检查，其键也会对照其他记录的键接受检查。
++     entry #move   将一个位置上的记录移动到另一个位置
++   entry .Cell   `Ratel.Provider` 的记录建立在其上、其成员从中读取的东西
+
+@ 0 18 0 1fd517c11046daf4088b0b1360dbad9c
++         错误 `↯/s.118.11`：_the RaTEL image cannot be used because `reason`_。
++         `Ratel.Error.Reason` 按 RaTEL 规范的 `↯/t.5` 代码（错误的 bolt 代码携带该代码）将其分支编号为 1 到 30——`BadMagic`、`UnsupportedVersion`、`ReservedSet`、`BadLength`、`BadDirectory`、`ExtentsOverlap`、`DigestMismatch`、`BadSignature`、`SchemaUndecodable`、`SignatureMismatch`、`SchemaUnlayoutable`、`BadTableDirectory`、`BadRootTable`、`BadRef`、`BadRecordIndex`、`RowRevisited`、`BadTag`、`BadUtf8`、`CodecUnresolved`、`CodecDecodeFailed`、`CodecNoncanonical`、`WidthMismatch`、`BadIndex`、`BadTree`、`IndexDisagrees`、`NonzeroPadding`、`ValueHashMismatch`、`InvalidState`、`Dirty`、`BadRowHeader`——并以该分类之外的原因继续编号：`NestingLimitExceeded`（31）、`Unencodable`（32）、`Oversized`（33）、没有索引能回答的查找为 `Unindexed`（34），行中没有、以另一种形式拥有、或没有值的成员分别为 `Unknown`（35）、`Inapplicable`（36）和 `Absent`（37），无法修改的镜像或通过未为写入而打开的读取器进行的修改为 `Unwritable`（38），用不同于读取所用 schema 的另一个 schema 写出的镜像为 `Mismatched`（39）。
++         `↯/t.5.1` 到 `↯/t.5.13`、`↯/t.5.19`、`↯/t.5.28` 和 `↯/t.5.29` 在打开镜像时抛出；其余的由遇到它们的访问或 `verify` 抛出。
++         `CodecNoncanonical` 和 `NonzeroPadding` 是规范中的可选检查，目前尚未抛出。
+
+@ 0 3 0 12c36a225e7c93c80260ddc224eb75de
++ entry .key   `@key`：将 case class 字段标记为其记录的键，体现在从该 case class 派生的 schema 中
++     该字段被声明为 `key`，因此同一集合中没有两条记录可以共享它的值；该类型的 RaTEL 镜像有一个主索引，`find` 借助它查找记录。
+
+@ 0 4 0 152d378fa25368d40facdfb2dffe24fa
++ entry .index   `@index(paths)`：在作为集合的 case class 字段之上声明一个二级索引
++     每条路径都是一个 TELP，例如 `/play` 或 `/stage/city`，从集合的一个元素指向它的某个标量成员；根路径 `/` 索引的是标量集合中的值本身。
++     一个字段可以带有多个这样的注解，每个对应一个索引。
+
+@ 0 3 0 1367738ce54d3f221416bb95346fc53e
++ entry .encoding   `@encoding(name)`：指名作为标量的 case class 字段的二进制编码
++     BinTEL 和 RaTEL 以绑定到该名称的编解码器——`u32`、`uuid` 以及其他标准编解码器，或应用程序绑定的编解码器——所给出的字节来存储它的值，而不是以文本存储。
+
+@ 0 3 0 11934fe7d1436cd111b3ee05fe22b1da
++ entry .width   `@width(bytes)`：承诺已编码的标量字段的每个值都恰好是那么多字节，使 RaTEL 将其存储在记录之内
++     其他长度的值在写入时会被拒绝。
++     没有编码的宽度，或带有 `@intern` 的宽度，无法编译。
+
+@ 0 1 0 1252a394c260c43a081e065f0c23ea7d
++ entry .intern   `@intern`：让 RaTEL 将标量字段的每个不同的值只存储一次，存放在镜像的字符串表中

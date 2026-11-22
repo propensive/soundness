@@ -1,0 +1,93 @@
+orthant 2 language
+
+@ 0 1 0 1dd3ff184458127015ae1ccf3652f901
++ # `↯/s.105.2` – `Crypto.Error`
+
+@ 0 1 0 124ac3af023a355109edffee6244bdfb
++ Zgłaszany, gdy Enigmatic nie może zdekodować zaszyfrowanych danych.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 0129e0129ab5b46d1d2bf8b64b5f4687
++ Prymityw kryptograficzny (szyfr, podpis lub MAC) odrzucił wejście. Konstruktor przyjmuje
++ `reason: Reason` wskazujący, dlaczego operacja się nie powiodła; przedstawiony komunikat to
++ `could not decode the encrypted data because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 12f19e8f03c14d4308be60932eed2510
++ ### `↯/s.105.2.1` – `BadPadding`
+
+@ 0 3 0 1fbb23f06adec7d61c68f6492c06516f
++ Bajty dopełnienia nie odpowiadały oczekiwaniom szyfru – zwykle dlatego, że szyfrogram był
++ uszkodzony lub dostarczono niewłaściwy klucz (niezgodność tagu uwierzytelniającego w trybach
++ AEAD).
+
+@ 0 1 0 1739d6e19df659901ee93e8aa56a6fe8
++ **Przykład.** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+@ 0 3 0 18d6ff2039ddebc11ab7da7730df6f92
++ **Rozwiązanie.** Potwierdzić, że klucz i IV odpowiadają tym użytym przy szyfrowaniu; sprawdzić,
++ czy szyfrogram nie został obcięty ani zmodyfikowany w trakcie przesyłania.
+
+@ 0 1 0 0d5d3bc275d259271bdf4903a900601c
++ ### `↯/s.105.2.2` – `IllegalBlockSize`
+
+@ 0 2 0 1ac8b0e57b4d7c25191149a0a958fd31
++ Długość wejścia nie była wielokrotnością rozmiaru bloku szyfru albo w inny sposób nie była
++ zgodna z ramkowaniem szyfru.
+
+@ 0 1 0 030998a246c79ec119f4b4a064e2d636
++ **Przykład.** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+@ 0 2 0 0e8bd28c57ce4caa1e9b80596ea98e3c
++ **Rozwiązanie.** Sprawdzić, czy szyfrogram jest kompletny i czy został wytworzony tym samym
++ szyfrem i trybem, którymi jest teraz odszyfrowywany.
+
+@ 0 1 0 169cce07803a4a17033792e518b82d17
++ ### `↯/s.105.2.3` – `InvalidKey`
+
+@ 0 2 0 0b0ab3f02879e1040067b20d58e980e5
++ Bajty klucza zostały odrzucone przez szyfr – niewłaściwy rozmiar, niepoprawny format lub
++ nieobsługiwane parametry.
+
+@ 0 1 0 03b840945e05f4b2096b23d229a9cc4b
++ **Przykład.** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+@ 0 2 0 0b7b6a6cc3122a1d1dfc629e8c43fdb6
++ **Rozwiązanie.** Potwierdzić, że klucz wytworzono dla tego samego szyfru i zestawu parametrów.
+
+@ 0 1 0 1f2c73535fe27d980bfea5daeed9b614
++ ### `↯/s.105.2.4` – `InvalidAlgorithm`
+
+@ 0 2 0 08d33c41a5ad27c505463e0f89a77113
++ Żądany algorytm lub tryb nie jest dostępny u dostawców skonfigurowanych w JVM.
+
+@ 0 1 0 01e72f0b9cfa5e7a1c0c2ff08284276a
++ **Przykład.** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+@ 0 2 0 0bc734f8dee0286d18fec3497ebb67d8
++ **Rozwiązanie.** Zainstalować lub włączyć dostawcę JCA obsługującego ten algorytm; sprawdzić
++ politykę `java.security`.
+
+@ 0 1 0 051a0972608a20a409b0c698aa7c2c98
++ ### `↯/s.105.2.5` – `IoFailure`
+
+@ 0 2 0 08baa998e193943a0fa1d4eef46d2047
++ Implementacja szyfru nie mogła odczytać ani zapisać buforów danych – zwykle jest to
++ niskopoziomowa usterka wejścia-wyjścia.
+
+@ 0 1 0 1a6338eabe0ee4f5026a09eea17d4598
++ **Przykład.** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+@ 0 1 0 050f887854411c1313d244ed279d6f20
++ **Rozwiązanie.** Przejrzeć łańcuch przyczyn w poszukiwaniu bazowego błędu wejścia-wyjścia.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 0388722c1a8ac94308aa18340e8189b1
++ - Źródło: `lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` – `PemError`, zgłaszany, gdy nie można sparsować kluczy zakodowanych w PEM

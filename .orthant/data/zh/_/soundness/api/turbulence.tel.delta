@@ -1,0 +1,1606 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 00df1c40f11f7767053c950b05d23d19
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1b5511e5022573b81aeeced09d8818b1
++ info   字节流和文本流：对每种源和数据汇都只有一个 `read`、`writeTo` 和 `source`，另有行、标准输入输出和异步泵送
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1bc061c7b55ca1d4186a87f13dc74740
++     _Turbulence_ 是在产生字节和文本的事物与消费它们的事物之间移动字节和文本的词汇。
++     三个动词涵盖每一种源和每一种数据汇：`read[T]` 将源整体拉入为所指定的类型，`writeTo` 将一个值排出到目的地，`source[element]` 将一个值打开为拉取端点——一个基于 `Credit` 的 zephyrine `Stream[Data]` 或 `Stream[Text]`——后续阶段用 `via` 连接到它上面，终端操作则将其排空。
++     哪些类型参与由类型类决定，因此新的文件类型、套接字或进程与其他一切一样，加入同样的三个动词：
+
+@ 0 6 0 014c3a6131106f780283302c8003ff46
++     - `Streamable` 说明一个值如何打开为 `Data` 或 `Text` 数据块的流；
++     - `Aggregable` 说明一个 `Data` 或 `Text` 的流如何合并为一个值；
++     - `Readable` 将二者组合为 `read`，当源与结果不一致时，通过作用域中的 `Charset` 或 `Codepage` 在字节与文本之间桥接；
++     - `Writable` 说明目的地如何排空整个流，`Sink` 说明它如何为增量写入的调用者打开为推送端点（一个 `Intake`）。
+
+% 2 1 0 03ba8fd6ca84fc76197b172465c2cb61
+
+% 3 1 0 0c5ecb66186137e417948b1ac85cdb9e
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 1 1 0 12cb91423b8613730b3d23af41198fea
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 14a256c2392a99fb1bf831bf369fe3cf
+
+% 0 1 0 1fc0bb8b20c423741a83bcb04e50ed69
+
+% 0 1 0 1a1dce279057ee041bac7231cf4f52aa
+
+% 0 1 0 1038fff6cba041550bc921099f5b77f8
+
+% 0 1 0 13183034c05be0ae0186f12f7474b3b0
+
+% 1 1 0 0887cf9472bcafcc023ad60eeb821544
+
+@ 0 6 0 0d9595b28a9640f10a2905e414a86a4c
++     `Stream` 是基于缓冲区的拉取端点，而不是由数据块构成的惰性列表：消费者以它准备接受的 `Credit` 调用 `refill`，读取被授予的窗口，然后越过它。
++     不复制也不保留任何东西，背压就是不发起调用，而且每个流都是一种独占的能力，捕获检查器不允许它被读取两次或被共享。
++     `Buffering`（来自 zephyrine）是每个缓冲区都参考的唯一方针，被截断的流所报告的 `Truncation.Error` 也来自 zephyrine，在此重新导出。
+
+@ 0 8 0 17c5e7684f7457101c5f386926318adc
++     行是一种方针，而不是常量：`delineate` 依据作用域中的 `LineSeparation` given，将文本流或字节流拆分为由其各行构成的记录流，该 given 从 `lineSeparation` 包中按名称选择。
++     标准流是一种能力：`Out`、`Err` 和 `In` 通过作用域中的 `Stdio` 进行读写，`Stdio` 从 `stdios` 包中选择；`Stdio.divert` 和 `Stdio.capture` 则重定向一个线程的 `System.out` 和 `System.err`。
++     当元素由其他线程随时间产生时，`Relay` 将任意数量的生产者汇入一个读取者；`Confluence` 合并多个流，`Divergence` 复制一个流，`convey` 在自己的任务上将一个流泵送到一个入口。
+
+@ 0 1 0 023bbc681e3a961c01643d67e0d3bd59
++     该库有四个源集：
+
+@ 0 9 0 0d25357f8ab3dcb21aa8b28cf0941ae9
++     - `turbulence.core`——类型类、`read`/`writeTo`/`source`/`load` 动词、行分隔、`Relay`、`StreamOutputStream` 以及 JDK 适配器（`inputStream`，以及 `InputStream`/`OutputStream`/通道/`Reader` 的 given）。
++     - `turbulence.stdio`——`Stdio`、`Out`、`Err`、`In`，以及 `stdios` 包中的 `muteStdio`、`javaLangSystemStdio` 和 `fileDescriptorStdio`。
++     - `turbulence.async`——`Confluence`、`Divergence` 和 `convey`，它们需要 parasite 的 `Monitor` 和 `Probate`，因此在 `supervise` 内运行。
++     - `turbulence.wasi`——`stdios.wasiStdio`，一个基于 WASI CLI 流资源的 `Stdio`，以及 `wasiApis.wasiCliApi`，即对其进行类型检查所依据的 WIT 接口。
+
+@ 0 5 0 1d06222f75da0b631195aa8729d34e4c
++     所有内容都导出到 `soundness` 总括包中，`lineSeparation`、`stdios` 和 `wasiApis` 这几个选择包与总括包自身的同名包合并。
++     其中的 given 需按名称导入，因为 `import soundness.*` 不导入 given；伴生对象中的 given（`Streamable.bytes`、`Readable.dataText`、`Writable.outputStreamData`、…）则无需导入，通过隐式作用域解析。
+
+% 0 1 0 03be5b2b53c6228511bc2d1eb0104765
+
+% 0 1 0 0c30b6b2b23dc22c02a241ea5e3aa48e
+
+% 0 1 0 1599721b2b14c19e190b19b869b27ffb
+
+% 0 1 0 15cf6f707699c5721e94f26493b42060
+
+% 0 1 0 009f8d583a1dbeb6018b9bd77799a6f1
+
+% 0 1 0 02c1359e1ae0cba21b735f9c8dd967f1
+
+% 0 1 0 065c5aa89fa2a3eb03f0694caa0489d1
+
+% 0 1 0 128f30054c43860a030e200f0b2ba945
+
+% 0 1 0 1726f3cf462785a00f14ad44bc115d1e
+
+% 0 1 0 091e05a08d5d57fa1d1abf41a15c5c71
+
+% 0 1 0 0e990d0524ffdc28094c1941de31db3f
+
+@ 0 1 0 104c8eb82289fe391a05b933dcbbb22b
++ entry .Streamable   能打开为拉取端点的值：基于 `Credit` 的 `Data` 或 `Text` 的 `Stream`
+
+% 1 1 0 10d12fa2f45821a3176858500e6fa906
+
+@ 0 7 0 10e147bae51a8c731b41a54e31a16bf4
++       `value is Streamable by medium over Credit` 是 `value` 能被打开为 `(Stream[medium] over Credit)^` 的证据，其中 `medium` 为 `Data` 或 `Text`。
++       它是 `read` 的源这一半，是 `writeTo` 的源这一半，也是 `source` 的全部。
++       该特质只有一个抽象方法 `#stream`；需要缓冲方针或错误上下文的实例将其作为 given 的上下文参数接受并捕获它，这就是为什么这里的大多数 given 都写作 `(tactic: Tactic[Truncation.Error], buffering: Buffering) => (… is Streamable …)^{tactic}`。
+
+% 2 1 0 1429138d2f15d545159e2eab3b79ae91
+
+% 3 1 0 00bf59f1347f89b40eac69bc00838510
+
+% 0 1 0 16849b239edfd49818aefdf16ec2dcb3
+
+% 0 1 0 1dc82cd5786193a013fac0a411011d88
+
+% 0 1 0 0ee69b8fd1fd869c0d736f614f58db8e
+
+% 0 1 0 0ca5dabd752a3e4a1c9001c3ac3fe8fa
+
+% 0 1 0 02c58d6949cb2e36161bb345b8a7a844
+
+% 0 1 0 10624b2bade9c25701b877ba153c6b18
+
+% 1 1 0 160dfb521841c863188836fdc360a642
+
+@ 0 7 0 0c16d24f83b0c5cc15ba08d0830bce18
++       无需任何自身实例即可流式传输的值：`Data` 和 `Text`（`.bytes`、`.text`，以及通过作用域中的 `Codepage` 将文本作为字节流式传输的 `.textData`），由数据块构成的 `Chain[Data]` 或 `Chain[Text]`，`HttpStreams.Body`，zephyrine 的 `Spring[Data]`，以及 JDK 的 `InputStream`、`ReadableByteChannel` 和 `Reader`。
++       从 JDK 源打开的流，若源在读取中途失败，会通过 given 所捕获的 `Tactic` 抛出 `Truncation.Error`，并在结束时关闭源。
+
+@ 0 4 0 0ba9241593186871111637fc1d577277
++       每个按 `Data` 流式传输的类型也可读取为 `Text`，反之亦然：`Readable` 通过作用域中的 `Charset` 或 `Codepage` 进行桥接，因此一个源只需一个 `Streamable` 实例。
++       `#contramap` 为一个可以转换成已有实例的类型的类型派生实例。
+
+% 1 1 0 16fdb3e3b2817c540e7952021f07d6a2
+
+% 0 1 0 155f6c7dbac6988f19723911ea703a20
+
+% 0 1 0 1e1f4c5c5a5c332c01477cd7bba8c620
+
+@ 0 43 0 001ac26514e119b01274cfddae9e24d1
++   entry #Transport   拉取流所用的需求类型：这里的每个实例都是 `Credit`
++   entry #stream   将值打开为一个全新的拉取端点
++       每次调用都生成一个新的 `(Stream[Operand] over Transport)^`；该流是一种独占的能力，由一个消费者排空。
++       `value.source[element]` 是其流畅写法。
++   entry #contramap   通过先将 `self2` 转换为 `Self`，为 `self2` 得到一个实例
++       `streamable.contramap(lambda)` 是 `self2 is Streamable by Operand over Transport`，流式传输 `lambda(value)`。
++       结果同时捕获原实例和该 lambda。
++   entry .bytes   `Data` 以自身流式传输，只有一个窗口
++       `Data is Streamable by Data over Credit`：即 `Stream(data)`，一个区域稳定的流，其唯一的窗口就是该数组本身，按引用共享，从不复制。
++   entry .sizedBytes   `Data & Sized[length]` 以其字节流式传输
++       带大小的块是 `Data` 的一个细化，精确匹配 `Self` 的 `.bytes` 实例不匹配它，因此它有一个行为相同的自身实例。
++   entry .transported   带有格式标签的字节 `Data over transport` 作为普通字节流式传输
++       `value.in[Data over Protobuf]` 写出的内容通过普通的字节管道读回：标签是幻影类型，流即 `Stream(data)`。
++   entry .text   `Text`（或其任何子类型）以自身流式传输，只有一个窗口
++       对每个 `textual <: Text` 都有 `textual is Streamable by Text over Credit`，因此细化的或带品牌的文本无需自己的实例。
++   entry .textData   `Text` 作为字节流式传输，通过作用域中的 `Codepage` 编码
++       需要一个 `Codepage` 和一个 `Buffering`。
++       文本通过编码器管道增量编码，因此 `text.source[Data]` 和 `text.read[Data]` 从不一次持有整个编码结果。
++       作用域中有 `Codepage` 时，`load` 与 `read` 一样，对 `Text` 源优先选择这条字节路径。
++   entry .chainData   由数据块构成的惰性 `Chain[Data]` 是一个字节源
++       每个数据块成为一个窗口。
++       链的生产不受流的需求控制——`Chain` 由构建它的人产生——因此额度只限制每个数据块一次暴露多少。
++   entry .chainText   由数据块构成的惰性 `Chain[Text]` 是一个文本源
++   entry .httpBody   `HttpStreams.Body`（HTTP 正文交换协议）是一个字节源
++       需要一个 `Buffering`。
++       每次重新填充都向正文请求一个块大小的数据块，因此请求或响应的正文可以直接 `read`，而无需先物化。
++   entry .spring   zephyrine 的 `Spring[Data]` 是一个字节源，每次拉取都生成一个全新的端点
++       需要一个 `Tactic[Truncation.Error]`，由实例捕获：源被截断时，spring 的 `apply()` 会抛出它，因此请求正文或 multipart 的某一部分可以直接 `read`，或原样交给解析器。
++   entry .inputStream   任何 `java.io.InputStream` 都是一个字节源
++       需要一个 `Tactic[Truncation.Error]` 和一个 `Buffering`。
++       读取通过该流之上的通道进行，直接读入流自身的存储，每次至多一个被授予的块（`buffering.capacity(Substrate.Bytes)`）。
++       输入结束时关闭 `InputStream`；读取中途发生 `IOException` 时关闭它，并以携带已交付字节的 `Truncation.Error` 中止。
+
+% 2 1 0 130157bc659c545c12949246fafc1f5b
+
+% 3 1 0 1be5ce012e15c2d219ab65d5a05299b9
+
+% 4 1 0 03516260853d01b713a314892cdbc1e7
+
+% 0 1 0 009d59b1bfc1c0f90d3f666efa5821c8
+
+% 0 1 0 00c62422e38fc66e1adef233d884b0b0
+
+% 1 1 0 0ca00d16acebc3a109898dda63eb4043
+
+@ 0 8 0 18dd5d327f5e27ff1bd3ad8bfd67ffc7
++   entry .channel   任何 `java.nio.channels.ReadableByteChannel` 都是一个字节源
++       与 `.inputStream` 相同，用 `channel.read(buffer)` 读取每个块；需要一个 `Tactic[Truncation.Error]` 和一个 `Buffering`。
++   entry .reader   任何 `java.io.Reader` 都是一个文本源
++       需要一个 `Tactic[Truncation.Error]` 和一个 `Buffering`。
++       字符以 `buffering.capacity(Substrate.Chars)` 为块读入一个字符窗口；输入结束时关闭读取器，`IOException` 会以携带已交付字符的 `Truncation.Error` 中止。
+
+@ 0 1 0 0beedebfcca78d0d0b745aaf76104af1
++ entry .Readable   可以作为某个结果类型整体读取的源：`read[T]` 背后的组合
+
+% 1 1 0 091771cf589efc220405f3a398ff5ef7
+
+@ 0 7 0 1822120b24ee3b46189d4149508e7d96
++       `source is Readable to result` 是 `value.read[result]` 所需要的。
++       它几乎从不手写：`Readable` 的伴生对象由源的 `Streamable` 实例和结果的 `Aggregable` 实例组合出它，当二者不一致时，通过作用域中的 `Charset` 或 `Codepage` 在字节与文本之间桥接。
++       四条管道都是普通的带优先级的 given：`Readable` 自身中的 `dataToData` 优先级最高，其次是 `Readable1` 中的 `textToText`、`Readable2` 中的 `dataToText` 和 `Readable3` 中的 `textToData`。
++       按源和结果列出：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 5 0 1afbbab2ef77a44b00bb37c3e46c9743
++       column  源
++       column  到按字节聚合的结果
++       column  到按文本聚合的结果
++       row  字节  `dataToData`  `dataToText`，通过 `Charset` 解码；需要一个 `Buffering`
++       row  文本  `textToData`，通过 `Codepage` 编码；需要一个 `Buffering`  `textToText`
+
+% 1 1 0 112ac3ce50b375d600ab7bc846ee1761
+
+@ 0 7 0 00c8a36bd2e037651cbdde2f7fb67a02
++       因此，只有 `Streamable by Data` 实例的类型可以读取为 `Text`，只有 `Streamable by Text` 的类型在给定编码时可以读取为 `Data`；两者都有的类型优先选择直接路径。
++       由于它们是 given 而不是宏，缺少实例就是一次普通的隐式搜索失败：消息为 _turbulence: the source cannot be read as the target type; this needs a `Source` instance for the source and an `Aggregable` instance for the target, plus a `Charset` or `Codepage` if their operands (Data/Text) differ_。
+
+% 2 1 0 0d7061d1f66d719d0650fb07e2f9f813
+
+% 3 1 0 1363f12b5b83df6e189f004eacba4639
+
+% 4 1 0 0b550754eb4442cf1f0895d61c5e1038
+
+% 5 1 0 0d140709d4c5d76e1ad866f9287046f0
+
+% 0 1 0 189643c591d307520ab919de4aab99a8
+
+% 0 1 0 03d9c2f9eae2957c160044594b21bc4e
+
+% 0 1 0 0d00337aba2def7c15a376b5cce71f4a
+
+% 0 1 0 198733f6b13c8f1f1c14f36f234ff3e4
+
+% 0 1 0 18e078f8c3925a520179d2eff34f300a
+
+% 1 1 0 14b83698f3dff4661f84f64ea2698df4
+
+@ 0 4 0 0cb1a5d7637ade6a10453ac56f51c6f1
++       手中已有完整的 `Data` 时，有直接的实例（`.dataData`、`.dataText`）一步完成解码，而不经过单窗口的流，正是这一点使文件的 `path.read[Text]` 成为真正直接的读取。
++       桥接管道在读取线程上以有界缓冲区增量转码。
+
+% 1 1 0 0deef6a9f528fd3b1b0b6ca66b9029be
+
+% 1 1 0 1437bceff0622b65091374f9161de3e3
+
+% 0 1 0 19cc67dc85f7e6d30623ed5d1c118e7a
+
+@ 0 10 0 0ae6254ab1a906ac1168990cd8fa917c
++   entry #read   将值整体读取为结果类型
++   entry .dataData   `Data` 读取为自身，不复制
++   entry .dataText   `Data` 读取为 `Text`，通过作用域中的 `Charset` 整体解码
++   entry .sizedDataData   `Data & Sized[length]` 读取为 `Data`
++       带大小的块是一个细化，精确匹配 `Self` 的 `.dataData` 不匹配它，因此它有自己的实例。
++   entry .sizedDataText   `Data & Sized[length]` 通过作用域中的 `Charset` 读取为 `Text`
++   entry .dataToData   可按字节流式传输的源可读取为任何可按字节聚合的结果
++       优先级最高的组合管道：`source is Streamable by Data over Credit` 配合 `result is Aggregable by Data`，无需编码。
++       结果同时捕获这两个实例。
+
+@ 0 1 0 1d7b67fbf7db4299109435017269dde5
++ entry .Readable1   优先级第二的 `read` 管道：文本源到文本结果
+
+% 1 1 0 003e82ccbb8312f80830b91812cbe170
+
+% 2 1 0 1cb98070e5923800135af9dd7159a1ef
+
+@ 0 5 0 07ee04efb867cff41db6bf84903cf665
++       `Readable` 伴生对象的一个优先级层，不供直接使用：它包含的管道优先级低于 `Readable.dataToData`，但高于两条桥接管道。
++   entry #textToText   可按文本流式传输的源可读取为任何可按文本聚合的结果
++       `source is Streamable by Text over Credit` 配合 `result is Aggregable by Text`；无需编码。
+
+@ 0 1 0 135065ce7e51719f05079376c8092fce
++ entry .Readable2   优先级第三的 `read` 管道：字节源解码为文本结果
+
+% 1 1 0 1315bb1d5a8c6fa201f6cb6b1b59d190
+
+% 2 1 0 18c7ca3d59c8592c0433781257e1ad31
+
+@ 0 4 0 17b135105edb87fc13e04b8aaf5cf2b5
++       `Readable` 伴生对象的一个优先级层，不供直接使用。
++   entry #dataToText   可按字节流式传输的源通过 `Charset` 读取为可按文本聚合的结果
++       需要一个 `Charset` 和一个 `Buffering`：字节通过字符集管道增量解码，因此在流上执行 `bytes.read[Text]` 从不一次持有整个解码结果。
+
+@ 0 1 0 02b40bcde80142b80e6613857dc3c372
++ entry .Readable3   优先级最低的 `read` 管道：文本源编码为字节结果
+
+% 1 1 0 0342338303c332d11c6619840f8afd9d
+
+% 2 1 0 19d3248991ee70e206be024b93b4a110
+
+@ 0 4 0 0a591d684b35fa4b07461f1fdc29d325
++       `Readable` 伴生对象的一个优先级层，不供直接使用。
++   entry #textToData   可按文本流式传输的源通过 `Codepage` 读取为可按字节聚合的结果
++       需要一个 `Codepage` 和一个 `Buffering`：文本通过代码页管道增量编码。
+
+@ 0 1 0 0b0642af029c44f018184c1d48cf9813
++ entry .Aggregable   可由 `Data` 或 `Text` 数据块的流构建的结果类型
+
+% 1 1 0 1d07df909037dad0019b98eaa7119b96
+
+@ 0 5 0 16ed545fe4c0afe20ff816d7daa57586
++       `result is Aggregable by medium` 是 `read[result]` 的结果这一半：说明 `Data` 或 `Text` 的整个流如何合并为一个值。
++       `Data` 和 `Text` 可按各自的介质聚合（`.bytesData`、`.textText`），`Text` 还可通过作用域中的 `Charset` 按 `Data` 聚合（`.bytesText`），而任何可聚合事物的 `Chain[element]` 也是可聚合的（`.stream`），`read[Chain[Text]]` 正是这样工作的。
+
+@ 0 7 0 02af313e565e866106cfd5297731c08b
++       该特质有两个方法。
++       `#aggregate` 接受旧式的形状，即由数据块构成的惰性 `Chain`；`#accept` 接受一个拉取端点，默认每次重新填充物化一个数据块，并委托给 `aggregate`。
++       `Data` 和 `Text` 实例覆盖了 `accept`，将每个窗口直接复制到构建器中，没有中间数据块；`accept` 以流式方式工作的格式也应如此。
++       `#map` 为一个可由已聚合类型得到的类型派生实例，它既转发 `aggregate` 也转发 `accept`，使流式的 `accept` 不会因映射而丢失。
+
+% 2 1 0 11dd69550e2dc69f1f2ae341ed49e7f4
+
+% 3 1 0 136852ee9ce226e10ee6b6b7ec1ddce1
+
+% 0 1 0 137980bde2334d471e6f3d56bea56ebe
+
+% 0 1 0 1ff1aff2cca2aa470b8dade0f86c4143
+
+% 0 1 0 03585b233cf30f520b60f322c7e6035b
+
+% 0 1 0 0076e3406352a5180a739d1b5b87e052
+
+% 0 1 0 1fad60b83664edae017ad1e4040e48be
+
+% 0 1 0 07dfcee996343e3000ae679055069fd2
+
+% 1 1 0 11f1bad71e8b619d021eb3917bafde70
+
+% 1 1 0 08792237b7931106064214c1c7b0f1b6
+
+% 1 1 0 0eaefc807136d6fe0872af8dac4a6c9c
+
+@ 0 17 0 110139d4f1e4835e04b43f188984ae56
++   entry #aggregate   从由数据块构成的惰性 `Chain` 构建结果
++   entry #accept   通过排空一个拉取端点构建结果
++       默认实现以无界额度重新填充，将每个窗口物化为一个数据块，并将由它们构成的惰性链交给 `#aggregate`。
++       覆盖它以直接读取窗口。
++   entry #map   通过变换已聚合的 `Self`，为 `self2` 得到一个实例
++       映射后的实例同时转发 `accept` 和 `aggregate`，并捕获原实例和该 lambda。
++   entry .bytesData   `Data` 的流聚合为一个 `Data`
++       将每个窗口复制到一个不断增长的字节构建器中，每个区域复制一次，最后一次性构建结果。
++       `aggregate` 形式先累加数据块的长度，再放置每个数据块。
++   entry .bytesText   `Data` 的流聚合为 `Text`，通过作用域中的 `Charset` 解码
++       即经 `Charset#decoded` 映射的 `.bytesData`：字节被整体收集，然后一步解码。
++   entry .textText   `Text` 的流聚合为一个 `Text`
++   entry .stream   只要 `element2` 可按 `element` 聚合，`Chain[element2]` 就可按 `element` 聚合
++       每个数据块单独聚合，因此 `read[Chain[Text]]` 为源的每个数据块产生一个元素，而不是一个连接起来的值。
+
+@ 0 1 0 0d000cfcd54deafc19d4a19a586c2173
++ entry .Writable   排空 `Data` 或 `Text` 数据块的整个流的目的地
+
+% 1 1 0 035feca7ad058a1c0cc01e76360186c2
+
+@ 0 6 0 1327d6c702b5471601729ccb448db013
++       `target is Writable by medium` 是 `value.writeTo(target)` 在目标一侧所需要的：只有一个方法 `#write`，它接受目标和一个拉取端点，并将其排空直至完成。
++       JDK 的 `OutputStream` 和 `WritableByteChannel` 可按 `Data` 写入（`OutputStream` 还可通过作用域中的 `Codepage` 按 `Text` 写入），另有一对适配器使任何 `Writable by Text` 也成为 `Writable by Data`，反之亦然，因此目的地只需为对它而言自然的那种介质提供一个实例。
+
+% 2 1 0 12b70b89c01979c61250f2d8bfc5da3b
+
+% 3 1 0 147a3b0ac72a501e0880ea782d659496
+
+% 4 1 0 14c49b5d97dabc5e07e194b70590810f
+
+% 2 1 0 1aeacafaf05785d61de339f7097bcbe5
+
+% 0 1 0 1d9745f20fa72d4005d1d1447b83ea2d
+
+% 0 1 0 1fe8ea15615b2bef0b50119dc4bd3156
+
+% 0 1 0 0a24d4b09302cb6701f773f3c7cc75e2
+
+% 0 1 0 05d256c108328b260a81bf13b1ad4a29
+
+% 0 1 0 1cc333525dcc0be30afd2e62258b6802
+
+% 0 1 0 0792512e9b3f77261c9dab67f3b53351
+
+% 0 1 0 12d1a8cbe45f1ee403a6c9981fc1b722
+
+% 0 1 0 148335e78386f41b01c26539798e1289
+
+% 0 1 0 10f70eb2f6dbd9a319c5cc2250f02cc2
+
+% 1 1 0 0b0d4db033c70721069fe8d1bf324728
+
+@ 0 4 0 0890b7f003254dea163bae6bde94282d
++       写入失败会被报告而不是抛出：JDK 的 given 接受一个 `Emit[Truncation.Error]`，以截断前已写入的字节数 `raise` 该错误，然后停止写入。
++       无论写入是否失败，目标都会被关闭。
++       写入者从不中止，因此 `Writable` given 是在 `Emit` 而不是 `Tactic` 之下召唤的。
+
+@ 0 4 0 1ed2b9ea8631ee290327d1e172e3ad67
++       `Sink` 是推送一侧的对应物，供通过 `Intake` 增量写入、而不是交出整个流的调用者使用。
++       `write` 方法的流参数没有声明为 `consume`，因此将它交给消耗性操作的实例会以中性引用的方式传递它，示例正是如此。
+
+% 0 1 0 1ce097c348bcbb8008de4b440a8cef39
+
+% 1 1 0 163e705ff232ea98044aca9432e11dc6
+
+% 1 1 0 1e2a76e5759d131e02d0827877669efd
+
+@ 0 6 0 078af9a8d3e657d90b5fa9654dce26a5
++   entry #write   将流排空到目标中，直至完成
++   entry #contramap   通过先将 `self2` 转换为 `Self`，为 `self2` 得到一个实例
++   entry .outputStreamData   任何 `java.io.OutputStream` 都可按 `Data` 写入
++       需要一个 `Emit[Truncation.Error]` 和一个 `Buffering`。
++       每个窗口直接从流自身的存储中写出；最后刷新并关闭流，任何时候发生 `IOException` 都会以截至当时已写入的字节抛出 `Truncation.Error`。
+
+% 2 1 0 0047e9bb4363a164046bd18d10eaea13
+
+% 3 1 0 063c47f8134092781951b8d5ed1ec7ad
+
+% 4 1 0 112f634dd718fc2e1f69e2a479631c3e
+
+% 6 1 0 04d24492f6dd902f06584f5066bc5670
+
+% 0 1 0 125da97b319f5a5c03c2694811aa9d00
+
+% 1 1 0 0a9d5f9d46d3694f174f8e882620bb6c
+
+% 2 1 0 028fe0bca932a38900fd2bdae4c1d7f9
+
+@ 0 18 0 175fa5953f8d016101ebcffe5fb9d6b8
++   entry .outputStreamText   `java.io.OutputStream` 可按 `Text` 写入，通过作用域中的 `Codepage` 编码
++       与 `.outputStreamData` 相同，文本通过代码页管道增量编码；还需要一个 `Codepage`。
++   entry .decodingAdapter   可按 `Text` 写入的目标可通过作用域中的 `Charset` 按 `Data` 写入
++       字节在到达文本写入者之前通过字符集管道增量解码；需要一个 `Charset` 和一个 `Buffering`。
++   entry .encodingAdapter   可按 `Data` 写入的目标可通过作用域中的 `Codepage` 按 `Text` 写入
++       文本在到达字节写入者之前通过代码页管道增量编码；需要一个 `Codepage` 和一个 `Buffering`。
++   entry .chunked   可按某种介质写入的目标，可按由该介质数据块构成的记录流写入
++       `writable is Writable by (Array[medium]^{})`：流的每条记录是一个数据块，按顺序写入。
++       这是事件日志的形状，其中每个格式化后的事件都是一个 `Text` 或 `Data` 数据块，也是 `Logger` 的目的地所需要的。
++       需要该介质的 `Addressable` 和一个 `Buffering`。
++   entry .channel   `java.nio.channels.WritableByteChannel` 可按 `Data` 写入
++       需要一个 `Emit[Truncation.Error]` 和一个 `Buffering`。
++       每个窗口被包装为 `ByteBuffer` 并写入直至排空；通道返回 `-1` 或发生异常时，以截至当时已写入的字节抛出 `Truncation.Error`。
++       通道不会被关闭。
+
+@ 0 1 0 05c084f5ef9c509b152a1cb69d49d413
++ entry .Sink   能打开为推送端点的目的地：基于 `Credit` 的 `Data` 或 `Text` 的 `Intake`
+
+% 1 1 0 11f73995994bae840b291dfa13fca67f
+
+@ 0 5 0 180b3fd173e8f96916aa858db3e9a046
++       `target is Sink by medium over Credit` 是 `Writable` 在推送一侧的对应物：`#intake` 不排空整个流，而是将目标打开为一个 zephyrine `(Intake[medium] over Credit)^`，调用者用 `put` 向其增量写入，也可以用 `pump`，或在自己的任务上用 `convey`，将流泵送进去。
++       `finish` 关闭底层资源，正如 `Writable` 在流结束时所做的那样。
+
+% 2 1 0 11397aea3ce5c9720fc3c585f377e7b6
+
+% 3 1 0 181c81d15e8a80af0e97b46c7739ee47
+
+% 4 1 0 07936e4ad62c6d2317ef334256ca0504
+
+% 6 1 0 085a5f52b9e4201907626bdf4f352e5f
+
+% 0 1 0 10ac6a5dc143a2f5121dbf6e36dff6ef
+
+% 0 1 0 0c9c6c0762ede4fd1b4578ab8aba0f8c
+
+% 1 1 0 07814c332f6b5fed0d0de5a3ac04662a
+
+% 2 1 0 14af82250863f09309d986b8e37529f0
+
+@ 0 4 0 088d9094d78d14791ca9df9420369da9
++       写入失败通过 given 所捕获的 `Emit[Truncation.Error]` 报告——数据汇只报告截断，从不中止——并且入口的需求降为零，使泵送停止。
++       `.buffered` 为只有整链写入函数的目标，将该函数适配到入口协议。
+
+% 1 1 0 08ad05b7d7704234000cea0fa67943dc
+
+% 1 1 0 04760a2ba0d193e71834f0725ff12e71
+
+% 0 1 0 117621d7b00cd2670cd53e0fc10faadf
+
+@ 0 18 0 131fa58b78cdbba50c6c38cb4f14b7f9
++   entry #Transport   入口的需求类型：这里的每个实例都是 `Credit`
++   entry #intake   将目标打开为一个全新的推送端点
++   entry #contramap   通过先将 `self2` 转换为 `Self`，为 `self2` 得到一个实例
++   entry .outputStream   任何 `java.io.OutputStream` 都能打开为字节入口
++       需要一个 `Emit[Truncation.Error]` 和一个 `Buffering`。
++       写入暂存在一个 `buffering.capacity(Substrate.Bytes)` 字节的块中，在块满时、`flush` 时以及 `finish` 时写出（并刷新），`finish` 随后关闭流。
++       `IOException` 会将入口标记为损坏——其需求变为零——并以截至当时已写入的字节抛出 `Truncation.Error`。
++   entry .channel   `java.nio.channels.WritableByteChannel` 能打开为字节入口
++       与 `.outputStream` 相同，通过 `ByteBuffer` 写出每个暂存块；`finish` 关闭通道。
++   entry .buffered   累积数据块、并在 `finish` 时将它们全部交给整链写入者的入口
++       `Sink.buffered(target, write)` 接受一个 `(target, Chain[medium]) => Unit`，返回一个 `(Intake[medium] over Credit)^`：写入按 `Buffering` 的块大小暂存，每个满块成为一个数据块，`finish` 按顺序以所有数据块调用一次 `write`。
++       它的需求如实地是无界的，因为它在 `finish` 之前保留所有内容。
++       它需要该介质的 `Addressable` 和一个 `Buffering`。
+
+% 2 1 0 0b6b2ffc39e3634303f8558f20f0c630
+
+% 3 1 0 1aca81306fa901d614230014ac5aa829
+
+% 0 1 0 16fb33a176e2d8800f95be0b9e7cff2e
+
+% 0 1 0 1c00859deeb9481713098a7321cdbce5
+
+% 0 1 0 170a2af1c2c5e9ef18127a8c756b0871
+
+% 0 1 0 091d50e094c50cd61e5f31788890a5e3
+
+% 1 1 0 1966b50cfe8c0f0819b1a570275c97c1
+
+@ 0 1 0 1e55a6220adc31c20836772b42411d7b
++ entry .Loadable   可从 `Data` 或 `Text` 的流解析、并保留其元数据的文档类型
+
+% 1 1 0 0272eec31dcd879f08702fb4bb9e1521
+
+@ 0 7 0 128993a1699d23ef1e8c6d05f40972d5
++       `result is Loadable by medium` 是 `value.load[result]` 在结果一侧所需要的：`#load` 接受一个拉取端点并返回一个 `Document[result]`，即解析出的根以及解析过程中发现的元数据（XML 序言的编码、HTML 文档的源位置）。
++       `Self` 必须是一个 `Documentary`，它声明其元数据是什么。
++       `Xml`、`Html`、`Tel` 和 `Math` 等格式提供实例，通常一个按 `Text`、一个按 `Data`，各自捕获用于其解析错误的 `Tactic`。
+
+% 2 1 0 11e18fd96bce6c7e1befc521ba39be65
+
+% 3 1 0 05d22b5ed46dfb781bf7b3fca249489d
+
+% 4 1 0 0533a2a45dceb8c903f45139fbac630a
+
+% 5 1 0 1c79722f095221d302779c85de94f06e
+
+% 0 1 0 1da9f8897316952c0e0a6d6aadec2862
+
+% 0 1 0 15a484c4bb518d620ee00c2c5b5c4bd8
+
+% 0 1 0 0f72973644b2dac91cd85a8eecdda77c
+
+% 1 1 0 06859a2fc5208eb3018a0affc85c58dd
+
+@ 0 3 0 00befd72c78f760a16e60da66ecbf886
++       当源与加载器在介质上不一致时，`load` 通过作用域中的 `Charset` 或 `Codepage` 进行桥接；`.fromData` 和 `.fromText` 是这一分派的两半，供已持有流的代码使用。
+
+% 1 1 0 0e151b6018e1805908727b20877b4610
+
+% 1 1 0 0b8fe6d8949be28606cabe76279377f3
+
+% 0 1 0 06c53c982a07e9820935ed58e92e63ec
+
+@ 0 15 0 09ec2aff6fa0ca0513e70e542b49eda4
++   entry #Self   文档类型，一个 `Documentary`
++   entry #Operand   加载器读取的介质：`Data` 或 `Text`
++   entry #load   将流解析为一个 `Document[Self]`
++   entry .fromData   从字节流加载文档，若加载器需要文本则通过 `Charset` 解码
++       `Loadable.fromData[result](stream)` 消耗该流。
++       它优先使用 `result is Loadable by Data`；若没有，则通过作用域中的 `Charset` 和 `Buffering` 使用 `Loadable by Text`；两者都没有时，无法编译，并给出 _turbulence: the result type has no `Loadable` instance_。
++   entry .fromText   从文本流加载文档，若加载器需要字节则通过 `Codepage` 编码
++       `.fromData` 的文本孪生版本：先找 `Loadable by Text`，否则通过作用域中的 `Codepage` 和 `Buffering` 使用 `Loadable by Data`。
++   entry .whole   整值源的字节，作为单窗口的流
++       `Loadable.whole(source)` 用源的 `Readable to Data` 实例读取它，并将结果包装为 `Stream[Data]`：对于不可流式传输、但可整体读取的源（如文件系统路径），`load` 走的就是这条路径。
+
+@ 0 1 0 16990a25deea2f5f027b31280e4d4fa0
++ entry .Document   已解析的文档：其根值以及解析过程中发现的元数据
+
+% 1 1 0 11911881085fd9ee063474648e221fa5
+
+@ 0 3 0 0cd47ce73902ee1f11bfdf6d32a42ba7
++       `Document[content]` 是 `load[content]` 的返回值。
++       `#root`（也即 `#apply`）是解析出的值，`#metadata` 的类型由内容自身的 `Documentary` 声明决定：`root.Metadata`，因此 `Xml` 文档的元数据就是 `Xml` 所声明的那种。
+
+% 1 1 0 06b95a630bfb5c250750de6042353f5f
+
+% 1 1 0 0f2e6a8921d9c8a60aa3a8db99d8f132
+
+@ 0 3 0 1297a6d712b70dda0c0e1ac0a6b2b504
++   entry #root   解析出的文档
++   entry #metadata   解析过程中在内容之外发现的内容，类型为 `root.Metadata`
++   entry #apply   解析出的文档，写作 `document()`
+
+@ 0 1 0 1c0425ba3c7b16951981e7e098366e16
++ entry .Documentary   可作为 `Document` 内容的类型，声明其元数据类型
+
+% 1 1 0 1668b13c91709acd127fd2280de14f88
+
+@ 0 4 0 0f5aa03ff515c28f193a8d9419042792
++       格式根类型的标记特质：`type Metadata` 是解析该类型时在内容之外发现的内容，`Document[content]` 将其以 `root.Metadata` 暴露出来。
++       `Xml`、`Html`、`Tel`、`Email` 和 `Math` 都是 documentary；新格式扩展它并提供一个 `Loadable` 实例。
+
+% 1 1 0 1255a625551646291e1bacd7c06b0997
+
+% 1 1 0 1f2024894421cf6f09f6cf411f735e2a
+
+@ 0 2 0 1a3524239c17ff7f184b5372b3a8daac
++   entry #Self   documentary 类型本身
++   entry #Metadata   解析该类型时在其内容之外发现的内容
+
+@ 0 1 0 1e569a20751df13b1417a837c7d311c4
++ entry .Eof   为追加而指定的文件：`Eof(file)` 即文件的末尾
+
+% 1 1 0 19d46b286ede12fb08f809c73bffd101
+
+@ 0 5 0 06fd7c59552a3ebc16a9a0cb54609f24
++       `Eof(path)` 包装一个路径，使打开它意味着以追加方式打开文件。
++       文件系统库使 `Eof[file]` 在 `file` 可打开的任何地方都可打开，并前置 `Append` 标志，因此 `path.open(...)` 会覆盖的地方，`Eof(path).open(...)` 会追加。
++       包装器本身只是带有一个字段的 case 类。
++   entry #file   被包装的文件
+
+@ 0 1 0 0bc1d07df254631e01922db0c11aacf2
++ entry .Line   一行文本，渲染时使用作用域中的 `LineSeparation` 所用的换行符
+
+% 1 1 0 183ecda470b85fdd1e18f75154fad0a8
+
+@ 0 3 0 15e7dae4bae80979198fa6e665e7a960
++       `Line(content)` 持有一行不含终止符的文本；`line()` 追加作用域中 `LineSeparation` given 的换行序列，因此同一个值会根据所选的方针渲染为 `\n`、`\r\n` 或 `\r`。
+
+% 1 1 0 19c934b05ec613f91d495c0811023da8
+
+@ 0 2 0 1b617db275a7f888009d93c4cd45d384
++   entry #content   该行的文本，不含终止符
++   entry #apply   追加了 `LineSeparation` 换行符的该行
+
+@ 0 1 0 17c4413eaad43d64165cc4674cf5bb65
++ entry .LineSeparation   行尾方针：CR、LF、CRLF 和 LFCR 中哪些结束一行，以及一行如何写出
+
+% 1 1 0 15c2700d7da6ece816cd3e1360fef243
+
+@ 0 6 0 0e56bcbbce54bdb500d3f060cc5663cc
++       `LineSeparation` 说明 `delineate` 如何将文本拆分为行，以及 `Line#apply` 和 `#newlineData` 写出哪种序列。
++       它是一个有五个字段的值：`#newline`，即写出的 `NewlineSeq`；以及四个 `Action`，分别说明读到单独的 CR、单独的 LF、CRLF 对和 LFCR 对时各自做什么——结束一行（`Nl`），作为字符留在文本中（`Cr`、`Lf`），被丢弃（`Skip`），结束一行并保留自身的一部分（`NlCr`、`NlLf`、`CrNl`、`LfNl`），或结束两行（`NlNl`）。
+
+@ 0 2 0 0bc7acc151a7422a1a479d3d3aa79905
++       方针从不是隐式的：`lineSeparation` 包中有标准方针，按名称导入，同一段文本在不同方针下拆分的结果各不相同。
+
+% 2 1 0 1951aaaf803b4ef215194fde7a6ddbc9
+
+% 0 1 0 089ad75bba0a38320e34393be575bf0a
+
+% 1 1 0 1a9ddc3f6c830d971f6def4a920c5392
+
+% 2 1 0 002e3be157a8adc8023670821e472a75
+
+% 0 1 0 155d8d482885fa000645126f6055555a
+
+% 0 1 0 0dc863e331bfcd741e3cb939f6ab004a
+
+% 0 1 0 0b827e445a4acafd15d9659895538edd
+
+% 1 1 0 181e919e2f9d030a166dcfeffe878c3b
+
+% 2 1 0 1271316a2019425308e3886c88890368
+
+% 0 1 0 08e5b1e758b66ebb035c7de38741c2f7
+
+% 0 1 0 044aeb9de90f97650f079eed562d0129
+
+% 0 1 0 0d962c243a6cc752066c89dfbfdd32b0
+
+% 1 1 0 0c4b8223ad30a818010d900006f67738
+
+% 2 1 0 12bb00de86debc8119660d76aab8ae62
+
+% 0 1 0 0df34cf5c7267e8b0b5a40b707ca2d35
+
+% 0 1 0 10c620b11916209e1167402dc85ad792
+
+% 0 1 0 02012f42830346f2094f808f15d0da33
+
+% 1 1 0 135803f8ebf5014305c6b9130317571d
+
+% 2 1 0 15399532f5a9d4b1148df6cdb826515e
+
+% 0 1 0 11e343f7b8db45db090c77bae0353616
+
+% 0 1 0 097f16b87f51425f19039e32ef0c91ed
+
+% 1 1 0 1aa25ff4c17f5b8c0e2ccbeef95c457c
+
+% 2 1 0 16a9628959d7ae95101127c09e7c3e6f
+
+@ 0 8 0 081294dbdad0599a09edbe91e4a84e0d
++       拆分本身是一个 zephyrine `Duct`，作为一个阶段应用：`.lines` 是 `Ductile` 实例，它允许用 `via` 将方针值连接到文本流上，产生一个每行一个 `Text`（不含终止符）的记录流。
++       没有终止符的最后一行仍会交付；空输入不产生任何行；跨两个窗口拆开的双字符序列会跨越边界得到解析。
++       采用 ASCII 透明编码（UTF-8、ASCII、Latin-1）的字节流由 `.byteLines` 在原始字节中拆分，每行一步整体解码，`delineate` 通过检查 `Charset` 来选择这种方式；其他任何编码都先解码。
+
+@ 0 2 0 0d74bd64906f9d741c0aa670a5c4118b
++       完全没有分隔符的行会使携带的部分行无限增长，任何行读取器都必然如此；若输入可能是恶意的，请在上游限制其大小。
+
+% 1 1 0 05666cc1653f3e7b03f1dfee4f2efae4
+
+% 1 1 0 0d904b9694e7f3721d9a50a25f5bdf5e
+
+% 0 1 0 1b06cec56affb44f06b5a8ec3e14c8de
+
+@ 0 1 0 02b626bab2ef17840f79898b39fe0e45
++   entry .NewlineSeq   方针作为行尾写出的序列：`Cr`、`Lf`、`CrLf` 或 `LfCr`
+
+% 1 1 0 099e2f63a0e690e201d26cd54e445705
+
+@ 0 33 0 0f189dd30357ba2014092644ae5dc36f
++         四种换行序列的枚举；`#text` 是作为 `Text` 的序列（`"\r"`、`"\n"`、`"\r\n"`、`"\n\r"`），`LineSeparation#newlineData` 给出同样的字节形式。
++     entry #text   作为文本的序列
++   entry .Action   方针对读到的 CR、LF、CRLF 或 LFCR 所做的处理
++       九种动作的枚举：`Nl` 结束该行；`Cr` 和 `Lf` 将字符保留在该行的文本中；`Skip` 丢弃它；`NlCr` 和 `NlLf` 结束该行并以该字符开始下一行；`CrNl` 和 `LfNl` 追加该字符后再结束该行；`NlNl` 结束两行。
++       `LineSeparation` 为其 `cr`、`lf`、`crlf` 和 `lfcr` 字段各指定一个动作。
++   entry .lines   将方针作为阶段应用到文本流上的 `Ductile` 实例
++       `stream.via(lineSeparation)` 连接行拆分管道，产生一个 `Stream[Array[Text]^{}]`——每行一个 `Text` 的记录流——并将行额度一对一地转换为字符额度。
++       `delineate` 与此相同，只是方针取自作用域。
++       它需要一个 `Buffering`。
++   entry .asciiTransparent   字符集中的 `0x0A` 或 `0x0D` 字节是否只能是行终止符
++       对 UTF-8、US-ASCII 和 ISO-8859-1 为真，在这些编码中，没有任何多字节序列包含这些字节，因此可以在解码之前找到行。
++       对 UTF-16 及其他编码为假。
++   entry .byteLines   用于 ASCII 透明编码的字节级行管道
++       `LineSeparation.byteLines(policy, charset)` 构建一个 `Duct[Data, Array[Text]^{}]`，它在原始字节中查找终止符，并在一次融合的调用中解码每个完成的行，不需要单独的解码阶段；被窗口边界切开的多字节字符只是随该行一起累积。
++       它是方法而不是 given，由 `delineate` 在用 `.asciiTransparent` 检查编码之后应用，不得用于未通过该检查的编码。
++       需要一个 `Buffering`。
++   entry #newline   作为行尾写出的序列
++   entry #cr   读到单独的回车符时的处理
++   entry #lf   读到单独的换行符时的处理
++   entry #crlf   读到回车符后跟换行符时的处理
++   entry #lfcr   读到换行符后跟回车符时的处理
++   entry #newlineData   作为字节的换行序列
++       对 `Cr`、`Lf`、`CrLf` 和 `LfCr` 分别为 `Data(13)`、`Data(10)`、`Data(13, 10)` 或 `Data(10, 13)`。
+
+@ 0 1 0 02245e919d06a71f17db4ae75b35a1e3
++ entry .lineSeparation   标准的行尾方针，每个都是按名称导入的 given
+
+% 1 1 0 1b715fa645e8ecb1047638975347022d
+
+@ 0 4 0 0bfd45481656c1c3023f6ef0bbbac2ea
++       哪些字符结束一行由作用域中的 `LineSeparation` given 决定，这一选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，需要按名称导入。
++       每个都是一个 `LineSeparation` 值，测试套件会用其输入的每一种分片方式检验其动作表。
+
+% 2 1 0 199bc33596f5607e158904bc3237a743
+
+% 3 1 0 0f9e7d21f5de1d6317ea843048a7f2b3
+
+% 0 1 0 0115ab0fde5209ee17abe67e42a01341
+
+% 0 1 0 1aa3ad1e7b7e854a086165608bc088e1
+
+% 1 1 0 07e4b975de91df1c128582881d0a47d1
+
+@ 0 3 0 13a95c81abb5a16e0da00fd22f804ef4
++       `adaptiveLinefeedLineSeparation` 适合来源未知的输入；严格方针用于另一种单独字符属于数据的格式，`javaBaseLineSeparation` 则遵循当前运行的平台。
+
+% 1 1 0 109dcdac9ad73fcf1b1409c3a5844341
+
+% 1 1 0 1492ec42b7a894cc060f51d464d662ec
+
+@ 0 19 0 1a7b5d45e9fe115b0a83e4f53aa26bb9
++   entry .adaptiveLinefeedLineSeparation   CR、LF、CRLF 或 LFCR 中任一种都结束一行；写出 LF
++       每种序列都是一次换行，因此 `a\n\nb` 是三行（`a`、一个空行、`b`），`a\r\nb` 是两行。
++   entry .linefeedLineSeparation   LF 结束一行；单独的 CR 被丢弃；CRLF 和 LFCR 是一次换行；写出 LF
++       `a\rb` 是一行 `ab`。
++   entry .strictLinefeedsLineSeparation   单独的 LF 结束一行，CR 留在文本中；写出 LF
++       目前的动作表是 `cr = Nl, lf = Lf, crlf = NlLf, lfcr = LfNl`——与 `strictCarriageReturnLineSeparation` 相同——因此 `a\nb` 是一行 `a\nb`，而 `a\rb` 是两行；只有写出的换行符（LF）不同。
++   entry .carriageReturnLineSeparation   CR 结束一行；单独的 LF 被丢弃；CRLF 和 LFCR 是一次换行；写出 CR
++       `a\nb` 是一行 `ab`。
++   entry .strictCarriageReturnLineSeparation   只有 CR 结束一行；LF 留在文本中；写出 CR
++       `a\r\nb` 是两行：`a` 和 `\nb`。
++   entry .carriageReturnLinefeedLineSeparation   只有 CRLF 结束一行；单独的 CR 被丢弃，单独的 LF 被保留；写出 CRLF
++       `a\nb` 是一行 `a\nb`，`a\rb` 是 `ab`，`a\n\rb` 是 `a\n` 和 `b`。
++   entry .javaBaseLineSeparation   与 JVM 的 `System.lineSeparator` 相符的方针
++       在 Windows 上为 `carriageReturnLinefeedLineSeparation`，分隔符为 LF 时为 `linefeedLineSeparation`，为 CR 时为 `carriageReturnLineSeparation`，否则为自适应方针。
+
+@ 0 1 0 016f58e5878d8f8a02d3fcb398ca8f7f
++ entry .source   将值打开为拉取端点，并指定元素类型：`value.source[Data]`
+
+% 1 1 0 0d638a157d33716310ae513065cc7d86
+
+@ 0 6 0 1ee522ab1e44b1d5096840dff78a57f4
++       作用于任何具有 `Streamable by element over Credit` 实例的值的扩展方法：`value.source[Text]` 或 `value.source[Data]` 即 `streamable.stream(value)`，一个全新的 `(Stream[element] over Credit)^`。
++       它是 `Streamable#stream` 的流畅写法，命名为 `source` 是因为在总括包中，zephyrine 的 `.stream` 构造器占用了那个名称。
++       当一个值两种方式都可流式传输时（如作用域中有 `Codepage` 时的 `Text`），需显式给出元素类型。
+
+% 2 1 0 0d3beb0dc1874fc315336376023e2d4e
+
+% 3 1 0 1709605b6e023523031b6d7261fe4208
+
+% 4 1 0 0b4cb4ad55789b7f11af057faf565d90
+
+% 0 1 0 16bbc8a866f2b26e058e7a632e9cf3b6
+
+% 0 1 0 1489a0585171fc660d681e342cdb4693
+
+% 1 1 0 161338c94d9d85c90e7cf5b1a21c5656
+
+% 1 1 0 01e14d84de62572f152b1873c69f5e6c
+
+@ 0 1 0 136dc4e72937b7431c77736d0b3a5fbc
++ entry .read   将值整体读取为所指定的类型：`value.read[Text]`、`value.read[Data]`
+
+% 1 1 0 13beff96bd5cf8b81e82c0681a943edd
+
+@ 0 5 0 12d643d434175bdb128ffde2b4555b6f
++       作用于任何具有 `Readable to result` 实例的值的内联扩展方法。
++       具有任一种介质的 `Streamable` 实例的源，可以读取为 `Data`、`Text`、`Chain[Data]` 或 `Chain[Text]`，或任何具有 `Aggregable` 实例的类型，由作用域中的 `Charset` 或 `Codepage` 在字节与文本之间桥接。
++       文件、URL、进程的输出和类路径资源都用这一个动词读取。
+
+% 2 1 0 1b66d2cf22db666918deccfc62530237
+
+% 3 1 0 11b25fe5d1e8607600f843623cdc0753
+
+% 4 1 0 0faa8492abbd83f41f2c67b6ef58caee
+
+% 5 1 0 11e44002fccf5f2a1b7fbeeeed9ed144
+
+% 2 1 0 0c552ab18bc65a091d1810521f71ee2a
+
+% 0 1 0 0d146845a9deb0380f8987a1b4a28be5
+
+% 1 1 0 05e470b31337c48000ae60f83978263d
+
+@ 0 2 0 169a65da577b20dd1d7649029d680cdf
++       JDK 源若在读取中途被截断，会通过其 `Streamable` given 所捕获的 `Tactic` 抛出 `Truncation.Error`；手中已有的 `Data` 或 `Text` 则完全无需流即可读取。
+
+% 1 1 0 05df9417ccbd4f231291aaa40b5ee894
+
+@ 0 1 0 0c7d2f209c107d5f0db6e189430c5bf7
++ entry .writeTo   将值排出到目的地：`value.writeTo(target)`
+
+% 1 1 0 02e9b6c5b28f511d07cabfc63172fa1f
+
+@ 0 6 0 0a3612a0b03d792c17a7a162f89d5d43
++       作用于任何具有 `Streamable by element over Credit` 实例的值的扩展方法，适用于任何具有 `Writable by element` 实例的目标：`value.writeTo(target)` 将值流式传输，并把流交给目标的写入者，由它排空直至完成并关闭目标。
++       元素类型从这两个实例推断，`Writable` 适配器则让文本可以通过作用域中的编码流向字节数据汇，字节也可以流向文本数据汇。
++       JDK 目标通过其 `Emit` 以 `Truncation.Error` 报告截断。
+
+% 2 1 0 0aa5bb5979c2915e1b5aa8acd961ecd3
+
+% 3 1 0 05c2204c7de2ee6a1e178eeaf8c5f7ca
+
+% 4 1 0 1ef949db8927fdbc03715c9f0ba4b067
+
+% 6 1 0 145b19bea1070c570366b51c537e8feb
+
+% 0 1 0 0ea2967142f2e75f1c0e48b7c123c19a
+
+% 1 1 0 1629b07abbb4e2030a522688b0c1afc0
+
+% 1 1 0 11e1dda0306a10781caaec8fd328cd23
+
+% 1 1 0 06db56854f6ae64b0186be6b2bb53e7a
+
+@ 0 1 0 0596c8a232bd4d6d026e5052cff4c89f
++ entry .load   将值解析为文档类型，并保留元数据：`value.load[Xml]`
+
+% 1 1 0 1ecc68b377a15f9a176b22d56d52ad69
+
+@ 0 8 0 17c2629dd83408eb05b7e20066c5f671
++       作用于任何值的内联扩展方法：对任何具有 `Loadable` 实例的 `result <: Documentary`，`value.load[result]` 返回一个 `Document[result]`。
++       它在调用处按以下顺序解析实例：可按字节流式传输的源配字节加载器，否则通过作用域中的 `Charset` 配文本加载器；可按文本流式传输的源配文本加载器，否则通过作用域中的 `Codepage` 配字节加载器；最后是不可流式传输、但 `Readable to Data` 的源（文件系统路径），整体读取。
++       因此，作用域中有 `Codepage` 时，`Text` 与 `read` 一样走字节路径。
++       每个加载器都捕获用于其解析错误的 `Tactic`，该 `Tactic` 必须在作用域中。
+
+% 2 1 0 0fe48239e68d53660858df2008df36c1
+
+% 3 1 0 03f59740ef02a1ee18793a6e728549a1
+
+% 4 1 0 1f63b2474ea90b5a1713ce04aae36b87
+
+% 5 1 0 12c02229d9fe9e95009013f01d942a20
+
+% 0 1 0 15bf2bbd2e012b230315aacd05019a46
+
+% 1 1 0 02444c13049fd62301879b96d6c580c0
+
+% 1 1 0 0dd47fad890c320b1154a6e13cbf28ce
+
+% 1 1 0 0da73409eb34ad931dcec0b1542107af
+
+@ 0 1 0 131d0619e69a8fdc0bd1a02221012e4b
++ entry .delineate   依据作用域中的 `LineSeparation` 将文本或字节拆分为行
+
+% 1 1 0 0450315a9affe816151360d5dd1b7227
+
+@ 0 10 0 05f775766d53aba60059a504bc6d6ef9
++       四个重载，一个实现。
++       在 `(Stream[Text] over Credit)^` 上，它连接 `LineSeparation.lines` 管道，产生一个 `(Stream[Array[Text]^{}] over Credit)^`——每行一个 `Text`（不含终止符）的记录流——可用 `records`、`memoize` 排空，或继续组合。
++       在 `(Stream[Data] over Credit)^` 上，它还需要一个 `Charset`：在 ASCII 透明编码（UTF-8、ASCII、Latin-1）下，在原始字节中查找分隔符，每行在一次融合的调用中整体解码；在其他任何编码下，先解码流，再拆分字符。
++       在完整的 `Text` 或 `Data` 上，它将该值作为单个窗口驱动同一管道，并直接返回一个 `Array[Text]^{}`。
++       每种形式都需要一个 `LineSeparation`（从 `lineSeparation` 按名称导入）和一个 `Buffering`。
+
+% 2 1 0 13ae4b7096adfa7b0ab6c3483d8d402c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 01a925c47bab7fd317cfdb0af0c0b165
++         label 字节流
+
+% 1 1 0 14323b17a94f1a9c03752f8f1de8d790
+
+% 2 1 0 0854116bbcad763c16fee7baa44182e8
+
+% 3 1 0 06bf829c808872ef1c22256083470d9a
+
+% 4 1 0 0d80484eaf9754c91e42775a41d4ca8b
+
+% 5 1 0 0567286a7108c01e1606a4674bdc327d
+
+% 7 1 0 05cb60ecce8190ce02cfa579b1966d0b
+
+% 0 1 0 03c8922c8ba2817d0595fbe7890507c3
+
+% 1 1 0 0a69dcb72c61e87817e8f0724f57af5a
+
+@ 0 1 0 0e015571a9285d94192a7a38c87f9919
++         label 拆分为行，作为记录流
+
+% 1 1 0 02409d9fb8a8bd5805476f6b618a89f0
+
+% 2 1 0 1db06c7f48fb25bf04d4924e0adf5193
+
+% 3 1 0 1cd77fefd7f0df4b028dcf381ff4d4ac
+
+% 4 1 0 1dd5f459f63a462007f065e698cf2338
+
+% 5 1 0 1acf91c3030148ef044e1bd02271ceca
+
+% 7 1 0 0088f2583d2e07b700978057db7ca2f0
+
+% 0 1 0 04cee58403cfc7aa1ea8863ffbd1e7b7
+
+% 1 1 0 0427761dd012d2970694d58cffb10af7
+
+@ 0 1 0 08430b1305324e5413369756d344b05c
++         label 作为记录排空
+
+% 1 1 0 0e605dafcc27350305623264b42ec4d8
+
+% 2 1 0 0bdeaceb936b981f064f0eb88e7c27fa
+
+% 3 1 0 1703a6e1d549bd2900c2b11877778028
+
+% 4 1 0 01715ebc6afed5e9056e8bd878d6e13e
+
+% 5 1 0 10582b1de5bb33c917a6650e496b189a
+
+% 7 1 0 07e8eee45004bed0182dd9124484733c
+
+% 0 1 0 1cbdb777bb20c14601336e7d40cc7df2
+
+% 1 1 0 03f88b9b4548cbf615b74a5e651e2fae
+
+@ 0 1 0 0e6279914b40a86005e6e3511d40864e
++         label 或者写出，每条记录一行
+
+% 1 1 0 12826603b77f461802c90a6050eb82a2
+
+% 2 1 0 1b9f163c6c6a904e13a8646388ab2e40
+
+% 3 1 0 0344235de13c8e3a1a7b43303f210650
+
+% 0 1 0 193e2b393d0b80a41e2fa33788906d28
+
+% 1 1 0 0c52ed82d9763e021fe09156ec74e577
+
+% 2 1 0 01c18303777ba4741f0d14c3569ed35b
+
+% 4 1 0 0963ee2cd78b6a8c05afcd45cab9786f
+
+% 0 1 0 185b37a264d914b40715d910a7aa385e
+
+% 0 1 0 15c2d82ce68199d81e83b686225a25e5
+
+% 1 1 0 15e4c2242ecbbb44172a34b0a965f401
+
+% 2 1 0 1b4e3fd258b0bf74018c8b576cbded3a
+
+@ 0 4 0 07d956a13800b8610179354a7147d08a
++       跨越多个窗口的行会被重新组装，没有终止符的最后一行会被交付，空输入不产生任何行。
++       之所以命名为 `delineate` 而不是 `lines`，是因为在总括包中，gossamer 的值级 `lines` 会遮蔽同名的扩展方法。
+
+% 1 1 0 0af66ff5383915b40ea989366ac62c1d
+
+% 1 1 0 03c7eed74cd21ceb09a926f3fad71be4
+
+@ 0 6 0 01baa2d654e329900b79a050f282e4d5
++ entry .inputStream   作为 `java.io.InputStream` 的字节流，用于交给 JDK API
++     有两种形式。
++     在 `(Stream[Data] over Credit)^` 上（需要一个 `Buffering`），结果每次以一个块的额度穿过窗口拉取，从不物化数据块；`close` 关闭端点，到达末尾时也会关闭。
++     在 `Chain[Data]` 上，结果遍历链的各个数据块；其 `close` 什么也不做。
++     二者都是通向坚持要求 `InputStream` 的 Java 库的桥接。
+
+% 2 1 0 1d74074c0d1714190d87fd43585a5a8c
+
+% 3 1 0 1cf76ece37b65718031b103202f3ed98
+
+% 1 1 0 07fd1d94da2b06e9020a2c4b7347edbd
+
+% 0 1 0 149c7436bdaf7d790162cce5475d9e59
+
+% 0 1 0 0f12841e3679d5ee14eee2a666ac139a
+
+% 1 1 0 0c458a1949c89ab40dd006e27beb865d
+
+@ 0 5 0 126be63890c39dde04fa3a3d4b0957f8
++ entry .httpBody   作为 `HttpStreams.Body`（HTTP 正文交换协议）的字节流
++     作用于 `(Stream[Data] over Credit)^`（被消耗）的扩展方法：正文的每次 `next(limit)` 以 `limit` 额度重新填充流并物化所交付的区域，流结束后返回 `null`。
++     它是正文上 `stream` 扩展方法的逆操作。
++     不导出到总括包：以 `turbulence.httpBody` 访问它。
+
+@ 0 6 0 11c108bca79ca00210ef00ed29c25c11
++ entry .stream   作为拉取端点的 `HttpStreams.Body`，每次按块大小请求一个数据块
++     作用于 `HttpStreams.Body` 的扩展方法，需要一个 `Buffering`：每次重新填充向正文请求至多 `buffering.capacity(Substrate.Bytes)` 字节（若被授予的额度更小，则为该额度），并将该数据块作为窗口暴露；正文返回 `null` 时流结束。
++     `Streamable.httpBody` 使用的正是它；它不导出到总括包，因为在那里 zephyrine 的 `stream` 构造器占用了这个名称：以 `turbulence.stream` 访问它。
+
+@ 0 1 0 15b509295b13337a0ee2d911b28be366
++ entry .more   `flow` 块中链的其余部分
+
+% 1 1 0 0d5b5701d69de45b1354d6b44900418d
+
+@ 0 3 0 13ee02761216d6ce1a3175cb5a00f1d0
++       `more` 是 `flow` 在 `next` 旁边绑定的、标注为 `"more"` 的上下文 `Chain`：仍待消费的尾部。
++       它是一个解析该标注值的内联访问器，因此在 `stream.flow(end)(... more ...)` 中，它读起来就像一个普通名称。
+
+% 0 1 0 0da1c91accc079ed13ffa000e094b980
+
+@ 0 1 0 097509716ff4f8a40ce97a295afcc899
++ entry .flow   对链做一步分支拆分：一个终止值，或一个基于 `next` 和 `more` 的块
+
+% 1 1 0 0f92567f3752b90d1ed913bdbf36db45
+
+@ 0 5 0 167be176ac33908515d124d2830df624
++       `chain.flow(termination)(proceed)` 在链非空时以绑定为上下文值的 `next`（头部）和 `more`（尾部）求值 `proceed`，否则求值 `termination`。
++       它是以组合子形式表达的模式 `case next #:: more => … case _ => …`，`condense`、`drop` 和 `take` 都用它编写。
++       在捕获检查下，这些标注绑定在某些位置可能需要写成 `next.asInstanceOf[element]`。
+
+% 2 1 0 0d5476b036e370550f50e50a04cd4dce
+
+% 3 1 0 06e8ee2baab3bac11d3bf907b3bb1f0a
+
+% 0 1 0 1222b5a0381fe28001c12d711da42b0b
+
+% 1 1 0 172c172c65ecb2d30818628cb66650ff
+
+% 0 1 0 100612282b3b25830e21e038ac4e4b01
+
+@ 0 4 0 173bd630a5d567191f62459e40c1bfa1
++ entry .condense   将链中每段连续相等的元素惰性地合并为一个
++     `Chain(1, 1, 2, 2, 2, 1).condense` 是 `Chain(1, 2, 1)`：只合并相邻的重复项，这与按键对整个集合去重的 `deduplicate` 不同。
++     链保持惰性。
+
+@ 0 3 0 06f2bcec624883bd066ef4fe2362d434
++ entry .strict   将惰性链强制求值到末尾并返回它
++     对链的每个元素求值（通过获取其大小），并返回同一个链，此时它已被完全 memoize，因此其生成过程中的任何副作用都已发生。
+
+@ 0 4 0 0cb416346b5921d71b3895462083dcf2
++ entry .drop   从 `Chain[Data]` 的开头丢弃若干字节
++     `chain.drop(bytes)` 接受的是 `Bytes` 计数而非数据块计数：计数范围内的整个数据块被跳过，跨越边界的数据块被截断，因此结果是相同的字节，在边界处重新分块。
++     惰性。
+
+@ 0 4 0 19b867a95644ec44162f9323a54223a0
++ entry .take   保留 `Chain[Data]` 开头的若干字节
++     `chain.take(bytes)` 接受 `Bytes` 计数：计数范围内的数据块完整保留，跨越边界的那个被截断，因此结果恰好包含 `bytes` 个字节（如果链更短则更少）。
++     惰性。
+
+@ 0 4 0 1bf5695790f5ca7e0053ced705cbae11
++ entry .shred   将 `Chain[Data]` 重新分块为若干缓冲区，每个缓冲区的大小重新抽取
++     `chain.shred(chunkSize)` 为每个输出数据块对传名参数 `chunkSize` 求值一次（至少为 1），因此调用者可以传入一个常量来统一地重新分块流，或者对某个分布采样，产生解析器必须经受住的各种分片方式：
+
+% 2 1 0 0cf15bcd2e74703c0bce5844047de82d
+
+% 3 1 0 1c384959a300293305f3a58b19312415
+
+% 0 1 0 19246b7300d6d8c11978752363ffb329
+
+% 0 1 0 0f89d94dc37ab05d02c8a66d28202c08
+
+% 0 1 0 004a255013a30eb807f699c49ea4150e
+
+% 0 1 0 0c1f066db95845c3104de8e162cc44d4
+
+% 0 1 0 1ea88ec678a6dba91d40d5828a22b6e8
+
+% 0 1 0 03edf4f21db6af5318fd95b386b278cf
+
+% 1 1 0 1f9752d45c2da56d0fee84cde9af10db
+
+@ 0 1 0 0b9d8d40e053a1f917ac5d7c1160b2c3
++     字节被复制到新的缓冲区中，因此输出绝不会与输入的数据块形成别名。
+
+@ 0 1 0 1320e3dac50de1661c8cc750c1a01511
++ entry .Relay   从任意数量的生产者线程到单个读取者的记录总线
+
+% 1 1 0 0e526b7b6c42b667019c2d1fc5a6be76
+
+@ 0 8 0 14bcdca291c0d15217cfbf3cd5f92477
++       `Relay[record]` 是面向记录粒度流量——事件、通知、消息——的推送侧桥梁：生产者在记录产生时用 `#put` 放入，其中某个生产者最终调用 `#stop`，单个读取者通过 `#stream`、`#chain` 或 `#batches` 将它们取出。
++       生产者从不阻塞，这是约定而非疏忽：relay 是将众多写入者扇入同一个出口的总线（HTTP/2 的出站帧多路复用器依赖它，日志缓冲池也是如此），在这里阻塞的 `put` 可能导致流之间的死锁，因此它的队列是无界的，其规程在于只有单个消费者。
++       在两个线程之间传递字节或字符流量的有界交接是 zephyrine 的 `Conduit`。
+
+% 2 1 0 0ce5e340ca3b8b0414c3f2c13b8da2fe
+
+% 3 1 0 1be050ca7c1ae4850b4bd04dc42e2198
+
+% 2 1 0 10634800aff5b616088021456ce6c52a
+
+% 0 1 0 18f65bb446c682f80545bc84f054b310
+
+% 0 1 0 09f2b1afe9ea76ba1313c4beb37fe271
+
+% 1 1 0 117082b30ba6af300c109784409e351f
+
+% 0 1 0 019a90d34fb9db980eec4a9a6345efec
+
+% 1 1 0 1db8d706bc60330111597bc8a02d5407
+
+@ 0 4 0 19f51489636f86d80ff4381770237f06
++       读取者为第一条记录阻塞，然后把同一窗口中已经到达的其他记录一并取走，因此记录跨越线程边界时成批传递，而不是每条记录都花费一次交接。
++       在 `stop` 之后放入的记录永远不会被递送。
++       每个生产者的顺序得以保持。
+
+% 0 1 0 12a76d6a7907e4380e82d2e86203790c
+
+% 1 1 0 0799e61422fbee891b2e096c7cb52431
+
+@ 0 21 0 15f596ac2746ebfb13f219e3a5b6549d
++   entry #put   添加一条记录；从不阻塞
++   entry #stop   结束 relay：在它之前放入的每条记录都被取出后，读取者会看到结束
++   entry #stream   记录上的拉取端点，作为记录流：单一所有者，只创建一次
++       `(Stream[Array[record]^{}] over Credit)^`，需要记录数组的 `Addressable`（通用的装箱实例适用于任何引用类型）和一个 `Buffering`。
++       一次重新填充为第一条记录阻塞，然后将已排队的每条记录取入同一窗口，直至其容量；取出过程中遇到的停止仍会递送这一批，下一次重新填充则结束流。
++       用 `records` 将其取完。
++   entry #chain   以惰性 `Chain` 表示的记录，每条记录一个 cons 单元
++       不需要 `Addressable`，因此适用于任何记录类型，包括抽象类型，代价是每条记录一个单元：适合日志或消息总线这类低速率递送。
++       与 `#stream` 一样，惰性且单一所有者。
++   entry #batches   按静默期合并成批的记录
++       `relay.batches(quiet)` 接受任何可抽象为毫秒的时长（配合 `abstractables.millisecondsAbstractable` 的 `Long`，或 aviation 的时长），返回惰性的 `Chain[List[record]]`。
++       读取者为第一条记录阻塞；之后每有新记录到达，就重新启动一个时长为 `quiet` 的计时器；计时器到期而没有新记录时，迄今收集到的记录构成一批，最早的在前，读取者随即再次阻塞。
++       这正是重新构建或重新哈希所需要的“发生变化，然后一段时间内再无动静”的形态。
++       在一阵突发中途遇到的停止仍会递送不完整的那一批，`quiet` 为零时则退化为取出已到达的全部记录。
+
+% 2 1 0 0ec771c94c6284191dde6802c2536c3c
+
+% 3 1 0 18b0be0ea4af73c51d8f9e75f2aa7eb1
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 2 1 0 0a5fb6c0d3d5ee171231f5eb0c5ce94f
+
+% 0 1 0 137f24922aa5a4e20e7b91eaf8c8934b
+
+% 0 1 0 0a346810a34732bd0de48aec80d6c5c4
+
+% 1 1 0 0e15199a4f8941f109d33f082e25f4eb
+
+% 0 1 0 089d83e071c3458f1c722eceb72d74dc
+
+% 1 1 0 1b3ef958364235151f705032bb2c95cd
+
+@ 0 1 0 12b6cfe0206592ee1292847790f6e97d
++ entry .StreamOutputStream   写入内容会变成惰性 `Chain[Data]` 的 `java.io.OutputStream`
+
+% 1 1 0 0b79f03870accffb0f4c602c68974981
+
+@ 0 6 0 071825eee268b4ee1a7fdd38fb430c00
++       用于只能写入 `OutputStream` 的 Java API：将一个 `StreamOutputStream` 交给它，然后从 `#stream` 读取它写入的内容，这是一个经由 `Relay` 供给的 `Chain[Data]`。
++       单字节写入会被缓冲，在 `flush` 时作为一个数据块释放；数组写入会被复制——JDK 允许调用者在 `write` 返回后复用其数组，而数据块是稍后才读取的——并作为一个数据块转发；`close` 会刷新并结束该链。
++       另一个线程上 `stream` 的读取者会阻塞，直到下一个数据块到来或流被关闭。
+
+% 2 1 0 0ff49bcf92b9f8971243d12678f0b092
+
+% 3 1 0 1744cd58f6ea49271c0372c802440f6b
+
+% 4 1 0 0c14667582fa1509093fdd7db692393d
+
+% 0 1 0 1f1d03ae718edf9b056933833c0a6566
+
+% 0 1 0 18d75c13aa955f80139d6f32f695f4a8
+
+% 0 1 0 099d0abc78de373d1e4cd3deba9e63a2
+
+% 0 1 0 07fe9d06e56e27ab08fa7facbdb03af3
+
+% 1 1 0 186c1727f56a812506675f98a20aa9bf
+
+% 1 1 0 13ad827fdbb646df1120dffe98f4bb34
+
+@ 0 2 0 05e64894dea5e3710754aa4508c20ab2
++   entry #stream   迄今已写入及将要写入的字节，以惰性 `Chain[Data]` 表示
++   entry #write   写入一个字节（缓冲至 `flush`），或写入一个数组，复制后作为一个数据块转发
+
+@ 0 1 0 023cb40c604f05f60d726080cff7a553
++ entry .Truncation   重新导出的 `zephyrine.Truncation`：流被过早截断时抛出的错误
+
+% 1 1 0 0e06e62933e7695901d5dad0f7fca636
+
+@ 0 6 0 0fa46341a1f099c7120013fe4bd0f9f1
++       `Truncation.Error(total)` 是错误 `↯/s.60.1`，即 _the stream was cut prematurely after `total`_，其中 `total` 是截断前已递送的 `Bytes`。
++       `Spring` 的拉取以及针对 JDK 源的 `Streamable` given 通过 `Tactic` 以它中止；针对 JDK 目标的 `Writable` 和 `Sink` given 则通过 `Emit` 来 `raise` 它，因为写入者只报告截断，从不中止。
++       该类型位于 zephyrine 中，与 `Stream` 和 `Spring` 并列；这个导出使得对用到它的模块来说，`import turbulence.*` 仍然足够。
+
+% 1 1 0 104339e33f9ed72b07b56eba6c0c0e20
+
+@ 0 1 0 0f8e96e9eeba7cba01aeff690736ed93
++ entry .Stdio   作为值的标准流：`out`、`err`、`in` 以及终端的能力
+
+% 1 1 0 1b3905fcaa24dc95199f51081cffcbf0
+
+@ 0 10 0 0a7b23ee3790852a1a86395e47b610b3
++       `Stdio` 以 JDK 的 `PrintStream` 和 `InputStream` 保存三个标准流，并附带一个 `Termcap`，描述另一端的终端能够渲染什么。
++       它是一个上下文值而非全局量：`Out`、`Err` 和 `In` 通过作用域中的 `Stdio` 写入和读取，因此服务多个客户端的守护进程、捕获输出的测试，或以管道启动的进程，各自得到属于自己的流。
++       可以从 `stdios` 包中按名称选择一个（`javaLangSystemStdio` 使用 JVM 自己的流，`fileDescriptorStdio` 使用进程的描述符，`muteStdio` 不使用任何流，`wasiStdio` 用于 WASI），用 `.apply` 构建，或由 `Stdio.Provider`（例如 CLI 调用）提供，只要该调用处于环境中，`.provided` 就会将其转换为 `Stdio`。
+
+% 2 1 0 0b6160f77ab3ddf119d4a0764e4aeecf
+
+% 3 1 0 06537125b0a4adf41b70e66d1ea5c899
+
+% 4 1 0 1ba64169cc090ee910a00e840aa760f9
+
+% 5 1 0 02039c62e1adc00810ee8ddd2737cbf1
+
+% 6 1 0 1087308b5126d95703b117f3ed919191
+
+% 7 1 0 07551fa382ab772408ce36a3cf8fb83a
+
+% 0 1 0 0f844e860392ee0a10480eddf6aa511e
+
+% 1 1 0 03d8f653d9ecbf5315f1c4010a7dea1b
+
+% 0 1 0 0ad076b58d606fe5103900c84edb2aff
+
+% 1 1 0 1a56d3233dcfa4e809786af30de8f410
+
+@ 0 4 0 1f421a3f7d75a6c20c1a77e1fc9bb070
++       `Stdio` 是一个普通值，而非能力特质：它作为接口混入 `Invocation` 这样的独占类型，而由 JVM 的线程安全流构建的 `Stdio` 不捕获任何东西。
++       保留了终端或某个流的 `Stdio` 会以 `Stdio^{…}` 的形式表明这一点。
+
+@ 0 4 0 0c5007b4686e08d4112cbe510ce0e732
++       无法修改的代码——例如向 `System.out` 打印的 Java 库——用 `.divert` 重定向，它转移的是调用*线程*及其下派生的任务的输出，而非整个 JVM 的输出，因此宿主可以同时为多个客体转移输出，而它们的输出不会交叉；`.capture` 与之相同，只是输出被收集为文本。
+
+% 1 1 0 19dae7eeb3ad01071b9870ee26e4c656
+
+% 1 1 0 11e6ca5da7c27cce1287a78021f6a97e
+
+% 0 1 0 13837adc062361b41942533592a686b8
+
+% 0 1 0 1fa4f92b3b585be01bb2be74b6ee2beb
+
+@ 0 1 0 1d864244f77693bd18df7cf434be1497
++   entry .Provider   带有规范 `Stdio` 的东西：一次 CLI 调用
+
+% 1 1 0 0a61fe785dccdfb91a8a83d393960baf
+
+@ 0 15 0 0c62d9a9b2b8a7e207c3d597436336e6
++         一个只有一个成员 `#stdio` 的特质。
++         `Stdio.provided` given 使得只要作用域中有 `Provider^`，就能召唤一个纯的 `Stdio`，这就是 CLI 的 `execute` 块中的 `Out.println` 无需指名就能找到调用的流的方式。
++     entry #stdio   提供者的标准流
++   entry .provided   作用域中任意 `Stdio.Provider` 的 `Stdio`
++       位于被查找类型的伴生对象中的条件 given，因此无需导入：作用域中的 `Provider^`（例如调用这样的被追踪能力）产生其 `stdio`，这是一个纯值。
++   entry .apply   由 JDK 流和一个 `Termcap` 构建 `Stdio`，任何为 `null` 的流都被静音
++       `Stdio(out, err, in, termcap)`：为 `null` 的输出流变为 `.MutePrintStream`，为 `null` 的输入流变为 `.MuteInputStream`，后者报告输入结束。
++   entry .MuteOutputStream   丢弃所有写入的 `OutputStream`
++   entry .MutePrintStream   基于 `.MuteOutputStream` 的 `PrintStream`：为 `null` 的 `out` 或 `err` 所变成的东西
++   entry .MuteInputStream   处于输入结束状态的 `InputStream`：`read()` 为 `-1`，没有任何可用内容
++   entry .Capture   块在 JVM 的流被捕获期间经由它们打印的内容，与块的结果并列
+
+% 1 1 0 149a8efc6aa771a31a602ee4d47cecb1
+
+@ 0 21 0 182a566f6cfa914c093c52ccf2a5a993
++         `Stdio.capture` 返回 `Capture(result, out, err)`：块的值，以及在此期间到达 `System.out` 和 `System.err` 的内容，按 UTF-8 解码，这是捕获流写入时使用的编码。
++     entry #result   块的值
++     entry #out   写入标准输出的内容，以文本表示
++     entry #err   写入标准错误的内容，以文本表示
++   entry .diverted   本线程的 `System` 写入被转移到的 `Stdio`，或 `Unset`
++       任务携带到其运行线程上的东西。
++       在没有生效转移的线程上为 `Unset`。
++   entry .divert   运行一个块，期间将本线程的 `System.out` 和 `System.err` 重定向到某个 `Stdio`
++       `Stdio.divert(stdio)(block)` 转移的是调用线程的输出，而非整个 JVM 的输出。
++       第一次调用会在 `System.out` 和 `System.err` 上各安装一个分发器，并在 JVM 的整个生命周期内保留（因此此后 `System.out` 是另一个对象），每次写入都经由它到达写入线程被转移到的流，若该线程没有被转移则到达原来的流。
++       在转移状态下启动的线程会继承该转移，parasite 任务在派生它的线程的转移下运行，因此转移遵循并发的结构，而不取决于任务碰巧落在哪个线程上。
++       退出时，客体的流会被刷新，之前的转移会在 `finally` 中恢复。
++       Scala 自己的 `println` 本来就是线程局部的；这里覆盖的是 Java 的打印以及其他任何写入 `System` 流的东西。
++       经由 `stdios.fileDescriptorStdio` 的输出不会到达任何转移，因为它直接指向进程的描述符。
+
+% 2 1 0 0b7ee0344941104e0684322b90782374
+
+% 3 1 0 067cd4bc31d0afef0cdb5097a54a3266
+
+% 1 1 0 0f4558e8a1d63db71d43843129bec38d
+
+% 0 1 0 1e2caf2c684e159c0794e7390d09691d
+
+% 0 1 0 0700570219e9d54f0544e1cd21b28685
+
+% 0 1 0 01c4b3b9a8b04e5a02d5df112bff14ad
+
+% 0 1 0 0d771ad32e50793502581e19fc866dae
+
+% 0 1 0 16c0c3970bd4cf2d080d2cbcf4709b2d
+
+% 1 1 0 04f082cb0cef88031033f0fc302d9cdd
+
+@ 0 5 0 1cb2649e214a0f990b49ede59a6484be
++   entry .capture   运行一个块，将其 `System.out` 和 `System.err` 输出收集为文本
++       `Stdio.capture(block)` 就是向一对内存中的 UTF-8 流执行 `.divert`，返回由块的结果和两段文本组成的 `Capture`。
++       在 `stdios.javaLangSystemStdio` 下经由 `Out` 的输出也会被捕获，因为该 `Stdio` 包装的是 JVM 的流；不同任务上的两个并发捕获会将各自的输出分开。
+
+% 2 1 0 1e56a48c1525b1351bcde2673725c936
+
+% 3 1 0 029fb7d37463021f00c0346e1eb78355
+
+% 0 1 0 190a4aa30004480810838d01403216c8
+
+% 0 1 0 0c6036ab66d92fdd1fc498951d79872b
+
+% 0 1 0 1af7bc25bca0ac121831019946cb00f9
+
+% 0 1 0 143a335e0bda2536119a3ffee6832fc0
+
+% 1 1 0 1721227818a6deb9070f03b751fe461c
+
+@ 0 16 0 17c6f8780359369d1c0e34f8a32f229e
++   entry #termcap   另一端的终端能够渲染什么
++   entry #out   标准输出，以 `PrintStream` 表示
++   entry #err   标准错误，以 `PrintStream` 表示
++   entry #in   标准输入，以 `InputStream` 表示
++   entry #ready   是否可以不阻塞地从 `in` 读取一个字符
++       查询 `in` 之上共享的字符读取器，因此已缓冲在其解码器中的字符也计算在内，而对原始流做 `available()` 检查会漏掉这些字符。
++   entry #readChar   从共享读取器读取一个字符，输入结束时为 `-1`
++       `#ready` 的配套方法，供终端这类逐字符消费者使用。
++       该读取器与 `read(array: Array[Char])` 重载共享。
++   entry #write   将字节写入标准输出
++   entry #print   将文本写入标准输出，如同 `out.print`
++   entry #writeErr   将字节写入标准错误
++   entry #printErr   将文本写入标准错误
++   entry #read   从 `in` 填充字节数组，或从共享读取器填充字符数组，返回读取的数量
++   entry #platform   这些流是否就是 JVM 自己的 `System.out`、`System.in` 和 `System.err`
+
+@ 0 1 0 08129e01c5db59c00555e11e3d7c3a9e
++ entry .Out   标准输出，经由作用域中的 `Stdio`
+
+% 1 1 0 04183e08046e63961fb08b7dfaff8a35
+
+@ 0 6 0 0add9d535514cfcb197ba28a07fe23d2
++       `Out.print` 和 `Out.println` 在 `Stdio` 的 `Termcap` 下渲染任何 `Printable` 值——`Text`、带样式的 `Teletype`、任何具有 `Printable` 实例的东西——因此颜色和样式只在终端能够显示时才输出，并将结果写入 `Stdio` 的 `out`。
++       参数是 `Termcap ?=> textual`，因此需要 termcap 才能渲染的表达式可以直接传入。
++       `println` 接受任意数量的行，并在锁的保护下写入，因此并发写入者的行不会交错。
+
+% 2 1 0 11b50006d7de61ad15964470fe56ca0a
+
+% 3 1 0 0b0c306f3390b7a10e91f2b87360201b
+
+% 4 1 0 1423727b675871b01db94afeb05a8a9d
+
+% 5 1 0 1c2229248e2aaf1d0eefbbbaa474edbe
+
+% 6 1 0 0f2174996040d0db043e395c00e48177
+
+% 7 1 0 03e846b1fe27f18700f07c0586199b16
+
+% 0 1 0 0852d096f53163cc1bc6f23db5e8520c
+
+% 0 1 0 0e198154127edf730c5c0b4afd14f8ac
+
+% 0 1 0 1eb36fb45b7495fb0d48cb3c250e4009
+
+% 0 1 0 04b1d4d9f6725a501ed0921217ca53a1
+
+% 1 1 0 1a8f5c21a94f6ea2101da3315b76cf6c
+
+@ 0 2 0 1d8dd288a308fd1b0504001b90865460
++       在守护进程或 CLI 中，`Stdio` 属于客户端，因此这是唯一能到达用户的输出；Scala 的 `println` 写入的是守护进程自己的 `System.out`。
+
+% 1 1 0 07821f32f1a572bb1535f7ac10ea7803
+
+% 1 1 0 1e19837f4b631b5712debcedb513f2cf
+
+@ 0 5 0 0a1695936c3577f115bddcf7ae71f4a5
++   entry .write   将字节写入标准输出
++   entry .print   在终端的 `Termcap` 下渲染一个 `Printable` 值并写入，不换行
++   entry .println   渲染并写入每一行，每行后加换行符；不带参数时只写一个换行符
++       多行形式需要一个普通的 `Stdio`（而非带捕获的），并在整个调用期间持有一个互斥锁。
+
+@ 0 1 0 141246c7e80897650dd6e3556214b3c1
++ entry .Err   标准错误，经由作用域中的 `Stdio`
+
+% 1 1 0 1176767d9b10a2a11b7e8bf38dad76e0
+
+@ 0 3 0 1955f9926cdd8bbf1a041a6affb3ab60
++       `Out` 在 `Stdio` 的 `err` 流上的孪生对应物：`Err.print` 和 `Err.println` 在终端的 `Termcap` 下渲染 `Printable` 值并写入，`Err.write` 写入字节。
++       带多行的 `println` 在锁的保护下写入它们。
+
+% 2 1 0 11ae5313305a17511db21a953609dde2
+
+% 3 1 0 1048f4910b7233890cc877c21576feeb
+
+% 4 1 0 0e83c9cc6778f4390f79730ac3772492
+
+% 5 1 0 0a6e9f6b2c4e0cfd0aac3d036ae21786
+
+% 6 1 0 1cf4e13bd0e904370a3a3173b60b333e
+
+% 7 1 0 15f7e672f74a5af8178aca0f14135ea8
+
+% 1 1 0 17a72aef9a1495200a5f9a771ce51292
+
+% 1 1 0 162792f6f5ed1ba3088b85364b83cd63
+
+% 2 1 0 0472c0a44845073b17f6fbd96d6cf8fa
+
+% 1 1 0 0dec6609929bc05e064515870ff34559
+
+@ 0 3 0 027d6bb5feb67ec311f2ba5ecfcda0d6
++   entry .write   将字节写入标准错误
++   entry .print   在终端的 `Termcap` 下渲染一个 `Printable` 值并写入标准错误
++   entry .println   将每一行写入标准错误，每行后加换行符；不带参数时只写一个换行符
+
+@ 0 1 0 1c5582740d50c8ff1c4a9fd71b0f2a62
++ entry .In   标准输入，经由作用域中的 `Stdio`
+
+% 1 1 0 0e4bac97f78cd3ca1a32395a70b73b6c
+
+@ 0 4 0 183b5e9293b3b28b1f49d4b4352681b8
++       `In.read(array)` 从 `Stdio` 的 `in` 填充字节数组并返回读取的数量（输入结束时为 `-1`），`In.close()` 将其关闭。
++       字符级读取经由 `Stdio#readChar` 和 `Stdio#ready`；整行读取则经由 `summon[Stdio].in` 之上的读取器。
+
+% 2 1 0 124aa533bb9a225005c9bd6a8478a28c
+
+% 3 1 0 137b9d5e7e21a64519ae34723b9a09ab
+
+% 4 1 0 0e5e35f2c3420c9e11f3ea67f69ed456
+
+% 5 1 0 08b3a510dc8050aa092fa144464da9fb
+
+% 6 1 0 1096a0b293bebc42106a1c48b87e83fd
+
+% 7 1 0 1278f0a3cb957ae916a3e81b76c8a76f
+
+% 0 1 0 01c30195cea143130e31760c48084200
+
+% 0 1 0 1df71477105dd183011ccba58ef7909b
+
+% 1 1 0 030dd99aaf4fb9661dba792f76e376b1
+
+% 2 1 0 12804fa7ec5e9776147d9a688b557392
+
+@ 0 2 0 1b72b2f2117ec2b71370169ad2e5354c
++   entry .read   从标准输入填充字节数组，返回读取的数量，结束时为 `-1`
++   entry .close   关闭标准输入
+
+@ 0 1 0 1bd10323dae338501bc2495e4a566b45
++ entry .stdios   标准流配置，每个都是按名称导入的 given
+
+% 1 1 0 1ef7ce3ae108f1f81bda692da56f172e
+
+@ 0 4 0 1274ae3dd74cd28c0ee00ca65b76e946
++       `Out`、`Err` 和 `In` 使用哪些流由作用域中的 `Stdio` given 决定，这一选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，需要按名称导入一个。
++       除 `muteStdio` 以外，都还需要作用域中有一个从 `termcapDefinitions` 中选择的 `Termcap`。
+
+% 2 1 0 1c763eb1b190d2e2075afc950f5e3816
+
+% 3 1 0 04a8321907599f5218684bd4a7a74cae
+
+% 2 1 0 1bfe715d1b5db6d210f42806eab46148
+
+% 3 1 0 19d2db6ff55e87680d69529f1d3875f2
+
+% 2 1 0 0afc704d8ec3a6d815cbaa56930cb4b8
+
+@ 0 2 0 187b9d7ead8a880003dafb71c65c68dc
++       CLI 或守护进程的调用通过 `Stdio.Provider` 提供自己的 `Stdio`，因此 `execute` 块不导入其中任何一个。
+
+% 1 1 0 0653f6e308da80fb116d08bb07ddb64d
+
+@ 0 19 0 1347f1b159f629641c0e688d74b5666e
++   entry .muteStdio   丢弃所有输出且处于输入结束状态的 `Stdio`，使用基本的 `Termcap`
++       用于测试，或不得打印的程序：`out` 和 `err` 是 `Stdio.MutePrintStream`，`in` 是 `Stdio.MuteInputStream`。
++       不需要 `Termcap`。
++   entry .javaLangSystemStdio   JVM 的 `System.out`、`System.err` 和 `System.in`，使用作用域中的 `Termcap`
++       经由它写入的输出受 `Stdio.divert` 和 `Stdio.capture` 影响，因为二者重定向的是 JVM 的流。
++   entry .fileDescriptorStdio   进程自己的文件描述符 0、1 和 2，使用作用域中的 `Termcap`
++       基于 `FileDescriptor.out`、`err` 和 `in` 新建的 `PrintStream` 和 `FileInputStream`：即操作系统交给进程时的流，绕过 JVM 或宿主安装在 `System.out` 中的任何东西。
++       经由它写入的任何内容都不会到达 `Stdio.divert`。
++   entry .wasiStdio   基于 WASI CLI 流资源的 `Stdio`，用于 Wasm 组件
++       位于 `turbulence.wasi` 中，使用作用域中的 `Termcap`。
++       每次写入都获取 `stdout` 或 `stderr` 流句柄，调用其 `blocking-write-and-flush`，然后释放该句柄；读取则获取 `stdin` 并调用 `blocking-read`，阻塞直到有字节可用，已关闭的流被视为输入结束。
++       `print` 和 `printErr` 直接发送文本的 UTF-8 字节，而不经由 `PrintStream`。
++       该 given 是 `inline` 的，因此 WASI 导入在召唤它的地方物化，那里也必须能看到 `wasiApis.wasiCliApi`；应在组件的入口点召唤它一次。
+
+@ 0 1 0 1e6d71d137b7670a0a6ed39fc1cf941e
++ entry .Confluence   将多个拉取端点按到达顺序合并为一个
+
+% 1 1 0 1c10c03d118d8a6716fdfaf07857b97a
+
+@ 0 9 0 0de74ea3b0b258c30290e1eefce2d493
++       `Confluence(sources*)` 实现扇入。
++       拉取式架构无法对阻塞的重新填充做 `select`，因此合并是多路复用的真实代价：每个输入一个泵任务，各自将传输大小的额度拉入一个共享的有界队列——队列满时泵会停驻，因此消费缓慢会对每个输入均匀地施加背压——再加上一个在队列为空时停驻的读取端点。
++       合并后的流在每个输入都结束时结束；某个输入的失败会在读取者下一次重新填充时重新抛出。
++       位于 `turbulence.async` 中：它需要介质的 `Addressable`、一个 `Buffering`，以及 parasite 的 `Monitor` 和 `Probate`，因此在 `supervise` 内运行。
++       泵是外围作用域的子任务，取消该作用域会释放停驻在一个无人读取的合并上的泵。
+
+% 2 1 0 0e2d7cd099ac047701306d542a2254cb
+
+% 3 1 0 1bb211803d02ea1815854fcc34681657
+
+% 4 1 0 0524f6cf757689001b5425975333ea44
+
+% 5 1 0 0dc06248ebe7108813a95ebd0aa1f4c1
+
+% 7 1 0 0da924f9252e04e81eabb8e31d9b0937
+
+% 0 1 0 038ead6baeaa1a870f0b385c7e30bb99
+
+% 1 1 0 13b365b197bc544617970ce22382e59a
+
+@ 0 3 0 0c0c5f74a33440071a2efb8a0038aa3d
++       区域稳定的源（固定的内存缓冲区）按引用共享；暂态的源则在其窗口被复用之前逐块做快照，块大小为 `buffering.transfer(substrate)`。
+
+% 0 1 0 1b550c17d8e0025819e49af419d8fc09
+
+% 1 1 0 1d1a0fb2bc8c35ca1216c3965fde3672
+
+% 1 1 0 0d946af77a44e70714c1c41c82a4e3b3
+
+@ 0 1 0 0c53ef06dc1633850aa75c857515c97e
++   entry .apply   由任意数量的 `(Stream[medium] over Credit)^` 源合并而成的流
+
+@ 0 1 0 16b8f925ff78d9ec1c964f94bcb61254
++ entry .Divergence   将一个拉取端点递送给多个订阅者，每个数据块共享
+
+% 1 1 0 19c7e6908df5192104cfcb72e04cbb14
+
+@ 0 10 0 009dad804b229d7917c64e20639fd9f3
++       `Divergence(source, count)` 实现扇出：一个泵任务拉取源，并通过每个订阅者各一个的有界环形缓冲区，将每个数据块递送给 `count` 个订阅者端点中的每一个。
++       数据块只物化一次，并在订阅者之间以只读方式共享；环形缓冲区满时泵会停驻，因此最慢的订阅者控制着源的速度，这正是复制所需的背压。
++       关闭其流的订阅者会关闭它的环形缓冲区，释放泵并丢弃之后的递送，因此被放弃的慢订阅者不会卡住其他订阅者。
++       源的失败会在每个订阅者下一次重新填充时重新抛出。
++       位于 `turbulence.async` 中：需要介质的 `Addressable`、一个 `Buffering`，以及 parasite 的 `Monitor` 和 `Probate`，因此在 `supervise` 内运行；源会被消耗。
+
+% 2 1 0 1c30c0f75c5284ed0785b39124539a0a
+
+% 3 1 0 0bc5bdeda25d920a05d487f8bdf120cf
+
+% 4 1 0 0e969597d3f2c99b08ec69265c35ac4f
+
+% 5 1 0 1c50bda50b883d6c0a573bab58cb086d
+
+% 7 1 0 1b63d485e6bd91c017ee94ac4ec58f42
+
+% 0 1 0 1ceb4fae5463ee310f076a7a28c95a96
+
+% 0 1 0 1ef7e0e7081eef6418b60e40d7379629
+
+% 1 1 0 1a46c52681100f4219c097796ca7dbfc
+
+@ 0 2 0 1f3b8452fa04081810fa4d1e21bc65d7
++       结果是由 `count` 个流组成的 `IndexedSeq`，每个都是由一个消费者取用的独占端点；可以在不同任务上读取它们，也可以依次读取。
+
+% 1 1 0 08475d179b343d1207632c05219e36e7
+
+@ 0 1 0 1195bf27b92fc7701616def58a788545
++   entry .apply   基于一个被消耗的源的 `count` 个订阅者流
+
+@ 0 1 0 03803e4d64bb128500642ebd6c7efbff
++ entry .convey   在独立任务上将流泵入入口
+
+% 1 1 0 10bd7b70bc1a3c020993f7772309e960
+
+@ 0 6 0 077804cf2c63006b155bdf92682a0e3c
++       `turbulence.async` 中针对被消耗的 `(Stream[medium] over transport)^` 的扩展方法：`stream.convey(intake)` 就是在 parasite 任务上运行的 `stream.pump(intake)`，返回 `Task[Unit]`，用于发后即忘的传输，以及带有异步边界的流水线，在那里它就是唯一的泵线程。
++       两个端点都移交给该任务；调用者不保留任何一个。
++       需要一个 `Monitor` 和一个 `Probate`，因此在 `supervise` 内运行，取消该作用域会释放阻塞在空管道上的泵。
+
+% 2 1 0 1d832bdb2a3d35ca0d2c6eedd057c370
+
+% 3 1 0 007530bc495239a31c964fe74c68182a
+
+% 4 1 0 114fb26afb6fe9a9015bb6fbc0f94709
+
+% 5 1 0 102c62ea9604946717612a440c443a55
+
+% 1 1 0 1edb3d85dcd743a4093f72f55998078e
+
+% 2 1 0 1a85a57fbeeb07860ed416a422b9f47d
+
+% 0 1 0 095efa93c0f40189093dce1638e64b8a
+
+% 0 1 0 1d0c89b844b43d7f03646645ad7c7288
+
+% 0 1 0 0f55794fa149e31d1361d214eba44fe1
+
+% 1 1 0 0a8aaaaf37e710490f5b644f67aa2df6
+
+% 1 1 0 06b307ab49eaaf3d05304ff1f584122c
+
+% 1 1 0 1f3e28cc5080e7de1d3ae75f679344ad
+
+@ 0 1 0 097138d3fa44932a067cc5ee5422c2af
++ entry .WasiCliApi   WASI CLI world 的 WIT 接口，作为类型：`Interface in Wit at "/turbulence/cli.wit"`
+
+% 1 1 0 16fab4d837a89a1b016c02cfca57f04c
+
+@ 0 4 0 1d206b4f57aadfbc127174d628888c76
++       位于 `turbulence.wasi` 中。
++       `stdios.wasiStdio` 的导航据以进行类型检查的类型，`call` 物化器也会查阅它，以处理 `get-stdout`、`get-stderr` 和 `get-stdin` 导入以及流资源的方法。
++       它的值是 `wasiApis.wasiCliApi`。
+
+% 0 1 0 06b7871e4947037d0a8b3296e33387b8
+
+@ 0 1 0 05a561f3d9f59bbe0e9c47c15922a713
++ entry .wasiApis   turbulence 所链接的 WASI 接口定义，每个都是按名称导入的 given
+
+% 1 1 0 0ef772b1a9705c8004fa00198a9809f6
+
+@ 0 2 0 0fec977afc2428a112fc77a9c5ef59af
++       位于 `turbulence.wasi` 中。
++       召唤 `stdios.wasiStdio` 的 Wasm 组件必须在该处能看到 `wasiCliApi`，因为流调用在那里展开。
+
+% 2 1 0 10a7a6b4c68d78f2005fa205735a1ac7
+
+% 3 1 0 1cf01f71a2ff9082110f4757849406e6
+
+% 0 1 0 0f0a2f3291a173dc0a6e362ba05a360c
+
+% 0 1 0 1bfc2bbbcd130cac0993a73354bdbf1a
+
+% 1 1 0 0573a05c8f1a6f5a1abbe374b8d44d48
+
+% 2 1 0 10e7ddd30bf6396a0e9437ea557e711d
+
+@ 0 4 0 101bcd7176c249290019f085b8866881
++   entry .wasiCliApi   从类路径资源 `/turbulence/cli.wit` 加载的 `WasiCliApi` 接口
++       `Interface[Wit](cp"/turbulence/cli.wit")`：该资源在编译时检查，其中的 WIT 定义了 `stdout`、`stderr` 和 `stdin` 导入及其 `output-stream` 和 `input-stream` 资源。

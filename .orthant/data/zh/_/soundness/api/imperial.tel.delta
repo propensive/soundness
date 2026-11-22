@@ -1,0 +1,274 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06471244edf78cfc0f4fd709c8b745df
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 051742139185ae9e0e44430e8c61ce66
++ info   Unix 系统和用户主目录下的标准目录，以类型化的嵌套名称表示
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1800e6b03e6be9b71612bef21e229b93
++     _Imperial_ 把 Unix 系统的约定目录命名为一棵嵌套对象树，因此标准位置写作一个值而不是文本，拼错的目录会成为编译错误。
++     `Home` 是用户主目录之下的树，`Base` 是文件系统根之下的树。
++     每个对象都以其所代表的目录命名，首字母大写，并去掉开头的 `.`——`$HOME/.local/bin` 是 `Home.Local.Bin`，`/var/lib` 是 `Base.Var.Lib`。
+
+@ 0 4 0 1725406e7f7675611de77542f05fff51
++     每个节点都是一个 `BaseLayout`。
++     以路径类型作为类型参数应用它，就会依据作用域中的 `Environment` 和 `System` 将其解析为该类型，因此同样的名称可以用于 `Path on Linux`、普通的 `Text`，或任何其他 `Instantiable across Paths from Text` 的表示：
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 02144ad0f83d1d2207050f0bcf5195f5
+
+% 0 1 0 166f81c9908c1cef09c4492c560ebf21
+
+% 0 1 0 10acb0208038e972123b36c3ca72b84d
+
+% 0 1 0 00dfe1bf7f1162631bf9653def00d90e
+
+% 0 1 0 1c5bbd0db4e6dcb91490fc2e200250af
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 090fa1d109709d5201e2d81beaa3328e
++     布局还说明了它是否打算被写入：对于 `/boot`、`/efi`、`/sys`、`/usr` 及其下的一切，以及 `/proc` 下的各进程目录，`readOnly` 为 `true`。
++     这些布局是固定路径：无论 `XDG_CONFIG_HOME` 怎么说，`Home.Config` 始终是 `$HOME/.config`；对于遵循 XDG 的位置，请使用 ambience 的 `Xdg` 值。
+
+@ 0 2 0 1dd151a2e0f6494a0bed8325899f19ae
++     该库只有一个源集 `imperial.core`，一切都导出到 `soundness` 总括包。
+
+% 0 1 0 0788cd3b9cec7daf0879d44e6e429e79
+
+% 0 1 0 079c6da2c0e561c513a1416d56d2ff7d
+
+% 0 1 0 0f97983af47232cc031cd624207a1de5
+
+@ 0 1 0 1ebf8a157598d46f10fe809a349daab7
++ entry .BaseLayout   标准布局中的一个目录，可依据环境解析为任何路径类型
+
+% 1 1 0 0a2b0b28fa6b52d7129a8f07dfcee1fb
+
+@ 0 5 0 1f5110a7bf33310d1b427f937c8c3670
++       `BaseLayout` 是 `Home` 或 `Base` 树中的一个节点：一个目录的名称、它所在的布局（以其外围对象的上下文 `BaseLayout.Dir` 携带），以及它是否为 `#readOnly`。
++       它的 `#Topic` 类型成员是一个元组，包含从该节点到其根的各级目录名，因此 `Base.Var.Log` 的主题是 `("log", "var")`，每个节点的类型都各不相同。
+
+@ 0 5 0 1c2201552cfd0e2d03052f52e164f36a
++       应用一个布局，即 `layout[Path on Linux]()`，会呈现其绝对路径，并据此构造所请求路径类型的值。
++       `Home` 下的布局读取 `HOME` 环境变量，若未设置则抛出 `Environment.Error`；`Base` 下的布局完全不需要环境变量，尽管两者的签名都要求作用域中有 `Environment` 和 `System`。
+
+% 2 1 0 0e9f2dfafbdfb83b1f26cc6d6f4dff16
+
+% 3 1 0 0a2b7d9186c5dbd6035220e6a791c5c2
+
+% 4 1 0 1729befde87e49c91110a0515daacc42
+
+% 5 1 0 0a77c24b69bee4ab0f85c62c249067d3
+
+% 6 1 0 0fedb600b8a75cbe1c19748e3ad91d51
+
+% 0 1 0 13e7ee669c90990e15bbb523ce360b24
+
+% 0 1 0 01ec940f6f210c711636b0dcccb40c84
+
+% 1 1 0 10684ea762657a6d033693920670fa2d
+
+@ 0 2 0 14830ccaa9a39c270c187ad2c25db0f8
++       嵌套在现有布局中的新布局，是其中一个继承 `BaseLayout` 的对象，它会把父布局的 `#dir` 作为自己的基础。
+
+% 1 1 0 11ddc3c55bdf22de0d8069b1a01dd2d2
+
+% 1 1 0 1beda2fb9cb9e37d03dc85a26a0f117e
+
+@ 0 1 0 0767669c9e2dcc04171f13e2add72628
++   entry .Dir   布局的位置：是否位于主目录之下，以及其路径段
+
+% 1 1 0 11c1f6e5c71166a9043041e2fcf0a3b7
+
+@ 0 22 0 0f44934da0740a4e00bed86c33736fb1
++         布局的 `BaseLayout.Dir` 作为上下文值传递给其嵌套布局，嵌套对象正是由此知道它所在的目录。
++         路径段按由内到外的顺序保存。
++     entry #home   路径是否相对于用户主目录
++     entry #path   路径的各段，由内到外
++     entry #/   某个子目录的目录，按其名称
++     entry #render   给定主目录的路径后，以文本形式表示的绝对路径
++         既不相对于主目录、又没有路径段的 `Dir` 呈现为 `/`。
++   entry #readOnly   该目录按约定是否不由程序写入
++       对于 `/boot`、`/efi`、`/sys`、`/usr` 及其下的一切，以及 `/proc` 的各目录，为 `true`；对于 `Home` 下的每个布局，为 `false`。
++   entry #Topic   从该节点到其根的各级目录名，以元组类型表示
++   entry #absolutePath   布局的绝对路径，以文本表示
++       需要 `Environment` 和 `System`。
++       `Home` 下的布局读取 `HOME` 环境变量（不带结尾的 `/`），若未设置则抛出 `Environment.Error`。
++   entry #dir   该布局的 `BaseLayout.Dir`，提供给嵌套在其中的布局
++   entry #apply   布局的绝对路径，以调用方选择的路径类型表示
++       `layout[Path on Linux]()` 由 `#absolutePath` 构造任何 `Instantiable across Paths from Text` 类型的值。
++       需要 `Environment` 和 `System`，并会抛出 `Environment.Error`（对于 `HOME` 未设置的 `Home` 布局）和 `Property.Error`。
+
+@ 0 1 0 00b6815da15cf6ba08fa907d28225761
++ entry .Home   用户主目录 `$HOME`，及其下的标准目录
+
+% 1 1 0 01648c2115c568b00abb184bffca0fba
+
+@ 0 3 0 1264fb7971aa398e15ccc56456abbc76
++       一个依据 `HOME` 环境变量解析的 `BaseLayout`。
++       `Home[Path on Linux]()` 就是主目录本身；其嵌套对象命名了它之下的约定目录。
+
+% 2 1 0 0f12ae71806ee8db00f12d41a0f69a47
+
+% 3 1 0 0bc7d78b04d14d491ea6457dc5553cf9
+
+% 4 1 0 1225f46d3787e7f21f5cdffa20586173
+
+% 5 1 0 0e172a6d39716fdb0f4adc9fe7b15c3e
+
+% 6 1 0 04f256fe20f571dd1e9fb0d88843ca93
+
+% 0 1 0 0ee821c7532e81e0051b53bec8bca330
+
+% 0 1 0 101290bb813888530d61d18237f80c63
+
+% 1 1 0 015a4073df270f231469b759ab0401eb
+
+@ 0 3 0 1afb2a39da3f6b5910fe80226e27b0b6
++       这些路径是固定的：即使 `XDG_CONFIG_HOME` 指定了另一个目录，`Home.Config` 仍是 `$HOME/.config`，因此应当遵循 XDG 变量的程序应改用 ambience 的 `Xdg`。
+
+% 1 1 0 0c8b6b683b885e7a038142b4273f9b98
+
+% 1 1 0 02899b1a62e7446a102b439efee08ab7
+
+@ 0 3 0 1fbd22784f76748e1ac74118716da65e
++   entry .Cache   用户的缓存目录，`~/.cache`
++   entry .Config   用户的配置目录，`~/.config`
++   entry .Local   用户的本地安装前缀，`~/.local`
+
+% 1 1 0 00e0cc5ed57784e01f9d3c94c3a55d71
+
+@ 0 6 0 1a87a94c5090f9461f69b6466877dd7c
++         `/usr` 的按用户对应物，存放用户自己的程序、库、数据和状态。
++     entry .Bin   用户自己的可执行文件，`~/.local/bin`
++     entry .Lib   用户自己的库，`~/.local/lib`
++     entry .Share   用户自己的应用程序数据，`~/.local/share`
++     entry .State   用户的应用程序状态，`~/.local/state`
+
+@ 0 1 0 08e05895d13e5a670fc3a8456383e07c
++ entry .Base   文件系统根 `/`，及其下的标准系统目录
+
+% 1 1 0 10ffaadd3bec5df116854fcd4cd4893f
+
+@ 0 3 0 057dcf2494db0ef7113cc2ddde13ceab
++       根目录的 `BaseLayout`，其嵌套对象对应 Filesystem Hierarchy Standard 中的各目录。
++       `Base[Path on Linux]()` 就是 `/`。
++       它的布局都不读取环境，因此实际上都不会抛出 `Environment.Error`。
+
+% 2 1 0 1dae16de24b2033e086d1fe24af20b5b
+
+% 3 1 0 04d40bb113d422800139215ac1b0866c
+
+% 4 1 0 152942308c914e6b09c03d2417f08e74
+
+% 5 1 0 0fe56aaa6ced9fb713c3f5dda7e01170
+
+% 6 1 0 0a00e5cb46380a9310df1e5891322e05
+
+% 0 1 0 10857b4d2ead102d0c138119e1234beb
+
+% 0 1 0 042e28e8d658b64f1358a2196d226eb3
+
+% 0 1 0 0afc25f2237541851c526ae1fcf81729
+
+% 1 1 0 004eb3557a536fd41e9c196b6b3c42de
+
+% 1 1 0 03d138c0a241cc890c19a725d7b8eba1
+
+% 1 1 0 1a8e70822f5a736200afaee835396c50
+
+@ 0 10 0 03c63f70fe1710440db547395afdade8
++   entry .Boot   引导加载程序的文件，`/boot`，只读
++   entry .Efi   EFI 系统分区，`/efi`，只读
++   entry .Etc   系统的配置文件，`/etc`
++   entry .Home   存放各用户主目录的目录，`/home`
++       不要与顶层的 `Home` 混淆，后者是当前用户自己的主目录。
++   entry .Root   root 用户的主目录，`/root`
++   entry .Srv   系统对外提供的数据，`/srv`
++   entry .Tmp   临时文件，`/tmp`，重启后可能不复存在
++   entry .Run   自上次启动以来的运行时数据，`/run`
+
+% 1 1 0 1cb90f561df7d39c10132e89d7d89e3e
+
+@ 0 4 0 11c8105edaebb2c901d579bf13c0f653
++         易失的状态，例如套接字和进程标识符文件，在启动时清除。
++     entry .Log   运行时日志，`/run/log`
++     entry .User   按用户划分的运行时目录，`/run/user`
++   entry .Usr   可共享的只读系统数据，`/usr`
+
+% 1 1 0 08de5396a80b287017fea026f02bc2cc
+
+@ 0 6 0 12854f3f426f48261452e33513d9bac4
++         `/usr` 下的每个布局都是 `readOnly`：由系统包管理器安装的程序位于此处，应用程序不应写入其中。
++     entry .Bin   系统可执行文件，`/usr/bin`，只读
++     entry .Include   C 头文件，`/usr/include`，只读
++     entry .Lib   系统库，`/usr/lib`，只读
++     entry .Share   与体系结构无关的数据，`/usr/share`，只读
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 1e4f999eafa3560507db39b4821b2205
++           文档，以及可用于重建 `/etc` 和 `/var` 的出厂默认值。
++       entry .Doc   软件包文档，`/usr/share/doc`，只读
++       entry .Factory   系统配置的原始副本，`/usr/share/factory`，只读
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 4 0 16bb53409b0a69db014c566b6f9a8ae3
++             可用于恢复系统 `/etc` 和 `/var` 的默认值。
++         entry .Etc   `/etc` 的出厂副本，`/usr/share/factory/etc`，只读
++         entry .Var   `/var` 的出厂副本，`/usr/share/factory/var`，只读
++   entry .Var   跨重启持久保存的可变数据，`/var`
+
+% 1 1 0 06f7959ef6f2fede1cdf221f6c8119ea
+
+@ 0 8 0 06fdc11868af847608ff57295ad000dd
++         系统程序在运行时写入的数据：缓存、状态、日志、队列，以及必须在重启后保留的临时文件。
++     entry .Cache   应用程序缓存，`/var/cache`
++     entry .Lib   应用程序状态，`/var/lib`
++     entry .Log   日志文件，`/var/log`
++     entry .Spool   待处理工作的队列，例如邮件和打印作业，`/var/spool`
++     entry .Tmp   跨重启保留的临时文件，`/var/tmp`
++   entry .Dev   设备文件，`/dev`
+
+% 1 1 0 1d9f46f581cd0cb9086438d0c1db4106
+
+@ 0 3 0 1d296ce989c48d751a11f9f54d91a2c2
++         内核的设备节点。
++     entry .Shm   共享内存，`/dev/shm`
++   entry .Proc   进程信息文件系统，`/proc`
+
+% 1 1 0 0ae0d204b22dd2ac16fde7d24e6b187a
+
+@ 0 2 0 16b0d7e1d7846d22150b7ccec7b07605
++         内核对运行中进程的视图。
++         `Base.Proc(pid)` 是单个进程的目录 `/proc/<pid>`，并且是只读的。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 12a77f35a923ed9d02842be6213a00e5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 027d2578eabc59200f7e01c88252b221
++     entry .apply   单个进程的目录 `/proc/<pid>`，按其 `Pid` 指定
++     entry .Sys   内核参数，`/proc/sys`，只读
++   entry .Sys   内核的设备和驱动程序树，`/sys`，只读

@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 1a0def54a58a05c615f1133e15a95be5
++ # `↯/s.100.5` – Numer portu poza zakresem
+
+@ 0 1 0 08a9012eb1adaaa4058c21e0707f1efe
++ Zgłaszany w czasie kompilacji, gdy literał portu jest spoza zakresu 1–65535.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 1 0 191b221af25f36480566b2513a07efda
++ Numery portów TCP i UDP zajmują szesnaście bitów, a zero jest zarezerwowane.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1ceb8a38798a6edb1d7cb8f24f275289
+
+% 1 1 0 12111ddf858aeb220e2089effec7030d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 04cfa3c921c64a2a16a3031358c02ff8
++ Użyć portu z zakresu od 1 do 65535.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 12ca3c998dde439e07bfac83b65fead3
++ - Źródło: `lib/urticose/src/core/urticose.internal.scala`

@@ -1,0 +1,121 @@
+orthant 2 language
+
+% 0 1 0 1049ac858f91dbe70b758274b29bcb37
+
+@ 0 1 0 1c92afa41738b7230a27b9a101ce7f56
++ 当 Xylophone 无法从 XML 中读取值时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 120790e0196010070f59453a43748404
++ 这是*解码*错误：文档已解析，但无法从中读出某个值。
++ 根本不是格式良好的 XML 的文档，属于 `Xml` 格式上的 `Parse.Error`（`↯/s.60.2`），而 XPath 求值失败则是 `↯/s.128.2`。
+
+@ 0 3 0 198619eef95bf50f02a086e5061a8b79
++ 这些错误在抛出后*会继续*：一条带有多个错误字段的记录会为每个字段累积一个错误，而不是在第一个错误处停止。
++ 原因说明出了什么问题；环境中的 `Foci[Xml.Focus]` 说明问题在哪里。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 09f51850634fdac507e2ba72551d992b
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.128.1.1`  `Malformed`  元素带有文本，但它不表示期望类型的值。  `[↯/s.128.1.1] the XML could not be read because the text abc is not a valid Int`  更正内容，或以能接受该内容的类型读取该字段。
+
+% 1 1 0 0ed7d0c8444756e803ddfb6e66ff503f
+
+% 0 1 0 16605d435109cd63103c7dcfef503ce8
+
+% 0 1 0 1dac19ff3be6145b0900b4fcb9a74ac2
+
+@ 0 1 0 15e24f372f9913261bd9c58adcf8776a
++   cell  元素存在，但没有可按期望类型读取的文本。
+
+% 0 1 0 1525b5d0b05a71631bb21546834a1409
+
+% 1 1 0 0e189d7b48e07b321961ab3a763c3b01
+
+% 2 1 0 0edb21ca2fca8bcc1fb2d94c4baeb411
+
+% 0 1 0 1a9fc7cbd6acd636035607fdf2c0b02d
+
+% 0 1 0 01114166bbcb42720bbfc761c98098ac
+
+@ 0 1 0 1c4cf7c8c736204c025b408fb2424604
++   cell  没有任何元素或属性提供某个已知类型的必需值。
+
+% 1 1 0 18e63faac2a837790091b580fc2b4fd1
+
+% 2 1 0 0133741592f5f4941704711726e454a3
+
+% 3 1 0 0ba7ade06b4ab4741ab946e6debb6032
+
+% 0 1 0 1edf32545c4fdf09166f922bf6312371
+
+% 0 1 0 010b477e2687fba50572d1c7e83849a1
+
+@ 0 1 0 03b701f70a44d6160ed3aa7fb1a10a05
++   cell  某个必需的嵌套记录没有对应元素，且作用域中没有 `Default`。
+
+% 1 1 0 0f32e22349c39c9f0f4a9611e16835bd
+
+@ 0 1 0 1906458fcf7c824a02d24e9d6e76d26f
++   cell  提供该元素，或为该类型提供一个 `Default`。
+
+% 1 1 0 1eed447c134aa2a911900ed72fa8546d
+
+% 0 1 0 031e9cdce1f2e7dd09891c59f9a196b6
+
+% 0 1 0 0dd6a05c4dd1d0da107394de6bf4c9ce
+
+@ 0 1 0 18ee0db50f2bf7471502fd6406f46a08
++   cell  某个必需的和类型没有对应元素，且作用域中没有 `Default`。
+
+% 1 1 0 1654fa0202074ea40533fb24400f1e0c
+
+% 2 1 0 060eba83e33a7cb01002b7a0a18187f9
+
+@ 0 1 0 199cb074c02bc4a503a73fb2b86a01a9
++ row  `↯/s.128.1.6`  `UnknownVariant`  判别属性没有指明正在读取的和类型的任何变体。  `[↯/s.128.1.6] the XML could not be read because circle does not name a variant of Shape`  使用该和类型的某个变体名称，或为变体重新设置标注。
+
+% 1 1 0 01682fd481086ee51f07e963ac901e8f
+
+% 0 1 0 0b9d71eded38f9830fbc30b600827d3f
+
+% 0 1 0 0258c2b6ecfc64921726871f3b40d44b
+
+@ 0 1 0 0e37b8e218db4b3004e98645f88bdb3a
++   cell  某个元素不带文本，且读取它的是一个不指明目标类型的通用文本编解码器。
+
+% 1 1 0 1cf5020f2008823d0235cfb261d50d4d
+
+% 2 1 0 183cd7e21449cb04042fc9bc1b1c3afd
+
+% 3 1 0 1d00739b5349c7d40b371a099ecbf355
+
+% 0 1 0 0fdcdc7672dc025602d5bae403f2f084
+
+% 0 1 0 0c4bbfa093ec2fda1aed326cc56e8ac9
+
+@ 0 1 0 00323e085b36abd1105814c771ee8e11
++   cell  某个元素或属性不存在，且读取它的是一个不指明目标类型的编解码器。
+
+% 1 1 0 148bb0f700c692261ea73cde3ff66b82
+
+% 2 1 0 1e02db542707202701b1f77d972b2ab9
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 0b9e1cd9012488d00d7fc124b43a97b0
++ - 源代码：`lib/xylophone/src/core/xylophone.Xml.scala`
++ - 相关：格式错误的文档见 `↯/s.60.2`（`Parse.Error`），XPath 求值见 `↯/s.128.2`

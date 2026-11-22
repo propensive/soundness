@@ -1,0 +1,11 @@
+orthant 2 language
+
+% 0 1 0 04edaa4762b37e2b0e385af5f0551258
+
+@ 0 1 0 1ac5cb23e93a044c173a5d922a49a802
++ 每个字符集都使用作用域中的清理器。
+
+@ 0 4 0 02e014dd225711831e5e0dc01eba7d8d
++ 编码则有相反的问题：编码中没有对应字节的字符，例如 ASCII 中的 `é`。
++ 默认情况下，`Codepage` 会在它的位置写入编码的替代字符 `?`。
++ 导入 `encodingSanitizers.strictEncodingSanitizer` 后，它改为抛出一个指名该字符的 `Codepage.Error`。

@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 1 0 1a260160731f23fe0070beef25a48b94
++ # `↯/s.27.10` – `Decimal.Error`
+
+@ 0 1 0 0275e74b4eeb25ef0fb61b1e51dc349f
++ Zgłaszany, gdy wartości nie można przedstawić jako liczby dziesiętnej o dowolnej precyzji.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 0d00c1e73a0568ce11abdb823d00b2b5
++ `Decimal` konstruuje się z tekstu, z liczby całkowitej lub z `Double`. W przypadku tekstu ten
++ błąd oznacza, że tekst nie jest liczbą dziesiętną; w przypadku `Double` – że liczba ta nie ma
++ dokładnej reprezentacji dziesiętnej.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 3 0 0507276eec7e26f6190c74e11cddd029
++ W przypadku tekstu należy sprawdzić składnię – opcjonalny znak, cyfry, opcjonalną kropkę
++ dziesiętną i opcjonalny wykładnik. W przypadku `Double` niepowodzenie mówi, że wartość binarna
++ nie jest dokładnie tą liczbą dziesiętną, o którą chodziło; należy konstruować z tekstu albo z
++ nieskalowanej liczby całkowitej i skali.
+
+@ 0 1 0 18661a39c50ebc2f040b88d7d57c4687
++ > Ten błąd używał wcześniej kodu `↯/s.62.2`, który kolidował z `EnvironmentError`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1ab250dc8c64572218ef347c2694cda1
++ - Źródło: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`

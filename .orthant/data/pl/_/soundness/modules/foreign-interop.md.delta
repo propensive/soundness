@@ -1,0 +1,283 @@
+orthant 2 language
+
+@ 0 1 0 0a4f483ea62cd8d10a65ca4e98ac46dd
++ ## Interoperacyjność z obcym kodem
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 15f516eae90c212a03b9cdb3af1f1177
++ Inne języki także mają systemy typów. Ich definicje, takie jak plik deklaracji TypeScriptu,
++ nagłówek C, interfejs [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) czy opis WebAssembly
++ [WIT](https://component-model.bytecodealliance.org/design/wit.html), mówią dokładnie, jakie
++ składowe istnieją i co przyjmują.
+
+@ 0 3 0 0874b9139ae77229037a3fbbf26173aa
++ Te definicje są odczytywane podczas kompilacji, a wyrażenia *obce* są względem nich sprawdzane.
++ Nawigowanie po obcym typie, wybieranie składowej i aplikowanie funkcji są weryfikowane względem
++ własnych deklaracji obcego języka.
+
+@ 0 5 0 1ccdbf808c9ec1981037f72dc9a0cdb4
++ `Ecosystem` nazywa obcy świat i gramatykę, w której zapisane są jego definicje. `Interface`
++ wczytuje dla niego plik definicji. Wartość `Foreign` nawiguje po zadeklarowanych typach
++ i wytwarza wyrażenie, które przekazuje się temu, co wykonuje kod w tamtym świecie. To mechanizm
++ leżący u podstaw [typowanego skryptowania DOM](web-automation.md) w przeglądarce, otwarty dla
++ każdego ekosystemu z czytelnym językiem interfejsów.
+
+@ 0 1 0 1db2a51914aba05b1e0c7a5fcc923fb8
++ ### O obcych typach
+
+@ 0 4 0 1eb6fe842210528513a41f064aa55ffb
++ Interoperacja zwykle porzuca obcy system typów na granicy. Wywołanie JavaScriptu ze Scali to
++ napis. Funkcja C to wiązanie zadeklarowane ręcznie. Autorytatywne deklaracje – plik `*.d.ts`,
++ nagłówek czy IDL – leżą nieprzeczytane, podczas gdy programista je przepisuje, a pomyłki są
++ dokładnie tymi, które wyłapałby obcy kompilator.
+
+@ 0 5 0 0b5eb6e47eef01bf19e590a6868a0a03
++ Tutaj deklaracje są natomiast odczytywane. Plik definicji jest parsowany w [czasie
++ kompilacji][czas kompilacji], każdy krok nawigacji jest rozwiązywany względem niego, a składowa,
++ która nie istnieje, albo argument złego obcego typu, jest błędem kompilacji Scali. Sprawdzanie
++ obcego wywołania względem własnych definicji obcego świata to
++ [bezpieczeństwo z konstrukcji](../../philosophy/safety-by-construction.md) ponad granicą
++ języków.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Wszystko pochodzi z pakietu `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 02950028bc55726e10c6bd79633befc4
++ ### Wczytywanie interfejsu
+
+@ 0 3 0 16475cb0a13eab311c19bcb3daafda5c
++ `Interface` wiąże ekosystem z plikiem definicji na [ścieżce klas](classpath.md). Plik jest
++ odczytywany podczas kompilacji, więc musi się znajdować na ścieżce klas kompilatora. Każda
++ obsługiwana gramatyka to `Dialect`, który wskazuje ekosystem:
+
+% 2 1 0 1c1712af55265b4c0ce3b3cb1805b78f
+
+@ 0 5 0 09cdfaaf0077e37e04bf6e3cd8b4de3f
++ column  Definicje
++ column  Ekosystem
++ column  Dialekt
++ row  deklaracje TypeScriptu  `Typescript`  `TypescriptDialect`
++ row  nagłówki C  `Native`  `CHeader.Dialect`
+
+% 0 1 0 1d1884dfc6698f8e1c8afb6e11398e33
+
+% 0 1 0 187bc859d5d36af8135f2ccd421503ca
+
+@ 0 1 0 0320087de8b38f4405223414cbfc10ea
++ row  `@Metadata` Kotlina w plikach klas  `Kotlin`  `KotlinDialect`
+
+% 1 1 0 1bce088b2cff5bd31ca785ec0b77824f
+
+@ 0 1 0 1ed02d4e2b0ef9771beb3a1fe8bb5c09
++ Na przykład interfejs TypeScriptu:
+
+% 2 1 0 134dca16c9c82399184e6f8c70a33657
+
+% 3 1 0 18165897d10e0fed043a6c58b7704303
+
+% 4 1 0 0686ceefe78a5e88146bc147c2a812d8
+
+% 0 1 0 1956a1471c62b3b9112a90e1992d8036
+
+% 0 1 0 12146a8f0cdb735a04505ee23c0ade11
+
+% 1 1 0 166cccd7bbcbc01f063f1e935ec94d73
+
+@ 0 1 0 1ba4a720ba6ba66601b43af104ec9dae
++ ### Nawigowanie po obcych typach
+
+@ 0 4 0 00dae521d99128471de8936c066bf803
++ Wartość `Foreign` reprezentuje wartość obcego typu. Po jej składowych nawiguje się tak, jakby
++ obce deklaracje były Scalą. Typ każdego kroku pochodzi z deklaracji, więc rafinacja odzwierciedla
++ dokładnie to, co mówi obcy system typów. Tutaj `Play` deklaruje składową `scene` typu `Scene`
++ oraz metodę `greet`, która przyjmuje napis:
+
+% 2 1 0 0b7f91b1bb45f3390753c27269446d17
+
+% 3 1 0 156ade9bfa34357011ab974f939956bd
+
+% 4 1 0 1c9198223240f35802cc38183a011441
+
+% 0 1 0 19e5605409360863054e0dad196deb83
+
+% 0 1 0 03ba52d39d1e33cf1e600a96f2f38c86
+
+% 0 1 0 08a7bb1a93891cf009ae4a674a68cef6
+
+% 1 1 0 0d0271e595d0727808334b6d6b11ff9d
+
+@ 0 2 0 03e6253b5f79ee1e10c083692f3472b2
++ `Play` nie deklaruje składowej o nazwie `missing`, a `greet` nie przyjmuje liczby, więc żadne
++ z poniższych się nie kompiluje:
+
+% 2 1 0 19077b4994bdc3350721b0ef9a56da85
+
+% 3 1 0 12b750ab12f0fb150d887fa32cac407e
+
+% 4 1 0 1417ec5a17e8317214f613f351bb2e04
+
+% 5 1 0 199394c4ae59627a1755bcde0f57b2d7
+
+% 0 1 0 13d28bbdfc9485d202da2b176ed295c6
+
+% 1 1 0 1edc3f6268bff34d1d4b91d50a9a2cb3
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1de2300d865aaa2d0141b2a9bdeb000c
+
+% 1 1 0 0d38ddf0b30f4a0815d673b13e0f0182
+
+@ 0 3 0 0ff11043eb2745a808e56039541b6814
++ Wartości Scali przechodzą jako argumenty tam, gdzie instancja `Interoperable` odwzorowuje je na
++ obcy typ: tekst na napis, a liczby o określonym rozmiarze na ich obce szerokości. Granica jest
++ typowana w obu kierunkach.
+
+@ 0 1 0 116ede136c6400ab0333ed2b7ed3b497
++ ### Fasady Kotlina i Javy
+
+@ 0 5 0 16f644c656f5776616db48a2f7b5a7d3
++ Biblioteka JVM napisana w Kotlinie znajduje się na tej samej ścieżce klas, więc jej deklaracje
++ nie potrzebują osobnego pliku. Są w plikach klas, w `@Metadata`, które zapisuje kompilator
++ Kotlina. Te deklaracje są odczytywane w czasie kompilacji, a *fasada* opakowuje żywą wartość
++ tak, że do jej składowych sięga się, jakby były składowymi Scali. Każdy dostęp staje się
++ bezpośrednim, statycznie typowanym wywołaniem JVM, bez refleksji i bez obiektu opakowującego.
++ Z biblioteką standardową Kotlina na ścieżce klas:
+
+% 2 1 0 18964c2c8b5f92880438dd26bc732a65
+
+% 3 1 0 04dd4bcf1ba5caa50b02adabe7327b42
+
+% 4 1 0 0e0e035af2b9b18f03d258b113afa6f6
+
+% 0 1 0 0931057d568a2d2806efb45a77b014e9
+
+% 0 1 0 107135aa7e6d2d9514a1ebfc6121acc8
+
+% 0 1 0 05929ff42d0628961506778e66592923
+
+% 0 1 0 06fc7ecdea01c0b31f87975def3dde66
+
+% 1 1 0 1e105396e3e84d7e145b1d51d6495760
+
+@ 0 1 0 07cb3692d14184180326df9beab4f623
++ Do typu Kotlina wchodzi się trzema metodami:
+
+% 2 1 0 16ae707fc547824e1b6227156bf590c8
+
+@ 0 5 0 0c117d710abdf29f09d42f7da0862a80
++ column  Metoda
++ column  Sięga do
++ row  `make[T](…)`  nowej instancji `T`, przez jej konstruktor
++ row  `companion[T]`  składowych obiektu towarzyszącego `T`
++ row  `singleton[T]`  składowych obiektu `T`
+
+% 1 1 0 198d5e951a420b111e562cf0e03f427d
+
+@ 0 3 0 0261839636738ae708c3e86902a1ebf7
++ Typy są podstawiane dalej, więc `pair.first` jest typu `Text`, a nie `Any`, a `Text` przechodzi
++ wszędzie tam, gdzie oczekiwany jest `CharSequence`. Nullowalność Kotlina jest respektowana.
++ Wynik, który może być nullem, jest [`Optional`](optional-values.md), nieobecnym tam, gdzie
++ Kotlin zwróciłby null.
+
+@ 0 4 0 07c45623de54ee3b067189b2c7c3fadf
++ Właściwości odczytuje się jak składowe, a właściwości `var` przyjmują przypisanie, przez
++ gettery i settery wygenerowane przez Kotlina. Przypisanie do `val` się nie
++ kompiluje. Parametr Kotlina typu funkcyjnego przyjmuje zwykłą lambdę Scali. Parametr lambdy jest
++ sam fasadą nad typem Kotlina, więc po wartości wewnątrz niej też można nawigować:
+
+% 2 1 0 1b5c90c3291f3e0e1bf438df78d555eb
+
+% 3 1 0 12ef33e501d06a4c09dcfab61b5a80d6
+
+% 4 1 0 10b89527640b4a7c0dd966734c96de6a
+
+% 0 1 0 0989acba7b22e7f6073706075ed64c61
+
+% 1 1 0 14679f478b565aca1137eb5f917e3340
+
+@ 0 3 0 1a50b23b833c0b7e1819f82e31c5cd31
++ Tutaj `replaced` to `t"a<1>b<2>"`. Składowa, której klasa nie deklaruje, albo argument złego
++ typu, jest błędem kompilacji. Gdy nazwa jest bliska rzeczywistej, błąd ją podpowiada, w pisowni
++ Kotlina.
+
+@ 0 1 0 0ec83308f9f8dfdf0bb27d5b6dd1efc6
++ ### Wyrażenia, nie efekty
+
+@ 0 5 0 01e759a3b2f6ad8b1f6251c5f410f2cc
++ Nawigacja buduje *wyrażenie*, typowane drzewo odwołań, selekcji i aplikacji, i sama niczego nie
++ wykonuje. Uruchomienie wyrażenia to sprawa ekosystemu. Ekosystem przeglądarki przedstawia je
++ jako JavaScript dla handlera zdarzeń, a ekosystem WebAssembly obniża wywołania WIT do importów.
++ Sedno leży w sprawdzaniu. Zanim wyrażenie opuści Scalę, każdy jego krok został zweryfikowany
++ względem własnych definicji obcego świata.
+
+@ 0 1 0 03dc9a06030fd5a50b5d4721a13b66b5
++ ### Własne typy Javy
+
+@ 0 6 0 1042de90672b47ae1ad7eee5f7258d7d
++ Biblioteka standardowa JVM ma typy dla rzeczy, dla których te biblioteki mają własne typy:
++ ścieżek, adresów URL, chwil, czasów trwania. Kod, który styka się z oboma światami, musi
++ przechodzić między nimi bez ręcznego kopiowania wartości. Zamiast konwertować, każdy typ Javy
++ czyni się *reprezentacją* danego pojęcia. Każda operacja, która prosi o wynik „jako ścieżkę”
++ albo „jako chwilę”, może wtedy wytworzyć bezpośrednio typ Javy. To, o którą reprezentację
++ chodzi, jest wyborem dokonywanym przez import:
+
+% 2 1 0 1178ce7b9e2d691602ce61d6f1f9fcdf
+
+@ 0 2 0 04c118806059bc66117947983525734d
++ column  Typ Javy
++ column  Odpowiada
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 7 0 0f77284119cc893d11c576512970ae0c
++ row  `java.nio.file.Path`  ścieżce  `pathInterfaces.javaNioPath`
++ row  `java.io.File`  ścieżce  `pathInterfaces.javaIoFile`
++ row  `java.net.URL`  adresowi URL  `urlInterfaces.javaNetUrl`
++ row  `java.time.Instant`  chwili  `instantInterfaces.javaTimeInstant`
++ row  `java.util.Date`  chwili  `instantInterfaces.javaUtilDate`
++ row  `Long`, milisekundy od epoki  chwili  `instantInterfaces.javaLongInstant`
++ row  `Long`, nanosekundy  czasowi trwania  `durationInterfaces.javaLongDuration`
+
+% 1 1 0 060aa7da670c23f3158144b75fec3ce1
+
+@ 0 1 0 0e938398b57a84e81bd4931330169119
++ Na przykład:
+
+% 2 1 0 1972af97ca8da61417baefc7e7375b71
+
+% 0 1 0 11b749a29b0fa45b0f03b7b68e79b6e4
+
+% 0 1 0 0fed01cae4da52fe159bae22d7269b65
+
+% 1 1 0 0c6122bfee5ca9301a8947f44855effb
+
+@ 0 3 0 07645d3514c382db055c5b7b7607000f
++ Gdy są one w zasięgu, [czas](time.md) odczytany z pliku lub zegara przychodzi jako
++ `java.time.Instant`, a czas trwania jako `Long` z nanosekundami, gotowe do przekazania API Javy,
++ które ich oczekuje. Reszta programu zachowuje własne typy.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 084c15b112fb12471e630e320371b0ed
++ - [Automatyzacja sieci WWW](web-automation.md) skryptuje DOM przeglądarki przez obce wyrażenia.
++ - [Ścieżka klas](classpath.md) opisuje ścieżkę klas, z której odczytywany jest plik interfejsu.
++ - [Kompilator](compiler.md) kompiluje źródła Kotlina do plików klas, które odczytuje fasada.
++ - [Czas](time.md) i [ścieżki](paths.md) opisują typy, którym odpowiadają reprezentacje Javy.
++ - [DOM przeglądarki](dom.md) i [podświetlanie składni](syntax-highlighting.md) opierają się na
++   definicjach obcych interfejsów.

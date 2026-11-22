@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 13c889da5b9b66d817daf5b3e3d725f5
++ # `↯/s.35.3` – Znak Unicode nie istnieje
+
+@ 0 2 0 12d22514ae43a6d60128322929a24cd1
++ Zgłaszany w czasie kompilacji przez makro `char"…"` z Hieroglyph, gdy nie można rozwiązać
++ nazwanego znaku Unicode.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 0900045be913d522194383997c785b8a
++ Makro wyszukuje znak według nazwy Unicode. Jeśli nie istnieje żaden znak o tej nazwie,
++ następuje to zatrzymanie.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12cf138035daa50314d88ba94e62d0b8
+
+% 1 1 0 1d8faa6ce47c317318ff34e82e97b70a
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 031891d54f275198030141b254d9f400
++ Użyć istniejącej nazwy Unicode; ich lista jest dostępna w Unicode Character Database.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 19b276d29d4564ff05bbb270c1b7f11a
++ - Źródło: `lib/hieroglyph/src/core/hieroglyph.internal.scala`

@@ -1,0 +1,41 @@
+orthant 2 language
+
+% 0 1 0 083d0161faae9d1215ca00b36edc4877
+
+@ 0 1 0 031a16b75637ea7907e59142beb9324e
++ 当 Geodesy 无法把某个值解析为 `geo:` URI 时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 0c4830b095eec05d1fd550d6deaafd1c
++ Geodesy 解析 RFC 5870 中形如 `geo:<lat>,<lon>[,<alt>][;<param>=<value>]…` 的 geo URI。
++ 如果 URI 的任何部分不符合语法，就会抛出此错误，并由变体指明是哪一部分。
++ 消息为 `the geo URI is not in the correct format because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1562cf0f029b514f15a17833718fcd2a
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.46.1.1`  `MissingEquals`  某个参数部分没有用来分隔名称和值的 `=`。  `` [↯/s.46.1.1] the geo URI is not in the correct format because the parameter does not contain an `=` ``  把参数写成 `name=value`。
++ row  `↯/s.46.1.2`  `MultipleEquals`  单个参数包含多于一个 `=`。  `` [↯/s.46.1.2] the geo URI is not in the correct format because the parameter contains more than one `=` ``  对应出现在值中的 `=` 字符进行百分号编码。
++ row  `↯/s.46.1.3`  `BadScheme`  URI 不是以 `geo:` 开头。  `` [↯/s.46.1.3] the geo URI is not in the correct format because the value does not begin with the `geo:` URI scheme ``  在 URI 前加上 `geo:`。
++ row  `↯/s.46.1.4`  `ExpectedSemicolon`  海拔值之后应有 `;`，但没有找到。  `` [↯/s.46.1.4] the geo URI is not in the correct format because a `;` was expected after the altitude value ``  用 `;` 把海拔与其后的参数分隔开。
++ row  `↯/s.46.1.5`  `UnexpectedSuffix`  坐标之后的内容既不以 `,` 开头，也不以 `;` 开头。  `` [↯/s.46.1.5] the geo URI is not in the correct format because a `,` or `;` was expected ``  用 `,` 引出海拔，用 `;` 引出参数。
++ row  `↯/s.46.1.6`  `ExpectedCoordinates`  纬度和经度缺失，或无法解析为数字。  `[↯/s.46.1.6] the geo URI is not in the correct format because latitude and longitude coordinates were expected`  紧跟在 `geo:` 之后提供两个以逗号分隔的十进制数。
++ row  `↯/s.46.1.7`  `BadUncertainty`  `u=`（不确定度）参数的值不是有效的数字。  `` [↯/s.46.1.7] the geo URI is not in the correct format because the `uncertainty` parameter vas not a valid number ``  为 `u=` 提供一个非负的十进制值。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1144be88f2df39e800aa365a21b4ffba
++ - 源码：`lib/geodesy/src/core/geodesy.Geolocation.scala`

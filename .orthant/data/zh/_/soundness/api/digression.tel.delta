@@ -1,0 +1,647 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c16ea87ef318b710ee30c861541aa4d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c31a9c8bd6149e7132335d0f3930e81
++ info   作为不可变且已名称还原的值的堆栈跟踪；调用点位置；经过验证的类名
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1bd56b2fb789f82e08a09a8e75b90e52
++     _Digression_ 将 JVM 对一次失败的看法转换为程序可以检视和渲染的值。
++     `StackTrace` 用 `stackTrace` 从任何 `Throwable` 捕获：包括其异常类、消息、一个 `StackTrace.Frame` 列表，以及作为另一个 `StackTrace` 的原因。
++     每个帧的类名和方法名都从编译器的编码向产生它们的 Scala 代码进行**名称还原**——`$plus` 变为 `+`，`$anonfun$3` 变为 `λ₃`，`<init>` 变为 `ⲛ`——并且在导入了 `StackTrace.Resolver` 时，它会将每个帧映射回其来源的源代码定义。
+
+% 2 1 0 16b510f0c8d1186d15a4235716969abd
+
+% 3 1 0 09ca52a168da48c404f62f234e380f68
+
+% 0 1 0 1f2ae059e1f4bd9a1aca20f622222eac
+
+% 0 1 0 1d84d59c97c154941fa68606178bb4a4
+
+% 0 1 0 1359acc6773ce3261f69c6800f6945df
+
+% 0 1 0 18647f0779e2dec71991e6c2780831f0
+
+% 0 1 0 13b48802a4aabb6d08281127041994a9
+
+% 1 1 0 15ec8af62d51001501d3e724c157b0e5
+
+@ 0 6 0 048231e3471c69421606ffb26b450178
++     与之并列的还有两个同样描述代码而非运行代码的小工具：`Codepoint`，即调用点的源文件和行号，在方法需要它的任何地方作为 given 捕获；以及 `Fqcn`，即按 JVM 规则验证过的完全限定类名，用 `fqcn"…"` 以字面量形式书写。
++     `Smap` 解析类文件为内联代码携带的 JSR-45 源映射，帧正是借此得知其内联的行写在何处。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     该库有两个源集：
+
+@ 0 7 0 108fc1535f9a57f306a0a2a40eebd708
++     - `digression.core`——`StackTrace`、`Codepoint`、`Fqcn`、`Smap`、`stackTrace`、`fqcn"…"` 和 `idempotent`，以及纯文本渲染（`Showable` 和 `Communicable`）。它不读取任何文件，因此可编译到所有平台；默认的 `StackTrace.Resolver` 什么也不做，而读取 TASTy 以找到每个帧来源的解析器是 hyperbole 中的 `stackResolutions.tastyStackResolution`。
++     - `digression.ansi`——`StackTracePalette` 和 `teletypeables` 包：跟踪、帧、方法和异常的彩色、表格化终端渲染。
+
+@ 0 3 0 18ab8b9af52dbe7d0a272bb91eafb0cb
++     所有内容都导出到 `soundness` 总括包，`teletypeables` 选择包与总括包自身的同名包合并。
++     其中的 given 需按名称导入，因为 `import teletypeables.*` 不会导入 given：
+
+% 2 1 0 190b8677a4efa9350efc6b76e8e51f95
+
+% 3 1 0 179ab22dc5a336450caac8591c142fc9
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 15c3bd29db4cff9e063cc6ce44c7ab7b
+
+% 0 1 0 06c460ffead2c63b1d387a3876843f1f
+
+% 1 1 0 1c2b1005279baa911d1e2844f851dd10
+
+% 0 1 0 0139ef97e07e3e7c007739de9a764db0
+
+% 0 1 0 0ab956b5e26509b10ecfee1ad8375317
+
+% 0 1 0 09f4e53d48363bd4183838ce63c009d7
+
+% 0 1 0 0878906e37bf145b11b3a6293bf7b01f
+
+% 0 1 0 16f60eb84fe8d57f1b02b30629b75bc1
+
+@ 0 7 0 0cb58322323a833e1850be9c09763678
++ entry .stackTrace   `Throwable` 的堆栈跟踪，作为 `StackTrace` 值，由作用域中的解析器解析
++     `Throwable` 上的扩展方法：`error.stackTrace` 就是 `StackTrace(error)`，其中每个帧都经过*调用者*作用域中的 `StackTrace.Resolver`。
++     如果没有导入任何解析器，则使用伴生对象的 `StackTrace.Resolver.none`，帧只携带其名称还原后的名称；导入 `stackResolutions.tastyStackResolution`（来自 hyperbole）会让帧同时携带其源代码定义。
++     解析器在这里获取，而不是在更深处，因为在 `StackTrace` 内部召唤的解析器永远只会找到默认值。
+
+% 2 1 0 04ccb9694ee11ded01f75859caf09271
+
+% 3 1 0 1328a2590cbf1a270b915b1818c5aade
+
+% 0 1 0 0107120b4fe1394d0ba352dd7387250c
+
+% 0 1 0 1c15d17075ef37a71e006eb85147d3ed
+
+% 1 1 0 031ced9e5692fd6b108f8ebe1cb79748
+
+@ 0 5 0 0f224f7b29644e6203f9efb04c64ed10
++ entry .fqcn   `fqcn"…"` 插值器：完全限定类名，在代码编译时验证
++     `fqcn"com.example.Main"` 是一个 `Fqcn`，在编译时按与 `Fqcn(text)` 相同的规则检查：每个路径段非空，由 ASCII 字母、数字、`_` 和 `$` 组成，不以数字开头，且不是 Java 关键字。
++     违反规则的名称会导致一个指明原因的编译错误。
++     该字面量不接受替换。
+
+% 2 1 0 040ed4e97a52393909b3abcd1a46fc8a
+
+% 3 1 0 0444e83ec5f3b5e21638586a6f9dc144
+
+% 0 1 0 0e3a43ae954e1b7d0b5203ba51595646
+
+% 0 1 0 0beaf15581bea048091daf223c15ccca
+
+% 1 1 0 09965581b63e6b5508d15e79042c04e2
+
+@ 0 6 0 0ffcf609b5d660be1fa3bb0965916bed
++ entry .idempotent   在程序的整个生命周期中，每个调用点最多运行一次代码块
++     `idempotent { … }` 接收其调用点的 `Codepoint`（自动捕获），并在执行第一次到达该调用点时运行代码块；之后每次到达都什么也不做。
++     它适用于只打印一次的警告，或以内联方式写出的一次性初始化。
++     该记录是全局且线程安全的，位于不同行的两次调用是不同的调用点。
+
+% 2 1 0 1af7b433408edfbc0634084f079d9f53
+
+% 3 1 0 15c2c475daf9195301f4be2175990eb0
+
+% 0 1 0 0ed797afa8f857c807defbd6bf522be2
+
+% 0 1 0 1d158225ce9f48931c28b9ae72a47c8b
+
+% 0 1 0 1fd2ac2ab040bf0b149d3a836afcae0b
+
+% 1 1 0 06dc1bb4b6cc96e1036714191da33eba
+
+@ 0 1 0 1203c319f4e55f230d9be026bf371627
++ entry .Codepoint   调用点的源文件和行号，作为 given 自动捕获
+
+% 1 1 0 17ec35d16dd65bb81eff2f9a8b0a637c
+
+@ 0 4 0 0fff07c9db219ccc1dafaab56448ef95
++       接收 `(using Codepoint)` 的方法会得到调用它的代码的位置，无需手动传递任何东西：伴生对象的 inline given `.default` 是一个宏，它在每个调用点展开为该调用点的源路径和行号。
++       日志、测试和缓存正是借此得知自己从何处被调用。
+
+% 2 1 0 02cf88a1c6a563670e7f25baf7b82ba7
+
+% 3 1 0 15a1ab23d4617eaa0303c55f17461a9d
+
+% 0 1 0 15ae4f0676383c111cbd967d4e4f7ecc
+
+% 0 1 0 1321ca1035834bd6045f044b6b92e5cb
+
+% 0 1 0 0a3441f26f2eb3c4139779ca6e63241f
+
+% 1 1 0 0b4dfbd2d12612bd0c6cc2eb5876767e
+
+@ 0 7 0 12e731cbe420b8d207f84c01da7b8c1d
++       `Codepoint` 是 case class，因此两个 `Codepoint` 在指明同一文件和行号时相等，`idempotent` 正是借此识别调用点。
++       它是 `Findable` 的，因此可以作为上下文值被召唤。
++   entry .default   调用点的位置，由宏在召唤该 given 之处找到
++   entry #source   源文件的完整路径，即编译器所看到的路径
++   entry #line   行号，从 1 开始计数
++   entry #text   文件路径的最后一段及行号，形如 `app.scala:42`
+
+@ 0 1 0 10ac0893d0638c64144a5ebcb79c9a5c
++ entry .Fqcn   完全限定的 JVM 类名：以点分隔的路径段，每段有效，至少一段
+
+% 1 1 0 1c8d64be3fb90f490d1527bd121d255a
+
+@ 0 5 0 16d58c022b8746e70275c6d7e85e5041
++       `Fqcn` 是至少能够命名一个类的类名：它的每个 `#parts` 都非空，由 ASCII 字母、数字、`_` 和 `$` 组成，不以数字开头，且不是 Java 关键字，并且至少有一段——类型表明了这一点，这正是 `#className` 和 `#packageName` 成为全函数的原因。
++       它由 `Fqcn(text)` 构造（会抛出 `Fqcn.Error`），或在编译时由 `fqcn"…"` 构造，或用 `as[Fqcn]` 从文本解码。
+
+% 2 1 0 02ebc3be2d3e80c81238704df04b589c
+
+% 3 1 0 02240f0ffa0d271e10d5d6cf174ebae5
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0489b5ecbd9def56065e591ef4056489
+
+% 0 1 0 05968fa429ab0e571e6e74bddb35d857
+
+% 0 1 0 022a11692ca689971fa107852c2299be
+
+% 0 1 0 086b61a2a3e7538e12839865072dc24d
+
+% 0 1 0 1f447d4f19633b9e1a62cfa5d5b2ad79
+
+% 1 1 0 03aee7f6a0186f6f06d1522d4d637d7b
+
+@ 0 2 0 187ffd5dab2ef98d0a1bdbd1962d2193
++       在类名传递的任何地方——清单的 `Main-Class`、反射查找、启动器的参数——`Fqcn` 都带有其格式正确的保证。
+
+% 0 1 0 123979d593f6a6b700cdf6110cca2ae4
+
+@ 0 15 0 01dfaaeff67d54bd18755d06803022cf
++   entry .apply   解析并验证类名，对违反的第一条规则抛出 `Fqcn.Error`
++       按 `.` 拆分文本并检查每个路径段，通过作用域中的 `Tactic[Fqcn.Error]` 抛出：空路径段（`com..Main`）为 `EmptyName`，诸如 `class` 的路径段为 `JavaKeyword`，允许集合之外的字符为 `InvalidChar`，以数字开头为 `InvalidStart`。
++   entry .unsafeFrom   来自已知有效文本的类名，由 `Unsafe` 门控
++       这是 `fqcn"…"` 展开的结果：名称已在代码编译时验证过，因此重新解析不会失败，而擦除的 `Unsafe` 令牌表明调用者为此担保。
++   entry .valid   某个字符是否可以出现在路径段中：ASCII 字母、数字、`_` 或 `$`
++   entry .decodable   将文本解码为 `Fqcn`，通过其捕获的战术抛出 `Fqcn.Error`
++       在召唤它的地方需要一个 `Tactic[Fqcn.Error]`，并保留它；`t"…".as[Fqcn]` 就是 `Fqcn(text)`。
++   entry .encodable   将 `Fqcn` 编码为其点分文本
++   entry .Error   当文本不是有效类名时抛出：空路径段、关键字或错误字符
+
+% 1 1 0 1c27792451539dc914b7a2d32ec0d8e6
+
+@ 0 3 0 07bfcadb4b27db360b6c900d1146a7f5
++         错误 `↯/s.63.1`：_the class name `name` is not valid because `reason`_。
++         由 `Fqcn.apply` 以及将文本解码 `as[Fqcn]` 时抛出；`fqcn"…"` 会将相同的原因报告为编译错误。
+
+% 2 1 0 188427309c9f922a142ac1d9bb68ab99
+
+% 3 1 0 057f4a8eec2809ae0057e2a82f54a383
+
+% 0 1 0 00ad3583ded003390195d673ae7cb290
+
+% 0 1 0 1787b25d11249e750d8eafd6f8eb5683
+
+% 1 1 0 1b9ef6dc2c1a2c7a0abb278a8f949a2c
+
+@ 0 1 0 168421f4d815bb1902eae25bac50c772
++     entry .Reason   类名无效的原因：`InvalidChar`、`InvalidStart`、`EmptyName` 或 `JavaKeyword`
+
+% 1 1 0 011d7dba48610cfd15cf1c5026ecae3c
+
+@ 0 1 0 0da1a2e50d9c6099004d1f0518c3c4f7
++           一个有四个编号分支的枚举：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0ab86642202331a21bff6c855e809da0
+
+@ 0 1 0 0c1d52efc93f88830673bf7447b3d5bc
++           row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  数字
+
+% 0 1 0 0781cea665c8e6e91bc5c395c1b6f286
+
+% 0 1 0 01d361fb5c638e3709f0268fb0631515
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 1663d6649d2891be18173230f6a6021e
++       entry #number   原因的编号，`1` 到 `4`
++     entry .communicable   将每个 `Fqcn.Error.Reason` 渲染为消息
++     entry #name   不是有效类名的文本
++     entry #reason   它无效的原因
++   entry #parts   名称的路径段，按顺序排列，类型为非空
++   entry #text   作为点分文本的名称：`com.example.Main`
++   entry #className   最后一段：类的简单名称
++   entry #packageName   除最后一段外的所有路径段，以点连接：即包名，对于默认包则为空
+
+@ 0 1 0 122c95cd18d52e301d4f121703c12148
++ entry .StackTrace   作为值的已捕获堆栈跟踪：异常类、消息、帧和原因
+
+% 1 1 0 0e0ee92d78919ee20221190a1d71a470
+
+@ 0 5 0 15be00abc15871510290a84cf47fc603
++       `StackTrace` 保存 `Throwable` 关于自己在何处被抛出的信息，已经过名称还原且不可变：异常的包（`#component`）和简单类名（`#className`）、`#message`、从栈顶向下排列的 `#frames`，以及作为另一个 `StackTrace` 的 `#cause`。
++       Soundness `Error` 的消息保留为抛出它时所用的结构化 `Message`；其他任何异常的消息则是其文本。
+
+% 2 1 0 1681e6a49d975d0c0a9891bd8fc09c13
+
+% 3 1 0 0ac5123e3b91fd8908569e3bb5a3ba09
+
+% 0 1 0 1ca6bfc98ce20bbd000c00751e889dbe
+
+% 0 1 0 1afa58e367a6766e039ddea930b72a26
+
+% 0 1 0 1e275aa757e5ec42068ac286a2399b68
+
+% 0 1 0 0f7261dfe946138a198c039c7bb12b14
+
+% 0 1 0 17fbecbb1b359fa70914083fd7ea48f8
+
+% 1 1 0 00a605b305cb703c03c4c498199302d4
+
+@ 0 4 0 05c8384c1bddde5b12a217936808a3fd
++       帧名由 `.rewrite` 改写，其所用的字形由 `.legend` 解释。
++       每个帧都经过调用者作用域中的 `StackTrace.Resolver`，默认它什么也不做；读取编译器 TASTy 的解析器会为每个帧提供一个 `Frame.Source`，即它所来自的定义。
+
+@ 0 4 0 0a98373feeec7ff213be51e4dddb0e23
++       跟踪可以用 `show` 渲染为对齐的纯文本（`.showable`），渲染为消息（`.communicable`），并且借助 `digression.ansi` 组件，通过 `teletypeables.stackTraceTeletype` 用 `teletype` 以彩色渲染。
++       Soundness 自己的错误是否捕获跟踪，取决于作用域中的 `Diagnostics` given。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1adcbb25415767e508a823d23857fb5c
++         label 已捕获，未解析
+
+% 1 1 0 03dee5457a81b84407306fc43ab6e321
+
+% 2 1 0 1e35b6e28c64e2020aac28497bbfd685
+
+% 2 1 0 0970633f648d363d0247f50d3572c611
+
+% 0 1 0 0c1d061fec3f141d0aa9661d3fa2c53d
+
+% 0 1 0 18a12ef0084d926e1308c71ac3d12fe2
+
+% 1 1 0 165387772e7726fb1549f465b564ca2b
+
+@ 0 1 0 1aa0fffdae239a491c478b32a1872ef6
++         label 通过 TASTy 解析
+
+% 1 1 0 03fd9183e95a20a60e8eaec7f2416a81
+
+% 2 1 0 13aa49569ca8d724169d95a5eadabce4
+
+% 0 1 0 1568baf2c53444f81b89d3508eef5586
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 0 1 0 1109de1a9f4c73ae071c263fedc28828
+
+% 2 1 0 1bf65ae89eb70d3b18f6b344d6224e47
+
+% 0 1 0 1e1bc03a1230273b16398ab3e0733f89
+
+% 0 1 0 0cc5227c0a2ce97c00e083d833faabd2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 0eb64f21f1c32b12165ee9136094c130
+
+% 0 1 0 0c2aeae04db353c10ba3b9d36601413d
+
+% 0 1 0 0e76e8365c21c39414c9014550297ae6
+
+% 0 1 0 181d2143e6ab29a90d441f28075a3c88
+
+@ 0 16 0 08f06ca1512ceebe05cb818500fc9a11
++   entry .apply   捕获 `Throwable` 的堆栈跟踪，用给定的 `Resolver` 解析每个帧
++       `StackTrace(exception)` 读取该 throwable 的 `StackTraceElement`，用 `.rewrite` 对每个类名和方法名进行名称还原，将编译后的名称保留为 `Frame#jvmClass` 和 `Frame#jvmMethod`，并让每个帧经过解析器。
++       缺失的文件名为 `———`，缺失的行号为 `Unset`。
++       原因也会依次被捕获。
++       扩展方法 `stackTrace` 是通常的入口。
++   entry .rewrite   将 JVM 类名或方法名还原为其 Scala 形式，对合成部分使用紧凑的字形
++       运算符恢复其符号（`$plus$plus` 即 `++`），`$uXXXX` 转义变为对应字符，编译器的合成标记 `.Marker.all` 变为字形，见 `.legend`：`λ` 表示 lambda，`Λ` 表示经过适配的 lambda，`α` 表示匿名类，`ⲛ` 表示构造器，`ι` 表示初始化器，`ℓ` 表示惰性值，`↑` 表示 super 访问器，`⇢` 表示其他访问器，`≔` 表示特质 setter，`⊢` 表示扩展方法，`∂` 表示直接方法，`δ` 表示默认参数，`⊡` 表示保留的内联方法体，`⊙` 表示外部引用，`Σ` 表示带签名的特化方法，其后的任何数字以下标表示。
++       模块类 `globe.Play$` 变为 `globe.ΞPlay`，包对象的类用 `⁅…⁆` 括起。
++       当 `method = true` 时，结果以 `()` 结尾，且 `$` 作为 `.` 分隔。
+
+% 2 1 0 10bcf50cfc36eb841e8198c4696aeeb1
+
+% 3 1 0 0c55f84ca5a6311e130c71405dda567d
+
+% 0 1 0 009a6aa595fcbcbc08f37d62993ae22d
+
+% 0 1 0 1c8e188adc1fc7f603f8b630e4153c3d
+
+% 0 1 0 12a218b58c4748b71e5038fd9f3660e3
+
+% 0 1 0 1408d2541b5a0d47185699557e91ad3a
+
+% 1 1 0 1511cfdee0294d1910e3a9913eb38cad
+
+@ 0 20 0 0da2170b77f98f380e5f4aa66d4d6f27
++   entry .Marker   编译器在程序自身的名称确定之后生成的名称，及其字形
++       每个 `Marker` 都有编译器写出的 `jvm` 文本（`$anonfun`、`<init>`、`$lzyINIT`）、显示为的 `glyph`、用于图例的 `meaning`，以及在该标记足以确定时，带有它的方法名所属的 `Frame.Kind`。
++       `Marker.all` 按 `.rewrite` 尝试它们的顺序列出，与编译器的 `NameKinds` 和 `StdNames` 的定义一致；`Marker.operators` 将每个运算符字符与其编码配对。
++       `.rewrite` 读取该表，`.legend` 由它派生，hyperbole 的 `StackResolver.hint` 也按它对帧分类，因此三者不会不一致。
++   entry .legend   名称还原后名称中每个字形的含义，从字形到描述，用于与跟踪一同渲染
++       一个 `Map[Text, Text]`，从 `.rewrite` 产生的每个字形映射到简短描述，由 `.Marker.all` 派生：`λ` 为 _lambda_，`ⲛ` 为 _constructor_，`δ` 为 _default argument_，`⁅⁆` 为 _package file_，依此类推。
++       字形后的数字是编译器自己的编号，以下标表示。
++   entry .showable   将跟踪渲染为纯文本：先是异常，然后每个帧一行对齐的 `at` 行，然后是其原因
++       每个帧行包含类和方法（经填充以便对齐），然后是文件和行号；已解析帧的源代码行以引用形式紧随其后，帧的 SMAP 所记录的每一层内联都是其下方的一行 `↳ inlined from`，最内层在前。
++       原因在 `caused by:` 之后给出。
++   entry .communicable   将跟踪渲染为消息，与 `.showable` 相同，用不换行空格对齐
++   entry .Method   名称还原后的类名和方法名，即帧所记录的那样
+
+% 1 1 0 137caaa2520f63df060303fc5801c3e7
+
+@ 0 7 0 044cd7753bac76420122cc2350924a7f
++         两个名称都已由 `StackTrace.rewrite` 改写：`className` 形如 `globe.ΞPlay`，`method` 以 `()` 结尾。
++     entry #className   名称还原后的类名，包含其包名
++     entry #method   名称还原后的方法名
++     entry #cls   类名的最后一段
++     entry #prefix   不含最后一段的类名：即其包和外围类
++   entry .Frame   跟踪中的一个帧：其方法、文件和行号、编译后的名称，以及解析后的源代码
+
+% 1 1 0 1618d39887070e801427e1c5a561e296
+
+@ 0 4 0 0f216d86fc56f09e0dc5b1885e254f65
++         帧记录其名称还原后的 `#method`、它报告的 `#file` 和 `#line`、它是否为 `#native`，以及构建它所依据的编译后名称 `#jvmClass` 和 `#jvmMethod`，这些是解析器所需要的。
++         解析器可以添加它所来自的 `#source` 定义，以及其所在行的 `#inlined` 来源。
+
+@ 0 3 0 1cfc103db3bd19f810757acf508788ee
++         `#displayClass` 和 `#displayMethod` 是渲染器所显示的内容：帧已解析时为源代码名称，未解析时为名称还原后的名称，因此没有哪个渲染器需要自己的分支。
+
+% 2 1 0 1f2235a8cd74e2b10231649e14abcd55
+
+% 3 1 0 1aaf6fbed281d7c502a9ce0ae0be1bb1
+
+% 0 1 0 1efa75521e6af85c1be0e7ddf06e94a5
+
+% 0 1 0 077699c766affba4055a0c2920e5fa4a
+
+% 0 1 0 0d9bc9d6bcda52751731d11bbf71c192
+
+% 0 1 0 0fbb800a6303de6a0d4e5f7ba75b2de3
+
+% 0 1 0 1b3696e05a10e97d0ae2d1a4a5a6f2f2
+
+% 0 1 0 066b45f63d7fcb2006881cd9c0485a18
+
+% 0 1 0 0d579c73cab06d6c03cb5b3ea75d1598
+
+% 0 1 0 1f4d1030481eb4ac1ef05d10d8e5dbef
+
+% 0 1 0 05b758b944ae03861efa822c05e01812
+
+% 1 1 0 0e67c25d8599c0e612854871c74fbe3d
+
+@ 0 1 0 0d09d6182d480ca40c5452b3a547a41a
++     entry .Kind   帧在解析后被证实是什么：方法、lambda……或编译器的管道代码
+
+% 1 1 0 0b07cf02fcc38c4b1d9a082ad808d689
+
+@ 0 7 0 0356c63caf939e50192b133c09e298a1
++           帧可能由之编译而来的定义种类的枚举：`Method`、`Lambda`、`Value`、`Class`、`Constructor`、`Extension` 和 `Default`（默认参数）是在源代码中写出的；`Bridge`、`Forwarder`、`Initializer`、`Specialized` 和 `Synthetic` 由编译器合成，`#plumbing` 会指明这一点，因此渲染器可以将它们弱化显示或略去。
++       entry #plumbing   该种类是否由编译器合成：桥接方法、转发器、初始化器……
++     entry .Source   帧编译所依据的源代码定义，即解析器所找到的
+
+% 1 1 0 1e05f21689e1095a15a92462689678cd
+
+@ 0 11 0 0aa7a54276a2d2b31aa6dd81a9856977
++           已解析帧的定义：其源文件的完整 `#path`（堆栈跟踪只记录最后一段）、它的 `#owner`（外围定义构成的链）、它自己的源代码 `#name`、它的 `#kind`，以及可选的该行 `#code`。
++       entry #path   源文件的完整路径
++       entry #owner   外围定义构成的链，以点连接：`globe.Play.stage`
++       entry #name   定义自己的源代码名称
++       entry #kind   定义的种类，作为 `StackTrace.Frame.Kind`
++       entry #code   源代码行，如果解析器读取了它；否则为 `Unset`
++       entry #definition   用 `.` 连接的所有者和名称；若没有所有者则只有名称
++     entry .Inlined   帧所在行代表的一层内联：它被写在的文件和行
+
+% 1 1 0 0bf0ed37545fb93f085c0a855d9d14cc
+
+@ 0 21 0 0cf9e13b93dd856d1a371cca70124b6e
++           当类文件的 SMAP 记录帧所在的行是从别处内联而来时，帧每一层都有一个 `Inlined`，最内层在前：`#file` 名称、其完整 `#path` 和 `#line`，以及在解析器找到时，该位置所在的 `#source` 定义——即内联方法本身。
++       entry #file   源文件的名称，即其路径的最后一段
++       entry #path   源文件的完整路径
++       entry #line   内联代码被写在的行
++       entry #source   该位置所在的定义，如果解析器找到了它
++     entry #method   帧的名称还原后的类名和方法名
++     entry #file   源文件的名称，即类文件所记录的；若没有则为 `———`
++     entry #line   行号；若未记录则为 `Unset`
++     entry #native   该帧是否为本地方法
++     entry #jvmClass   编译后的类名，名称还原之前
++     entry #jvmMethod   编译后的方法名，名称还原之前
++     entry #source   源代码定义，如果解析器找到了它
++     entry #inlined   帧所在行代表的各层内联，最内层在前
++     entry #displayClass   作为帧的所有者显示的内容：已解析时为源代码所有者，否则为名称还原后的类
++     entry #displayMethod   作为帧的方法显示的内容：已解析时为源代码名称，否则为名称还原后的方法
++     entry #displayPrefix   不含最后一段的 `#displayClass`
++     entry #displaySegment   `#displayClass` 的最后一段
++   entry .Resolver   将帧映射到其源代码层面的定义，由调用者作用域中的 given 选择
+
+% 1 1 0 0631bf649d44f10d09f1e9c7be8eca86
+
+@ 0 6 0 09f1a96be700edc01a74f72f4be07764
++         解析帧需要 digression 所没有的能力——至少需要一个类路径——因此默认的 `.none` 原样返回每个帧，而实现则从拥有该能力的模块导入：hyperbole 中的 `stackResolutions.tastyStackResolution` 读取每个顶层类的 TASTy（跟踪中提到的每个类读取一个文件）。
++         将该能力排除在外，正是跟踪能在浏览器、本地二进制文件或 WebAssembly 组件中无需改动即可工作的原因。
+
+% 2 1 0 17b188807fa8cab60c560be75697515e
+
+% 3 1 0 1e62b4c896b7082a0eeeacd2a7f15086
+
+% 0 1 0 020b6f6dc589b97a1e47673d0f593f8a
+
+% 0 1 0 00da3440539e6d8f074777942a4d1448
+
+% 1 1 0 11d9c42b688ef29f0d330cb4ab15e330
+
+@ 0 13 0 07b8368a59db7628187dac1bd52cd31c
++     entry .none   默认解析器，保持每个帧被捕获时的样子
++     entry #resolve   补充了其源代码定义所添加内容的帧：`#source`、`#inlined`
++   entry #component   异常类的包：`java.lang`
++   entry #className   异常类的简单名称，已名称还原：`Exception`
++   entry #message   异常的消息，作为 `Message`
++   entry #frames   各个帧，从栈顶向下
++   entry #cause   异常原因的跟踪；或为 `Unset`
++   entry #crop   去掉某个方法的帧之后的此跟踪，该方法以名称还原后的类名和方法名指定
++       `trace.crop(className, method)` 移除其 `Method` 具有该类名和方法名（名称还原后）的每个帧——比如测试运行器入口点的帧——并按顺序保留其余帧。
++   entry #drop   去掉最顶部 `n` 个帧之后的此跟踪
++   entry #dropRight   去掉最底部 `n` 个帧之后的此跟踪
+
+@ 0 1 0 1c4fd428f0d1c12301b258478d63c6b9
++ entry .Smap   已解析的 JSR-45 源映射：类文件的合成行号原本写在何处
+
+% 1 1 0 01c6c150026d6b1507eae0439fe570e1
+
+@ 0 6 0 0becd8e6a217da331619d97181b6d489
++       当编译器内联代码时，类文件的行号表只能指明其自身文件的行，因此它会记录合成行号以及一个 `SourceDebugExtension` 属性——即 SMAP——将它们映射回去。
++       `Smap.parse` 读取一个 SMAP：它的 `#generated` 文件名、`#default` 层，以及按名称排列的 `#strata`。
++       `#expand` 将合成行转换为它所代表的来源链（最内层在前），以及它最终回溯到的真实调用点行；`#sites` 是它的逆运算，即某个源代码行被内联到的生成范围。
+
+% 2 1 0 15550197654c037018c9c88d603c9cff
+
+% 3 1 0 10fb6d89897b33751be09dbf7df01f0d
+
+% 0 1 0 06275b40778ee59d1245495052a70a1e
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1af91be0d7746a260fd14236fe726710
+
+% 0 1 0 08f2f578ea3ff42c1210b19fda1798b1
+
+% 0 1 0 161a16999d2301080ae2f1387cb991a7
+
+% 0 1 0 0d54731b4e033cc01b754037fb913a9f
+
+% 0 1 0 08d5130224b2f36c14aef348730b1183
+
+% 0 1 0 1190c212a4c9cc7a15f68ef1e08d79cd
+
+% 0 1 0 1e5e4d24419467cd0b2ab53f3cfaf0c7
+
+% 0 1 0 001059c6a0701627154108faa85b09a8
+
+% 0 1 0 1f16c9a7e3a3e8330a0ddc898a4b0d88
+
+% 0 1 0 1f1ea552cb45648115c1d2bce2887c6c
+
+% 0 1 0 09b0d7185f354d761150682c90349958
+
+% 1 1 0 10c556ba3ade481a0a8949072bde7bda
+
+@ 0 10 0 1211a87078ea56cd17b3ed1849793682
++       Scala 和 Kotlin 编译器所写的 `<default>Debug` 层将合成行映射到其内联调用点，因此 `#expand` 会逐层追踪它；`<default>Class` 层则指明每个来源所在的顶层类。
++   entry .parse   解析 SMAP 的文本；若其头部无法读取则为 `Unset`
++       不以 `SMAP` 和两行头部开头的文本为 `Unset`；在节内，任何格式错误的内容都会被跳过，因为 SMAP 始终只是额外细节的来源。
++   entry .File   某一层文件表中的一个文件：堆栈跟踪记录的名称及其完整路径
++     entry #name   文件的名称，即堆栈跟踪所记录的
++     entry #path   文件的完整路径；若 SMAP 未给出，则仍为其名称
++   entry .Entry   一个行映射条目：某个文件中的一段输入行，映射到一段输出行
+
+% 1 1 0 0318be04614b66a012379e7940cbe80b
+
+@ 0 30 0 1b51f3d81295fb0d1563f24f776a67e1
++         文件 `fileId` 中从 `inputLine` 开始的 `repeat` 个输入行，映射到从 `outputLine` 开始的输出行，每个输入行覆盖 `increment` 个输出行。
++     entry #inputLine   该段的第一个输入行
++     entry #fileId   输入行所在的文件，以其在文件表中的 id 表示
++     entry #repeat   该段有多少个输入行
++     entry #outputLine   该段映射到的第一个输出行
++     entry #increment   每个输入行覆盖多少个输出行
++     entry #apply   某个输出行对应的输入行；若该条目不覆盖它则为 `Unset`
++   entry .Stratum   SMAP 的一层：它的文件表和行条目
++     entry #files   文件表，按文件 id 排列
++     entry #entries   行映射条目，按顺序排列
++     entry #apply   某个输出行映射到的文件 id 和输入行，取自覆盖它的第一个条目
++     entry #origin   某个输出行映射到的文件和输入行，当文件表知道该文件时
++   entry .Origin   一行内联代码被写在何处：文件、路径、行号，以及它所在的类
++     entry #file   源文件的名称
++     entry #path   源文件的完整路径
++     entry #line   行号，从 1 开始计数
++     entry #cls   该位置所在编译单元的顶层类的二进制名称，如果 SMAP 给出了的话
++   entry .Expansion   合成行所代表的内容：它的内联来源（最内层在前）以及真实的行
++     entry #inlined   各个来源，最内层在前
++     entry #line   该链回溯到的帧自身文件中的真实行；若链中断则为 `Unset`
++   entry #generated   SMAP 所属的生成文件的名称
++   entry #default   默认层的名称，例如 `Scala`
++   entry #strata   各层，按名称排列
++   entry #path   生成文件的完整路径，如果其文件表记录了的话
++   entry #expand   合成行的内联来源以及真实的调用点行；对于真实的行则为 `Unset`
++   entry #sites   某个源文件的行被内联到的生成 `[start, end)` 行范围
++       每个调用点一个范围，不包括该行在生成文件中自然出现的位置；对于 SMAP 之外的文件则为空。
++       内联到多个调用点的行会给出多个范围，因为设在它上面的断点应当出现在每一处。
+
+@ 0 1 0 0b99017ad6454e7a02afb626f8f9bd97
++ entry .StackTracePalette   终端堆栈跟踪所用的颜色：消息、文件、方法、行号和强调色
+
+% 1 1 0 04bc67a8796ff72304a190bc4b2eb9fc
+
+@ 0 5 0 084bac036d1be9a61bfd6a26e8546cba
++       为 `teletypeables` 渲染准备的 sRGB 颜色组成的 `iridescence.Palette`，位于 `digression.ansi` 组件中：`#message`、`#file`、`#method` 和 `#line` 颜色，一个 `#separator`，以及五种强调色，它们依次为帧的包着色，使来自同一个包的帧共享一种颜色。
++       伴生对象的 `.default` 处于隐式作用域中；自己定义的 given 会覆盖它。
+
+% 2 1 0 1167b3b13b4c522914b8bd259da35e82
+
+% 3 1 0 1ada2c7dd726a99f076bc5687f946da2
+
+% 4 1 0 17f614d75c5bcc1b1ffed72248664d3b
+
+% 0 1 0 0722a3d2d26a5b4a16acaafb054a49ff
+
+% 0 1 0 100eaa7b505be848036b1a5a7a58ea58
+
+% 0 1 0 17c2119d214fd30218cf0c35ed65fac7
+
+% 1 1 0 1ef1ab099a8b0d38019bd9e03b677006
+
+@ 0 12 0 01124b5abf0305fa18979aab53163870
++   entry .default   黑底白字，文件和行号为青绿色，强调色为暖色
++   entry #Form   调色板的色彩空间，`Srgb`
++   entry #message   异常行以及 `caused by:` 的颜色
++   entry #file   文件名的颜色
++   entry #method   方法名的颜色
++   entry #line   行号的颜色
++   entry #separator   分隔符的颜色：`at`、`.`、`:`
++   entry #accent1   第一种包强调色
++   entry #accent2   第二种包强调色
++   entry #accent3   第三种包强调色
++   entry #accent4   第四种包强调色
++   entry #accent5   第五种包强调色；第六个包重新使用第一种
+
+@ 0 1 0 129b4932aaedb02b0b9b4b864cf03895
++ entry .teletypeables   跟踪、帧、方法和异常的彩色终端渲染，按名称导入
+
+% 1 1 0 0a63e85c2235c51e0c8c9751854193db
+
+@ 0 5 0 008f58dffe9505620872524fca537e0e
++       位于 `digression.ansi` 组件中。
++       每个 given 都使其对象成为 `Teletypeable`，因此 `teletype` 会将其渲染为终端的带样式文本；每个都需要作用域中有一个 `Text is Measurable`（例如 `textMetrics.uniformMetric`）来计算列宽，并且这些渲染采用作用域中的 `StackTracePalette`。
++       `import teletypeables.*` 不会导入 given，因此每个都需按名称导入。
+
+% 2 1 0 0852884132dbb1a4057b778cbddb44d8
+
+% 3 1 0 04827b35766cd0090b136fce01dd1ed5
+
+% 4 1 0 12f63c4dcf9e54f217f2dc725ab60416
+
+% 0 1 0 0e3f2c3b9261c8f0037d3c609768a164
+
+% 0 1 0 04f08902b8b598dd084cc0d502445056
+
+% 1 1 0 040506868f7596f71ad395e8b03e87b6
+
+@ 0 11 0 16f2d7425ae7a74409e6276982e92f82
++   entry .stackTraceTeletype   以无边框表格表示的跟踪：每个帧一行，对齐，按包着色
++       先是异常行，然后每个帧一行——`at`、作为一个对齐列的类和方法、作为另一列的文件和行号，以及已解析帧的引用源代码，这一列在终端较窄时最先被省去——每一层内联在其下方有一行 `↳`。
++       与上方帧属于同一个类的帧会弱化显示，编译器的管道代码也是如此；原因在 `caused by:` 之后给出。
++   entry .exceptionTeletype   渲染为其堆栈跟踪的 `Exception`，用作用域中的解析器捕获
++       需要一个 `Text is Measurable` 和一个 `StackTrace.Resolver`，并通过 `.stackTraceTeletype` 渲染。
++   entry .frameTeletype   一个帧占一行：类和方法适配到四十列，然后是文件和行号
++   entry .methodTeletype   将 `StackTrace.Method` 表示为其类和方法，用 `⌗` 分隔
+
+@ 0 1 0 024dda655c3104191562fca42fa0bd35
++ entry .internal   `Codepoint.default` 和 `fqcn"…"` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 05215239b24b403800c9826a3663484b
++       不供直接使用：此对象的存在是为了让宏有一个稳定的归属。
++   entry .location   `Codepoint.default` 背后的宏：展开位置的源路径和行号
++   entry .fqcn   `fqcn"…"` 背后的宏：验证字面量并拼接 `Fqcn.unsafeFrom`
++   entry .javaKeywords   类名路径段不能使用的 Java 关键字

@@ -1,0 +1,1358 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e011ea158cf197909bd07fd93e181a5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 075285b0bbf2513f083b127035e7f4f0
++ info   sesje terminala w trybie surowym: naciśnięcia klawiszy i raporty terminala jako typowane zdarzenia, edycja wiersza i menu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 17a11c26eec487471037eccbbdbe8f9d
++     _Profanity_ to strona wejściowa interaktywnego programu terminalowego. Terminal zgłasza
++     wszystko – naciśnięcie klawisza, zmianę rozmiaru, zmianę aktywności, wklejenie, kolor tła –
++     jako sekwencje sterujące na standardowym wejściu, i to tylko w trybie surowym, który
++     trzeba ponownie wyłączyć, jakkolwiek program się zakończy. Profanity ogranicza sesję
++     w trybie surowym do zasięgu bloku, dekoduje wejście na typowane `Terminal.Event`
++     i buduje nad strumieniem zdarzeń edycję wiersza i menu.
+
+@ 0 4 0 13c10f0f39147cd409678dd164cd957c
++     Sesją jest `interactive`. W jej obrębie `Terminal` jest kontekstową zdolnością: jego
++     `Terminal#eventIterator` dostarcza zdarzenia, jego `Terminal#stdio` pisze na ekran
++     z rzeczywistą szerokością i głębią kolorów terminala, a sprawdzanie przechwytywania
++     ogranicza go do bloku, ponieważ tryb surowy i standardowe wejście są likwidowane, gdy
++     blok się kończy.
+
+% 2 1 0 13959f646b55088d012f6e4d7bedcfa2
+
+% 3 1 0 1ac916edf41b973b1876ef86cebea8f6
+
+% 4 1 0 144e400af5b690c1026fc33bd4081058
+
+% 5 1 0 16b5fe680128a0721f2c6d78efd6998b
+
+% 0 1 0 0f78d076a2e1731e0b86593735a0f7a8
+
+% 0 1 0 19cd01961f0ca871033869efd334646a
+
+% 0 1 0 07c68d15da07179906837500c206b2b4
+
+% 0 1 0 044b0703a247bc140f10eeec8560f8cc
+
+% 0 1 0 0ac9a58fd2fa62eb05ce2a7347cfbd2e
+
+% 1 1 0 065cf98ea66657bf1d123006a33f8ec4
+
+@ 0 6 0 1ab1fac5768018051dbf7875cbe71d3a
++     `Terminal.Event` to unia czterech słowników: `Keypress` z clavichord (znak, nazwany
++     klawisz edycyjny, klawisz funkcyjny lub dowolny z nich przytrzymany z `Shift`, `Alt`,
++     `Ctrl` lub `Meta`), raportu `Terminal.Info` od terminala, `Interrupt` (sygnału POSIX,
++     takiego jak `WINCH`) oraz `WindowsSignal`. Dekodowaniem zajmuje się `Keyboard.Standard`,
++     obsługując starsze i VT-owe sekwencje klawiszy, parametry modyfikatorów, postać CSI-u
++     protokołu klawiatury kitty, wklejanie w nawiasach, raporty aktywności, raporty położenia
++     kursora i rozmiaru oraz odpowiedź z kolorem tła.
+
+@ 0 6 0 0a1e61fbc02331161b72f8e7549d16c7
++     Opcjonalne tryby terminala – wklejanie w nawiasach, raportowanie aktywności, śledzenie
++     myszy, ekran alternatywny, protokół klawiatury kitty – to `Terminal.Feature` w pakiecie
++     `terminalFeatures`. `interactive` włącza na czas sesji każdy z nich, który jest
++     w zasięgu, i wyłącza go ponownie na jej końcu, więc program wybiera swoje tryby,
++     importując ich givens **po nazwie**: `import pkg.*` nie importuje givens. Pakiet
++     `keyboards` podobnie zawiera dekodery, spośród których program może wybierać.
+
+@ 0 5 0 0d8a5cea46392c860fee414453520f79
++     Na strumieniu zdarzeń opierają się dwa widżety, każdy będący czystą maszyną stanów
++     (zdarzenie na wejściu, nowy stan na wyjściu) sterowaną przez renderującą go
++     `Interaction`: `LineEditor` dla jednego lub kilku wierszy tekstu oraz `SelectMenu` dla
++     wyboru spośród opcji. Oba rysują przez `Board`, więc ten sam widżet renderuje się
++     w wierszu przy kursorze (`InlineBoard`), na całym terminalu (`TerminalBoard`) lub wewnątrz
++     panelu większego układu.
+
+% 2 1 0 0635333a64a7584d10291e8b766a0b8b
+
+% 3 1 0 0901e1cbdeb5fd810434c40e6ab5a8ba
+
+% 4 1 0 08c7ddf91030909e063fea62c33ee343
+
+% 5 1 0 1f5e13c3e2667b501e3397c56b4acfb2
+
+% 0 1 0 145b8ff511bb47c1052048e226809213
+
+% 0 1 0 14a8e5cea526d0a70fde2d89956d4de2
+
+% 0 1 0 1e11ac88b364ed100165a0f926810ee3
+
+% 1 1 0 18d6b8e2cf3e400805af134574ba2bf8
+
+@ 0 4 0 0ef6eb59310bb480053fb2fe50179498
++     Sygnały docierają do sesji przez `Console`, na której ona działa: zmiana rozmiaru lub
++     wznowienie zamieniają się w zdarzenie, a rozmiar zmierzony przez launcher, jeśli taki
++     jest, zostaje zapisany bezpośrednio. `Signal` niesie `Interrupt` lub `WindowsSignal` wraz
++     z tym, co dołączył do niego nadawca.
+
+@ 0 6 0 1f3c99b6cf79a09515240c3638d2d9f5
++     `interactive` potrzebuje `Console` – którą zapewnia blok `cli` z exoskeleton, niezależnie
++     od tego, czy program działa samodzielnie, czy pod demonem ethereal – oraz `Monitor`,
++     `Probate`, `Environment` i `Tactic[Terminal.Error]`. Biblioteka to jeden zbiór źródeł,
++     `profanity.core`, dla JVM: sesja ustawia tryb surowy, uruchamiając `stty`. Wszystko jest
++     eksportowane do modułu zbiorczego `soundness`, a pakiety wyboru `keyboards`
++     i `terminalFeatures` łączą się z własnymi pakietami modułu zbiorczego.
+
+% 0 1 0 1e9daf8658f616a205c5a8814277d05f
+
+% 0 1 0 164a924f19667e0d1aeb87c70c2e0f46
+
+% 0 1 0 1992f2fed2cbfca508a83aabf3c8c62e
+
+% 0 1 0 0c217fa01a5dd684076bdf79351898fb
+
+% 0 1 0 1fb5f0ff4464cc3808339230f20795f9
+
+% 0 1 0 1a7f9eee164def8c05f4b12ebb2fba4f
+
+% 0 1 0 1797ecdbacccb8871a70287d860932f0
+
+@ 0 1 0 0309ae6e8c7cb468021728a23e63ec89
++ entry .interactive   uruchamia blok jako sesję terminala w trybie surowym, z `Terminal` w kontekście
+
+% 1 1 0 12e1d72fb4598cc805100ff75a769424
+
+@ 0 4 0 0e2079088f8b6cbd144d3c8ed9ae0e8d
++       `interactive(block)` tworzy `Terminal`, przełącza terminal w tryb surowy, stosuje każdą
++       `Terminal.Feature` w zasięgu i wartościuje blok z terminalem jako wartością
++       kontekstową; gdy blok się kończy, jakkolwiek by się nie kończył, wyłącza funkcje
++       w odwrotnej kolejności, zamyka standardowe wejście, zatrzymuje strumień zdarzeń i czeka
++       na zakończenie pompy wejścia.
+
+% 2 1 0 1c95ecbc2ab2279d19c5296f5568e13c
+
+% 3 1 0 08399ea6e14d5e590b7b7790f51c2b58
+
+% 4 1 0 0e3108e323ac46d70319b22dcf3ee7cf
+
+% 0 1 0 1738c4feca27eb6517464ff992a96ccc
+
+% 2 1 0 18927299611a0e0003109cff53fce4d9
+
+% 3 1 0 084f34c8b617cf3e066def97a3204148
+
+% 0 1 0 0e3c7987cac67a1a159cdc68c5e4ca42
+
+% 0 1 0 0efb4d4e49657e700d6ec92362948b6b
+
+% 0 1 0 0afc87a990fda19b1b592a2ace02e9fa
+
+% 1 1 0 1eb1b2abdbe0e3bd146c6335fed94fde
+
+@ 0 8 0 0c54b43613e33b1e04017093322d8a6b
++       Tryb surowy ustawia się poleceniem `stty intr undef -echo icanon raw opost`, gdy
++       standardowe strumienie `Console` są własnymi strumieniami procesu; pod demonem, którego
++       strumienie są przekazywane z launchera, launcher już ustawił terminal klienta i nic nie
++       jest uruchamiane. Tryb surowy wyłącza obsługę `Ctrl`+`C` przez sterownik terminala,
++       więc dociera ono jako naciśnięcie klawisza `Keypress.Ctrl('C')`, a nie jako sygnał.
++       Gdy tylko tryb surowy zostanie włączony, sesja pyta terminal o jego rozmiar
++       (`Terminal.reportSize`), ponieważ powłoki domyślnie nie eksportują `LINES` i `COLUMNS`;
++       do nadejścia odpowiedzi przyjmuje się, że terminal ma rozmiar 80×24.
+
+@ 0 4 0 16296aad8732697f012eba0e90e578e1
++       Potrzebuje `Console`, `Monitor` i `Probate` (pompa wejścia jest zadaniem demona),
++       `Environment` (dla `TERMINAL_BG`, `LINES` i `COLUMNS`), `Every[Terminal.Feature]`
++       (pustego, gdy nie zaimportowano żadnej funkcji) oraz `Tactic[Terminal.Error]`,
++       zgłaszanego, gdy `stty` zawodzi, ponieważ standardowe wejście nie jest terminalem.
+
+@ 0 3 0 1e04850df658c5d70c0643427b6a17b7
++       `Terminal` jest zdolnością na wyłączność, a sprawdzanie przechwytywania ogranicza go do
++       bloku: nie można go zwrócić, przechwycić w zwracanym domknięciu ani schować w zmiennej
++       zewnętrznej, ponieważ reprezentowana przez niego sesja kończy się wraz z blokiem.
+
+% 2 1 0 16db94b19a9b51270671efdf02f36f1a
+
+% 3 1 0 057463f463e273d212387068931f4771
+
+% 0 1 0 0b0f9e790a5ed17315d4a13383744d99
+
+% 0 1 0 09f4a7c7864fa0aa1d3617bc1372ac5d
+
+% 0 1 0 195ddc35616aa424028011286c89fc8a
+
+% 1 1 0 19d6ada385792aa518f4b6a9daf54307
+
+% 1 1 0 172b562cf38b82161af832dd8568d304
+
+% 0 1 0 06d7546c86dd8f8b0c343fe04ef2c488
+
+% 0 1 0 1a3f84fbf06c3fc31f8e5121189dd32c
+
+@ 0 7 0 0bed0163028dd0430c6536ada9d49057
++ entry .terminalStdio   standardowe strumienie dostarczane przez `Terminal` w zasięgu, jako `Stdio`
++     Given najwyższego poziomu, który czyni `Terminal#stdio` instancją `Stdio` wszędzie tam,
++     gdzie `Terminal` jest w kontekście, więc `Out.println` wewnątrz bloku `interactive` pisze
++     przez strumienie sesji, z termcapem zgłaszającym obsługę ANSI, pełny kolor i bieżącą
++     szerokość terminala. Jest to jedna kanoniczna instancja, a nie wybór, więc jest nazwanym
++     givenem na najwyższym poziomie pakietu. Eksportuje go moduł zbiorczy, a ponieważ
++     `import soundness.*` nie importuje givens, importuje się go po nazwie tam, gdzie jest
++     potrzebny: `import soundness.terminalStdio`.
+
+@ 0 1 0 0852c7454f8244550dcbbb7b027195cf
++ entry .Terminal   aktywna sesja terminala w trybie surowym: jej strumień zdarzeń, rozmiar i strumienie wyjściowe
+
+% 1 1 0 10dec3ecf76792a0066b9e6818885cb5
+
+@ 0 5 0 1e0d81053e94f06802dfdc0d996f9d7e
++       `Terminal` to zdolność, którą `interactive` pożycza swojemu blokowi. Przechowuje stan
++       sesji: strumień `Terminal.Event`, które demon pompy wejścia dekoduje ze standardowego
++       wejścia, ostatnio zgłoszony rozmiar terminala, to, czy jego tło jest jasne, czy ciemne,
++       oraz `Stdio`, przez który się do niego pisze. Jest `Interactivity[Terminal.Event]`,
++       więc widżety `LineEditor` i `SelectMenu` pobierają z niego zdarzenia bezpośrednio.
+
+% 2 1 0 07ab49492d70810b1bf4a7bc599bdd9d
+
+% 3 1 0 0c6394ca69db1139063e7d4e54a42cec
+
+% 4 1 0 15af882cbaf8ca1e0134ae5a6769b5b5
+
+% 5 1 0 14cce234f0d0b67b03e4d5191d1b7e7a
+
+% 0 1 0 04d77058a8531fb107e950ed8ad069e3
+
+% 1 1 0 15fc3aab607b025713da021e32502f3b
+
+% 0 1 0 1572f797828cdc0e0932c7affab5a461
+
+% 0 1 0 0e20f430687bde8d132708f2b68d92ef
+
+% 0 1 0 0a0f9bf770ee14ee19daf999875ec813
+
+% 1 1 0 0b4749ec995d363b0790d20389f92a0d
+
+@ 0 5 0 05d3f96179acefd009fca24773980abd
++       Rozmiar pochodzi najpierw z termcapu `Console` – pod demonem launcher zmierzył terminal
++       klienta – a następnie z `LINES` i `COLUMNS`, i jest uaktualniany przez każdy raport
++       rozmiaru i każdy sygnał zmiany rozmiaru; `#knownColumns` i `#knownRows` przyjmują
++       wartość rezerwową 80×24, dopóki rozmiar jest nieznany. `#mode` jest odczytywany ze
++       zmiennej środowiskowej `TERMINAL_BG` i uaktualniany przez odpowiedź, o którą prosi
++       `terminalFeatures.backgroundColorFeature`.
+
+@ 0 5 0 14bed44cbe2faa8e02c2e452495c8d3a
++       Zmiana rozmiaru jest obsługiwana w pełni: przy `WINCH` (lub `CONT`) sesja pyta
++       o położenie kursora oraz, jeśli sygnał nie niósł nowego rozmiaru, także o rozmiar.
++       Strumień zdarzeń otrzymuje natychmiast `Interrupt`, `Terminal.Info.WindowSize`
++       (natychmiast, jeśli sygnał niósł rozmiar, a w przeciwnym razie, gdy terminal
++       odpowie) oraz `Terminal.Info.CursorPosition`, informujące renderer działający w wierszu,
++       dokąd przeformatowanie przesunęło jego blok.
+
+@ 0 2 0 144afd5c111de12d05b78cb59fedf890
++       `Terminal` tworzy wyłącznie `interactive`, które go likwiduje; jest on zdolnością na
++       wyłączność, więc nie może przeżyć tego bloku.
+
+% 1 1 0 0cb4c9904eece3411239e8ddf77282ff
+
+% 0 1 0 09b462d82f78e8031aef48ee58c4df88
+
+% 1 1 0 04b9c35e9cb62b9001eb70d93f69e5ed
+
+% 0 1 0 10b1715f22a1535905ff3793a0bde2e1
+
+@ 0 12 0 1a77d356721ff24a04a282273b9e3b93
++   entry .reportSize   sekwencja sterująca, która pyta terminal o jego rozmiar
++       Zapisuje kursor, przesuwa go tak daleko w prawo i w dół, jak pozwala terminal, pyta
++       o jego położenie i go przywraca: `\e7\e[4095C\e[4095B\e[6n\e8`. Odpowiedź terminala,
++       raport położenia kursora z prawego dolnego rogu, dekoduje się jako
++       `Terminal.Info.WindowSize`. `interactive` wysyła ją, gdy sesja się zaczyna,
++       a `terminalFeatures.terminalSizeFeature` jest nią w postaci funkcji terminala.
++   entry .anchorQuery   sekwencja sterująca, która pyta, gdzie jest kursor: `\e[6n`
++       Zmiana rozmiaru wysyła ją przed sondą rozmiaru, aby renderer działający w wierszu
++       dowiedział się, dokąd przeformatowanie terminala przesunęło komórkę, na której był jego
++       kursor. Jej odpowiedź ma taką samą postać jak odpowiedź sondy rozmiaru; sesja rozróżnia
++       je po kolejności, w jakiej je wysłała, i zgłasza tę jako
++       `Terminal.Info.CursorPosition`.
++   entry .Error   zgłaszany, gdy standardowe wejście nie jest podłączone do terminala
+
+% 1 1 0 119d8e695a3e36221161efa635866739
+
+@ 0 4 0 0444f5b599fbf2a50d88d641f0149ee9
++         Błąd `↯/s.95.2`: _STDIN is not attached to a TTY_. Zgłaszany przez `interactive`, gdy
++         `stty` nie zdoła przełączyć terminala w tryb surowy, jak dzieje się, gdy wejściem
++         programu jest potok lub plik.
++   entry .Feature   tryb terminala włączany i wyłączany parą sekwencji sterujących
+
+% 1 1 0 0ddb5b68a4c923ed0f525b7f8295cab3
+
+@ 0 7 0 05598ed316945ded0b59c8249f258b5f
++         `Feature` to sekwencja `#enable` i sekwencja `#disable`: wklejanie w nawiasach,
++         raportowanie aktywności, śledzenie myszy, ekran alternatywny, protokół klawiatury
++         kitty. Standardowe funkcje są givens w pakiecie `terminalFeatures`, a `interactive`
++         przywołuje każdą z nich w zasięgu jako `Every[Terminal.Feature]`, włączając każdą na
++         czas sesji i wyłączając na jej końcu, w zagnieżdżeniu, tak że ostatnia włączona jest
++         pierwszą wyłączaną. Jednorazowe zapytanie, na przykład o kolor tła lub rozmiar, ma
++         pusty `#disable`.
+
+% 2 1 0 1662851680272ceb1401e3a06399365c
+
+% 3 1 0 13be9312c8bd094805a121dce373b8e1
+
+% 0 1 0 1dfc23811e46fff304eaf60957f87a63
+
+% 0 1 0 0bef6af9d3208dd60481bd78503e77dd
+
+% 1 1 0 1b6e6ef5de64f8f213ffed2806794a09
+
+@ 0 1 0 06468e20a8989d99003156463c355f62
++         Funkcję można też zastosować wokół bloku wewnątrz sesji, za pomocą `#apply`.
+
+% 0 1 0 188087308212848c139ffefd2492f848
+
+@ 0 5 0 0544507f22b49e4618b8d148144f4e07
++     entry #enable   sekwencja sterująca, która włącza tryb
++     entry #disable   sekwencja sterująca, która wyłącza tryb; pusta dla jednorazowego zapytania
++     entry #apply   uruchamia blok z włączonym trybem, wyłączając go potem, jakkolwiek blok się zakończy
++         Potrzebuje `Terminal` w kontekście, przez którego `Stdio` zapisywane są sekwencje, więc
++         funkcję można zastosować tylko wewnątrz sesji `interactive`.
+
+% 2 1 0 1c29d21e3e243642166f16e649ab935a
+
+% 3 1 0 1a7117e86a4ce5e71da1ea0bec7cdf28
+
+% 4 1 0 1f4e6fb60a80dfc51c2718fe889e7d6f
+
+% 5 1 0 1db464497bdaa9321ff6a8eb205ebb49
+
+% 0 1 0 1a01abec6ff4315917ce134873ae30c3
+
+% 0 1 0 166c0eb9a13a78090f3230ee01a4475d
+
+% 1 1 0 1bf8368c424abbd9175b488323233a98
+
+@ 0 1 0 0d94f30fd94a83711ebb183ac315559f
++   entry .Info   raport od terminala: jego rozmiar, kursor, tło, aktywność lub wklejenie
+
+% 1 1 0 083c20bae5397cff078a1c4c44a46226
+
+@ 0 1 0 0fa6f2bb267798831773239be93defb2
++         Zdarzenia wysyłane przez terminal, które nie są naciśnięciami klawiszy, dekodowane
++         przez `Keyboard.Standard`:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 150d1427efb3e0c60c391e76a697ca2a
++         column  Przypadek
++         column  Raport
++         column  Wysyłany
++         row  `WindowSize(rows, columns)`  rozmiar terminala; `Terminal` zapisuje go przed przekazaniem dalej  w odpowiedzi na `Terminal.reportSize`: na początku sesji, po zmianie rozmiaru lub dla `terminalFeatures.terminalSizeFeature`
++         row  `CursorPosition(row, column)`  położenie kursora we współrzędnych ekranu liczonych od jedynki  w odpowiedzi na `Terminal.anchorQuery` lub jako raport DECXCPR z przedrostkiem `?`
++         row  `BgColor(red, green, blue)`  kolor tła, ze składowymi szesnastobitowymi; `Terminal` uaktualnia na jego podstawie swój `#mode`  w odpowiedzi na zapytanie `terminalFeatures.backgroundColorFeature`
++         row  `LoseFocus`, `GainFocus`  zmiana aktywności  z `terminalFeatures.focusReportingFeature`
++         row  `Paste(text)`  całość wklejenia w nawiasach, zamiast jednego naciśnięcia klawisza na znak  z `terminalFeatures.bracketedPasteFeature`
++         row  `Redraw`  żądanie odświeżenia  nigdy przez terminal: aplikacja umieszcza je w strumieniu zdarzeń, aby obudzić swoją pętlę zdarzeń, gdy zadanie w tle zmieni to, co jest wyświetlane
+
+% 1 1 0 1ee5272832958f0b15f90eb4e1d94475
+
+% 2 1 0 002fa8b633dd6fc7190701b80c862d93
+
+% 3 1 0 195338b73e3796210ed8fc86336f1a02
+
+% 4 1 0 1554ecc07fd3136915c463dc51c77a77
+
+% 5 1 0 06eab14e0fbc215e02fc5dcaf079a1ad
+
+% 0 1 0 1d4dcd99b8af1dd10ff1d2b1d138b99b
+
+% 0 1 0 030e8a728ce283b309e53cbfb3c7203f
+
+% 0 1 0 0ade5055e51a1f271358653557b2e6c7
+
+% 0 1 0 087fc6764020dba6197d3ec666a27263
+
+% 0 1 0 0979a79bfb7ac53313e997f0ac2285bb
+
+% 1 1 0 109583d4d07d756f1ee876f768dd2f59
+
+@ 0 46 0 0d30209a278fae42140ff6cf3269d977
++   entry .Event   każde zdarzenie, które dostarcza sesja terminala: naciśnięcie klawisza, raport lub sygnał
++       Unia `Keypress | Terminal.Info | Interrupt | WindowsSignal`. `Keypress` pochodzi
++       z clavichord, aby sterownik przeglądarki mógł nazwać naciśnięcie klawisza bez
++       zależności od biblioteki terminalowej; jest to unia, a nie zapieczętowany trait,
++       ponieważ typ w innym module nie może rozszerzać zapieczętowanego traitu z tego modułu.
++       Dopasowanie do niej jest nadal sprawdzane pod kątem wyczerpującości.
++   entry #in   standardowy strumień wejściowy sesji
++   entry #out   standardowy strumień wyjściowy sesji
++   entry #err   standardowy strumień błędów sesji
++   entry #keyboard   dekoder `Keyboard.Standard`, który zamienia wejście na zdarzenia
++       Jego `Keyboard.Lookahead` sprawdza bieżące wejście: samotny znak escape, po którym
++       natychmiast następuje dalsze wejście, rozpoczyna sekwencję, a taki, po którym przez
++       dziesięć milisekund linia milczy, jest klawiszem `Escape`.
++   entry #mode   czy tło terminala jest jasne, czy ciemne, jeśli wiadomo
++       `Optional[Brightness]`, odczytywany na początku sesji ze zmiennej środowiskowej
++       `TERMINAL_BG` (jako szesnastkowe składowe `rrrr/gggg/bbbb`) i uaktualniany, gdy
++       terminal odpowie na zapytanie wysyłane przez `terminalFeatures.backgroundColorFeature`.
++       Można go też przypisać.
++   entry #rows   wysokość terminala w wierszach, jeśli wiadomo
++       Uaktualniana przez każdy raport rozmiaru i sygnał zmiany rozmiaru, a w obrębie sesji
++       można ją przypisać: `terminal.rows = 10`.
++   entry #columns   szerokość terminala w kolumnach, jeśli wiadomo
++       Uaktualniana przez każdy raport rozmiaru i sygnał zmiany rozmiaru, a w obrębie sesji
++       można ją przypisać: `terminal.columns = 40`.
++   entry #knownColumns   szerokość terminala lub 80, dopóki jest nieznana
++       Zachowawcza wartość rezerwowa jest zamierzona: rysowanie dla terminala węższego niż
++       rzeczywisty jest nieszkodliwe, a założenie szerszego rozrzuca wyjście adresowane
++       bezwzględnie.
++   entry #knownRows   wysokość terminala lub 24, dopóki jest nieznana
++   entry #cap   termcap sesji: ANSI, pełny kolor i bieżąca szerokość terminala
++   entry #stdio   standardowe strumienie sesji, niosące `#cap` jako swój termcap
++       `Stdio`, przez który pisze się do terminala, ze strumieniami `Console` i termcapem,
++       którego szerokość podąża za szerokością terminala. `terminalStdio` czyni go
++       instancją `Stdio` w zasięgu wszędzie tam, gdzie jest `Terminal`.
++   entry #events   przekaźnik, na który pompa wejścia i handler sygnałów umieszczają zdarzenia
++       `Relay[Terminal.Event]`. Aplikacja może umieszczać na nim własne zdarzenia – takie jak
++       `Terminal.Info.Redraw`, aby obudzić pętlę zdarzeń – a `interactive` zatrzymuje go, gdy
++       sesja się kończy, co kończy każdy iterator po nim.
++   entry #eventIterator   iterator po zdarzeniach sesji, w kolejności ich nadejścia
++       Każde wywołanie od nowa opróżnia wspólną kolejkę zdarzeń, więc dwa iteratory dzielą
++       zdarzenia między siebie, zamiast każdy widzieć je wszystkie. Iterator wyczerpuje się,
++       gdy kończy się wejście sesji.
++   entry #pumpInput   zadanie demona, które czyta standardowe wejście i dekoduje je na zdarzenia
++       Uruchamiane wraz z sesją, czyta znaki z wejścia `Console`, dekoduje je za pomocą
++       `#keyboard`, zapisuje każdy raport rozmiaru lub koloru tła i umieszcza każde zdarzenie
++       na `#events`. Jakkolwiek się zakończy – przez zamknięcie standardowego wejścia przez
++       sesję, koniec wejścia lub błąd dekodowania – zatrzymuje strumień zdarzeń, więc pętla po
++       zdarzeniach widzi koniec, zamiast blokować się na zawsze. `interactive` czeka na nie
++       przy likwidacji sesji.
+
+@ 0 1 0 0996e5a991f1c1951a52116e23ec4338
++ entry .Console   konsola, na której działa sesja terminala: jej standardowe strumienie i pułapka sygnałów
+
+% 1 1 0 0e8f4815f76c87cd1bc4f3e8164565d4
+
+@ 0 4 0 0a78aa30119ca0ab1b7568681a26f79c
++       `interactive` potrzebuje `Console`: standardowych strumieni, które sesja czyta
++       i zapisuje, oraz sposobu na powiadamianie o sygnałach. Jest nią `Cli` z exoskeleton,
++       którą zapewnia blok `cli`, niezależnie od tego, czy program działa bezpośrednio, czy
++       jako klient demona ethereal, którego strumienie i sygnały przekazuje launcher.
+
+@ 0 2 0 0ccaadd819b4a6dd0afdcd34560856aa
++       `Console(stdio)` tworzy konsolę nad dowolnym `Stdio`, której `#trap` ignoruje każdy
++       handler, dla sesji, która nie potrzebuje sygnałów.
+
+% 1 1 0 061178b17e7e1fa002e3d993a27c4867
+
+% 1 1 0 1ebc344845fda1ea1f1895cf1332adf5
+
+@ 0 6 0 04b4d460d2cc5f711eecc4c3fafe89ca
++   entry .apply   konsola nad podanymi standardowymi strumieniami, która nie otrzymuje sygnałów
++   entry #stdio   standardowe strumienie konsoli
++   entry #trap   rejestruje handler dla sygnałów, które otrzymuje konsola
++       `PartialFunction[Signal, SignalResponse]`. `Terminal` rejestruje taki handler dla
++       `WINCH` i `CONT`, aby śledzić zmiany rozmiaru, a każdy inny sygnał zamienia na
++       zdarzenie. Konsola utworzona przez `Console(stdio)` odrzuca handler.
+
+@ 0 1 0 0f157c5f7872c2060db70a2857fe4739
++ entry .Keyboard   dekoder znaków wysyłanych przez terminal na oznaczane przez nie naciśnięcia klawiszy
+
+% 1 1 0 1b0c8f47d5de743d06092de8644d4242
+
+@ 0 3 0 0f1e93b51f9be53203426e3cdbe553ae
++       `Keyboard` zamienia leniwy `Chain[Char]` wejścia na `Chain` swojego typu `#Keypress`.
++       `Keyboard.Standard` to dekoder używany przez `Terminal`, a pakiet `keyboards` zawiera
++       go wraz z dwoma trywialnymi dekoderami jako givens do importowania po nazwie.
+
+% 2 1 0 18b7d3dec8be11f50b52fd61ee074863
+
+% 3 1 0 0437536c1a6f7e01194d8d71f234f187
+
+% 0 1 0 1dc91c1c82b76a521835669693a19273
+
+% 0 1 0 012d9074d8d6d1411ee6485dc9779315
+
+% 1 1 0 1ed91ad83572d9030d327c43ce7706b2
+
+@ 0 2 0 0230ac03bac617d708c57e7d07deafb7
++       Funkcje pomocnicze w obiekcie towarzyszącym to elementy, z których zbudowany jest
++       `Keyboard.Standard`, i są publiczne na potrzeby dekoderów pokrewnych kodowań.
+
+% 0 1 0 176793f42160888c057b771c2ae61f78
+
+% 0 1 0 19ba5e7336e3f41802300af8614dd72b
+
+@ 0 13 0 1e0b3c110db068b51d8840ab5afaf94d
++   entry .modified   opakowuje klawisz w modyfikatory nazwane przez starszą cyfrę modyfikatora
++       `Keyboard.modified(digit, key)` odczytuje cyfrę sekwencji takiej jak `\e[1;5A` jako
++       jeden plus maska bitowa i opakowuje klawisz tak jak `applyModifiers`: `'5'` to `Ctrl`,
++       więc `\e[1;5A` to `Ctrl(Up)`.
++   entry .applyModifiers   opakowuje klawisz w modyfikatory nazwane przez maskę bitową: shift 1, alt 2, ctrl 4, meta 8
++       Modyfikatory zagnieżdżają się na zewnątrz w tej kolejności, więc maska bitowa 5 daje
++       `Ctrl(Shift(key))`. Maska bitowa to wartość modyfikatora protokołu kitty minus jeden.
++   entry .csiu   dekoduje parametry sekwencji CSI-u protokołu kitty na naciśnięcie klawisza
++       Przyjmuje znaki między `\e[` a końcowym `u`, w postaci
++       `codepoint[:shifted[:base]][;modifiers[:event]][;text]`. Punkty kodowe 13, 9, 27 oraz
++       8 lub 127 to `Enter`, `Tab`, `Escape` i `Backspace`, które mogą nieść dowolny
++       modyfikator; każdy inny punkt kodowy jest znakiem, zamienianym na naciśnięcie klawisza
++       `Ctrl` przez modyfikator control i na wielką literę przez modyfikator shift.
+
+% 2 1 0 0607d080365045d31aed9609bafeba74
+
+% 3 1 0 1895057223eaa74602e07cf332911aca
+
+% 0 1 0 034c7970fc5bfaba16bbc206534b1414
+
+% 1 1 0 0b2081761869486b1375a9b4f1a896a6
+
+@ 0 3 0 037370087472460e15600cb151c99622
++   entry .ctrlChar   naciśnięcie klawisza `Ctrl` dla znaku lub sam znak, jeśli nie ma on postaci kontrolnej
++       Postacie kontrolne mają litery (obu wielkości) oraz `@`, `[`, `\`, `]`, `^` i `_`.
++   entry .navigation   klawisz edycyjny nazwany przez końcową literę sekwencji kursora: `A` to `Up`, `H` to `Home`
+
+% 1 1 0 02d41d1392980dbc04159da76bcb8fe2
+
+@ 0 2 0 115b5a4e9e1d5b220d622cedeb1273ac
++       column  Litera
++       column  Klawisz
+
+% 0 1 0 052d72c9eb6079c11f45aa6d9bf7d101
+
+% 0 1 0 049c2d81143aaac812afb8179d15539d
+
+% 0 1 0 0f73ce9940dae9e3140f3640ac9c4060
+
+% 0 1 0 0f5bdfc032edb2580d586cb9686111eb
+
+% 0 1 0 04a24469606fc47b0d2b03a26cd633bd
+
+% 0 1 0 15181381a27bdbef15175cce0232ad82
+
+@ 1 1 0 16f04aab4469b5290b20fceeac7bbc5f
++       row  każda inna  `Escape`
+
+% 2 1 0 02ffc9699d56e167033fad8bca35d517
+
+@ 0 1 0 135351a5b475b1910a9ad64ed935ed33
++   entry .vt   klawisz edycyjny nazwany przez cyfrę sekwencji VT `\e[n~`: `2` to `Insert`, `5` to `PageUp`
+
+% 1 1 0 17cc387dae1df775150813c331ad8bcf
+
+@ 0 2 0 1f5c8ef75d7c565e0c181cf5385caf70
++       column  Cyfra
++       column  Klawisz
+
+% 0 1 0 1bf7b813c81d980d0d2c302d09fb1ddc
+
+% 0 1 0 12d9d8bdd9c2ceee17d133c20b945db6
+
+% 0 1 0 1c4089c700b9a1d6109f6060f7bda07f
+
+% 0 1 0 0f226e59c961569410ec8231edabbd65
+
+% 0 1 0 121f32173d2c620b0afb9d8743070237
+
+% 0 1 0 157f1e84a8442c180a24b20d5be62f90
+
+@ 1 1 0 023419fde3d35de50a874d522aa76a31
++       row  każda inna  `Escape`
+
+% 2 1 0 09900549704e9a010ece5cba2f0ef73c
+
+@ 0 1 0 00361b5f5b1626a21d0d539a6f3ba5ef
++   entry .Lookahead   decyduje, czy znak escape rozpoczyna sekwencję, czy jest klawiszem `Escape`
+
+% 1 1 0 10d7033490515aaf0b91ec3d7607f81b
+
+@ 0 3 0 0aafed3ce62ce5bd030131811dffc26d
++         Klawisz escape i początek sekwencji sterującej to ten sam znak; rozróżnia się je po
++         tym, czy wkrótce nastąpi dalsze wejście. `#sequenceFollows` otrzymuje resztę wejścia
++         po znaku escape i odpowiada, czy należy ona do sekwencji.
+
+@ 0 9 0 0106194fffa8e2bc14a2725ad933d21c
++         Terminal zapisuje całą sekwencję naraz, więc na aktywnym terminalu wejście już
++         zbuforowane rozstrzyga natychmiast, a jedynie milcząca linia czeka krótko na resztę
++         sekwencji podzielonej między pakiety (jak może ją podzielić połączenie SSH), zanim
++         znak escape zostanie zgłoszony jako klawisz. Tą polityką jest `.tty`; `.immediate`,
++         w obiekcie towarzyszącym, a więc w zasięgu niejawnym, służy do wejścia, które jest już
++         kompletne.
++     entry .immediate   dla kompletnego wejścia, takiego jak test czy odtworzenie: sekwencja następuje, jeśli następuje cokolwiek
++         `Keyboard.Lookahead`, którego używa `Keyboard.Standard()`, gdy nie podano innego.
++         Sprawdza, czy reszta wejścia jest pusta, co na aktywnym terminalu blokowałoby do
++         następnego naciśnięcia klawisza; tam należy użyć `.tty`.
+
+% 2 1 0 110746a89674e3cf00c954caec2a25ee
+
+% 3 1 0 15a25404323507ce084a53684d5faec1
+
+% 0 1 0 0c7c60507c046b7904a42667bb21e473
+
+% 1 1 0 08569ea59181e7651c3b1195b4d32ee7
+
+@ 0 6 0 124d241463d6041d02c8b33bb5ff7bfb
++     entry .tty   dla aktywnego terminala: zbuforowane wejście rozstrzyga natychmiast, milcząca linia czeka do terminu
++         `Keyboard.Lookahead.tty(stdio, deadline)` pyta `Stdio`, czy wejście jest gotowe,
++         odpytując co milisekundę przez maksymalnie `deadline` milisekund (domyślnie dziesięć).
++         Używa go własna klawiatura `Terminal`.
++     entry #sequenceFollows   czy wejście po znaku escape kontynuuje sekwencję sterującą
++   entry .Standard   dekoder tego, co wysyłają terminale: klawiszy, modyfikatorów, CSI-u, wklejeń i raportów
+
+% 1 1 0 06c2e47a6a7454c90113ff77d7309d13
+
+@ 0 3 0 08e04b17d5ae18570877b93f0fce98b7
++         `Keyboard.Standard()` dekoduje na `clavichord.Keypress | Terminal.Info`, z
++         `Keyboard.Lookahead` z kontekstu, aby odróżnić klawisz `Escape` od początku sekwencji
++         (`Keyboard.Lookahead.immediate`, chyba że w zasięgu jest inny). Odczytuje:
+
+@ 0 13 0 0c4f60500bd1e59c1638522cfb38e67e
++         - znaki kontrolne: backspace (`\b` lub DEL), tabulację, wysunięcie wiersza lub powrót
++           karetki jako `Enter`, a inne kody C0 jako `Ctrl` ich litery;
++         - `\eO`, po którym następuje litera, jako `FunctionKey`;
++         - sekwencje kursora i edycyjne sekwencje VT (`\e[A`, `\e[3~`), ze starszymi cyframi
++           modyfikatorów (`\e[1;5A`, `\e[3;2~`);
++         - sekwencje protokołu klawiatury kitty, `\e[…u`, przez `Keyboard.csiu`;
++         - wklejenie w nawiasach, `\e[200~…\e[201~`, jako jedno `Terminal.Info.Paste`;
++         - raporty położenia kursora, jako `Terminal.Info.WindowSize` (postać zwykła, którą
++           `Terminal` przeklasyfikowuje, gdy odpowiada na `Terminal.anchorQuery`) lub
++           `Terminal.Info.CursorPosition` (postać z przedrostkiem `?`);
++         - raporty aktywności, jako `Terminal.Info.LoseFocus` i `Terminal.Info.GainFocus`;
++         - odpowiedź na zapytanie OSC 11 o kolor tła, jako `Terminal.Info.BgColor`;
++         - każdą inną sekwencję CSI jako `EscapeSeq`, a każdy inny znak jako `CharKey`.
+
+@ 0 1 0 087f3001cdd27f8512e7a8089276d2eb
++         Niepoprawny raport jest pomijany, a dekodowanie trwa dalej po nim.
+
+% 2 1 0 0c70687d4acc7bb61e0b2625deee3796
+
+% 3 1 0 1ded1784043a624a07ac6754e4a41432
+
+% 0 1 0 18d71a0ed0d668360785cd3b9721819e
+
+% 0 1 0 1430913a6c87b4ab04c1a4e04329737a
+
+% 0 1 0 17eae69e948e45881f09a0559e28ffdd
+
+% 0 1 0 00793140f5ffde9213eace31bb6ba9b9
+
+% 1 1 0 15935775b9e2eff90c93c1da5093cbf7
+
+% 0 1 0 0e79edfce2aebceb154e2927a83fc41b
+
+@ 0 5 0 06bacf42b9b8f7b50039d91ca2e1f6bb
++     entry #process   dekoduje leniwy strumień znaków wejściowych na naciśnięcia klawiszy i raporty
++         Leniwe w obu kierunkach: każde zdarzenie jest dekodowane, gdy nadejdą potrzebne mu
++         znaki, więc wejście aktywnego terminala można przetwarzać w trakcie pisania.
++   entry #Keypress   typ zdarzenia, na który dekoduje klawiatura
++   entry #process   dekoduje leniwy strumień znaków wejściowych na leniwy strumień zdarzeń
+
+@ 0 1 0 0e8abec7b038b7241615ca2df541155b
++ entry .keyboards   dekodery klawiatury, każdy jako given do importowania po nazwie
+
+% 1 1 0 17976d276aa3442301a761958dcdf0cb
+
+@ 0 2 0 0071e1cd25993eaa012be82c510f0f3d
++       Given `Keyboard` wybiera, jak dekodowane są znaki wejściowe. `import soundness.*` nie
++       wprowadza żadnego z nich, ponieważ `import pkg.*` nie importuje givens; importuje się je
++       po nazwie.
+
+% 2 1 0 0c53e23c2528284c14a015ee97abb674
+
+% 3 1 0 100530f0e2957fc31fb72fc0861ce682
+
+% 0 1 0 114dc1f47291e7e5064f13f081def73d
+
+% 1 1 0 05f3be14ad8e9ecd10f5742003d940ba
+
+@ 0 2 0 1b108cd3dc1c32fc0fdfe0a1b68da507
++       `Terminal` zawsze dekoduje za pomocą własnego `Keyboard.Standard`; te givens są dla
++       kodu, który sam przetwarza wejście.
+
+% 1 1 0 0bbcdc83277672a203554c50289d8522
+
+@ 0 6 0 135f34b6eca76fcf0543219716a2b593
++   entry .rawKeyboard   przepuszcza każdy znak bez dekodowania, jako `Char`
++   entry .numericKeyboard   przepuszcza każdy znak bez dekodowania, jako jego kod `Int`
++   entry .standardKeyboard   pełny dekoder, `Keyboard.Standard`, jako given
++       Potrzebuje `Monitor` i `Probate` w zasięgu i używa `Keyboard.Lookahead.immediate`
++       z zasięgu niejawnego, który pasuje do kompletnego wejścia; aktywny terminal potrzebuje
++       `Keyboard.Lookahead.tty`, jak ma to własna klawiatura `Terminal`.
+
+@ 0 1 0 071160c77c955d25001a4c6d870db64a
++ entry .terminalFeatures   standardowe tryby terminala, każdy jako given do importowania po nazwie
+
+% 1 1 0 014db85f9f9f7b1012c6c69f9182551b
+
+@ 0 3 0 1ede905708c60b591c1e2d7aea1112fb
++       Każdy given jest `Terminal.Feature`, którą `interactive` włącza na czas sesji
++       i wyłącza na jej końcu. Sesja ma tylko te tryby, których givens są w zasięgu, a ponieważ
++       `import pkg.*` nie importuje givens, każdy importuje się po nazwie:
+
+% 2 1 0 0907aa7040a16537125dcdfc93e296c7
+
+% 3 1 0 03829d7a73e91ff41bdb2d112fc7e298
+
+% 4 1 0 1f0df74bf7c106ff02a55efd6c742490
+
+% 0 1 0 17aa6d6e6b9836bd0f85df4722138035
+
+% 2 1 0 086a1f60a82d9c040c081831242253e2
+
+% 3 1 0 0d890ca2bc14a9b712798ef1ca9887a1
+
+% 0 1 0 166215a91eb5446018f23a5c8da1e7bd
+
+% 0 1 0 01a2363d77382f5e19a49a3da210e73f
+
+% 1 1 0 02ebb8e3f37587c31ae6ee912d98e7f8
+
+@ 0 1 0 1408318ab0a7e8ef15b3e8b5cfe5ff07
++       Efekt najlepiej widać, dodając tryby po jednym:
+
+% 2 1 0 184f77d80f294aef198fc6590626ba75
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0a7ced9514274eac1e33f8ef804a3bf7
++         label Bez funkcji: tylko klawisze i raport rozmiaru
+
+% 1 1 0 0cecffa1ca2cab1e1e776735962ff545
+
+% 1 1 0 12b571dbd8abd8df02ddb11c616f449f
+
+% 2 1 0 05d0e701db1305d6195ecaef11b1110c
+
+% 1 1 0 0f2f95fafee7064c1028b0ca9c73de3f
+
+@ 0 1 0 055f53a7619877341d3fe6ce64500fd4
++         label Wklejanie w nawiasach: wklejenie to jedno zdarzenie
+
+% 1 1 0 04369d9f0eb0a9370625c724a96bac2f
+
+% 0 1 0 196d526d45b002dc0175b7415df8690c
+
+% 2 1 0 0e781546a4c75ad5094e6877106f9d14
+
+% 3 1 0 18747a2679e85c3d1d4339b74b5de10b
+
+% 0 1 0 09b8747e9ab0804604f21dde2cdbd12d
+
+% 1 1 0 066c8ca290fb553d1fd64a88e64d849a
+
+@ 0 1 0 081b40456d77c0dc1b106b2520264287
++         label Do tego protokół kitty: klawisze z modyfikatorami są rozróżnialne
+
+% 1 1 0 1e4610532fcb47970273b6cc86d48ede
+
+% 2 1 0 1629071840454b0b012cb59b918cece6
+
+% 2 1 0 1b057c3d58e446ac1b7ba15d4347cb6e
+
+% 3 1 0 19b28004eabc26ea0eebf9f84d368bbc
+
+% 0 1 0 1decbe48982e543605c09a65623ab4c9
+
+% 1 1 0 0824c39cc24ee2250220010b7efc3809
+
+@ 0 1 0 0a0646cd26afed360d723f0866faed20
++         label Do tego ekran alternatywny: historia przewijania pozostaje nietknięta
+
+% 1 1 0 0f02e44788c8c7891b9ecb2cc9238ef8
+
+% 2 1 0 066804919c941a5c18656cd0926a384f
+
+% 0 1 0 01c25d61576e3e0b05bb3e278ef61455
+
+% 2 1 0 150b9a8cb5d4a8021e33a893c51fd1dd
+
+% 3 1 0 042252a070cc157707f1c235ebbb7195
+
+% 1 1 0 06b8c37fdd9c19bf1155ddf62b4d2139
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 11982b576565c8031005ba1d875343de
+
+% 1 1 0 0aa730172cd70865085dbc59e87dcf54
+
+@ 0 23 0 0d90e2adf22724310b34f7bccc96d35c
++   entry .bracketedPasteFeature   wklejanie w nawiasach: wklejenie nadchodzi jako jedno `Terminal.Info.Paste`
++       `\e[?2004h` włącza, `\e[?2004l` wyłącza. Bez niego wklejonego tekstu nie da się
++       odróżnić od pisania, a wklejony znak nowego wiersza jest `Enter`.
++   entry .focusReportingFeature   raportowanie aktywności: zdarzenia `Terminal.Info.GainFocus` i `LoseFocus`
++       `\e[?1004h` włącza, `\e[?1004l` wyłącza.
++   entry .mouseTrackingFeature   śledzenie myszy, w postaci SGR: naciśnięcia przycisków jako sekwencje sterujące
++       `\e[?1000h\e[?1006h` włącza, `\e[?1006l\e[?1000l` wyłącza. Raporty nie są dekodowane na
++       zdarzenia myszy: nadchodzą jako `Keypress.EscapeSeq`.
++   entry .alternateScreenFeature   bufor ekranu alternatywnego, który pozostawia historię przewijania nietkniętą
++       `\e[?1049h` włącza, `\e[?1049l` wyłącza: interfejs pełnoekranowy rysuje na osobnym
++       ekranie, a poprzednia zawartość terminala wraca, gdy sesja się kończy.
++   entry .kittyKeyboardFeature   protokół klawiatury kitty: jednoznaczne klawisze i modyfikatory jako CSI-u
++       `\e[>1u` odkłada na stos flagę ujednoznaczniania protokołu, a `\e[<u` ją zdejmuje.
++       Dzięki niemu `Shift`+`Enter`, `Ctrl`+`I` i `Tab` czy kombinacje `Escape` i `Alt` są
++       zgłaszane jako odrębne, dekodowane przez `Keyboard.csiu`. Terminal, który nie
++       implementuje protokołu, ignoruje obie sekwencje.
++   entry .backgroundColorFeature   jednorazowe zapytanie o kolor tła, z odpowiedzią jako `Terminal.Info.BgColor`
++       Wysyła `\e]11;?\e\` na początku sesji i nic na jej końcu. Odpowiedź uaktualnia
++       `Terminal#mode`, więc program może wybrać jasne lub ciemne kolory.
++   entry .terminalSizeFeature   jednorazowe zapytanie o rozmiar, z odpowiedzią jako `Terminal.Info.WindowSize`
++       Wysyła `Terminal.reportSize` na początku sesji i nic na jej końcu. `interactive` już
++       wysyła je raz na rzeczywistym terminalu, więc ma to znaczenie głównie dla sesji nad
++       przekazywanymi strumieniami.
+
+@ 0 1 0 1fd0b663cde207c5051b8cce42340188
++ entry .Board   powierzchnia, na której rysuje widżet: kursor do przesuwania, tekst do umieszczania i rozmiar
+
+% 1 1 0 0582ae0fd35ff7380c3e3e4661545b89
+
+@ 0 5 0 197287e6542dfb5918d3896664a5ca50
++       Każdy renderer rysuje przez `Board`, pozycjonując wyłącznie przez `#move` i nigdy przez
++       wypisywanie kodów sterujących, więc ten sam kod widżetu rysuje w wierszu przy kursorze
++       (`InlineBoard`), na całym terminalu (`TerminalBoard`) lub w przyciętym obszarze
++       większego układu. Współrzędne są lokalne dla powierzchni, są to liczone od zera
++       `Ordinal`, kolumna przed wierszem.
+
+% 2 1 0 1867c204d5d7d08a011d26cb1e89f52f
+
+% 3 1 0 17c82bd92ffe3d47171cb4712aec4bed
+
+% 0 1 0 18218bad2333e1351e44660cae822966
+
+% 1 1 0 1cc3c59f74370ac40e555eca740cc2ef
+
+% 1 1 0 1a522806f89ce98d1f8f5a8976df4550
+
+% 0 1 0 1ed53f4994ecb4d01a275670378cc368
+
+% 0 1 0 0b27c8f9843c5d9b075b1642760da878
+
+% 1 1 0 0b6e9de382337661191c19ae6d56179e
+
+@ 0 2 0 0ece2b900f665040026984982b678ee1
++       Plansza jest stanową zdolnością na wyłączność: rysowanie ją zmienia, więc każda operacja
++       rysowania jest metodą `update`, wywoływalną tylko przez referencję na wyłączność
+
+% 0 1 0 1e00be90c4b02e191f234ba94f509abc
+
+@ 0 3 0 12d7401210b80e3d15a48e8287804e5d
++       Gdy w kontekście jest `Terminal`, `.inlineBoard` w obiekcie towarzyszącym dostarcza nad
++       nim `InlineBoard`; panel dostarcza własną planszę w bliższym zasięgu, który ma
++       pierwszeństwo, i w ten sposób `LineEditor` wywołany wewnątrz panelu rysuje w jego
++       obrębie.
+
+% 0 1 0 1fa5cfe46a4dfdb409b087fc8bca3c96
+
+% 0 1 0 0ecbfac8155d43b517dc51498fb914ee
+
+% 1 1 0 1f58a98c4d79926e0f1cf0138cc889ab
+
+@ 0 14 0 13ce4f86b1fe980d058114dcdd627456
++   entry .inlineBoard   przy `Terminal` w kontekście – `InlineBoard` przy jego kursorze
++       W zasięgu niejawnym, więc widżet wywołany w bloku `interactive` rysuje w miejscu,
++       przy znaku zachęty, bez żadnego importu.
++   entry #width   szerokość powierzchni w komórkach
++   entry #height   wysokość powierzchni w komórkach
++   entry #move   przesuwa kursor do komórki, według kolumny, a potem wiersza
++   entry #put   zapisuje tekst lub sformatowany tekst `Teletype` przy kursorze, przesuwając go
++   entry #clear   czyści całą powierzchnię
++   entry #clearLine   czyści bieżący wiersz od kursora dalej
++   entry #cursor   pokazuje lub ukrywa kursor sprzętowy
++   entry #showCaret   pozostawia widoczny kursor w komórce, gdy ramka zostanie narysowana
++       Buforowana powierzchnia może przesuwać kursor podczas wypisywania ramki, więc widżet,
++       który pokazuje karetkę, umieszcza ją po `#flush`.
++   entry #flush   zatwierdza ramkę; nic nie robi na powierzchni, która nie jest buforowana
+
+@ 0 1 0 16ed0a10f57cc9bf0a98ec63587b627f
++ entry .InlineBoard   `Board` przy kursorze terminala, rysowana ruchem względnym, aby pozostawała przy znaku zachęty
+
+% 1 1 0 02159f8d6722e786057c115d0c6029ec
+
+@ 0 6 0 003614f39f5870340ee49c584b7ee936
++       `InlineBoard` rysuje widżet w miejscu, w którym był kursor, gdy zaczynała: wiersz 0 to
++       ta linia, a kolumna 0 jej lewa krawędź, a każdy `#move` staje się względnym ruchem
++       pionowym i bezwzględną kolumną, więc widżet przerysowuje się sam na sobie, a nie na górze
++       ekranu, a historia przewijania nad nim pozostaje nietknięta. Śledzi własny kursor,
++       licząc znak nowego wiersza lub zawinięcie przy `#width` jako przejście do następnego
++       wiersza. `put` dla `Teletype` zapisuje jego zwykły tekst.
+
+@ 0 2 0 139391b6245c91dd090329a344f99c8e
++       Gdy w kontekście jest `Terminal`, `Board.inlineBoard` dostarcza nad nim taką planszę,
++       więc to jej używają `LineEditor` i `SelectMenu` w bloku `interactive`.
+
+% 1 1 0 0b55dcaa6d404c8f0e888e95698e406e
+
+@ 0 3 0 11a238e9fd5284f014cc0c0c9b7f35a6
++   entry .apply   plansza w wierszu nad terminalem, o jego znanej szerokości i wysokości
++   entry #width   szerokość, przy której tekst się zawija
++   entry #height   wysokość, z jaką utworzono planszę
+
+@ 0 1 0 1ea0d64cfff98f5301f8d508b849155d
++ entry .TerminalBoard   `Board` nad całym terminalem, z pozycjonowaniem bezwzględnym i bieżącym rozmiarem
+
+% 1 1 0 1832dcbf09ea10be0928782517a6ed6a
+
+@ 0 4 0 1fd711507009d68913e0e6760b5ec40b
++       Każdy `#move` jest bezwzględnym położeniem kursora, więc plansza jest całym ekranem,
++       czego potrzebuje interfejs pełnoekranowy na ekranie alternatywnym. Nie śledzi własnego
++       kursora, pozwalając terminalowi przesuwać go podczas zapisywania tekstu, i odczytuje swój
++       rozmiar, gdy ktoś o niego pyta, więc podąża za zmianą rozmiaru.
+
+% 2 1 0 1d053290f1d6064d1940bc831afbaf38
+
+% 3 1 0 01c49fc1791dc4e1004b951a045e9b58
+
+% 4 1 0 163f9260d6c60cbd1ab953664a91e4b8
+
+% 0 1 0 0652cc050e61baed0c2f7e6e1431f80f
+
+% 2 1 0 05465710a51529e30a24bde743994057
+
+% 0 1 0 0837ef0d6355ba37132cf4f0cb7e6125
+
+% 1 1 0 14fbde570416c9f70cef36866eea9377
+
+% 1 1 0 0983d2351bf49d1706cdabbb70c52d57
+
+% 0 1 0 1250e54b7e07460611ee8b05ada48733
+
+% 1 1 0 1ba16f6d97d73e5f196737ea4542f83e
+
+@ 0 2 0 182d448ee9fdb01011ba00a6ab020ef7
++       Plansza przechwytuje swój terminal tylko po to, by odczytywać jego rozmiar, więc jej
++       zbiór przechwyceń to `{terminal.rd, caps.any}`: funkcje rozmiaru przekazane do
++       konstruktora mogą tylko odczytywać.
+
+% 1 1 0 1b940104a0ee32ec0e94f8f10b095a19
+
+@ 0 5 0 043e0e69884a226a1e9513727b5c6138
++   entry .apply   plansza nad terminalem, o bieżącym rozmiarze, lub plansza o stałym rozmiarze nad `Stdio` w zasięgu
++       `TerminalBoard(terminal)` odczytuje `Terminal#knownColumns` i `Terminal#knownRows`
++       za każdym razem, gdy pyta się ją o rozmiar, i pisze przez `Stdio` terminala.
++       `TerminalBoard(width, height)` ma stały rozmiar i pisze przez `Stdio` w kontekście.
+
+@ 0 1 0 0724d0c32def007418c8695093dafba5
++ entry .Interaction   jak widżet jest rysowany i otrzymuje odpowiedź: renderuje każdy stan i decyduje, co go zatwierdza
+
+% 1 1 0 09accfbd037519d61d64f6d386e62adf
+
+@ 0 6 0 0f8d42be70515a2211a3b1950d94e2d5
++       `Interaction[answer, question]` steruje widżetem – `question`, takim jak `LineEditor`
++       lub `SelectMenu` – nad strumieniem zdarzeń: renderuje każdy stan za pomocą `#render`,
++       przekazuje każde zdarzenie widżetowi, aby utworzyć następny stan, i zatrzymuje się, gdy
++       zdarzenie go zatwierdza (`#submits`, domyślnie `Enter`) lub odrzuca (`Escape`,
++       `Ctrl`+`C`, `Ctrl`+`D` lub koniec zdarzeń). Odpowiedzią jest `#result` stanu
++       końcowego lub `Unset`, jeśli widżet został odrzucony.
+
+@ 0 3 0 158873453b87673a055504d0d2f52497
++       `.selectMenu` i `.lineEditor` z obiektu towarzyszącego renderują przez `Board`
++       w zasięgu, więc `ask` na żadnym z tych widżetów nie wymaga importu. Własna interakcja
++       może renderować inaczej lub wcale, i w ten sposób testuje się logikę widżetu bez
++       terminala:
+
+% 2 1 0 0da29299c3974aee15952f7b61ce3920
+
+% 3 1 0 126ddbe3bf35a4b11026e4b0f9efd3df
+
+% 0 1 0 01be35fb0ea4c8180c34d3c75423a06f
+
+% 0 1 0 1ae53966b870af3c186e913c6e1d0601
+
+% 0 1 0 0eae9e837c4b71ad01f5b1527869a5ff
+
+% 0 1 0 08b7918f11201fe917ee2715957c66a1
+
+% 0 1 0 1fb321f3747b28a60ff7c8cab0d4223a
+
+% 1 1 0 0a20bb47a7baa1b617c98e9d9b3e464b
+
+@ 0 2 0 0217429ebe9c011b0e819a2f7d2c6b85
++       `#react` pozwala interakcji zmienić stan w odpowiedzi na zdarzenie, zanim zobaczy je
++       widżet, jak robi to mechanizm uzupełniania przy `Tab`.
+
+% 1 1 0 0d1e4cc4b89a3bc814abe124ff9c9f3e
+
+% 2 1 0 1a94b6f590dbf8960569a00b6001abd2
+
+% 1 1 0 180e3a43a36feca102ca7a2ff6b4d012
+
+@ 0 17 0 0bbcdff2196ed77d103c551ca9345b7f
++   entry .selectMenu   rysuje `SelectMenu` na `Board` w zasięgu, jedną opcję na wiersz, z `>` przy bieżącej
++       Ukrywa kursor, gdy menu jest wyświetlane, przerysowuje całe menu przy każdej zmianie –
++       licząc opcję szerszą niż plansza jako tyle wierszy, na ile się zawija – a gdy menu
++       otrzyma odpowiedź, czyści je i przywraca kursor. Potrzebuje `Showable` dla opcji.
++   entry .lineEditor   rysuje `LineEditor` na `Board` w zasięgu, z karetką, zawijając szeroki tekst
++       Przerysowuje tekst edytora w każdej ramce i umieszcza karetkę tam, gdzie wskazuje
++       `LineEditor.cursorPosition`, licząc osadzone znaki nowego wiersza, zawijanie i znaki
++       szerokie; zatwierdza zgodnie z decyzją `LineEditor.Mode` edytora, a po otrzymaniu
++       odpowiedzi przechodzi do nowego wiersza pod tekstem.
++   entry #before   wywoływana raz przed narysowaniem pierwszego stanu; domyślnie nic nie robi
++   entry #render   rysuje stan, mając dany stan narysowany przed nim, jeśli taki był
++   entry #after   wywoływana raz, gdy widżet otrzyma odpowiedź lub zostanie odrzucony; domyślnie nic nie robi
++   entry #result   odpowiedź, jaką daje stan końcowy
++   entry #submits   czy zdarzenie zatwierdza widżet w jego bieżącym stanie; domyślnie `Enter`
++   entry #react   zmienia stan w odpowiedzi na zdarzenie, zanim zobaczy je widżet; domyślnie nic
++       Wywoływana dla każdego zdarzenia, które ani nie zatwierdza, ani nie odrzuca. Interakcja,
++       która uzupełnia słowo przy `Tab`, ją przesłania:
+
+% 2 1 0 151bfda1a71d32b102d9b1b9edeeca5f
+
+% 3 1 0 152fdbabf72c475f16b516da9b665d90
+
+% 0 1 0 01b427046b5026bf01e90f5055197d74
+
+% 0 1 0 055f56b446b51c5516e2d4e67fd9db3b
+
+% 0 1 0 0f1f59121454a4490feb8f26aafd83a3
+
+% 0 1 0 106e020933e2fc9e11e96ed6e2d05d93
+
+% 0 1 0 13bc67b33db2c35d0b6bc44c6d4b096a
+
+% 0 1 0 026c9eb78e66effe0b712b01a03d6416
+
+% 0 1 0 05c271110039865617d20bd62709fbd2
+
+% 1 1 0 1f2255570d66def50021a8e0f2b82b83
+
+@ 0 6 0 0945d9ab80a6a00f055bb70a0a05576c
++   entry #recur   pętla zdarzeń: renderuje, odczytuje zdarzenie i zatwierdza, odrzuca lub kontynuuje
++       Zwykle nie wywołuje się jej bezpośrednio: `#apply` wywołuje ją po `#before`.
++   entry #apply   uruchamia widżet nad iteratorem zdarzeń, od stanu początkowego do odpowiedzi lub `Unset`
++       `interaction(events, state)(step)`, gdzie `step` tworzy następny stan ze stanu
++       i zdarzenia – `_(_)` dla `Question`, którego `apply` jest właśnie tym krokiem. Wywołuje
++       `#before`, uruchamia pętlę, a następnie `#after`.
+
+@ 0 1 0 1f5e9ffdf829ba71196bf3cba100785c
++ entry .Interactivity   źródło zdarzeń, z którego czytają widżety, takie jak `Terminal`
+
+% 1 1 0 1ea5b2bc434e82fe000b21fc9fec2f2b
+
+@ 0 5 0 0d9bed7685d9ea3506665aa38b7bab96
++       `LineEditor#ask` i `SelectMenu#ask` pobierają zdarzenia z
++       `Interactivity[Terminal.Event]` w kontekście, którym w bloku `interactive` jest sam
++       `Terminal`. Przekazują swojej kontynuacji `Interactivity` nad tym samym iteratorem,
++       z którego czytają, więc widżet wywołany w kontynuacji podejmuje pracę tam, gdzie
++       pierwszy się zatrzymał, zamiast tracić zdarzenia odczytane z wyprzedzeniem.
+
+% 1 1 0 119682e38a2e91201401d9c350cf1154
+
+@ 0 2 0 00d7b1abb3fbacbd029b1d87a27bab4e
++   entry .apply   `Interactivity`, które wydaje iterator już odczytywany
++   entry #eventIterator   iterator zdarzeń, z którego się czyta
+
+@ 0 1 0 08e10609f9ef8dbb1664b146db2d63a4
++ entry .Question   widżet jako maszyna stanów: zdarzenie na wejściu, następny stan na wyjściu
+
+% 1 1 0 1120c35809eb32af14df6807c4511d5f
+
+@ 0 3 0 050d0f40c25ea90d0388a66dc882b7e8
++       `LineEditor` i `SelectMenu` to `Question`. `#apply` pytania przyjmuje jedno
++       `Terminal.Event` i daje następny stan; `Interaction` rysuje stany i decyduje, kiedy
++       któryś jest odpowiedzią.
+
+% 1 1 0 1e0e4f863f5ce74417249308511dcd64
+
+% 2 1 0 17c2a764c101a56d0cacf4dedda1ee68
+
+% 1 1 0 10cd3e864d2963c01629ef382e9626c5
+
+@ 0 1 0 1f4710808e9695f11c83addbad5ffdef
++   entry .Error   zgłaszany, gdy użytkownik odrzuca widżet zamiast na niego odpowiedzieć
+
+% 1 1 0 17823a08b638480008873c0df93f6e07
+
+@ 0 4 0 07ec2885cf2d7e72029faac8b59dc849
++         Błąd `↯/s.95.1`: _the user dismissed an interaction_. Zgłaszany przez
++         `LineEditor#ask` i `SelectMenu#ask`, gdy użytkownik naciśnie `Escape`, `Ctrl`+`C` lub
++         `Ctrl`+`D` albo wejście się skończy, zanim nastąpi zatwierdzenie.
++   entry #apply   następny stan, po zdarzeniu
+
+@ 0 1 0 0cb4a8858e2e8cd910c0fad765eaeae0
++ entry .LineEditor   edytowalny wiersz tekstu lub kilka wierszy, z kursorem: widżet, który pyta o tekst
+
+% 1 1 0 0d6399a46509e3190b2c6dd86afc1595
+
+@ 0 6 0 17d4d44a411a84521e08fcf9a5d8b3d4
++       `LineEditor` to stan pola tekstowego: jego `#value` i `#position` kursora w jego
++       obrębie. Każde naciśnięcie klawisza tworzy nowy edytor, ze zwykłymi klawiszami
++       edycyjnymi: znaki wstawiane są przy kursorze; `Backspace` i `Delete` usuwają znak po
++       jednej lub drugiej stronie kursora; `Left`, `Right`, `Home` i `End` go przesuwają;
++       `Ctrl` z `Left` lub `Right` przesuwa o słowa; `Ctrl`+`W` usuwa słowo przed kursorem,
++       a `Ctrl`+`U` wszystko przed nim.
+
+% 2 1 0 084dae7347c0f523066d09c6dd14a563
+
+% 3 1 0 06113737b9e3d6270d4f41e235a4b1f9
+
+% 4 1 0 0260a3f452ded9cc00f98f86df31fe86
+
+% 5 1 0 05fa9160169ce7f500bf722c64334b3a
+
+% 0 1 0 12c31b1adb2569eb17427d5ae8fe9a27
+
+% 0 1 0 010fb786143f22a21822068e05bca3ed
+
+% 1 1 0 0c5803354ece202e0d3396c350685312
+
+@ 0 3 0 0c84fd206c3496650380b2fe3aa7b18b
++       `#ask` uruchamia edytor w terminalu, rysując go w wierszu przy kursorze (lub na `Board`
++       w zasięgu), i przekazuje zatwierdzony tekst do swojej kontynuacji; odrzucenie go
++       zgłasza `Question.Error`.
+
+@ 0 4 0 1e7cccd48c1f9f790c39e717123980e6
++       W `LineEditor.Mode.Multiline` klawisze strzałek oraz `Home` i `End` przesuwają między
++       wierszami i w ich obrębie, a predykat na tekście decyduje, czy `Enter` zatwierdza, czy
++       wstawia znak nowego wiersza; `Shift`+`Enter`, które wymaga
++       `terminalFeatures.kittyKeyboardFeature`, aby terminal je zgłaszał, zawsze zatwierdza.
+
+% 2 1 0 00b324318bd8641f0c987ed26a4c14ee
+
+% 3 1 0 13596aaf83a523680ed6ff5b37383b74
+
+% 0 1 0 0d3979cd3b3fd79503dafe6cfbbd1990
+
+% 1 1 0 1ba6bb8b0900aaa105bb2d4b7b4d8075
+
+% 1 1 0 1c546554db94d10915e30cd985fba155
+
+% 2 1 0 17b64895f535d7d31b5b29fcec423444
+
+% 1 1 0 10a2f3c06b4f9bef0f4a15711247245e
+
+@ 0 1 0 127a1bb31252a56a197c4e7f9a8570f1
++   entry .Mode   czy `Enter` zatwierdza edytor, czy wstawia znak nowego wiersza
+
+% 1 1 0 119925f1dafc9664180d164a65f70084
+
+@ 0 10 0 1785a5e150db799e1037d732c86a6596
++         `SingleLine` (domyślnie): `Enter` zatwierdza. `Multiline(submit)`: `Enter` zatwierdza,
++         jeśli `submit` jest spełnione dla dotychczasowego tekstu, a w przeciwnym razie wstawia
++         znak nowego wiersza; `Shift`+`Enter` zawsze zatwierdza; `Up` i `Down` przesuwają
++         między wierszami, a `Home` i `End` przechodzą na końce bieżącego wiersza.
++   entry .cursorPosition   wiersz i kolumna przesunięcia znaku w tekście rozłożonym na zadaną szerokość
++       `LineEditor.cursorPosition(text, position, columns)` rozkłada tekst tak, jak robi to
++       siatka komórek: według klastrów grafemów, przy czym szeroki znak, taki jak `中`,
++       zajmuje dwie komórki, a znak łączący żadnej, zawijając klaster, który przekroczyłby
++       szerokość, i przechodząc do następnego wiersza przy każdym znaku nowego wiersza. Dla
++       zwykłego tekstu bez znaków nowego wiersza jest to `position/columns`
++       i `position%columns`.
+
+% 2 1 0 0b64c66dd6814e8111ffb6a0033eb342
+
+% 3 1 0 13a20c6d37771fae1b68a34ded60afb6
+
+% 0 1 0 0c5d83779c04c3890ab59e009856dd01
+
+% 0 1 0 0fc7e931cd458cef156b75de0395e53a
+
+% 1 1 0 0a776937b66396da02c1dfeb738a93c9
+
+@ 0 14 0 07c331ad99619d9a1e1aea3229610080
++   entry #value   edytowany tekst
++   entry #position0   przesunięcie kursora przekazane do konstruktora lub `Unset` dla końca tekstu
++   entry #mode   czy `Enter` zatwierdza, czy wstawia znak nowego wiersza, jako `LineEditor.Mode`
++   entry #position   przesunięcie kursora w tekście
++   entry #submitsOn   czy zdarzenie zatwierdza ten edytor, zgodnie z jego `LineEditor.Mode`
++   entry #apply   edytor po naciśnięciu klawisza
++       Naciśnięcie klawisza, którego edytor nie obsługuje, lub takie, które przesunęłoby
++       kursor poza zakres, pozostawia go bez zmian.
++   entry #ask   uruchamia edytor w terminalu i przekazuje zatwierdzony tekst do kontynuacji
++       Potrzebuje `Interactivity[Terminal.Event]` (w bloku `interactive` – `Terminal`),
++       `Interaction[Text, LineEditor]` (`Interaction.lineEditor` z obiektu towarzyszącego,
++       rysującej na `Board` w zasięgu) oraz `Tactic[Question.Error]`, zgłaszanego, jeśli
++       edytor zostanie odrzucony. Wynik kontynuacji jest wynikiem `ask`; w jej obrębie kolejny
++       widżet czyta te same zdarzenia.
+
+@ 0 1 0 0577df0118dec185177767207f1338ad
++ entry .SelectMenu   wybór spośród opcji, po których porusza się klawiszami strzałek: widżet, który pyta o wybór
+
+% 1 1 0 096dcf4dba8ad5760a67e32bc443b377
+
+@ 0 3 0 09e1aee0ba2aceb209fc7b257804a385
++       `SelectMenu` to stan menu: jego `#options` i bieżąca opcja `#current`. `Up` i `Down`
++       przesuwają o jedną, zatrzymując się na końcach, a `Home` i `End` przechodzą do
++       pierwszej i ostatniej.
+
+% 2 1 0 1b3a520b214aec641879689f3ffe502a
+
+% 3 1 0 08e27f5b2cea7e9206f22d088a2c2481
+
+% 4 1 0 0a824ae9c497324d190c657385a560da
+
+% 5 1 0 0356e0f79c360642006950cc6b595a5e
+
+% 0 1 0 1cf6703c08df86830e3cc0450de2a097
+
+% 0 1 0 059c96c042d06bb416a0a03680a5eeb9
+
+% 1 1 0 1d9c463aa871532908407b8d3c928989
+
+@ 0 3 0 03fdf38e1a5c321a0d08dc0bf7a2ba95
++       `#ask` rysuje menu w wierszu przy kursorze (lub na `Board` w zasięgu), jedną opcję na
++       wiersz, z `>` przed bieżącą, i przekazuje opcję wybraną klawiszem `Enter` do swojej
++       kontynuacji; odrzucenie go zgłasza `Question.Error`.
+
+% 1 1 0 056900c4ccb6df440a79d48e4f70b2fa
+
+% 2 1 0 052bfdfafcf934e9009229f15204288c
+
+% 1 1 0 1e14671f23bdc210108670a3d0f75191
+
+@ 0 8 0 1dbbe05ad228c93f0046c9e57d3c2c18
++   entry #options   opcje, w kolejności wyświetlania
++   entry #current   opcja, na której jest menu
++   entry #apply   menu po naciśnięciu klawisza
++   entry #ask   uruchamia menu w terminalu i przekazuje wybraną opcję do kontynuacji
++       Potrzebuje `Interactivity[Terminal.Event]` (w bloku `interactive` – `Terminal`),
++       `Interaction[item, SelectMenu[item]]` (`Interaction.selectMenu` z obiektu
++       towarzyszącego, która wymaga, by opcje były `Showable`) oraz `Tactic[Question.Error]`,
++       zgłaszanego, jeśli menu zostanie odrzucone.
+
+@ 0 1 0 01d1dda4495a666f10dcd5aed8eebf87
++ entry .Signal   sygnał w postaci dostarczonej programowi, z rozmiarem terminala lub terminem dołączonym przez nadawcę
+
+% 1 1 0 06ac24334d59fef21c0e7ba1e9e805c8
+
+@ 0 5 0 0bbbb4b2c6a73bfc11370d832b662000
++       Sygnał POSIX sam niczego nie niesie, ale przekazujący go launcher może: klient ethereal
++       wysyła `WINCH` i `CONT` z rozmiarem terminala, którego demon po drugiej stronie gniazda
++       nie może zmierzyć, a zdarzenie zamknięcia, wylogowania lub zamknięcia systemu Windows –
++       z czasem, jaki system daje przed zakończeniem procesu bez względu na wszystko. Sygnał
++       zgłoszony w samym procesie niczego nie niesie.
+
+@ 0 1 0 15361c8345cfe7a21f5905ce2974da69
++       Handlery `Console#trap` otrzymują `Signal`:
+
+% 2 1 0 09a48295363ab02a15e761e8532f16eb
+
+% 3 1 0 1bec0156b47eaeb811cba29d27e6fcc8
+
+% 0 1 0 12f594ab8ad330df0de41f485e959753
+
+% 0 1 0 034f380523efd52812255bf23af255f7
+
+% 0 1 0 0794bb28e3bfb1d302c6274434b31e5e
+
+% 0 1 0 1e15d4b74e7ec4a70a266f5518e8eab3
+
+% 1 1 0 028842c54b157298038042b75c8393d3
+
+@ 0 1 0 182a64a91ef194281c03ec2dde5fe29d
++       Sygnał jest pokazywany jako jego krótka nazwa: `WINCH`, `CTRL_LOGOFF`.
+
+% 1 1 0 1a359dd4a3ce0c4f1cd3164aba499f98
+
+% 1 1 0 0bb33998f4b8c8d31adb874fa6d50f04
+
+% 0 1 0 006c10eff367ede31dfbc661ab814e13
+
+@ 0 6 0 0988537e27b0fad90b6a644471f5e42f
++   entry .showable   pokazuje sygnał jako jego krótką nazwę, taką jak `WINCH` lub `CTRL_CLOSE`
++   entry #interrupt   sygnał: `Interrupt` (sygnał POSIX) lub `WindowsSignal`
++   entry #columns   szerokość terminala, jeśli nadawca ją dołączył
++   entry #rows   wysokość terminala, jeśli nadawca ją dołączył
++   entry #deadline   czas do zakończenia procesu przez system, jeśli nadawca go dołączył
++   entry #size   rozmiar terminala jako `(columns, rows)`, jeśli nadawca dołączył oba
+
+@ 0 4 0 185ed17237b17e9b02a993bdfe784151
++ entry .SignalResponse   jak odpowiada handler sygnału: `Accept`, `Reject` lub `Defer`
++     `Accept` mówi, że handler obsłużył sygnał; `Reject` – że nie, więc stosuje się domyślną
++     akcję sygnału (launcher, który nie przekazuje sygnału do żadnego handlera, odpowiada
++     `Reject`); `Defer` – że sygnał zostanie obsłużony później.
+
+@ 0 1 0 0f9b23b4b64bdc8b10f0e9acce3132ff
++ entry .Interrupt   sygnał POSIX, od `HUP` do `SYS`, z nazwą i numerem
+
+% 1 1 0 08e57d8d952bcbc81883306d7842e46e
+
+@ 0 5 0 18550079aa82ac76189de483de470107
++       Trzydzieści sygnałów POSIX jako wyliczenie: `Hup`, `Int`, `Quit`, `Ill`, `Trap`, `Abrt`,
++       `Bus`, `Fpe`, `Kill`, `Usr1`, `Segv`, `Usr2`, `Pipe`, `Alrm`, `Term`, `Chld`, `Cont`,
++       `Stop`, `Tstp`, `Ttin`, `Ttou`, `Urg`, `Xcpu`, `Xfsz`, `Vtalrm`, `Prof`, `Winch`, `Io`,
++       `Pwr` i `Sys`. Jest też `Terminal.Event`: `Terminal` umieszcza każdy sygnał otrzymany
++       przez swoją konsolę w swoim strumieniu zdarzeń. `UnixSignal` to inna jego nazwa.
+
+% 2 1 0 1804ff33f44202d208d726f1663cb5e6
+
+% 3 1 0 15f8c5b8d74fb64b04aa8be03552d9a8
+
+% 0 1 0 002c8860b98773e1109d4b739a37849d
+
+% 0 1 0 13baac11c7a5de701bfe7745cf50bbc8
+
+% 0 1 0 1fefab2981e900401573ede8d9f637c0
+
+% 1 1 0 1e7e7390b384e89108bad3971434ecf3
+
+% 2 1 0 02b63df9647a452c1fc5c25d1a3e0b9c
+
+% 1 1 0 03563d8bb0f8107800c8b841155ee565
+
+@ 0 10 0 08c203520ccfd1c60afca2174bf7125d
++   entry .decoder   dekoduje sygnał z jego krótkiej nazwy, w dowolnej wielkości liter: `WINCH` lub `winch`
++       Nazwa bez przedrostka `SIG`. Nazwa, która nie należy do sygnału, rzuca
++       `IllegalArgumentException`, zamiast zgłaszać błąd przez taktykę.
++   entry .encodable   koduje sygnał jako jego krótką nazwę, `WINCH`
++   entry .showable   pokazuje sygnał jako jego krótką nazwę, `WINCH`
++   entry #shortName   nazwa bez przedrostka, wielkimi literami: `WINCH`
++   entry #name   pełna nazwa: `SIGWINCH`
++   entry #id   numer sygnału w numeracji Linuksa: `HUP` to 1, `TERM` 15, `CHLD` 17
++       Numerowane od 1 w kolejności wyliczenia, z pominięciem 16. Numery są linuksowe; macOS
++       i systemy BSD numerują sygnały od `URG` wzwyż inaczej.
+
+@ 0 4 0 07b99606a919ba11046d8dd6c7bdeb98
++ entry .UnixSignal   inna nazwa dla `Interrupt`, sygnałów POSIX
++     Zarówno alias typu, jak i jego obiekt towarzyszący, więc `UnixSignal.Winch`
++     i `case _: UnixSignal` działają tak jak z `Interrupt`. Wyliczenie nazywa się `Interrupt`,
++     ponieważ `Signal` to dostarczony sygnał wraz z jego ładunkiem.
+
+@ 0 1 0 115d3fa70edcdc4b0ce662a82afba73e
++ entry .WindowsSignal   zdarzenie sterujące konsoli Windows: `Ctrl`+`C`, `Ctrl`+`Break`, zamknięcie, wylogowanie, zamknięcie systemu
+
+% 1 1 0 02d68d199cd9a00a1c0fddd03ab29202
+
+@ 0 4 0 170400dc570458951bf0b06c8b30a22f
++       Pięć zdarzeń, które konsola Windows dostarcza zamiast sygnałów POSIX: `CtrlC`,
++       `CtrlBreak`, `Close`, `Logoff` i `Shutdown`. Launcher je przekazuje, a `Signal`
++       z `Close`, `Logoff` lub `Shutdown` niesie termin, po którym system zakończy proces.
++       Jest też `Terminal.Event`.
+
+% 2 1 0 075c2f26394227af143d464efd0f6bd3
+
+% 3 1 0 01435168c86222611760bf218596eba0
+
+% 0 1 0 1148c66a9d42d9cc0f470b2365acdbb7
+
+% 1 1 0 1d85deb4c2288eae090b62bf08016e7b
+
+% 2 1 0 1ef48cf20355f91318a45c2056895769
+
+% 1 1 0 15e0ccc792956eb50d6ce129340f5c23
+
+@ 0 6 0 05d0a6a3134f2c4314776d78583c2f01
++   entry .decoder   dekoduje zdarzenie z jego krótkiej nazwy, takiej jak `CTRL_C` lub `CTRL_LOGOFF`
++       W dowolnej wielkości liter. Nazwa, która nie należy do zdarzenia, rzuca
++       `IllegalArgumentException`, zamiast zgłaszać błąd przez taktykę.
++   entry .encodable   koduje zdarzenie jako jego krótką nazwę, taką jak `CTRL_BREAK`
++   entry .showable   pokazuje zdarzenie jako jego krótką nazwę, taką jak `CTRL_BREAK`
++   entry #shortName   nazwa używana przez launcher: `CTRL_C`, `CTRL_BREAK`, `CTRL_CLOSE`, `CTRL_LOGOFF`, `CTRL_SHUTDOWN`
+
+@ 0 1 0 1be0788a1a2439961bec2f4d21c38c26
++ entry .CtrlChar   dopasowuje znak kontrolny C0 jako literę lub symbol, z którego tworzy go `Ctrl`
+
+% 1 1 0 0e03e46aa23011f108056d06c30718a3
+
+@ 0 3 0 1691e61e625192650c4d2edd2cede2b3
++       Ekstraktor: `case CtrlChar(letter)` dopasowuje znak, którego kod plus 64 to `@`, wielka
++       litera lub jeden z `[`, `\`, `]`, `^` i `_`, i wiąże ten znak, z typem będącym unią
++       singletonów. `Keyboard.Standard` używa go do dekodowania `\u0003` jako
+
+% 0 1 0 01457b65e5ad7da511dbd15d0a71b9de
+
+% 2 1 0 0a4cc21e842310c408396a9654f2f1cc
+
+% 3 1 0 0808407a509a3bea12f8e47e55a3ad59
+
+% 0 1 0 0c7b2bac9ecfdb5a1ff036c3369ba934
+
+% 0 1 0 16748a97ee3d96941a90e706c8f7d688
+
+% 0 1 0 12b2a32cd0515b4e109999417f4b9924
+
+% 1 1 0 0796b821681ee9500c21c7ef02f39a52
+
+@ 0 1 0 1643f46ea1c7eed41331a27fbe1bf53b
++   entry .unapply   litera lub symbol znaku kontrolnego albo `None` dla każdego innego znaku

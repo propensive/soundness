@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 9 0 11b8761d2079527915eedfb9394c62f1
++ Debugowanie działającej aplikacji powinno sprawiać wrażenie natywnego, a nie hostowanego:
++ punkty przerwania, wykonywanie krokowe i inspekcja przez serwer Debug Adapter Protocol, z
++ inspekcjonowanymi wartościami przedstawianymi jako ich typy Soundness – ta sama dyscyplina
++ braku kodowań Javy, którą `core-5` stosuje do śladów, zastosowana do stanu na żywo.
++ vivisection jest takim serwerem: `vivisection.DapServer` obsługuje zestaw żądań (launch,
++ attach, punkty przerwania, wątki, ślady stosu, zasięgi, zmienne, ewaluacja, wykonywanie
++ krokowe), a `DapClient` z jego zestawu testów prowadzi żywy program debugowany przez punkt
++ przerwania, krok `next` i inspekcję w zwykłym przebiegu, przy czym każda zmienna lokalna jest
++ przedstawiana przez swoją instancję `Inspectable`, a migawka obiektu jest pokazywana przez swoją
++ prostą nazwę i tożsamość, a nie nazwę klasy JVM. Tematem jest `doc/work/soundness/modules/debugging.md`.

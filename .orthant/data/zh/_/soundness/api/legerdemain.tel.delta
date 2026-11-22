@@ -1,0 +1,587 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1816f82651a7183f14e7dc026cc98f4e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d5bcdaf6c5b0f100ed108c644f2b17
++ info   从数据类型派生的 HTML 表单，以及其提交内容所解码自的表单编码 `Query`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18173414ba64218813da28adb904e3fe
++     _Legerdemain_ 将 HTML 表单视为数据类型的用户界面。
++     case class 给出一个表单——每个字段一个带标注的部件，由字段的类型选择，嵌套的 case class 成为嵌套的字段组——而一次提交，即由键值对组成的 `Query`，会解码回该 case class，任何失败都会指向导致它的字段。
++     类型是这两半的唯一事实来源，因此表单不会与它所收集的数据脱节。
+
+% 2 1 0 05b97a4d2cfe536903470dafd9efe6e9
+
+% 3 1 0 0598b18039e5119003c2d993600ea147
+
+% 4 1 0 14c481c12c396a1f04bafc8515d89bee
+
+% 5 1 0 0f3f6e9b438a253d06ca8feff9e1a7f7
+
+% 0 1 0 099357e06907479a1fc8c3c025a7630c
+
+% 0 1 0 1be073e19c57569a0da176bcb0474da3
+
+% 0 1 0 1f193ff683528bd5130d83fb33cdd69e
+
+% 0 1 0 16b627110ecefc2b1ceb0fbb68afc42c
+
+% 0 1 0 1ba668cb1ff8be4f10f36656f6c1a547
+
+% 1 1 0 02adf972541e2302098b7ef83e527069
+
+@ 0 7 0 0649e728f52f17800aea6c4ec87ab40d
++     各部分通过三个类型类组合在一起。
++     `Elicitable` 说明某个字段的类型用哪个 `Widget` 编辑——任何可编码为文本的值用 `Field`，`Boolean` 用 `Checkbox`，枚举用 `Combobox`，已存储的 `Reference` 用 `Dropdown`。
++     `Formulaic` 由积类型字段的 `Elicitable` 为其派生，并生成表单的行。
++     `Formulation` 决定表单及其每一行在 HTML 中如何框定；唯一的标准选择是 `formulations.postFormulation`，需按名称导入，因为 `import soundness.*` 不会导入 given。
+
+@ 0 6 0 0bc30018822ad9ee1442fe1bec1c5eeb
++     该库有两个源集。
++     `legerdemain.query` 包含 `Query` 和 `Parametric`：不含任何 HTML 的表单编码键值结构，HTTP 客户端和服务器将其用于 URL 查询字符串和表单提交。
++     `legerdemain.core` 添加了部件、类型类、`elicit`、`edit` 和 `formulations` 包，并依赖 honeycomb 的 HTML。
++     所有内容都导出到 `soundness` 总括包。
++     Telekinesis 在这些基础上构建表单循环——渲染、提交、带错误重新渲染——即 `orchestrate`。
+
+% 0 1 0 070e6e8be6a8f9610ec1f5ab60ce86d1
+
+% 0 1 0 1dc3224e54923d0a1218577fb61cf5e6
+
+% 0 1 0 169399e3e1ecc60f01686c3e992b7b35
+
+% 0 1 0 03350034340ac5a2108cf9d4c98d2f7d
+
+% 0 1 0 16a78fc871728de60b1963a5fc0890ea
+
+@ 0 6 0 05edf16bf9127f321c1805a562b0c922
++ entry .elicit   渲染某个类型的表单，可选择用已提交的 `Query` 填充，并附带其验证消息
++     `elicit[Value](query, validation, submit)` 通过作用域中的 `Formulation` given 渲染 `Value` 的整个表单，`Value` 必须是 `Formulaic` 的。
++     `query` 是已提交的内容，用于再次显示用户的输入（空白表单则为 `Unset`）；`validation` 保存要附加到字段上的消息，以每个字段的 `Pointer` 为键（没有消息则为 `Validation()`）；`submit` 是提交按钮的标注，或为 `Unset` 以使用该表述方式的默认值。
+
+% 2 1 0 0d13ad250e4390271e55e2b8f7b09475
+
+% 3 1 0 15dd599ba608c15c1abc964d3930585e
+
+% 4 1 0 097f7701f318ac1d1d9df6661eea5b1c
+
+% 5 1 0 0bc5d2bd7794a32418780fcb9ce5cd2e
+
+% 2 1 0 15369c286d01570f1ab9509943fb7583
+
+% 0 1 0 07a95ab6c9d9b4430b2fa306fa272985
+
+% 0 1 0 0a2cbbf91e2154de0f70ab1858e945d3
+
+% 0 1 0 0ae20a52d6fbf87e1d51697ad280eb65
+
+% 1 1 0 055802dc285765ff05482d5f9b4e0850
+
+@ 0 4 0 0f679f9f7bd890e715ff6f8f87ea5afe
++     每个字段的标注取自其名称，在大写字母处拆分并首字母大写（`firstName` 变为 _First name_），嵌套的 case class 成为一个 `<fieldset>`，以该字段的标注作为标题。
++     字段的部件以其点分路径 `speaker.name` 命名，这就是它被提交时所用的键。
+
+@ 0 5 0 0bb9c6010d743f4915b273e6bda72fc9
++ entry .edit   渲染某个值的表单，用该值的字段填充
++     任何既是 `Formulaic` 又是 `Encodable in Query` 的值上的扩展方法：`value.edit(validation, submit)` 是 `elicit` 渲染的表单，用该值自身编码为 `Query` 的字段填充，用于修改已有的记录。
++     它需要作用域中有一个 `Formulation`。
+
+% 2 1 0 0bc5fde39d0172a705e5b04f2e8c621f
+
+% 3 1 0 08847ded56ac6ac6076a871273c5adaa
+
+% 4 1 0 111e442fab2d0b9a030e84d984b2956d
+
+% 2 1 0 150f0eee9d896de31dea105f150d413d
+
+% 0 1 0 1c27a48ee6ceffbf017c4b15fbfcf9a8
+
+% 1 1 0 15554eb473c2a5e9076f21b85b3e7326
+
+@ 0 1 0 12ca44f0eafb14781e19a3058ab74c8e
++ entry .formulations   在 HTML 中框定表单的标准方式，每个都是需按名称导入的 given
+
+% 1 1 0 0c9ee1cf5e56377f0ff933b435b3aa49
+
+@ 0 3 0 02bcf320134ec454173c8a6b76a81916
++       表单及其各行如何渲染，取决于作用域中的 `Formulation`，而 `import soundness.*` 不会引入任何一个：需要按名称导入一个，或者应用程序定义自己的以匹配其设计。
+
+% 2 1 0 165647207bcadcb101799250713e4873
+
+% 3 1 0 08daf9406e36c21a1b7d685235444e3a
+
+% 0 1 0 11e571ee7c39219108c83c7a1daefdd7
+
+% 1 1 0 15abc6b9bab8db7000bbae132f1cf76f
+
+@ 0 7 0 1c6b3d318950b06d0110d7b355ef1863
++   entry .postFormulation   一个朴素、无样式的表单，提交回它自己的 URL
++       表单是一个 `<form action="." method="post">`，包含各行以及一个标注为 `submit` 文本的提交按钮；若为 `Unset`，则标注为 _Submit_。
++       每一行是一个 `<div>`，包含一个带有字段验证消息（如果有）的 `<p class="alert">`、一个包裹标题和部件的 `<label>`，以及一个 `<span class="required">*</span>`，因此样式表可以为提示和标记设置样式。
++       目前每一行都会显示该标记，无论字段是否必填。
+
+@ 0 1 0 05c503e6c3a368e40b17779b2132147d
++ entry .Formulation   表单及其每个带标注的行在 HTML 中如何框定
+
+% 1 1 0 10460bfeb23b13cc0607c609fb5e57e2
+
+@ 0 5 0 01b2d9f02de036d7160d219e2d89dbea
++       `Formulation` 是表单的呈现方式，与其字段如何派生相互独立：`#form` 包裹各行和提交按钮，`#element` 用标题和验证消息框定一个部件。
++       `elicit` 和 `edit` 将其作为上下文值接收；`formulations.postFormulation` 是标准的那个，应用程序可以为自己的标记定义自己的：
+
+% 2 1 0 0ad6a71e0796600e0f568897f53e5695
+
+% 3 1 0 03fb70bd85af054f019ad547f16c16ea
+
+% 0 1 0 1da6d46e0f216dc51283ca7212c8124f
+
+% 0 1 0 0d8e888e819df8f814afe8969b6f167d
+
+% 0 1 0 0b0a8ef604f9f4a40a0ed28dd987a3a7
+
+% 0 1 0 10f2f08127a2b95a06de001a69d8dd56
+
+% 0 1 0 1e81af7ffeb068ce0cb4d44bf5ebc5f8
+
+% 0 1 0 0b6b75ba305165e70c42b455889c228c
+
+% 0 1 0 1fa500fbe95b054100263919a5314f59
+
+% 0 1 0 0e34cc68eb25a2981e153e8dbc7a33d0
+
+% 1 1 0 10b0051310137f7117bd851c31b64056
+
+@ 0 1 0 122d221d1cd604c003120e241aa0dd7b
++       `Formulation` 是受捕获追踪的（`Findable`），因此它可以闭包捕获某个能力。
+
+% 0 1 0 15c23bf2061bb1600928dd660875b8de
+
+@ 0 2 0 12569fce9f2b15bb1988e883c44e09f1
++   entry #form      包裹表单的各行及其提交按钮，按钮标注为给定文本或默认值
++   entry #element   用标题、验证消息以及是否必填来框定一个部件
+
+@ 0 1 0 1f1ac04e489e9e31112bb344858906db
++ entry .Formulaic   可以呈现为表单行的类型：为 case class 逐字段派生
+
+% 1 1 0 1b83b47346db263600e5935d187a9039
+
+@ 0 5 0 06b6751aa2dca019006ccd94d89caa3e
++       `Formulaic` 是 `elicit` 和 `edit` 所需的类型类。
++       它由积类型的字段为其派生——每个字段本身都必须是 `Formulaic` 的——并且对任何 `Elicitable` 且其部件可作为短语 HTML `Renderable` 的单个值给出。
++       派生的积类型渲染为带有 `<legend>` 的 `<fieldset>`，因此数据中的嵌套就是表单中的嵌套。
+
+@ 0 3 0 152ed909f6ff51eb041e5f6869530ee2
++       `#fields` 接收该值在整个表单中的 `Pointer`、它的标题、已提交 `Query` 中该指针之下的部分、`Validation` 以及 `Formulation`；单个字段按其指针在验证中查找自己的消息。
+
+% 0 1 0 17efcd80442d96ac1c3da3efbf099571
+
+% 1 1 0 115498ebfd5488df1ebbf0a6bb3d3fa9
+
+@ 0 8 0 1fbaf0d4a48e4b5c018d12e089482a13
++   entry .elicitable   单个字段的行：它的 `Elicitable` 部件，经渲染并与其消息一同框定
++       用字段的点分名称、标题和已提交的值为该值构造部件，渲染它，并用该表述方式的 `element` 框定它。
++   entry .conjunction   派生 case class 的各行：由每个字段的行组成的字段组
++       `Formulaic` 用于积类型的派生。
++       每个字段的标题是其名称在大写字母处拆分并首字母大写的结果，其指针在父级指针的基础上加上字段名。
++   entry #fields   某个值的表单行，给定其指针、标题、已提交的查询、验证和表述方式
+
+@ 0 1 0 18f839fa05ebcad70a3f9527a36f7502
++ entry .Elicitable   用哪个部件编辑某个类型，以及该类型的值如何以文本输入
+
+% 1 1 0 05d08716e46f26ec0c391c46912b892d
+
+@ 0 3 0 03d36f91579674910a06fb32853b7aec
++       `value is Elicitable` 说明类型为 `value` 的表单字段是什么样子：它的 `Operand` 是一个 `Widget` 类型，`#widget` 用字段的名称、标题和当前值构造一个部件，`#input` 给出值被提交时的文本。
++       伴生对象中的 given 做出选择：
+
+@ 0 6 0 049737dcc05651f41bb7d86fc5c734b1
++       - 任何 `Encodable in Text` 的值——`Text`、数字、诸如 `EmailAddress` 的经过验证的类型——都是文本 `Field`（`decodable`，位于 `Elicitable2`，优先级较低）；
++       - `Boolean` 是 `Checkbox`，勾选时提交为 `on`（`boolean`）；
++       - `Enumerable` 类型是一个提供每个值名称的 `Combobox`（`enumerable`）；
++       - 指向已存储实体的 `Reference[Entity]` 是由所有已存储实体组成的 `Dropdown`，以其 `Showable` 渲染显示（`reference`）。
+
+@ 0 1 0 01dbf0b07d7acde516b1aa85eb1ca2ef
++       自己的类型可以通过自己的 given 获得不同的部件。
+
+% 0 1 0 138d9437b8bcaa5719360097d57a553a
+
+% 0 1 0 1a90924ff14ae77008f767372188e94e
+
+@ 0 10 0 0f5348b04ba32a8d03f489a857380a3c
++   entry .boolean      用 `Checkbox` 编辑 `Boolean`，为真时输入为 `on`，为假时为空
++   entry .enumerable   用由其值名称组成的 `Combobox` 编辑 `Enumerable` 类型
++       每个值按 `Enumerable` 所给的名称输入，组合框的列表提供所有名称。
++   entry .reference    用由所有此类实体组成的 `Dropdown` 编辑指向已存储实体的 `Reference`
++       要求实体是 `Listable`、`Showable` 和 `Referenceable` 的，且其引用的操作数是 `Encodable in Text` 的：每个已存储实体都会被枚举，每个选项以其编码后的引用为键，以实体的 `show` 为标注。
++   entry #input    该类型的值被输入或提交时的文本
++   entry #widget   字段的部件，由其名称、标题和当前文本构造
+
+@ 0 1 0 1a0e0576f25699e71928579331e08e0a
++ entry .Elicitable2   优先级较低的 `Elicitable` given，适用于任何可编码为文本的类型
+
+% 1 1 0 031ac0efbd25710205bcf22a8f8742c8
+
+@ 0 4 0 1f13fc7dd808d50803e168aae9d16288
++       混入 `Elicitable` 伴生对象，使那里更具体的 given 胜出。
++   entry #decodable   用文本 `Field` 编辑任何 `Encodable in Text` 的值，以其编码输入
++       尽管名称如此，它只要求类型是 `Encodable in Text` 的：字段显示值的编码，而提交内容通过 `Query` 单独解码。
+
+@ 0 1 0 02f61cb5f53f7a33047b5a6fddd9d3bf
++ entry .Widget   表单控件，带有它被提交时所用的名称及其当前值
+
+% 1 1 0 177b940413d19b5e1b75509edaac9574
+
+@ 0 5 0 0a85aa46a5d8d26514cbab90f3ea160c
++       `Field`、`Checkbox`、`Combobox`、`Dropdown` 和 `RadioGroup` 的共同形状：每个都是 case class，带有 `#name`（字段在表单中的点分路径）和 `#value`（它所持有的文本），每个伴生对象都有一个 `Renderable` given，将其渲染为短语 HTML。
++   entry #name    控件被提交时所用的名称：字段在表单中的点分路径
++   entry #value   控件所持有的文本，来自已提交的查询或正在编辑的值
+
+@ 0 1 0 0e7c195511e6b9631aad2f1dcb1f023c
++ entry .Field   文本输入框，任何可编码为文本的值的部件
+
+% 1 1 0 1a49d4a00561f3dc1e304a8ffde27e7f
+
+@ 0 6 0 1d68747965062124112443416ed2689a
++       渲染为带有部件名称和值的 `<input type="text">`；标注由其外围的 `Formulation` 渲染。
++   entry .renderable   将字段渲染为 `<input type="text">`
++   entry #label   字段的标题
++   entry #name    字段被提交时所用的名称：它在表单中的点分路径
++   entry #value   字段中的文本
+
+@ 0 1 0 1a35a8e65b9cc31c07449c79fd1325bd
++ entry .Checkbox   复选框，`Boolean` 的部件
+
+% 1 1 0 0edd8eac35c79f2705596ab5fd2bb45b
+
+@ 0 6 0 0f99e2b4f5d770570b866cc3e04274f2
++       渲染为 `<input type="checkbox">`，当其值非空时为勾选状态。
++       勾选的复选框提交为 `on`，未勾选的则根本不提交，这就是 `Boolean` 根据其键是否存在而从 `Query` 解码的原因。
++   entry .renderable   渲染复选框，其值非空时为勾选状态
++   entry #name    复选框被提交时所用的名称：它在表单中的点分路径
++   entry #value   勾选时为 `on`，否则为空
+
+@ 0 1 0 1bf23067b5c39c551fe5af29d7b0ca58
++ entry .Combobox   带有建议列表的文本输入框，枚举的部件
+
+% 1 1 0 0ea90385ffadc4d2090c11f2709cc047
+
+@ 0 9 0 1a3f909613d2e7ba156b8faafc1116a5
++       渲染为一个 `<input>`，通过其 `list` 属性关联到由选项组成的 `<datalist>`，因此浏览器会建议这些值，同时仍接受键入的文本，而该文本随后必须能够解码。
++       datalist 的 id 是部件的名称，因此该名称必须是有效的 DOM id：名称包含空白的字段，或者位于表单根部的单独枚举（其名称为空），都无法渲染。
++   entry .renderable   将组合框渲染为一个 `<input>` 及其 `<datalist>`
++   entry #name      输入框被提交时所用的名称，也是其 datalist 的 id
++   entry #options   建议的值
++   entry #value     输入框中的文本
+
+@ 0 1 0 064a473e89d5fabc117448668aacebaf
++ entry .Dropdown   从固定的带标注选项列表中进行选择，已存储引用的部件
+
+% 1 1 0 03fa308343f8791a0cb3da576ff7f9f8
+
+@ 0 5 0 1ef8e03dc7bda702002e2c0cecc5b9cd
++       渲染为由 `<option>` 组成的 `<select>`，每个选项提交其 `key` 并显示其 `value`。
++   entry .renderable   将下拉框渲染为由其选项组成的 `<select>`
++   entry #name      选择被提交时所用的名称
++   entry #options   各个选项，每个都有一个提交的键和一个显示的标注
++   entry #value     当前选中的键
+
+@ 0 1 0 10bbf692c1710aac101133d3b4ede78c
++ entry .RadioGroup   共享同一名称的一组单选按钮，其中一个被选中
+
+% 1 1 0 03f3f88765e8aa44161d3c5bf637fe51
+
+@ 0 7 0 139b2c6549d06e400fc510eeb9cb2d7f
++       渲染为每个选项一个 `<label>`，包裹一个 `<input type="radio">`。
++       没有标准的 `Elicitable` 会产生它；应通过单选按钮选择的类型，需要一个 `Operand` 为 `RadioGroup` 的 `Elicitable` given。
++   entry .renderable   将单选按钮组渲染为每个选项一个带标注的单选按钮
++   entry #name      组中每个按钮被提交时所用的名称
++   entry #options   各个选项，每个都有一个键、一个提交的值和一个标注
++   entry #value     当前选中的值
+
+@ 0 1 0 0c22e949889dde441aa8281e2a2f1259
++ entry .Query   表单编码的键值对：URL 查询字符串或表单提交，以及它们的编解码器
+
+% 1 1 0 137af14deeb112ec00c613b3f2b68da5
+
+@ 0 5 0 0f51853c59e73535067d2117d14dfb23
++       `Query` 是由 `Text` 组成的 `(key, value)` 对的有序列表，就像查询字符串 `a=1&b=2` 或 `application/x-www-form-urlencoded` 正文所持有的那样。
++       嵌套数据被展平为点分键——`speaker.name`——因此 case class 可以逐字段编码为 `Query` 并从中解码，表单提交和查询参数正是这样成为带类型的值。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1b09dd2943dee7711572a7bfadc804cc
++         label 空查询
+
+% 1 1 0 16c9d472591ea8dd02f8aafdc192b6df
+
+% 2 1 0 12a2456f9b36a6011006ff90bbaa3d83
+
+% 3 1 0 08dcf1ae0320a69e16e79e656dc6d046
+
+% 0 1 0 0f6604aca456157c076ffbd6576104a6
+
+% 0 1 0 06905ce725fd03b80b21ad458f2bd17d
+
+% 1 1 0 0419a33130f082510faea32938bf8826
+
+@ 0 1 0 1528526bb45882680d954d07c66c22b9
++         label 一个参数
+
+% 1 1 0 143fe1041fa84df80b2aaad07bc9bdcb
+
+% 2 1 0 165199b7c45c17540e84612d7c0c3ec4
+
+% 3 1 0 0e00f8ecc5cdab511d014cdddcfd3933
+
+% 0 1 0 17ce139a6ee8b48a1716c7e365bbfe1a
+
+% 0 1 0 1835039ffdbda110081cb4a34823baf3
+
+% 1 1 0 1978244a25d24cce0dd2323876784140
+
+@ 0 1 0 12c5315c9eb94bed047d8758b71b5ec3
++         label 追加第二个参数
+
+% 1 1 0 0ddbfb79563f1af508bd058b9dfea02a
+
+% 2 1 0 1fb7d47f45e5b99601954302a67039fd
+
+% 3 1 0 0540e3a41eb11a7f19f93b2ad3dd83be
+
+% 0 1 0 16e6c69df601f7f208549ccc75d9df9f
+
+% 0 1 0 03ca07f99a6c8fef0d1db700890b7b36
+
+% 1 1 0 08e169406b5acbae1948685ed2832135
+
+@ 0 1 0 019f83119e5d231c1dff88b42fd02f91
++         label 两者嵌套在前缀之下，然后解码
+
+% 1 1 0 1a903d77f0414b921fd6e74b67c65d73
+
+% 2 1 0 10a72e118fe3b0dc0e97a905edc3763e
+
+% 3 1 0 10f60762e5b3dd350f509f57c39d445c
+
+% 0 1 0 1b053025a27ea06517187934ed192b18
+
+% 0 1 0 028cbf1bc02f01461e50fd4b7924dcb1
+
+% 0 1 0 0284c59024acf3610df830e8efe4ff56
+
+% 0 1 0 0928d04a94c6473509a82e8d8f61b8a6
+
+% 0 1 0 0af8ff365f39d1e7101a708b64c80cf3
+
+% 0 1 0 181c7dd74e919bda06473d8ad93d2483
+
+% 0 1 0 0b4df2833d5769ca08c6dad0b50d4848
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0cdf9675725c8adc164a3ed13d28823a
++       文本用 `as[Query]` 解码为 `Query`，而 `Query` 编码（或 `show`）为 URL 编码的字符串。
++       任何 `Encodable in Text` 的类型都编码为只含一个无名值的 `Query`，任何字段可编码的 case class 都逐字段编码；解码与这两者对应，缺少参数时抛出 `Query.Error`。
++       在累积式策略（`validate`）下，case class 每个缺失或无效的字段都会被报告，各自带有其点分的 `Pointer`，并且只有在每个字段都解码成功时才会运行 case class 的构造器。
+
+@ 0 2 0 0bcbe581d6c3478f1289be879fddac1d
++       当有 `Parametric` given 为名称指定类型时，具名参数可以动态读写——`query.name`、`query.name = value`、`Query.make(name = value)`。
+
+% 0 1 0 0d44f2f2eef4167a1888e88c0fedc130
+
+% 1 1 0 01776fce97be213013ba7803b719b32c
+
+@ 0 9 0 1522f651ee9bfaa11a104873b45328e0
++   entry .apply   空查询、只含一个无名值的查询，或按顺序由给定键值对组成的查询
++       `Query()` 为空，`Query(text)` 以空键持有单个值 `text`——这是 `Encodable in Text` 的值编码成的形状——而 `Query(pairs)` 原样持有一个 `(key, value)` 对列表。
++   entry .encodable   将 `Query` 编码为 URL 编码的文本；以及将任何可编码的值或 case class 编码为 `Query`
++       两个 given 共用这个名称。
++       一个将 `Query` 渲染为用 `&` 连接的 `key=value` 对，每个键和值都经过 URL 编码。
++       另一个是 inline given，它使任何类型成为 `Encodable in Query`：`Encodable in Text` 的类型成为只含一个无名值的查询，而 case class 将每个字段编码在其名称之下，嵌套字段编码在点分键之下。
+
+% 2 1 0 05a97a552f8f10420569d682a98ae57b
+
+% 3 1 0 051ce768152bc62e1e53c5145e59b13c
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 08659b3d3fcf27d70c388bc3af27a2a8
+
+% 1 1 0 0583592f11ffca320ad3c6ce0a4eb204
+
+@ 0 6 0 094a3ae0062884f005612a030911b750
++   entry .decodable   将 URL 编码的文本解码为 `Query`；以及将 `Query` 解码为任何可解码的值或 case class
++       两个 given 共用这个名称。
++       一个按 `&` 拆分文本，并在每个部分的第一个 `=` 处拆分，对两侧进行 URL 解码；没有 `=` 的部分是一个值为空的键。
++       另一个是 inline given，它使任何类型成为 `Decodable in Query`：`Decodable in Text` 的类型从查询的无名值解码，而 case class 从其字段名之下的参数逐字段解码。
+
+@ 0 5 0 02f19e1f145824811722ae4d1388e55e
++       缺失的值会抛出原因为 `Missing` 的 `Query.Error`，除非该类型有 `Default`，此时在抛出错误后使用默认值。
++       在累积式策略下，case class 每个缺失的字段都会被抛出，各自聚焦于其点分的 `Pointer`，并且构造器不会以回退值运行——因此细化类型的构造器永远不会为用户未填写的字段报告虚假的错误。
+
+% 2 1 0 1244ea5d9101d6f21fb0973f792b728c
+
+% 3 1 0 1b25642fd9ea393b094c76707529bf5b
+
+% 4 1 0 0cf38464b4c02c1218a4411950e73613
+
+% 0 1 0 0a65634d34e41fa013d1a661b1826922
+
+% 0 1 0 01b2b051011e6cec09418ebf69486153
+
+% 1 1 0 1af07ce2b7769e0c11cd91cda6fa9a01
+
+@ 0 1 0 0fd106d2d9e88a0707bd22a6179b3c89
++   entry .EncodableDerivation   `Encodable in Query` 的积类型派生：每个字段编码在其名称之下
+
+% 1 1 0 14070ab33649d1b70fd2897cf1bd5d93
+
+@ 0 3 0 107d3c6632e80c4d1eca8d3eb92737ba
++         由用于 case class 的 inline `encodable` given 使用；通常不会直接指名使用。
++     entry .conjunction   将积类型编码为其字段查询的并集，每个都以字段名为前缀
++   entry .DecodableDerivation   `Decodable in Query` 的积类型派生：每个字段从其参数解码
+
+% 1 1 0 03f8eb496f34821a1e62aeae1b67816f
+
+@ 0 17 0 19ce6a1c6fc478de102d535c563e4ab8
++         由用于 case class 的 inline `decodable` given 使用；通常不会直接指名使用。
++         它在一次遍历中解码所有字段，将每个字段的错误聚焦于其 `Pointer`（嵌套记录的错误落在 `outer.inner`），并且只有在每个字段都干净地解码后才构造该积类型。
++     entry .conjunction   逐字段解码积类型，只有在每个字段都解码成功时才构造它
++   entry .booleanEncodable   像复选框那样编码 `Boolean`：为真时为 `on`，为假时什么也没有
++   entry .booleanDecodable   将 `Boolean` 解码为复选框的提交内容：只要值存在即为真
++       未勾选的复选框不会被提交，因此 `Boolean` 字段永远不会缺失：它的缺席就是 `false`。
++   entry .showable   将 `Query` 显示为其 URL 编码的查询字符串，与 `#queryString` 给出的相同
++   entry .inspectable   `Query` 的调试渲染：用逗号分隔的 `key = "value"` 对，不经过 URL 编码
++   entry .applyDynamicNamed   `Query.make(name = value, …)`：由具名、带类型的参数组成的查询
++       每个参数名都必须在作用域中有一个 `Parametric` given，说明其值的类型，且每个值都必须是 `Encodable in Query` 的；两者都在代码编译时检查。
++       类型错误的值会导致编译错误 _the parameter `name` takes values of `T` but the provided value had type `U`_；没有 `Parametric` 的名称会导致另一个错误（错误 `↯/s.87.4`），没有编码的值会导致第三个错误（错误 `↯/s.87.3`）。
+
+% 2 1 0 0826fa908f9a8284081e876f583ab2e4
+
+% 3 1 0 0708f5e69e07063a1d5b3ddf7b78ade8
+
+% 0 1 0 07ed1395cacb9602103c25c3f2b48e17
+
+% 0 1 0 0f58a88339cd075f1d52467860846253
+
+% 0 1 0 1990392abd9337a20f2b72c048e42865
+
+% 1 1 0 13cf69521ce6c47e0a359fcdc9e5631e
+
+@ 0 4 0 1ab0ebbbe60e3ba310a59ad5d358e9b8
++       Telekinesis 的 `queryParameters.arbitraryQueryParameter`（按名称导入）接受任何名称及任何值。
++   entry .addable   `query + query`：两者的键值对，左侧的在前
++   entry .Error   当某个值所需的参数在查询中缺失时抛出
+
+% 1 1 0 0b1419ee9c644788159abf8beb09406c
+
+@ 0 4 0 0adf787ba22ec3951e3f155e297ec3c8
++         错误 `↯/s.87.2`：_the query parameter could not be read because the parameter was not present in the query string_。
++         当必需的值没有对应参数时，由 `Decodable in Query` given 抛出；解码 case class 时，它聚焦于该字段的 `Pointer`，因此累积式策略会报告表单中每个缺失的字段。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 109b642e3654197f1a7d7f072c241117
+
+% 0 1 0 189f17deb544cc2610dffbeffc3157b9
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 1f4fe7028e1915fc06bec5182b9af9ce
++     entry .Reason   查询参数无法读取的原因：`Missing`，唯一的原因
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 26 0 09bdf08dd217babb135e62d253816837
++           `Missing` (1)：查询字符串中不存在该参数。
++       entry #number   原因的编号，即错误代码的第二部分
++     entry .communicable   将原因渲染为消息：_the parameter was not present in the query string_
++     entry #reason   `Query.Error.Reason`
++   entry #values   查询的 `(key, value)` 对，按顺序排列，嵌套字段的键为点分形式
++   entry #append   将另一个查询的键值对追加到此查询之后得到的查询
++   entry #nil      查询是否不含任何键值对
++   entry #++       将另一个查询的键值对追加到此查询之后得到的查询，与 `#append` 相同
++   entry #selectDynamic   `query.name`：参数 `name`，解码为其 `Parametric` 指定的类型
++       需要 `"name" is Parametric to Result` 和 `Result is Decodable in Query`；查询中 `name` 之下的部分（它自身的值以及任何点分子项）会被解码，若缺失则抛出 `Query.Error`。
++   entry #updateDynamic   `query.name = value`：添加了参数 `name` 的查询，由带类型的值编码而来
++       需要 `"name" is Parametric to Result`，且值必须是 `Encodable in Query` 的。
++       编码为单个无名值的值添加在 `name` 之下；结构化的值添加在 `name.` 及其各个键之下。
++       接收者保持不变。
++   entry #at      某个键之下的值，从文本解码；若没有则为 `Unset`
++       `query.at[Int](t"page")` 是参数 `page` 作为 `Int` 的值；当没有 `page` 参数拥有自己的值时为 `Unset`。
++       它需要一个用于解码的 `Tactic`。
++   entry #as      将整个查询解码为一个值，错误聚焦于其 `Pointer`
++       `query.as[Person]` 通过 `Person is Decodable in Query` 解码，因此缺失的字段会抛出聚焦于该字段点分指针的 `Query.Error`。
++   entry #apply   查询的无名值，或为 `Unset`；或某个键之下的查询部分
++       对于恰好持有一个空键键值对的查询，`query()` 是该值，否则为 `Unset`。
++       `query(t"speaker")` 是 `speaker` 之下的子查询：键为 `speaker` 的键值对成为无名值，而每个以 `speaker.` 开头的键去掉该前缀。
+
+% 2 1 0 0543e539d56086811457cf05068a8073
+
+% 3 1 0 1f74ba6ae2c54ec71774573220d0575a
+
+% 4 1 0 0c471cd2b6595fc00ad723d08c0df6c5
+
+% 0 1 0 1a27cfe8169c39d60dbe764489b9c0c4
+
+% 0 1 0 1c27f2f20d8314d01b25b94ed8a06ff4
+
+% 0 1 0 0987d6ed079bf941164d877fb0a0e14b
+
+% 1 1 0 13cefe27880b8eda11ec728e4fb4679e
+
+@ 0 6 0 1e8426939dd1d7791ccc29a5deca0794
++   entry #prefix   把每个键都放在某个前缀之下的查询：`name` 变为 `prefix.name`
++       无名值的键变为前缀本身，因此单独编码后再加上前缀的值就是一个具名参数。
++   entry #queryString   作为 URL 编码文本的查询，无名值单独写出，不带 `=`
++       每个键值对为 `key=value`，经过 URL 编码，用 `&` 连接；空键的键值对只写出其值。
+
+@ 0 1 0 1accb5ab4afe0dea06f3fbc6a1169948
++ entry .Parametric   具名查询参数的类型，用于 `query.name` 和 `Query.make(name = …)`
+
+% 1 1 0 184aef61f501fd3502bca1794e81d639
+
+@ 0 5 0 1edbb27fd21efa20031667f4ac36bb05
++       `"name" is Parametric to Result` 声明查询参数 `name` 持有 `Result` 类型的值。
++       它是 `Query` 的动态访问器——`query.name`、`query.name = value` 和 `Query.make(name = value)`——所需的证据，因此参数以固定的类型读写，并在代码编译时检查。
++       它不携带任何行为，因此 given 写作一个擦除的占位符：
+
+% 2 1 0 0c7793b1a9d1f74319b636dd65e852f6
+
+% 3 1 0 12c07bb37ddf1b0a12d3265e38fce1f5
+
+% 0 1 0 1b7378daaa5d8a721f6f4802d08e4df0
+
+% 1 1 0 155dc05194c3d7bb1ca3e0d29e1a8dac
+
+@ 0 2 0 0466e96d12a2535b00317b1422b8ddca
++       Telekinesis 的 `queryParameters.arbitraryQueryParameter` 为每个名称给出每种类型，供希望动态访问而不逐一声明参数的代码使用。
+
+% 0 1 0 081014bdc9d21eaa0b93d3b5f9647b1e
+
+@ 0 1 0 0695963a36d8411219de4a069f83369a
++   entry #Self   参数的名称，作为字面量 `Label` 类型
+
+@ 0 1 0 0a9a8278e381b2ae17a0188c9c9e0b1e
++ entry .internal   `Query.make` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 1ea659d4152ea6c313b6977fa3317271
++       不供直接使用：此对象的存在是为了让宏有一个稳定的归属。
++   entry .query   `Query.make(name = value, …)` 背后的宏：检查每个名称的 `Parametric` 并编码每个值

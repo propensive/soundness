@@ -1,0 +1,673 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 132bb41f85bb6a6e045576da68ac2626
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c923f48569655030680da73dcdc8fb3
++ info   WebSocket：升级后的 HTTP 连接，作为带类型的消息循环，既可用作服务器端处理函数，也可用作客户端
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 11 0 1a8ce956a70ba2e41f099b37468ca50a
++     _Perihelion_ 在连接的两端讲 WebSocket 协议（RFC 6455）。
++     在**服务器端**，scintillate 处理函数返回 `webSocket(initial)(handle)`：请求通过 `101 Switching Protocols` 握手被升级，连接变成一个状态机——每条入站消息都被解码为处理函数的消息类型，并连同当前状态传给 `handle`，后者以一个 `Control` 作答：`Reply` 发送一条消息并继续，`Continue` 静默等待，`Conclude` 发送最后一条消息并关闭，`Terminate` 则立即关闭。
++     在**客户端**，`Websocket.Url`（`ws://` 或 `wss://`）是一种 coaxial 传输方式，因此 `url.react(initial) { message => … }` 会建立连接、执行握手并以相反方向运行同样的循环，`url.exchange` 让客户端先发言，`url.session` 则借出活动的 `Websocket.Connection` 供自由使用。
+
+% 2 1 0 14a9db8bd66c8acc14b9bea12c4246ff
+
+% 3 1 0 1556b562dbe9b8e615d9c7a041ddafeb
+
+% 4 1 0 01805e9c4062e8f60bf416663d1141de
+
+% 5 1 0 099cd5ae59da604103ddab577af02d53
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 2 1 0 18da14192dee5d581d1a292548e03f9e
+
+% 3 1 0 187529a5da0ee20a19c92d590f917b26
+
+% 4 1 0 19476aed4f06d1ce0fe98b227333ed8c
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 1 1 0 1bfa93eae20509af1227c391aea01fc4
+
+% 2 1 0 015a8ad26de56fb30c59f0a5e6f28aad
+
+% 3 1 0 07ebe7c5883ba8531ba5e9c0406acb5d
+
+% 4 1 0 178f86d904add64615fe46ffd0c812a6
+
+% 6 1 0 1a06e3e5afd1d52b1d6c68a5eba8a53a
+
+% 8 1 0 04a66ec93f178d9216bf9ef8e3c318ec
+
+% 0 1 0 0720d9ea1d5184400000e4513ad2860f
+
+% 0 1 0 104956e7a842c818046ba912fe996ab6
+
+% 0 1 0 00ede44a02af135806b8dbe602e703a7
+
+% 1 1 0 1e471ca9d9776c9a15940a2b48e06712
+
+@ 0 10 0 1499af827f0f55ad054138bbcf4d694d
++     消息是带类型的。
++     原始的 `Message`（一个 `Text` 帧或 `Binary` 帧）是无类型的形式；任何 coaxial 的 `Ingressive`/`Transmissible` 类型（例如 `Text`）都直接承载；而 `value over Json`（或 `over Tel`，或任何 `Encodable in Text` 的格式）通过 `overIngressive` 和 `overTransmissible`，把记录作为该格式的文本放在文本帧中承载。
++     协议中棘手的部分——掩码（客户端加掩码，服务器不加，并且每一方都拒绝对方的错误）、分片与重组、`Ping`/`Pong`、文本的增量 UTF-8 校验、关闭代码——都由共享的 `Reader` 和 `Channel` 处理，从不出现在处理函数中，并且符合 Autobahn 测试套件。
++     违反协议时会产生 `Websocket.Error`，其原因携带发送给对端的关闭代码。
+
+@ 0 8 0 13923c98d586f3f911b1fcd453997ecd
++     该库是一个组件 `perihelion.core`（JVM），构建在 scintillate 的服务器和 coaxial 的套接字之上。
++     `Websocket.Masking`、`over`、`overIngressive`、`overTransmissible`、`Websocket`、`webSocket` 和 `WsSessional` 导出到 `soundness` 总括包。
++     有三个名称没有导出：`Message`，因为 fulminate 的 `Message` 已经在总括包中占用了这个名称（`import perihelion.Websocket.Message`）；以及客户端 given `wsClient` 和 `wsSessional`，因为合成的导出转发器会丢失它们带捕获注解的细化类型（`import perihelion.wsClient`、`import perihelion.wsSessional`）。
++     `Channel` 和 `Reader` 在包中是公开的，但没有导出。
+
+% 0 1 0 0a9d023e7b04b8921b8c9dd6156648e3
+
+% 0 1 0 11ac59b705b277d400a35d384aab4b45
+
+% 0 1 0 012bed43bcaeca060cac55a54eb47237
+
+% 0 1 0 1896cd76afb12fde0fa44395e16fc8ae
+
+% 0 1 0 092b60bd3c85e512057f2b0dd81136f9
+
+@ 0 12 0 1e3785b3a10f25320d9e28d4802444e3
++ entry .webSocket   把正在处理的请求升级为 WebSocket，作为有状态的消息循环来处理
++     `webSocket(initial)(handle)` 在 scintillate 处理函数内部调用，此时上下文中有一个 `Http.Request`（即连接），它返回一个 `Websocket[message, state]`，后者是 `Servable` 的：从处理函数返回它会发送 `101` 握手，连接随即成为该循环。
++     `initial` 是起始状态（默认为 `()`），`handle` 是一个上下文函数 `(state: state) ?=> message => Control[state]`：每条解码后的消息都在上下文中带着状态传入，返回的 `Control` 说明要发送什么以及下一个状态是什么（`Unset` 保持当前状态）。
++     消息类型从处理函数的参数推断，因此在那里标注；读取状态的处理函数用一个显式的上下文参数为它命名，`(count: Int) ?=> (message: Message) => …`，因为通过转换插入的上下文参数没有名称。
+
+% 2 1 0 1e96894f68dde62d050ba9ce5bdab416
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1704f4b53f1ef8e215573007c25d1f9f
++       label 原始消息的回显
+
+% 1 1 0 0ff14f74d9442e12082f5d2b9e5ddad1
+
+% 2 1 0 192c4d6cff6a52870e60fdafb3ba8a5d
+
+% 3 1 0 1dd347e0b4a567010b82b758dc3151ce
+
+% 4 1 0 0074e3342253e71f003ceabfd2029844
+
+% 5 1 0 11c9f64289e5e22f1810b1dd676f3a31
+
+% 6 1 0 05e73fa26af4ce1102dc44090edcf5f5
+
+% 7 1 0 029904f52db9ba7a1b5196d29bd75972
+
+% 8 1 0 1f1f8b24cc5ae4cf1622345cbac27f0a
+
+% 10 1 0 1626643816d7ac751a536657b8dad6cb
+
+% 11 1 0 128b346aa780857a0d6c1d34bdbec689
+
+% 0 1 0 09ae018fe6f9bc1c00262ab0c28f3168
+
+% 0 1 0 17e82f5d9d17008c1c006a7a0591a6a3
+
+% 1 1 0 07db47cabc29fe76196b335aa29e39a8
+
+@ 0 1 0 003f130bfd2e04411af128d0c8a822f6
++       label 消息计数，作为状态传递
+
+% 1 1 0 133d0349330c24e00c750a646956a62b
+
+% 2 1 0 079319c79e70996b14bc2c562e462354
+
+% 3 1 0 185a8210923e06ac05f51adb0f25b0ec
+
+% 4 1 0 1834574b1aa764890e081eb389b458c6
+
+% 5 1 0 1cd8e77d128a556f07c074b73f99d56b
+
+% 6 1 0 1f270432dd55949204e961f236af99b9
+
+% 7 1 0 110fbe0a78f9e9f411723551ee9ef333
+
+% 8 1 0 1450046b2c9cfdcb146165c655440b22
+
+% 10 1 0 1c8fce0eba51ea3718b8e1c3a53a15d5
+
+% 11 1 0 1a510ece387f1eb31a16baee69053b03
+
+% 0 1 0 190f1b65d369248d11ab4d445577bbb1
+
+% 0 1 0 0285570f5b648e23116ad9b5e88c2e19
+
+% 1 1 0 0be67d2de57757f90154d75aa90aa76d
+
+@ 0 1 0 1d26139a8867557e09c5ac6fc25c883d
++       label 基于 JSON 的带类型消息，并在第十条之后关闭
+
+% 1 1 0 0d09bc33998df24e00ba523b9f21423a
+
+% 2 1 0 0391d0cbe956bfe71dacfd6718a4bb07
+
+% 1 1 0 02f9133e32e33ef50a86ff900d15e009
+
+% 2 1 0 1a61e3b90ac8534d1ff6138089a0b7de
+
+% 3 1 0 06ff3cd12fd31a3e0640e265eccb0618
+
+% 4 1 0 0308d532679d6b951c207f2426e56a10
+
+% 5 1 0 0a1d6895194489581d1557eb782ff217
+
+% 0 1 0 16d36e63e38a71cf1a67a289145a770d
+
+% 0 1 0 03214a9eeeaf913115b5b1a17c3cf419
+
+% 0 1 0 10129a26846d36790c11befb6781a581
+
+% 0 1 0 05d56be7634328310857c5007450e233
+
+% 0 1 0 0cdffacd1abfd7bc098823410d964616
+
+% 2 1 0 1bc8aea50a9581d01a6af71b7b896d81
+
+% 3 1 0 16267895b137474b19caaf14dde0beca
+
+% 0 1 0 16821d6a062e7a111aba588c9a19227a
+
+% 0 1 0 177f7198d5a2efc01f10ff1353f86903
+
+% 0 1 0 0ad3a464d1f7d7441c9d22dd0dc686c8
+
+% 1 1 0 0fe134fdaab1b269070280cbafb47c62
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 10 0 0ab2a1366996c5bc01cd501f078b52fb
++     消息类型必须是 `Ingressive` 的：原始的 `Message`（按恒等方式解码，因此处理函数能看到帧是文本还是二进制）、借助 coaxial 自身实例的 `Text` 或 `Data`，或者借助 `overIngressive` 的 `value over format`，后者需要该格式的 `Decodable in Text`（`Json` 的需要 `formatting` 和 `textSanitizers` 中的 given）、值的 `Decodable in format`、一个 `Charset` 以及一个 `Tactic[Hazard]`（例如 `strategies.throwUnsafely`）。
++     `Reply` 或 `Conclude` 接受任何 `Transmissible` 值，序列化为一个完整的帧。
++     处理函数在作用域中的 `Monitor` 和 `Probate` 之下，在自己的任务上运行；循环中的 `Websocket.Error` 会以该原因的关闭代码关闭连接，而对端的 `Close` 结束连接时，任务的结果类型为初始状态的类型。
+
+@ 0 1 0 1257611121a1d72a041b3ce60ced9cf2
++ entry .Websocket   服务器端的 WebSocket：握手响应、它的通道以及它的处理任务
+
+% 1 1 0 0f5adb41861b83b41444a3071a40a041
+
+@ 0 8 0 08fc6848eab0a94114c7a0b952bcd31a
++       `Websocket[message, state]` 是 `webSocket` 返回的东西：一个 `Servable` 值，其响应是 `101 Switching Protocols` 握手——根据请求的 `Sec-WebSocket-Key` 和 `.magic` 计算出的 `Sec-WebSocket-Accept`、`Connection: Upgrade`、`Upgrade: websocket`——并以出站帧流作为正文，scintillate 会在连接存续期间一直把它泵送到套接字。
++       构造时它会启动 `#task`，后者读取客户端的帧，把它们重组为消息，将每条消息解码为 `message`，并运行处理循环。
++       处理函数可以在返回该值之前先保留它，以便在客户端发送任何内容之前通过 `#channel` 推送一条消息：
+
+% 2 1 0 1b95623c2c6dcd8f00ef08895ca8adc7
+
+% 3 1 0 1ca957080fcca3d411e10f8ddc96a80b
+
+% 4 1 0 0410b19376de0a0b1057cede599336d0
+
+% 5 1 0 0ea53b8ab6af1c091b1a80278830078c
+
+% 2 1 0 1f3740e9f8bf446a06d8a014827e08f1
+
+% 1 1 0 147c451fbb64a563180fed72b9c8b8dd
+
+% 2 1 0 0b2de5fe18b3637e169700403c80b6a2
+
+% 3 1 0 0c8600c4e787e5de156d692a197920ea
+
+% 4 1 0 1091d5c91f7a4d2f18637a8b86f3716e
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 2 1 0 1e8b62b807c19b281d160a97b2e9d558
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 1a72c4f461f9b50106aee49671d91870
+
+% 0 1 0 1c73668f2fd536661d12be36746a7943
+
+% 0 1 0 0a165248ebd96d43177b061fe011df16
+
+% 1 1 0 007e39fc3ac946321af1717ef647a365
+
+@ 0 6 0 0dc89300c132b98a160a6a622cc2e1b5
++       构造器接受请求、初始状态、从 `Message` 到处理函数类型的解码器以及处理函数；`webSocket` 会构建解码器，是创建它的预期方式。
++       没有 `Sec-WebSocket-Key` 头部的请求会导致 panic：处理函数只应升级请求了升级的请求。
++       伴生对象包含协议的其他部分：客户端的 `.Url` 和 `.Connection`、线上层面的 `.Frame`，以及 `.Error` 和 `.Event` 类型。
+
+% 0 1 0 16c195590f87e3e306ba97313850a060
+
+% 1 1 0 0fcb3266317b8b9c0787a3c906648a50
+
+% 0 1 0 1331208fd70561a6086c895868d59c76
+
+% 0 1 0 1518e122d114c2500d43eecbc7c9f946
+
+@ 0 17 0 0b4c8b7b2a5eac8e1aaf2c29666c19e3
++   entry .magic   RFC 6455 附加到密钥之后的 GUID，`258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
++       `Sec-WebSocket-Accept` 是客户端的 `Sec-WebSocket-Key` 后接这段文本所得 SHA-1 的 Base64；服务器在 `.servable` 中计算它，客户端在 `wsClient` 中检查它。
++   entry .servable   把 `Websocket` 作为 `101` 握手提供，其正文是出站帧流
++       让处理函数可以返回 `Websocket` 的 given。
++       正文是 `Flowing` 的，其来源是通道唯一的读取端点，由服务器的响应写入器恰好物化一次。
++   entry .Url   `ws://` 或 `wss://` URL：`urticose.Url["ws" | "wss"]`
++       与任何 `Url` 一样从文本解码（`t"ws://localhost:8080/".as[Websocket.Url]`），没有专门的方案机制；授权部分省略端口时，`ws` 的端口默认为 `80`，`wss` 的默认为 `443`。
++       `wss://` 连接通过 coaxial 的 `SecureEndpoint` 在 TLS 上打开，由作用域中的 `Tls` given 配置——默认是带主机名校验的系统信任库，对自签名的测试服务器则用 `Tls(context, verify = false)`。
++       当 `wsClient` 处于作用域中时，该 URL 是一种 `Duplexable` 传输方式，因此 `url.react`、`url.exchange` 以及（有 `wsSessional` 时）`url.session` 都适用于它。
++   entry .Connection   活动的客户端连接：重组后的入站消息、`send` 和 `close`
+
+% 1 1 0 1b9490961431a6440770d10b8d0282f1
+
+@ 0 5 0 1669897b3aff7ae3124e10a10f6d669e
++         这是 `wsClient` 连接到 `Websocket.Url` 后得到的、也是 `url.session` 借出的东西：握手已完成，一个后台守护进程把每个缓存的帧泵送到套接字，入站流已越过 `101`。
++         coaxial 的 `react` 和 `exchange` 把它作为状态机来驱动；会话作用域则直接使用 `#messages`、`#send` 和 `#close`。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 0 1 0 00920982337d627e01fe9c94d2198ebe
+
+% 0 1 0 0a2e252fedb67daa153c82ae9a1e2c86
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 1 1 0 0ef91427fd5ba7ce1185a09ea5211102
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 0 1 0 00ed41fc23e6d82a10dec47c6ff8e153
+
+% 0 1 0 05a4be4afdfc5fd616c1ab116ec4c482
+
+% 0 1 0 14e2104f99484339197a71b252edb935
+
+% 0 1 0 1bdac8d8b52a79ac1a92ae12a7008c08
+
+% 1 1 0 0cb47c875281e80107dfbeea5c9f1a91
+
+@ 0 21 0 048d280938aa804814eb2369a0fe0852
++     entry #messages   入站消息，每个流元素是一条完整的消息，以字节表示
++         在连接上运行共享的 `Reader`：应答 `Ping`，丢弃 `Pong`，重组分片，把文本校验为 UTF-8，对端的 `Close` 结束该流。
++         每个元素是一条消息的载荷——文本消息的 UTF-8 字节，或者原样的二进制消息字节——数据块边界为消息分帧。
++         需要一个 `Tactic[Websocket.Error]` 来应对协议违规。
++     entry #send   发送一条消息，作为一个完整的帧，在通道处加掩码
++         流被消耗并 memoize 为该帧的字节；`Transmissible` 值的 `serialize` 产生的正是这样的流。
++     entry #close   发送 `1000` 关闭帧，停止泵送并关闭套接字
++         等待泵送程序写完已缓存的内容。
++         需要一个 `Monitor`。
++   entry #key   客户端的 `Sec-WebSocket-Key`，握手的接受密钥由它计算得出
++   entry #channel   出站一侧：`send` 向客户端推送一条消息，`close` 结束连接
++       处理循环用来回复的 `Channel`。
++       处理函数可以持有 `Websocket`，并在返回它之前调用 `channel.send(Message.Text(…))`，以问候尚未发言的客户端；该帧会被缓存，并在 `101` 发出后写出。
++   entry #task   处理循环，从构造时开始运行；其结果是最终状态
++       当客户端关闭，或处理函数结束或终止时，以处理函数最后返回的状态完成；在 `Websocket.Error` 以原因的关闭代码关闭连接之后，则以初始状态完成。
++   entry .Error   对端违反协议时抛出，带有要发送的关闭代码
+
+% 1 1 0 1adec524b6ddd56b0b01a406d58f733a
+
+@ 0 7 0 06836fee2fc00dae0d25f54ca666fa58
++         错误 `↯/s.115.1`，以原因的编号作为其细节：_the WebSocket protocol was violated because `reason`_。
++         当帧或消息违反 RFC 6455 时由 `Websocket.Frame.parse` 和 `Reader` 抛出，握手失败时由 `wsClient` 抛出，连接被提前切断时也会抛出。
++         服务器端的循环捕获它，以 `reason.closeCode` 关闭连接，并返回初始状态；客户端则通过其 `Tactic[Websocket.Error]` 看到它。
++     entry .Reason   违反协议的原因，各自带有 RFC 6455 关闭代码
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 10b3946ab7b638521079ee1765d1560d
++           每个分支都携带要发送的 RFC 6455 关闭代码：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 15 0 1e43649ecc0765bb196981f4c47549be
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `Unmasked`  1  _the client sent an unmasked frame_  关闭代码 1002
++           row  `BadOpcode(code)`  2  _the frame used the reserved opcode `code`_  关闭代码 1002
++           row  `BadControl`  3  _a control frame was fragmented or exceeded 125 bytes_  关闭代码 1002
++           row  `BadFragmentation`  4  _the message fragmentation was invalid_  关闭代码 1002：在一条分片消息尚未结束时到达了数据帧，或者续帧没有可接续的内容
++           row  `TooLarge(size)`  5  _the frame payload of `size` bytes exceeded the limit_  关闭代码 1009：载荷超过 16 MiB
++           row  `InvalidText`  6  _a text frame contained invalid UTF-8_  关闭代码 1007：也用于无效的关闭原因
++           row  `ReservedBits`  7  _a reserved header bit (RSV1/2/3) was set_  关闭代码 1002：没有协商任何扩展
++           row  `BadClose`  8  _the close frame had a malformed payload or invalid code_  关闭代码 1002：一字节的关闭载荷，或无效的关闭代码
++           row  `Masked`  9  _the server sent a masked frame_  关闭代码 1002
++           row  `Handshake(detail)`  10  _the WebSocket handshake failed because `detail`_  关闭代码 1002：URL 没有主机，服务器没有以 `101` 应答，或者其 `Sec-WebSocket-Accept` 不正确
++           row  `Truncated`  11  _the connection closed before the frame was complete_  关闭代码 1006：连接的字节在帧的中途结束
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 5 0 0cf314acb91d2b84115f28f042a165c7
++       entry #number   原因的编号，即错误的细节编号
++       entry #closeCode   关闭前发送给对端的 RFC 6455 关闭代码
++     entry .communicable   把每个原因呈现为一条消息
++     entry #reason   违反协议的原因
++   entry .Event   连接记录的日志：发送和接收的消息，以及关闭
+
+% 1 1 0 0abe8dbe6573fea417b25062eaf355f3
+
+@ 0 13 0 120a8bde4ceb98c11cd04801e063b0e6
++         每个 `Event` 都带有 `Log.Network` 和 `Log.Protocol` 标签。
++         `Sent` 由 `Channel#send` 以 `fine` 级别记录，带有消息的字节数；`Received` 由服务器的循环为处理的每条消息以 `fine` 级别记录；`Closed` 由 `Channel#close` 以 `info` 级别记录，带有关闭代码。
++         凡是调用 `Channel#send` 或 `Channel#close` 的地方，作用域中都必须有 `Websocket.Event is Loggable`；`logging.silentLogging` 会丢弃它们。
++     entry .communicable   把每个事件呈现为一条消息
++     entry .Sent   发送了一条消息：_sent a `bytes`-byte websocket message_
++       entry #bytes   消息的长度
++     entry .Received   接收了一条消息：_received a `bytes`-byte websocket message_
++       entry #bytes   消息的长度
++     entry .Closed   连接已关闭：_closed the websocket connection with code `code`_
++       entry #code   发送的关闭代码
++   entry .Frame   一个 WebSocket 帧：线上格式，从游标解析并编码为字节
+
+% 1 1 0 1acabb006f8c3dc41472e07ed71717d3
+
+@ 0 8 0 007635fc33a18362080a6a22f966a5da
++         帧类型的枚举，每种都有自己的 `#opcode` 和 `#payload`：`Continuation(last, data)`、`Text(last, data)` 和 `Binary(last, data)` 是数据帧，其 `last` 是 FIN 位；`Close(code, reason)` 携带一个两字节的代码和一个原因；`Ping(data)` 和 `Pong(data)` 是控制帧。
++         `.parse` 从 `Cursor` 中读取一个帧，并强制执行掩码方向和每一条结构规则；`#encode` 写出一个不加掩码的帧；`Masking.Client#outbound` 为从客户端发送而给编码后的帧加掩码。
++         使用 `webSocket` 或 `wsClient` 的程序从不处理帧；帧是为协议测试或扩展准备的。
+
+% 2 1 0 13d1f5533cd871ac153ba64abf1f7fb3
+
+% 3 1 0 07c2852813f3a1d0093e9b1e99c560a6
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 166802820f76e93a021fc47a77b6b80b
+
+% 0 1 0 0cfbc081861c42dd15b78560b7806927
+
+% 0 1 0 04c1465e2f2bf4cb0a7383320bb745b8
+
+% 0 1 0 17d6e84b7b70b2831f7a0f16aa045214
+
+% 0 1 0 026ba5e60dcac5301c27b352aea226bb
+
+% 0 1 0 122254d81847ff98003573a2d956c3ed
+
+% 1 1 0 1669f5b39b4b715619d9eeff85ec5495
+
+@ 0 22 0 0272f708fcc301891120e781c58fc001
++     entry .maxPayload   可接受的最大帧载荷，16 MiB；更大的载荷会以 `1009` 关闭
++     entry .maxControlPayload   控制帧的最大载荷，125 字节
++     entry .closeData   关闭帧的载荷：两字节代码后接原因
++     entry .validCloseCode   某个关闭代码是否可以出现在线上
++         `1000`–`1003`、`1007`–`1011` 以及应用范围 `3000`–`4999`。
++         代码 `1004`、`1005` 和 `1006` 从不传输，`1012`–`2999` 尚未分配，因此携带这些代码之一的关闭帧是 `BadClose`。
++     entry .parse   从游标中解码一个帧，在流干净结束时返回 `Unset`
++         恰好消耗该帧的字节，并为载荷去掩码。
++         `Masking` given 确定方向：`Masking.Server` 要求帧加了掩码（来自客户端），`Masking.Client` 要求帧不加掩码（来自服务器），方向错误时抛出带有 `Unmasked` 或 `Masked` 的 `Websocket.Error`。
++         还会抛出：`ReservedBits`、`TooLarge`、`BadControl`、`BadOpcode` 和 `BadClose`。
++         没有字节的关闭载荷解码时使用哨兵代码 `1005`。
++         解析器只会在帧的开头阻塞，从不在帧的最后一个字节之后阻塞，因此空的 `Ping` 或 `Pong` 无需等待对端的下一个帧就会返回。
++     entry .unmask   用四字节掩码密钥对载荷做异或，密钥为空时原样返回
++         它是自身的逆操作：加掩码和去掩码是同一个操作。
++     entry #opcode   帧的操作码：`0x0` 续帧、`0x1` 文本、`0x2` 二进制、`0x8` 关闭、`0x9` ping、`0xa` pong
++     entry #payload   帧的载荷；对于 `Close`，是按 `closeData` 排布的代码和原因
++     entry #fin   此帧是否完成其消息；对控制帧总是 `true`
++     entry #encode   不加掩码的帧字节：头部、以短形式或 16 位或 64 位形式表示的长度、载荷
+
+@ 0 1 0 1664029380975c240a2c32bc8e4055e9
++   entry .Masking   这是连接的哪一端，因而帧是否加掩码
+
+% 1 1 0 1e04818e5fdd793610f220fe5f353cdb
+
+@ 0 6 0 1226e513c849b97d0a93c48a63eaffcc
++         RFC 6455 规定，客户端用一个新的 32 位密钥为它发送的每个帧加掩码，服务器则不加掩码发送；每一方都拒绝掩码方向错误的帧。
++         `Masking` 确定所在的一端：`#outbound(frame)` 在一个完整的已编码帧发出时为它加掩码（或原样放行），`#inbound` 说明从对端读取的帧是否必须加了掩码。
++         `Websocket` 安装 `.Server`，`wsClient` 安装一个 `.Client()`；直接使用 `Websocket.Frame.parse`、`Reader` 或 `Channel` 时需要一个作为 given。
+
+% 2 1 0 163c02fc5cfa532d1a5fc947327e8fa7
+
+% 3 1 0 1c667ec88b13317b00ccf464896706e4
+
+% 0 1 0 1a18fe401d7a0ab706b53933593da461
+
+% 0 1 0 11458e6d13f0e7e909ca530481920352
+
+% 0 1 0 0b9055256702baa609b836a1653beaec
+
+% 1 1 0 17da91d3f8f473410202609cfd54b54e
+
+@ 0 6 0 06ff395dd61479ec090a2d6c82afe4f2
++     entry .Server   服务器端：不加掩码发送，要求入站帧加了掩码
++     entry .Client   客户端：用新的密钥为每个出站帧加掩码，拒绝加了掩码的入站帧
++         `Masking.Client()` 为每个连接保留一个用于生成密钥的 `SecureRandom`，因此对同一帧的两次加掩码结果不同。
++     entry #outbound   为一个完整的、未加掩码的帧加掩码以便发送，在服务器端则原样返回
++     entry #inbound   从对端读取的帧是否必须加了掩码
+
+@ 0 1 0 1c48bd527b671d7501df88c70b3d0f68
++ entry .Message   一条完整的 WebSocket 消息：重组并按 UTF-8 解码的 `Text`，或以字节表示的 `Binary`
+
+% 1 1 0 138d732300dafb6210e7e12a96bc7e3f
+
+@ 0 7 0 04340edec7fcbbc21a3d451e89168812
++       当处理函数的消息类型就是 `Message` 本身时，它看到的两种消息的枚举：文本消息为 `Message.Text(text)`，分片已重组并解码；二进制消息为 `Message.Binary(data)`。
++       控制帧和分片从不在这里出现。
++       `Message` 既是 `Ingressive` 的也是 `Transmissible` 的，因此它可以作为处理函数的参数类型和 `Reply` 的实参，`Channel#send` 也接受它。
++       它没有导出到 `soundness`——fulminate 的 `Message` 在总括包中占用了这个名称——因此需要按名称导入：`import perihelion.Websocket.Message`。
+
+% 2 1 0 01867b6e6cafe21c05d10a3910b063f9
+
+% 3 1 0 03c2d799168037a40e91ee7e3659f2bc
+
+% 2 1 0 1f757edcbe626ea5054dea547a99db2f
+
+% 0 1 0 108515f6d52a4e801a3a2904e69a8f54
+
+% 0 1 0 021573f72ab8f23a15be1aba38458561
+
+% 0 1 0 18be03259578b3981e0939a5e735c2ad
+
+% 1 1 0 1f302432427523c404929644515a00f2
+
+@ 0 7 0 0c0f832805b7be4f1a0e27fc2c132d5e
++   entry .ingressive   形式上的 `Message is Ingressive`，使 `Message` 满足 `webSocket` 对消息的约束
++       读取器本身就产生 `Message`，因此 `Message` 通道按恒等方式解码，这个实例从不被应用；它的存在是为了让原始类型满足 `Ingressive` 的要求，并且位于伴生对象中，因此无需导入。
++   entry .transmissible   把一条消息序列化为一个完整的、不加掩码的帧
++       `Text` 变为由其 UTF-8 字节构成的文本帧，`Binary` 变为二进制帧，因此 `Message` 可以作为 `Reply` 或 `Conclude` 的实参，并被原样写出。
+
+@ 0 1 0 08e6f3d136b305e802acfa93658241ee
++ entry .Channel   连接的出站一侧：一个线程安全的帧队列，泵送到套接字
+
+% 1 1 0 11c4b0e9d9c2fe6b0b0caee48f124aba
+
+@ 0 9 0 16658b2ce007faf21064650052dc6dbb
++       `Channel` 是由已编码帧组成的有界管道。
++       读取器（应答 `Ping` 和 `Close`）、处理循环（`Reply` 和 `Conclude`）以及程序自己的 `#send` 都在锁的保护下往这里入队，而由一个泵送程序——服务器的响应写入器或客户端的守护进程——把它排空到套接字，因此队列满时会对每个生产者施加背压。
++       每个帧在这个边界处由作用域中的 `Websocket.Masking` 加一次掩码：`Websocket.Masking.Server` 原样放行，`Websocket.Masking.Client` 用新的密钥加掩码。
++       它由一个 `Websocket.Masking` 和一个 `Buffering` 构造；`Websocket#channel` 和客户端连接持有各自连接的通道，程序通过它们访问它。
++       在包中公开，但没有导出到 `soundness`。
+
+% 0 1 0 1dd0ecd19a35a3250bd156936d95a2c1
+
+% 0 1 0 165089220e647c38108ff8dae5aa494f
+
+@ 0 6 0 08d4be06982d814f01185410fb1d48a4
++   entry #send   把一条消息作为一个完整的帧入队，并记录 `Websocket.Event.Sent`
++       接受一个 `Message`；帧会立即刷出，因为交互式协议必须及时送达每个帧，而不是填满一个块。
++       需要一个 `Websocket.Event is Loggable`。
++   entry #stop   结束出站流，使泵送程序完成，连接的正文随之结束
++   entry #close   把一个带代码（默认为 `1000`）的关闭帧入队，记录 `Websocket.Event.Closed`，然后停止
+
+@ 0 1 0 1d6d4af5003279c50eefa90779fea3d5
++ entry .Reader   把对端的帧读成消息：重组、`Ping`/`Pong`、`Close`、UTF-8 校验
+
+% 1 1 0 1dba574e4eef7b0e1ab04e721d8008c3
+
+@ 0 12 0 161f822db50791b00228b640c9d3231c
++       `Reader(body, channel)` 是服务器和客户端共享的入站一半。
++       它的 `#messages` 是一个惰性的 `Chain[Message]`，建立在从 `body`（一个 `Spring[Data]`，每次强制求值该链时重新借出）解析出的帧之上：数据帧会一直累积到带 FIN 的那个帧为止；文本消息以增量方式校验 UTF-8，因此错误的字节会立即使连接失败；`Ping` 通过通道以 `Pong` 应答；`Pong` 被丢弃；`Close` 被回显（代码缺失时使用 `1000`），通道停止，链随之结束。
++       违反协议时抛出 `Websocket.Error`，正文被提前切断时原因为 `Truncated`。
++       它需要一个 `Tactic[Websocket.Error]` 以及所在一端的 `Websocket.Masking`。
++       正文上的游标只在第一条消息被强制求值时才创建，因此服务器可以发送它的 `101`，客户端可以发送它的第一个帧，而不会有任何读取阻塞。
++       在包中公开，但没有导出到 `soundness`。
+
+% 2 1 0 1bb6c6f9d4898ad616f536bc719db004
+
+% 3 1 0 0a55f19edbefb6741a9b91fddc0790a2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 10663412eea971e402de49e0f8b1b802
+
+% 0 1 0 146b15c27016c22f08affd79657a602d
+
+% 0 1 0 01695849077b5cc30440a2ef48c02fbe
+
+% 0 1 0 137bd5e60597627010bd732b6d1a7dce
+
+% 0 1 0 04e623de3e2e52a7121d792fc67f98be
+
+% 1 1 0 07b4a65c9de603c80ef61ed1e1e9388d
+
+% 1 1 0 1d84b1e9f313e24d0164eaeb86837970
+
+% 0 1 0 12d52007b7e3bf07141814c22454a5f7
+
+@ 0 1 0 0934f57c8206c92d0f67ca00a355341a
++   entry #messages   重组后的消息，惰性产生，直到对端关闭或正文结束
+
+@ 0 4 0 1bdea7082c12861b07f5493e205d3a35
++ entry .over   用值所承载的格式为其打上标记，`value.over[Json]`，使回复通过该格式序列化
++     `over` 是一个幻影类型成员，因此 `value.over[Json]` 是到 `value over Json` 的无操作转型，它会为 `Reply` 或 `Conclude` 选中 `overTransmissible`，并匹配类型为 `(ping: Ping over Json)` 的处理函数参数。
++     导出到 `soundness`。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 2 1 0 056eff890dc280701473075183f5b4b3
+
+% 0 1 0 1ab72a907c4906e20db82abd0401602b
+
+% 1 1 0 165600c6d046526a0b8082e6fce6081d
+
+@ 0 6 0 01b236f5eaee99d019a965f9de52c8c2
++ entry .overTransmissible   把 `value over format` 序列化为一个由该格式文本构成的文本帧
++     当 `transport is Encodable in Text`（`Json` 和 `Tel` 都是）且 `value is Encodable in transport` 时，使任何 `value over transport` 成为 `Transmissible` 的 given，另需一个用于字节的 `Codepage`。
++     值被编码为该格式，格式被编码为文本，文本被包装在单个不加掩码的文本帧中，因此 `Reply(Ping(1).over[Json], …)` 是一个完整的帧。
++     导出到 `soundness`。
+
+@ 0 7 0 07effe617cc4c34415c271d4cced647c
++ entry .overIngressive   把文本帧的字节解码为 `value over format`
++     当 `transport is Decodable in Text` 且 `value is Decodable in transport` 时，使任何 `value over transport` 成为 `Ingressive` 的 given。
++     它需要一个 `Charset` 来解码字节，并且由于格式解码器以战术为条件，还直接需要一个 `Tactic[Hazard]`——`strategies.throwUnsafely` 满足这一要求——因此格式错误的载荷会抛出异常，而不是通过更窄的战术来报告。
++     导出到 `soundness`。
+
+@ 0 10 0 178ad2e60c411b951f23a17f2ad55e56
++ entry .wsClient   使 `Websocket.Url` 成为 coaxial 的 `Duplexable` 传输方式：`url.react`、`url.exchange`
++     连接客户端的 given。
++     `connect` 打开到该 URL 主机和端口的 TCP（`ws`）或 TLS（`wss`，通过 `SecureEndpoint` 和作用域中的 `Tls`）连接，用一个新的 16 字节 `Sec-WebSocket-Key` 发送握手，恰好读取响应的头部块（从不越过它读入服务器尚未发送的帧），检查 `101` 和正确的 `Sec-WebSocket-Accept`，并启动泵送出站帧的守护进程；`receive` 是该连接的 `messages`；`transmit` 为一条消息加掩码并作为一个帧缓存；`close` 发送 `1000`。
++     它是 `Duplexable` 的，而不仅仅是 `Serviceable` 的，因为可以安全地在它的通道上并发发送，正是这一点让 `exchange` 能够主动发送。
+
+% 2 1 0 1e7b32327b74cc15032403cf0f913db4
+
+% 3 1 0 0d207794cac8f0040f4634635c88515f
+
+% 4 1 0 04978ef7445ce29a1d089f50631ff9c4
+
+% 5 1 0 05d6de6699f9b4aa1c10e4c985e4f1cd
+
+% 0 1 0 15afa59c6f4168b61350c610bbcf3dec
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 2 1 0 1ef571dc91da5cfe109a49a0476cefb5
+
+% 3 1 0 0ddf0c39c863f9541fa065d430a5fc11
+
+% 4 1 0 0b63f2adc53930f901b81cd9051e8946
+
+% 1 1 0 0c8301042015c0570ab1b7128fa8a91a
+
+% 2 1 0 0ad4d9087b657cbd105b1e9366b88d57
+
+% 3 1 0 0c67a1059e0483d1178cee0471a33f2c
+
+% 4 1 0 01857a8b155e53e00556043080a6f7a6
+
+% 6 1 0 029903b13b46e60700f3db5e021070ca
+
+% 8 1 0 03c3eef1b5ecba9a0af81904d4945a21
+
+% 0 1 0 0e2346fe6b5fc62210a69b05dfe6b60e
+
+% 0 1 0 03bd8ba15f2f8b330bc26dbb1eaa9eb8
+
+% 0 1 0 0918d98002d2adb7196e46fbd7a6083c
+
+% 0 1 0 072f708db04047851ada2a3c93e27455
+
+% 1 1 0 0f48db55935af8520a3a2890578bc0df
+
+@ 0 8 0 1c43530c01db25ea1f95fb504175ca77
++     `url.react(initial)(handle)` 等待服务器先发言；`url.exchange (initial)(handle)(interact)` 在循环开始之前把一个 `Transmitter` 交给 `interact`。
++     两者都在处理函数结束或服务器关闭后返回最终状态。
++     该 given 需要一个 `Online`（`internetAccess.online`）、一个 `Monitor` 和 `Probate`、一个 `Every[Socket.Option.Tcp]`、一个 `Tls`，以及用于 `Websocket.Error`、`Http.Response.Error` 和 `Port.Error` 的战术，并且会保留它们，因此它是一种能力。
++     它没有导出到 `soundness`，因为合成的转发器会丢失它的细化：`import perihelion.wsClient`。
+
+@ 0 1 0 187d986df208594f0dc95abecbea210e
++ entry .WsSessional   把已连接的 `Websocket.Connection` 借给一个作用域：`url.session { connection ?=> … }`
+
+% 1 1 0 012f626fd7ed91931d988d818aafbe3e
+
+@ 0 7 0 00d2caedbe8208f712284f732f837c06
++       `Websocket.Url` 的 `Sessional` 实例，位于 given `wsSessional` 之后。
++       `#session` 通过 `wsClient` 建立连接，把 `Websocket.Connection`——握手已完成，泵送程序正在运行——借给 lambda，并在 lambda 结束时（无论是返回还是抛出异常）以 `1000` 关闭帧关闭它。
++       该连接是一种新鲜的能力，因此它以及从它借来的流都不能离开该代码块。
++       对于状态机式的消费，`url.react` 和 `url.exchange` 是自然的形式；会话则用于不适合逐条消息处理函数的交互。
+
+% 2 1 0 0e777d5abc69a1de0d31430e5d5a2d54
+
+% 3 1 0 1f9df24ce557fa9e1998503e54024d50
+
+% 4 1 0 1f721d0962aa3bf8083e25d54744a9eb
+
+% 5 1 0 0932cfa5072a739104f7a0351f072e17
+
+% 0 1 0 1641402876a5c5c51ca8f30b603ace71
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 0081119c3d60eabd1aceb39da2249178
+
+% 2 1 0 14afc0a3a011f4bd062e52375aaa32b0
+
+% 3 1 0 131d9a10dfbd85bb0f2f07f6d2ffde30
+
+% 4 1 0 16b71aa4b037dbd31b3a8c9c221f00af
+
+% 2 1 0 190e8e62bd75063d1ce7b2c2bfcd363d
+
+% 0 1 0 14fa2f0eff98171b0d0c8d9bb68a9b02
+
+% 0 1 0 0599d39cba00a48a08a1319c09b4e569
+
+% 1 1 0 0864af7521e0e6c41d049ebb3ebd542c
+
+@ 0 2 0 0ae0423617a84ece1f0740cfc32e16b9
++       它需要 `wsClient` given（作为捕获参数）、一个 `Monitor`，以及用于连接失败的 `Tactic[Socket.Error]`。
+
+% 0 1 0 02051f0ca203583c09af34c9b86346c4
+
+% 0 1 0 1ab93f0e39c86b6f17642610bcb46ce8
+
+@ 0 3 0 1ba0be66dcad83181ffa775e30a543b1
++   entry #session   连接到该 URL，把连接借给 lambda，之后关闭它
++   entry #Result   借出的句柄：一个新鲜的 `Websocket.Connection^`
++   entry #Self   主体：`Websocket.Url`
+
+@ 0 4 0 0e3e7b8960d42c11114c51f3b1bdb030
++ entry .wsSessional   `WsSessional` given：按名称导入，`import perihelion.wsSessional`
++     由 `wsClient` given、一个 `Monitor` 和一个 `Tactic[Socket.Error]` 构建，并保留它们。
++     没有导出到 `soundness`，因为合成的转发器会丢失它带捕获注解的类型。

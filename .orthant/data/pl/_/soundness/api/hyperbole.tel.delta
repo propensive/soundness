@@ -1,0 +1,653 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14884a8d0543cd58000ca3de7c798178
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12a90e6b1539478a0d0fda808abd94b1
++ info   TASTy jako dane: introspekcja drzew i symboli oraz rozwiązywanie ramek stosu na definicje źródłowe, z których pochodzą
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 0e72e7f78642dad61aa8b8d2e65bd054
++     _Hyperbole_ odczytuje to, co kompilator Scali wie o programie – jego **TASTy** – i
++     udostępnia to jako wartości, w dwóch celach.
+
+@ 0 9 0 0646e01d210f3b6015777801c46066f7
++     Pierwszym jest **introspekcja**. `Introspect.syntax` przechwytuje typowane drzewo
++     dowolnego wyrażenia, takie, jakie widzi je kompilator po typowaniu i rozwinięciu inline,
++     jako `Tasty.Tree`; a `Introspect.semantics` przechwytuje symbol – typu, wartości albo
++     otaczającej definicji – jako `Tasty.Symbol` z jego flagami, właściwościami i składowymi.
++     Wewnątrz makra rozszerzenia `syntax` i `semantics` robią to samo dla posiadanego `Expr`
++     lub `Symbol`. Oba przedstawiają się w terminalu, przez `TastyPalette`, jako diagram
++     drzewa lub tabela, co zastępuje archeologię za pomocą `println`, gdy autor makra chce
++     zobaczyć, co wytworzyło rozwinięcie, albo gdy ktokolwiek chce zobaczyć, co kompilator
++     zrobił z wierszem zwykłego kodu.
+
+% 2 1 0 188dfa04e3bbbb051892482ebf695a85
+
+% 3 1 0 08bf557526cc52541a65a005bfb7c5c6
+
+% 0 1 0 1d148a1ae60a0f051a182e7fc8d0253e
+
+% 0 1 0 13ecb3587ae717d10bf1bcd7fa83dcc0
+
+% 0 1 0 1f44defb8e5f5a5a13ed3731aea1322b
+
+% 0 1 0 0de6ae8dd618958617e670e193013a69
+
+% 1 1 0 19dcd3bca25b8b7b039b8c893e0e851b
+
+@ 0 9 0 0c5f8af093c87a510de3b9bdb3b135ef
++     Drugim jest **rozwiązywanie ramek stosu**. Ramka stosu JVM nazywa
++     skompilowaną klasę i metodę, a demanglowanie (`StackTrace.rewrite` w digression) może
++     tylko uporządkować tę nazwę: `$anonfun$3` staje się `λ₃`, co mówi, że wykonała się lambda,
++     ale nie która. Kompilator zapisuje rozciągłość każdej definicji w TASTy, które
++     zapisuje obok każdego pliku klasy, więc wiersz niesiony przez ramkę wystarcza, by znaleźć
++     definicję, do której należy. `StackResolver` wykonuje to wyszukiwanie, a zaimportowanie
++     `stackResolutions.tastyStackResolution` sprawia, że każdy `StackTrace` przechwycony w
++     zasięgu niesie `StackTrace.Frame.Source` nazywający plik, łańcuch otaczających definicji,
++     nazwę źródłową definicji i jej `Kind`; `resolved` robi to samo ze śladem, który już się
++     ma.
+
+% 2 1 0 189bc8aea053ab67107edb61ef208a79
+
+% 3 1 0 075d4f2905d70098150f731328edcd72
+
+% 0 1 0 109ae64d1f2c3f160b747bcab6438096
+
+% 1 1 0 00596dc2fc8f8fa80ec47580377d1df9
+
+% 2 1 0 0a5a6b136741710a1946369bd8e09f56
+
+% 0 1 0 1f2ae059e1f4bd9a1aca20f622222eac
+
+% 1 1 0 0fabe28fe58874eb045f72bff2788c23
+
+% 0 1 0 1d8d554adda34102077f8d392814ffb5
+
+% 1 1 0 1c0e9dfe8b3068c1167de010f8c643cd
+
+@ 0 1 0 1278f6e005c1db141ac0955b9d6a295a
++     Biblioteka ma trzy zbiory źródeł, według tego, co potrafi każda platforma:
+
+@ 0 10 0 023edde6800a8e370a1d99ea32fc1dff
++     - `hyperbole.tasty` – model danych `Tasty` (`Symbol`, `Tree`, `Definition`, `File`) oraz
++       `Tasty.parse`, które odczytuje definicje pliku `.tasty` z surowych bajtów za pomocą
++       samego `tasty-core`: bez kompilatora, bez ścieżki klas, bez systemu plików. Kompiluje się
++       dla JVM, Scala.js i Scala Native, więc debugger może parsować TASTy pobrane przez łącze.
++     - `hyperbole.core` – `Introspect`, makra i rozszerzenia `syntax` i `semantics`,
++       `TastyPalette` oraz przedstawienia `Teletypeable`. Tylko JVM, ponieważ zależy od
++       podświetlania składni kompilatora i od kompilatora etapującego.
++     - `hyperbole.stacks` – `StackResolver`, pakiet wyboru `stackResolutions` i rozszerzenie
++       `resolved`. Tylko JVM: odczytuje TASTy i pliki klas przez given `Classloader` będący w
++       zasięgu, a pliki źródłowe z dysku.
+
+@ 0 4 0 0878d48908cee5480f900d88f14fd4b5
++     Giveny resolvera importuje się z nazwy, ponieważ `import soundness.*` nie importuje
++     givenów: `Classloader` z `classloaders`, `WorkingDirectory` z `workingDirectories` oraz
++     samo `stackResolutions.tastyStackResolution`. Wszystko jest eksportowane do modułu
++     zbiorczego `soundness`, a `stackResolutions` łączy się z pakietem modułu zbiorczego o tej
++     samej nazwie.
+
+% 0 1 0 188d5c043f73b7c21d0bdb36a80aa2b8
+
+% 0 1 0 0024bea7c40b97f109d7459e1cc211c8
+
+% 0 1 0 1a633081218ae21b06e35c1a46848027
+
+% 0 1 0 07daa4ef4011608a1ba56e3c26180cc6
+
+@ 0 1 0 155c58d844a2d0c91d43b6c45aed6110
++ entry .Introspect   przechwytuje drzewo wyrażenia lub symbol jako wartość, ze zwykłego kodu
+
+% 1 1 0 1fcf9d1f26a1df0e192ffc1b5d351916
+
+@ 0 5 0 0fbc0c631bbd0d751ed30f136cfcff88
++       Dwa makra, które działają spoza jakiegokolwiek makra, na dowolnym wyrażeniu lub typie w
++       zwykłym kodzie. `Introspect.syntax` daje typowane drzewo wyrażenia jako `Tasty.Tree`, z
++       tagiem, nazwą, typem i źródłem każdego węzła; `Introspect.semantics` daje flagi,
++       właściwości i szczegóły symbolu jako `Tasty.Symbol`. Oba wytwarzają zwykłe wartości,
++       które można porównywać, przechodzić lub przedstawiać jako `Teletype` z `TastyPalette` w
++       zasięgu.
+
+% 2 1 0 0a892b421d2b3ceb040d446bd3e8a008
+
+% 3 1 0 1000dc90e08b374a031296bafad9faec
+
+% 0 1 0 0ea811604853c35e04b2adb2498c1be5
+
+% 2 1 0 1a27a6c18ad6a3f81758de027ec375a3
+
+% 0 1 0 1e51e1b64a46df030f0db3ac601fa186
+
+% 0 1 0 1431fcf3d6904caa0fe258995fc8739e
+
+% 0 1 0 152bc9f0dcd6a45108c7627a1d19421c
+
+% 1 1 0 034e12f2fbbccb1111ee805c117687c4
+
+@ 0 4 0 0a95ebccd1d9a4f2182f6f8aa2f88034
++       Introspekcja `1 + x` dla `val x = 5` pokazuje `Apply` z `Select` nad `Literal` i
++       `Ident`; to samo dla `val y: 5 = 5` pokazuje pojedynczy `Literal`, ponieważ typ
++       singletonowy pozwolił kompilatorowi zwinąć dodawanie – i w ten sposób makra odpowiadają
++       na pytania o sam język.
+
+% 1 1 0 19eb37a051e6e15f159dbea8f77111b2
+
+% 0 1 0 0c1383b94e4717511d69840a3c9e5270
+
+% 0 1 0 0d33cbd07fe618701b26520538176965
+
+@ 0 7 0 0015391143ffcd4b17428e660217c0d5
++   entry .syntax   typowane drzewo wyrażenia jako `Tasty.Tree`, z rozwinięciem inline lub bez niego
++       `Introspect.syntax(inlining)(expression)` to makro transparent inline: wyrażenie jest
++       typowane, a jego drzewo serializowane do `Tasty.Tree`, którego węzły niosą tag, rodzaj
++       węzła (`Apply`, `Ident`, `Literal`, …), jego typ, źródło, z którego pochodzi, i jego
++       dzieci. Przy `inlining = true` (domyślnie `false`) jest to drzewo po rozwinięciu inline,
++       więc pojawiają się w nim ciała metod inline i makr; przy `false` pokazywane jest własne
++       drzewo wyrażenia, a wywołania inline pozostają wywołaniami.
+
+% 2 1 0 1d206b7968fc4cec1f7ce594150e000a
+
+% 3 1 0 1f51ccba1a62241305724373a700af92
+
+% 2 1 0 05558e5e59d79fae16b76a4626810707
+
+% 0 1 0 1534f1104da220971d15fd21bd84e147
+
+% 1 1 0 157f7f31f682d1291076097bd1f206d7
+
+@ 0 10 0 15a159ec671283471eacea034cae6c8d
++       Tutaj korzeniem jest `Apply` typu `Unit`, którego `expr` to
++       `scala.Predef.println("hello world")`, z `Ident` (`println`) i `Literal` (z tagiem `a`,
++       typu `"hello world"`) jako jego `nodes`.
++   entry .semantics   symbol jako `Tasty.Symbol`: typu, wartości albo otaczającej definicji
++       Trzy postacie. `Introspect.semantics[T]` daje symbol typu `T` po rozwinięciu aliasów;
++       `Introspect.semantics(value)` daje symbol termu, do którego odnosi się wyrażenie; a
++       `Introspect.semantics()` daje symbol definicji, w której zapisano wywołanie. Każdy
++       `Tasty.Symbol` zapisuje pełną nazwę symbolu podzieloną na `prefix` i `name`, każdą flagę
++       kompilatora wraz z informacją, czy jest ustawiona, właściwości, które ma symbol, oraz
++       szczegóły, takie jak jego właściciel, pozycja, składowe i adnotacje.
+
+@ 0 6 0 173126accbc57a1a1e344ae42dfaf8af
++ entry .syntax   drzewo `Expr` wewnątrz makra jako `Tasty.Tree`
++     Rozszerzenie dla `Expr[T]`, wymagające `Quotes`: `expr.syntax` to odpowiednik
++     `Introspect.syntax` po stronie makra, dla autora makra badającego argument lub drzewo
++     wytworzone przez rozwinięcie. Drzewo jest brane takie, jakie jest, bez ponownego
++     rozwijania inline. Przedstawione przez `tastyTreeTeletypeable` i `TastyPalette` czyta się
++     jako diagram z wcięciami, z typem i źródłem każdego węzła obok.
+
+% 2 1 0 1cc3f5ebf1ae7cd50ab254fce174087a
+
+% 3 1 0 050bf95b55b6fb460bd5d8675c1d6f50
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 0 1 0 0597ae50d86f683310b14115456876bb
+
+% 1 1 0 18c5df72e5a6cd50134a525d7d5d9534
+
+@ 0 4 0 1becaa9fe95d96040b23fae432f2a788
++ entry .semantics   `Tasty.Symbol` dla `quotes.reflect.Symbol`, wewnątrz makra
++     Rozszerzenie dla `Symbol`, wymagające `Quotes`: `symbol.semantics` to odpowiednik
++     `Introspect.semantics` po stronie makra, sprowadzający symbol refleksji do wartości z jego
++     flagami, właściwościami i szczegółami, którą makro może badać, porównywać lub
++     przedstawiać.
+
+@ 0 7 0 17b57604dd1a5a0707dd221c1a0b74c3
++ entry .TastyPalette   kolory, którymi przedstawiane są drzewa i symbole TASTy
++     `Palette` w sRGB, mająca poza `background` i `foreground`, które ma każda paleta:
++     `typeDefinition` i `termDefinition` dla węzłów definiujących typ lub term,
++     `typeReference` i `termReference` dla węzłów, które się do nich odnoszą, `flagOn`/`flagOff`
++     i `propertyOn`/`propertyOff` dla flag i właściwości symbolu, `outline` dla typów i wartości
++     szczegółów oraz `accented` dla nazw parametrów. Aby przedstawić `Tasty.Tree` lub
++     `Tasty.Symbol` jako `Teletype`, w zasięgu musi być `TastyPalette`; biblioteka żadnej nie
++     dostarcza.
+
+% 2 1 0 13796828447a06970ae1d57963a8cdbd
+
+% 3 1 0 13e1187979e0f7cf1f7d2788fe5371fe
+
+% 0 1 0 13fc4b6087da96a60fad17d5dfc8458d
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 1677448d14dc3be404368d1a8bc6b58a
+
+% 0 1 0 1dd8e3e8409139be11ff5050c55a4195
+
+% 0 1 0 03fa095e94b4298d1750c6f593ab609a
+
+% 0 1 0 0846aac4c797f35a034eff40ce6c89cd
+
+% 0 1 0 14b767d1c582cbf714fced4b62c1ccc1
+
+% 0 1 0 0b0e19a3fbf683360abb5c30c6993e60
+
+% 0 1 0 14cce2f1f48df8ff018477cc9e0aa43a
+
+% 0 1 0 0ee70ecbf286cfa2061a68b919c21e76
+
+% 0 1 0 1779c7aca9429874158af067dd8863b0
+
+% 0 1 0 03c207b700949bcb09b6f67abfa737c8
+
+% 0 1 0 01297901af139901183a3984b081de40
+
+% 0 1 0 104bd6fa2b4b8760125f08bb8bbb0def
+
+% 1 1 0 1c5ba0193ae529841b7a585037694574
+
+@ 0 6 0 1596542fa9e7517210a1c426e06abf1c
++ entry .tastySymbolTeletypeable   przedstawia `Tasty.Symbol` jako dwukolumnową tabelę jego właściwości
++     Given `Teletypeable` dla `Tasty.Symbol`, wymagający `TastyPalette`. Tabela ma wiersz z
++     nazwą (prefiks przyciemniony, nazwa pogrubiona), wiersz flag z ustawionymi wyróżnionymi na
++     kolorze `flagOff` palety, wiersz właściwości z ustawionymi na `propertyOn` oraz po jednym
++     wierszu na każdy szczegół. Jest givenem najwyższego poziomu, więc rozwiązuje się bez
++     importu wewnątrz `hyperbole`, a gdzie indziej z nazwy:
+
+% 0 1 0 1f3075a8d42fc66f071a00cd7588da7f
+
+@ 0 7 0 0e447de6496dcb6511ae2662e9afa2e2
++ entry .tastyTreeTeletypeable   przedstawia `Tasty.Tree` jako diagram z wcięciami, z kolumnami typu i źródła
++     Given `Teletypeable` dla `Tasty.Tree`, wymagający `TastyPalette`. Każdy węzeł to wiersz:
++     linie drzewa, tag węzła w nawiasach ostrych (albo `▪` dla węzła bez tagu), jego nazwa
++     pokolorowana jako definicja termu lub typu albo odwołanie do nich, a nazwa parametru w
++     kolorze `accented`; potem jego typ, zdemanglowany przez `StackTrace.rewrite`; potem
++     źródło, z którego pochodzi, z obciętym wspólnym wcięciem. Given najwyższego poziomu,
++     importowany poza `hyperbole` z nazwy: `import soundness.tastyTreeTeletypeable`.
+
+@ 0 1 0 1e57ec687abb61c21cdb3aa54cab7e93
++ entry .Tasty   model danych TASTy: drzewa, symbole, definicje i pliki, odczytywalne z surowych bajtów
+
+% 1 1 0 1f8e67271a88c85c11701bf645176a80
+
+@ 0 7 0 1e44a91812d796bb0ef6d9cf84d6f5d6
++       `Tasty` to obiekt zawierający typy modelu i czytnik. `Tasty.Tree` i `Tasty.Symbol` to
++       to, co wytwarza `Introspect`. `Tasty.File` i `Tasty.Definition` to to, co `Tasty.parse`
++       odczytuje z bajtów pliku `.tasty`: definicje zapisane przez kompilator dla jednej klasy
++       najwyższego poziomu, każda z nazwą, łańcuchem właścicieli, `Kind` i wierszami, które
++       obejmuje, oraz ścieżka pliku źródłowego, z którego zostały skompilowane. Odczyt wymaga
++       tylko `tasty-core`, stałych formatu i czytnika bajtów, więc ten komponent działa na JVM,
++       Scala.js i Scala Native.
+
+% 2 1 0 0aa7b39722e7fc8610fce1342b931c15
+
+% 3 1 0 0113e71606a720361b5121e4d9d73aae
+
+% 1 1 0 10a14798fc4c8e4b1dce56ee585f8cfc
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0c8f62312d5a06821798fadf933997ca
+
+% 0 1 0 102df740253fb28d0301222c3f28463e
+
+% 0 1 0 117ca5d4da989ff812fd488cc1a5eb3a
+
+% 1 1 0 0c8e0c7e4002bbda15e27949ec066a31
+
+@ 0 3 0 1f6cc52b5ecb61041325ad0a5d5717fd
++       TASTy jest zapisywane raz na klasę najwyższego poziomu, więc definicje klasy
++       zagnieżdżonej, anonimowej lub klasy modułu znajdują się w pliku najbardziej zewnętrznej
++       klasy, która ją otacza, a definicje najwyższego poziomu w `<file>$package.tasty`.
+
+% 0 1 0 04b1ef1ed3f6e3140839d491caf4fa35
+
+% 0 1 0 1d465da45f1b8ec311fdb090187d7222
+
+@ 0 8 0 03c12d864653fd4209de80f3722270da
++   entry .parse   odczytuje definicje pliku `.tasty` z jego bajtów albo daje `Unset`, jeśli nie potrafi
++       Wszystko, co nieoczekiwane – wersja TASTy, której ten czytnik nie rozumie, obcięty plik,
++       brakująca sekcja – daje `Unset`, a nie błąd, ponieważ TASTy jest zawsze tylko źródłem
++       dodatkowych szczegółów. Wynikiem jest `Tasty.File` ze ścieżką źródłową zapisaną przez
++       kompilator (względną wobec jego `-sourceroot`, jeśli go podano) i każdą definicją z jej
++       rozciągłością. Nazwy wyprowadzone przez kompilator są przedstawiane tak, jak on je
++       zapisuje: `name$1`, `method$default$2`, `super$name`.
++   entry .Symbol   symbol kompilatora sprowadzony do nazwy, flag, właściwości i szczegółów
+
+% 1 1 0 1a73e18da41b11830bb004307af2f1af
+
+@ 0 13 0 0568703af4ce40d107e992aa04f8bc94
++         Wytwarzany przez `Introspect.semantics` lub rozszerzenie `semantics`. `#prefix` i
++         `#name` dzielą pełną nazwę na ostatnim segmencie; `#flags` wymienia każdą flagę
++         kompilatora (`Abstract`, `Case`, `Given`, `Inline`, …) wraz z informacją, czy jest
++         ustawiona, a `#properties` podobnie każdą właściwość (czy symbol jest klasą, typem,
++         termem, pakietem, …); `#details` to lista nazwanych wartości – właściciel, pozycja,
++         składowe, adnotacje i tym podobne – każda będąca tekstem lub listą tekstów.
++         Przedstawia się przez `tastySymbolTeletypeable`.
++     entry #prefix   pełna nazwa do ostatniego segmentu, z końcową `.`
++     entry #name   własna nazwa symbolu
++     entry #flags   każda flaga kompilatora wraz z informacją, czy jest ustawiona dla tego symbolu
++     entry #properties   każda właściwość symbolu wraz z informacją, czy ten symbol ją ma
++     entry #details   nazwane szczegóły symbolu: każdy będący tekstem lub listą tekstów
++   entry .Tree   jeden węzeł typowanego drzewa, z tagiem, rodzajem, typem, źródłem i dziećmi
+
+% 1 1 0 191c7a5d7526d9331fe60336c275ae82
+
+@ 0 8 0 038f1a92ace3fa9a1f0079947b33ee79
++         Wytwarzany przez `Introspect.syntax` lub rozszerzenie `syntax` i zagnieżdżany przez
++         `#nodes`. `#name` to rodzaj węzła tak, jak nazywa go kompilator (`Apply`, `Select`,
++         `Ident`, `Literal`, `DefDef`, …); `#typeName` jego typ, tam gdzie go ma; `#expr` węzeł
++         wypisany jako kod; `#source` wiersz źródła, z którego został sparsowany; `#tag`
++         jednoznakowy znacznik roli dziecka w rodzicu (`a` dla argumentu, `' '` dla braku
++         roli); `#param` nazwa parametru, który wypełnia dziecko, jeśli taki jest; `#term`, czy
++         węzeł jest termem, a nie typem; a `#definitional`, czy definiuje, a nie się odnosi.
++         Dwa drzewa są równe, gdy równe jest każde pole, i w ten sposób test przypina
++         rozwinięcie.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 00c432d5b1fd54710c69a5c0639de8ff
+
+% 0 1 0 165c039be46474c10f5769439b27c20e
+
+% 0 1 0 1e77147963e3f26e020077711da1816d
+
+% 0 1 0 14254e564ee08ac20897f9d03ac1c418
+
+% 0 1 0 08a67e5db6ed0dbb1773747865b460ea
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 13 0 02eb3695ed72e3e6133e658c6bdfe436
++     entry #tag   jednoznakowy znacznik roli węzła w rodzicu; `' '` dla braku roli
++     entry #typeName   typ węzła jako tekst; pusty, gdy węzeł go nie ma
++     entry #name   rodzaj węzła: `Apply`, `Ident`, `Literal`, `DefDef`, …
++     entry #expr   węzeł wypisany jako kod
++     entry #source   wiersz źródła, z którego pochodzi węzeł, w postaci zapisanej
++     entry #nodes   dzieci węzła, w kolejności
++     entry #param   nazwa parametru, który ten węzeł wypełnia w rodzicu, jeśli taki jest
++     entry #term   czy węzeł jest termem; `false` dla typu
++     entry #definitional   czy węzeł coś definiuje, a nie się do tego odnosi
++     entry #shortCode   pierwszy wiersz `#expr`, z `...`, jeśli było ich więcej
++     entry #typeNode   ten węzeł oznaczony jako typ (`term = false`)
++     entry #definition   ten węzeł oznaczony jako definicja (`definitional = true`)
++   entry .Definition   jedna definicja zapisana przez kompilator: jej nazwa, właściciele, rodzaj i rozciągłość w źródle
+
+% 1 1 0 1ea1de6ddbf8010316ed7c70620114a6
+
+@ 0 17 0 1693e14ef52c4c961dc6627dc0ce9561
++         To, czego rozwiązywanie ramki stosu potrzebuje od definicji. `#name` to nazwa źródłowa
++         (`<init>` dla konstruktora); `#owners` łańcuch otaczających definicji, od
++         najbardziej wewnętrznej, z pakietem włącznie; `#kind` to `StackTrace.Frame.Kind`
++         (`Method`, `Lambda`, `Value`, `Class`, `Constructor`, …); `#start` i `#end` to
++         przesunięcia znakowe jej rozciągłości, a `#firstLine` i `#lastLine` wiersze.
++         Definicja zsyntetyzowana przez kompilator – konstruktor `object` – ma pustą
++         rozciągłość w pozycji, która akurat była pod ręką.
++     entry #name   nazwa źródłowa definicji; `<init>` dla konstruktora
++     entry #owners   otaczające definicje, od najbardziej wewnętrznej, kończąc na pakiecie
++     entry #kind   czym jest definicja, jako `StackTrace.Frame.Kind`
++     entry #start   przesunięcie znakowe, w którym zaczyna się definicja
++     entry #end   przesunięcie znakowe, w którym się kończy
++     entry #firstLine   pierwszy wiersz źródła, który obejmuje
++     entry #lastLine   ostatni wiersz źródła, który obejmuje
++     entry #span   długość rozciągłości, `end - start`: `0` dla definicji zsyntetyzowanej
++     entry #covers   czy wiersz mieści się między `#firstLine` a `#lastLine`
++   entry .File   definicje jednej klasy najwyższego poziomu i ścieżka źródłowa, z której zostały skompilowane
+
+% 1 1 0 166dfae3ece0a8f4192a782911781b32
+
+@ 0 15 0 0a1d953ffe05a97c1d43c138b5eed72b
++         To, co zwraca `Tasty.parse`. `#path` to ścieżka źródłowa zapisana przez kompilator –
++         pełna ścieżka albo względna wobec `-sourceroot` – albo `Unset`, jeśli plik nie ma
++         atrybutu źródła; `#definitions` to każda definicja w pliku. `#covering` znajduje
++         definicje wokół wiersza, od najbardziej wewnętrznej, i to jest wyszukiwanie, którego
++         dokonuje wiersz ramki stosu.
++     entry #path   ścieżka źródłowa zapisana przez kompilator, jeśli jest
++     entry #definitions   każda definicja zapisana w pliku
++     entry #compiledFrom   czy ten plik został skompilowany z danej ścieżki źródłowej
++         Prawda, gdy ścieżki są równe albo jedna jest końcowym fragmentem drugiej, ponieważ
++         kompilacja z `-sourceroot` zapisuje swoje ścieżki względnie, podczas gdy SMAP zapisany
++         w tej samej kompilacji może nazywać ten sam plik bezwzględnie.
++     entry #covering   każda definicja obejmująca wiersz, od najbardziej wewnętrznej
++         Zagnieżdżenie mierzy się rozciągłością – rozciągłość lambdy jest mniejsza niż metody,
++         która ją otacza, więc lambda sortuje się pierwsza – a definicje z pustą rozciągłością
++         sortują się na końcu, aby trafić do nich tylko wtedy, gdy ramka rzeczywiście jest jedną
++         z nich.
+
+@ 0 1 0 01aa498dc146cc6507b4d533aeb7875d
++ entry .StackResolver   odtwarza z TASTy definicję źródłową stojącą za każdą ramką śladu stosu
+
+% 1 1 0 0eb636c2d1f9f3581d7ab10b70e0caef
+
+@ 0 7 0 14ba4f729d551d221c3f87b3f0536792
++       `StackResolver` to `StackTrace.Resolver`, który dla każdej ramki znajduje plik TASTy
++       klasy najwyższego poziomu tej ramki przez `Classloader` w zasięgu, wyszukuje definicje
++       obejmujące wiersz ramki, wybiera tę, z którą zgadza się rodzaj skompilowanej nazwy, i
++       dołącza `StackTrace.Frame.Source` nazywający plik, łańcuch otaczających definicji, nazwę
++       źródłową definicji, jej `Kind` oraz sam wiersz źródła, gdy plik da się odczytać. Ramka,
++       której klasa nie ma TASTy albo której plik nie ma dla niej wiersza, jest zwracana bez
++       zmian.
+
+@ 0 3 0 1441d728fc92e85619dcb08220bfa55f
++       Bez resolvera ślad ma tylko skompilowane nazwy, zdemanglowane, ale anonimowe; gdy jest
++       zaimportowany, każdy ślad przechwycony w jego zasięgu nazywa swoje definicje; a ślad,
++       który już się ma, rozwiązuje się jawnie:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 11c21768f5faa38e08db5f12392f5fb1
+
+% 1 1 0 1964184faf74d7ac1512a5fcda244870
+
+% 2 1 0 038dbbbff8dc670d0d76b8f05ffd293a
+
+% 2 1 0 0ccb6989fbe4979501036f7d416d5e04
+
+% 3 1 0 157c6af7e0b4e4ea08cf0b556d4f46fc
+
+% 4 1 0 0f828db1eba7ecc50486048c52cf9ca8
+
+% 6 1 0 031e3a501259f2a91ea7306ddab34f03
+
+% 7 1 0 0eebaa51be49cf250fd36e81846d128b
+
+% 8 1 0 01b7bc26dd41d07e0c7b3fa4e61c4b38
+
+% 9 1 0 00d570de19e37ec61c9fb06f2c2b0159
+
+% 10 1 0 1b10a753ce9d6c0e0b743891edd54351
+
+% 12 1 0 188eebe82b326b8413339e17dac8110b
+
+% 0 1 0 086e3c266b62b7961bb28f28b87fd2e1
+
+% 0 1 0 18a12ef0084d926e1308c71ac3d12fe2
+
+% 0 1 0 0546f7942a99b4bb0b1f536fa4a54b11
+
+% 1 1 0 0069cc826ae80a210bc319bfac90fdf6
+
+% 2 1 0 0a828a54bd673419079646acd602ed32
+
+% 0 1 0 1109de1a9f4c73ae071c263fedc28828
+
+% 1 1 0 13b6099dcd42e77d1de06c14160ba497
+
+% 2 1 0 13ee63f83ef8c17614922c1c77a29186
+
+% 4 1 0 09ee7012b7e0392f1dd6630812e88073
+
+% 5 1 0 040ca84ffa9ddb3611e92e04e605320a
+
+% 6 1 0 139b011dc73a69ec014a39549a59fe58
+
+% 8 1 0 1c7c6e99752cbb9a0850af69d9247283
+
+% 9 1 0 017fd27f9a4739d507942e5e3504483f
+
+% 10 1 0 07fdb3868a8fbc8d0411fa28e9806c11
+
+% 11 1 0 0e840c9383acc4ae12b14993c658599b
+
+% 12 1 0 1342a1907fad3c2a0b3212609f4922e5
+
+% 12 1 0 1a16771da252e91400dc616eed6b859a
+
+% 0 1 0 02608e97228470900a8d66723d8d0cdd
+
+% 0 1 0 18ab72e15b326fb90747ed1949ba3649
+
+% 0 1 0 05a75c288b17e8df0026aa26edb998ba
+
+% 0 1 0 1a018619d9ec890b0edf68024fd46d33
+
+% 0 1 0 0626332409697468092801de2da4beb5
+
+% 1 1 0 13f1d8844bb4efb8098a6b33fca32d1d
+
+% 2 1 0 13b93ffeef3501471627bf5a67746410
+
+% 1 1 0 0b73f710986d89e70ac20503df2a7561
+
+% 2 1 0 01686c4f04ceea781de36de4d6f3094f
+
+% 4 1 0 03e0f7b57c9215e21fdb6e894a451389
+
+% 5 1 0 0a17b5590a1793d90cf21a5595aa38f2
+
+% 6 1 0 1f3bbc99059a20660e69fc080f18ceab
+
+% 8 1 0 11ff500d83e6fbe41fe11c32d7750ea9
+
+% 9 1 0 02834202c251344f1ea783a27a077b4c
+
+% 10 1 0 1d888cf3f1648ebc03cd1a61af7bbd0f
+
+% 11 1 0 0bfa5c40aeae9a361f200279bb19444c
+
+% 12 1 0 1f7eafad966cbf1e0ade95ac61794fb7
+
+% 0 1 0 19050127c449871013fc607f878d3446
+
+% 0 1 0 03d2763bad0a8bd6149e781b71e38808
+
+% 0 1 0 16d08b50965c9eab17245c0e8a033a61
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 10bceb907b3b156506d3dd8a8cd71751
++       Konstrukcja wymaga `Classloader`, przez który odczytywane są zasoby `.tasty` i `.class`,
++       oraz `WorkingDirectory`, względem którego rozwiązywana jest ścieżka źródłowa zapisana w
++       TASTy względem `-sourceroot`: musi to być katalog, w którym kod został skompilowany,
++       inaczej ramka zachowuje wszystko poza swoim wierszem źródła. Ramka, której wiersz jest
++       syntetycznym wierszem przydzielonym przez kompilator dla kodu rozwiniętego inline, jest
++       najpierw rozwijana przez SMAP pliku klasy (odczytywany przez `Classfile#sourceDebugExtension`
++       z mandible): ramka dostaje swój rzeczywisty wiersz miejsca wywołania, a jej lista
++       `inlined` – poziomy rozwinięć inline pod nią, każdy rozwiązany względem TASTy, aby
++       nazwać metodę inline, w której się mieści.
+
+@ 0 4 0 0a53d9b68657931b1a86e5446f5e70a2
++       TASTy i pliki źródłowe są odczytywane raz na klasę i buforowane w resolverze, więc jeden
++       resolver powinien obsługiwać wiele śladów; `stackResolutions.tastyStackResolution`
++       buduje jeden na zasięg. Rozwiązywanie kosztuje jeden odczyt pliku na każdą klasę
++       najwyższego poziomu nazwaną w śladzie i dlatego wymaga włączenia.
+
+% 0 1 0 0efc085c828a23dc1fa61beb83033b55
+
+% 0 1 0 1c741505eff6e5d11ed7da37dde1d57f
+
+% 1 1 0 0187fee7f5ce8c6c060b364696c591fe
+
+@ 0 20 0 01212f9dcd1ae6c102353d24c8b6b256
++   entry .hint   jaki rodzaj definicji zdradza skompilowana nazwa metody, jeśli w ogóle
++       `StackResolver.hint(method)` odczytuje znaczniki, które kompilator wytwarza po zapisaniu
++       TASTy, tak jak wymienia je wraz z rodzajami `StackTrace.Marker.all` z digression:
++       `<init>` to `Constructor`; `<clinit>`, `$init$` i `$lzyINIT` to `Initializer`; `$anonfun`
++       to `Lambda`, a `$adapted` to `Bridge`; `super$`, `protected$`, `inline$` i `$accessor`
++       to `Forwarder`; `$_setter_$` i `$retainedBody` to `Synthetic`; `$extension` to
++       `Extension`; `$default` to `Default`; `$mc…$sp` to `Specialized`. Nazwa bez znacznika
++       daje `Unset`, a definicja, na którą rozwiązuje się ramka, mówi sama za siebie.
++   entry .matches   czy definicja jest tą, którą opisują skompilowana nazwa ramki i wskazówka rodzaju
++       Przy wskazówce `Constructor` definicja musi być `<init>`; przy wskazówce `Lambda` jej
++       rodzaj musi być `Lambda`; w przeciwnym razie jej nazwa źródłowa musi być równa
++       skompilowanej nazwie metody, co spełnia nazwa, która przetrwała kompilację bez zmian. W
++       ten sposób resolver odróżnia konstruktor od pierwszej składowej zadeklarowanej obok
++       niego, a lambdę od otaczającej ją metody, gdy obie obejmują ten sam wiersz.
++   entry .display   nazwa TASTy tak, jak pokazuje ją ramka: bez `$` modułu, z nazwami wyprowadzonymi zdemanglowanymi
++       Końcowy `$` klasy modułu jest usuwany, `<init>` staje się `ⲛ`, a nazwa zawierająca `$`
++       – funkcja anonimowa, getter wartości domyślnej, plik pakietu – przechodzi przez
++       `StackTrace.rewrite`, więc rozwiązana ramka czyta się tym samym słownictwem co
++       nierozwiązana.
++   entry #resolve   ramka z wypełnionym `source` albo bez zmian, jeśli nic nie da się znaleźć
+
+@ 0 1 0 06cf67091bbaf1470aa47fd311e90e1d
++ entry .stackResolutions   resolvery ramek stosu, każdy jako given do importu z nazwy
+
+% 1 1 0 08b30481cd7d79cd11f9dbac04bc4918
+
+@ 0 5 0 1aa1415198f8f4ac00f713baf8d98048
++       O tym, którego `StackTrace.Resolver` używa przechwycony ślad, decyduje given w zasięgu:
++       domyślny, w digression, nic nie robi, a `import soundness.*` nie wprowadza żadnego
++       innego. Zaimportowanie jednego z tego pakietu z nazwy sprawia, że każdy `StackTrace`
++       przechwycony w otaczającym zasięgu – każdy `error.stackTrace` i diagnostyka każdego
++       błędu Soundness – niesie definicje źródłowe swoich ramek.
+
+% 2 1 0 18e009e4c50ef43f1cf5db061906b15d
+
+% 3 1 0 0b385839781ec45604390f1d7b82f7d7
+
+% 0 1 0 16d0e72e209c38f51220547030e5288b
+
+% 1 1 0 12bd8c1c02c46d261c012f6ec8c14dc4
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 1 1 0 1650bc3f29b2f41e06be7deff50afb6c
+
+@ 0 9 0 04f76f5d8487c9e409979555f9fba6e6
++       Given jest funkcją kontekstową, więc trzeba go importować tam, gdzie w zasięgu są też
++       jego własne giveny – `Classloader` i `WorkingDirectory`; z tego powodu
++       `soundness.stackResolutions` modułu zbiorczego go reeksportuje.
++   entry .tastyStackResolution   rozwiązuje ramki względem TASTy obok plików klas, przez classloader w zasięgu
++       `(Classloader, WorkingDirectory) => StackTrace.Resolver`, który buduje `StackResolver`
++       nad tymi dwoma givenami. Każdy ślad przechwycony w zasięgu odczytuje jeden plik TASTy na
++       każdą klasę najwyższego poziomu, którą nazywa, buforowany w resolverze; ścieżka źródłowa
++       zapisana względem `-sourceroot` jest odczytywana z `WorkingDirectory`, który powinien
++       więc być katalogiem, w którym kod został skompilowany.
+
+@ 0 6 0 17a86422b82190af0fe60d5cb90b4c89
++ entry .resolved   ślad stosu z każdą ramką rozwiązaną względem TASTy, łącznie z przyczynami
++     Rozszerzenie dla `StackTrace`, wymagające `Classloader` i `WorkingDirectory`: buduje
++     `StackResolver` i odbudowuje ślad z `StackResolver#resolve` zastosowanym do każdej ramki,
++     rekurencyjnie wzdłuż łańcucha `cause`. Dla wywołujących, którzy już mają ślad i wolą
++     zapytać jawnie, niż importować `stackResolutions.tastyStackResolution` do zasięgu, który
++     go przechwytuje.
+
+% 2 1 0 0dd270521504486319b49bacae12b6fe
+
+% 3 1 0 1b5d430335de3614184598e4bca11718
+
+% 1 1 0 00119cf9aec9aaa21eaf31d03a7d481a
+
+% 2 1 0 02ed76744485131d17b91a556b493439
+
+% 0 1 0 043a1e6145bfcb8b09006b74ed58d6c1
+
+% 1 1 0 1697e9ce621fb4581ca4dfc6419e5f3e
+
+% 1 1 0 0e60998a869308cd07ac935d7534279c
+
+@ 0 1 0 19daf74e92d0cb971050a99de753adce
++ entry .internal   implementacje makr stojące za `Introspect` oraz rozszerzeniami `syntax` i `semantics`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 046b7bce23a98ab41744802614e08f95
++       Nie do bezpośredniego użytku: obiekt istnieje po to, aby makra miały stałe miejsce.
++   entry .introspection   makro stojące za `Introspect.syntax`: buduje `Tasty.Tree` i wkleja je jako literał
++   entry .tastyTree   buduje `Tasty.Tree` z `Expr` w czasie rozwijania makra, opcjonalnie z rozwinięciem inline
++   entry .semantics   makra stojące za trzema postaciami `Introspect.semantics`
++   entry .introspect   `Symbol` refleksji na wklejone wyrażenie `Tasty.Symbol`
++   entry .tastySymbol   buduje `Tasty.Symbol` z `Symbol` refleksji w czasie rozwijania makra
++   entry .serialize   wkleja wartość `Tasty.Symbol` jako wyrażenie

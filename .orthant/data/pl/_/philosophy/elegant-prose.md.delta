@@ -1,0 +1,143 @@
+orthant 2 language
+
+@ 0 1 0 11b1d9dbac7517c609511e8e77d4f296
++ # Elegancka proza
+
+@ 0 6 0 192e4867caa6218b09533aa7127958ec
++ Kod w Soundness powinien czytać się jak elegancka proza: ktoś, kto zna dziedzinę, powinien móc
++ przeczytać metodę na głos i zrozumieć, co robi. Temu celowi służą pozostałe zasady –
++ [styl bezpośredni](direct-style.md), staranne [nazewnictwo](naming.md),
++ [małe API](small-apis.md) i [uczciwe sygnatury](honest-signatures.md) istnieją po to, by
++ znaczenie kodu wypływało na powierzchnię, a maszyneria schodziła na dalszy plan. Jasność dla
++ czytelnika traktuje się jako główny cel projektu, a nie jako jego szczęśliwy efekt uboczny.
+
+@ 0 9 0 00f630af2dde9e1b18fa715e3082d676
++ Prozy uczy się przez analogię i tak samo dobrze zaprojektowanego API. Czytelnik, który widział
++ `text.read[Json]`, powinien trafnie zgadnąć, że `text.read[Markdown]` parsuje Markdown, że
++ `bytes.read[Audio in Wave]` odczytuje plik WAV i że `stream.read[Csv]` odczytałoby CSV – jeden
++ czasownik, znaczący to samo w każdym formacie. Ta sama analogia przenika całe słownictwo:
++ wszystko, co da się zdekodować, to `text.as[T]`, wszystko, co da się pokazać, to `value.show`,
++ wszystko, co się strumieniuje, to `source.stream[Data]`, każdy sprawdzany literał to
++ interpolator (`url"…"`, `p"…"`, `json"…"`, `v"…"`), a każda postać serializowana przechodzi
++ pełny obieg przez tę samą parę operacji. Nauczenie się jednego zakątka Soundness to nauczenie
++ się gramatyki całości.
+
+@ 0 4 0 07bc9fc9c9d3ac1c061dd1b1333c8136
++ Analogia jest ograniczeniem projektowym, a nie przypadkiem: nowy moduł *musi* nazywać swoje
++ parsowanie `read`, swoje przedstawianie `show`, a swoje literały zapisywać jako interpolator –
++ ponieważ w chwili, gdy wymyśli `parseFrom` albo `stringify`, trafne domysły czytelnika zaczynają
++ zawodzić, a proza przestaje płynąć.
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## Test
+
+@ 0 2 0 15fa1815b0dfb7271522f7bea4632229
++ To twierdzenie da się sprawdzić: należy przeczytać kod na głos i zobaczyć, czy ma sens dla
++ kogoś, kto zna dziedzinę, ale nie bibliotekę.
+
+% 2 1 0 1ea8275c9ccbd60b1c05c9285907679c
+
+% 3 1 0 14514a5d8c7594410030df39929bc3f4
+
+% 4 1 0 12b14d4b78034b441e5a92aa4d17b52c
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 11debf3f8ca0d1ef0fe3bc9f51899a5c
+
+% 0 1 0 196b923a40c8885b0ea0831911ed4fb1
+
+% 0 1 0 1ec9f438ce6113e6059f84cf01229841
+
+% 0 1 0 145858cbd1a860e913502d0d67da3295
+
+% 0 1 0 09d92ce0f689a9410a227fe219f8936a
+
+% 1 1 0 03cc50d3d9ca38531fe3257992d1059b
+
+@ 0 3 0 145db717aa100d21093b0695eb88dc57
++ „Nadzoruj: serwer to serwer gniazd na porcie 8080, który obsługuje – dopasuj cel żądania: dla
++ ukośnika odpowiedź HTTP, OK, strona główna…”. Czytelnik znający HTTP nadąża za tym, nie wiedząc
++ nic o Soundness.
+
+@ 0 1 0 1ab24b93e77c7e4f0ec2f76cda4cb365
++ Ten sam test zastosowany gdzie indziej:
+
+% 2 1 0 06da447884b50a511536aec664fd13e1
+
+% 3 1 0 1cf254ea407b5ffd042a72dac4d406c7
+
+% 4 1 0 06d058051559dec61c33b5f21e27b24a
+
+% 0 1 0 12cea3836f3c8d9115628600dc5a06b1
+
+% 0 1 0 101d7caa0fcf1db70943a9316fc4f554
+
+% 0 1 0 1efa76fd5405969200bfd834d84b96a2
+
+% 0 1 0 0567dd676232b453187980514e92885f
+
+% 0 1 0 1beb41604f6a00bb1330ae8f161608b1
+
+% 0 1 0 1ed1bd904def568018b2775f634e6ae5
+
+% 1 1 0 029ce7110081b51702585b287f75ed4a
+
+@ 0 1 0 146d5a6dfd0d006a0f4d67a2f770e581
++ Każdy fragment czyta się jak stwierdzenie o dziedzinie, a nie jak polecenie dla maszyny.
+
+@ 0 1 0 0b15b6b50dc99b9507e1167f59d816d6
++ ## Ile kosztuje ukrycie maszynerii
+
+@ 0 2 0 080a90c8970e7d5101ffc4f12535b67a
++ Proza, która dobrze się czyta, nie jest prozą, za którą nic nie stoi. Każdy wiersz powyżej
++ opiera się jednocześnie na kilku innych zasadach, a czytelnik nie ma zauważyć żadnej z nich:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 1e6d54f9efee65be1b14332443f218c5
++ column  Wyrażenie
++ column  Opiera się na
++ column  Czytelnik widzi
++ row  `path.open[Directory](Read & Exclusive)`  [zdolności w zasięgu](delimited-scopes.md), zbiorze uprawnień na poziomie typów i [sprawdzaniu przechwytywania](capture-checking.md) dowodzącym, że uchwyt nie ucieka  katalog otwierany do odczytu na wyłączność
++ row  `t"2011-12-13".as[Date]`  klasie typów rozwiązywanej według typu docelowego, kontekstowej strategii obsługi błędów i kalendarzu  tekst stający się datą
++ row  `5.25.pm on 2018-Aug-11`  literale sprawdzanym w czasie kompilacji, konstruktorze [infiksowym](infix-types.md) i walidacji odrzucającej `13.00.am`  godzinę w dniu
+
+% 1 1 0 07c85d279b80a6de06f5c2c9bf309c7b
+
+@ 0 3 0 0de12326003c82a3109d9166e913edd2
++ Taki jest cel: maszyneria, która schodzi na dalszy plan. Gdy maszyneria *musi* być widoczna –
++ gdy trzeba nazwać zdolność albo przypisać typ – to dlatego, że czytelnik naprawdę musi to
++ wiedzieć, a nie dlatego, że projekt przecieka.
+
+@ 0 1 0 0970d700e34264b81fa1e73a79c5296c
++ ## Gdzie proza zawodzi
+
+@ 0 1 0 102f38f04e77ea411269d0e0bbcbcac2
++ Szczerość w tej sprawie jest bardziej użyteczna niż sama zasada.
+
+@ 0 2 0 1eb69c9eb1336bb81173b2ac365b9463
++ **Przypisania typów przeszkadzają.** Tam, gdzie wnioskowanie nie sięga, typ trzeba napisać, a
++ długi typ infiksowy w środku wyrażenia zatrzymuje zdanie w pół słowa.
+
+@ 0 3 0 072fec0eff6f32c4019b737c4c900d13
++ **Komunikaty o błędach nie są prozą.** Brakujący given jest zgłaszany jako nieudane wyszukiwanie
++ implicitów, w słownictwie kompilatora, a nie biblioteki – dlatego istnieje
++ `explainMissingContext` i dlatego jest on naprawą, a nie rozwiązaniem.
+
+@ 0 4 0 051cb752a9e2ef471ec1c85abbc11191
++ **Niektóre dziedziny nie mają dobrego języka.** Potok strumieniowy czyta się dobrze; słownictwo
++ `Duct` i `Intake` pod nim – nie, i nie mogłoby, bo te pojęcia nie mają codziennych nazw.
++ Odpowiedzią jest trzymanie takiego słownictwa pod powierzchnią, gdzie większość czytelników
++ nigdy go nie spotyka, a nie udawanie, że czyta się jak proza.
+
+@ 0 4 0 02ac4c8818b4668f1096c5b94d6b252c
++ **Czytanie na głos to test, a nie dowód.** Kod może płynąć pięknie i być błędny, a ta zasada nie
++ zastępuje sprawdzania, które zapewniają pozostałe zasady. Sprawia ona, że poprawny kod *wygląda*
++ na poprawny, i – co bardziej użyteczne – że błędny kod wygląda na błędny dla czytelnika, który
++ zna dziedzinę.
+
+@ 0 3 0 18c61c76b1eeace018da2b6e0635f379
++ Zobacz [nazewnictwo](naming.md) i [małe API](small-apis.md), dwie dyscypliny, które najbardziej
++ bezpośrednio do tego prowadzą, oraz [styl bezpośredni](direct-style.md), kształt, który pozwala
++ zdaniu pozostać zdaniem.

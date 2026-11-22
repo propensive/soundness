@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 1500708d61bde950192c8469de2a6217
++ row  `↯/s.117.1.7`  `Misconfigured`  Wystawcy brakuje czegoś, czego potrzebuje operacja, na przykład endpointu autoryzacji lub URI przekierowania.  `[↯/s.117.1.7] OAuth failed because the issuer is not configured for this: the flow needs a redirect URI`  Należy dać `Issuer` endpoint lub URI wskazany w komunikacie.
++ row  `↯/s.117.1.8`  `Identity`  Token ID OpenID Connect był nieobecny, nie przeszedł weryfikacji albo nie został wydany przez dostawcę dla tego klienta i tego żądania.  `[↯/s.117.1.8] OAuth failed because the ID token was not acceptable: it does not answer this client's request`  Nie należy traktować użytkownika jako zidentyfikowanego. Należy sprawdzić, czy wystawca, identyfikator klienta i nonce przekazane do `Oidc.identify` są tymi z żądania autoryzacji, a klucze są bieżącymi kluczami dostawcy.

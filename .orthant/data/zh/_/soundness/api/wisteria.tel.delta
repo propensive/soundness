@@ -1,0 +1,722 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05d9ebbe7b16e06314c693f4ff3c954b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09bbff7899a68e751ea73e3155021b38
++ info   为积类型和和类型泛型派生类型类实例，只需编写一次两条规则
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 04c88950aca70f1503c6922ecced67b5
++     _Wisteria_ 是 Soundness 中每个派生编解码器背后的派生引擎——由 case class 构建的 JSON 编码器、由字段构建的 CSV 行、由结构构建的摘要，都出自它。
++     类型类作者通过扩展 `Derivation` 编写两条规则：`conjunction`（**积类型**各字段的实例如何组合成该积类型的实例）和 `disjunction`（**和类型**的实例如何在其变体之间选择）。
++     此后每个 case class、元组、枚举和密封特质都拥有实例，通过继承而来的 `derived` given 解析，或者用 `derives` 子句请求。
++     无需编写宏：这两条规则是普通的 inline 方法，逐字段或逐变体的工作由继承而来的组合子 `fields`、`contexts`、`build`、`construct`、`variant`、`delegate`、`choices` 和 `singleton` 完成。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a79673f0c5fcfdd17ceee814d61943b
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 13147acc52e6cb8103f5ad4510211791
+
+% 0 1 0 13aa9dc6133e6a780636a2b34b76d33f
+
+% 0 1 0 144e1ca9fdf4f4931696760eeab20fb1
+
+% 0 1 0 1d2d3a970d4e705602448891021206a2
+
+% 0 1 0 17c6fd8df148d1511889a248e3654655
+
+% 0 1 0 1b7598531004cacc053a379c93161428
+
+% 1 1 0 06bff56d802acef7080a8e6e573d8128
+
+% 0 1 0 12966690a03c891315a16f87fc9a135f
+
+% 0 1 0 091e5b55970372c10eda8a5a65ed55a9
+
+% 0 1 0 10884fb74a62cc2d069c4fae82279dd8
+
+% 0 1 0 06e8b40b575b59f6094574421acdaee2
+
+% 1 1 0 0e2897de01d03d7003c2b645b75cd43e
+
+% 0 1 0 010530e45e4d14360587e77e503a8f89
+
+% 0 1 0 1a02c00a5ffb01fb0af00159237bb8e0
+
+% 0 1 0 0e85b81ce7d354c317f0db2a797b1549
+
+% 0 1 0 0a754f90293d122716f0a2fa6ccb01e6
+
+% 0 1 0 1c5e4b96e0f6458f01ac4f235999cd22
+
+% 0 1 0 15bcfcc2e868b68507a69dad802884b0
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 11804960e7a7af23155e8abe3c957920
++     在每个组合子接收的多态 lambda 内部，字段或变体由少数几个上下文值描述，通过本包的访问器读取：`contextual` 是该字段自身类型的类型类实例，`label` 是按书写形式给出的字段名，`index` 是其位置，`default`（来自 vacuous）是字段声明的默认值或 `Unset`，`dereference` 是从积类型值到该字段的函数。
++     `[field] => field => …` 语法是多态 lambda：每个字段的类型各不相同，lambda 体只知道 `contextual` 恰好是该类型的实例，而这正是它所需的全部。
+
+@ 0 7 0 06408db19ed902a0115359ef8f63b748
++     **积类型**是 case class、元组、枚举分支或单例（case object，或无参数的枚举分支，即没有字段的积类型）；它的值是**字段**，具有固定的类型、规范的顺序和标注。
++     **和类型**是枚举或密封特质；它的各个备选项是**变体**。
++     引擎通过 `scala.deriving.Mirror` 识别它们，此处别名为 `Reflection`、`ProductReflection` 和 `SumReflection`，因此没有 mirror 的类型——普通特质、非 case class 的类——会在派生之处失败。
+
+@ 0 7 0 0330e015d757e2a516941fd7d11afd60
++     `Derivation` 同时为积类型和和类型派生；`ProductDerivation` 只为积类型派生，因此将该类型类应用于和类型是编译错误；`SumDerivation` 只为和类型派生。
++     对于以 `Self` 风格编写的类型类（`value is Display`），别名 `Derivable` 和 `ProductDerivable` 会适配其形状。
++     派生实例的优先级低于伴生对象自身体中编写的任何 given，因此为某个类型手写的实例总是胜出。
++     派生对类型类的使用者不可见，对他们而言，定义一个 case class 就足够了。
+
+@ 0 7 0 1979e7b4646fa66a159a1fbe4ed690e1
++     引擎一次派生整个**图**：`derived[T]` 访问从 `T` 的字段和变体可达的每个类型，为每个不同的类型生成一个实例，并通过真正的隐式搜索解析每个字段，同时忽略该类型类自身的派生 given。
++     因此字段的实例要么是手写的实例，要么是集合的编解码器，要么是同一图中的兄弟实例——而递归类型会解析到自身，而不是重新进入派生。
++     递归类型仍最好通过 `derives` 子句在其伴生对象上获得实例。
+
+@ 0 5 0 036443b40882673715d41ff0ebe382be
++     除编解码器之外，`arithmetic` 对象为任意积类型逐字段派生 `Addable`、`Subtractable`、`Multiplicable` 和 `Divisible`，每个都是按名称导入的 given：`import arithmetic.addable`。
++     逐字段的覆盖来自 vicarious：作用域中的 `derivation is Specific over typeclass`（用 `specifically` 构建）在指定的字段路径上提供不同的实例，每个组合子都会查询它。
+
+@ 0 4 0 17f3716236e5909a13ae598a2020a7ba
++     本库只有一个源集 `wisteria.core`，可编译到 JVM、Scala.js 和 Scala Native。
++     所有内容都导出到 `soundness` 总括包，但有一点需要注意：访问器 `label` 与 tarantula 的 `Element#label()` 同名，因此同时导入两者并发现 `label` 被报告为有歧义的文件应写 `wisteria.label`。
+
+% 0 1 0 1b16f507f74ef78910d9ae05b9b17bcb
+
+% 0 1 0 1469cdb0563490d407c8700030dd2d3a
+
+% 0 1 0 02520eac0fbae18b1ef1a6378a43a69d
+
+% 0 1 0 16a304ec1cd7ff4000fa6e8070f71c3e
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+@ 0 1 0 0aa0cca7d2547f671c239b055ca2ac7b
++ entry .Derivation   为积类型和和类型都进行派生的类型类伴生对象的基类
+
+% 1 1 0 17321e16e514a18500e9ce0185ede43c
+
+@ 0 5 0 06cf81340d3c3da100c6eaeaa0f5cdee
++       `object Typeclass extends Derivation[Typeclass]` 为类型类提供派生：该对象实现 `conjunction`（积类型规则，来自 `ProductDerivation.Methods`）和 `disjunction`（和类型规则，来自 `SumDerivation.Methods`），并继承 `derived`，即任何积类型或和类型借以解析实例的 given。
++       类型参数是类型类的类型构造器；`Self` 风格的类型类改用 `Derivable`。
+
+% 2 1 0 0d0337fa0da76bb5080994e64e520e32
+
+% 3 1 0 138106c240cf290f05f72c91cfdfb2ac
+
+% 4 1 0 1c77c82091b6efab11f641938afedb77
+
+% 0 1 0 067ff7c5e830be870106b98cc0352688
+
+% 0 1 0 0454a91fd21e0b71158bca0b3c6fe5d1
+
+% 0 1 0 05f33a590db72e541882d93454661130
+
+% 0 1 0 07a949f21a3498a30a9a2d75c851539a
+
+% 0 1 0 021eace761ebc7aa06ae5f95006f9c32
+
+% 0 1 0 0625be81730b847003845275b84fe0e3
+
+% 1 1 0 17c3e3b458cf6fce127bbeb3e765beee
+
+% 0 1 0 07bac2604ad319bf05da505554c55a13
+
+% 0 1 0 0f1da7bceb1a62161cfa67fb08e8ee7d
+
+% 0 1 0 1d4e753f9fc49f901cda04ec12c9277f
+
+% 0 1 0 01b5c590dfa035dc143e85c627233416
+
+% 0 1 0 1ca937a34616c150014bc9fc24d86738
+
+% 0 1 0 15350d969a6406161d89fbf9cb3ca286
+
+% 1 1 0 02a196d01ec141f20654fa187771175a
+
+% 0 1 0 032eabbbec06e4df1f7bed37c94f0df3
+
+% 0 1 0 0f4aef81f061039f0c872cef162c552b
+
+% 0 1 0 03526477d1343a2d0b94ac6508df9251
+
+% 2 1 0 02ef9817fd85db8310ce071fe6f0fc39
+
+% 0 1 0 05657e63441db3c016c9822ac7beb72c
+
+% 1 1 0 0b0d1c220e07e5d20e98be66de00532f
+
+@ 0 8 0 1dee106818cc4ef80d42c1440cbbb863
++       两条规则都是 `inline` 的：它们在使用处展开，派生图中每个类型展开一次，正因如此，lambda 的 `contextual` 才能是对应字段类型的实例，`inline if choice[derivation]` 才能在编译时用 `scala.compiletime.error`（写成完全限定形式）拒绝某种形状。
++       有两种错误常见到值得点名：以 _given instance derived in trait Derivation does not match type…_ 结尾的长错误，几乎总是意味着多态 lambda 的类型变量缺少上界（应为 `[variant <: derivation]`，而不是 `[variant]`）；而与 `Product` 不匹配则意味着 `conjunction` 的类型参数缺少 `<: Product`。
+
+@ 0 4 0 09f69c8bc4a697e10e7a26a7cebb2097
++       该对象不必是类型类的伴生对象。
++       若定义在普通对象上，这些规则提供派生而不将其暴露给隐式搜索，在需要实例的地方调用 `Rules.derived[T]` 即可——这是为一个类型类提供两种派生的方式，例如一个严格的解析器和一个宽松的解析器。
+
+@ 0 8 0 1f7d4339d29dc5701838eed5a9b5bc6c
++       在捕获检查下，规则的结果类型是 `typeclass[derivation]^`：派生实例可以诚实地捕获其解析所需的能力，例如解码器的战术，而该捕获只在 `derivedOne` 中擦除一次。
++       派生在使用它的模块中展开，因此派生中的捕获错误报告在该模块中，而不是类型类自身的模块中。
++       调用 `delegate` 或 `singleton` 的和类型规则在其展开之处需要一个 `Tactic[Variant.Error]`；通常的做法是用 `provide[Tactic[Variant.Error]]` 将其封闭在实例内部，使派生实例本身不成为能力。
+
+% 0 1 0 0ee2070c762f0c5a02120dbde3000d4f
+
+% 1 1 0 0dc8e3c3d962d2520a2d79b2f9e5d2c2
+
+% 0 1 0 0790dba7c556641e1a5f3a1b3e9c5d3a
+
+@ 0 16 0 19c013751dd1808916865c7a51841b2a
++   entry #derivedOne   单个类型（积类型或和类型）的实例，只深入一层
++       通过检查类型的符号，为和类型选择 `disjunction`，为积类型选择 `conjunction`，并将新鲜的结果收窄为 `typeclass[derivation]`。
++       其字段和变体解析为兄弟实例；`derived` 为图中每个不同的类型调用它一次，而只需要恰好一层的派生可以直接调用它。
++   entry #derived   为任何具有 `Reflection` 的类型派生实例的 given
++       `derived[derivation]` 接收一个 `Reflection[derivation]`（即 `scala.deriving.Mirror`），是隐式搜索为每个积类型和和类型找到的 given，也是 `derives Typeclass` 子句所指的方法。
++       它构建从 `derivation` 可达的所有类型的完整图——每个字段类型和变体类型，递归地——为每个不同的类型生成一个惰性绑定的实例，并返回根类型的实例。
++       类型有手写 given 或编解码器（例如 `List[T]` 的编解码器）的字段使用它；类型是图中另一个积类型或和类型的字段使用其兄弟实例；到达自身的类型解析到它自己的绑定。
++       字段类型完全没有实例时，在派生处产生编译错误；在调用处编译一个显式的 `Typeclass.derived[T]`，是找出哪个字段缺少实例的最快方法。
+
+@ 0 1 0 1c94e7b403abe6171266e748d590d08b
++ entry .ProductDerivation   只为积类型进行派生的类型类伴生对象的基类
+
+% 1 1 0 11b4e51329b4b4be142407fd2c4126db
+
+@ 0 7 0 00214da99cfd57b5128591b7afce71e2
++       `object Typeclass extends ProductDerivation[Typeclass]` 为类型类提供针对 case class、元组和单例的派生，而不提供针对和类型的派生：将其应用于枚举或密封特质会产生指明不匹配之处的编译错误，而不是运行时的意外。
++       该对象只实现 `conjunction`，并继承 `derived`。
++       编写积类型规则所用的组合子——`fields`、`contexts`、`build`、`construct`、`complement`、`typeName`、`tuple` 和 `singleton`——是 `ProductDerivation.Methods` 的成员。
+
+% 2 1 0 0e27187a328433e113a9c8d9b8fa964d
+
+% 3 1 0 1eeb3d1cfef69c4407e9d40206f7d3f9
+
+% 4 1 0 06ba31ef59d885911d9eb992209ac110
+
+% 0 1 0 19a21b97cca651720e895f942ed49233
+
+% 0 1 0 1cb5510700c904bd14478ee8cea3586f
+
+% 0 1 0 10ea6dd3436fda07173d66c8f47f6e7a
+
+% 0 1 0 18a0839b0cc040a71ec9779fa29526e6
+
+% 0 1 0 0d9121c2bb83e4e6036725c5cf74c42e
+
+% 0 1 0 03fad97a20a5fa100ef15bb83295af60
+
+% 0 1 0 095f662d33f43b9e093a571bf641a967
+
+% 0 1 0 136e1115c40308080525bf8d83358e7d
+
+% 0 1 0 1f1363ce5a99e3a2156eb29b107000b8
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 2 1 0 04533cfb6eee4ddb07d0cbe4d6428d26
+
+% 0 1 0 15f1a6562d1bc5f2006ae18c0508a3bd
+
+% 1 1 0 1b541ae3d6caf959179232a2d821b7cb
+
+% 2 1 0 14b1bea166369d871612d279ec9cf5dc
+
+% 2 1 0 1671d92c922f15ad00af0b0c49093d4a
+
+@ 0 1 0 1d94bd7648cef7f616afab6a61cf3442
++   entry .Methods   积类型组合子：编写 `conjunction` 所用的词汇
+
+% 1 1 0 130fd033f84a2d0f1f5d61c6820d1ed4
+
+@ 0 9 0 07a27ae720f5800b04aee4458bc51f88
++         每个 `Derivation` 和 `ProductDerivation` 都混入的特质。
++         它声明抽象的积类型规则 `conjunction`，并提供编写该规则所用的 inline 组合子。
++         每个组合子接收一个多态 lambda `[field] => … => result`，并为每个字段展开一次，字段的上下文值处于作用域中：`contextual`，即 `typeclass[field]` 实例；`label`，即以 `Text` 表示的字段名；`index`，即以 `Int & FieldIndex[field]` 表示的位置；`default`，即保存声明的默认值或 `Unset` 的 `Default[Optional[field]]`；以及在 `contexts` 中的 `dereference`，即函数 `derivation -> field`。
++         这些组合子是 `protected` 的，因此只能从派生对象内部访问：
+
+@ 0 22 0 068c55fa166a82951f4b6a9644dd3dd6
++         - `fields(value)(lambda)` 对一个值的各字段进行折叠，将每个字段的值交给 lambda，并以冻结的 `Array[result]` 返回结果。
++           这是**消费者**的组合子：渲染器、编码器、哈希。
++           lambda 的参数是字段的值。
++         - `contexts[derivation]()(lambda)` 是不带值的同一折叠：lambda 的参数是字段的实例，并且可以用 `dereference` 深入一个值——或两个值，等价性正是这样比较对应字段，而不将它们与为其定型的 lambda 分开。
++           对于 schema，或积类型的标注列表，则完全不需要值。
++         - `build[derivation](lambda)` 构造积类型的一个新值：lambda 的参数是字段的实例，它返回字段的值。
++           这是**生产者**的组合子：解析器、解码器、生成器。
++           构造通过 mirror 的 `fromProduct` 进行，正因如此，它才适用于嵌套在对象中以及声明在方法内部的 case class。
++         - `construct[constructor, derivation](bind, pure, lambda)` 是针对结果包装在类型构造器中的 lambda 的 `build`——`Optional`、`Attempt`、`List`——它通过所给的多态 `bind` 和 `pure` 串联各字段，使某个字段失败时整个积类型也失败：`construct[Option, derivation]([in, out] => _.flatMap, [monadic] => Some(_), lambda)`。
++         - `complement(product)` 在任一 lambda 内部，从同一积类型的另一个值中读出当前字段，并以该字段的类型定型；`dereference` 是以函数形式提供的同一访问。
+
+@ 0 7 0 19a2cd4f57ef5fed170aa8f30de6b0f0
++         折叠会为**每个**字段召唤类型类，因此即使是叶子实例很平凡的类型类（例如 `Text` 的标注）也必须提供这些实例。
++         `index` 是带品牌的 `Int`，因此原生 `List` 用 `Ordinal.zerary(index)` 索引，并产生 `Optional`；索引所需的复杂度门控（`dysasymptotics.linearAccess`）必须在派生展开之处导入。
++         在捕获检查下，lambda 从数组类型字段读取的值保留该字段的捕获注解，因此带有冻结的 `Array[Long]^{}` 字段的积类型可以顺利派生。
+
+@ 0 30 0 167c430cc6e1b76f0f45586460d46274
++         由于规则是 `inline` 的，其中受门控的集合操作——`.all`、`.to[List]`、用序数索引 `List`——在派生展开之处，针对那里导入的一切进行解析。
++         如果这样的操作在展开中无法解析，而同一行代码在普通 `def` 中可以编译，就把它移到规则所调用的普通辅助方法中。
++     entry #conjunction   积类型规则：由各字段的实例得到积类型的实例
++         抽象方法，由派生对象实现。
++         `conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]^` 在派生图中为每个积类型调用一次，mirror 处于作用域中，并返回实例，通常是基于 `fields`、`contexts`、`build` 或 `construct` 的 lambda。
++         `<: Product` 上界和上下文界定都是必需的。
++         在捕获检查下结果是新鲜的（`^`），因此实例可以捕获其构造所需之物；`Derivation#derivedOne` 会擦除该捕获。
++     entry #typeName   正在为之派生的类型的名称，以 `Text` 表示
++         `typeName[derivation]` 是 mirror 的标注：对 `case class Person` 是 `Person`，对二元组是 `Tuple2`。
++         在两条规则中以及 lambda 中都可用，供需要写出类型名或变体名的渲染使用。
++     entry #tuple   积类型是否为元组，在代码编译时判定
++         `inline if tuple[derivation] then … else …` 让渲染可以为元组省略类型名，元组的字段标注为 `_1`、`_2`、…。
++     entry #singleton   积类型是否为单例——case object 或无参数的分支
++         `inline if singleton[derivation] then typeName[derivation] else …`：单例没有字段，因此渲染只显示其名称，解析器也无可解析。
++   entry #derivedOne   单个积类型的实例，只深入一层
++       对该类型应用 `conjunction`，召唤其 mirror，并将新鲜的结果收窄为 `typeclass[derivation]`。
++       此处和类型是编译错误。
++   entry #derived   为任何积类型派生实例的 given
++       同 `Derivation#derived`：构建可达类型的图并返回根类型的实例，每个类型都用 `derivedOne` 派生。
++       可达类型中若有和类型则是编译错误，因为此派生没有 `disjunction`。
+
+@ 0 1 0 1caf6de83cb84814068e68711a617ad0
++ entry .SumDerivation   只为和类型进行派生的类型类伴生对象的基类
+
+% 1 1 0 01810cd410a6d24301056f654514e1da
+
+@ 0 6 0 07ba64f508aec8951ab9c469aaaf400e
++       `object Typeclass extends SumDerivation[Typeclass]` 为类型类提供针对枚举和密封特质的派生，而不提供针对积类型的派生：各变体的实例必须来自别处，通常是手写的 given。
++       该对象只实现 `disjunction`，并继承 `derived`。
++       编写和类型规则所用的组合子——`variant`、`delegate`、`choices`、`singleton`、`complement`、`variantLabels` 和 `choice`——是 `SumDerivation.Methods` 的成员。
+
+% 2 1 0 0a8e8b92642f3698188154e76a6ba0b4
+
+% 3 1 0 1144e867abc178e6111f9629a60cf035
+
+% 0 1 0 0117438b690aaebc0e0c6bc11cb64147
+
+% 0 1 0 10437ce778870f5203bf37312a79f45b
+
+% 0 1 0 04d009cc9431decb0f72b165fa824997
+
+% 0 1 0 0252d8b3f04aa0b31833ba1dd7c78649
+
+% 0 1 0 0f57a7e08ba1bd1e02215ec4d5951d24
+
+% 0 1 0 04c04b7a2bb4cf7f16ded1b9b6371169
+
+% 0 1 0 114f7a268b59e0e90f18e752b62315c5
+
+% 0 1 0 18bc41b444129aa905caf1ca99a5a2f5
+
+% 0 1 0 1ce79f2a3076093a0842088338f34c87
+
+% 0 1 0 1900295e8914dde01e8ba505a8fd5a7b
+
+% 0 1 0 08e309bef604dd2b1245d60636a495fb
+
+% 0 1 0 125c3c341cb854791f5a9e509cf821bb
+
+% 1 1 0 0918ff7e3958ef0c1c426ff50661fec2
+
+% 2 1 0 1bb121329c0a9bf018fbf20516bc439b
+
+% 0 1 0 1d9b5d79310caccc132d3e13708e853f
+
+@ 0 1 0 1f5868421afbf1af0e73ce49cf4a5dda
++   entry .Methods   和类型组合子：编写 `disjunction` 所用的词汇
+
+% 1 1 0 1b4ff102e436da670dff47d5cea82c90
+
+@ 0 7 0 1aa6cc5971f5fbce0f89608a961cb93c
++         每个 `Derivation` 和 `SumDerivation` 都混入的特质。
++         它声明抽象的和类型规则 `disjunction`，并提供编写该规则所用的 inline 组合子。
++         每个组合子接收一个以变体为参数的多态 lambda `[variant <: derivation] => … => result`——上界是必需的——并在变体的上下文值处于作用域中的情况下展开它：`contextual`，即 `typeclass[variant]` 实例；`label`，即以 `Text` 表示的变体名；`index`，即以 `Int & Variant.Index[variant]` 表示的位置。
++         这些组合子是 `protected` 的，因此只能从派生对象内部访问：
+
+@ 0 16 0 1785478c839190020bd2a5991924f353
++         - `variant(sum)(lambda)` 根据值的实际分支进行分派：lambda 的参数是收窄到其变体的值，因此 lambda 体在该分支而不是和类型上定型。
++           这是**消费者**的组合子。
++         - `delegate(label)(lambda)` 通过标注得知要产生哪个变体，并将该变体的实例交给 lambda；这是**生产者**的组合子，用于输入中带有判别字段的解码器。
++           不对应任何变体的标注会抛出 `Variant.Error`，因此在规则展开之处作用域中必须有 `Tactic[Variant.Error]`——通常用 `provide[Tactic[Variant.Error]]` 封闭在实例内部。
++         - `singleton(label)` 将标注转换回它所指的值，用于所有变体都是单例的和类型；未知标注同样抛出 `Variant.Error`。
++         - `choices(lambda)` 对每个变体进行折叠，无需用于分派的值，将每个变体的实例、标注和索引交给 lambda，并返回冻结的 `Array[result]`：这正是产生 schema 而非实例的派生所需的。
++         - `complement(sum)` 读取双值类型类的另一个值，收窄到当前变体，以 `Optional` 表示，因为两者不必是同一变体。
++         - `variantLabels` 按声明顺序列出各变体的标注。
+
+@ 0 22 0 081c891849bff7021938dae6208313b0
++         `choice[derivation]` 在代码编译时报告是否每个变体都是单例——一个只有名称、不带数据的枚举——写作 `inline if choice[derivation] then … else scala.compiletime.error("…")`，使只对此类枚举有意义的派生能以自己的消息拒绝其余情形。
++     entry #disjunction   和类型规则：由各变体的实例得到和类型的实例
++         抽象方法，由派生对象实现。
++         `disjunction[derivation: SumReflection]: typeclass[derivation]^` 在派生图中为每个和类型调用一次，mirror 处于作用域中，并返回实例，通常是基于 `variant` 或 `delegate` 的 lambda。
++         与 `conjunction` 一样，在捕获检查下是新鲜的（`^`）。
++     entry #choice   和类型的每个变体是否都是单例，在代码编译时判定
++         它是 `transparent inline` 的，因此 `inline if choice[derivation]` 在编译时解析，未选取的分支被消除——包括原本会使构建失败的 `scala.compiletime.error`。
++         对只有名称的枚举和由 case object 组成的密封特质为真；只要有一个变体携带数据即为假。
++         通过检查类型的符号来判定，因此即使深处于图的内联之中也是可靠的。
++   entry #derivedOne   单个和类型的实例，只深入一层
++       对该类型应用 `disjunction`，召唤其 mirror，并将新鲜的结果收窄为 `typeclass[derivation]`。
++       此处积类型是编译错误。
++   entry #derived   为任何和类型派生实例的 given
++       同 `Derivation#derived`：构建可达类型的图并返回根类型的实例。
++       可达类型中的积类型——例如带字段的变体——必须有自己的实例，因为此派生没有 `conjunction`。
+
+@ 0 1 0 08d5a3959a151b7a1795105256801bc3
++ entry .Derivable   针对以 `Self` 风格编写的类型类（`value is Display`）的 `Derivation`
+
+% 1 1 0 041b253fc40796fb19d661276b1f7fcb
+
+@ 0 5 0 09e18473a445b54e1dfeeb7c31312ffb
++       `Derivation` 接收一个类型构造器 `Typeclass[_]`。
++       主体为 `Self` 类型成员的类型类——`trait Display { type Self; def display(value: Self): Text }`，用作 `Text is Display`——没有可以交给它的类型构造器，因此 `Derivable[Display]` 写出了一个：它就是 `Derivation[[self] =>> Display { type Self = self }]`。
++       此时规则在结果类型中使用 `is` 语法编写，同样的组合子照样适用。
+
+@ 0 2 0 127bdc10747350561c556081bba6ed11
++       观察一个类型类的成长：`Display` 起初只为积类型编写，使用 `ProductDerivable`，随后又加上和类型规则，使用 `Derivable`。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 176406b3a306ff89139e3c602bb149fb
++         label 仅有积类型规则：case class 可以显示，和类型不能
+
+% 1 1 0 1928423003c643bc1e03823b75be9fce
+
+% 2 1 0 1dc5692799ac665707efb4c8bcc16100
+
+% 3 1 0 02f87f04dcf5dc0810e62f70cc7f6e20
+
+% 5 1 0 020c357d9b691a0c04bddf468f31a480
+
+% 6 1 0 10597ec20a8e7ead165ca1b77557308f
+
+% 7 1 0 19524aaf3101d02d0c00210e18e318d7
+
+% 0 1 0 01ba80d649231d3b12707e7f3cad11ea
+
+% 1 1 0 19e9566c61abe304139af4ae5adcc057
+
+% 2 1 0 029e18582c092a57057ac0f85d7e249d
+
+% 4 1 0 040b5fcdc834adb30018094a94d3d64e
+
+% 5 1 0 0376d0b2af7744e30298eb75269c7a2c
+
+% 6 1 0 10c9957a2e6097be1da0cf78fcffcc2b
+
+% 7 1 0 1919183200d8c524110b0aac51e64373
+
+% 8 1 0 1de78eec1e9fdd030e1f4f5ae5bd1ec7
+
+% 2 1 0 062feab503460d6d11c9ff71037b3ac5
+
+% 3 1 0 1414dc5277109a3e0afa848a73962d32
+
+% 5 1 0 1cbb61f6f41191b30f79fb2bc679f6f4
+
+% 7 1 0 156d6135e47c89e9095d40979984f584
+
+% 8 1 0 08a01df668387d2c0eccac9fc0323525
+
+% 9 1 0 196b87afe98757bf149c40f2ea1f83fd
+
+% 11 1 0 1a6ebcca001d84ec1d080203a7bcb37e
+
+% 0 1 0 150b77db62817c2c10352cece49c5793
+
+% 1 1 0 058405961cbbfb0b0fb9bc687a8969b8
+
+@ 0 1 0 1e334de49ecf1c540915f636ae5e4ba7
++         label 再加上和类型规则：由变体自身的实例显示它
+
+% 1 1 0 04d1022e6fe227f211e1319f3f3ff076
+
+% 2 1 0 12ec126390744ce8065cd53293a049e9
+
+% 3 1 0 0e41d0503a68a7811a92f25aacdcc299
+
+% 5 1 0 05bfc6513f2f9e0105f9082296d8f52e
+
+% 6 1 0 0ef4d221ae5236141e115242f073fd03
+
+% 7 1 0 0aab4d02da9919781dbeabfd7a9d605d
+
+% 0 1 0 18d1f373c69f5df81461fd9a12fad695
+
+% 1 1 0 1908f87934e8cada16a94720d02bdb2c
+
+% 2 1 0 0d59793153e14f0e182bd626ad9eb67f
+
+% 4 1 0 091ba7af6b85222503b42921a22a1335
+
+% 5 1 0 118d9f7ead7afb1c0f825367af4eda4b
+
+% 6 1 0 176a97e133407c5c1cf47fec8162f884
+
+% 7 1 0 0d479cb383223a771886256eb307d2bf
+
+% 8 1 0 1f36d77071f722e40a7e3a0b530ecf72
+
+% 0 1 0 07921cac7d4701461947e15dc6ddc700
+
+% 1 1 0 0fbd694947311d6215b7bd7c1b26b199
+
+% 0 1 0 1697a6a840d45e9901f972943113dc82
+
+% 0 1 0 13372a1edcd9fcb00b1ced6ad3d9d915
+
+% 2 1 0 1eec1aff6acaf3240b04a56d945f9f49
+
+% 3 1 0 1f791b949d2bafac11abe73c3d129514
+
+% 5 1 0 1466a2563bf4329c1daa3e9bed8794b0
+
+% 7 1 0 1ea2c49e5b4340431d511a9525d5c6d8
+
+% 8 1 0 058ab5bee55ec4ce0379214457972deb
+
+% 9 1 0 0bb479d85adae46e0b66e0eeddaf140e
+
+% 11 1 0 03ddb52fb78a24aa139ef608696874bc
+
+% 0 1 0 0b10a05a0a4bb9cd19aba4b695fc882b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 042fc9db001732800d7057fe4a99f87e
++       针对某个字段路径的覆盖通过 vicarious 实现：当作用域中有一个以 `specifically { case root.opponent.name() => shout }` 构建的 `Duel is Specific over Display` 时，派生实例恰好在该路径上使用 `shout`，在其他地方使用默认实例。
+
+% 1 1 0 17907ba806159e28012ce28565b6810f
+
+% 2 1 0 050a021a2512e9dd0d224f25a89efaae
+
+@ 0 5 0 07d2c9ce493e4a9e1cc6c6381b71c382
++ entry .ProductDerivable   针对以 `Self` 风格编写的类型类的 `ProductDerivation`
++     `ProductDerivable[Typeclass]` 就是 `ProductDerivation[[self] =>> Typeclass { type Self = self }]`：针对主体为其 `Self` 类型成员的类型类的仅限积类型的派生，`conjunction` 返回 `derivation is Typeclass`。
++     双规则形式见 `Derivable`。
+
+@ 0 8 0 184690156361813f1a83743d8a630d89
++ entry .Reflection   类型是积类型或和类型的证据：`scala.deriving.Mirror.Of`
++     `Reflection[derivation]` 就是编译器的 `Mirror.Of[derivation]`，即每个 `derived` given 所接收的证据：它存在于每个 case class、元组、枚举、密封特质和单例，而不存在于其他任何类型，这就是普通特质或非 case class 无法派生的原因。
++     `ProductReflection` 满足 `Reflection` 的要求，因为 `Mirror.ProductOf` 是一个 `Mirror.Of`。
++     mirror 可以在嵌套的上下文界定搜索中解析，正因如此，派生实例才能从另一个类型类自身的派生内部召唤，例如某种格式的 `read[T]`。
+
+@ 0 4 0 1989230590b0c72a0158d9ea753a4761
++ entry .ProductReflection   类型是积类型的证据：`scala.deriving.Mirror.ProductOf`
++     `ProductReflection[derivation <: Product]` 是 `conjunction` 所要求的上下文界定。
++     它携带积类型的字段标注和类型，其 `fromProduct` 是 `build` 构造值的方式。
+
+@ 0 4 0 0043c123258aaeb01b42f9c76146c021
++ entry .SumReflection   类型是和类型的证据：`scala.deriving.Mirror.SumOf`
++     `SumReflection[derivation]` 是 `disjunction` 所要求的上下文界定。
++     它携带各变体的标注和类型，其 `ordinal` 是 `variant` 找出值的实际分支的方式。
+
+@ 0 8 0 0312b9f4fb5acd5715f0142872537256
++ entry .contextual   组合子的 lambda 内部，当前字段或变体的类型类实例
++     在交给 `fields`、`contexts`、`build`、`construct`、`variant`、`delegate` 或 `choices` 的多态 lambda 内部，`contextual` 是当前元素类型的 `typeclass[field]`（或 `typeclass[variant]`）实例——手写的 given、编解码器，或同一派生图中的兄弟实例——也是 lambda 体对一个它看不到其类型的值做任何事情的唯一手段。
++     大多数组合子还将同一实例作为 lambda 的参数传入，因此 `[field] => parsing => parsing.parse(…)` 和 `contextual.parse(…)` 是同一个实例。
+
+@ 0 6 0 020145a928c20f3214517d79ffefd331
++ entry .label   组合子的 lambda 内部，当前字段或变体的名称，以 `Text` 表示
++     对字段而言，是 case class 中书写的名称（元组为 `_1`、`_2`、…）；对变体而言，是分支的名称。
++     渲染器将其用作键，解析器将其与判别字段匹配。
++     在 `soundness` 总括包中，该名称与 tarantula 的 `Element#label()` 共用：同时导入两者并发现 `label` 有歧义的文件写 `wisteria.label`。
+
+@ 0 7 0 1fc525026d3d1ae5125a9d4575aa070b
++ entry .index   组合子的 lambda 内部，当前字段或变体的位置
++     对字段而言，是 `Int & FieldIndex[field]`；对变体而言，是 `Int & Variant.Index[variant]`。
++     品牌将数字与元素的类型绑定，因此 `complement(product)` 可以从另一个值中读出同一字段并正确定型。
++     它可以作为 `Int` 进行比较和算术运算，但用它索引原生 `List` 要写成 `columns(Ordinal.zerary(index))`，产生 `Optional`，并需要导入复杂度门控，例如 `dysasymptotics.linearAccess`。
+
+@ 0 6 0 196e69726addc3f613220fa57e2d9b6f
++ entry .dereference   `contexts` 的 lambda 内部，从积类型值到当前字段的函数
++     `dereference` 是一个 `derivation -> field`：在没有可折叠的值时，`contexts` 为每个字段提供从积类型的任意值中读取它的方式，并以该字段的类型定型。
++     绑定一次——`val extract: derivation => field = dereference`——再将它应用于双值类型类所比较的每个值，这样两个字段都能到达同一个 `contextual` 实例，而始终不丢失其类型。
+
+@ 0 6 0 1ae4f4db720d6e2a145e52db83d6adf2
++ entry .variant   `wisteria.variant` 从上下文中读取带 `"variant"` 标签的值；组合子是 `SumDerivation.Methods#variant`
++     包级访问器 `variant[value]` 以 `index` 和 `label` 的方式读取带 `"variant"` 标签的上下文值。
++     `disjunction` 以 `variant(value) { [variant <: derivation] => variant => … }` 调用的组合子是 `SumDerivation.Methods` 继承而来的方法，它根据和类型值的实际分支进行分派；在派生对象内部，该方法遮蔽这个访问器。
+
+@ 0 1 0 08d4e6986e675e4e07abefb6e59368cf
++ entry .arithmetic   为任意积类型逐字段提供 `+`、`-`、`*` 和 `/`，作为按名称导入的 given
+
+% 1 1 0 0d17564d6325a77901a5907d9757b6f7
+
+@ 0 5 0 035807e28a7cb21515182f906eeb5e74
++       symbolism 的算术类型类的四个派生，每个都通过各字段自身的实例，逐字段地对积类型的两个值进行加、减、乘或除，因此无需为积类型编写实例，`Text` 就会拼接，而 `Int` 会求和。
++       每个都是需要按名称导入的 given——`import soundness.*` 不会导入它们——因为为每个 case class 提供算术是一种选择，而不是默认行为。
+
+% 2 1 0 14fbe5ab3bac2e62054a38324aac920b
+
+% 3 1 0 1c857d45de85dfa7130746e3dade75df
+
+% 0 1 0 107ee72a262313ce044d407112366029
+
+% 0 1 0 1fdd89478da912871630955ea3d1933c
+
+% 0 1 0 0e59580ad2d89ed70c06a7c8b7ff1e62
+
+% 1 1 0 1bf4ece2f3c845b50bc69524ae6cf69c
+
+@ 0 21 0 00f06bd2925337930328a3d2772a1101
++       派生对象（`AddableDerivation` 及其同类）是相应类型类的 `ProductDerivation`，可用于显式的 `derived[T]`，而每个 given 都是针对任何具有 `ProductReflection` 的 `value <: Product` 的 `Derivation.derived[value]`。
++   entry .AddableDerivation   `value is Addable by value to value` 的 `ProductDerivation`
++       其 `conjunction` 用 `build` 构建两个积类型值之和，通过字段的 `Addable` 将每对对应字段（用 `complement` 读取）相加。
++   entry .addable   该 given：任何积类型都逐字段地 `Addable by` 自身 `to` 自身
++       对每个具有 `ProductReflection` 的 `value <: Product` 的 `AddableDerivation.derived[value]`；每个字段类型都需要自己的 `Addable`。
++       按名称导入。
++   entry .SubtractableDerivation   `value is Subtractable by value to value` 的 `ProductDerivation`
++       同 `AddableDerivation`，将每对字段相减。
++   entry .subtractable   该 given：任何积类型都逐字段地 `Subtractable by` 自身 `to` 自身
++       `SubtractableDerivation.derived[value]`；按名称导入。
++   entry .MultiplicableDerivation   `value is Multiplicable by value to value` 的 `ProductDerivation`
++       同 `AddableDerivation`，将每对字段相乘。
++   entry .multiplicable   该 given：任何积类型都逐字段地 `Multiplicable by` 自身 `to` 自身
++       `MultiplicableDerivation.derived[value]`；按名称导入。
++   entry .DivisibleDerivation   `value is Divisible by value to value` 的 `ProductDerivation`
++       同 `AddableDerivation`，将每对字段相除。
++   entry .divisible   该 given：任何积类型都逐字段地 `Divisible by` 自身 `to` 自身
++       `DivisibleDerivation.derived[value]`；按名称导入。
+
+@ 0 1 0 1245df162608a47810e235b1c72574a5
++ entry .Discriminable   格式的解码器如何在线上区分和类型的变体
+
+% 1 1 0 1c5e86f9242e3f0d10af530a28465afb
+
+@ 0 12 0 0f4f32516f1f27aa0f781b214fb1d2c2
++       编码和类型的格式必须说明一个值是哪个变体，而 `value is Discriminable in Form` 说明了如何做：`discriminate` 从格式的 `Form`（例如一个 JSON 节点）中的值读出变体的标注，`variant` 去掉判别字段，只留下变体自身的载荷，`rewrite` 则在编码时为载荷添加标注。
++       该类型类定义在这里，紧挨着查询它的派生，并由各个格式实现：jacinta 的 `discriminables` 包提供 `type` 字段、`kind` 字段、以变体名为键的包装对象，以及 `type`/`value` 封装，每个都是按名称导入的 given。
++       格式的派生解码器调用 `discriminate`，然后 `delegate` 给它所指的变体，对未知标注抛出 `Variant.Error`。
++   entry #rewrite   该形式中的载荷，其中写入了变体的标注 `kind`
++   entry #discriminate   该形式中的值所携带的变体标注，没有则为 `Unset`
++   entry #variant   变体自身的载荷，去掉了判别字段
+
+@ 0 5 0 1b47a4c69a5d2c461afcc0933496e710
++ entry .FieldIndex   字段 `index` 上的品牌：`Int & FieldIndex[field]`
++     一个密封的、无居民的特质，与 `Int` 相交，将字段的位置与其类型绑定，使 `complement(product)` 在得到索引后，能从另一个值中读出该字段并以 `field` 返回。
++     `index` 访问器在积类型组合子的 lambda 内部产生它；它从不手工构造。
+
+@ 0 1 0 03e9c3d25db31db71ba9d372b0f078cb
++ entry .Variant   和类型派生的词汇：变体的 `Index`，以及未知标注的 `Error`
+
+% 1 1 0 12b282b7bcaabecc188bd2f53b3d7d98
+
+@ 0 3 0 1c52cf9705051b2f0cd66a17f58bac10
++       不存在 `Variant` 类型：变体是正在派生的和类型的一个分支，由其位置（`Variant.Index`）和标注标识。
++       该对象容纳生产者在标注不对应任何变体时抛出的错误，以及变体索引上的品牌。
+
+% 1 1 0 0edd82c51b4122a91b750e8c360bcc4b
+
+@ 0 1 0 06d9387b528b1ffd1a291452557159e2
++   entry .Error   标注不对应和类型的任何变体时抛出：_the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+
+% 1 1 0 020fc51fad49788e038621bd2ab7da82
+
+@ 0 6 0 190c84ac47523651070ecc45e70f69e9
++         当 `delegate` 和 `singleton` 所得到的标注——通常是从解码器输入中读出的判别字段——与和类型的任何变体都不匹配时，通过 `Tactic[Variant.Error]` 抛出。
++         消息列出有效的变体，因此错误会说明输入本应携带什么。
++         调用这两个组合子之一的派生在其展开之处需要该战术处于作用域中：在实例内部使用 `provide[Tactic[Variant.Error]]` 可以使派生实例不捕获调用者自己的战术。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1d9f1403dc0472d316185a8cb732004c
+
+% 0 1 0 1f2f831994c36226146c3d36df042379
+
+% 0 1 0 169cd914d43f876e1b467e4a3f411100
+
+% 0 1 0 18ebecd33d57323007adf0f25aabbb17
+
+% 0 1 0 15819c18359b2fb117eb0b8c1d354798
+
+% 0 1 0 02516cfa6f3e56370c61b0067030d02a
+
+% 0 1 0 178b6816c7da10101e2d8c01d218c5ae
+
+% 0 1 0 0c9899ac40be17131e72818c61cb1c87
+
+% 0 1 0 079a0377cbb8fa3f13587c7c34aca18b
+
+% 0 1 0 13234ab85d3cdd4518a01d48f85af207
+
+% 0 1 0 0f88dba06ef7f4da1fdb97a8db1bef46
+
+% 0 1 0 0730cfa4cee3dffd05312a6dd97fc05b
+
+% 0 1 0 04a484f83a3985e00f98eedc6e1f4eeb
+
+% 0 1 0 0624ee964a601b940e0291d147eba6eb
+
+% 0 1 0 145d42098345cf7b1b88e3ec996acd95
+
+% 0 1 0 101137a01f722ec51d804325068f3083
+
+% 0 1 0 164e8be16805f5260d1cf9706c442156
+
+% 0 1 0 0cb4ad237d49f54a1573995dbc80ac2a
+
+% 0 1 0 1568f18160d953a40febdfdf123cc735
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 9 0 06de42572afbd5520ed0e7ac9fa42d57
++         `Variant.Error[derivation](label)` 为和类型构建该错误，在编译时填入和类型的名称及其变体标注。
++     entry .apply   为和类型构建该错误：`Variant.Error[Sum](label)`
++         一个 inline 方法，根据类型的符号填入 `sum` 和 `validVariants`，因此调用者只需提供出错的标注。
++     entry #inputLabel   不对应任何变体的标注
++     entry #sum   和类型的名称
++     entry #validVariants   和类型各变体的标注，按声明顺序
++   entry .Index   变体 `index` 上的品牌：`Int & Variant.Index[variant]`
+
+% 1 1 0 07f4a4fb1d2aa2890eabf37b178db54c
+
+@ 0 4 0 01ce2f27954a57ea0890162951be5778
++         一个密封的、无居民的特质，与 `Int` 相交，将变体的位置与其类型绑定。
++         `index` 访问器在和类型组合子的 lambda 内部产生它，`complement(sum)` 用它将另一个值收窄到同一变体。
++     entry .apply   将 `Int` 标记为变体的索引：`Variant.Index[variant](int)`
+
+@ 0 1 0 0e60cfadf3b8945d1c62ad07e0d2a86e
++ entry .internal   派生引擎和各组合子背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 31 0 1e9a7b2fc5ca4086014b94c0e8804702
++       不供直接使用：该对象容纳 inline 组合子所拼接的宏实现，以及测试和工具使用的访问器。
++       `derived` 对应 `deriveGraph`；`fields`、`contexts`、`build` 和 `construct` 对应 `fieldsProduct`、`contextsProduct`、`buildProduct` 和 `constructMonadic`；`choice` 对应 `isChoice`。
++       `fieldInstance` 是解析字段实例的隐式搜索，它忽略类型类自身的派生 given，因此字段会落到手写的 given、编解码器或图中的兄弟实例上，而绝不会重新进入派生。
++   entry .default   字段声明的默认值（按其索引），或 `Unset`
++   entry .sumName   类型的名称，以 `Text` 表示，取自其符号
++   entry .variantLabelList   和类型各变体的标注，按声明顺序
++   entry .fieldLabelList   积类型各字段的标注，按声明顺序
++   entry .field   元素的类型类实例，解析时不重新进入派生
++   entry .overridePaths   作用域中的 `Specific over typeclass` 所覆盖的点分字段路径，或 `Nil`
++   entry .overridePathsMacro   `overridePaths` 背后的宏
++   entry .Reentrant   重入探测期间的标记 given，使到达自身的类型解析到其兄弟实例
++   entry .reentrySentinel   重入探测返回的值；从不求值
++   entry .isSum   类型是否为和类型，在代码编译时判定
++   entry .isSumMacro   `isSum` 背后的宏
++   entry .fieldLabels   `fieldLabelList` 背后的宏
++   entry .isSumType   类型表示是否为带有子类型的密封特质或枚举
++   entry .isProductType   类型表示是否为引擎能够构建的积类型
++   entry .isChoice   `choice` 背后的宏：是否每个变体都是单例
++   entry .fieldInstance   `field` 背后的宏
++   entry .deriveGraph   `derived` 背后的宏：为每个可达类型生成一个惰性绑定的实例
++   entry .buildProduct   `build` 背后的宏
++   entry .contextsProduct   `contexts` 背后的宏
++   entry .fieldsProduct   `fields` 背后的宏
++   entry .constructMonadic   `construct` 背后的宏
++   entry .typeName   `sumName` 背后的宏
++   entry .variantLabels   `variantLabelList` 背后的宏
++   entry .getDefault   `default` 背后的宏：读取合成的默认参数方法

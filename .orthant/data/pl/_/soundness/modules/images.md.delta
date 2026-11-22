@@ -1,0 +1,297 @@
+orthant 2 language
+
+@ 0 1 0 044a22d235970b2307ed86aeec6c9e56
++ ## Obrazy
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 077bc5d1fb1e4b840eaa4b595b2c0ca2
++ Obrazy rastrowe – PNG, JPEG, WebP, GIF i BMP – odczytuje się do wartości `Raster` z formatem w
++ jej typie, tak jak [dźwięk](audio.md) przechowuje swój format. `Raster in Png` i
++ `Raster in Jpeg` to różne typy, a konwersja między nimi to jedna metoda. Sam obraz jest
++ [niemutowalną][niemutowalny] siatką pikseli. Każdy piksel odczytuje się jako typowany
++ [kolor](colors.md), a przycinanie, odbijanie i obracanie tworzą nowe obrazy.
+
+@ 0 4 0 0d726b9a8336fd0b1da46583037ef630
++ Raster może też przechowywać w typie swój *układ pikseli*: ile bitów zajmuje każdy kanał i w
++ jakiej kolejności. Piksel odczytuje się wtedy jednym przesunięciem i maską, obliczonymi podczas
++ kompilacji kodu, a nie wybieranymi w [czasie wykonania][czas wykonania]. Każdy kodek jest
++ zaimplementowany bezpośrednio, więc obrazy odczytuje się i zapisuje na każdej platformie, nie
++ tylko na JVM.
+
+@ 0 1 0 166495a9885742651465f29f60b293a3
++ ### O obrazach rastrowych
+
+@ 0 5 0 1b84a13f0e038412059c6363b5fa32a8
++ API obrazowania JVM odczytuje każdy format do mutowalnego `BufferedImage` i zapomina, jaki to był
++ format, a decyzje o kodowaniu i formaty pikseli zostawia wywołaniom sterowanym flagami. Dla
++ typowych zadań – odczytania obrazu, sprawdzenia jego rozmiaru, obejrzenia pikseli, konwersji
++ formatu i zapisania go z powrotem – ta maszyneria to głównie ceremonia, a mutowalność sprawia,
++ że współdzielenie obrazu nie jest bezpieczne.
+
+@ 0 6 0 1170825f975a10f109cee12472ecaf0d
++ `Raster` jest niemutowalny i zna swój format. Odczyt nazywa oczekiwany format, więc JPEG
++ podający się za PNG to typowany błąd, a nie null. Piksele wracają jako kolory, gotowe do
++ operacji na kolorach. Zapis to ten sam polimorficzny odczyt jako bajty, którego używa każdy inny
++ format. Raster, którego format i model barw są w typie, realizuje
++ [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md): konwersji,
++ której nie da się wykonać, nie da się napisać.
+
+@ 0 2 0 01361c3a432fd91f1f19d266550f6358
++ Wszystko pochodzi z pakietu `soundness`. Pozostałe importy wybierają [strategię][strategia]
++ obsługi błędów i pozwalają przykładom wypisywać wyniki:
+
+% 2 1 0 0c5552414e12bc00093eee7a70f990a3
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 08c941c3efc87d830104e747fd7bc7b2
++ ### Odczyt
+
+@ 0 3 0 10e075df8c545e5b1b62058a6a9f481d
++ Źródło bajtów odczytuje się jako raster nazwanego formatu. Te bajty to kompletny plik PNG,
++ obraz dwa na jeden, którego lewy piksel jest czerwony, a prawy niebieski. Jest na tyle mały, że
++ można go zapisać:
+
+% 2 1 0 1686f059508ba9950ef8a38d228d5bff
+
+% 0 1 0 0fb0f3f021c9ce2e19188b9020933aec
+
+% 0 1 0 172631f017a8c7a21fa43fea4afef6ec
+
+% 0 1 0 020697cb74c26979102e296bb60a522e
+
+% 1 1 0 1e96c1662262f253130d4e1881e4c9e8
+
+% 3 1 0 05ec533984b972561a2bfc5f99f587f1
+
+% 4 1 0 0afe6f0d65e800cd0d88af83ab2c1f76
+
+% 5 1 0 1f2025c43b63eaef0749b101d21f7f6f
+
+% 0 1 0 164f161805f44601008a3b471339ec3c
+
+% 0 1 0 12bdd82adee4200e1ed7a785b46d2814
+
+% 0 1 0 003d0154676ec5051e7c06ccd2abea13
+
+% 1 1 0 06891cc8b0ed88fa132fb9ab93fec9ab
+
+@ 0 2 0 192c7fbac0a66dcc19656b5af84a415e
++ Bajty, które nie są w nazwanym formacie, zgłaszają `Raster.Error`, który nazywa format, który
++ zawiódł:
+
+% 2 1 0 1a7a2e7cb29a59050b23b86924578eb4
+
+% 3 1 0 1b5e87a648477b840beb2e4a2efb5a7f
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 14960d490a2523fe02534ae2a934bfea
+
+% 1 1 0 137dfe7a2a140d91120b4a4b00751f00
+
+@ 0 1 0 02857cb7bda522b908304922c0b2fc05
++ ### Piksele
+
+@ 0 2 0 114cd7d778a1c6f10685d1f155b8cabf
++ Zastosowanie obrazu do współrzędnych odczytuje piksel jako `Chroma`, kolor z kanałami
++ bajtowymi, co łączy obraz z całą maszynerią [kolorów](colors.md):
+
+% 2 1 0 0eb34a20cd6a65a500a9b596f45c30c5
+
+% 3 1 0 0dcfcb7702590bbb048d9855a1ea71c8
+
+% 4 1 0 07b23677773dc08200687ef6711adb0d
+
+% 0 1 0 180fe659d3cc81e511d66419e3c8a9d5
+
+% 0 1 0 1ff99f1297985de812f8a6e43cd55f9b
+
+% 0 1 0 161d064053d789c70ef0cd4b474d059c
+
+% 1 1 0 0b6bc1105d3210801ea7de1f9f24281a
+
+@ 0 2 0 0de5f23faaf45f191c06eb76e54c6136
++ Obraz można też *zbudować* z funkcji pikseli; tak powstają obrazy testowe i generowana grafika:
+
+% 2 1 0 0259ddbfda6392421bffe6369afbfda0
+
+% 0 1 0 09ef49234e995051169fe7d39ea87c6d
+
+% 1 1 0 1cada717bf25a168147d39f4c67ec5ca
+
+% 3 1 0 174b05db40c844e31316f1acb01e83d5
+
+% 4 1 0 16df5a8b1ba2623c002792ce695c1770
+
+% 5 1 0 0a990654170636190e747c58a734a23a
+
+% 0 1 0 1106a48757809bc71fe660cbc0315b62
+
+% 0 1 0 0a7c4f7a5255b4930425ef645941c70c
+
+% 1 1 0 10757dc2b8fcc33d104276e67c7528fb
+
+@ 0 1 0 0dc71becd23618b9068d43ebcd09bb1e
++ ### Układy pikseli
+
+@ 0 4 0 1ac815355262022a03bbafb6ae5101a5
++ Układ to krotka typów kanałów, od najbardziej znaczącego. `(Red[10], Green[12], Blue[10])` to
++ dokładnie upakowanie 32-bitowego piksela RGB, a `Rgba` nazywa znany ośmiobitowy. Raster
++ zbudowany z układem daje typowany dostęp, a `pixel` kompiluje się do jednego stałego
++ przesunięcia i maski:
+
+% 2 1 0 0ec122e8ba734edf1f835d08e48ad586
+
+% 0 1 0 18574cdd06cb756e1c5820b3d65a3f27
+
+% 0 1 0 0958ec7f36477c7b197e79b3e56f0c07
+
+% 1 1 0 1d28da0a275d50680342080a726786de
+
+% 3 1 0 05ef9d0bc37a990c04eba3631b2508f7
+
+% 4 1 0 1ef2ef665bf6b9fc1890e0b35f6654ec
+
+% 5 1 0 00a4d400ea1d02e902e5ef1e400f4b61
+
+% 0 1 0 06306a1500955a5d09e6d3d6a6a06643
+
+% 0 1 0 0e88a200d38f5df4187ea23054fd15d8
+
+% 1 1 0 0222347c66437ec31565a0a37fac0085
+
+@ 0 4 0 0807a55d82041e94007d42600127a034
++ `repack` konwertuje między układami. Dodaje w pełni nieprzezroczysty kanał alfa tam, gdzie ma go
++ układ docelowy, i skaluje kanały tam, gdzie ich głębie się różnią. Przepakowanie do układu, który
++ raster już ma, zwraca ten sam raster. `descriptor` podaje układ w czasie wykonania, na potrzeby
++ operacji, które muszą działać niezależnie od niego.
+
+@ 0 1 0 0e06ff7d7903c7d903c43c11b1420ad5
++ ### Płótna
+
+@ 0 4 0 156e0d412ccd0f071029a7fc75d634d8
++ `Raster` jest niemutowalny, a generowanie go piksel po pikselu przez `Raster(w, h)(…)` nie
++ zawsze ma kształt, jakiego chce algorytm rysujący. Otwarcie rastra jako `Canvas` daje zamiast
++ tego uchwyt w zasięgu na jego bufor. Każde płótno można odczytywać. Zapisywać można tylko do
++ płótna otwartego z uprawnieniem `Write`, a zapis mutuje je w miejscu:
+
+% 2 1 0 0c027b01e8960e2117a474c632a4eacc
+
+% 0 1 0 0d8a65516c9461841cd3697657cd4179
+
+% 0 1 0 0d032ff46f88eece13f7a09d5f8c8359
+
+% 0 1 0 05d47aae01ca3d2d1de169d871c26991
+
+% 1 1 0 04c0a21407294c5f10c70cfab09bfdee
+
+@ 0 1 0 04ae1850305aa1b202ce50fdf46c6691
++ `snapshot` tworzy niezależną kopię, więc późniejsze zapisy nie wpływają na obraz pochodny.
+
+@ 0 1 0 184e7137d957cc821fa3901d305490bb
++ ### Przekształcanie
+
+@ 0 1 0 10cad7c73995778c1150cfeecc4e9a74
++ Przycinanie, odbijanie i obrót o ćwierć obrotu tworzą nowy obraz:
+
+% 2 1 0 0692389af565cbb61b98878c8b06d09a
+
+% 3 1 0 1426d55d85af3e5a0b36ead601d8598d
+
+% 4 1 0 196cf77f4405010d14127571b9c24266
+
+% 0 1 0 09b02e0f6b6ffc51191046adb2a79de1
+
+% 0 1 0 0fa80148fca649d3197e40d4e62034de
+
+% 0 1 0 120b7980aab8933516ecb838e3f55b9a
+
+% 1 1 0 1466a930e6deaae01a018e23349252c8
+
+@ 0 2 0 01a73849ba13ff8e1c4bcee4240cebfa
++ Argument `rotate` dopuszcza tylko `90`, `180` lub `270`. Obrót, który wymagałby
++ przepróbkowania, nie jest po cichu przybliżany:
+
+% 2 1 0 03c89e0f2d3a28e206446f364b454f1b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 19ec60d9bf1166a40e8544e9f19d7e02
+
+% 1 1 0 09f24a3aba1d93e606807dfef1623f5e
+
+@ 0 1 0 14edd77c34b8b4230597962106a6c9ed
++ ### Konwersja i zapis
+
+@ 0 2 0 085513b1de8bbebc01cb454844073800
++ `to` wyraża obraz w innym formacie, a odczytanie go jako `Data` daje zakodowane bajty,
++ symetrycznie do odczytu:
+
+% 2 1 0 02076b22856fc82e03a1b29d58d1b2c9
+
+% 3 1 0 1a8304f6e4d396511ac918292fcc7f24
+
+% 4 1 0 147cfad26457c85904ea107157c48613
+
+% 0 1 0 1efb0c468ca6fb071f702efb96e7f5cc
+
+% 0 1 0 04a99a3fdc5476111c1f9cba4dbd4460
+
+% 0 1 0 0b9d543983a6651e17e61775e1862b1b
+
+% 1 1 0 1334cd415e7751481c06f6ab2abcdf13
+
+@ 0 1 0 093a82d39a14aeb1075dee9b08a4acd7
++ Kodeki są napisane bezpośrednio dla formatów:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 1f44cd52edfe79f606866f1b941ba69c
+
+@ 0 8 0 00d3e3a09802b9df01cb78ab65241cf2
++ column  Odczytuje
++ column  Zapisuje
++ column  Na JVM
++ row  PNG  każdy typ koloru, głębie bitowe od 1 do 16, wszystkie pięć filtrów, przeplot Adam7  8-bitowy truecolor, z alfą, gdy ma ją układ  `javax.imageio`
++ row  JPEG  podstawowy i progresywny, skala szarości, YCbCr i CMYK  podstawowy  `javax.imageio`
++ row  WebP  stratny VP8, bezstratny VP8L i rozszerzony VP8X  bezstratny VP8L  czysty kodek
++ row  GIF  GIF87a i GIF89a, tylko pierwsza klatka  jedna klatka GIF89a o co najwyżej 256 kolorach  `javax.imageio`
++ row  BMP  od 1 do 32 bitów, `BI_RGB` lub `BI_BITFIELDS`, bez kodowania długości serii  24-bitowy `BI_RGB`  `javax.imageio`
+
+% 1 1 0 0b4c4237a8fd97a71ab942d6649fc8f1
+
+@ 0 3 0 126c8b1d07f8166a1283a0c1c8b9d3ad
++ Spoina backendu wybiera między każdym kodekiem a własną biblioteką obrazowania
++ platformy, jeśli taka istnieje, więc ten sam kod konwertuje obraz na JVM, w przeglądarce i
++ wewnątrz komponentu WebAssembly.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 7 0 083f122ec8afef5a1f372b5f0b79cd6f
++ - [Kolory](colors.md) opisuje `Chroma`, `Srgb` i operacje na kolorze piksela.
++ - [Dźwięk](audio.md) w ten sam sposób przechowuje swój format w typie.
++ - [Dane binarne](binary-data.md) opisuje `hex"…"` i `Data`, którymi są zakodowane obrazy.
++ - [SVG](svg.md) opisuje grafikę wektorową, która nie ma pikseli, dopóki nie zostanie
++   przedstawiona.
++ - [Typy mediów](media-types.md) nazywa formaty.
++ - [Automatyzacja webu](web-automation.md) przechwytuje zrzut ekranu jako `Raster in Png`.
++ - [System plików](filesystem.md) opisuje pliki, z których obrazy się odczytuje i do których się
++   je zapisuje.

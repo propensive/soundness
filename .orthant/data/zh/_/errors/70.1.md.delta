@@ -1,0 +1,66 @@
+orthant 2 language
+
+% 0 1 0 07d17661ab6f927810e909c47890bda0
+
+@ 0 2 0 0c1f6fd9310e6ee11b1a5aca51348139
++ 当路径在某方面无效而导致路径操作无法进行时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 09ab203f412b9c9b04622755ac757fe9
++ Serpentine 针对路径的结构性问题报告 `Path.Error`：对根进行操作、两条路径的根不匹配、根格式错误，或名称组成部分无效。
++ 消息为 `the path $path was invalid because $reason`（当路径未知时省略 `path` 前缀）。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 06669ac8cc4566a91cfcf1093c8ed096
+
+@ 0 1 0 1a867460c8b14ef90dacd466a8d072b7
++ 在根路径上调用了 `parent`，而根路径没有父路径。
+
+@ 0 1 0 1e1eee2fb2b89e96193a1ab1b4b59dd1
++ **示例。** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
+
+@ 0 2 0 1b8bac8a6ce1ec820dc23017f3eb772b
++ **解决方法。** 在请求父路径之前检查该路径是否为根，或使用返回 `Optional` 的访问器。
+
+% 0 1 0 0c7452db5b66215e1866b41c13edb468
+
+@ 0 2 0 0dea288e2726c4c91ae7097c193c7d4b
++ 根组成部分本身格式错误（例如一条不以驱动器号或 UNC 根开头的 Windows 路径）。
+
+@ 0 1 0 0c139622aed11a4a1f2c22acef1fb0d9
++ **示例。** `[↯/s.70.1.2] the path was invalid because the root is not valid`
+
+@ 0 2 0 0b72f78959dd27ef06a1ea5c8538e113
++ **解决方法。** 通过带类型的 `Path` API 构造路径，而不是解析任意文本，或者传入语法上有效的根。
+
+% 0 1 0 12373971629e29f010b493539dde83da
+
+@ 0 2 0 1ff6ae6204dddb8d0beb6eedfb50eca2
++ 试图在根不兼容的两条路径之间进行相对化或连接。
+
+@ 0 1 0 027cd48cb009de2506d078f9eaf18895
++ **示例。** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
+
+@ 0 2 0 1487aa37b7e7aa98048a0930dacac1c9
++ **解决方法。** 在相对化之前确保两条路径具有相同的根；否则，全程使用绝对路径。
+
+% 0 1 0 1dfe4030ebaaa88f0e0de7cdc844abfd
+
+@ 0 2 0 18d93388d9f6a19c140f0bc9557af98f
++ 某个路径组成部分（名称）对目标文件系统无效，例如包含非法字符或是保留名称。
+
+@ 0 1 0 1e945241a69c08bb0140b59f29da68af
++ **示例。** `[↯/s.70.1.4] the path was invalid because the name is not valid`
+
+@ 0 2 0 06bafd02dbe1ce7f10c349ed2a8f72ca
++ **解决方法。** 在把组成部分名称组合成路径之前，按照目标平台的规则清理它们。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0c655e0e19e1deec1f14b42b088269eb
++ - 源代码：`lib/serpentine/src/core/serpentine.Path.scala`

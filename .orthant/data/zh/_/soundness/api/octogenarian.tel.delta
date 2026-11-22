@@ -1,0 +1,3001 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16fa8e7b6c058e6d1c5383407b0d069f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e148f9a93d2cee21167af7773698fbe
++ info   将 Git 作为针对某个作用域打开的仓库上的类型化操作，后端可以运行 `git`，也可以完全不需要 `git`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 145cbf35e628c04d0c233a2c8f6b6ce1
++     _Octogenarian_ 从 Scala 驱动 [Git](https://git-scm.com/)，以仓库句柄上的类型化操作进行，而不是手工拼接命令字符串、事后再解析文本输出。
++     分支（`Git.Branch`）、标签（`Git.Tag`）和提交哈希（`Git.Hash`）是不同的类型，因此期望分支的操作不接受标签；结果以值的形式返回（`Commit`、`Git.Delta`、`Git.Head`、`Git.Merge.Outcome`），而不是需要重新解析的文本；失败是一个带有编号 `Git.Error.Reason` 的 `Git.Error`；而且该 API 在每个 Git 库都必须诚实面对的一件事上是诚实的：仓库位于磁盘上，而其他进程会写入它。
+
+@ 0 7 0 0d930edafdfe3d890221ee0277a7741f
++     这种诚实有两个方面。
++     每个解析 ref、HEAD、索引、工作文件、reflog、stash、配置、远程仓库或链接工作树的读取都返回一个 `Stale` 值：它所持有的内容在读取的那一刻为真，此后可能已经改变。
++     而每个移动 ref 的写入都接受它所依赖的那个 `Stale` 读数，如果该 ref 不再持有它，就以 `Git.Error(Moved(ref, expected, actual))` 失败；这是 Git 自己的比较并交换操作 `git update-ref ref new old`，只是变得无法回避，从而一次提交不会覆盖另一个进程在读取和写入之间提交的工作。
+
+@ 0 5 0 097652b15e4a235e088126593e98fe41
++     仓库用 `Git.init` 创建，并在一个块的持续期间以两种形式之一打开。
++     `Git.Repo` 是对象数据库及其 ref，裸仓库拥有的就是这些；`Git.Worktree` 是其仓库之上的一个检出的树，带有索引和工作文件。
++     模式指明句柄所携带的授权：仅以 `Read` 打开的句柄不能用于写入，这是编译错误而不是运行时错误。
+
+% 2 1 0 1c79b308c03eaa781e696e13199ec0e7
+
+% 3 1 0 03b4e10cbc6c21ec1a0cce9c6744f3b1
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 137145ab5db7c09f181dae39ecbac270
+
+% 0 1 0 1619ecc7ffe347c9086fae87aebae597
+
+% 0 1 0 07e8c33c3bb0b2c312593103dd044c4f
+
+% 1 1 0 18929999bb38f3980d62254ca32e12f5
+
+% 2 1 0 0aba296bea301f6901381f7249dd43ee
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 2 1 0 1ef571dc91da5cfe109a49a0476cefb5
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 1 1 0 00bfa1012084695d1c9865dec92eeb7f
+
+% 0 1 0 01dad18e5871fc340bd19a8973f87743
+
+% 0 1 0 0cd9502f884f7b071116b1543b174f13
+
+% 0 1 0 11fb91e46d2dd1070df32d3daafcbb0b
+
+% 2 1 0 05e75ea42e5426f11a31be72adcd98d2
+
+% 0 1 0 0fac618c669d2b620145bac4d88db2bb
+
+% 0 1 0 15980cd0c5582e7f00a974b8a4e3c932
+
+% 0 1 0 09276a51fccb460d02816a6f7cd11cb0
+
+% 0 1 0 016a0d798c9d543a07461225fddd2e87
+
+% 0 1 0 0628f6fd2282c25a1521a63aa682e88f
+
+% 1 1 0 1254d530dad97547151b6ad1c6006545
+
+@ 0 4 0 178fdd1b9a88ff3d1f2bd16b10b0d43f
++     `Git.Worktree.Handle` 同时也是 `Git.Repo.Handle`，因此每个仓库操作都可以在它上面使用；它还是一个 galilei 目录句柄：由它构成的路径（例如 `worktree / "notes.txt"`）只属于这个句柄，不能表达 `..`，并且可以在相同的授权下用文件系统操作读写。
+
+@ 0 2 0 16c94f8d821d40ce08019c69cb2ce6c7
++     在底层，操作由一个**后端**即 `Git.Backend` 执行，它通过从 `gitBackends` 包中按名称导入一个 given 来选择：
+
+@ 0 10 0 0d28bdc6d73a789b0db8e7272a3aef41
++     - `gitBackends.commandlineGit` 运行由 `gitCommands.searchpathGitCommand` 找到的 `git` 命令，在作用域内的 `WorkingDirectory` 和 `Environment` 中执行，并将每次调用记录为一个 `Commandline.Event`。当需要完整的 git 自身行为（钩子、过滤器、凭据助手、子模块）时，就选择它。
++     - `gitBackends.soundnessGit` 是 `Native()`，它是以 git 自己的格式亲自读写仓库文件的后端，因此仓库始终是 `git` 本身能理解的仓库，一方因冲突而停止的操作可以由另一方继续。它不需要 `git` 二进制文件，因此在 JVM 或 Scala Native 能运行的任何地方都能运行。对象（松散的和打包的）、ref、索引、配置、notes、链接工作树、合并、变基和 stash 全部由它自己实现。
+
+@ 0 1 0 0ed6d51cadbd97511947ba0f44ea381e
++     作用域内是哪个后端，对使用它的代码没有任何影响：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0b8d8e23a6ee28ad1e541c7d1e1399b4
+
+% 1 1 0 132849cfce972ab0093d005b67a4e1b6
+
+% 2 1 0 0692f0c13fe1d492034570732afb651a
+
+% 0 1 0 120131d57b5f2d0e11e2216882e20968
+
+% 0 1 0 04f85e5b3c05a532131d789a3a790ea5
+
+% 0 1 0 13db2575a4f236e90f59c12f01faa995
+
+% 1 1 0 1958e142bca43f361633623b94d14f35
+
+% 3 1 0 1db4ba422adf82aa1717bdae24ac3a1a
+
+% 4 1 0 0e81232918f0b14005395f9d4be137e9
+
+% 5 1 0 0877580c90c96c350da841accbf57973
+
+% 0 1 0 0eaa318c316486d105c40f2a27bdaab1
+
+% 1 1 0 19c7e091aa4b06e314e7adf90d571a8d
+
+% 2 1 0 135f0e6a19d4a1ff1c952631b622e5e7
+
+% 0 1 0 06bf89deb4e19ec61e23f26442744379
+
+% 0 1 0 03579d022b8808861f7885f95bb8cd78
+
+% 1 1 0 19617aa7795372db18ed09d8e9cedd45
+
+% 3 1 0 13a0b415446fa6e410f9cefbc4a1439c
+
+% 4 1 0 1c189485186381601c3025a5370a3d62
+
+% 5 1 0 11e09730668df02d0fc7dc9679217e38
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 1978c9336f966d6004b6f2d543cae99a
++     原生后端通过路径访问同一文件系统上的仓库。
++     远程仓库则需要一个**传输层**，`gitTransports` 包为 git 访问服务器的每种方式各提供一个 given：`smartHttp`（基于作用域内任意 `Http.Backend` 的 git 智能协议）、`sshCommand`（派生出的 `ssh` 进程）和 `soundnessSsh`（原生 SSH 客户端，不需要 `ssh` 二进制文件）。
++     `Native(List(SmartHttp(), SshCommand()))` 在这两者之上使用第 2 版传输协议。
++     命令行后端不需要这些：`git` 自带其传输层。
+
+@ 0 6 0 0edca734c1816d24134458458c731f84
++     **签名**与后端无关。
++     提交或标签由 Soundness 组装并存储，而不是由 `git commit` 生成，因此签名从不离开进程：由 `Git.Signer` 生成签名，由 `Git.Verifier` 检查签名。
++     `SshKeygen.Signer(key)` 和 `SshKeygen.Verifier(allowedSigners)` 驱动 `ssh-keygen -Y`，正如 `gpg.format = ssh` 让 git 所做的那样；`Gpg.Signer()` 和 `Gpg.Verifier()` 驱动 `gpg`。
++     通过其中任一方式签名的标签都能被 `git tag -v` 接受。
+
+@ 0 1 0 1380f58a567b2e590d2d589f1948434a
++     该库按各部分对平台的需求划分为若干组件：
+
+@ 0 16 0 18b70f6806ad167117d5558142ae1715
++     - `octogenarian.core`：模型（`Git` 及嵌套在其中的一切、`Commit`、`Git.Delta`、`Git.Hunk`、`Git.Patch`、`Git.Remote`、`ReflogEntry`、`Notes` 和 `NoteRef`），`Git.Repo` 和 `Git.Worktree` 句柄，以及它们所驱动的 `Git.Backend` 类型类。这里不派生任何进程，因此原生后端的使用者永远不会编译 guillotine。支持 JVM 和 Scala Native；在 javalib 没有 `java.time` 的 Scala Native 上，新提交以 UTC 加盖时间戳。
++     - `octogenarian.cli`：`Commandline`，即运行 `git` 的后端，作为 `gitBackends.commandlineGit` 提供；`gitCommands.searchpathGitCommand`；以及 `Gpg`。
++     - `octogenarian.native`：`Native`，即亲自读写仓库文件的后端，作为 `gitBackends.soundnessGit` 提供；`Transport` 和 `Peer`，即传输协议的两端；`SshAddress`。
++     - `octogenarian.http`：`SmartHttp`，基于智能 HTTP(S) 的远程仓库，作为 `gitTransports.smartHttp` 提供。
++     - `octogenarian.ssh`：`SshCommand`，基于派生出的 `ssh` 进程的远程仓库，作为 `gitTransports.sshCommand` 提供；以及 `SshKeygen`，通过 `ssh-keygen` 签名。
++     - `octogenarian.sshNative`：`SshNative`，基于原生 SSH 客户端的远程仓库，作为 `gitTransports.soundnessSsh` 提供。
+
+@ 0 6 0 131a43085c4543231fd696ed74cce2c1
++     这些都不能针对没有文件系统的 Scala.js 编译。
++     一切都导出到 `soundness` 总括包，而 `gitBackends`、`gitCommands` 和 `gitTransports` 选择包与总括包自己的同名包合并；它们的 given 需按名称导入，因为 `import soundness.*` 不会导入 given。
++     `NoteRef` 的扩展 `target`、`namespace` 和 `content` 也被导出，但 `content` 最好按名称导入（`import octogenarian.content`），这样它才能胜过路径上通用的 `read`。
+
+@ 0 3 0 1666c2df7210e66b1b53cab7f6c5629f
++     无论选择哪个后端，`Exclusive` 都只在本 JVM 内的句柄之间进行仲裁。
++     它从不等待其他进程，这就是为什么每个移动 ref 的操作都是对所给 `Stale` 读数的比较并交换。
+
+% 0 1 0 0024e45e4a44686100bfb6ed90f8be86
+
+% 0 1 0 0d1aab482c42f51d055f528fc202fca3
+
+% 0 1 0 13e127754c98d8b1072e22ae29357516
+
+% 0 1 0 191fdf3f0feb7f9f0f391c266c575b4c
+
+% 0 1 0 083b87b81140297e1e705964cba55022
+
+% 0 1 0 0d4ae720e749ca6e0e94b1c81247ff9b
+
+% 0 1 0 196c7809c4abd1a00834f921fd5b5d3d
+
+% 0 1 0 0431435a68b4d1670e553f11be790bd9
+
+@ 0 1 0 130285ee21b29e69010dfb3d15ce170d
++ entry .Git   Git 模型以及仓库和工作树句柄的命名空间
+
+% 1 1 0 11d9aa71d664191619c5eef8defb11c6
+
+@ 0 10 0 026ee9d84694d77507f8540498318ca2
++       `Git` 包含 Git 自身所命名的一切：引用（`Git.Ref`、`Git.Branch`、`Git.Tag`、`Git.Hash`、`Git.Revision`、`Git.Refspec`），对象（`Git.Object` 及其种类），身份与时间（`Git.Identity`、`Git.Timestamp`、`Git.Signature`），HEAD 的状态（`Git.Head`），工作文件（`Git.Status`、`Git.PathStatus`），配置（`Git.Config`），合并和序列操作的结果（`Git.Merge`、`Git.Sequence`、`Git.Operation`），远程操作（`Git.Push`、`Git.Pull`、`Git.Activity`），签名（`Git.Signer`、`Git.Verifier`、`Git.Verification`），它的错误（`Git.Error`、`Git.RefError`），以及打开路径的两种形式：`Git.Repo` 和 `Git.Worktree`，每种都为一个块借出一个 `Handle`。
++       `Git.Backend` 是句柄所驱动的类型类，由 `Commandline` 和 `Native` 实现。
+
+@ 0 3 0 114336e9077fd6951e1248dbb30e0413
++       有三个操作会创建仓库：`.init` 新建一个仓库，`.clone` 从路径或 URL 复制一个仓库，`.cloneCommit` 恰好获取一个提交。
++       每个操作都接受一个 `Git.Backend^` 和一个 `Tactic[Git.Error]`，访问远程仓库的那两个还接受一个 `Internet`。
+
+% 2 1 0 0fee550de16d274311d465f8dc7166e1
+
+% 3 1 0 00fad8fd9e195b2e0b8bb92beca7f383
+
+% 4 1 0 04c5a42310a903250ad7af01a398747b
+
+% 5 1 0 0e4f81c64d1f8fd31503af07b6f298ef
+
+% 6 1 0 07fc5d869bd029561d4600b48e1eeccc
+
+% 7 1 0 05b9227eba5104d51f30bbaa8fcda12f
+
+% 8 1 0 11b47f8fc310db7107e25891c7b2aefc
+
+% 9 1 0 17b2a333fa86067202609ce349029f54
+
+% 11 1 0 152a9161b2c6253310634bc6f974f6e4
+
+% 12 1 0 0f09b9349c84d1800d6b40efce0b850f
+
+% 2 1 0 02dd8c930a9c53c61e490558e2bf18a4
+
+% 0 1 0 15f5bfa13f69418c043144cecc7c0590
+
+% 1 1 0 04cd6c1aa9184a4f03bfe7b1e7fd33dd
+
+% 0 1 0 1117a3b43ba1167e0cee4d884a606abc
+
+% 0 1 0 00710612581a197b09367bdad473bdc0
+
+% 1 1 0 0831d582049dacf90b4bdfa40e986e58
+
+% 0 1 0 103f234d0d4937711f328bb60f7b3177
+
+% 0 1 0 0f6d58b8716105ff16549442ed8ca3d5
+
+@ 0 10 0 0ace0b956014120a0553dd97ecab4f34
++   entry .Ref   一个完全限定的引用路径 `refs/heads/main`，作为 `Path on Git.Refs`
++       `Git.Ref` 是别名 `Path on Git.Refs`：诸如 `refs/heads/main`、`refs/tags/v1` 或 `refs/notes/commits` 的引用，建模为 `Git.Refs` 平面上的路径，因此它可以从 `Git.Refs` 用 `/` 构建，也可以用 `Git.Refs.heads`、`Git.Refs.tags`、`Git.Refs.notes` 和 `Git.Refs.remotes` 构建（它们都像 `git check-ref-format` 那样检查各段），或者用 `Git.Refs.parse` 从文本解析。
++       `Git.Branch` 和 `Git.Tag` 各自知道自己的 ref（`branch.ref`、`tag.ref`）。
++       在期望 `Git.Revision` 的地方，`Git.Ref` 会转换为 `Git.Revision`，因为经过校验的 ref 路径本身就已经是一个修订版本。
++   entry .Error   当 Git 操作无法完成时抛出，带有一个编号的原因
+
+% 1 1 0 140b9972126d2f36081dd20c4fc8ccc6
+
+@ 0 6 0 11e99a6a967d922515425cb3badf8224
++         错误 `↯/s.123.1`：_the Git operation could not be completed because `reason`_。
++         这是每个仓库操作通过作用域内的 `Tactic[Git.Error]` 抛出的唯一错误；它的 `#reason` 是一个 `Git.Error.Reason`，带有编号，因此完整代码为 `685.<n>`；它的 `#detail` 是 git 自己所说的话（如果后端有的话）：在 `Commandline` 下是 `git` 进程去除首尾空白后的标准错误，在 `Native` 下是文件系统或网络故障自身的消息。
+
+% 2 1 0 1c7bf02279182497024fffd5ec8ad1e6
+
+% 3 1 0 193080da2483ed131381effd52585e82
+
+% 4 1 0 0146d227cad7e6c40fd8b755f52cb0df
+
+% 5 1 0 11a0457cda1e31b8136648946ff81558
+
+% 6 1 0 1e5b7de9783e240203a69a4bff52951f
+
+% 7 1 0 1fad79a894d76290074c2b03ac51e26c
+
+% 8 1 0 1ac4259b3a860ded1d7cf939473873e5
+
+% 9 1 0 10668884f05162cc14e7aff689e3e959
+
+% 11 1 0 1f8f0e3805361aba01d3d13a9468aa93
+
+% 13 1 0 1443592792a857e700b2a6f8babec5f8
+
+% 0 1 0 00274a57a11385ee0038a2d64e32d7ee
+
+% 0 1 0 0f3d6090f91e142d0f500666d9f175f2
+
+% 0 1 0 14529a491e893e0d1a60d53adda177bb
+
+% 0 1 0 06fc6e0049c5876c19dfd6cf2b410f6d
+
+% 1 1 0 13c166a307b409bd134cc1faa701e403
+
+@ 0 5 0 05c2a4363c0c72d0017e741ad17c1b9d
++         最重要的原因是 `Moved`：一个依赖于 `Stale` 读数的写入发现该 ref 已在别处，因而什么也没做。
++     entry .Reason   操作失败的原因：三十四个编号分支之一
++         一个 `Clarification` 枚举，因此每个分支都带有其编号（`685.<n>`），并通过 `.communicable` 渲染为其消息。
++         各分支按编号顺序排列：
+
+% 1 1 0 1a8b918dc7f9969906d6d506b4bfab31
+
+@ 2 4 0 00919b4e47da24a4040f3ec784677ff4
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 0becee6df2e2f78b1677b6a44f0d09a2
+
+@ 0 3 0 1b90b3dc6e83544d0905a36b4029ae98
++         row  `NoRepository(path)`  2  _`path` is not a Git repository_  打开时抛出
++         row  `NoWorktree`  3  _the repository has no working tree_  因此无法作为 `Git.Worktree` 打开
++         row  `Moved(ref, expected, actual)`  4  _`ref` was `expected` when read but is now `actual`_  比较并交换失败；任一哈希都可能为 `Unset`，渲染为 _nothing_；`ref` 按调用者使用时的名称（`HEAD`）给出，与 git 的做法相同
+
+% 0 1 0 18a3d7ed6b321448163ccfb6aedc74f0
+
+% 0 1 0 0c5bba8ecb94800b0528644c7fb15521
+
+% 0 1 0 1012ded781eec15d1c5db56300b64b6c
+
+@ 0 1 0 072d1453f3899c6c1735a3936b60680a
++         row  `Unmerged(branch, tip)`  8  _the branch `branch` at `tip` is not fully merged_  没有 `force` 时 `deleteBranch` 拒绝执行
+
+% 0 1 0 02cef223a9c1d0ec135f59ac238f7b5f
+
+@ 0 2 0 144dfa535412ef77031a7917469cc28d
++         row  `NothingToCommit`  10  _there is nothing to commit_  树未改变，且未给出 `allowEmpty`
++         row  `Detached`  11  _HEAD is detached_  在需要分支的地方（`pull`）
+
+% 0 1 0 1942bc43ad4c4cd21f7ca3de88f1646c
+
+% 0 1 0 069454a83cabf60e053df72133eed518
+
+% 0 1 0 1a4fd8ba9e119784158774f7f30015ec
+
+% 0 1 0 01b24e4a390c891102b6ecda1cbfbb3e
+
+% 0 1 0 1385b76cf1bba9970bc6591ba9e00208
+
+% 0 1 0 0e63676db96a97340014182d64de8188
+
+% 0 1 0 00b237ae874faf351453a92fbaea4b9e
+
+% 0 1 0 0379edb0b6923eff07dd0ce71dbacf78
+
+% 0 1 0 04c31fff12b95cd11f30fbd520a8b547
+
+% 0 1 0 0d9c8532d99b1e6214ea728d7fb8f134
+
+% 0 1 0 04de9705246e336a033b2c698f396d7e
+
+@ 0 1 0 0c61ec7e1330ef921d7b5f32d13b92d1
++         row  `LeaseFailed(ref, expected, actual)`  23  _the remote's `ref` was expected to be `expected` but is `actual`_  `Push.Force.Lease` 的预期有误
+
+% 0 1 0 093ca07dcf25fe191ba8d77df79f2f29
+
+@ 0 1 0 09e0041d894141c816a439338278aa48
++         row  `NoSuchConfig(key)`  25  _the configuration key `key` is not set_  创建提交时提交者的 `user.name` 或 `user.email`
+
+% 0 1 0 069802804939a0c2187e53faf1b3e7c1
+
+% 0 1 0 01e13eeaf35e10dc0bb11ac8f491707d
+
+% 0 1 0 03f74a8e35b8ddca14c5521a8f9c89d0
+
+@ 0 2 0 1e53315a9367b85c08d1e0ea7f7338e0
++         row  `Unsupported(operation)`  29  _`operation` is not supported by this backend_  也用于被拒绝的并发独占打开
++         row  `Unexpected`  30  _git reported an unexpected failure_  原因表中没有的失败；git 的消息保留为错误的 `detail`
+
+% 0 1 0 1e669f9422e19c781ba157be262629d7
+
+% 0 1 0 0614ca488efe1b8f1b6bf53d8d617a00
+
+% 0 1 0 05f559d11595ce9a041b26f70ceded78
+
+% 0 1 0 0f3566af75830478033f0718f2537211
+
+% 1 1 0 056d392dbe3599951489a10e918cf1f5
+
+@ 0 4 0 1185ac2d7f406a1017cb98e68e48ed36
++     entry .communicable   将每个原因渲染为一条消息
++     entry #reason   操作失败的原因
++     entry #detail   git 自己所说的话（如果后端有的话）：去除首尾空白后的标准错误
++   entry .RefError   当文本不是有效的 Git 引用、哈希或 refspec 时抛出
+
+% 1 1 0 1a2b21bd8f1cad60191caea5bfe8445b
+
+@ 0 6 0 03ea263c647d67c10add1f850ef10d42
++         错误 `↯/s.123.2`：_`value` is not a valid Git reference because `reason`_。
++         由按照 git 自身规则（`git check-ref-format`）检查名称的解析器抛出：`Git.Branch.parse`、`Git.Tag.parse`、`Git.Revision.parse`、`Git.Refs.parse`、`Git.Refs.heads` 及其同类、`Git.Hash.apply` 和 `Git.Refspec.parse`，以及由它们构建的 `Decodable in Text` given。
++         `NoteRef#namespace` 对错误的 notes 命名空间段抛出它。
+
+% 2 1 0 0d97f1a0476ca235055356f4c8227f5a
+
+% 3 1 0 12c9ef158a835f8c03f2d7500f09a201
+
+% 0 1 0 06e3bfa9272a8d19156187ba5e02d2f5
+
+% 0 1 0 040c4897fbca83f708617f9518575056
+
+% 1 1 0 11a07d98c9e6f1a11ac12477f352a2b9
+
+@ 0 1 0 0d2cdfc881b99418073cd2869dbe7132
++     entry .Reason   文本违反了哪条规则
+
+% 1 1 0 05a92b08f66eb14011e8cdd32c6145b4
+
+@ 2 4 0 034d0189feab7189103704dfc3c90164
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 1bd5f4ebd50b012d128b5452af8894c3
+
+% 0 1 0 06c0401dfcd320dc0d5cc458865f3bba
+
+% 0 1 0 141c998bde119b1c10cd5efd0ba0c48f
+
+% 0 1 0 03fa4208a9e0628e1dfa042e462fd082
+
+% 0 1 0 0953068e56223e3f087d106715e7b4b0
+
+@ 0 2 0 06ba0e5b54bd706808db5f475ea1effc
++         row  `InvalidCharacter`  6  _the name contains a character forbidden by Git_  `*`、`[`、`\`、空格、`^`、`~`、`:` 或 `?`
++         row  `BadHash`  7  _the value is not a 40-character hexadecimal hash_  仅限小写十六进制
+
+% 0 1 0 196967294709fe4b023ad02a048327ed
+
+% 1 1 0 024474b6088dd83113453bed2b3b030e
+
+@ 0 4 0 0629b6d66ca7cdb10c5ea3354c1c7eac
++     entry .communicable   将每个原因渲染为一条消息
++     entry #value   被拒绝的文本
++     entry #reason   它违反的规则
++   entry .Refs   完全限定引用的平面，以 `refs/` 为根
+
+% 1 1 0 0a983139a9c61bbc045972d402106073
+
+@ 0 5 0 1af999aa7c654a930f733b1d6ebba165
++         `Git.Refs` 是 `Git.Ref` 所在平面的根：`Git.Refs / "heads" / "main"` 就是 `refs/heads/main`。
++         具名构造器像 `git check-ref-format` 那样检查每一段，并抛出 `Git.RefError`，而 `.parse` 从文本读回一个完全限定的名称。
++         该平面的 `Filesystem` 以 `/` 分隔，以 `@` 作为自身段，以 `..` 作为父段，有效的 ref 中两者都不会出现。
+
+% 2 1 0 0c0c4b89c145ea8f0df00702e8507f7d
+
+% 3 1 0 1cb68cd9eba8510b0bfb4e10e20586f0
+
+% 4 1 0 0ef442df112c6f8c0c9032f00147bd90
+
+% 0 1 0 097bb54bfac62ae119036395d0347f58
+
+% 0 1 0 1bcbfb064d737d590f0191d45f5034a0
+
+% 0 1 0 105f4a259c9de10416a96cdb5a527559
+
+% 0 1 0 1b1b23db63f601c311ffcc9434d585ad
+
+% 1 1 0 18970a97437c9be50811546d0c3639c1
+
+@ 0 29 0 1920b6eb304d8ecc1ae368bf90d588e4
++         通过 `.pathIsRevision`，凡是接受 `Git.Revision` 的地方都接受 `Git.Ref`。
++     entry .Plane   引用路径的平面类型：即 `Git.Refs` 本身
++     entry .notes   `refs/notes/<namespace>`，命名空间经过检查
++         如果命名空间违反了引用规则，则抛出 `Git.RefError`。
++     entry .heads   `refs/heads/<branch>`，分支名经过检查
++         如果名称违反了引用规则，则抛出 `Git.RefError`。
++         `Git.Branch#ref` 是相同的路径，但不经检查。
++     entry .tags   `refs/tags/<tag>`，标签名经过检查
++     entry .remotes   `refs/remotes/<remote>/<branch>`，两段都经过检查
++     entry .defaultNotes   `refs/notes/commits`，即 git 自己的 `notes` 命令所用的命名空间
++         `Git.Repo.Handle` 上每个 notes 操作的默认 `ref`。
++     entry .stash   `refs/stash`，stash 各条目所挂靠的 ref
++     entry .parse   将完全限定的名称 `refs/heads/main` 读取为 `Git.Ref`
++         文本必须以 `refs/` 开头，其后的每一段都必须满足引用规则；否则抛出 `Git.RefError`。
++         不是完全限定的名称（`HEAD`、`main`）会被拒绝。
++     entry .validateSegment   按照 git 的引用规则检查一段，抛出 `Git.RefError`
++         一段必须非空，不得以 `.` 开头或结尾，不得以 `.lock` 结尾，不得包含 `@{` 或 `..`，并且不得包含 `*`、`[`、`\`、空格、`^`、`~`、`:`、`?` 或 `/` 中的任何一个。
++     entry .admissible   接受任何文本作为引用路径一段的 given
++         检查被推迟：`/` 构建路径，而具名构造器和 `.parse` 进行校验。
++     entry .filesystem   作为 `Filesystem` 的引用平面：以 `/` 分隔，`@` 和 `..` 分别表示自身和父级
++     entry .pathIsRevision   在期望 `Git.Revision` 的任何地方，将 `Git.Ref` 作为 `Git.Revision`
++         一个位于隐式作用域中的 `Conversion`：经过校验的 ref 路径满足 git 强制执行的每条规则，因此它本身就是一个修订版本，`repo.resolve(Git.Refs.heads(t"main"))` 无需包装。
++   entry .Revision   git 在期望修订版本的地方接受的任何东西：哈希、分支、标签或表达式
+
+% 1 1 0 119c8c79ee7777791ba6d8e95bbfd0c7
+
+@ 0 5 0 1a58ea1f35a43f140ae3ff59e4995b58
++         `Git.Revision` 就是 `gitrevisions(7)` 所称的修订版本：一个 `Git.Hash`、`Git.Branch` 或 `Git.Tag`（它们都扩展它），一个 `Git.Ref`（通过 `Git.Refs.pathIsRevision`），或者诸如 `HEAD~2` 或 `main..feature` 的表达式。
++         `.head` 构造 `HEAD` 表达式，`.unsafe` 构造任何其他表达式，不经检查。
++         读取历史或执行检出的操作接受 `Git.Revision`：`log`、`resolve`、`checkout`、`merge`、`rebase`、`diffAgainst`。
+
+% 2 1 0 03a0a2d43091d77004c65cd1b8cfba3e
+
+% 3 1 0 07c0cd7880b2d17b1d5cc907b7ec8140
+
+% 0 1 0 0a2906e215f3b2f8099d6806da9a031d
+
+% 0 1 0 10087810748da1eb00a0225d2ec1cb49
+
+% 0 1 0 15ee941edc42654e03e9d9e0406090c3
+
+% 1 1 0 0032afb53755fe57117a201ae2d0ab5c
+
+@ 0 15 0 1931ae6ae72955de0050a467ea72ab17
++     entry .head   `HEAD`，或者对正数 `n` 而言的 `HEAD~n`
++     entry .unsafe   将任何文本作为修订版本，不经检查
++         用于类型化引用无法表达的表达式，例如 `v1.0^{commit}` 或 `main..feature`。
++         不做任何校验；git 无法解析的表达式在使用时才会报告，表现为 `NoSuchRef`，或 `resolve` 返回的 `Unset`。
++     entry .parse   按照 git 的规则检查一个引用*名称*并将其返回
++         逐段校验诸如 `feature/sonnets` 的名称（而不是表达式），方式与 `Git.Refs.validateSegment` 相同，但允许 `/`，并在违反第一条规则时抛出 `Git.RefError`。
++         `Git.Branch.parse` 和 `Git.Tag.parse` 构建在它之上。
++     entry .encodable   修订版本编码为其文本
++     entry .showable   修订版本显示为其文本
++     entry .inspectable   修订版本检视为 `Revision(HEAD~2)`
++         分支、标签和哈希有各自的形式：`Branch(main)`、`Tag(v1.0)`、`Hash(…)`。
++     entry #text   git 所接受的修订版本文本
++   entry .Refspec   一个获取或推送 refspec，`+refs/heads/*:refs/remotes/origin/*`
+
+% 1 1 0 1c60f4728b2b89c0133d5dfd38c4684c
+
+@ 0 5 0 0669271d1597cf0d08ec323a1657406a
++         refspec 在一侧指明 `#source`，在另一侧指明 `#destination`，两者都可以是 `Unset`，并指明更新是否被 `#force`（开头的 `+`）。
++         没有源而有目标的 refspec 在推送时删除目标。
++         `fetch` 和 `push` 接受一个 refspec 列表，`addRemote` 则记录一个作为远程仓库的获取 refspec，默认为 `+refs/heads/*:refs/remotes/<name>/*`。
+
+% 2 1 0 1e08bb4aa99b638413c565eb11234905
+
+% 3 1 0 1deca892ece5c14a0d782c6bbd44979d
+
+% 4 1 0 08689bbc8b794a0a1330b619807422ae
+
+% 0 1 0 04f6eec8b91e12870480320e961a8439
+
+% 0 1 0 05179668a14ce83f19c36c214b527722
+
+% 0 1 0 0569d7cb9744961a18e526bbd8588f37
+
+% 0 1 0 14616af65ea5c77713d046808ee0bfcd
+
+% 1 1 0 12474f176338857d1cbc9e46ecf1ab2f
+
+@ 0 11 0 19c011f362a11e5200ff32cf2d74d448
++     entry .parse   从文本读取 refspec，对含有两个冒号的 refspec 抛出 `Git.RefError(BadRefspec)`
++     entry .apply   由一个 ref（两侧相同）或由源 ref 和目标 ref 构造的 refspec
++         `Git.Refspec(ref)` 将 `ref` 推送或获取到其自身；`Git.Refspec(source, destination)` 将一个映射到另一个。
++         两者都不强制。
++     entry .encodable   refspec 编码为其文本
++     entry .showable   refspec 显示为其文本
++     entry #source   推送时本地一侧或获取时远程一侧的 ref（如果有）
++     entry #destination   另一侧的 ref（如果有）
++     entry #force   更新是否可以不是快进：即开头的 `+`
++     entry #text   git 所接受的 refspec 文本：`+source:destination`
++   entry .Tag   按名称表示的标签，在类型上区别于分支或哈希
+
+% 1 1 0 012f92497a827fab03f96a0fafb1245c
+
+@ 0 5 0 12eba1751f35cf6318674a382e76b0e6
++         `Git.Tag(t"v1.0")` 是一个标签名；它是一个 `Git.Revision`，因此在期望修订版本的任何地方都能被解析，而 `#ref` 是它的完整路径 `refs/tags/v1.0`。
++         `.parse` 按照 git 的规则检查名称；case class 构造器不检查，`.unsafe` 则明确表明这一点。
++         标签所指向的是一个 `.Target`，可以是轻量的或附注的，用 `Git.Repo.Handle` 的 `tag` 读取；附注标签的对象是一个 `.Annotation`。
+
+% 2 1 0 0fdf3abe27c37fa9161fc2212cfd7249
+
+% 3 1 0 0988a94f0ba119ad098ae76334e0d7d5
+
+% 4 1 0 0d57677b139ae5d41ac5a1d6c7933729
+
+% 5 1 0 0bd6e2a9957601c514700401d7e7978e
+
+% 6 1 0 0280d08efd0acd64156a87bee34eaa0f
+
+% 7 1 0 1b0f23c910a06b2a064a6e6b4b3f0e56
+
+% 8 1 0 091861042e4039dd159280e0e791db4f
+
+% 9 1 0 0af9dc1ab284a4d311a5f4b39453267c
+
+% 11 1 0 09c1843f88a5c56e052642e49b031e83
+
+% 13 1 0 19d6714a9cf116f80277c84a2bd6c127
+
+% 0 1 0 0f08007279d034c00df4ae8d4888e4cc
+
+% 0 1 0 1ac3ef9008e1641919344d2c812a3a18
+
+% 0 1 0 1c6ad46b0738cd4f0fc3a2774937cf47
+
+% 0 1 0 0c633f659c8c80690c54d1d3ff0576b8
+
+% 0 1 0 0fc979cf4bd5f85d00f612894da27941
+
+% 1 1 0 12fd6b1e05d0e08112b66000dccb87df
+
+@ 0 9 0 1cdefffde9c408fc14ad462b16ddd6c9
++     entry .unsafe   按名称表示的标签，不经检查
++     entry .parse   按名称表示的标签，按照 git 的引用规则检查
++         对 git 会拒绝的名称抛出 `Git.RefError`。
++     entry .decoder   通过 `.parse` 从文本读取标签
++         一个 `Git.Tag is Decodable in Text`，因此在作用域内有 `Tactic[Git.RefError]` 的地方，`t"v1".as[Git.Tag]` 可用。
++     entry .showable   标签显示为其名称
++     entry .inspectable   标签检视为 `Tag(v1.0)`
++     entry .Target   标签名所指向的对象：直接指向一个提交，或指向一个再指向提交的附注
+
+% 1 1 0 00519abfa774ca3b0294185dbd1e83cb
+
+@ 0 6 0 1f0b566061bf641c1cff9d4ce57e7fb0
++           `Lightweight(commit)` 是指明一个提交的标签 ref；`Annotated(annotation, commit)` 指明一个标签对象，后者自己的目标是 `commit`。
++           无论哪种情况，`#peeled` 都是该提交。
++           `Git.Repo.Handle` 的 `tag` 读取一个目标，而 `tags()` 列出已剥离到其提交的标签。
++       entry #peeled   标签最终指明的提交
++     entry .Annotation   附注标签对象的内容
+
+% 1 1 0 199de9ba62c823de06a1cbed0510a97f
+
+@ 0 12 0 0f8d8a0ff3cfcb9e0f5b7af2a737158f
++           `annotationAt(hash)` 读回的内容：被标记的对象、其种类、标签的名称、打标签的人和时间（在没有 tagger 行的标签中不存在）、消息，以及标签已签名时的 ASCII 铠装签名块。
++       entry #target   被标记对象的哈希
++       entry #kind   被标记对象的种类，通常为 `Commit`
++       entry #name   标签的名称
++       entry #tagger   创建标签的人和时间（如果有记录）
++       entry #message   标签的消息，不含 git 的结尾换行符
++       entry #signature   铠装签名块（如果标签已签名）
++     entry #text   标签的名称
++     entry #ref   标签的完整引用 `refs/tags/<name>`
++   entry .Branch   按名称表示的分支，在类型上区别于标签或哈希
+
+% 1 1 0 05e30a46a9a677a41d1511fe7f5c6ae0
+
+@ 0 6 0 021f5b976f9e4d1c192a7163b6461405
++         `Git.Branch(t"main")` 是一个分支名；它是一个 `Git.Revision`，因此在期望修订版本的任何地方都能被解析，而 `#ref` 是它的完整路径 `refs/heads/main`。
++         `.parse` 按照 git 的规则检查名称；case class 构造器不检查，`.unsafe` 则明确表明这一点。
++         分支在工作树上用 `switch(branch, head, create = true)` 创建，或在仓库上用 `makeBranch(branch, at)` 创建，用 `branches()` 列出，并依据对其末端的 `Stale` 读数删除或重命名。
+
+% 2 1 0 1c87257d207308b918128dbc047cc878
+
+% 3 1 0 18cadaf1a6e622170cecdd7f617d9ea8
+
+% 4 1 0 1cfe3f0e1214fc8b014bab0b3e43b420
+
+% 0 1 0 127aafa802159087104c7301c36eab24
+
+% 0 1 0 00f19164a5ecc1c205d3c4a699c7790f
+
+% 0 1 0 19e5d4ca4e78aaf310c5b75368a7dd55
+
+% 1 1 0 1dfd1139a0c654f8176a1ad7b6c28987
+
+@ 0 11 0 0037901b5eec8e1c08163a80a06c6c63
++     entry .unsafe   按名称表示的分支，不经检查
++     entry .parse   按名称表示的分支，按照 git 的引用规则检查
++         对 git 会拒绝的名称抛出 `Git.RefError`。
++     entry .decoder   通过 `.parse` 从文本读取分支
++         一个 `Git.Branch is Decodable in Text`，因此在作用域内有 `Tactic[Git.RefError]` 的地方，`t"main".as[Git.Branch]` 可用。
++     entry .showable   分支显示为其名称
++     entry .inspectable   分支检视为 `Branch(main)`
++     entry #text   分支的名称
++     entry #ref   分支的完整引用 `refs/heads/<name>`
++   entry .Hash   一个四十个字符的对象哈希，也是 notes 路径的根
+
+% 1 1 0 1cf70c165bb9ce5f1ead3d2a8f878d14
+
+@ 0 5 0 0daa7aab9110acf619fd541840c5c15a
++         `Git.Hash` 是一个对象的名称：四十个小写十六进制数字，`.apply` 会检查，`.unsafe` 则不检查。
++         它是一个 `Git.Revision`，同时也是 `Notes` 平面上的一个 serpentine `Root`：`hash / t"attestations"` 是一个 `NoteRef`，即在 `attestations` 命名空间中附加到该提交的 note。
++         相等性按文本判定，因此从不同地方读取的两个哈希比较时相等。
+
+% 2 1 0 0bf4bdcd6333333c0c8dc39dfb28b898
+
+% 3 1 0 1fde6f4905e3cee2193b689f1231ee10
+
+% 4 1 0 184af6e1196676db1d03f7814a8b0016
+
+% 0 1 0 14415dddefd634d60805cb2b374b76c9
+
+% 0 1 0 165f346ea9c0d9b21d4544b74f945ca7
+
+% 0 1 0 1d85e8b09197e8110f60009219132deb
+
+% 0 1 0 1ba64701a0f5a6fc1bc9a977df2c1f99
+
+% 1 1 0 190db5a03da81c5b1d5304967a15427f
+
+@ 0 15 0 09da2ef3a7cb19f40421ff7988517cab
++         对象是不可变的且按内容寻址，因此以哈希为键的读取（`commitAt`、`treeAt`、`blobAt`、`show`）是一个普通值，从不是 `Stale`。
++     entry .apply   由四十个小写十六进制数字构造的哈希，否则抛出 `Git.RefError(BadHash)`
++     entry .unsafe   由文本构造的哈希，不经检查
++     entry .zero   全零哈希，git 用它表示“没有对象”
++         对于未诞生的分支，`Git.Head#commit.or(Git.Hash.zero)` 给出的就是它；当 git 没有说明是哪个末端时，命令行后端在 `Unmerged(branch, tip)` 中报告的末端也是它。
++     entry .decoder   通过 `.apply` 从文本读取哈希
++         一个 `Git.Hash is Decodable in Text`，需要一个 `Tactic[Git.RefError]`。
++     entry .showable   哈希显示为其四十个数字
++     entry .inspectable   哈希检视为 `Hash(5c1d…)`，包含全部四十个数字
++     entry #text   四十个十六进制数字
++     entry #Plane   以哈希为根的平面：`Notes`
++     entry #Limit   notes 路径的根类型：即 `Git.Hash` 本身
++   entry .Identity   身份：一个名字和一个电子邮件地址
+
+% 1 1 0 013fce75532c823719f3c284895b5a00
+
+@ 0 9 0 1d2564b56055ac340dac8a682435fb0a
++         `Git.Identity(t"Hamlet", t"hamlet@example.com")` 是提交的作者行和提交者行所携带的 `user.name` 和 `user.email` 二元组。
++         提交的提交者总是从有效配置中读取（如果任一键未设置，则抛出 `NoSuchConfig`）；除非 `commit(…, author = identity)` 另有指定，作者与提交者相同，标签的 tagger 也是如此。
++     entry #name   此人的名字
++     entry #email   此人的电子邮件地址
++     entry #text   git 所写的身份形式：`name <email>`
++   entry .Timestamp   git 自己的时间戳：自纪元以来的秒数和以分钟计的 UTC 偏移
+
+% 1 1 0 1967ad31274506651eb60cbf48b4ce3e
+
+@ 0 11 0 0f2c369bf8781eef157a44c365b40133
++         与任何日历类型分开保存，从而它在读取和写入的对象中能逐字节地往返：`Git.Timestamp(1700000000, 90).text` 是 `1700000000 +0130`。
++         `.now` 读取挂钟时间，在 JVM 上带有本地偏移，在 javalib 没有 `java.time` 的 Scala Native 上则为 `+0000`。
++     entry .now   当前时间，带有本地 UTC 偏移（在 Scala Native 上总是 `+0000`）
++     entry .parse   由其两个字段的文本构造的时间戳，任一字段格式错误时为 `Unset`
++     entry #seconds   自 Unix 纪元以来的秒数
++     entry #offsetMinutes   以分钟计的 UTC 偏移，格林尼治以西为负
++     entry #offset   git 所写的偏移形式：`+0130`、`-0500`
++     entry #text   git 所写的时间戳形式：`1700000000 +0130`
++   entry .Signature   一个 `author`、`committer` 或 `tagger` 行：身份和时间
+
+% 1 1 0 09f0183325fb911811ec4c49effecef7
+
+@ 0 8 0 179162339fd1944a082e3383fb6affa2
++         一个 `Git.Identity` 加上一个 `Git.Timestamp`，正如 `Commit#author`、`Commit#committer` 和 `Git.Tag.Annotation#tagger` 所携带的那样。
++         不要与密码学签名混淆，后者是 `Git.Signer` 的职责。
++     entry .parse   由头部行 `Hamlet <hamlet@example.com> 1700000000 +0100` 构造的签名，或 `Unset`
++     entry #identity   身份
++     entry #timestamp   时间
++     entry #text   git 所写的行形式：`name <email> seconds offset`
++   entry .Object   从数据库读取的 git 对象：blob、tree、commit 或 tag
+
+% 1 1 0 0cd2e4dea94ad71d040f81fda3fcfa60
+
+@ 0 5 0 0160d2b8b1287d3b0eef812b212fa34e
++         `Git.Repo.Handle` 上的 `show(hash)` 将任何对象读取为 `Git.Object`：`Blob(data)`、`Tree(entries)`、`Commit(commit)` 或 `Tag(annotation)`，由 `#kind` 指明是哪一种。
++         类型化读取器 `blobAt`、`treeAt`、`commitAt` 和 `annotationAt` 各读取一种，遇到其他种类时抛出 `NoSuchObject`。
++         对象命名空间还包含 `.Kind`，即 git 所命名的四种种类，以及 `.Tree`，即 tree 的模式和条目。
+
+% 2 1 0 0cdfeea73b9b11b21113fdfd0a1a4559
+
+% 3 1 0 1efee362560c089307243ab8bb0c790e
+
+% 4 1 0 0eaba1c7c6f508a001b49b6936673450
+
+% 5 1 0 10b7ec44a54bbbda0615e2de3e0b50ed
+
+% 6 1 0 137934f6cf345958022710b96aef47b0
+
+% 7 1 0 0b16ad2bcbe32df309a47df67f3b99d4
+
+% 8 1 0 195b14b66673ee850f558241b0094c88
+
+% 9 1 0 0e99edc5461705220e04327e23985c30
+
+% 11 1 0 046f3fba9628e8001ca8121fa0a433f7
+
+% 13 1 0 1434efa117a79f8b1df7d159dc204d5f
+
+% 1 1 0 0d851d6337f38e4012af841bf4ae37fe
+
+% 0 1 0 0edb4ec290b43ebb1d80e14f632fbcf1
+
+% 0 1 0 038e24ee19c37ccd07d037ce6241441a
+
+% 0 1 0 0557337489fc969a0ddec7cea1c1c70c
+
+% 1 1 0 11d4bc71b27c77d606baae4e8fc7145b
+
+@ 0 1 0 0278b423a9f7655a1b8bffb173da2816
++     entry .Kind   对象的四种种类，按 git 的命名：`blob`、`tree`、`commit`、`tag`
+
+% 1 1 0 0d7959e5b9b2f3e5063369888bb9d693
+
+@ 0 5 0 02ecd29b689e6368135279b2570faf8e
++           `Blob`、`Tree`、`Commit` 和 `Tag`；`.parse` 从 git 的小写名称读取一种，`#text` 将其写回。
++           `writeObject(kind, data)` 接受一种来存储原始内容。
++       entry .parse   由 `blob`、`tree`、`commit` 或 `tag` 构造的种类；其他任何文本为 `Unset`
++       entry #text   git 所命名的种类
++     entry .Tree   tree 对象的模式和条目
+
+% 1 1 0 00075a8c835e5145072e08e91140b4a5
+
+@ 0 3 0 1819d7e9ea7a34a21c30080d1b009472
++           tree 是一个 `.Entry` 列表，每个条目由一个 `.Mode`、一个名称和它所指明对象的哈希组成。
++           `treeAt(hash)` 读取一个 tree。
++       entry .Mode   tree 条目的模式：普通、可执行、符号链接、gitlink 或目录
+
+% 1 1 0 0e778c08e38abb93093fbcd6d558ab31
+
+@ 0 7 0 1df9d92ae1fdefc71d7fe5d79ec0430c
++             `Regular`（`100644`）、`Executable`（`100755`）、`Symlink`（`120000`）、`Gitlink`（`160000`，子模块的提交）和 `Directory`（`40000`，子树）。
++             `.parse` 读取 git 所写的八进制文本，将 `100664` 视为普通文件，将 `040000` 视为目录；`#octal` 是规范的写法。
++         entry .parse   由八进制文本构造的模式，git 不会写出的模式为 `Unset`
++         entry #octal   git 在 tree 中所写的模式
++       entry .Entry   tree 的一个条目：其模式、名称以及它所指明对象的哈希
+
+% 1 1 0 18c4fc2d87db34e615961c46a5587d2a
+
+@ 0 8 0 065cbc886b21011a1f4afff3dac62622
++             `#kind` 是该哈希所指明的对象种类，由模式决定：`Directory` 指明一个 `Tree`，`Gitlink` 指明一个 `Commit`，其他任何模式指明一个 `Blob`。
++         entry #mode   条目的模式
++         entry #name   条目在 tree 中的名称
++         entry #hash   条目所指明对象的哈希
++         entry #kind   条目所指明对象的种类，由其模式推断
++     entry #kind   这是哪一种对象
++   entry .Head   HEAD 所在之处：附着于某个分支，或分离于某个提交
+
+% 1 1 0 1e192343aa6c5c351246876b0b002e68
+
+@ 0 5 0 08f6ef57cf4ef990047c236b0c320d86
++         `Attached(branch, tip)` 表示 HEAD 位于某个分支上，在未诞生的分支（尚未进行首次提交的新仓库）上其 `tip` 为 `Unset`；`Detached(at)` 表示 HEAD 位于某个提交上。
++         `head()` 将其读取为 `Stale[Git.Head]`，每个移动 HEAD 的写入（`commit`、`switch`、`checkout`、`reset`、`merge`、`rebase`、…）都依赖于这个读数。
+
+% 2 1 0 0fee1783d388056a0ccdf73815b2b7e2
+
+% 3 1 0 1a4ce3c9140f6ae60f6199c4f8669018
+
+% 4 1 0 1aa6cb409e327ac40ad443fad23c5fe5
+
+% 5 1 0 182827b70a5685760d67373adbdfe962
+
+% 6 1 0 073af6008a34f01913fe36f8a9b2483a
+
+% 7 1 0 08c08e28e5f5bf5a0eb698afa2fa4de1
+
+% 8 1 0 1c6be6a6a6f973de135a2ea37c4d7bb8
+
+% 9 1 0 1e6c1cc81d438a2d1590c30fcedfb765
+
+% 11 1 0 1845067ba3e37c7f184935c2e211fa80
+
+% 13 1 0 02634e197949aee212e06f2729c81644
+
+% 0 1 0 020f4d222a9143ae1430aeed8f342427
+
+% 0 1 0 08b3bb19e278b4990672ceba61974ca7
+
+% 0 1 0 0dd5d09d7ee3dbbb18f124af09d215bf
+
+% 1 1 0 118416d921dbe12114942c6c1b6d4778
+
+@ 0 3 0 1a63991f8b4ac1c60f6129ead1fdd88d
++     entry #commit   HEAD 所在的提交，在未诞生的分支上为 `Unset`
++     entry #current   检出的分支，HEAD 分离时为 `Unset`
++   entry .Status   一个路径的状态，以 `git status` 的一个字母表示
+
+% 1 1 0 0edeaf41a109b15518939ac6bd079a8e
+
+@ 0 5 0 004db05cbb6bed401cfa16a6b9169dbd
++         `Updated`（`M`）、`Added`（`A`）、`Deleted`（`D`）、`Renamed`（`R`）、`Copied`（`C`）、`Unmerged`（`U`）、`Untracked`（`?`）、`Ignored`（`!`）和 `TypeChanged`（`T`）。
++         `Git.PathStatus` 为索引和工作文件各携带一个。
++     entry .parse   由 `git status --porcelain` 的字母构造的状态，空格或其他任何字符为 `Unset`
++   entry .PathStatus   `status` 的一行：索引和工作文件的状态，以及路径
+
+% 1 1 0 162fdfc481272d2f00a27217c89faf14
+
+@ 0 10 0 134e0c1a04070e021f9a40fee709e7aa
++         `Git.Worktree.Handle` 上的 `status()` 所列出的内容，每个路径一行：索引相对于 HEAD 的状态、工作文件相对于索引的状态（未改变时各为 `Unset`）、路径，以及对于重命名或复制而言它的来源。
++         这些路径位于工作树句柄的平面上，因此它们的生命期不能超过该句柄，并且可以通过它读写。
++     entry #index   索引相对于 HEAD 的状态（如果有变化）
++     entry #worktree   工作文件相对于索引的状态（如果有变化）
++     entry #path   路径，位于工作树句柄的平面上
++     entry #origin   重命名或复制的路径的来源
++   entry .Activity   克隆、获取、推送或拉取的进度，在执行者和观察者之间共享
+
+% 1 1 0 161c05929559353317d7ae3d9c13ced5
+
+@ 0 7 0 0a1b61170fedbdd012d2011b3031d0ab
++         长时间运行的远程操作会阻塞直到完成，并通过一个 `Activity` 报告其进度：几个原子单元，即阶段、是否由远程端报告该阶段、已完成多少以及总共多少、已传输的字节数，每个都以不可分割的方式更新，因此其他线程不会看到半完成的状态。
++         更新不分配内存：每当一行边带数据到达或一个对象被处理，后端就递增计数器。
++         用户界面以自己的节奏轮询 `#report`；响应式界面则排空 `#updates`，这是一个只有在被请求时才存在的 `Relay`，因此只轮询的调用者无需为它付出任何代价。
+
+@ 0 2 0 075930c530c38be106e6e36aa6739553
++         这些操作接受 `activity: Optional[Activity^] = Unset`，没有给出时会创建一个私有的。
++         想要观察的调用者自己创建一个并传入：
+
+% 2 1 0 1904b27810ae75b90ddc4818ca975c73
+
+% 3 1 0 16c2641b6b5816621abdb8a825a8d5bf
+
+% 4 1 0 05bdff54fcae8fc80acf1a137eec3787
+
+% 5 1 0 127fffc42f8a41d8147b2975d6fc534d
+
+% 6 1 0 1fc0f59616a25f5b099833324c70f1be
+
+% 7 1 0 19b5c3f94c6778f6170f04948068026a
+
+% 8 1 0 1a24d717e7ea1f91199352d0d42e8ad6
+
+% 9 1 0 186f5f3f2015167c02928e348f7e5116
+
+% 10 1 0 1767fde085ba13d202c100047d2bf493
+
+% 11 1 0 011a1c97c145ffbd10b560b7f6560094
+
+% 12 1 0 0268f216bbcb5fc50ce4e21cf15d1fe7
+
+% 0 1 0 1f98cbc7a3762ff907317e8e4d607571
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 1df60d93a8a4f5a7099b4ba309ce3cad
+
+% 2 1 0 0de383407d9eb8001d7d22cfaff539e5
+
+% 0 1 0 19fa52058f7e28c81f69aea3104f5346
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 0dc6a618e235447b174bdecee18d2416
+
+% 0 1 0 1872730b807a6a01091e3325be01f328
+
+% 0 1 0 101d32302dc085e4119cd06b8af7bfe6
+
+% 0 1 0 1b6a7c6821420e9c0fda38371e37d010
+
+% 0 1 0 1448261cbfdba35209e925c397a12c9a
+
+% 0 1 0 07717c8d69c00f5012eacf682b3c2fa9
+
+% 1 1 0 027ee89cf4001554093c1b24cb1e3854
+
+@ 0 3 0 15e3bec6f93d986c168b256a15614ae4
++         `Activity` 是 `Durable` 的：它可以比创建它的作用域活得更久，因为观察线程在操作返回后仍持有它。
++     entry .Phase   传输正在进行的阶段
+
+% 1 1 0 05060183829aefc20dc9e9444ab70c2c
+
+@ 0 5 0 1d2758b98def8a0909297ebbcab9cce4
++           先是 `Idle`，然后是 git 自己的各阶段：`Enumerating`、`Counting`、`Compressing`、`Writing`、`Receiving`、`Resolving`、`Unpacking`，最后是 `Checkout` 和 `Done`。
++           `.parse` 从 git 进度行的标题（`Receiving objects`）读取一个阶段。
++       entry .parse   由 git 进度标题 `Receiving objects` 构造的阶段；未知标题为 `Unset`
++     entry .Report   对一项活动的一次观察：纯数据，一经读取即已过时
+
+% 1 1 0 01da77f077c89e821c738613607d84cf
+
+@ 0 23 0 0d1e9070ae1c66bb0d9025718868df77
++           阶段、是否由远程端报告该阶段（`remote:` 行）、已完成多少项、在已知时总共有多少项，以及到目前为止已传输的字节数。
++           `#complete` 是已完成的比例，总数未知时为 `Unset`。
++       entry #phase   正在进行的阶段
++       entry #remote   是否由传输的另一端进行报告
++       entry #done   该阶段已完成的对象或文件数
++       entry #total   总数（一旦已知）
++       entry #bytes   到目前为止已传输的字节数
++       entry #complete   以比例表示的 `done/total`，空阶段为 `1.0`，总数未知时为 `Unset`
++     entry #report   当前状态，作为 `Stale[Git.Activity.Report]`
++         每个单元读取一次；结果是某一时刻的一致快照，返回时就已经过时。
++     entry #complete   操作是否已完成
++     entry #updates   报告的 `Relay`，每次变化一个，在活动结束时终止
++         在第一次请求时创建，此后持续接收数据；从不请求的调用者无需付出任何代价。
++         请在另一个线程中排空它的流。
++     entry #begin   开始一个阶段，重置计数；由后端调用
++     entry #measure   设置该阶段的总数；由后端调用
++     entry #advance   增加该阶段的已完成计数；由后端调用
++     entry #progress   同时设置已完成计数和总数；由后端调用
++     entry #transferred   增加已传输的字节数；由后端调用
++     entry #finish   将活动标记为已完成并停止 `#updates` 中继；由后端调用
++   entry .Config   git 配置：键、范围、来源，以及读写它们的句柄
+
+% 1 1 0 1b750e3a419a32901c12245cd4036a2a
+
+@ 0 6 0 11ec53ce97199d3018094ca8006cd0f0
++         配置通过一个借出的 `Git.Config.Handle` 读写，并按值的编解码器确定类型：`repo.config { config ?=> config.get[Text](key) }` 读取仓库自己的文件，`repo.configure { … }` 写入它，`repo.effectiveConfig { … }` 读取 git 会参考的所有范围，而任何文件都可以按其路径以 `path.open[Git.Config](Read & Write) { config ?=> … }` 打开，例如全局的 `~/.gitconfig`。
++         键是一个 `.Key`，从 `section.name` 或 `section.subsection.name` 解析。
+
+% 2 1 0 058845846cc7adb10fae92812b4d5b9c
+
+% 3 1 0 01bdea656435882f1f23e7b61ba87842
+
+% 4 1 0 109be130e3cec3a41619c82796f039e5
+
+% 5 1 0 112ca7ce08678fe110e6ef2e93ad3046
+
+% 6 1 0 15cc4dce2895d4c8059f88324bd9427e
+
+% 7 1 0 0a9b27fe7cce855b1970f391963c56f2
+
+% 8 1 0 04ab8e82576f947b0461755f41b1499d
+
+% 9 1 0 0f53dab83655b0a71920b3e84fcc2086
+
+% 11 1 0 0628b75ecc9ef7f40273fd42974d4a47
+
+% 0 1 0 010cf579cb94b70219a9a0538bbbe877
+
+% 2 1 0 1055a5a362133bea1d391ff92d36c715
+
+% 0 1 0 14e17c15c40f054a184e0bf2c8efb33e
+
+% 0 1 0 0ea5c199c1edf72117e951f0571e55a0
+
+% 1 1 0 07089be2f6b6c0db1575f8b0dcb779b9
+
+@ 0 4 0 0f80a74c996d04a20b7437ceed6277ab
++         读取结果是 `Stale` 的，因为文件可能被另一个进程重写；对未设置的键调用 `get` 得到 `Unset`，而不是错误。
++     entry .Scope   设置所在之处：`Local`、`Worktree`、`Global` 或 `System`
++     entry .Key   配置键：其节、可选的子节和名称
+
+% 1 1 0 0a43e175afeef77801f423dd785d04c3
+
+@ 0 11 0 0a84d7ece2a2560a1541ab9439463ee9
++           `Git.Config.Key(t"remote", t"origin", t"url")` 就是 `remote.origin.url`；`.parse` 读取以点分隔的形式，将节和名称转为小写（子节区分大小写，与 git 一致），并对没有节或没有名称的文本抛出 `Git.Error(InvalidConfig)`。
++       entry .parse   由 `section.name` 或 `section.subsection.name` 构造的键，否则抛出 `Git.Error(InvalidConfig)`
++       entry .showable   键显示为其以点分隔的文本
++       entry #section   节，小写
++       entry #subsection   子节（如果有）
++       entry #name   名称，小写
++       entry #text   以点分隔形式表示的键
++     entry .Source   句柄读写的配置文件
+
+% 1 1 0 0ea20233f034649c18c2bbd744eaf96c
+
+@ 0 5 0 0aec286193108c95109aafa356770ace
++           `Repository(gitDir, scope)` 是仓库自己在某个范围内的文件；`File(path)` 是一个具名文件，例如 `~/.gitconfig`；`Effective(gitDir)` 读取 git 对该仓库会参考的所有范围，不能写入。
++           句柄的 `#source` 是其中之一；`Git.Backend` 的 `configRead`、`configWrite` 和 `configUnset` 接受一个来源。
++     entry .Handle   借出的配置句柄：`get`、`all` 和 `list` 用于读取，`set`、`add` 和 `unset` 用于写入
+
+% 1 1 0 1c03a81cfe3c96bb0921e71a463f6f86
+
+@ 0 16 0 19b81a39b161bf420dbdecee712b2049
++           由仓库句柄上的 `config`、`configure` 或 `effectiveConfig`，或者通过将文件作为 `Git.Config` 打开，为一个块借出。
++           它是一个独占的能力，因此不能保留到块之外。
++           读取需要 `Grant.Read`，写入需要 `Grant.Write`，这些授权由打开句柄时的模式授予；通过只读句柄写入无法编译。
++       entry .get   某个键生效的值，经过解码，作为 `Stale[Optional[value]]`
++           需要一个 `value is Decodable in Text`。
++           git 从系统到本地依次列出各范围，最后的设置生效，这就是它返回的值；未设置的键为 `Unset`。
++       entry .all   为多值键设置的每个值，经过解码，作为 `Stale[List[value]]`
++       entry .list   每个键及其原始值，作为 `Stale[List[(Git.Config.Key, Text)]]`
++       entry .set   将键设置为某个经过编码的值，替换它原有的任何值
++           需要一个 `value is Encodable in Text` 和 `Grant.Write`。
++       entry .add   为键添加一个值，保留它原有的值
++       entry .unset   移除键的值，或者在 `all = true` 时移除多值键的每个值
++       entry #source   该句柄读写的文件或范围
++     entry .Openable   路径如何作为 `Git.Config` 打开：该文件上的一个借出句柄
+
+% 1 1 0 16916f4d51139a581492096f4701e7dd
+
+@ 0 12 0 09623aa07a84b5550d0c56fe6abb9dcb
++           `path.open[Git.Config](mode) { config ?=> … }` 背后的 `aperture.Openable`：句柄的来源是 `Git.Config.Source.File(path)`。
++           构建它时需要一个 `Git.Backend^` 和一个 `Tactic[Git.Error]`，由 `.openable` 从作用域中提供。
++       entry #open   打开路径，将带有该模式授权的句柄借给块
++       entry #Self   被打开的路径类型
++       entry #Form   打开的形式：`Git.Config`
++       entry #Operand   标志类型：无
++       entry #Result   借出的内容：一个 `Git.Config.Handle`
++     entry .openable   使任何 `Path on Linux` 都能作为 `Git.Config` 打开的 given
++         位于隐式作用域中；它需要一个 `Git.Backend^`（来自 `gitBackends`）和一个 `Tactic[Git.Error]`。
++   entry .Operation   一个中途停止、等待冲突解决的操作
+
+% 1 1 0 1e76b6da74225b050507210195695379
+
+@ 0 8 0 14186e62a8b953a91023d54b0d6bf26b
++         `.git` 中记录的关于已停止的合并、变基、拣选或还原，或正在进行的二分查找的信息：`Merging(merging, conflicting)`、`Rebasing(onto, originalHead, done, remaining, conflicting)`、`CherryPicking(commit, conflicting)`、`Reverting(commit, conflicting)` 和 `Bisecting`。
++         `Stopped` 结果携带其中一个，而仓库句柄上的 `operation()` 读取正在进行的那一个。
++         `#conflicts` 指明在 `continue()` 之前必须解决并添加的路径。
++     entry #conflicts   仍处于冲突中的路径，必须在操作继续之前解决
++   entry .Sequence   拣选、还原、变基或应用 stash 的结果，以及驱动它们的动作
+
+% 1 1 0 10238efcaa87d7fb00f48888b360e1f2
+
+@ 0 5 0 0ca22e979ed66b4b17737df2fd63a2de
++         `.Outcome` 是这些操作各自返回的结果：带有新 HEAD 的 `Completed(head)`，或者遇到冲突时的 `Stopped(operation)`，后者不是错误。
++         冲突解决并添加之后，`continue()` 完成该操作，`skip()` 跳过当前提交，`abandon()` 恢复到操作开始时的状态，`quit()` 则保持树的现状；这些就是后端的 `sequence` 所接受的 `.Verb`。
+
+% 2 1 0 1a3d653efce7a3cb1ac3fad6058e81b8
+
+% 3 1 0 098a0483f1d246590a6eb075384b3bce
+
+% 4 1 0 05f935da74a63fa417e7bb04ddb72ebb
+
+% 5 1 0 0220712bf58159470762b9bf4d619943
+
+% 6 1 0 0de57ba91955b6b31f4b46080584b91e
+
+% 7 1 0 0b8cdc7cab4d92ff0fafa73ea7dd0a2b
+
+% 8 1 0 1f29c201b456fc4d0ae7931d6e60d795
+
+% 9 1 0 06dff8a1a4c1638709b1e4776d57f6ec
+
+% 11 1 0 0291949c865192a806ed1f1b593bc3f1
+
+% 13 1 0 044bd9ddbab3e85b15047f7e2733bba6
+
+% 0 1 0 1c215324fda9ca44192e59d5d44f0da5
+
+% 0 1 0 1ae558517284b3a406b6443bb239b544
+
+% 0 1 0 00943c6302209a7d073c0e72331a607b
+
+% 0 1 0 141a7012da559443175af4cd418b2dbe
+
+% 1 1 0 045ec32de399ae6f02544dbc357c3149
+
+@ 0 3 0 0acecc73d8737de6119ecadd5b27f5ed
++     entry .Outcome   `Completed(head)`，或遇到冲突时的 `Stopped(operation)`
++     entry .Verb   `Continue`、`Skip`、`Abort` 或 `Quit`：驱动进行中操作的方式
++   entry .Merge   合并或拉取的结果
+
+% 1 1 0 1e84b040dd495cf5187e0db379db357b
+
+@ 0 13 0 13585229c770e4231c321ca9b04c27ca
++         当分支只是前进时，`.Outcome` 为 `FastForwarded(head)`；创建了合并提交时为 `Merged(head)`；无事可做时为 `UpToDate`；遇到冲突时为 `Stopped(operation)`，这不是错误：解决这些路径，添加它们，然后 `continue()`。
++     entry .Outcome   `FastForwarded(head)`、`Merged(head)`、`UpToDate` 或 `Stopped(operation)`
++   entry .Rebase   变基所接受的选项
++     entry .Option   `Autosquash`、`KeepEmpty`、`NoRenames`、`Signoff` 或 `Autostash`
++   entry .Pull   拉取如何整合它所获取的内容
++     entry .Mode   `Merge`、`Rebase` 或 `FastForwardOnly`
++         `Merge` 以 `FastForward.Auto` 的方式合并 `FETCH_HEAD`；`FastForwardOnly` 拒绝快进以外的任何操作；`Rebase` 将分支变基到它之上，并将完成的变基报告为 `Merged`。
++   entry .Push   推送的强制方针，以及每个 ref 的结果
+
+% 1 1 0 18f707143f09b7d615fbb61a589c5128
+
+@ 0 4 0 0fde217d475a36bd0d94305cdac2ecb9
++         `.Force` 说明是否允许非快进更新：`Never`、`Always`，或 `Lease(expectations)`，即 git 的 `--force-with-lease`：远程端的比较并交换，携带推送所依赖的、由 `remoteRefs` 给出的远程 ref 的 `Stale` 读数。
++         `.Outcome` 是每个被推送的 ref 的结果。
+
+% 2 1 0 0ea822c8bc6ab8cc14755c89ddc2ec59
+
+% 3 1 0 05b2698c51d46c4408d15e94c7a5f392
+
+% 4 1 0 09ee066e0e6cf76f1d7fc950182a2517
+
+% 5 1 0 1aa7964fd1f902fa0c1d9311d2f3a141
+
+% 6 1 0 11a8039f7167ef2d0a8a2a6ad6fe3018
+
+% 7 1 0 10c7d6963c94f00316f76346975daa76
+
+% 8 1 0 1abdcc5ab909b99a16680bae9cd3962b
+
+% 9 1 0 01ef19c7d8443315167899ee50c4c9d1
+
+% 10 1 0 095b692582dc742b0904853772672b23
+
+% 11 1 0 03ccd7ece10c801b148d8fb33412647d
+
+% 12 1 0 0588b415512fd85d1b250d1359387d90
+
+% 4 1 0 0a13a4eeeb3c27241dfe6efd345c0ec2
+
+% 0 1 0 1f74c685849f332819c760a6e93b651b
+
+% 2 1 0 04293a82910013df173d3143be1e9d0b
+
+% 0 1 0 01fb63c96e95303f0963c9748105adc0
+
+% 0 1 0 05820cef001dda181c6e896c7c60823d
+
+% 0 1 0 0172fcadcec9f90c0e6cf604eeb43ea2
+
+% 1 1 0 0ed72ec189518f9b17a3234c31794269
+
+@ 0 4 0 0e6be77947929eaa186552c877980065
++     entry .Force   `Never`、`Always`，或用于 `--force-with-lease` 的 `Lease(expectations)`
++     entry .Outcome   `Updated(from, to, forced)`、`Created(to)`、`Deleted(from)`、`UpToDate` 或 `Rejected(reason)`
++         租约失败按 ref 报告为 `Rejected`，而不是被抛出。
++   entry .Stash   stash 的条目
+
+% 1 1 0 15aafd4cd694050c1631cb46b2d1b557
+
+@ 0 8 0 1342d7e539ac1e2f0c2e3a09292377c8
++         工作树句柄上的 `stashes()` 将它们列为 `Stale[List[Git.Stash.Entry]]`，最新的在前；`popStash`、`applyStash` 和 `dropStash` 接受一个 `Stale[Git.Stash.Entry]`，如果该条目在列出后已消失或改变，则抛出 `NoSuchStash`。
++     entry .Entry   一个 stash 条目：其索引、提交和消息
++       entry #index   条目的位置，最新的为 `0`
++       entry #commit   保存被暂存状态的提交
++       entry #message   条目的消息
++   entry .Signer   生成提交或标签所携带的签名
+
+% 1 1 0 03dc66d1d2aa101f006f74052286d1ba
+
+@ 0 8 0 0fcaeaefd349097b07309c7559cfe8eb
++         `Git.Signer` 对提交或标签的载荷生成一个 ASCII 铠装签名，句柄将其作为提交的 `gpgsig` 头部或标签的尾随块插入。
++         将它作为 `commit(…, signer = …)`、`amend(…, signer = …)` 或 `annotatedTag(…, signer = …)` 传入。
++         `SshKeygen.Signer(key)` 通过 `ssh-keygen -Y sign` 签名，`Gpg.Signer()` 通过 `gpg` 签名；签名从不离开进程，因为对象是在这里组装的，而不是由 `git commit` 组装。
++     entry #sign   对载荷的铠装签名，无法生成时抛出 `Git.Error(SigningFailed)`
++   entry .Verifier   检查提交或标签所携带的签名
+
+% 1 1 0 1b282d7929fe22ce091af274e424a280
+
+@ 0 10 0 1501d716071e3bf4145f3716b04bb0e4
++         作用域内的 `Git.Verifier` 就是 `verifyCommit` 和 `verifyTag` 所使用的。
++         `SshKeygen.Verifier(allowedSigners)` 对照允许签名者文件进行检查，`Gpg.Verifier()` 则对照密钥环进行检查。
++     entry #verify   对载荷签名的 `Git.Verification`
++   entry .Verification   `Good(signer)`、`Bad(detail)` 或 `Unknown(detail)`
++       验证提交或标签的结果：`Good` 指明签名者的主体或用户 ID；`Bad` 表示签名不匹配；`Unknown` 表示无法检查，即对象未签名、标签不是附注标签，或签名者不在允许的签名者之列。
++   entry .Backend   仓库句柄所驱动的实现：`Commandline` 或 `Native`
+
+% 1 1 0 144f05abff2888f4049f0ccc7b343a60
+
+@ 0 7 0 0328df2b0455c1681cb972dc1d457b22
++         `Git.Repo.Handle` 或 `Git.Worktree.Handle` 上的每个操作都只基于该 trait 声明的原语编写一次；两个后端以不同方式实现这些原语。
++         底层管道（ref、对象、索引、配置、notes）足够简单，因此比较并交换、对象组装和签名都位于句柄中；而算法性的动作（`merge`、`rebase`、`cherryPick`、`stash`、传输层）则由各个后端自行实现。
++         `Git.Backend^` 是一个能力：通过按名称导入某个 `gitBackends` given 来选择，每个句柄都保留打开它时所用的那一个。
+
+% 2 1 0 11526db9268fdeed04136202db50f0bb
+
+% 3 1 0 1625748d1b17f2dd1ac3933da8a62420
+
+% 4 1 0 0d3ba277be9cf183156ae8db0d218c0f
+
+% 5 1 0 0cda0b71aa1212251fa5b43dced8209d
+
+% 6 1 0 0341e7223d7e578215a4079470fc75c8
+
+% 7 1 0 10c0761499afc60d141ba6737d74720a
+
+% 8 1 0 1c6335f12e80878d1fe70877c2f4b591
+
+% 0 1 0 16622465ad0f8220164a15c25a426286
+
+% 1 1 0 151e5770cecf80a901a7a231eeb5787e
+
+@ 0 3 0 14200372d85b2e7103c786f3a1bd4fc1
++         这些成员是句柄所调用的底层管道；程序通过句柄自己的操作而不是这些成员来驱动仓库。
++         后端对它未实现的原语抛出 `Unsupported(operation)`。
+
+% 0 1 0 1083fdb0ea7b40fa14b2733606335f78
+
+% 0 1 0 1aa26b3c22e75d261a791854c996ecce
+
+% 0 1 0 1f8be20d5e212e921783d69560fd6f90
+
+@ 0 1 0 05505dde2ebb0d4c1b4ee06923917434
++     entry .Location   找到仓库的位置：其 git 目录、共享的 git 目录及其工作树
+
+% 1 1 0 0ce2c5459c09ba851cbe8a3e0d8fbdef
+
+@ 0 7 0 1fe1f4cb78b83757045ff5119a7cfca9
++           `#locate` 返回的内容。
++           除非该路径是一个链接工作树（其自身的 git 目录指明共享的那个），否则 `#commonDir` 与 `#gitDir` 相同；对于裸仓库，`#worktree` 为 `Unset`。
++       entry #gitDir   仓库自己的 git 目录
++       entry #commonDir   所有工作树共享的 git 目录，对象和 ref 位于其中
++       entry #worktree   工作树的根（如果仓库有工作树）
++     entry .Expectation   更新得以进行时 ref 必须持有的内容：任意内容、无，或一个哈希
+
+% 1 1 0 029a324fa51db5cc17a1882577efd2a3
+
+@ 0 90 0 1c1deda6ac9e0d1705eaeb4e1aee2bfe
++           `Unconditional` 覆盖 ref 所持有的任何内容；`Absent` 要求 ref 不存在（创建分支或标签就是这样）；`Exactly(hash)` 要求它持有该哈希。
++           `.apply` 将一个 `Optional[Git.Hash]`（即 `Stale` 读数的值）提升为 `Absent` 或 `Exactly`，每个比较并交换都是这样表达的。
++           它是一个枚举，而不是 `Optional[Optional[Git.Hash]]`，后者会塌缩。
++       entry .apply   对 `Unset` 为 `Absent`，否则为 `Exactly(hash)`
++       entry #expected   所要求的哈希，或 `Unset`
++     entry .Target   ref 的内容：`Direct(hash)` 或 `Symbolic(ref)`
++     entry .StatusLine   状态的一行，其路径为文本，尚未类型化到句柄的平面上
++       entry #index   索引相对于 HEAD 的状态（如果有变化）
++       entry #worktree   工作文件相对于索引的状态（如果有变化）
++       entry #path   相对于工作树的路径
++       entry #origin   重命名或复制的路径的来源
++     entry .NoteEdit   对 notes 树的一次编辑：`Add`、`Append`、`Remove` 或 `Copy`
++         `#editNotes` 所应用的内容：`Add(target, body, force)`、`Append(target, body)`、`Remove(target, ignoreMissing)` 或 `Copy(source, target, force)`。
++     entry .WorktreeEntry   后端所列出的一个链接工作树；`Git.Worktree.Entry` 是句柄的形式
++       entry #path   工作树的根
++       entry #head   检出的提交（如果有）
++       entry #branch   检出的分支（如果是附着状态）
++       entry #bare   该条目是否就是裸仓库本身
++       entry #locked   锁定的原因（如果工作树被锁定）
++       entry #prunable   工作树可被清理的原因（如果可以）
++     entry #locate   包含某个路径的仓库所在之处；没有则为 `Unset`
++     entry #init   在某个路径上创建一个仓库，带有初始分支，可以是裸仓库，也可以不是
++     entry #clone   将一个来源（路径或 URL）克隆到某个路径，通过一个活动报告进度
++     entry #head   某个 git 目录中 HEAD 所在之处
++     entry #readRef   ref 的内容，直接的或符号的；不存在时为 `Unset`
++     entry #listRefs   某个前缀下的每个 ref 及其哈希
++     entry #peel   标签对象最终指明的提交
++     entry #updateRef   移动或删除一个 ref，依赖于一个 `Expectation`，并带有一条 reflog 消息
++         每个移动 ref 的操作所依托的比较并交换：当 ref 不持有预期内容时抛出 `Moved`，当另一个进程持有其锁时抛出 `Locked`。
++     entry #updateSymbolicRef   将诸如 `HEAD` 的符号 ref 指向另一个 ref
++     entry #resolve   修订版本表达式所指明的哈希，或 `Unset`
++     entry #revList   从某个修订版本可达的提交，最新的在前，可选择按范围界定、限制数量或按路径过滤
++     entry #reflog   某个 ref 或 `HEAD` 的 reflog
++     entry #mergeBase   两个提交的最佳公共祖先（如果有）
++     entry #isAncestor   一个提交是否可从另一个提交到达
++     entry #readObject   对象的种类和原始内容，或 `Unset`
++     entry #readObjects   一次读取多个对象的哈希、种类和内容
++     entry #writeObject   将原始内容存储为某种种类的对象，返回其哈希
++     entry #diffTree   两棵树之间的文件差异
++     entry #status   索引和工作文件的状态，作为状态行
++     entry #add   暂存路径，或用 `all` 暂存一切
++     entry #remove   从索引中移除路径，除非 `cached`，否则也从工作树中移除
++     entry #move   在索引和工作树中重命名一个路径
++     entry #restore   从某个来源恢复索引或工作树中的路径
++     entry #clean   删除未跟踪的文件，返回被移除的路径
++     entry #writeTree   将索引写为 tree 对象，返回其哈希
++     entry #readTree   按照 `ResetMode` 的指示，使索引（以及在 `Hard` 时使工作文件）与 HEAD 一致
++     entry #diffWorktree   工作文件或索引相对于 HEAD 或某个修订版本的差异
++     entry #tracked   索引跟踪的每个路径
++     entry #conflicts   每个处于冲突中的路径
++     entry #checkout   检出一个修订版本，使 HEAD 分离
++     entry #switch   切换到一个分支，如有要求则先创建它
++     entry #merge   在某个快进方针下将一个修订版本合并到 HEAD
++     entry #cherryPick   将提交应用到 HEAD 之上
++     entry #revert   将提交的逆操作应用到 HEAD 之上
++     entry #rebase   将 HEAD 变基到某个修订版本之上，带有选项
++     entry #sequence   继续、跳过、中止或退出正在进行的操作
++     entry #operation   正在进行的操作（如果有）
++     entry #stash   将未提交的状态保存为一个 stash 条目，返回其提交；如果没有可保存的内容，则为 `Unset`
++     entry #stashes   stash 的条目，最新的在前
++     entry #applyStash   应用一个 stash 条目，如有要求还恢复索引，并在有要求时丢弃该条目
++     entry #dropStash   删除一个 stash 条目
++     entry #readNote   某个 notes ref 中某个目标上的 note（如果有）
++     entry #listNotes   某个 notes ref 中的每个 note，作为 note blob 和目标的二元组
++     entry #editNotes   基于一个基础提交和一次编辑创建一个新的 notes 提交，不挂在任何 ref 上
++         然后句柄通过比较并交换将 notes ref 移动到它，正是这一点使两个写入者不会互相覆盖对方的 notes。
++     entry #configRead   某个配置来源的每个键和值
++     entry #configWrite   设置一个键，或为其添加一个值
++     entry #configUnset   移除键的一个值或所有值
++     entry #remoteRefs   远程仓库通告的每个 ref 及其哈希
++     entry #fetch   从远程仓库获取 refspec，返回已更新的 ref
++     entry #push   在某个强制方针下将 refspec 推送到远程仓库，返回每个 ref 的结果
++     entry #worktrees   每个链接工作树
++     entry #addWorktree   在某个路径上添加一个链接工作树，检出于某个修订版本
++     entry #removeWorktree   移除一个链接工作树
++     entry #lockWorktree   锁定一个链接工作树，并附上原因
++     entry #unlockWorktree   解锁一个链接工作树
++     entry #moveWorktree   将一个链接工作树移动到另一个路径
++     entry #pruneWorktrees   移除目录已不存在的工作树的记录，返回它们的路径
++   entry .OpenFlag   打开时可以使用的标志：`Await`
++       `Await` 会等待本 JVM 中冲突的独占句柄关闭，而不是立即失败。
++       以 `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)` 的形式传入。
++       独占性只在本 JVM 内的句柄之间仲裁，所用的登记表与 galilei 的目录句柄相同；它从不等待其他进程。
++   entry .Repo   路径作为仓库打开时的形式：其对象数据库和 ref，借出一个 `Handle`
+
+% 1 1 0 0a91e12f75c92f69014791383563e6a6
+
+@ 0 8 0 0aed979250d8c4ad1d56d6818a75e768
++         `path.open[Git.Repo](mode) { repo ?=> … }` 打开一个裸仓库、一个 `.git` 目录、一个包含 `.git` 目录的工作树，或一个链接工作树的 `.git` 文件，并将一个 `Git.Repo.Handle` 借给块。
++         模式指明授权：`Read`（默认值，用于 `open[Git.Repo]()`）、`Read & Write`，或 `Exclusive & Write`，后者拒绝本 JVM 中其他的独占句柄（配合 `Git.OpenFlag.Await` 则改为等待它们）。
++         打开时会验证那里确实有一个仓库，否则抛出 `Git.Error(NoRepository(path))`，因此句柄在被授予时总是指代一个仓库；此后发生的事情是其他进程的事，这就是为什么每个解析 ref 的读取都是 `Stale` 的。
+
+% 2 1 0 1dee447d6cfd06c717ecbe7cc5886fef
+
+% 3 1 0 0786d66e00a2929501c1cf5c832d1e9a
+
+% 4 1 0 0a826639e6c86d2213f7d2b091d54011
+
+% 5 1 0 1ce76f6720aa90ca1192f30bcd227f0b
+
+% 6 1 0 0980659a3d03053b0dd3b8a7157a6003
+
+% 7 1 0 141a499fbb2c495315c29dc8d9c4f07a
+
+% 8 1 0 17c666a2a09692dd03865a7718dd962a
+
+% 9 1 0 1af46601ff6427650a52dfd5e48b69ac
+
+% 11 1 0 06a4a5a024e3cca213780ebbfc3624dc
+
+% 0 1 0 1f462709a183eff2176407881e00995d
+
+% 1 1 0 0f932fc97d16228d10ec2456926381cd
+
+% 0 1 0 1b84da3ddf8194510c337295b1b304ef
+
+% 0 1 0 0323a90d9ccaeaa50e701ceb7bbc4e4b
+
+% 1 1 0 1a71ccd4179ec7030671c3c3e088eae6
+
+@ 0 6 0 032e8ba37c88a1300c7a16ceedf2e8fa
++         该句柄是一个独占的能力：它不能保留到块之外，由它派生的任何东西也不能。
++         每个操作都是句柄上由某个授权开启的扩展：读取位于 `Git.Repo.Handle & Granting[Grant.Read]` 上，写入位于 `… & Granting[Grant.Write]` 上，因此在未以 `Write` 打开的句柄上写入是编译错误。
++         `Git.Worktree.Handle` 是一个 `Git.Repo.Handle`，因此所有这些在工作树上同样可用。
+
+% 0 1 0 095379084b65320e16efda3fb2fea1fc
+
+% 0 1 0 01685537e926971c057b35f7a6e56aa2
+
+% 0 1 0 00dfde3eb911894f1871fc8087f2209c
+
+@ 0 1 0 1940af628834e91d048e0ebc1227d325
++     entry .Handle   借出的仓库句柄：每个仓库操作都是其上按授权开启的扩展
+
+% 1 1 0 1e691f55f2440dd91bccbfee765eed29
+
+@ 0 5 0 0d51c8e5a2bf51391a94443390bf58a1
++           解析 ref、HEAD、修订版本表达式、reflog、stash、配置、远程仓库或链接工作树的读取都返回一个 `Stale` 值：在读取的那一刻为真，此后则未必。
++           以哈希为键的读取（`.show`、`.commitAt`、`.treeAt`、`.blobAt`、`.annotationAt`、`.mergeBase`、`.isAncestor`、`.exists`）是一个普通值，因为对象是不可变的且按内容寻址。
+
+@ 0 6 0 083961d7dba2f5a51697c1e4d36f52fa
++           每个移动 ref 的写入都接受它所依赖的 `Stale` 读数，如果该 ref 不再持有它，就抛出 `Git.Error(Moved(ref, expected, actual))`：这是一次比较并交换，是防范另一个进程写入同一仓库的唯一手段。
++           创建分支或标签则依赖于其不存在，因此 `.makeBranch` 和 `.makeTag` 不接受读数，并在该名称已存在时抛出 `Moved(ref, Unset, actual)`。
+
+% 2 1 0 0da767359745e0c6141790c6fc57ac7a
+
+% 3 1 0 0a2afd2583d2148a11e025281143307e
+
+% 4 1 0 12f4e48da986897b0ca8586e43118939
+
+% 5 1 0 06484654b9494d870389af5d83a84c35
+
+% 6 1 0 18cf808d52d59d9d1091819a90fba42d
+
+% 7 1 0 11392004f43f9a5110507c20f3ecdc85
+
+% 8 1 0 08340e001a55f3130f25542007734970
+
+% 9 1 0 13263ac048d931fd0d1fffde93d855bc
+
+% 11 1 0 16646c0af51b4f680cbda0dcb3596897
+
+% 1 1 0 04c8ac3b8bee29f10ec2a461bcd1308d
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 1 1 0 116c5f9cc4d90de401f341c8f8645df5
+
+@ 0 1 0 04c39477f6c84d2509720c20622f84ea
++             label 对 ref 的读数是所见内容的证明
+
+% 1 1 0 1be39b3713bfcdd20a3549a0718df8c8
+
+% 2 1 0 08f91bf0223cfd3d0b6c29bf385a154f
+
+% 3 1 0 170f8c90936aea5310cb825fa36608f5
+
+% 1 1 0 09825694e003d5b50d2ca82644420ea0
+
+@ 0 1 0 00160aa3ca2663cf1ef28822c2ca1158
++             label 写入依赖于该读数
+
+% 1 1 0 1c6b83af2732998e143b0d98ee7eeb9b
+
+% 2 1 0 0413c3555a633b5418bf72c100e2250c
+
+% 3 1 0 01782122ea0a1fa1081929701f821261
+
+% 4 1 0 1049467f2604952e0fe1ad1fd73a304a
+
+% 5 1 0 1b8dd1029e0929050d1805131af64972
+
+% 1 1 0 10d16ea0fc800ba4105a33d9b887234e
+
+@ 0 1 0 0b74aaa4780b3fdd00f97cae9b291e36
++             label 如果 ref 在此期间移动了，则不会覆盖任何内容
+
+% 1 1 0 10a8b252fb3894b60a6ca4c3ffc53bc0
+
+% 2 1 0 0b1506af46127776004351a612f743f9
+
+% 3 1 0 147d1c5a9d1d1184133be4dc86d1c8e5
+
+% 4 1 0 088030d98068b0f914f0faa1233797dc
+
+% 5 1 0 1e276a64fdd347c7098f21b34c2c6ea2
+
+% 0 1 0 0f280b9bb31727801d9ae87f6d813598
+
+% 0 1 0 0632536aa59207b51c67f22ff5343a50
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 1 1 0 110dbe0df3ce97af1d8f7853eb1178f9
+
+@ 0 22 0 1b9a38f93346c2000bc7be36bb6a6f87
++           句柄自身的字段说明仓库所在之处：`#gitDir`、`#commonDir`、`#worktree`，以及打开时所用模式的 `#atoms`。
++       entry .head   HEAD 所在之处，作为 `Stale[Git.Head]`
++           工作树上每一个移动 HEAD 的写操作都以这一读数为条件。
++       entry .ref   某个 ref 持有的哈希，会跟随符号 ref，作为 `Stale[Optional[Git.Hash]]`
++           不存在的 ref 为 `Unset`。
++           notes 的写操作以 `Git.Refs.defaultNotes` 的读数为条件。
++       entry .refs   某个前缀下（或全部）的每个 ref 及其哈希，作为 `Stale` 映射
++           不是完全限定 ref 的名称（`HEAD`）会被丢弃。
++       entry .symbolicRef   `HEAD` 这类符号 ref 所指向的目标，作为文本；若不是符号 ref 则为 `Unset`
++       entry .resolve   某个修订版本所指的哈希；若 git 无法解析则为 `Unset`
++           接受任何 `Git.Revision`：分支、标签、哈希、`Git.Ref`，或 `Git.Revision.head(2)` 这样的表达式。
++           未知的修订版本为 `Unset`，而不是错误。
++       entry .branches   每个分支及其末端，作为 `Stale` 映射
++       entry .tags   每个标签及其所指的提交（已剥离），作为 `Stale` 映射
++           附注标签会被剥离到其标签对象所指向的提交；`.tag` 读取未剥离的 `Git.Tag.Target`。
++       entry .tag   标签所指向的对象，无论是轻量标签还是附注标签；若没有该标签则为 `Unset`
++       entry .log   从某个修订版本可达的提交，最新的在前，作为 `Stale[List[Commit]]`
++           除非给出 `from`，否则从 `HEAD` 开始；至多 `limit` 个提交；若指定了 `paths`，则只包含涉及它们的提交。
++           未诞生的分支没有历史，给出 `Nil`；其他任何无法解析的起点都会抛出 `NoSuchRef`。
+
+% 2 1 0 1fee8c902642b68e00f44d693254079b
+
+% 3 1 0 08f346abbd77212318a409d45f5ce345
+
+% 4 1 0 0d4362e113e979c405cb4a215d0c7add
+
+% 5 1 0 19a2dafa45d43d831c6a22ad8465143f
+
+% 6 1 0 1070672a32d8b7f007fc65e2ef5c3697
+
+% 7 1 0 117081eb4f1f55890b0d8986db1cc2c5
+
+% 8 1 0 193b10217d547ba20f97d5f4acd1f013
+
+% 9 1 0 0ab1cce25eb28e9b18c03c3c8fff3cd5
+
+% 11 1 0 18df1ce6449a129c0e24167e3a542801
+
+% 0 1 0 1a0754e6a20ac9f106f1962362c9b7e9
+
+% 0 1 0 15551f4eeee152761dc2862b7a2c623f
+
+% 1 1 0 0e629f3ff92bb2631d323a7eec21c376
+
+@ 0 68 0 0c43129ec29b7fda181607d32d5a8f38
++       entry .revList   从某个修订版本可达的哈希，最新的在前，可选择在 `until` 处停止，作为 `Stale` 列表
++       entry .reflog   某个 ref 曾指向何处的本地历史，最新的在前，作为 `Stale[List[ReflogEntry]]`
++           除非给出 `ref`，否则是 `HEAD` 的历史：正是这份记录使错误的重置得以挽回。
++       entry .mergeBase   两个提交的最佳共同祖先；若二者没有共同祖先则为 `Unset`
++       entry .isAncestor   一个提交是否可从另一个提交到达
++       entry .exists   具有某个哈希的对象是否在数据库中
++       entry .show   按哈希取得的任意对象，作为 `Git.Object`；若不存在则抛出 `NoSuchObject`
++       entry .commitAt   具有某个哈希的提交，作为 `Commit`；对其他任何对象都抛出 `NoSuchObject`
++           命名为 `commitAt` 而不是 `commit`，因为 `commit` 是工作树的写操作动词，而受授权门控的句柄无法重载。
++       entry .treeAt   具有某个哈希的树的条目；对其他任何对象都抛出 `NoSuchObject`
++       entry .blobAt   具有某个哈希的 blob 的内容，作为 `Data`；对其他任何对象都抛出 `NoSuchObject`
++       entry .annotationAt   具有某个哈希的附注标签对象；对其他任何对象都抛出 `NoSuchObject`
++       entry .verifyCommit   用作用域中的 `Git.Verifier` 检查提交的签名
++           未签名的提交为 `Unknown("the commit is not signed")`；否则为 `Good(signer)` 或 `Bad(detail)`。
++           需要一个 `Git.Verifier` given，例如 `SshKeygen.Verifier(allowedSigners)` 或 `Gpg.Verifier()`。
++       entry .verifyTag   用作用域中的 `Git.Verifier` 检查标签的签名，作为 `Stale[Git.Verification]`
++           之所以是 `Stale`，是因为标签名是一个 ref。
++           轻量标签或未签名的附注标签为 `Unknown`。
++       entry .config   在一个代码块内只读地借出仓库自身的配置
++           `repo.config { config ?=> config.get[Text](key).value }`。
++           全局和系统配置则通过打开其文件来访问：设 `gitconfig: Path on Linux` 为用户自己的文件，则为 `gitconfig.open[Git.Config](Read) { config ?=> … }`。
++       entry .effectiveConfig   只读地借出 git 对该仓库会参考的每个作用域
++           系统、全局、本地和工作树配置合在一起，后出现的设置胜出，与 git 的读取方式相同。
++           不可写入。
++       entry .note   notes ref 中附加在某个提交上的 note，作为 `Stale[Optional[Text]]`
++           除非给出 `ref`，否则位于 `Git.Refs.defaultNotes`（`refs/notes/commits`）中；没有 note 时为 `Unset`。
++       entry .notes   notes ref 中的每个 note，作为从被注释提交到 note blob 的 `Stale` 映射
++       entry .remotes   每个远程仓库，从仓库配置中读取，作为 `Stale[List[Remote]]`
++       entry .remote   按名称取得的一个远程仓库，作为 `Stale[Optional[Remote]]`
++       entry .remoteRefs   远程仓库公布的每个 ref 及其哈希，作为 `Stale` 映射
++           需要一个 `Internet`。
++           这些读数正是 `Git.Push.Force.Lease` 所携带的内容。
++       entry .upstream   某个分支所跟踪的远程仓库和分支（若已配置），作为 `Stale` 二元组
++       entry .worktrees   每个链接工作树，作为 `Stale[List[Git.Worktree.Entry]]`
++           每个条目都是工作树写操作（`.removeWorktree`、`.lockWorktree`、`.unlockWorktree`、`.moveWorktree`）所接受的读数。
++       entry .operation   正在进行的合并、变基、拣选、还原或二分查找（若有），作为 `Stale`
++       entry .updateRef   移动或删除一个 ref，以对它的 `Stale` 读数为条件
++           `updateRef(ref, to, from, message)`：若 `ref` 仍持有 `from.value`，则将其设为 `to`（对 `Unset` 则删除它），否则抛出 `Moved`；`message` 是 reflog 中的那一行。
++           需要 `Grant.Write`。
++       entry .forceRef   无条件地移动或删除一个 ref，覆盖其所持有的任何内容
++       entry .updateSymbolicRef   将 `HEAD` 这类符号 ref 指向一个 `Git.Ref`
++       entry .writeObject   将原始内容按某种类别存储为对象，返回其哈希
++       entry .makeBranch   在某个提交处创建分支，不检出它；若分支已存在则抛出 `Moved`
++           创建以分支不存在为条件，因此不需要读数。
++           若要一步完成创建和检出，在工作树上使用 `switch(branch, head, create = true)`。
++       entry .deleteBranch   删除分支，以对其末端的读数为条件；除非强制，否则拒绝删除未合并的分支
++           若末端不是 HEAD 的祖先且 `force` 为 false，则抛出 `Unmerged(branch, tip)`；若分支不再持有 `at.value`，则抛出 `Moved`。
++       entry .renameBranch   重命名分支，以对其末端的读数为条件；若 HEAD 附着于该分支，则随之改变
++       entry .makeTag   在某个提交处创建轻量标签；若标签已存在则抛出 `Moved`
++       entry .annotatedTag   写入带消息的附注标签对象，可选择签名，并返回其哈希
++           `annotatedTag(tag, at, message, tagger, signer)`：除非给出，标注者为已配置的身份，并打上当前时间戳；`Git.Signer` 会追加一个铠装签名，`git tag -v` 接受该签名。
++           标签 ref 的创建以其不存在为条件。
++       entry .deleteTag   删除标签，以对其对象的读数为条件（无论是否为附注标签，与 `tags()` 的报告一致）
++       entry .configure   在一个代码块内借出仓库自身的配置，可读可写
++           `repo.configure { config ?=> config.set(key, value) }`。
++           需要 `Grant.Write`。
++       entry .addNote   给提交附加 note，以对 notes ref 的读数为条件；返回 notes 提交
++           `addNote(target, body, from, ref, force)`：`from` 是 `repo.ref(ref)`，即 notes ref 的读数（除非给出 `ref`，否则为 `Git.Refs.defaultNotes`）。
++           若已有 note 附加且 `force` 为 false，则抛出 `NoteExists`；若 notes ref 在读取 `from` 之后移动过，则抛出 `Moved`。
++           构建证明以及其他带外元数据正是这样随仓库一同传递，而不会有某个写入者覆盖另一个写入者的内容。
+
+% 2 1 0 1186ab151935f38f1226661f011e954e
+
+% 3 1 0 12bd8e7fc673f1ed1a1c67d8351d7c79
+
+% 4 1 0 0b156d35f2dd2a760cc7e5321fa3aac0
+
+% 5 1 0 13b10772135ad096009e6055425494ea
+
+% 6 1 0 13c16a9f46abf7b717a276bd54179ef7
+
+% 7 1 0 1d3cf4b9416a14d309e45cb31fd91c21
+
+% 8 1 0 05e5c446bb5396d605d5008c5bccdfc6
+
+% 9 1 0 08276a55352e0cf817b8c1137af3d1e8
+
+% 11 1 0 1cdd92de7aaabe7e0d03c56a0ca973eb
+
+% 0 1 0 0807c2ec03678a051df30d621821e58e
+
+% 0 1 0 00e2842f6c2d536516caeeaf586b121c
+
+% 0 1 0 15eb95d1486a894e185dbc0558802f2d
+
+% 0 1 0 1c4e7fd417bab0ad01ba73c08135dde0
+
+% 0 1 0 036cebb1155834371697ca6b02351332
+
+% 1 1 0 07a96ad062ec11b100ad2d7234167da3
+
+@ 0 34 0 1518d0661ec0cc450da08199e92b772e
++       entry .appendNote   向提交上的 note 追加内容，以对 notes ref 的读数为条件
++       entry .removeNote   移除提交上的 note，以对 notes ref 的读数为条件
++           若没有 note，则抛出 `NoteNotFound`，除非 `ignoreMissing` 为 true。
++       entry .copyNote   将一个提交上的 note 复制到另一个提交，以对 notes ref 的读数为条件
++       entry .addRemote   按名称和 URL 添加远程仓库，并带一个 fetch refspec；抛出 `RemoteExists`
++           refspec 默认为 `+refs/heads/*:refs/remotes/<name>/*`。
++           URL 可以是本地路径，两种后端都无需传输层即可访问。
++       entry .removeRemote   移除远程仓库的配置及其 `refs/remotes/<name>/` ref；抛出 `NoSuchRemote`
++       entry .renameRemote   重命名远程仓库，并改写其 refspec、跟踪 ref 以及跟踪它的分支
++       entry .setRemoteUrl   设置远程仓库的 fetch URL，或在 `push = true` 时设置其 push URL
++       entry .fetch   从远程仓库获取，返回被更新的 ref，作为 `Stale` 映射
++           `fetch(remote, refspecs, depth, prune, tags, activity)`：除非给出 `refspecs`，否则使用远程仓库已配置的 refspec；若给出 `depth`，则浅获取到 `depth` 个提交；`prune` 删除远程仓库已不再拥有的跟踪 ref；`tags` 获取每个标签。
++           需要一个 `Internet`；若传入了 `activity`，进度会报告给它。
++       entry .push   按某种强制方针推送到远程仓库，返回每个 ref 的结果，作为 `Stale` 映射
++           `push(remote, refspecs, force, tags, setUpstream, activity)`：除非给出，`force` 为 `Git.Push.Force.Never`，而 `Lease(expectations)` 使推送以对远程仓库 ref 的读数为条件。
++           被拒绝的 ref 是一个 `Rejected` 结果，而不是错误。
++           需要一个 `Internet`。
++       entry .addWorktree   在某个路径添加链接工作树，检出到某个修订版本，返回该路径
++           `addWorktree(target, revision, detach, newBranch)`：之后将返回的路径作为 `Git.Worktree` 打开。
++           目标可以是任何路径类型。
++       entry .removeWorktree   移除链接工作树，以对其条目的读数为条件
++       entry .lockWorktree   锁定链接工作树以防被清理，并附带一个原因
++       entry .unlockWorktree   解锁链接工作树
++       entry .moveWorktree   将链接工作树移动到另一个路径，返回新路径
++       entry .pruneWorktrees   移除目录已消失的工作树的记录，返回其路径
++       entry #gitDir   仓库自身的 git 目录
++       entry #commonDir   所有工作树共享的 git 目录，对象和 ref 都在其中
++           除非句柄是在链接工作树上打开的，否则与 `#gitDir` 相同。
++       entry #worktree   工作树的根目录（若仓库有工作树）
++       entry #atoms   打开句柄时所用模式的原子
++     entry .Openable   路径如何作为 `Git.Repo` 打开：定位仓库并借出一个 `Handle`
+
+% 1 1 0 139e7240bd55deb9005ee8b028454a89
+
+@ 0 15 0 04271ff55b9fe96100af8d60786a22eb
++           `path.open[Git.Repo](mode, flags) { repo ?=> … }` 背后的 `aperture.Openable`。
++           它请求后端定位仓库（抛出 `NoRepository`），在模式为 `Exclusive` 时登记这次打开，并借出一个带有该模式授权的 `Git.Repo.Handle`。
++           `.openable` 由作用域中的 `Git.Backend^` 和 `Tactic[Git.Error]` 构建一个实例。
++       entry #open   打开路径，将带有该模式授权的句柄借给代码块
++       entry #Self   被打开的路径类型
++       entry #Form   打开时所用的形式：`Git.Repo`
++       entry #Operand   标志类型：`Git.OpenFlag`
++       entry #Result   借出的内容：一个 `Git.Repo.Handle`
++     entry .openable   让任何 `Path on Linux` 都能作为 `Git.Repo` 打开的 given
++         位于隐式作用域中；它需要一个 `Git.Backend^`（从 `gitBackends` 导入一个）和一个 `Tactic[Git.Error]`。
++         由于每个 `Path on Linux` 都有它，也都有 `Git.Worktree.openable`，因此形式总要写明：`open[Git.Repo]` 或 `open[Git.Worktree]`。
++   entry .Worktree   路径作为已检出的树打开时的形式：仓库之上的索引和工作文件
+
+% 1 1 0 1d4f7bca5072c1011a1847fc752d7437
+
+@ 0 6 0 1071ad25fea0bc241a4d912dfc5162f0
++         `path.open[Git.Worktree](mode) { worktree ?=> … }` 打开一个工作树或链接工作树，并借出一个 `Git.Worktree.Handle`。
++         它既是 `Git.Repo.Handle`——每个仓库操作都可直接使用——又是 galilei 的 `Directory.Handle`，因此由它构成的路径（`worktree / "src" / "main.scala"`）只属于这个句柄的类型，无法逃逸出去，无法表示 `..`，并且可以在相同的授权下用 galilei 的操作读写。
++         裸仓库会抛出 `Git.Error(NoWorktree)`。
+
+% 2 1 0 0521d07e743153270f21d028a61f02cc
+
+% 3 1 0 0fe6149aea14cb70144f656ca97a00e8
+
+% 4 1 0 0c7092c78a31cf7c0aafaa30eaea2d99
+
+% 5 1 0 1f0231dcabd0cdd3048e09dfd40fb5da
+
+% 6 1 0 1ac477fc6d4751b7010d8771a20410f6
+
+% 7 1 0 03fbb38262ecc04d07298d968e414b6a
+
+% 0 1 0 1064203287a1d87409d0c0df4049c164
+
+% 1 1 0 08600b7162f867701718d040c4455696
+
+% 2 1 0 149a6f55dcf216600ac7ed7412566dd1
+
+% 4 1 0 169d0aaf9604d3d211cacff3d654533a
+
+% 6 1 0 1940ec62d7a68cf307ea6a299aa7ecb1
+
+% 0 1 0 1746c028e6965b360d3218654089d3a9
+
+% 0 1 0 09ecbb5f6b48b1181499281129f18a44
+
+% 0 1 0 1176e85206e1483812898888c94478e3
+
+% 0 1 0 03c6a4bfba37bcad134c8850354188b3
+
+% 0 1 0 181df0024b0920aa1f3fcd1b8a1e2906
+
+% 1 1 0 0c2710fed896045b036d024a13f63b98
+
+@ 0 2 0 0822f81793893ee41fcec44bb93dd920
++         `Git.Worktree.Entry` 是 `worktrees()` 所列出的链接工作树，也是仓库句柄上的工作树写操作所接受的读数。
+
+% 0 1 0 13fad0d77931c3261808a1fe1c595cb7
+
+% 0 1 0 0a699bf2949b721a097d386d1967ff45
+
+@ 0 1 0 095d76a4710aedb71e6f5dd1c12587e4
++     entry .Entry   一个链接工作树：其路径、检出的内容，以及它是否被锁定或可被清理
+
+% 1 1 0 14ffd7b34af064cb1ac096044cb05799
+
+@ 0 9 0 038b61a0afd788f81bbce3cef7a2f7e5
++           仓库句柄上的 `worktrees()` 所列出的内容，包装在 `Stale` 中；也是 `removeWorktree`、`lockWorktree`、`unlockWorktree` 和 `moveWorktree` 所接受的读数。
++       entry #path   工作树的根目录
++       entry #head   检出的提交（若有）
++       entry #branch   检出的分支（若 HEAD 附着于分支）
++       entry #bare   该条目是否为裸仓库本身
++       entry #locked   锁的原因（若工作树已锁定）
++       entry #prunable   工作树可被清理的原因（若可清理）
++     entry .Handle   借出的工作树句柄：索引和工作文件操作，外加每个仓库操作
+
+% 1 1 0 081b920a8af0030a18d0d17d14452c1e
+
+@ 0 8 0 00aa3b9b3338bd410686ec0bc7b97530
++           `Git.Repo.Handle` 所提供的一切，再加上需要索引和工作文件的操作：暂存（`.add`、`.addAll`、`.rm`、`.mv`、`.unstage`、`.restore`、`.clean`），提交（`.commit`、`.amend`），移动 HEAD（`.reset`、`.checkout`、`.switch`），整合（`.merge`、`.cherryPick`、`.revert`、`.rebase`、`.pull`），推进正在进行的操作（`.continue`、`.skip`、`.abandon`、`.quit`），stash（`.stash`、`.popStash`、`.applyStash`、`.dropStash`），以及查看工作文件的读操作（`.status`、`.diff`、`.diffStaged`、`.diffAgainst`、`.tracked`、`.conflicts`、`.currentBranch`、`.stashes`）。
+
+@ 0 3 0 191ca825a40b3adc024638946681c3f4
++           每个移动 HEAD 的操作都接受一个 `Stale[Git.Head]`，即来自 `head()` 的读数；若 HEAD 在别处，则抛出 `Moved(HEAD, expected, actual)`。
++           路径是 `Path on worktree.Plane`，由句柄本身构成。
+
+@ 0 75 0 1176ae4ca46d366817a54249d4b7c1be
++           冲突不是错误：`merge`、`cherryPick`、`revert`、`rebase` 和各种 stash 应用操作会返回一个 `Stopped(operation)` 结果，列出处于冲突中的路径；冲突解决并添加之后，`continue()` 完成该操作。
++       entry .status   每个已更改路径的状态，作为 `Stale[List[Git.PathStatus[worktree.Plane]]]`
++           除非 `untracked = false`，否则包含未跟踪的文件；被忽略的文件只在 `ignored = true` 时包含。
++       entry .diff   工作文件与索引的差异，作为 `Stale[List[Delta]]`
++       entry .diffStaged   索引与 HEAD 的差异，作为 `Stale[List[Delta]]`
++       entry .diffAgainst   工作文件与某个修订版本的差异，作为 `Stale[List[Delta]]`
++       entry .diffBetween   两个提交的树之间的差异，作为普通的 `List[Delta]`
++           以哈希为键，因此不是 `Stale`。
++       entry .tracked   索引跟踪的每个路径，位于句柄的平面上，作为 `Stale` 列表
++       entry .conflicts   处于冲突中的每个路径，位于句柄的平面上，作为 `Stale` 列表
++       entry .currentBranch   检出的分支；HEAD 分离时为 `Unset`；作为 `Stale`
++       entry .stashes   stash 的条目，最新的在前，作为 `Stale[List[Git.Stash.Entry]]`
++       entry .add   暂存路径
++           接受任意数量的 `Path on worktree.Plane`，以 `worktree / "name"` 的形式构成。
++       entry .addAll   暂存所有更改，如同 `git add --all`
++       entry .rm   从索引中移除路径，并且除非指定 `cached`，也从工作树中移除
++           `rm(paths*)(cached, force)`：`force` 会移除有本地更改的路径。
++       entry .mv   在索引和工作树中重命名路径
++       entry .unstage   从索引中移除路径，工作文件保持原样
++       entry .restore   从某个修订版本恢复工作树中的路径（或在指定 `staged` 时恢复索引）
++           `restore(paths*)(source, staged)`：除非给出 `source`，否则从索引恢复。
++       entry .clean   删除未跟踪的文件，若有要求也删除目录或被忽略的文件，返回被删除的路径
++       entry .commit   提交索引，以对 HEAD 的读数为条件，返回新提交的哈希
++           `commit(message, head, author, signer, allowEmpty)`：写入树，在此处组装提交对象——以已配置的身份作为提交者（若 `user.name` 或 `user.email` 未设置，则抛出 `NoSuchConfig`），除非给出 `author`，也以它作为作者——若给出了 `Git.Signer` 则由它签名，存储对象，再通过比较并交换移动 HEAD。
++           树与父提交相比没有变化时，除非指定 `allowEmpty`，否则抛出 `NothingToCommit`。
++           对象是在此组装的，而不是由 `git commit` 生成，因此签名从不离开进程，同一份代码可服务于两种后端；钩子不会运行，也不会参考 `commit.gpgsign`。
++       entry .amend   以新的消息或签名改写末端提交，保留其父提交和作者
++           `amend(message, head, signer)`：树是索引当前的状态。
++           在未诞生的分支上抛出 `NoSuchRef(HEAD)`。
++       entry .reset   按某个 `ResetMode` 将 HEAD 移到某个修订版本，以对 HEAD 的读数为条件
++           `Soft` 只移动 HEAD；`Mixed` 同时重置索引；`Hard` 还会重置工作文件；`Merge` 和 `Keep` 是 git 更安全的变体。
++           返回移到的提交；若修订版本无法解析，则抛出 `NoSuchRef`。
++       entry .checkout   检出某个修订版本并分离 HEAD，以对 HEAD 的读数为条件；返回新的读数
++       entry .switch   切换到某个分支，若指定 `create` 则先在 HEAD 处创建它，以对 HEAD 的读数为条件
++           返回新的 `Stale[Git.Head]`。
++           若本地更改会被覆盖，则抛出 `Dirty(paths)`；若 `create` 指定了已存在的分支，则抛出 `RefExists`。
++       entry .merge   将某个修订版本合并入 HEAD，以对 HEAD 的读数为条件，并遵循一种快进方针
++           `merge(revision, head, ff, message, sign)`：`FastForward.Auto` 在能快进时快进，`Only` 拒绝其他任何情况（`NotFastForward`），`Never` 总是创建合并提交。
++           结果为 `FastForwarded`、`Merged`、`UpToDate`，或在冲突时为 `Stopped(operation)`。
++       entry .cherryPick   将提交应用到 HEAD 之上，以对 HEAD 的读数为条件；指定 `noCommit` 时只应用到索引
++       entry .revert   将提交的逆操作应用到 HEAD 之上，以对 HEAD 的读数为条件
++       entry .rebase   将 HEAD 变基到某个修订版本之上，以对 HEAD 的读数为条件，可带选项
++           `rebase(onto, head, upstream, options)`：`upstream` 限定被重放的提交，与 `git rebase --onto` 的用法相同。
++           冲突时的 `Stopped(operation)` 携带已完成和剩余的提交数。
++       entry .pull   从远程仓库获取一个分支并合并或变基，以对 HEAD 的读数为条件
++           `pull(remote, head, branch, mode, activity)`：除非给出 `branch`，否则为当前分支（若 HEAD 不在任何分支上，则抛出 `Detached`）；除非 `mode` 另有指定，否则为 `Git.Pull.Mode.Merge`。
++           需要一个 `Internet`。
++       entry .continue   在冲突解决并添加之后，完成正在进行的操作
++           若没有正在进行的操作，则抛出 `NoOperationInProgress`。
++       entry .skip   跳过正在进行的操作中的当前提交
++       entry .abandon   放弃正在进行的操作，将 HEAD、索引和工作文件恢复到操作开始时的状态
++           即 git 的 `--abort`。
++           返回恢复后的 `Stale[Git.Head]`。
++       entry .quit   离开正在进行的操作而不恢复任何内容，如同 git 的 `--quit`
++       entry .stash   将未提交的状态保存为一个 stash 条目，返回其提交；若无内容可保存则为 `Unset`
++           `stash(message, includeUntracked, keepIndex)`。
++       entry .popStash   应用一个 stash 条目并丢弃它，以该条目仍与列出时一致为条件
++           若条目已消失或已改变，则抛出 `NoSuchStash`。
++           指定 `index = true` 时，索引也会被恢复。
++           冲突是一个 `Stopped` 结果。
++       entry .applyStash   应用一个 stash 条目而不丢弃它，以该条目仍与列出时一致为条件
++       entry .dropStash   删除一个 stash 条目，以该条目仍与列出时一致为条件
++       entry #Under   工作树路径所属的平台：`Linux`
++     entry .Openable   路径如何作为 `Git.Worktree` 打开：定位仓库及其树，并借出一个 `Handle`
+
+% 1 1 0 0fd4d9f2754b914516d9e0ac67359944
+
+@ 0 16 0 07c777ae042fff101b1c110b25f5dc1b
++           `path.open[Git.Worktree](mode, flags) { worktree ?=> … }` 背后的 `aperture.Openable`。
++           它定位仓库（抛出 `NoRepository`），要求存在工作树（抛出 `NoWorktree`），在模式为 `Exclusive` 时同时登记公共目录和工作树，并借出一个带有该模式授权的 `Git.Worktree.Handle`。
++       entry #open   打开路径，将带有该模式授权的句柄借给代码块
++       entry #Self   被打开的路径类型
++       entry #Form   打开时所用的形式：`Git.Worktree`
++       entry #Operand   标志类型：`Git.OpenFlag`
++       entry #Result   借出的内容：一个 `Git.Worktree.Handle`
++     entry .openable   让任何 `Path on Linux` 都能作为 `Git.Worktree` 打开的 given
++         位于隐式作用域中；它需要一个 `Git.Backend^`（从 `gitBackends` 导入一个）和一个 `Tactic[Git.Error]`。
++   entry .init   在某个路径创建仓库，带初始分支，可以是裸仓库或非裸仓库
++       `Git.init(target, initialBranch, bare)` 接受任何路径类型。
++       除非给出，初始分支为 git 的默认值（取决于其配置），因此依赖 `main` 的程序应当明确指定。
++       需要一个 `Git.Backend^` 和一个 `Tactic[Git.Error]`。
+
+% 2 1 0 1540ff6db2deebd51c22722a83734625
+
+% 3 1 0 16b9d55947e13e07178b6ae8bcc85920
+
+% 4 1 0 0fea6cd0cb1a05af10cded9408d0db17
+
+% 5 1 0 19310a8485126a250d5b58c9933a8538
+
+% 6 1 0 13c6c816d16c9a55128d4ff3d65c6fc6
+
+% 7 1 0 0eaf28fd1094dcd400458d4a27d7dd03
+
+% 8 1 0 167b340b8fa5b19d1feffb7840af8ed6
+
+% 9 1 0 011d295bd3595e61143a86cf27cd62a2
+
+% 11 1 0 15f9c69341553fa012e7f2e89a0a4436
+
+% 12 1 0 18e860b1559ae3b904bc4b53ec71baa8
+
+% 0 1 0 058fdf425886412415d8e6c3428e3242
+
+% 1 1 0 0c32ef78f33629d41b0da17a65a32ef1
+
+@ 0 8 0 15b94684ad2c914e1ecdd19a0e317477
++   entry .clone   从路径、URL 或 `SshUrl` 将仓库克隆到某个路径
++       `Git.clone(source, target, branch, depth, bare, recursive, activity)`：源是本地路径（任何路径类型）、URL（任何 URL 类型或文本）或 `SshUrl`；`branch` 检出远程仓库 HEAD 以外的分支；`depth` 进行浅克隆；`recursive` 克隆子模块（仅限命令行后端）。
++       需要一个 `Internet`、一个 `Git.Backend^` 和一个 `Tactic[Git.Error]`；若传入了 `activity`，进度会通过它报告。
++       在原生后端下，远程 URL 需要一个构建该后端时提供的 `Transport`（`Native(List(SmartHttp()))`），否则为 `Unsupported`。
+
+% 2 1 0 00d8bb41fa76cd9610ff2c534b1cb05c
+
+% 3 1 0 020a2801c164ac6e1a0addc521202d61
+
+% 4 1 0 11b7a09688a7b3991cddf25d383e8636
+
+% 5 1 0 1a50d4bc731776690dd9ecb8e82bf6a8
+
+% 6 1 0 170e3b6961b6374b0c510251b5770dd2
+
+% 7 1 0 005f9a7b917a2323163b73a7f3237769
+
+% 3 1 0 17f531e6fbeb82a106af540bb4ce174b
+
+% 4 1 0 06388dd360635c7f0d01b7fbd30755ee
+
+% 5 1 0 0b257ecd4af8aadd0743b7de45052004
+
+% 4 1 0 0eaa97c4318cf44a1f3b265eb769881e
+
+% 0 1 0 12c82d77152673fe164b3269ae38e30c
+
+% 0 1 0 106090ade7ef445f167684226e71c847
+
+% 0 1 0 04051c9e1f5b170d0b9f598f972add0b
+
+% 0 1 0 1ed924f57d0896c10ce8757ca36105cd
+
+% 1 1 0 0eee903418ab90b71cc92f5b15a9f573
+
+@ 0 5 0 1b8a1998c8505db91ccfa95a52864134
++   entry .cloneCommit   只克隆恰好一个提交：将它浅获取到一个全新的仓库中并检出
++       `Git.cloneCommit(source, target, commit, activity)` 在 `target` 处初始化一个仓库，以深度 1 获取这一个提交，并以分离状态检出。
++       服务器必须允许按哈希获取（`uploadpack.allowReachableSHA1InWant`，或协议版本 2）。
++       需要一个 `Internet`、一个 `Git.Backend^` 和一个 `Tactic[Git.Error]`。
+
+@ 0 1 0 084418c196b7fcba077b906640037e43
++   entry .Remote   按名称、fetch URL 和 push URL 确定的远程仓库
+
+% 1 1 0 1f7466296e8a05e30646a8565a557d8f
+
+@ 0 7 0 1879e266f6bc043a1e34097079ce3e34
++         `remotes()` 所列出、`addRemote` 所返回的内容，从仓库自身的配置（`remote.<name>.url` 和 `remote.<name>.pushurl`）中读取。
++         URL 是文本：本地路径、HTTP(S) URL 或 SSH 地址，与 git 所接受的形式相同。
++     entry #name   远程仓库的名称，如 `origin`
++     entry #fetchUrl   获取所用的 URL
++     entry #pushUrl   推送所用的 URL（若与 `#fetchUrl` 不同）
++   entry .Patch   将补丁文本读取为 `Delta`，并将一个文件的各个 hunk 展平为一个 `Diff`
+
+% 1 1 0 175f7771c3a8ad0515882d787f9f52be
+
+@ 0 5 0 15b9188708f9bd131b8b4181c6f2390e
++         `Patch.parse` 读取 `git diff -p --no-color` 的输出——无论来自文件、邮件还是其他任何地方——每个 `diff --git` 头部对应一个 `Delta`，可处理修改、添加、删除、重命名和复制的文件；二进制差异或仅模式的更改会给出一个没有 hunk 的 `Delta`。
++         命令行后端解析 git 自身的输出时用的也是这个解析器。
++         `Patch(files)` 是作为值的已解析补丁。
+
+% 2 1 0 19a65318db1412da0e50de8d6a4843c7
+
+% 3 1 0 00de0ea47880e9660cf2ac75d7469c03
+
+% 0 1 0 0b30d1cf4d625fec0f5041960f2bc515
+
+% 0 1 0 0bbda92b4ace6fbf07f18381776f307a
+
+% 0 1 0 1c327a026d63d634006b69da07365a7f
+
+% 0 1 0 0ab2a702d37dbf0c06c95b1f7ec14ee1
+
+% 0 1 0 0d0512669f01f48b0ec84e0fbac1f545
+
+% 0 1 0 18312c42685070fc1ed7971053430eec
+
+% 0 1 0 063bd9cf677f26c31a917418023c02be
+
+% 0 1 0 0c241ea991cb3f3d16c78a7b5bc8c257
+
+% 0 1 0 174f05d794a60c710b465a3219a0cf74
+
+% 0 1 0 13037f1fc3c475e3068cb65a6b3219bd
+
+% 1 1 0 1895fd1f129be9a5161debfad4c3a359
+
+% 0 1 0 12c4f9c99d98a9b41f956d9da845e4fc
+
+@ 0 6 0 0bf901f577fd28861a6c418490cb4abe
++     entry .parse   统一差异格式文本各行中的 `Delta`
++     entry .asDiff   将一个文件的各个 hunk 展平为一个 dissonance `Diff[Text] & Retained`
++         由各个 hunk 的 `Retained` 编辑组装而成，因此差异携带每一行的文本，并支持 `redraft` 以及其他需要值的操作。
++     entry #files   补丁中的文件，按顺序排列
++   entry .Hunk   文件差异中的一个 hunk：其范围、其节标题以及其编辑
+
+% 1 1 0 1f48327f3624cb61182d85b3eb1949ab
+
+@ 0 11 0 163fff0fb9247e3717fb7e55e826cc56
++         统一差异格式的 `@@ -oldStart,oldLines +newStart,newLines @@ section` 头部，连同其编辑，作为 dissonance 的 `Edit[Text]`——`Ins`、`Del` 和 `Par`——每个都携带其文本，因此 hunk 是 `Retained` 的，并支持 `redraft` 等需要值的操作。
++     entry #oldStart   hunk 在旧版一侧的第一行
++     entry #oldLines   hunk 跨越的旧行数
++     entry #newStart   hunk 在新版一侧的第一行
++     entry #newLines   hunk 跨越的新行数
++     entry #section   `@@` 之后的标题：若 git 找到了，则为外围的函数或类
++     entry #edits   插入、删除和未更改的行，按顺序排列
++   entry .Delta   一个文件在差异中的部分：两侧的路径、更改的类别以及其 hunk
+
+% 1 1 0 0890b302ebcc641e0b00547b4e90c902
+
+@ 0 4 0 05460c62a7557c840ff5d041512ae55f
++         `diff()`、`diffStaged()`、`diffAgainst(revision)` 和 `diffBetween(left, right)` 所报告的内容，每个文件一个，也是 `Patch.parse` 从补丁文本中读取的内容。
++         二进制差异或仅模式的更改没有 hunk。
++         `Patch.asDiff` 将各个 hunk 展平为一个 dissonance `Diff[Text]`。
+
+% 2 1 0 0538ed758e5244b901ff145c5e5a5a11
+
+% 3 1 0 133e5a3272e4bfe40496c894545226b5
+
+% 4 1 0 191a3d3278a3f82d1a5f2f36125f5b8f
+
+% 5 1 0 12f77c8b9c24a7d01038e0d0e0281d3c
+
+% 6 1 0 0bb3d0eaee2acd4b10cb5b28ecf4e9fd
+
+% 7 1 0 0ccc75b4b4dcc2b1123a4efc43028240
+
+% 8 1 0 1f5d6ccebca5f3b01e9b58c721b03b17
+
+% 9 1 0 1f54d3dc5085085b0c01fd2b3ad77436
+
+% 11 1 0 0755806f385138d4147395c320927e30
+
+% 13 1 0 1c5296ae15d1aea21a5cbc0cc3a359e4
+
+% 0 1 0 1a66aabda1067439182577afebbf9d23
+
+% 0 1 0 012f9e7f01b4f48010950d717df6ee8c
+
+% 0 1 0 057c0aead9ec1a77070ff80457fcb6d4
+
+% 1 1 0 1bbbf4a6cc40392e0c19fb21dc312a36
+
+% 0 1 0 0b7e22dd699fd68e001a61ed80039415
+
+% 0 1 0 1688c2c54eaebaf60c6420e00d3e273d
+
+@ 0 8 0 1ccff358555aebbd199457cdcee68a18
++     entry #oldPath   更改前的路径，添加的文件为 `Unset`
++     entry #newPath   更改后的路径，删除的文件为 `Unset`
++     entry #status   文件如何更改
++     entry #hunks   各个 hunk，按顺序排列；二进制或仅模式的更改为空
++     entry .Status   文件如何更改：`Added`、`Modified`、`Deleted`、`Renamed`、`Copied` 或 `TypeChanged`
++         由每个 `Delta` 携带。
++         `Patch.parse` 从补丁头部推断它：一侧为 `/dev/null`、`rename from`、`copy from`、`new file mode`、`deleted file mode`。
++ entry .Commit   存储形式的提交：其哈希、树、父提交、作者、提交者、签名和消息
+
+% 1 1 0 013fc66d5e7690a5182d4ef1475c8805
+
+@ 0 4 0 024a3696130b10500b04b87f573e08e5
++       `log()` 所列出、`commitAt(hash)` 所读取的内容：提交自身的哈希，它所快照的树，它的父提交（根提交没有，合并提交有两个），谁编写了它、谁提交了它（各为一个带时间戳的 `Git.Signature`），若带有 `gpgsig` 头部则还有铠装签名块，以及去掉 git 所追加的末尾换行符的消息。
+
+% 2 1 0 010bcc72ce3fc61f06fe61c41f27924a
+
+% 3 1 0 08f79ce61f26a6e9035263667bdbfca9
+
+% 4 1 0 10a1768f7a6aeb881863395828b353a0
+
+% 5 1 0 020761d59d943f6b0619f099c2ff0751
+
+% 6 1 0 1d5f0554517f7e42106cc0479a03cfd0
+
+% 7 1 0 1db82b7cd5774781028b70bed07c2f3b
+
+% 8 1 0 0e8db4735286bfde0ccf1a497ffb7ec4
+
+% 9 1 0 19ac930280e79ca9080229c4e71eecd4
+
+% 11 1 0 0c49a9c00e6ec47c13bacc9e25107945
+
+% 2 1 0 1a821beb91bbe1ee1dbec9304a0ce894
+
+% 0 1 0 06c841f719314fca116d05ae8c8ceb2a
+
+% 0 1 0 03d4bc515c90b9b41cbb18b6d523af17
+
+% 1 1 0 170b3a58e4bae69217385f500b7c2c46
+
+% 0 1 0 1fb2025b17b04b1905c9a2a027edbdde
+
+@ 0 7 0 14993f7377e8457819860f52b78962f1
++   entry #commit   提交自身的哈希
++   entry #tree   它所快照的树的哈希
++   entry #parents   它的父提交，较早的历史在前：根提交没有，合并提交有两个
++   entry #author   谁编写了它，何时编写
++   entry #committer   谁提交了它，何时提交
++   entry #signature   来自其 `gpgsig` 头部的铠装签名（若已签名）
++   entry #message   消息，不含 git 存储的末尾换行符
+
+@ 0 4 0 0052efc7c3fe702e07383ce3738a5c53
++ entry .FastForward   合并是否可以、必须或不得快进：`Auto`、`Only` 或 `Never`
++     `merge` 所接受的方针，使是否创建合并提交得以明确声明，而不是从配置中继承。
++     `Auto` 在能快进时快进；`Only` 拒绝其他任何情况，抛出 `NotFastForward`；`Never` 总是创建合并提交。
+
+@ 0 1 0 08457d3b814920190fc41a7fc63bf548
++ entry .Notes   git notes 的平面：以提交哈希为根、经由命名空间向下延伸的路径
+
+% 1 1 0 1326e223ff7c64fe0602884a7b6bac56
+
+@ 0 5 0 0cea7f3b1440a0f41a21a96374de87d5
++       git note 是附加在提交上而不改变提交的文本，位于 `refs/notes/` 下的某个命名空间中。
++       将 note 的地址建模为 serpentine 路径——提交哈希是根（`Git.Hash` 是一个 `Root`），命名空间的各段是下行部分——使 `hash / t"attestations"` 能用路径运算符本身构建一个 `NoteRef`，而 `NoteRef` 的扩展方法 `target`、`namespace` 和 `content` 则将其读回。
+
+% 2 1 0 184a366863958aff0b5a4a10ca4c3435
+
+% 3 1 0 09abd824905c29f908daf8eb74f5d9cf
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 07cfc6be710f1b18022afb02db77eb9e
+
+% 0 1 0 0ddc3dd8e7b63db50412c342d237fa53
+
+% 0 1 0 037adee62809ecdb0196628b407c115d
+
+% 0 1 0 196ba647771ef08e030c990846ce7fc6
+
+% 0 1 0 0c44f3097c40f0d811ab54834c1390d9
+
+% 1 1 0 08eb7d462b86a42b19e153f79076cfd5
+
+% 0 1 0 03a9af837f2913c7022135a496c3c27f
+
+% 0 1 0 10e14c837c78026a0e30128dc39265d1
+
+@ 0 9 0 11a2919c589cbafc119590922a7d6a91
++   entry .Plane   notes 路径的平面类型：即 `Notes` 本身
++   entry .filesystem   作为 `Filesystem` 的 notes 平面：以 `/` 分隔，以 `@` 和 `..` 表示自身和父级
++   entry .admissible   允许任何文本作为命名空间段的 given
++       验证推迟到 `namespace`，它在需要完整 ref 时根据 git 的引用规则检查每一段。
++   entry .radical   提交哈希如何编码为 notes 路径的根：`<hash>/`
++   entry .eradicable   如何从 notes 路径的根读回提交哈希
++       解码四十个十六进制数字加上 `/`，其他任何内容都抛出 `Path.Error(InvalidRoot)`；需要一个 `Tactic[Path.Error]`。
+
+@ 0 5 0 18d1698a0654f2820db61da8b2a1400b
++ entry .NoteRef   note 的地址：`Path on Notes under Git.Hash`，即其下带有命名空间的提交哈希
++     `NoteRef` 以 `hash / t"namespace"` 的形式构建（还可以继续向下：`hash / t"ci" / t"attest"`）。
++     它的根是 note 所附加的提交（`target`），它的下行部分是 `refs/notes/` 下的命名空间（`namespace`），而 `content[value]` 通过作用域中的仓库句柄读取 note。
+
+% 2 1 0 02a10f3ee3b1db190349969c85b4aabe
+
+% 3 1 0 1bf9c7cb908c654019b0a19a2edd803b
+
+% 0 1 0 1c73f1e2e2d9bf44035a7350a583c893
+
+% 1 1 0 1d2dfea54918af6d06b01fb4f243adf5
+
+% 2 1 0 1b18b6b68220f92f0cc2d85e32cb542b
+
+% 1 1 0 1546cdc57484ee8913294d0197d43674
+
+% 1 1 0 1f5c94a665f89774161ff69169638ef2
+
+% 1 1 0 02f499499f728ee00abfb50e708a854f
+
+% 2 1 0 1d325dc260c44bb7072438b459c884d5
+
+% 0 1 0 106de4016ee2faf810902935c4b0afc3
+
+% 2 1 0 150863afee890fc0091b0f6671c2238f
+
+% 0 1 0 02beefa91a27220a13f1a6b70a92b929
+
+% 0 1 0 1ec0a45a353d22c41d0e334008f19d03
+
+% 0 1 0 0d5367a1afb795d4076ea0f379ed4b27
+
+% 0 1 0 00a152f2994e1c1d189ef5f98476bf50
+
+% 1 1 0 0101e9968cde831319a677dcccc46cca
+
+@ 0 3 0 13da7aacfe9c972b1f73c46382542a8a
++ entry .target   `NoteRef` 所附加的提交：其根哈希
++     `NoteRef` 上的扩展方法，将路径根的四十位数字读回为 `Git.Hash`。
+
+@ 0 4 0 12420105dcc185bc19619f83d754ee7d
++ entry .namespace   `NoteRef` 所指的完全限定 notes ref：`refs/notes/<segments>`
++     `NoteRef` 上的扩展方法。
++     下行部分的每一段都在此处根据 git 的引用规则检查，git 会拒绝的段将抛出 `Git.RefError`，因为构建路径时 `/` 接受任何文本。
+
+@ 0 8 0 04c754492e925e021b495c2bdabc1756
++ entry .content   `NoteRef` 所指的 note，经解码，通过作用域中的仓库句柄读取
++     `NoteRef` 上的扩展方法：`(hash / t"ns").content[Text]` 是 note 的正文，作为 `Stale[Text]`，或解码为任何 `value is Decodable in Text`。
++     它需要作用域中有一个 `Git.Repo.Handle & Granting[Grant.Read]`——即 `open` 代码块所借出的句柄——若该命名空间中没有附加 note，则抛出 `Git.Error(NoteNotFound)`。
++     结果是 `Stale` 的，因为 note 是通过另一个进程可能移动的 ref 访问的。
++     它命名为 `content` 而不是 `read`，因为 `NoteRef` 是路径，而路径是可读的；请按名称导入它（`import octogenarian.content`），使它在特异性上胜出。
+
+@ 0 1 0 084a8c7c1485df5801a217f21204ab76
++ entry .ReflogEntry   reflog 的一行：ref 曾指向何处、何时移动以及为何移动
+
+% 1 1 0 0cfda1e15d3ca3291d2758a34a170a52
+
+@ 0 8 0 0609a88fb3dfa12812f9a0ece4616841
++       `reflog()` 所列出的内容，最新的在前：移动后 ref 持有的哈希，选择器（`HEAD@{0}`），移动的时间（自纪元以来的秒数），以及操作所记录的消息（`commit: Add notes`、`branch: Created from …`、`reset: moving to main`）。
++   entry #hash   移动后 ref 持有的哈希
++   entry #selector   条目的选择器，如 `HEAD@{0}`
++   entry #timestamp   ref 移动的时间，自纪元以来的秒数
++   entry #message   移动的原因，按操作所记录的内容
+
+@ 0 1 0 1ab2e9933803dd00103de1ae560555c1
++ entry .ResetMode   `reset` 除 HEAD 外还移动什么：`Soft`、`Mixed`、`Hard`、`Merge` 或 `Keep`
+
+% 1 1 0 151bb4f1212e4ffb0997cf94f4b38a9a
+
+@ 0 5 0 05e7bdb3263070d6071f5b680139b7f3
++       `Soft` 只移动 HEAD，索引和工作文件保持原样；`Mixed` 同时重置索引；`Hard` 还会重置工作文件，丢弃本地更改；`Merge` 和 `Keep` 是 git 的变体，它们拒绝丢弃未提交的更改。
++       `#flag` 是命令行中的写法。
++   entry #flag   git 用来指代该模式的标志：`--soft`、`--mixed`、`--hard`、`--merge`、`--keep`
+
+@ 0 1 0 0c768447ff160f1b0556b92894397f6e
++ entry .SshUrl   仓库通过 SSH 访问的地址：可选的用户、经过检查的主机名和路径
+
+% 1 1 0 175779380519fcb70959a178b71650ed
+
+@ 0 8 0 1712706a5705a1971701294959d2a3c6
++       `SshUrl(user, hostname, path)` 是 `Git.clone` 和 `Git.cloneCommit` 除路径和 URL 之外唯一接受的源类型；`#text` 将其渲染为交给 git 的地址。
++       主机名是 urticose 的 `Hostname`，因此已经过检查。
++       若要以 git 的任一种 SSH 形式将地址作为文本处理，`SshAddress.parse` 是传输层所用的读取器。
++   entry #user   连接时使用的用户（若有）
++   entry #hostname   主机
++   entry #path   仓库在主机上的路径
++   entry #text   git 所接受形式的地址
+
+@ 0 1 0 0ea2c3a3049349e40fcad7ecb4b87dd5
++ entry .Commandline   运行 `git` 命令的后端，即 `gitBackends.commandlineGit`
+
+% 1 1 0 15a9c54a19f086530d35d2fe8cf0c314
+
+@ 0 7 0 07848398b65e5d4e041d60cba39f40a7
++       一个 `Git.Backend`，其每个操作都是对 git 底层命令的一次或几次调用；高层命令动词运行对应的高层命令并读取其结果。
++       每个子进程都在作用域中的 `WorkingDirectory` 和 `Environment` 中运行，设置 `LC_ALL=C` 以便其消息是原因表所认识的英文消息，并设置 `GIT_TERMINAL_PROMPT=0` 以便凭据提示直接失败而不是挂起。
++       每次调用都作为一个 `Commandline.Event` 记录日志，因此作用域中必须有一个 `Commandline.Event is Loggable`（`logging.silentLogging` 会丢弃它们）。
+
+@ 0 3 0 062d4e58782e5c7f012e264cd89314e4
++       当需要完整的 git 自身行为时——钩子（但 `commit` 上没有，它自己组装对象）、过滤器、凭据助手、子模块——应选择它；它还带有 git 自身的传输层，因此远程 URL 无需其他任何东西。
+
+% 2 1 0 0760238005158cb603443cd663ce3cf8
+
+% 3 1 0 0515f0789b65380013ee26935d48726c
+
+% 4 1 0 0acf43f3f7e337401c2d0e87248e7dab
+
+% 2 1 0 17d566c47e7eaec41a8d3f0c7bb875f7
+
+% 3 1 0 0aceb588de1a1753069760681b19ee50
+
+% 4 1 0 033a8498cb6a1b960fbed2cffc5b3cee
+
+% 0 1 0 1fbc797e25e6dc6f08149504afa9d302
+
+% 1 1 0 06bbdff19fd86b461563daacbc4238b0
+
+@ 0 3 0 047ab610a8d7e774029a1cca7c5301f5
++       `.reason` 是将 git 的标准错误读取为 `Git.Error.Reason` 的表；无法识别的内容为 `Unexpected`，其消息作为错误的 `detail` 保留，因此不会丢弃任何信息。
++       根本无法运行 `git` 时为 `CannotExecuteGit`。
+
+% 1 1 0 1d0fe28737bf6866136ea5d12b9fdd63
+
+% 0 1 0 0744f20b945fd34b041ff6076985ff6a
+
+% 1 1 0 0a148150baa7810e170137bec226323e
+
+@ 0 1 0 087858f2881ea6320365e082d2ed3be9
++   entry .Command   要运行的 `git` 可执行文件，由其路径指定
+
+% 1 1 0 1934a50d85fa3a1511611f15c0817266
+
+@ 0 4 0 1bb7e6634fd6163d192a1f9bd52a6712
++         `gitCommands.searchpathGitCommand` 在搜索路径上查找它；自带 git 的程序则明确指定它：`Commandline.Command(t"/opt/git/bin/git")`。
++     entry #path   可执行文件的路径，作为文本
++   entry .Event   后端记录的日志内容：每次 `git` 调用，作为 guillotine 的 `Exec.Event`
+
+% 1 1 0 10b9b20cc8f6474f04c7de10bc97a5e0
+
+@ 0 18 0 08168ada031503ba11562093c9d8a224
++         `Exec(event)` 包装一个 `guillotine.Exec.Event`，带有 `Log.Process` 标签；`.execEvent` 将 guillotine 的事件转录为它，因此后端只需要作用域中有一个 `Commandline.Event is Loggable`。
++         `logging.silentLogging` 会丢弃它们。
++     entry .execEvent   将 guillotine 的 `Exec.Event` 转录为 `Commandline.Event`
++     entry .communicable   将事件渲染为 _the git operation did not execute: `reason`_
++   entry .Outcome   一次 `git` 调用的产物：其退出状态、标准输出和标准错误
++     entry #exit   退出状态
++     entry #stdout   标准输出，作为文本
++     entry #stderr   标准错误，作为文本
++     entry #ok   退出状态是否为零
++     entry #lines   标准输出中的非空行
++   entry .reason   将 git 的标准错误读取为 `Git.Error.Reason`
++       匹配 git 的消息——它们足够稳定，可以用来匹配——以识别 `NoRepository`、`Moved`、`RefExists`、`Locked`、`NoSuchRef`、`Unmerged`、`NoSuchObject`、`NothingToCommit`、`Detached`、`Dirty`、`NotFastForward`、`LeaseFailed`、`OutsideWorktree`、`Untracked`、`NoOperationInProgress`、`NoSuchRemote`、`RemoteExists`、`Unauthorized`、`Unreachable`、`RemoteRejected`、`InvalidConfig`、`NoteExists`、`BadSignature`、`SigningFailed`、`NoSuchWorktree` 和 `Conflict`；其他任何内容都为 `Unexpected`。
+
+@ 0 1 0 135aaf586a5a51c61f25de086d5628f9
++ entry .Gpg   像 git 一样，通过 `gpg` 用 OpenPGP 密钥签名和验证
+
+% 1 1 0 0fe0ed84d94fb2f61147758669f7dbc4
+
+@ 0 6 0 02ac2752e9df8e96197ade1db9b7c56e
++       `Gpg.Signer()` 用默认密钥或用 `key`（密钥 ID、指纹或用户 ID）对提交或标签的载荷生成分离式铠装签名；`Gpg.Verifier()` 则对照密钥环检查签名，从 gpg 机器可读的状态行中读取 `GOODSIG`、`BADSIG` 等。
++       二者都在作用域中的 `WorkingDirectory` 和 `Environment` 中运行 `gpg`，以 `Exec.Event` 记录日志，并将无法运行它报告为 `Git.Error(SigningFailed)`。
+
+% 2 1 0 1841d28632047325122c387702573cd6
+
+% 3 1 0 1f36bdf35af886b21371908b4d592210
+
+% 4 1 0 0a6a2c53f012791902312700b8d7972b
+
+% 5 1 0 1a594ffc65ab26691f52de1445d16df0
+
+% 6 1 0 0699683981df51c413cdd1901c452ff7
+
+% 7 1 0 1f345b64790b895f1e3163e9a6864e2e
+
+% 8 1 0 19d5c4c56031d7c91f1c52fcd488b698
+
+% 9 1 0 13fd4b532596193219898c7befa0f6c2
+
+% 10 1 0 1eb5b2803a6e6c951ba8b7362f22dc59
+
+% 11 1 0 07f93916269248021795ed66ef62444e
+
+% 13 1 0 1db0d06cc813235d11d7a85cfaa1e7be
+
+% 0 1 0 1ad881bf36d4c3991eb1878cb1bda595
+
+% 2 1 0 019af44e1261192703056cc75f5eae8c
+
+% 0 1 0 1b1cf511db38e1170bba41d4d08f7781
+
+% 0 1 0 1a364bd6cd85c613198abe7d7a89c9bc
+
+% 1 1 0 1f2ad9d324c8e4291ac29900d57245ae
+
+% 1 1 0 1fb9124a6742f5ca059fb53cbb64a541
+
+% 0 1 0 1d528a3dc2b78e581d135371ba3a0e94
+
+@ 0 4 0 042f5045937e2e5116faf46b13697070
++   entry .Signer   通过 `gpg -bsa`，用默认 OpenPGP 密钥或用 `key` 签名
++     entry #sign   对载荷的铠装签名；若 gpg 失败，则抛出 `Git.Error(SigningFailed)`
++   entry .Verifier   通过 `gpg --verify` 对照密钥环验证
++     entry #verify   `GOODSIG` 行为 `Good(userId)`，`BADSIG` 为 `Bad`，否则为 `Unknown`
+
+@ 0 1 0 0568d089d976c302143a080e19e6f36f
++ entry .SmartHttp   通过 git 的智能协议经由 HTTP(S) 访问远程仓库，即 `gitTransports.smartHttp`
+
+% 1 1 0 1c1bd661dd1d7fdc0db4da267b8c20cf
+
+@ 0 7 0 07b28cb63c6c178100fabaf10e0086c5
++       原生后端的一个 `Transport`：从 `info/refs?service=…` 读取能力公告，每条命令都是对该服务的一次 `POST`，并在 `Git-Protocol` 头部中请求协议版本 2。
++       URL 的 userinfo 中的凭据（`https://user:token@host/…`）以 Basic 认证发送。
++       它通过作用域中的任意 `Http.Backend` 通信，因此 `SmartHttp()` 需要一个（例如 `httpBackends.javaNetHttp`），而 `Native(List(SmartHttp()))` 就是一个能经由 HTTP(S) 克隆、获取和推送的后端。
+
+% 2 1 0 05100fcd03f3e3c60dc8aba6a6215876
+
+% 3 1 0 00cc3fce02a09ff312e0d981eaf5c5fa
+
+% 4 1 0 0ab3151572d874f50cf27f08107c5bc1
+
+% 5 1 0 106e2addc14f33b7007a01a423a0dcc6
+
+% 2 1 0 1fda2995a38796541cbcf8a990d3fd27
+
+% 1 1 0 1f9a6537aed296460eba8acd58b6889b
+
+% 2 1 0 0356fa0b80ebaf860a3af1153e1fc5e3
+
+% 0 1 0 0c893331b656bda61f523c8e0360bd83
+
+% 2 1 0 1633583db54ec20d09756fe8c81f2161
+
+% 0 1 0 16874e5cd7b1e28f026d6709c430824f
+
+% 1 1 0 1b55e9beb3c2dd1d118bfe54011e2d0b
+
+@ 0 3 0 00dbb8f1bea46a720d55bf85632036d7
++       服务器的应答会变成 `Git.Error`：`401` 和 `403` 为 `Unauthorized`，`404` 为 `NoRepository`，连接失败为 `Unreachable`，其他任何失败为 `Unexpected`，并以状态码作为详情。
+
+% 1 1 0 136251c8fcb4cf8d1b8f51eb2b6ebf96
+
+% 1 1 0 1a2f4d482d74f7e91003f1e5d0c8eaa1
+
+@ 0 1 0 118de4f9c02b68bc1dfbe7e5c7f7bb26
++   entry .Channel   一个仓库的 HTTP 端点：公告以及每次服务交换
+
+% 1 1 0 1738fd8e2016467c1b14d0d8d391f3b7
+
+@ 0 8 0 0f718274d6c1c9b20fe7b70db2c7e961
++         协议所驱动的 `Channel`：`#advertise` 获取 `info/refs` 并跳过 HTTP 形式在前面添加的 `# service=…` 行，`#exchange` 向服务发送请求并返回其 packet-line 应答。
++         交换之间不保留任何东西。
++     entry #advertise   某个服务的能力公告，作为 packet-line 读取器
++     entry #exchange   向服务发送请求并返回其应答，作为 packet-line 读取器
++     entry #close   没有需要关闭的东西：每次交换都是独立的请求
++   entry #accepts   URL 是否以 `http://` 或 `https://` 开头
++   entry #connect   基于该 URL 的一个 `Peer`；若服务器拒绝或无法访问，则抛出 `Git.Error`
+
+@ 0 1 0 1dbb4c104c8dceb51a32056e22030df3
++ entry .SshCommand   通过派生的 `ssh` 进程访问远程仓库，即 `gitTransports.sshCommand`
+
+% 1 1 0 15b022ea93e5ba7700dfbfea9f960559
+
+@ 0 6 0 04e7b01ef8385065074a55b4454cd6dd
++       原生后端的一个 `Transport`，它以与 git 自身相同的方式访问服务器：每个服务一个 `ssh` 进程，在服务器上运行 `git-upload-pack` 或 `git-receive-pack`，并通过 `GIT_PROTOCOL` 变量请求协议版本 2（用 `SendEnv` 发送，服务器在其 `AcceptEnv` 允许时予以遵从）。
++       `ssh://[user@]host[:port]/path` 和类似 `scp` 的 `[user@]host:path` 两种形式都可通过 `SshAddress.parse` 识别。
++       用户自己的 `ssh` 配置、密钥和代理都会生效，与在 shell 中一样。
+
+@ 0 3 0 1859b22a63a439851a0e66b214624ad5
++       `SshCommand()` 在作用域中的 `WorkingDirectory` 和 `Environment` 中运行，将每个进程作为一个 `Exec.Event` 记录日志。
++       一次获取需要两个连接——一个用于 `ls-refs`，一个用于 `fetch`——因为交换之间不保留任何东西。
+
+% 2 1 0 1758e6e51576481e0428b231e60858c7
+
+% 3 1 0 029253e71afb2adb07ecb00dc2b64bd2
+
+% 4 1 0 12c34fc35121c6481f53d00f293d765b
+
+% 5 1 0 1be63c4f721a5f0c02ba6bc44c8401a8
+
+% 1 1 0 069934decac3d2d414ff0d652a53dffa
+
+% 2 1 0 005b71f18b5aafd70574dc1188ad758d
+
+% 3 1 0 1b14c0fad3c2cb41120e3348a9e8b967
+
+% 4 1 0 15a3a117f81f53ea0d8c246d1ac30e59
+
+% 5 1 0 0a87b7ba324ebfba14a7d7d1e85e4ebb
+
+% 0 1 0 00cb43fb8277244d107faca856b1001d
+
+% 2 1 0 1009c1da76ea02800eea36efac60ee67
+
+% 0 1 0 1ced413c07d290500fae5fa378695234
+
+% 1 1 0 13ecf94f55e5aee50675eee295ae9f10
+
+% 1 1 0 026166774f3e3d7a15150924c4838b83
+
+% 1 1 0 053a273797aaece71a9c9cc6e9d2bb78
+
+% 1 1 0 058817bd80b002270d63246d9ca54bae
+
+@ 0 1 0 0d3175a2cf84c49e05aa08bd54d3fb24
++   entry .Channel   通过派生的 `ssh` 访问的一个仓库：每次交换一个进程
+
+% 1 1 0 1fa18f855d621a7c0757289b08fd7bc0
+
+@ 0 9 0 02f6193e27d07443176064e0cf5c52a9
++         协议所驱动的 `Channel`。
++         服务器在每个连接开始时都先发送公告，`#advertise` 返回该公告，而 `#exchange` 会越过它，再返回对其所写请求的应答。
++         无法启动 `ssh`，或应答被截断，都为 `Git.Error(Unreachable(host))`。
++     entry #advertise   启动一个服务并返回其公告，作为 packet-line 读取器
++     entry #exchange   启动一个服务，向其写入请求并返回越过公告之后的应答
++     entry #close   没有需要关闭的东西：每次交换都是独立的进程
++   entry #accepts   URL 是否为 SSH 地址（任一种形式）
++   entry #connect   基于该地址的一个 `Peer`；若 URL 不是 SSH 地址，则抛出 `Git.Error(Unsupported)`
+
+@ 0 1 0 0a03560bde9a29ca1dfb1a4587f9ca9c
++ entry .SshKeygen   通过 `ssh-keygen -Y` 用 OpenSSH 密钥签名和验证，与 `gpg.format = ssh` 时 git 的做法相同
+
+% 1 1 0 16961a3dcfc96e4e15fa2f8e68c0960d
+
+@ 0 8 0 16f436d4ab515c930a9714bf7bfa3d8b
++       `SshKeygen.Signer(key)` 用某个路径上的私钥在 `git` 命名空间中为提交或标签的载荷签名；`SshKeygen.Verifier(allowedSigners)` 在一个允许签名者文件（即 git 的 `gpg.ssh.allowedSignersFile` 所指的文件，每行为 `principal key-type key`）中找到签名的密钥所代表的主体，并据此验证。
++       两者都在作用域内的 `WorkingDirectory` 和 `Environment` 中运行 `ssh-keygen`，以 `Exec.Event` 记录日志，并把运行失败报告为 `Git.Error(SigningFailed)`。
++       以这种方式签名的提交或标签，`git log --show-signature` 和 `git tag -v` 都会接受。
+
+% 2 1 0 14710ba1f381980405fd643789433e76
+
+% 3 1 0 13c927833b5b00a81b3b801e04fb2c23
+
+% 4 1 0 1ad7a2def129c0670dc60b19d9ca0bd0
+
+% 5 1 0 02fd96cb55076a3302bdb48d922fad1f
+
+% 6 1 0 1cb9fc3e6e788fac129e14ed07207167
+
+% 7 1 0 10cc7a1086e2a5f518cae04678a2eb40
+
+% 8 1 0 1aa924aa894b7b7b0becb6f112502901
+
+% 9 1 0 12930b0d075ec95202b52b23e73aef18
+
+% 10 1 0 0fd12173505e112d03ebb00d54f71100
+
+% 11 1 0 034a26a41d3d936e062f416ef8a8e74e
+
+% 13 1 0 1cd90fec0aa0fe240f8cdf27904acbfa
+
+% 0 1 0 140784e6a19d29391108779a682d16d1
+
+% 0 1 0 052f8cd9730491f4007737e57c39adab
+
+% 0 1 0 158cc5f1b03c362f117dfa6b73fec6f6
+
+% 2 1 0 02072da2e6ed4c881efcdfcbb8d980d1
+
+% 0 1 0 0351ec26c48fef0312fe9bc15c867704
+
+% 0 1 0 0308d92cd7cc4aa91c48ad52defac580
+
+% 1 1 0 1018e4e197023d0807a498ae460562e6
+
+@ 0 2 0 15d78c83ed76f97d1fa6618484f5827b
++       git 配置中的 `tag.gpgsign` 或 `commit.gpgsign` 设置不会被参考：只有在传入 `Git.Signer` 时才会签名，而且签名从不离开进程。
+
+% 1 1 0 1d2a0ee252ad9f7f002af3479f60114e
+
+% 0 1 0 0479ff2ac89ee72d16cd41a9846e6754
+
+% 0 1 0 04d926a705ee53a618a54dc2a8a34e5a
+
+@ 0 4 0 15c0c0b178ad2a0c06e45a2bbaa1d060
++   entry .Signer   通过 `ssh-keygen -Y sign -n git`，用某个路径上的私钥签名
++     entry #sign   对载荷的铠装签名；ssh-keygen 失败时抛出 `Git.Error(SigningFailed)`
++   entry .Verifier   依据允许签名者文件中的主体和密钥进行验证
++     entry #verify   密钥被允许且签名成立时为 `Good(principal)`；没有匹配的主体时为 `Unknown`；否则为 `Bad`
+
+@ 0 1 0 0bf65b1c94381c7f05c0a815a5d205b9
++ entry .SshNative   通过原生 SSH 客户端访问远程仓库，无需 `ssh` 可执行文件，即 `gitTransports.soundnessSsh`
+
+% 1 1 0 0b2747fe3800c9be0a948bd1d7408521
+
+@ 0 8 0 02d6ed29172d65f311639ca3b1da0515
++       原生后端的一个 `Transport`，它通过 susurration（用 Scala 编写的 SSH 客户端）连接：每个对端一条 SSH 连接，每次交换一个通道，每个通道都以 `GIT_PROTOCOL=version=2` 运行 `git-upload-pack` 或 `git-receive-pack`。
++       主机密钥依据作用域内的 `Ssh.HostKeys` 方针检查，用户的身份来自 `Ssh.Credentials`（地址中的用户，否则为凭据中该主机的用户，再否则为 `git`），套接字来自 `Socket.Backend`；因此 `SshNative()` 接受这些，以及 `Ssh.Provider`、`Ssh.Algorithms`、TCP 选项、一个 SHA-256 `Hash` 和 `Diagnostics`。
++       `SshCommand` 接受的两种地址形式在这里都被接受。
+
+% 2 1 0 14f8661fcfad31c1099a299edbcaa2d5
+
+% 3 1 0 09a55506d65feb070d5f8e6a19705c78
+
+% 4 1 0 1cff62815acfe6ec01a66e0c59e3b55f
+
+% 5 1 0 173367eb424922a40ef645c262f9fa25
+
+% 0 1 0 0e45d61bd94f638418ed324ab416b0b0
+
+% 1 1 0 0c18dbdcce7e681a02c4a890fcde3f26
+
+% 2 1 0 1a2499ede562273516e721442d46205b
+
+% 0 1 0 0266db36ba6bdb1a1c77adf683b3ff44
+
+% 2 1 0 0657db022f7168391bda77931856f212
+
+% 0 1 0 0b3fe5d339b67f2816491fd1acd1578c
+
+% 1 1 0 195b58056193064e0939a0cfa12f3fdb
+
+@ 0 2 0 1eb4841a5882b1fe06670eaea7209054
++       连接、认证或 SSH 失败为 `Git.Error(Unreachable(host))`，以失败自身的消息作为详情；`1`–`65535` 之外的端口为 `Unsupported`。
+
+% 1 1 0 1eae9908fba37cbd1361b4d9666912cb
+
+% 1 1 0 1f400f4658f28e6f169d56a6739d2efb
+
+% 0 1 0 026227bba2bfd7871a71b150bd0a7258
+
+@ 0 1 0 11a98706c0ec318810e50235d9c1186d
++   entry .Channel   到仓库的一条 SSH 连接，每次交换一个通道
+
+% 1 1 0 179a4478b2b3a7c911c881db930250a1
+
+@ 0 8 0 1f894227759951d902855f854def77c3
++         协议所驱动的 `Channel`。
++         由于传输层由一个线程驱动，前一次交换的 SSH 通道会在下一个通道打开之前关闭；连接本身则保持打开，直到 `#close`。
++     entry #advertise   为某项服务打开一个通道，并以数据包行读取器的形式返回它的公告
++     entry #exchange   为某项服务打开一个通道，写入请求，并返回越过公告之后的回复
++     entry #close   关闭当前通道、会话和套接字
++   entry #accepts   某个 URL 是否为任一形式的 SSH 地址
++   entry #connect   连接、认证并返回一个 `Peer`；失败时抛出 `Git.Error(Unreachable)`
+
+@ 0 1 0 0cdb9504e064b5a7078ec8ccbd62973c
++ entry .gitCommands   `git` 可执行文件所在之处，每个都是需按名称导入的 given
+
+% 1 1 0 12e840229a4f149b032442575808180d
+
+@ 0 3 0 1b910378e41608e41a5a609e9095e137
++       命令行后端需要一个 `Commandline.Command`，指明要运行的 `git`。
++       导入 `searchpathGitCommand` 会在搜索路径上找到它；自带 git 的程序则改为绑定 `given Commandline.Command = Commandline.Command(t"/opt/git/bin/git")`。
+
+% 2 1 0 1b8befea2cd643f01d40db0ba2dc461b
+
+% 3 1 0 0c5b3553d364e38401685759947478d5
+
+% 4 1 0 0b6d4e6cd2a4427c00ede055c1368808
+
+% 1 1 0 0df41f4bac28f85206c262f2f4699a1c
+
+% 1 1 0 1e3d42e000da21431a3ee99127223867
+
+% 2 1 0 11c03cccad1976ef11c61d51ca3f0fd4
+
+% 3 1 0 09d1e0f8d5692c9d09790254d7c201bb
+
+% 4 1 0 13f0629dd5690fa21f383c5d97d879d0
+
+@ 0 5 0 1f2487603b6be8571567a7d44825723a
++   entry .searchpathGitCommand   通过 `which git` 在搜索路径上找到的 `git`
++       在该 given 首次使用时，于作用域内的 `WorkingDirectory` 和 `Environment` 中解析，并以 `Commandline.Event` 记录日志。
++       它需要作用域内有 `Tactic[Exec.Error]`、`Tactic[Path.Error]`、`Tactic[Io.Error]` 和 `Tactic[Name.Error]`——`strategies.throwUnsafely` 涵盖了这些——以及一个可从文本实例化的 `Path on Linux`。
+
+@ 0 1 0 12a672659170cddc0bf63e5cb0ba27ae
++ entry .gitBackends   `Git.Backend` 的两种实现，每个都是需按名称导入的 given
+
+% 1 1 0 0f035ce6d6805c4e0ef5312aebbd060f
+
+@ 0 3 0 06b7cd53d84d8d1a0046045168bbce3b
++       由哪个后端执行操作，取决于作用域内的 `Git.Backend^` given，而且这一选择从不是隐式的：`import soundness.*` 不会引入任何一个，必须按名称导入其中之一。
++       两者都是长期存在的；同样的代码在任一后端下都能运行。
+
+% 2 1 0 11600634ea8ae37c02994f2e7dd20c12
+
+% 3 1 0 1146c649f47fddf11c0837ddca3ccab2
+
+% 4 1 0 144358cfe280c4bc068e3d0ae5531a1a
+
+% 5 1 0 163d308874fe45710314a607e306482b
+
+% 6 1 0 1963a0e790ed72591440634117f90f56
+
+% 7 1 0 0328a476ad1faa1c04667b2feb439248
+
+% 8 1 0 01d723d9915ef7da18825de8857087c6
+
+% 4 1 0 0f4d055dd1f6f2da1e16bf3fcf750751
+
+@ 0 6 0 132d10e7acb4c68a1bac558210589ab6
++       `commandlineGit` 运行 `git` 命令，因而具有 git 的一切行为、传输方式和凭据助手。
++       `soundnessGit` 是 `Native()`，它自己读写仓库的文件，不需要 `git`；此时远程仓库需要一个 `Transport`，因此在原生后端下通过网络克隆、获取或推送的程序，会在作用域内有 `gitTransports` 的 given 的情况下绑定自己的 `given Git.Backend = Native(List(SmartHttp(), SshCommand()))`，而不是导入 `soundnessGit`。
+
+% 1 1 0 0cab0be40081f7bb135244219105413e
+
+% 0 1 0 138107cee06e99d416786aa56cabbe3f
+
+% 1 1 0 1d9383a4011b3dd30cccbad54c0aa2a0
+
+@ 0 6 0 08f3c5fadfbd8f98029c3dd0f3c9e35a
++   entry .commandlineGit   运行 `git` 命令的后端
++       一个 `Git.Backend^{loggable, caps.any}`，由作用域内的 `Commandline.Command`、`WorkingDirectory`、`Environment` 和 `Commandline.Event is Loggable` 构建为 `Commandline(command)`：因此要同时导入 `gitCommands.searchpathGitCommand`（或绑定一个命令）、`workingDirectories.javaBaseWorkingDirectory`、`environments.javaBaseEnvironment` 和一个日志方针。
+
+@ 0 7 0 1ff82bb3e74f6cbc01675a44a3b0c946
++   entry .soundnessGit   原生后端：自己读写仓库的文件，无需 `git` 可执行文件
++       不带任何传输层的 `Native()`，因此它按路径访问同一文件系统上的仓库，对其他任何 URL 都抛出 `Git.Error(Unsupported(the transport for <url>))`；通过 HTTP 或 SSH 从远程仓库获取或向其推送的程序，应改为绑定自己的 `given Git.Backend = Native(List(SmartHttp(), SshCommand()))`。
++       由于 `import soundness.*` 不导入 given，它需要按名称导入；`gitBackends.commandlineGit` 是运行 `git` 命令的替代方案。
+
+% 2 1 0 162883997921acd606a276cabb148247
+
+% 3 1 0 194e7b96f13c854e092c6bae4b794302
+
+% 4 1 0 08be3df0fd9d755b13ce401118fdf80d
+
+% 5 1 0 16421447b7153d82072dd90e10ccde87
+
+% 6 1 0 1f1bfddfbcd764ad0be4db9a8ea1d1a0
+
+% 7 1 0 1e8ba7a30e42cb4b10be82e77ad2641d
+
+% 8 1 0 1b418fb13035803d1838963251bfce30
+
+% 10 1 0 0acac173004ffbc21c55af9c944569ac
+
+% 11 1 0 07da488b9ba79c071fb5febae8219cc6
+
+% 12 1 0 14e79a03c7f07b201d8e2d7fcba5194e
+
+% 0 1 0 12203875568c65f81bff7501ef31c8ab
+
+% 1 1 0 05d1db2ed4d456351a661dd92dbac43c
+
+@ 0 1 0 1b7c0d631ffd90d6177b08dfeb1a6ad3
++ entry .gitTransports   原生后端访问远程仓库的方式，每个都是需按名称导入的 given
+
+% 1 1 0 1bcbbc01444659f1129390f0bc0943b2
+
+@ 0 5 0 02be38b289c55c720e58b0a582b07647
++       `Transport` 是 `Native` 访问 URL 的方式：`SmartHttp` 通过 HTTP(S)，`SshCommand` 通过派生的 `ssh` 进程，`SshNative` 通过原生 SSH 客户端。
++       这里的 given 根据各自所需的上下文构造每一种传输层，因此可以通过命名而不是构造传输层来写出 `Native(List(smartHttp, sshCommand))`。
++       命令行后端不需要其中任何一个。
+
+% 2 1 0 1acd29acc70a2ed51cdfc5d8b4c1d11a
+
+% 3 1 0 1043fd5d3037a4861c7317e22923874f
+
+% 4 1 0 1fad31b30cc358421adc042de6f9b03a
+
+% 5 1 0 05ee239d1e284a9f02163d33cd642498
+
+% 0 1 0 0cd572d9e32b8e910e779c0cb909d64d
+
+% 1 1 0 0c6500e817c9dfe709ea8f3f6a153ef3
+
+% 1 1 0 183d2417d14c5c661ea87f33383ed8bc
+
+% 2 1 0 09646fb4f0ec14990e883f01d078e1ed
+
+% 3 1 0 047acc312dc7913b0e1d6e6738ea6027
+
+% 0 1 0 0a0f4f5eca29fea90e3a32f5adec57e4
+
+% 1 1 0 0f83c3cb89c89593076bde903ec246f5
+
+% 0 1 0 074f15f1525ad02d076931017366168c
+
+% 1 1 0 0f41ddfcd0ef39d11908a557456ede87
+
+% 1 1 0 11c76b7696cf02160ada5d595e7bea03
+
+@ 0 10 0 08cbe1b688eb4efe10509f641316d432
++   entry .smartHttp   基于作用域内 `Http.Backend` 的 `SmartHttp()`
++       需要一个 `Http.Backend`，例如 `httpBackends.javaNetHttp`。
++   entry .sshCommand   在作用域内的 `WorkingDirectory` 和 `Environment` 中的 `SshCommand()`
++       一个 `Transport^{loggable, caps.any}`：它保留构建它时所用的 `Exec.Event is Loggable`，因此作用域内必须有一个日志方针。
++   entry .soundnessSsh   根据作用域内的 susurration 上下文构建的 `SshNative()`
++       需要一个 `Socket.Backend`、TCP 的 `Socket.Option`、一个 `Ssh.Provider`、`Ssh.Algorithms`、`Ssh.HostKeys`、`Ssh.Credentials`、一个 SHA-256 `Hash` 和 `Diagnostics`，以及作为可以使用网络之证据的 `Online`（它被要求提供，正如 telekinesis 的 HTTP 客户端要求它那样，但不会被保留：传输层本身是纯的）。
+
+@ 0 1 0 175a2f3044d34fc40607d6ab9dc9ce85
++ entry .Native   自己读写仓库文件的 `Git.Backend`，无需 `git` 可执行文件
+
+% 1 1 0 120f922147671452148e5e91376a004f
+
+@ 0 6 0 01e2442cddd9e7191ed540a5bb09ac96
++       `Native` 是 `Git.Backend` 的纯 Scala 实现：`Git.Repo` 或 `Git.Worktree` 句柄执行的每个操作，都通过以 git 自己的格式读写仓库自身的文件来完成，因此它所触及的仓库始终是 `git` 本身能理解的仓库，一方因冲突而停止的操作，另一方可以继续。
++       `gitBackends.soundnessGit` 是由 `Native()` 构建的 given，通过按名称导入来选择；`gitBackends.commandlineGit` 是运行 `git` 命令的替代方案。
+
+% 2 1 0 08516c3c6fc68b371305b3e7b67c9a33
+
+% 3 1 0 0bff2a692a3eabd91b66951733000051
+
+% 4 1 0 19620cd35aac7b011f88460f9918fc6d
+
+% 5 1 0 079d096a3481439318766e4d714308f2
+
+% 6 1 0 0adda3c29b49d9fe182afcdaa1fb943e
+
+% 7 1 0 105406ded35b2a831c8b622d049245ae
+
+% 8 1 0 1a378b1fd486d867188257c1adc45582
+
+% 10 1 0 08ef7e356385ca3617722acc01b42767
+
+% 11 1 0 109af20903f4c0de14a492697884c207
+
+% 12 1 0 0f71faf774357af607ed3d2d16877347
+
+% 0 1 0 0904de66c991cbcb0cc4c7c1ad31739c
+
+% 0 1 0 00beaae14ec758c81223558941cc6cc7
+
+% 1 1 0 1a56a6ec53c3ae160a4b5ea33329f494
+
+@ 0 1 0 115ea1220a33f955008a997c41a2d00f
++       它读写的内容：
+
+@ 0 24 0 158bd53abe80375a095bd58442c1dcfd
++       - **对象**：`objects/` 下的松散对象，`objects/pack/` 下的包文件及其 `.idx` 索引（偏移增量和引用增量都会被解析），以及 `objects/info/alternates` 中列出的存储。它写入的对象总是松散对象，先以临时名称写入再移动到位，因此并发的读取方永远不会看到不完整的对象；获取或克隆时收到的包被完整保存在内存中，然后解包为松散对象。
++       - **Ref**：松散 ref、`packed-refs`、符号 ref 和 reflog。每次移动 ref 的写入都是在一个以独占创建方式取得的 `<ref>.lock` 文件下进行的比较并交换：已被持有的锁为 `Git.Error(Locked)`，不再持有调用方的 `Stale` 读取结果所示内容的 ref 为 `Git.Error(Moved)`，并以调用方所用的名称（`HEAD`）报告，与 git 的报告方式相同。
++       - **配置**：`/etc/gitconfig`、XDG 和 `~/.gitconfig` 文件、仓库的 `config`，以及设置了 `extensions.worktreeconfig` 时的 `config.worktree`，按 git 的顺序读取，并拼接进 `include.path` 文件。提交者身份来自 `user.name` 和 `user.email`，`core.logallrefupdates` 决定是否写入 reflog。
++       - **索引和工作树**：索引文件（版本 2，保留未知的扩展）、`.gitignore` 文件和 `info/exclude`，以及 status、add、remove、move、restore、clean、checkout 和 switch。
++       - **序列操作**：merge（使用 diff3 三方合并和冲突标记）、cherry-pick、revert、rebase 和 stash，使用与 git 相同的状态文件（`MERGE_HEAD`、`CHERRY_PICK_HEAD`、`sequencer/`、`rebase-merge/`、`refs/stash`），因此 `git` 可以继续或中止 `Native` 停下的操作，反之亦然。
++       - 任意 notes ref 下的 **note**、**链接工作树**（`worktrees/` 注册表），以及**传输**：fetch、push、clone 和 `remoteRefs`，对象可以是同一文件系统上按路径访问的仓库，也可以通过 `Transport` 经线上协议访问。
+
+@ 0 8 0 0547eda913444a8811f85e0b5402b8cd
++       同一文件系统上的仓库通过其路径，或 `file://`、`./` 或 `../` URL，作为 `Peer.Local` 访问，完全不需要传输层。
++       其他任何 URL 都需要一个接受它的 `Transport`，取自构造后端时所用的 `transports` 列表：`SmartHttp()`（`http` 组件）用于 `http://` 和 `https://`，`SshCommand()`（`ssh` 组件）或 `SshNative()`（`sshNative` 组件）用于 `ssh://` URL 和 `scp` 风格的 `host:path` 地址。
++       `gitBackends.soundnessGit` 是不带任何传输层的 `Native()`，因此它只能访问本地仓库；没有传输层接受的 URL 为 `Git.Error(Unsupported(the transport for <url>))`。
+
+% 2 1 0 13254fbf099d3389183584a235edd75a
+
+% 0 1 0 07eda6bd62522bc81ee56960cd77a6b1
+
+% 1 1 0 183a6973f748fa85195225ac8dc46c08
+
+% 0 1 0 1f2eb7265bc00bf104a4ce954355feab
+
+% 0 1 0 0c9b5f76c68d732c1c230132c66c4134
+
+% 1 1 0 0c8726f53dd348e419c557b49020712a
+
+% 2 1 0 179ec46f2e7fbc7c15b8e9d1354dd974
+
+% 0 1 0 044cccdae18f820707a30c7fafdf0665
+
+% 0 1 0 07048c2ed22a4ec9038cb008e9de920d
+
+% 1 1 0 0a661887eac530130c8aac8b738d5f8c
+
+% 2 1 0 0fe184634537db0e1ff2d72bf5399f61
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 0 1 0 0c4ca26c4b2b9150098f5c00b9cf93c4
+
+% 0 1 0 0a98ae082f952800010439d6e277a866
+
+% 0 1 0 113169c818238e9d058d67dec6af6bca
+
+% 1 1 0 0757a3fa0dcac1101c5319a08405bb66
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 116afdc7d323a0b804f32785e69c5651
++       使用第一个对该 URL 的 `accepts` 为真的传输层，因此应按偏好顺序排列列表。
++       无论哪种传输层，列出 ref 和获取时都使用协议版本 2，推送时使用版本 0 的 `receive-pack` 交换，与 git 的做法相同。
+
+@ 0 6 0 1fc9ea44ad6b79d90b95dd61dd40afb8
++       它不做的事情，每一项都报告为 `Git.Error(Unsupported(…))`：递归克隆子模块，为合并提交签名（为提交和标签签名与后端无关，通过 `Git.Signer` 进行），`rebase --autosquash`，继续 `am` 风格的 rebase，跳过一次合并，以及 soft、mixed 和 hard 之外任何模式的 `reset`。
++       钩子、过滤器和凭据助手从不运行。
++       任何操作之下的文件系统失败都报告为 `Git.Error(Unexpected)`，以失败自身的消息作为详情。
+
+@ 0 3 0 0bd2c14de176501312b9d25e590a61f2
++       `Native` 可用于 JVM（`native-jvm`，基于 galilei 的 `java.nio.file` 后端）和 Scala Native（`native-native`，基于 javalib 文件系统）。
++       它被导出到 `soundness` 总括包，`Transport`、`Peer` 和 `SshAddress` 也是如此。
+
+% 1 1 0 058a00ef448b93c60269588dda9f36a1
+
+% 1 1 0 19aa45b5fd89cd530f89e16c094b6523
+
+% 1 1 0 0843cc4a2499efe3176f31e268b16838
+
+% 1 1 0 15c5ad53fa8587931821f82bdcefa670
+
+@ 0 176 0 09f0472751d2b6b015a14763b703e6b0
++   entry #locate   找出某个路径所属的仓库：它的 git 目录、公共目录和工作树
++       含有 `.git` 目录的目录是工作树；`.git` 是一个指明 `gitdir:` 的文件的目录是链接工作树，其自身的 git 目录在 `commondir` 中指明共享的 git 目录；含有 `HEAD`、`objects` 和 `refs` 的目录本身就是 git 目录（裸仓库，或其父目录为工作树的 `.git`）。
++       其他任何情况，或不存在的路径，都为 `Unset`。
++       这正是 `path.open[Git.Repo]` 和 `open[Git.Worktree]` 所参考的。
++   entry #init   创建一个仓库，`HEAD` 位于初始分支上
++       创建 `objects/`、`refs/heads/`、`refs/tags/`、`info/` 等目录，把 `HEAD` 写为指向该分支（未指定时为 `main`）的符号 ref，写入一个包含 `core.repositoryformatversion`、`core.filemode`、`core.bare` 以及（对于非裸仓库）`core.logallrefupdates` 的 `config`，并写入 `description` 文件。
++       裸仓库直接在目标位置创建，否则在其 `.git` 中创建。
++       已存在的文件会被保留，因此重新初始化是无害的。
++       `Git.init` 是其入口。
++   entry #clone   把一个仓库获取到一个新仓库中，并检出其默认分支
++       连接到源（本地路径，或某个传输层接受的 URL），在未指定分支时询问其符号 `HEAD` 以选择分支，初始化目标，以通常的获取 refspec（`+refs/heads/*:refs/remotes/origin/*`，裸克隆时为 `+refs/heads/*:refs/heads/*`）写入 `origin` 远程仓库，进行获取；对于非裸克隆，还会创建配置了上游的本地分支，检出树并写入索引。
++       `depth` 会进行浅克隆，其 `shallow` 文件为 git 所认可。
++       它需要 `Internet` 证据，递归克隆子模块为 `Git.Error(Unsupported(cloning submodules recursively))`。
++       传给它的 `Git.Activity` 报告 `Receiving` 和 `Checkout` 阶段。
++   entry #head   `HEAD` 是什么：附着于一个分支（可能尚未诞生），或分离于某个哈希
++       符号 `HEAD` 为带有该分支末端的 `Git.Head.Attached`，尚未诞生的分支则末端为 `Unset`；直接的 `HEAD` 为 `Git.Head.Detached`。
++       没有可读 `HEAD` 的仓库为 `Git.Error(NoSuchRef(HEAD))`。
++   entry #readRef   某个 ref 的内容，直接的或符号的，来自松散文件或 `packed-refs`
++   entry #listRefs   某个前缀下的每个 ref 及其哈希，按名称排序
++       松散 ref 会遮蔽同名的打包 ref，与 git 中的情况相同。
++   entry #peel   沿附注标签一路跟随到它们最终指明的对象
++   entry #updateRef   对 ref 的比较并交换：若它持有预期的值，则移动或删除它
++       以独占创建方式取得 `<ref>.lock`（若另一个进程持有它则为 `Git.Error(Locked)`），把 ref 的当前值与 `Git.Backend.Expectation` 比较（若不同则为 `Git.Error(Moved)`），写入或删除，并在 `core.logallrefupdates` 要求时追加一行带消息的 reflog。
++       被更新的打包 ref 会以松散形式写入。
++       这是句柄上每个移动 ref 的动词所依赖的原语。
++   entry #updateSymbolicRef   让一个符号 ref（例如 `HEAD`）指向另一个 ref
++   entry #resolve   把修订版本表达式解析为哈希，若无匹配则为 `Unset`
++       理解完整的和无歧义的缩写哈希，`HEAD` 和 `@`，按 git 的顺序尝试的 ref 名称（`refs/<name>`、`refs/tags/<name>`、`refs/heads/<name>`、`refs/remotes/<name>`、…），形如 `<ref>@{n}` 的 reflog 条目，以及从右向左结合的 `~n`、`^n`、`^{}`、`^{commit}`、`^{tree}` 和 `^{tag}` 后缀。
++   entry #revList   从一个修订版本可达、而从另一个不可达的提交，最新的在前
++       从 `from` 开始沿父提交遍历，在 `until` 和 `shallow` 边界处停止，按提交日期降序排列；`limit` 限制数量，`paths` 只保留更改了其中某个路径的提交。
++       无法解析的修订版本为 `Git.Error(NoSuchRef)`。
++   entry #reflog   某个 ref（默认为 `HEAD`）的 reflog，最新的在前
++   entry #mergeBase   两个提交最近的共同祖先，若没有则为 `Unset`
++   entry #isAncestor   一个提交是否可从另一个提交到达
++   entry #readObject   对象的种类和字节，来自松散存储、包或备用存储
++       没有任何存储持有它时为 `Unset`。
++       找不到某个哈希时会重新列出各个包，因为另一个进程可能已经重新打包。
++   entry #readObjects   一次读取多个对象，跳过缺失的对象
++   entry #writeObject   以松散形式存储一个对象并返回其哈希
++       按 git 的方式对 `<kind> <size>\0` 头部和字节计算哈希；已存在的对象不会被重写。
++   entry #diffTree   两棵树之间的文件差异，作为带有差异块的 `Delta`
++   entry #status   每个路径的索引和工作树状态，与 `git status --porcelain` 的报告相同
++       比较 `HEAD` 的树、索引和工作文件，遵循 `.gitignore` 和 `info/exclude`；`ignored` 和 `untracked` 指明是否列出那些文件。
++       stat 数据仍与文件相符的索引条目会被信任而不计算哈希，这是 git 的 racy-git 规则所允许的。
++   entry #add   暂存路径，或用 `all` 暂存工作树下的每处更改
++       为文件写入 blob 并更新索引，对尚未暂存的文件遵循 `.gitignore`；不匹配任何文件且未被暂存的路径为 `Git.Error(Untracked(path))`。
++   entry #remove   从索引中移除路径，并且除非指定 `cached`，也从工作树中移除
++       索引未跟踪的路径为 `Git.Error(Untracked(path))`；如果没有 `force`，暂存内容或工作内容与 `HEAD` 不同的文件为 `Git.Error(Dirty)`。
++   entry #move   在索引中和磁盘上重命名一个被跟踪的路径
++   entry #restore   从索引或某个源修订版本恢复路径，恢复到索引、工作文件或两者
++   entry #clean   删除未跟踪的文件，用 `directories` 时还删除未跟踪的目录，并返回被删除的内容
++       只有设置了 `ignored` 时，被忽略的文件才会被删除。
++   entry #writeTree   把索引写为一个树对象并返回其哈希
++       含有未合并条目的索引为 `Git.Error(Conflict(paths))`。
++   entry #readTree   把索引重置为 `HEAD`，对于 `ResetMode.Hard` 还重置工作文件
++       `Soft` 什么也不改变；`Mixed` 根据 `HEAD` 重写索引，stat 数据保持未验证，因此下一次 status 会对每个文件计算哈希；`Hard` 还会重写工作文件，并与磁盘上的内容而不是索引比较，因此被修改的文件会被替换。
++       其他任何模式为 `Git.Error(Unsupported)`。
++   entry #diffWorktree   工作文件（或使用 `staged` 时为索引）与 `HEAD` 或某个修订版本之间的差异
++   entry #tracked   索引中的每个路径
++   entry #conflicts   有未合并索引条目的路径
++   entry #checkout   把 `HEAD` 移到某个修订版本并使其分离，同时更新索引和文件
++       分支名以附着方式检出，其他任何东西以分离方式检出。
++       如果检出会覆盖在索引或工作树中被修改的路径，则为 `Git.Error(Dirty)`。
++   entry #switch   把 `HEAD` 移到一个分支，用 `create` 时从当前提交创建该分支
++       不用 `create` 时，不存在的分支为 `Git.Error(NoSuchRef)`，切换就是以附着方式检出该分支。
++       用 `create` 时，分支通过一次预期它不存在的比较并交换在当前提交处创建，因此已存在的分支为 `Git.Error(Moved)`，`HEAD` 被指向它而不触及文件。
++   entry #merge   把一个修订版本合并进 `HEAD`：快进、合并提交，或因冲突停止
++       遵循 `FastForward` 方针，根据双方相对于其合并基础的 diff3 合并写入冲突标记，发生冲突时留下 `MERGE_HEAD` 和 `MERGE_MSG`，供 `sequence` 继续或中止。
++       以原生方式为合并提交签名为 `Git.Error(Unsupported)`。
++   entry #cherryPick   把提交逐个应用到 `HEAD` 上，在第一个冲突处停止
++       写入 `CHERRY_PICK_HEAD` 和一个保留当前条目的 `sequencer/` 待办列表，与 git 的做法完全相同，因此任一方都可以继续。
++       使用 `noCommit` 时，更改被暂存而不创建提交；否则，不改变任何东西的拣选为 `Git.Error(NothingToCommit)`。
++   entry #revert   把提交的逆向更改应用到 `HEAD` 上，即反向的 `cherryPick`
++   entry #rebase   把自 `upstream` 以来的提交重放到 `onto` 上，在冲突处停止
++       把状态保存在 `rebase-merge/` 中，已停止的拣选已位于 `done` 中，与 git 的安排相同。
++       用于 sign-off 之类的 `Git.Rebase.Option` 会被遵循；`--autosquash` 为 `Git.Error(Unsupported)`。
++   entry #sequence   继续、跳过或中止正在进行的 merge、cherry-pick、revert 或 rebase
++       读取现有的状态文件，以判断是哪种操作；若没有则为 `Git.Error(NoOperationInProgress)`。
++       继续 `am` 风格的 rebase 和跳过一次合并为 `Git.Error(Unsupported)`。
++   entry #operation   正在进行的操作（如果有），及其冲突路径
++   entry #stash   把索引和工作区更改保存为一个 stash 条目，并重置树
++       在 `refs/stash` 下写入 git 所写的三个提交（索引、按要求包括的未跟踪文件，以及 stash 本身），并附带一个 reflog 条目；`keepIndex` 保留已暂存的更改。
++       干净的树不创建条目并给出 `Unset`；含有未合并条目的索引为 `Git.Error(Unmerged)`。
++   entry #stashes   各个 stash 条目，最新的在前，来自 `refs/stash` 的 reflog
++   entry #applyStash   把一个 stash 条目应用到树上，用 `index` 时也恢复索引，用 `drop` 时将其丢弃
++       缺失的条目为 `Git.Error(NoSuchStash)`；冲突会像合并那样使它停止。
++   entry #dropStash   从 reflog 中移除一个 stash 条目
++   entry #readNote   某个 notes ref 下对象上的 note（如果有）
++   entry #listNotes   某个 notes ref 下的每个 note，各自表示为被注释的对象和 note blob
++       平铺的和扇出的 notes 树都能读取。
++   entry #editNotes   添加、追加、移除或复制一个 note，写入一个新的 notes 提交
++       以 notes ref 的当前末端作为 `base`（第一个 note 时为 `Unset`），并返回新提交；由调用方移动 ref。
++       除非编辑强制覆盖，已存在的 note 为 `Git.Error(NoteExists)`，从没有 note 的对象复制为 `Git.Error(NoteNotFound)`。
++   entry #configRead   一个配置文件的条目，或所有生效的条目
++       `Git.Config.Source.Effective` 按 git 的顺序给出系统、XDG、全局、本地和工作树文件，并拼接进 `include.path` 文件（最多十层深）；其他任何来源都作为单个文件读取。
++   entry #configWrite   在配置文件中设置一个键，或用 `add` 追加一个值
++       在 `config.lock` 下写入，保留注释和文件的其余部分；新节中的键会得到节头。
++   entry #configUnset   从配置文件中移除一个键，或用 `all` 移除它的每个值
++   entry #remoteRefs   像 `ls-remote` 那样列出远程仓库的 ref，`HEAD` 在前，标签附带其剥离后的目标
++       需要 `Internet` 证据。
++       远程仓库是一个已配置的名称，其 URL 为 `remote.<name>.url`（推送时若设置了 `remote.<name>.pushurl` 则用它），或者是按原样使用的 URL 或路径。
++   entry #fetch   从远程仓库获取，移动 refspec 所指的本地 ref，并写入 `FETCH_HEAD`
++       未给出 refspec 时使用远程仓库已配置的 refspec，与对端的 `download` 协商，以松散形式存储收到的内容，把历史截断到 `depth` 并在 `shallow` 中记录边界，用 `tags` 时把 `refs/tags/*:refs/tags/*` 加入 refspec，用 `prune` 时删除匹配模式目标、而远程对应物已消失的本地 ref。
++       返回它更改的 ref。
++       需要 `Internet` 证据。
++   entry #push   发送远程仓库缺少的对象，并请求它移动它的 ref
++       每个 refspec 都成为一个 `RefUpdate`，其预期值由 `Git.Push.Force` 方针设定：普通推送预期远程仓库的当前值，并在本地拒绝非快进的移动；`Always` 不预期任何值；`Lease` 预期它所携带的读取结果。
++       结果把每个 ref 命名为 `Created`、`Updated`、`Deleted`、`UpToDate` 或 `Rejected`，并附带对端给出的原因；`setUpstream` 配置分支的 remote 和 merge 键。
++       需要 `Internet` 证据。
++   entry #worktrees   主工作树和每个链接工作树，及其 head、分支和锁定状态
++       `gitdir` 指向一个已不存在的目录的链接工作树会被标记为可修剪。
++   entry #addWorktree   把一个修订版本检出到一个新的链接工作树中，按要求位于一个新分支上
++       在 `worktrees/<name>` 下以 `gitdir`、`commondir` 和它自己的 `HEAD` 注册它，在新树中写入 `.git` 文件，检出文件并写入索引。
++       作为现有分支名的修订版本会使 `HEAD` 附着于该分支，除非设置了 `detach`；`newBranch` 会先在那里创建一个分支（若它已存在则为 `Git.Error(Moved)`）。
++       已存在且不为空的目标为 `Git.Error(Unexpected)`。
++   entry #removeWorktree   删除一个链接工作树及其注册表条目
++       被锁定的工作树为 `Git.Error(Locked)`；没有 `force` 时，有更改的工作树为 `Git.Error(Dirty)`。
++   entry #lockWorktree   写入一个 `locked` 文件（可带原因），使该工作树永远不会被修剪
++       锁定一个已被锁定的工作树为 `Git.Error(Locked)`。
++   entry #unlockWorktree   移除工作树的 `locked` 文件
++       未被锁定的工作树为 `Git.Error(Unexpected)`。
++   entry #moveWorktree   移动链接工作树的目录，并重写其注册表条目
++       被锁定的工作树为 `Git.Error(Locked)`，已存在的目的地为 `Git.Error(Unexpected)`。
++   entry #pruneWorktrees   移除其工作树已消失的注册表条目，并返回它们的路径
++       被锁定的条目会被保留。
+
+@ 0 1 0 10d26e3ce87998900e6331ec2d6f5ecb
++ entry .Transport   供原生后端使用的、访问某类 URL 上的远程仓库的一种方式
+
+% 1 1 0 113eeeffbac2c5d801f2f74f667db0c1
+
+@ 0 7 0 11aed1d5a564ef86021615f69c025768
++       `Native` 无需任何帮助即可按路径访问同一文件系统上的仓库；其他任何 URL——`https://…`、`ssh://…`、`host:path`——都需要一个其 `#accepts` 接受它的 `Transport`，取自构造后端时所用的列表。
++       该库提供三种，每种都在各自的组件中，因此程序只需为它所用的那一种付出代价：`SmartHttp()`（`http` 组件）通过作用域内的任意 `Http.Backend` 使用 git 的智能 HTTP 协议；`SshCommand()`（`ssh` 组件）为每次交换派生一个 `ssh` 命令进程；`SshNative()`（`sshNative` 组件）使用纯 Scala 的 SSH 客户端。
+
+% 2 1 0 149106cf83790929151aee6b3df6fd15
+
+% 3 1 0 1c12df8c8e86384d0cca44b99a5ec973
+
+% 2 1 0 00186788692ac0901b3242e988efcf65
+
+% 0 1 0 06b3412787d0405a19b1702bff270c7e
+
+% 1 1 0 094d05ed027b7db00751ad3765f3f07f
+
+@ 0 7 0 06b33e890055eb830d8e47196fbc5214
++       按列表顺序询问各传输层，第一个接受该 URL 的传输层连接到它：它返回的 `Peer` 是获取或推送的另一端，由线上协议驱动（`ls-refs` 和 `fetch` 使用版本 2，推送使用版本 0 的 `receive-pack` 交换）。
++       自己编写的传输层实现这两个方法；通过线上协议连接的传输层根据一个 `Channel` 构建它的 `Peer`，该通道承载服务公告以及每个请求和响应。
++       `gitBackends.soundnessGit` 完全没有传输层。
+
+% 1 1 0 176e98b415b245c70dbe8bcd3015fad6
+
+% 1 1 0 03d709df51fafa790a62df7ab5e8dc1c
+
+% 0 1 0 16bb82917313b5ba0bb531328ee552d6
+
+% 1 1 0 0d7d21c0f7e0b1dc08e9c8948e69d5ea
+
+@ 0 6 0 198797ce8b1334870ffd17b11c9e2e81
++   entry #accepts   该传输层能否访问这个 URL
++       仅根据 URL 的形状判断：`SmartHttp` 接受 `http://` 和 `https://`，SSH 传输层接受 `SshAddress.parse` 能理解的任何东西。
++   entry #connect   打开到该 URL 上仓库的连接，作为一个 `Peer`
++       无法建立连接时抛出 `Git.Error`；该 URL 已经被接受。
++       对端是一种能力（`Peer^`），因为它持有连接。
+
+@ 0 1 0 1081b1293c6c20e70edf0759f563b33f
++ entry .Peer   获取或推送的另一端：列出 ref，发送对象，接收对象和 ref 更新
+
+% 1 1 0 00bc7b36b4d4cae11e8dc1bf2a36404b
+
+@ 0 7 0 0c5a9dbb9c3d6aa6149cdd4233a24b47
++       `Peer` 是 `Native` 从中获取、向其推送的对象。
++       它列出自己的 ref，发送从被请求的 ref 可达的对象（在请求方已拥有的对象处停止），并接收对象连同 ref 更新，逐个应用这些更新并报告结果。
++       这一切如何发生是对端自己的事：`Peer.Local` 直接读写本文件系统上的仓库，而传输层的对端通过 `Channel` 使用线上协议。
++       对端通过 `Transport#connect` 获得，或者对于本地路径由 `Native` 自己获得；程序通常只有在编写 `Transport` 时才会遇到它。
+
+% 1 1 0 186a79eac72649cc1430f9be93da3f53
+
+% 0 1 0 12b06bf9a1bcf34317f4826f5de19c6c
+
+% 1 1 0 06898a86f7993a7d038edf928a293853
+
+@ 0 24 0 0ffa36cc020da59a173ac148d859dfbc
++   entry .Local   本文件系统上的仓库，通过直接读写其文件来访问
++       `Peer.Local(location, identity)` 接受仓库的 `Git.Backend.Location`（由 `Native#locate` 找到）以及要记录在其 reflog 中的身份。
++       它是 `Native` 对路径，或对 `file://`、`./` 或 `../` URL 所使用的对端。
++       它的 `refs` 先列出 `HEAD`，然后列出每个 ref，附注标签之后跟着形如 `<name>^{}` 的剥离后目标，与 `ls-remote` 的做法相同；它的 `upload` 以松散形式写入对象，并通过比较并交换应用每个 `RefUpdate`，对已移动的 ref 报告 `failed to update ref`，对被另一个进程锁定的 ref 报告 `failed to lock`，对非裸仓库已检出的分支报告 `branch is currently checked out`，该分支永远不会在其脚下被更新。
++   entry #refs   每个 ref 及其哈希，包括 `HEAD`，与 `ls-remote` 列出的方式相同
++       附注标签之后跟着形如 `<name>^{}` 的剥离后目标。
++   entry #symbolicHead   `HEAD` 是指向哪个 ref 的符号 ref（如果对端告知）
++       `clone` 在未指定分支时检出的 ref；对于分离的或未知的 `HEAD` 为 `Unset`。
++   entry #download   把从 `wants` 可达、而 `has` 不认识的每个对象发送给 `store`
++       `haves` 是请求方持有的提交，用于只能被告知请求方拥有什么、而不能主动询问的对端。
++       给定 `depth` 时，提交历史在该深度处被截断，并返回边界处的提交，供请求方的 `shallow` 文件使用；否则结果为空。
++       `Git.Activity` 被推进到 `Receiving` 阶段。
++   entry #upload   接收所指明的对象（通过 `read` 读取），然后应用更新
++       返回每个更新的 ref，与它被拒绝的原因配对；已应用的则配以 `Unset`。
++       `Git.Activity` 被推进到 `Writing` 阶段，以对象数量计量。
+
+@ 0 1 0 1f36130e1f26260a0c84617d272779ae
++ entry .RefUpdate   要在对端上更改的一个 ref：它现在预期持有什么，以及它应当持有什么
+
+% 1 1 0 196b9059d58183d4020995db1cc99085
+
+@ 0 5 0 017fa76fa91304d71f0807532d398f31
++       推送的一行：`Native#push` 为每个 refspec 构建一个 `RefUpdate`，并把它们交给 `Peer#upload`。
++       `expected` 值是比较并交换的条件——普通推送时为远程仓库的当前读取结果，强制推送时为 `Git.Backend.Expectation.Unconditional`，`Git.Push.Force.Lease` 时为租约的读取结果——`to` 为 `Unset` 时删除该 ref。
+
+% 1 1 0 0cafda5c961666fc1b40e066d13dccaa
+
+@ 0 3 0 1ab187cd6850925e1426431dbb480120
++   entry #ref   ref 的完整名称，例如 `refs/heads/main`
++   entry #expected   要应用更新，该 ref 必须持有的值
++   entry #to   要把 ref 移到的哈希，或表示删除它的 `Unset`
+
+@ 0 1 0 19a36cb80b28cb7f1092adbffd748b6c
++ entry .Channel   到远程仓库的 `git-upload-pack` 或 `git-receive-pack` 的连接，无论它以何种方式承载
+
+% 1 1 0 18b894747922106b120c8c104ab75528
+
+@ 0 9 0 06852fe1231791b40433593dfadd9132
++       `Transport` 与线上协议之间的接缝：通道提供服务器为某项服务发出的开场公告，以及以 pkt-line 分帧发送一个请求并读取回复的方式，构建在它之上的协议客户端完成其余工作。
++       随库提供的三种传输层各自定义了一个——基于带 `Git-Protocol: version=2` 头部的 HTTP 请求的 `SmartHttp.Channel`，每次交换一个 `ssh` 进程的 `SshCommand.Channel`，以及在一条 SSH 连接上每次交换一个通道的 `SshNative.Channel`——自己编写的传输层也会定义一个。
++       它返回的读取器是库自己的 pkt-line 读取器，不属于公共 API，因此目前只能在库内部编写 `Channel`。
+
+% 1 1 0 008e0b81c78ebd2a0d727f1bb35ba8e2
+
+@ 0 5 0 0ecafee4489ad68c004ecbc593589ad4
++   entry #advertise   服务器为某项服务发出的开场公告，作为 pkt-line 读取器
++       服务为 `git-upload-pack` 或 `git-receive-pack`；协议客户端从中读取版本行和能力列表。
++   entry #exchange   向某项服务发送一个请求，并返回响应的读取器
++   entry #close   释放通道持有的一切：一个进程、一条连接
+
+@ 0 1 0 1e5f1929ffe943421db8e4f440c364c4
++ entry .SshAddress   通过 SSH 访问的仓库的地址，采用 git 接受的任一形式
+
+% 1 1 0 1666ba2703883d2b03012dc6be47d3e8
+
+@ 0 5 0 0d3f4f8e298b6c9e04305d422da54dc2
++       Git 接受 URL 形式的 SSH 远程仓库 `ssh://[user@]host[:port]/path`，或类 `scp` 形式的 `[user@]host:path`；后者只要冒号出现在任何斜杠之前就是 SSH 地址（`localhost:/srv/repo.git`），否则就是本地路径（`./dir:x`）。
++       `SshAddress` 是这两种形式解析后的形式，SSH 传输层恰好接受 `.parse` 能理解的那些 URL。
+
+% 2 1 0 1d59271360259a091828e082242a9e23
+
+% 3 1 0 1cef8fc7e4c7949d0bcf7d19d4ccdd68
+
+% 0 1 0 1528054a8964758c11797ef5af264185
+
+% 0 1 0 16407175361b2737139cfee9449fb915
+
+% 0 1 0 031a320b36502ceb160e0586446fa91f
+
+% 0 1 0 01ddaaa090e85fff0df84e7359fdc560
+
+% 0 1 0 0a7decd2c9e4c6f11667773900884df6
+
+% 1 1 0 11bbf230d0d288720157c0aa7fa662fb
+
+@ 0 2 0 0734bc55fb489bf70888a306505fe913
++       在 URL 形式中，路径保留开头的 `/`；在 `scp` 形式中，路径是冒号之后的一切，除非它以 `/` 开头，否则相对于服务器上该用户的主目录。
+
+% 1 1 0 11bb19f14dd6ac7312c87e572cd17368
+
+@ 0 8 0 010d06fc248b2ec10024709c0bfa7798
++   entry .parse   从文本中读取 SSH 地址，若文本不是 SSH 地址则为 `Unset`
++       以 `ssh://` 开头的文本在授权部分之后必须有一个 `/`，端口不是数字会使整个地址为 `Unset`。
++       带有其他任何 `://` 的文本不是 SSH 地址，第一个 `/` 出现在第一个 `:` 之前或没有冒号的文本也不是。
++   entry #user   登录时所用的用户，或表示 SSH 客户端默认值的 `Unset`
++   entry #host   主机名或地址
++   entry #port   端口，或表示 SSH 客户端默认值（22）的 `Unset`
++   entry #path   仓库在服务器上的路径

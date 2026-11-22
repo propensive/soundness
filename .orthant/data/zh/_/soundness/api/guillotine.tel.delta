@@ -1,0 +1,1347 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0eca55478231cd681755d97e040abf5b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0703e3a070cd7bc01df54db665f0e019
++ info   作为有类型值的外部进程：在编译时检查、运行、用管道连接并按类型读取的命令
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 13247a613327a74b12951680c8ef47e2
++     _Guillotine_ 运行外部程序。
++     命令是一个 `Command`——一个参数列表，中间没有 shell——由 `sh"…"` 插值器构建，它像 POSIX shell 那样解析引号和转义，**而且是在代码编译时解析**：未闭合的引号是编译错误，代入命令的值会按它所落入的位置进行转义，因此含有空格的文件名仍然是一个参数。
++     命令可以用 `|` 连接成 `Pipeline`，二者都可以用 `exec[T]()` 同步运行，其类型参数决定如何读取进程的输出，也可以用 `fork[T]()` 在后台启动，它返回一个 `Job`，可以向它写入、从它读取、等待它、中止它或杀死它。
+
+% 2 1 0 1f7c49cb613e4e1800fcde1c7571ba8d
+
+% 3 1 0 12157c16342f038603162edf47cfdae6
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 043d0443a826aa590c585b4bb4438aa9
+
+% 0 1 0 088000bff55976160205a17be7016df9
+
+% 0 1 0 05e8ef5c4324c45c04c3b5660b04bdaf
+
+% 0 1 0 1775cfddb4b327010fc33934d4b86cfd
+
+% 1 1 0 09ac11102d47533c17e698dd4d4d9b20
+
+@ 0 8 0 0ad255ec85c296f5094ab34de0d8fd3d
++     每次运行都需要四个上下文值：一个 `WorkingDirectory`（进程的工作目录；`workingDirectories.javaBaseWorkingDirectory` 是这个 JVM 的工作目录）、一个 `Environment`（进程的变量；`environments.javaBaseEnvironment` 继承当前进程的变量，`environments.emptyEnvironment` 不给它任何变量，`variables(…)` 可以在两者之上添加变量）、一个 `Tactic[Exec.Error]`（`strategies.throwUnsafely`，或者一个 `tend`/`mitigate` 块），以及一个 `Exec.Event is Loggable`（`logging.silentLogging`，或者一个真正的日志）。
++     这些都不会随 `import soundness.*` 一起导入，因为每一个都选择了一种方针：`import pkg.*` 不会导入 given，因此每一个都要按名称导入。
+
+@ 0 8 0 17a0bf97f9fac18612034b22bbaee711
++     `exec` 和 `fork` 的结果类型可以是任何具有 `Computable` 实例的类型：`Text` 和 `String`（全部标准输出，在进程结束时读取）、`List[Text]` 和 `Chain[Text]`（标准输出的各行，链在进程写入时惰性拉取）、`Data`（原始字节）、`Stderr`（作为文本的标准错误）、`Exit`（退出状态，`Exit.Ok` 或 `Exit.Fail(code)`）、`Unit`（等待并丢弃输出），以及任何路径类型（去掉首尾空白并解码后的输出）。
++     名称是某个 POSIX 实用程序的命令可以完全不带类型地调用——`sh"echo hi"()`——由 `PosixCommands` 中的 `Intelligible` given 选择该命令所隐含的结果类型。
+
+@ 0 6 0 02ec33a044ebe91008ea9935fab54936
++     命令也可以用 `Command#pty` 在伪终端上运行，这样它会在其标准流上发现一个终端，并可以通过 `session` 以交互方式驱动；它的行规程是一个 `Termios`。
++     应当比当前进程存活更久的进程用 `detach` 启动，它只保留该进程的 `Pid`。
++     `Process` 是系统上任何进程的句柄，按 `Pid` 指定，带有其父进程、子进程、启动时间和 CPU 时间；当没有这样的进程在运行时，会抛出 `Pid.Error`。
+
+@ 0 8 0 1f5426bd6bf37f62059d73bca89fd3da
++     这个库是单个组件 `guillotine.core`，它可以为 JVM 和 Scala Native 编译（不支持 Scala.js，因为它没有 `ProcessBuilder`）。
++     有三个私有部分按平台拆分：伪终端（在 JVM 上通过外部函数 API，在 Native 上通过 C 互操作，两种情况都只支持 Linux 和 macOS）；管道的连接（在 JVM 上使用 JDK 的 `startPipeline`；在 Native 上每个阶段都在管道上启动，由一个守护线程把前一阶段的输出复制到它之中）；以及进程的启动时间和 CPU 时间，Native 的 javalib 无法报告它们，因此在那里 `Process#startTime` 和 `Process#cpuUsage` 为 `Unset`。
++     所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 188a530422b122f2112064e384060cc3
+
+% 0 1 0 106d8b53c6d1b7081d63b55a6c3d535a
+
+% 0 1 0 0c147bd9a816e0e60fd95fefbbf46e8a
+
+% 0 1 0 1f9490b290101a8d09a8c8438dd92c6a
+
+% 0 1 0 1060d6dfbba72ba60e0d903c678494af
+
+% 0 1 0 1f5b2d60615e116a0d1cb4e17bf5d1ae
+
+@ 0 10 0 17517008a361969e1fc4b47a43413d13
++ entry .sh   `sh"…"` 插值器：在代码编译时解析的 `Command`，代入的值会被转义
++     `sh"ls -la $directory"` 是一个 `Command`，其参数是字面量中的各个单词，按空白拆分，并像 POSIX shell 那样处理单引号、双引号和反斜杠转义。
++     不会运行任何 shell：参数直接交给程序，因此代入值中的元字符永远不会被解释。
++     解析在代码编译时通过 `Sh.Runtime` 解析器进行，错误会报告在引起它的字符处：_this single quote is never closed_ 和 _this double quote is never closed_ 报告在打开的那个引号处，_a command cannot end with an escape character_ 报告在末尾的反斜杠处，而 _an escape character cannot appear immediately before a substitution_ 报告在写在 `$` 之前的反斜杠处。
+
+% 2 1 0 1d36d21fca2ffc9f1cad0c4508ef9eaf
+
+% 3 1 0 0bb4ab43a679a54f18e6594b65ec37e1
+
+% 0 1 0 127439ec3b6a4a031bc6c10a84d1b25b
+
+% 0 1 0 1b52a89265ca77431bc7a370b1d2e166
+
+% 0 1 0 06454df37c8a59ab1481f35e66c81e98
+
+% 0 1 0 185e0bbca4d68ad500328337e9514a33
+
+% 1 1 0 12da1fae1a3bcb10091ec05b385cd3ee
+
+@ 0 10 0 09486d70d6121b850e8f1c6b987b74bf
++     代入的值按它所落入的位置进行转义。
++     不在引号内时，一个 `Text` 无论包含什么都恰好是一个参数，一个 `List[Text]` 的每个元素是一个参数（空列表不贡献任何参数）；在引号内时，列表的各元素用空格连接成引号所界定的那一个参数。
++     与字面文本相邻的值会与之连接（`${a}x` 得到 `ax`）。
++     `Command` 作为其各个参数代入，因此 `sh"sh -c '$inner'"` 把一个内部命令作为单个参数传给 shell。
++     任何其他类型通过一个 `Parameterizable` 实例代入——`Pid` 呈现为 `↯42`，任何 `Encodable in Text` 的东西（一个 `Path`、一个 URL）呈现为其编码——没有这种实例的类型是编译错误，_can't substitute `T` into a sh-interpolator_。
++     不能代入外围类的 `val` 成员选择（`$config.host`）；先把它绑定到一个局部变量。
+
+@ 0 4 0 14bac1a26172f35e15c29aaf0d1da759
++     结果的静态类型是一个细化类型 `Command { type Exec = "ls" }`，它把命令的名称作为字面量类型携带，`Executable#apply()` 正是用它来找到给出该命令隐含结果类型的 `Intelligible` 证据。
++     以不同空白或引号写出的两个命令，只要参数相同就相等。
+
+@ 0 1 0 092af24dd63ec92e1fc135775137a66e
++ entry .Executable   可以运行的东西：`Command` 或 `Pipeline`，带有 `exec`、`fork`、`detach` 和 `|`
+
+% 1 1 0 0a739d7c271b50f300bdcfbf7e041375
+
+@ 0 7 0 13d69929d3e374a41fed10435011a263
++       两种可运行之物 `Command` 和 `Pipeline` 的密封特质，也是两者共有操作的所在。
++       每次运行都为子进程接受一个 `WorkingDirectory` 和一个 `Environment`（能够枚举其变量的环境会完全取代当前进程的环境，此时裸命令名会在*该*环境的 `PATH` 上查找，因为 JDK 会搜索这个 JVM 的 `PATH`），一个用于无法启动的进程的 `Tactic[Exec.Error]`，以及一个用于启动、退出、中止和杀死事件的 `Exec.Event is Loggable`。
+
+% 2 1 0 091f19782529c84616e33493136ff976
+
+% 3 1 0 07913af5d714a49c1fae749c2b53b6f2
+
+% 4 1 0 10c3dd9a8d8292721cc675b3fbb2b779
+
+% 5 1 0 16d0a1ad9c5fbd091e4c543e288acbf0
+
+% 6 1 0 063ddf801d0057ca153ca134065d01a5
+
+% 7 1 0 18e6ae53dd834eec11ba6b4d73421a36
+
+% 0 1 0 0ff1020db1caab7018da2a81c19f4055
+
+% 0 1 0 0d133c7705b998fb0d9a71526985f84a
+
+% 0 1 0 1b811b02fc96dbfc174cad3d0067a4b9
+
+% 0 1 0 0faea02e838cf0c106cf0a785bdba03c
+
+% 1 1 0 1cc91c3dcf05dc300ccb2077485f1aba
+
+@ 0 3 0 1876de414d727e411f7c29192b777086
++       `exec` 等待进程，并把其输出解释为所指定的类型；`fork` 启动进程并返回 `Job`；`detach` 启动进程并只保留其 `Pid`。
++       无参的 `apply()` 就是结果类型由命令名称隐含的 `exec`。
+
+% 1 1 0 1e802c352c62e52e1ce9274cbf68dda2
+
+% 1 1 0 09cdc1ee2bcebd620a10310d6777e70b
+
+% 1 1 0 0d94350ded3a11d404305ffef631f567
+
+% 1 1 0 1cfccdfe1e6f63e319647734badb97fb
+
+@ 0 12 0 1251cd3cca63de9f16ce809de620b9ea
++   entry #Exec   命令的名称，作为字面量类型（如果已知）
++       由 `sh"…"` 构建的 `Command` 把 `Exec` 设为其第一个单词（`sh"ls -la"` 是一个 `Command { type Exec = "ls" }`）；用 `Command(…)` 构建的则让它保持抽象。
++       `apply()` 用它召唤 `Exec is Intelligible`，即命令所隐含结果类型的证据，而 `Job` 的第一个类型参数就是它。
++   entry #fork   启动进程并返回其 `Job`，不等待
++       `fork[result]()` 启动命令（或者管道的每个阶段，并将它们连接起来），并立即返回一个 `Job[Exec, result]^`：结果类型现在就已固定，之后用 `Job#await()` 读取。
++       作业是一种能力，以新鲜方式跟踪，因此它不能逃逸到未跟踪的值中。
++       需要一个 `WorkingDirectory`、一个 `Environment`、一个 `Tactic[Exec.Error]`（在程序无法启动时抛出）和一个 `Exec.Event is Loggable`，并以 `info` 级别记录 `Exec.Event.ProcessStart` 或 `PipelineStart`。
+
+% 2 1 0 10d2c75366a82d7d05a1850b2efe124c
+
+% 3 1 0 0b55876fe25693980e238e51c6d2448d
+
+% 4 1 0 00de66fd6b5f78320fc2d800fedc99b8
+
+% 5 1 0 05f39bb8119014531704d8fda6ca7ef6
+
+% 6 1 0 18c5dac57c56528406953e610071542f
+
+% 7 1 0 0dfa6c5c639efa900c6cda03acd0a4c3
+
+% 9 1 0 0584d835238ca5e40ba4abd8fb78bc67
+
+% 0 1 0 1d87622195118b110ce7b08902ae35b6
+
+% 0 1 0 0554d19e19fbca9d0c18868facc8de2f
+
+% 1 1 0 087cac6c703f642b058df4d224cfe982
+
+@ 0 11 0 011ebf7e93bebcd0076361e8383846b3
++   entry #detach   启动进程，使其比当前进程存活更久，只保留其 `Pid`
++       用于应当在本程序之外继续运行的子进程——一个服务器、一个守护进程。
++       它的标准输入是空设备，它的输出和错误被丢弃（`detach()`），或者追加到一个日志文件（`detach(log)`，接受任何 `Abstractable across Paths to Text` 的路径类型，并创建日志的各级父目录）。
++       `fork` 出来的子进程继承了无人读取的管道，向其中写入的服务器最终会阻塞；分离的子进程则不会。
++       对于管道，头部读取空设备，尾部写入日志，每个阶段的错误都与尾部的错误去往同一处；`Pid` 是尾部的。
++       子进程的环境是作用域内的 `Environment`，因此 `environments.emptyEnvironment` 加上 `variables(…)` 恰好给它所指定的那些变量。
++       记录 `ProcessStart`，如果程序无法启动则抛出 `Exec.Error`。
+
+% 2 1 0 1a4fa75cb808a3ef1ab5fb9a45690ac2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 036bf989159b9ada118608c65591db90
+
+% 3 1 0 10d58e9b7a27ff8c1c4c21ef7fed08c7
+
+% 4 1 0 00d91c2889826d720e5ccf1ee5269be8
+
+% 5 1 0 13dde84c4db4183610e4c94dc4c8165c
+
+% 0 1 0 1f04638265358737135668d64f6a638b
+
+% 1 1 0 1a7af580a6c7bc9515196e3fc4f20b87
+
+@ 0 7 0 15d871bcd797d77d0e6003eca2aac00f
++   entry #exec   运行进程直至完成，并把其输出读取为所指定的类型
++       `exec[result]()` 就是 `fork[result]().await()`：进程运行，其输出由作用域内的 `result is Computable` 实例解释——`Text`、`List[Text]`、`Chain[Text]`、`Data`、`Stderr`、`Exit`、`Unit`，或者一个路径类型（参见 `Computable`）。
++       类型所决定的不只是一次转换：读取哪个流，非零状态是失败还是答案，以及调用是在进程结束时返回（`Text`），还是在进程一启动就返回（`Chain[Text]`，其各行惰性到达）。
+
+% 2 1 0 0ea825d98ff9878b1af27f99e94c57aa
+
+% 3 1 0 1c74c52fa39207df05f94ce2a9e718bb
+
+% 4 1 0 151aa04bada4b30818c7b18f615eaa57
+
+% 5 1 0 1c36616ddfdfce4e1aecdb1834743bfc
+
+% 6 1 0 10bb9129086bfd1504c50a8470c22ace
+
+% 7 1 0 0110e9e3ab3b3dc30628c8cbea90d364
+
+% 0 1 0 040911a2a2c0bdea1b07a7db60bb67d5
+
+% 0 1 0 0620134a8da0a55e142bdb2613cc6a94
+
+% 0 1 0 19365e6088c91f29032bd52616c62ce7
+
+% 0 1 0 0b69adbc2a1050431d022c4002cabb32
+
+% 1 1 0 0a60f82cb0594ebe054f564d841bcc68
+
+@ 0 13 0 120aa456b860045903c0d64837b1dd57
++       程序无法启动时——缺少二进制文件、目录不可执行——会抛出 `Exec.Error`，它指出失败的命令；被提前截断的输出读取（一个 `Truncation.Error`）也作为同一种错误报告，管道的最后一个命令作为其命令。
++       运行后以非零状态退出的程序不是错误：要查看其状态，就请求一个 `Exit`。
++   entry #apply   `command()`：以其名称所隐含的结果类型运行；`a(b)`：管道 `b | a`
++       无参的 `apply()` 像 `exec` 那样运行命令，结果类型由命令的 `Exec` 名称的 `Intelligible` 证据选择：正如 `PosixCommands` 中的 given 所规定的，`sh"echo hi"()` 是一个 `Text`，`sh"ls"()` 是一个 `Chain[Text]`，`sh"sleep 1"()` 是一个 `Exit`。
++       它是 `inline` 的，需要与 `exec` 相同的 `WorkingDirectory`、`Environment`、`Computable`、`Tactic[Exec.Error]` 和 `Exec.Event is Loggable`。
++       名称没有 `Intelligible` 实例的命令，或者用 `Command(…)` 而不是 `sh"…"` 构建的命令，不能以这种方式编译：用 `exec[T]()` 指定类型。
+
+% 2 1 0 0f1f51e7a1b47fa40f612a18cb1b9afa
+
+% 3 1 0 0855aa081ffe3011002ab7df4fad380f
+
+% 4 1 0 146530d1f3f77c2f00002621f184ebe7
+
+% 5 1 0 1465ce9833a361b71f238c2f1115390f
+
+% 6 1 0 19caefe28b65cfbd0a53c45abfe67a8e
+
+% 7 1 0 0e3100f50c4ead020f8eed9b35d696d5
+
+% 0 1 0 11487312d80a5a4b06a2c2dc584b6cc9
+
+% 0 1 0 021438bf98d4c3bd0074d0bba2e8e65b
+
+% 0 1 0 14424aa0845c3fc30f59f06004a0decf
+
+% 1 1 0 1bc9d491071e25c3011b1fbec34cb891
+
+@ 0 8 0 0c87475de97067e71a9e36ab1f3c0aa1
++       `apply(command: Executable)` 与 `|` 方向相反：`b(a)` 就是 `a | b`，即 `a` 的输出馈入 `b` 的管道。
++       两者都会扁平化，因此应用于管道的管道是由它们所有命令组成的一个管道。
++   entry #|   `a | b`：第一阶段的输出作为第二阶段输入的管道
++       构建一个 `Pipeline`，并扁平化：`a | b | c` 是由三个命令组成的一个 `Pipeline`，把管道接入命令，或把命令接入管道，都会扩展它而不是嵌套。
++       管道的输出和退出状态是其最后一个命令的，写入它的输入则去往其第一个命令。
+
+% 2 1 0 07f6ca6ade08ffcd1037f8aaae584369
+
+% 3 1 0 177090c5369edd1004dd4e78c2e536e9
+
+% 0 1 0 1937cd6f4c1f02df002b503b0eb6b08e
+
+% 1 1 0 0ce21bd7da71a42a07da21ae1655fc9a
+
+@ 0 1 0 12a3884e87f8e77d10a95b6bba4e211d
++ entry .Command   作为值的程序及其参数：由 `sh"…"` 构建，用 `exec`、`fork` 或 `pty` 运行
+
+% 1 1 0 175aed4a118d8620171398bd1d8116a0
+
+@ 0 6 0 081aeee7c44e67dd1a5859aaa0b9b232
++       `Command` 是一个 `#arguments` 列表，第一个参数指定程序，中间没有 shell：每个参数都恰好按其保存的样子到达程序。
++       它是一个 `Executable`，因此 `exec[T]()`、`fork[T]()`、`detach`、`apply()` 和 `|` 是运行和组合它的方式。
++       `sh"…"` 是构建它的通常方式，`Command(t"ls", t"-la")` 是直接方式；只要参数相同，两者就相等，不过只有插值形式在其 `Exec` 类型中携带名称。
+
+% 2 1 0 0507e814845fed7d131c472a92b986d4
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17cee968ed0022d90b28e8011f9d0f54
++         label 一个命令，其中一个值被转义为一个参数
+
+% 1 1 0 0d84accb77ba5f80121344e388b701ef
+
+% 2 1 0 0a4da8a5e3e46b79055f724be8efda51
+
+% 4 1 0 089735c2f0a942a8056aa0503788d3a2
+
+% 0 1 0 01e817e23a3e8f2e091723a6cece79cc
+
+% 1 1 0 0421a7aa3db2968214e4ce23694a69d9
+
+@ 0 1 0 177f0707d1780166035db85c5710eb01
++         label 用管道接入第二个命令
+
+% 1 1 0 12149421e9180dc71190189b2f2ff469
+
+% 2 1 0 1afc8f801d9e590d0e5002fc63ee64ef
+
+% 4 1 0 1dbe761a2171f5210491ba0ce6e88134
+
+% 0 1 0 150776774db3e56e1456175f544ccbcb
+
+% 1 1 0 188acce4e05fc18d1b76292e3cf06dd2
+
+@ 0 1 0 01fc4107210334e102f3db604203c5dc
++         label 运行，并把其输出读取为所指定的类型
+
+% 1 1 0 1599779243c30bd00ca2b1f13a3b185e
+
+% 2 1 0 0cd5e4340e7c646e1ad8072f810e4e82
+
+% 0 1 0 0c4ca26c4b2b9150098f5c00b9cf93c4
+
+% 0 1 0 0a98ae082f952800010439d6e277a866
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 2 1 0 197483ac7fce9a6f163d0d216364dd1f
+
+% 0 1 0 0ee5b3b3dd806631087f4926fc62b8b6
+
+% 1 1 0 016c2915185311361f0db6ad8d40ca3a
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 0d62194190c3053504c323e39fd58fa1
++       命令有两种呈现方式：`show` 给出它在 shell 中键入时的样子，每个参数只在需要时才加引号（`echo 'a b'`），而 `inspect` 给出构建它的源代码（`sh"echo 'a b'"`，需要双引号时用三引号）。
++       `#escape` 给出严格形式，每个参数都加单引号，用于把整个命令传给 shell。
++       命令也可以作为其参数代入另一个 `sh"…"`。
+
+@ 0 2 0 019aa7a7fe102c7f1931801fb3dbad69
++       在 JVM 和 Scala Native 上，`#pty` 在伪终端上而不是在管道上运行命令；`Command.OnTerminal` 是它返回的值。
+
+% 1 1 0 0975fb109e83109e02f4bee8578ed958
+
+% 1 1 0 10fb7a87b3a78aa416dc4d08183b8744
+
+% 1 1 0 14b9f9a79707ee740e6686ad1eafcd84
+
+% 1 1 0 133863bbd011ab8b1e8743baf91de67c
+
+@ 0 10 0 1069922f6c6bd83a078608d622ca4f15
++   entry .inspectable   把命令呈现为构建它的 `sh"…"` 源代码
++       `sh"echo 'a b'"`，每个参数都按 `show` 的方式加引号，当某个参数包含双引号时使用三引号。
++       这个 given 以 `Command` 的子类型为界，因此 `sh"…"` 展开得到的细化类型也能找到它。
++   entry .showable   把命令呈现为它在 shell 中键入时的样子
++       每个参数如果是普通的就直接写出，包含空格、制表符、反斜杠或双引号时加单引号，包含单引号时加双引号，两者都包含时加双引号并转义其中的双引号；各参数用空格连接。
++       `sh"echo 'a b'".show` 是 `echo 'a b'`。
++   entry .OnTerminal   要在给定大小的全新伪终端上运行的命令
+
+% 1 1 0 03084b57004850ad13be4be047a9ce4c
+
+@ 0 8 0 006f98bbecdb00761600619dd8501ab1
++         `Command#pty` 所返回的东西：命令、以字符为单位的终端 `#width` 和 `#height`，以及在命令启动前要设置的 `#termios` 行规程，或者用 `Unset` 保留系统的行规程。
++         它是一个描述，而不是终端：每次 `#exec` 或 `session` 都用 `posix_openpt` 分配一个伪终端，在其从属端以会话首进程的身份运行命令（因此该终端是它的控制终端，在其中键入 `^C` 会中断它），之后释放终端。
++         在 JVM 上这通过外部函数 API 进行，因此运行时加上 `--enable-native-access=ALL-UNNAMED` 以消除 JDK 的警告；在 Scala Native 上则通过 C 互操作。
++         仅支持 Linux 和 macOS。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 11ee899a509bce52021a519a020a042d
+
+% 3 1 0 19a35f2744d80e02148f56f5d1a89a89
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 1 1 0 17592c5a450d35af137b4605a399ec21
+
+% 0 1 0 1901bbb1ded629960d29686cb3c999c7
+
+% 0 1 0 1e47294abebea68a136331395e939dce
+
+% 0 1 0 14f067647882455900e1638aafc418df
+
+% 0 1 0 09ee6476f2927b9a0906bc042a726956
+
+% 0 1 0 132b013b83f004d51cdf54f52d4f00ab
+
+% 1 1 0 052f402f745c0f6c107ed6ed7f8c5669
+
+@ 0 8 0 136411b4bd86b7d606c46d5f95a47f93
++         `session`（aperture 的扩展方法，通过 `.sessional`）把正在运行的命令作为 `Command.OnTerminal.Job` 借给一个代码块，并在代码块返回或抛出异常时结束它：仍在运行的命令会被挂断（`SIGHUP`），就像关闭一个真正的终端那样，如果在一秒内没有退出，就会被杀死。
++         作业的输出是程序写到终端的一切，包括标准错误以及所有转义序列；任何对它 `Writable` 的东西——`Text`、`Data`、一个流——都会被键入终端。
++         终端没有输入结束：读取直到文件末尾的程序会收到文件结束字符 `^D`（字节 4），而不是其输入被关闭。
+
+% 0 1 0 1a58b1de3600d1b70c2b251bdaac59d5
+
+% 0 1 0 0797de790294be411dda9431c0e89740
+
+@ 0 12 0 1f5853b9709325271d35f9cd739570de
++     entry .showable   呈现命令及其终端的大小：`stty size on 80×24`
++     entry .Sessional   `Sessional` 实例类：把正在运行的 `OnTerminal.Job` 借给一个代码块
++         `.sessional` 背后的类，一个具名类（`Sessional` 实例必须如此），它接受命令运行所需的 `WorkingDirectory`、`Environment`、`Tactic[Exec.Error]` 和 `Exec.Event is Loggable`，其 `session` 在一个全新的终端上启动命令，把其 `Job` 作为上下文值传给代码块，并在之后结束它。
++     entry .sessional   使 `onTerminal.session: terminal ?=> …` 能够工作的 given
++         它位于隐式作用域中，因此无需导入，但在调用 `session` 的地方，作用域内需要有一个 `WorkingDirectory`、一个 `Environment`、一个 `Tactic[Exec.Error]` 和一个 `Exec.Event is Loggable`。
++         代码块接收一个 `Command.OnTerminal.Job` 作为其上下文 `session` 值，它可以在代码块内使用，但不能被保留。
++     entry .Job   在伪终端上运行的 `Job`：可调整大小，行规程可设置
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 196a80c645480938005407b095933a40
++           `session` 所借出的句柄：一个结果类型为 `Exit` 的 `guillotine.Job`，具备作业所具有的一切——`text()`、`stdin`、`await()`、`exitStatus()`、`kill()`——以及只有终端才具有的三样东西。
++           它的输出流是终端的输出流，也携带标准错误，而它的错误流是空的。
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 0d18a63c6a8ea9581143528bfe1b8124
+
+% 0 1 0 1f3de2f7adc1dab51cbd6eaa5740b17c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1a7b9a9e4a324c8014f4a330cdd0d018
+
+% 0 1 0 004d8c79d5fea98807aa0d2c04c429d8
+
+% 0 1 0 1abfdeb6e2b4318e0997e21755efb780
+
+% 0 1 0 0f8732f70517513f139b170b1d7c9f9c
+
+% 0 1 0 0e1b11261d79e42b13b8cfb35b1499ea
+
+% 0 1 0 1670524790192d65096afb052600c2b8
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 33 0 05b4e3d7e9b954d5099cf241df2d8724
++       entry #resize   设置终端的大小，以字符为单位；程序会收到 `SIGWINCH`
++       entry #mode   终端的行规程，作为一个 `Termios`，在命令运行期间可读可赋值
++           `terminal.mode` 从终端读取 `Termios` 所指定的各个开关，`terminal.mode = Termios.raw` 设置它们，而保持行规程的其余部分不变——这正是程序自己用 `stty` 会做的事。
++           关闭 `canonical` 还会使读取在一个字节到达后就立即返回。
++     entry #command   要运行的命令
++     entry #width   终端的宽度，以字符为单位
++     entry #height   终端的高度，以字符为单位
++     entry #termios   在命令启动前要设置的行规程，或者用 `Unset` 表示系统的行规程
++     entry #exec   在其终端上运行命令直至完成，并把其输出读取为所指定的类型
++         与 `Executable#exec` 相同，但在一个全新的伪终端上：读取的输出是终端的输出，混有标准错误，退出状态的报告方式与在管道上相同（被杀死的命令为 `Exit.Fail(137)`）。
++         需要一个用于结果的 `Computable`、一个 `WorkingDirectory`、一个 `Environment`、一个 `Tactic[Exec.Error]`（在命令找不到或无法启动时抛出）和一个 `Exec.Event is Loggable`。
++   entry #arguments   程序及其参数，按顺序排列
++   entry #detach   启动命令，使其比本程序存活更久，只保留其 `Pid`
++       命令的输入是空设备，其输出和错误不去往任何地方，或者追加到所给的日志文件（并创建其各级父目录）。
++       参见 `Executable#detach`。
++   entry #fork   启动命令并返回其 `Job`，不等待
++       在作用域内的 `WorkingDirectory` 中、以作用域内的 `Environment` 在管道上启动程序，记录 `Exec.Event.ProcessStart`，并返回一个 `Job[Exec, result]^`。
++       如果程序无法启动，则抛出 `Exec.Error`。
++       参见 `Executable#fork`。
++   entry #pty   这个命令，要在给定大小的伪终端上运行
++       `pty(width = 80, height = 24, termios = Unset)` 返回一个 `Command.OnTerminal`：在调用其 `exec` 或 `session` 之前什么都不会运行。
++       在这里给出的 `Termios` 会在命令启动前设置；`Termios.raw` 是全屏程序所需要的。
++   entry #escape   POSIX shell 能够解析回这些参数的单行命令
++       每个参数都加单引号，其中的单引号写成 `'\''`，因为单引号内没有任何东西可以转义。
++       `Command(t"echo", t"a b").escape` 是 `'echo' 'a b'`。
++       这是把整个命令交给 `sh -c`、`ssh` 或其他任何会重新解析它的程序时所用的形式。
+
+@ 0 1 0 15a7d53fdc7f6f591e6b6577c5880d78
++ entry .Pipeline   几个命令，每个命令的输出是下一个的输入，作为一个整体运行
+
+% 1 1 0 0cb44133aa1634ad0940c8ac98d62853
+
+@ 0 6 0 146116363ad94a9305dd460fcb210ea8
++       用 `|`（或 `apply`）由 `Command` 构建，并且始终是扁平的：无论管道是如何组装的，`#commands` 都保存着每个阶段。
++       它是一个 `Executable`，像命令一样运行：`exec[T]()` 把最后一个阶段的输出读取为 `T`，最后一个阶段的退出状态就是管道的退出状态；`fork[T]()` 给出一个 `Job`，其 `stdin` 写入第一个阶段，其各个流从最后一个阶段读取（JDK 把之后每个阶段的输入替换为一个写入时抛出异常的流）；`detach` 以分离方式启动每个阶段。
+
+% 2 1 0 0f16625566c4403a0f67fd1e8d5488c8
+
+% 3 1 0 0f7233f78e88b28714b3d98cdb4a8e51
+
+% 4 1 0 0060afda76e1fac517f211ea6fb96c52
+
+% 5 1 0 0ee3cfe7a3cd96bc107089dc05b8ce04
+
+% 6 1 0 1968ee356a511f2f0ca132bb11b71381
+
+% 7 1 0 1f00c586c71dec301fcdb7704b10323d
+
+% 0 1 0 05662911af0b335605c4c5ef30e6ed3e
+
+% 1 1 0 197176b4a2687ae201ff7e855eb5cb26
+
+@ 0 4 0 19600332ab30552b1207a515b4f3e383
++       在 JVM 上，各阶段由 `ProcessBuilder.startPipeline` 在内核中连接；在 Scala Native 上，每个阶段都在管道上启动，由一个守护线程把前一阶段的输出复制到它的输入中，并在流结束时关闭它。
++       管道用 `show` 和 `inspect` 呈现为以 ` | ` 连接的各个命令。
+
+% 1 1 0 0b2362f995a1b76d03fabb5eeb134da0
+
+% 1 1 0 16938a7e4b66cc1a009424dda06778e8
+
+@ 0 10 0 122a822b7ce1932c0633a47f88e61b0b
++   entry .communicable   作为消息的管道：其各命令的 `show` 形式，以 ` | ` 连接
++   entry .inspectable   把管道呈现为其各命令的 `sh"…"` 形式，以 ` | ` 连接
++   entry .showable   把管道呈现为其各命令的 shell 形式，以 ` | ` 连接
++   entry #commands   各阶段，按顺序排列，已扁平化
++   entry #detach   以分离方式启动每个阶段，只保留最后一个阶段的 `Pid`
++       第一个阶段读取空设备，最后一个阶段写入日志（或不写入任何地方），每个阶段的标准错误都去往最后一个阶段的输出所去之处。
++       参见 `Executable#detach`。
++   entry #fork   启动每个阶段并将它们连接起来，返回整体的 `Job`
++       记录 `Exec.Event.PipelineStart`。
++       作业的输出、退出状态和 `pid` 是最后一个阶段的；其 `stdin` 和 `intake` 写入第一个阶段。
++       参见 `Executable#fork`。
+
+@ 0 1 0 0a58ed4a418e34bc10e468fcf6616bdd
++ entry .Job   一个由 `fork` 得到的正在运行的子进程：它的流、结果、退出和生命周期
+
+% 1 1 0 1d07a8e6f4702df8170c33ae71db71c8
+
+@ 0 7 0 0e1a26b435c50ff4060c8b7131844fc2
++       `Job[exec, result]` 是 `Executable#fork[result]()` 所返回的东西：进程的一个活动句柄，作为能力被跟踪（由 `fork` 新鲜地得到，因此不能存储在未跟踪的值中，不过可以在任务之间共享：一个任务读取每个流，另一个等待它，第三个中止它）。
++       它是一个 `Subprocess`（`Computable` 所读取的流和状态）、一个 `Process.Ref`（pid 和信号），并且是 `Durable` 的。
++       它的 `result` 类型在 fork 时就已固定，`#await` 通过作用域内的 `Computable` 读取它。
+
+% 2 1 0 19a5dfe360f9582b106c9a4924263ec8
+
+% 3 1 0 08692c9bec0f884104ffea8afa85f9a7
+
+% 4 1 0 0502c52df62aa59a019457d3633a7226
+
+% 5 1 0 1a00b14535ca89f015e79667965e9b8e
+
+% 6 1 0 14889eed4fc7d76c1bdd4d7261d6fe50
+
+% 7 1 0 0f2474a814b7986a0f4e24d29c88fb85
+
+% 9 1 0 16687ef9f8a5dc5b143367115d65da65
+
+% 0 1 0 0ec631c72574d1d71991542f123444d4
+
+% 0 1 0 1011e76ba013aa8c1d48213737f571c6
+
+% 0 1 0 00839cff290a298f15445b6255a512e2
+
+% 0 1 0 1822aceb93e2ee3111bf355d67c69891
+
+% 1 1 0 076baaea36c4b2a0064982af50b2f401
+
+@ 0 3 0 1f9d0a9f8daf5c381a92995fcbbd4b8c
++       对于管道，作业在两端各有一个进程：输出、退出状态和 `pid` 是最后一个阶段的，而 `stdin` 和 `intake` 写入第一个阶段。
++       在伪终端上的作业是一个 `Command.OnTerminal.Job`，它增加了 `resize` 和 `mode`。
+
+% 1 1 0 0e67e43ac311814b01131ce7e66fa597
+
+% 2 1 0 1a76e4c2816acbd01f2355ff2557b36e
+
+% 1 1 0 0bc2095921ceabfe13791e26b01775da
+
+% 0 1 0 169a2ddbcc17b179024402344a06db99
+
+@ 0 18 0 19d62cf2b4dc9beb0225eb63b643c483
++   entry .writable   `stream.writeTo(job)`：作业的 `Process.Input` 能接受的任何流，写入其标准输入
++       用于被跟踪的 `Job^` 的 `Writable` given，适用于任何使 `Process.Input is Writable` 成立的数据块类型——`Data`（需要一个 `Emit[Truncation.Error]`）或 `Text`（以及一个 `Codepage`）。
++       它委托给 `#stdin`，后者在流结束时关闭管道。
++   entry .writableText   `text.writeTo(job)`：用系统代码页编码的文本，写入标准输入
++       用于被跟踪的 `Job^` 的 `Writable by Text` given，只需要一个 `Emit[Truncation.Error]`：文本用 `Codepage.system` 编码。
++       在伪终端会话中，`t"hi\r".writeTo(terminal)` 用的就是它。
++   entry #pid   进程的 `Pid`；管道的是其最后一个阶段的
++   entry #alive   进程是否仍在运行
++   entry #attend   等待进程退出，丢弃其状态和输出
++   entry #stdout   作为惰性字节流的标准输出，从活动管道上继续读取
++       一个 `Stream[Data] over Credit`，在被强制求值时拉取；每次调用都从管道当前的位置继续读取，除非调用 `memoize`，否则不缓存任何内容。
++       需要一个 `Tactic[Truncation.Error]`，如果流在其分帧所规定的位置之前结束，就会抛出。
++   entry #stderr   作为惰性字节流的标准错误
++       与 `#stdout` 相同，但来自错误管道。
++       在伪终端上错误流是空的，因为程序的标准错误就是终端。
+
+% 2 1 0 11c33ccd1ca3fb7e0f64d712e31feeaa
+
+% 3 1 0 0c9789a41c406086175f9b73b36280ad
+
+% 4 1 0 070a7f32a0ef9c8b1d52bf41e71b510d
+
+% 5 1 0 1a0a66a038d0c4b51b7b502c5352106b
+
+% 6 1 0 17c2645d6d28843c1c3d0d0c8902cf7e
+
+% 7 1 0 1292aa4e2fd435c7171ca6cffd181664
+
+% 0 1 0 1abeaf604c63c5150466bf5a3ff76090
+
+% 0 1 0 15ea396f3476ac7300ce8784e6597c18
+
+% 0 1 0 1d7c0249a99c32bd1d4b429dbbb6bc99
+
+% 0 1 0 10ad36c8a4ef3ef017e5870901b5b366
+
+% 1 1 0 0b7a3adb0cebf07a11757c2d288378b5
+
+@ 0 22 0 1579317444d468c300c54b99c7c3c333
++   entry #text   全部标准输出，作为 UTF-8 文本，读取到流的末尾
++       阻塞直到进程关闭其输出（通常是直到它退出）。
++   entry #errorText   全部标准错误，作为 UTF-8 文本，读取到流的末尾
++   entry #lines   作为由各行组成的惰性流的标准输出
++       UTF-8，`\n`、`\r\n` 和 `\r` 都结束一行，与 `BufferedReader.readLine` 的处理方式相同；一个 `Stream[Array[Text]] over Credit`，其 `records` 一次一行地给出各行。
++       需要一个 `Tactic[Truncation.Error]`。
++       `Chain[Text]` 和 `List[Text]` 的 `Computable` 实例读取的就是它。
++   entry #status   等待进程退出，并给出其原始退出码
++       成功为 `0`；对于被信号终止的进程，为 128 加上信号编号（`SIGKILL` 为 `137`）。
++       `#exitStatus` 以 `Exit` 的形式给出同样的结果，并记录日志。
++   entry #stdin   把整个流写入标准输入，并在流结束时关闭管道
++       `job.stdin(stream)` 接受一个 `Stream[chunk] over Credit`，其中 chunk 是任何使 `Process.Input is Writable by` 成立的数据块类型——`Data`，或者作用域内有 `Codepage` 时的 `Text`——写入它，并关闭进程的输入，这适合读取输入直到末尾然后退出的程序。
++       对于管道，流去往第一个阶段。
++       逐条消息驱动的长期子进程则需要 `#intake`。
++   entry #intake   作为推送端点的标准输入，用于增量地驱动一个活动进程
++       进程输入管道上的一个 `Intake[Data] over Credit`：每次 `put` 都会被写入，`flush` 将其发送，而管道保持打开，因此可以给语言服务器或 REPL 送入一条消息，读取其回复，再发送另一条；`finish` 关闭管道。
++       需要一个 `java.io.OutputStream is Sink by Data over Credit`，由 turbulence 提供。
+
+% 2 1 0 1e457ee2d7ea1f5b18253abd5f5cba6c
+
+% 3 1 0 1b12eea3f9349f7a0b0825a9843cd3e9
+
+% 4 1 0 0d8c374cdf415af21e4c5939521ba65b
+
+% 5 1 0 1ae7b6bb454a09ae0dcea6b47a56035d
+
+% 6 1 0 1dc35df09f2a30790e60a9925abacfe0
+
+% 7 1 0 1d5e0433974afc3413ffe147bd02b7a6
+
+% 9 1 0 094f7d1ee08c17ac0c24207849935c38
+
+% 0 1 0 19b3c1b3339337ba07785bb7651644f6
+
+% 0 1 0 1ddd1c774974ca5f1b86539797ea7aa8
+
+% 0 1 0 02940bb78ced41591588b20006611fa8
+
+% 0 1 0 1178757a119bd465174f9831884ef036
+
+% 0 1 0 0f12d4dfc7e9144a0da9864838dbc240
+
+% 0 1 0 091d50e094c50cd61e5f31788890a5e3
+
+% 0 1 0 154285bd38e2411e1df7861324ad29f5
+
+% 1 1 0 0973572f7468816b09f77c1efaa69b4d
+
+@ 0 5 0 07fb732c447008ef0877f1c626bcdee9
++   entry #await   作业的结果，通过作用域内的 `Computable` 获得，立即或在一段时长内
++       `await()` 计算作业 fork 时所指定的 `result`：对于 `Text`，它等待输出结束；对于 `Exit`，等待进程退出；对于 `Chain[Text]`，它立即返回一个惰性链。
++       它需要 `result is Computable` 和一个 `Tactic[Truncation.Error]`，如果输出在其分帧所规定的位置之前结束，就会抛出。
+
+@ 0 5 0 0bd1dbefa649740d0e9cfed2114bfbf7
++       `await(duration)` 接受任何 `Abstractable across Durations to Long` 的时长类型（纳秒；借助 `abstractables.millisecondsAbstractable`，也可以是以毫秒为单位的普通 `Long`），至多等待那么长时间让进程退出，然后计算结果；如果进程尚未退出，则通过一个 `Tactic[Async.Error]` 抛出 `Async.Error(Async.Error.Reason.Timeout)`。
+
+% 2 1 0 0ab68c7f63a5cd7c16f078ad2dc2a420
+
+% 3 1 0 1edaa49b3984256e0609e1a428e8a5d3
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 1 1 0 10a2def3c695288a0af652c74a96f72f
+
+% 2 1 0 17f34087427950c90bad9dc64b766f1c
+
+% 3 1 0 112b22c42989b8b117651e8d3637b375
+
+% 4 1 0 0dc45ad8d3e0dcb206fd4eb75f668d4f
+
+% 0 1 0 16127c0ccc8667f1040a29ebb1c0d362
+
+% 0 1 0 16100520352e5e4e0643ded127afa5e3
+
+% 0 1 0 08180c05ceeedf790b205f436104e0f5
+
+% 1 1 0 089c63e92a6725ea0ec0854b64e7c81e
+
+@ 0 21 0 1d442e7b4a62da1408902cf11478d530
++   entry #exitStatus   等待进程退出，并以 `Exit` 的形式给出其状态，记录日志
++       零为 `Exit.Ok`，否则为 `Exit.Fail(code)`；零时以 `fine` 级别记录 `Exec.Event.ProcessExit`，否则作为警告记录，因此它需要一个 `Exec.Event is Loggable`。
++       被杀死的进程报告 `Exit.Fail(137)`，在其终端上被 `^C` 中断的进程报告 `Exit.Fail(130)`。
++   entry #abort   用 `SIGTERM` 请求进程停止
++       `destroy()`：进程可以捕获这个信号并进行清理，也可以忽略它。
++       以 `info` 级别记录 `Exec.Event.AbortProcess`。
++   entry #kill   用 `SIGKILL` 停止进程
++       `destroyForcibly()`：进程无法忽略它。
++       以警告级别记录 `Exec.Event.KillProcess`。
++   entry #process   作业背后的操作系统 `Process`，按其 pid 获得
++       `Process(pid)`，因此它需要一个 `Tactic[Pid.Error]`，如果进程已经消失就会抛出；结果是一个被跟踪的 `Process^`，带有 `Job` 所没有的父进程、子进程和进程树。
++   entry #startTime   进程启动的时间，作为任何瞬时类型，或 `Unset`
++       通过 `Process#startTime` 获得，把 `Pid.Error` 吞掉并作为 `Unset`；接受一个 `Instantiable across Instants from Long` 的瞬时类型（毫秒）。
++       在 Scala Native 上始终为 `Unset`。
++   entry #cpuUsage   进程已使用的 CPU 时间，作为任何时长类型，或 `Unset`
++       通过 `Process#cpuUsage` 获得；接受一个 `Instantiable across Durations from Long` 的时长类型（纳秒）。
++       在 Scala Native 上始终为 `Unset`。
+
+@ 0 1 0 166a8eb7e5a132f205041c6a90fdfe83
++ entry .Subprocess   `Computable` 所读取的东西：正在运行的进程的流和退出状态，与平台无关
+
+% 1 1 0 192e0261485799ce0c9a957230f69b26
+
+@ 0 4 0 1e636c092368cd561a3a92f869aa6b16
++       `Computable` 实例据以计算其结果的特质：作为惰性字节流或完整文本的标准输出和标准错误、输出的各行，以及退出状态，不涉及 `java.lang.Process` 或任何其他平台类型。
++       `Job` 是它唯一的实现。
++       新的 `Computable` 就是针对它编写的。
+
+% 1 1 0 0ce0d7cb0813acae1d074d8d73722eb0
+
+% 1 1 0 167126b9eb7f7ad9090220fbe35fe0a7
+
+@ 0 6 0 187e87ddfb1f537f1257ae2e2faf994a
++   entry #stdout   作为惰性字节流的标准输出；需要一个 `Tactic[Truncation.Error]`
++   entry #stderr   作为惰性字节流的标准错误；需要一个 `Tactic[Truncation.Error]`
++   entry #text   作为 UTF-8 文本的全部标准输出，读取到末尾
++   entry #errorText   作为 UTF-8 文本的全部标准错误，读取到末尾
++   entry #lines   作为由各行组成的惰性流的标准输出；需要一个 `Tactic[Truncation.Error]`
++   entry #status   等待退出，并给出原始退出码
+
+@ 0 1 0 0dae46ed5c0482b71d3ab50366d410f3
++ entry .Computable   进程的输出如何变成 `T` 类型的结果：`exec[T]` 背后的类型类
+
+% 1 1 0 0316fbd940726ba80952be6b9de37a98
+
+@ 0 4 0 1b193ce6d049bc401a995d49f817e59a
++       `T is Computable` 说明如何把一个 `Subprocess` 读取为 `T`：读取哪个流、何时读取，以及退出状态意味着什么。
++       `exec[T]()` 和 `Job#await()` 为它们的类型参数召唤它，因此所指定的类型*就是*解释方式。
++       伴生对象中的实例无需导入即可找到：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 11 0 0d684844e42f580506989a3f6e47b365
++       column  结果类型
++       column  读取
++       column  需要
++       row  `Text`, `String`  全部标准输出，在进程关闭它时读取
++       row  `List[Text]`  标准输出的各行，在其结束时读取
++       row  `Chain[Text]`  作为惰性、记忆化链的各行，在进程写入时拉取，因此调用立即返回  一个 `Buffering`
++       row  `Data`  作为字节的全部标准输出，已记忆化  一个 `Buffering`
++       row  `Exit`  退出状态，`Exit.Ok` 或 `Exit.Fail(code)`；非零是一个答案，而不是错误
++       row  `Unit`  不读取任何内容：等待退出并丢弃一切
++       row  `Stderr`  作为 `Stderr(text)` 的标准错误；这个 given 位于 `Stderr` 的伴生对象中
++       row  任何 `Instantiable across Paths from Text` 的路径类型  标准输出，去掉首尾空白，解码为路径：`sh"which git".exec[Path on Linux]()`
+
+% 1 1 0 0ec87f143c8d0126144c1b9d6fe646a2
+
+@ 0 3 0 02f37e150df00fa21e51ab5f8970da18
++       逐行读取的类型是 `Chain`，因为独占的 `Iterator` 不能作为被擦除的 `Intelligible` 证据的结果。
++       要惰性地获得字节，就在 fork 得到的 `Job` 上使用 `Subprocess#stdout()`。
+
+@ 0 3 0 17a7d56a2cd9568b157528b6618062b8
++       未涵盖的类型可以通过映射一个现有实例（`Computable` 是一个函子）或通过 `.apply` 工厂获得实例，工厂接受 `Subprocess` 以及其读取所需的 `Tactic[Truncation.Error]`：
+
+% 2 1 0 1eb46bebbe64d42911549ca7393c0f3a
+
+% 3 1 0 1d28181a6000d24c0d7dd57be59defce
+
+% 0 1 0 0ca9b23c2a4f8d4f0c4b8e842479efab
+
+% 0 1 0 113ed28b6a1f295501c4b49e29aa80b7
+
+% 0 1 0 0e050861888e724f06c26e2d01a822ca
+
+% 0 1 0 12781b5e9c411c50005d4b2327eb445a
+
+% 0 1 0 1af9e8c95442714e039e15a4d18664da
+
+% 0 1 0 0b58c342a6e18c4e04eb6059b76f6c37
+
+% 1 1 0 09937b2f65b6adc81cd8da37516ca16d
+
+@ 0 3 0 13849f5d9f39f266023ac2a1fcc5295f
++       被提前截断的读取——流在其分帧所规定的位置之前结束——会通过战术成为一个 `Truncation.Error`，`exec` 将其作为该命令的 `Exec.Error` 报告。
+
+% 0 1 0 17677bcf3fa8ee060c6ac2434c6b4034
+
+% 1 1 0 02eaa0eac69e517b080cb91035c0fc79
+
+% 0 1 0 09cf98bc5ad594d51490364f12fd8fab
+
+@ 0 21 0 1b63fbd586617ad1181e51e00e852fa2
++   entry .apply   由一个关于 `Subprocess` 和截断战术的函数创建实例
++       `Computable[T]((process, tactic) => …)`：编写实例所用的工厂，因为带有 `using` 子句的方法不是单一抽象方法，lambda 不能转换为它。
++       战术作为普通的第二个参数传入；在读取需要它的地方，用 `given Tactic[Truncation.Error] = tactic` 绑定它。
++   entry .lineStream   `Chain[Text]`：标准输出的各行，在进程写入时惰性获得
++       需要作用域内有一个 `Buffering`。
++       这个链是纯的并且会记忆化：强制求值它会从活动管道拉取下一行，已读取的行会被保留。
++   entry .list   `List[Text]`：标准输出的各行，在其结束之后
++   entry .text   `Text`：全部标准输出，UTF-8，在进程关闭它之后
++   entry .string   `String`：与 `.text` 相同，但作为 Java 字符串
++   entry .data   `Data`：作为字节的全部标准输出，已记忆化；需要一个 `Buffering`
++   entry .exitStatus   `Exit`：零为 `Exit.Ok`，否则为 `Exit.Fail(code)`，在进程退出之后
++   entry .unit   `Unit`：等待进程退出，并丢弃其输出和状态
++   entry .instantiable   任何路径类型：标准输出，去掉首尾空白，解码为路径
++       用于 `Instantiable across Paths from Text` 的类型，例如 `Path on Linux`：`sh"which git".exec[Path on Linux]()` 以及 `which` 命令的隐含结果所使用的就是它。
++   entry #compute   把 `Subprocess` 读取为 `Self`，读取被提前截断时抛出 `Truncation.Error`
++   entry #map   通过一个关于本实例结果的函数，得到另一个类型的实例
++       `summon[Text is Computable].map(_.trim)` 是一个会去掉首尾空白的 `Text is Computable`，`map(Count(_))` 则是一个用于 `Count` 的实例：这是涵盖新类型的通常方式。
+
+@ 0 1 0 0be4a7ea9254bc2b0546257e93ff2245
++ entry .Stderr   作为文本的进程标准错误：`exec[Stderr]()`
+
+% 1 1 0 1ae11fb22edc8f6a05296c2334c84bdd
+
+@ 0 3 0 18a8228ae02a5e5a05a88200afa50fd2
++       一个包装器，用于从错误流而不是输出流读取的结果。
++       其伴生对象的 `Computable` 实例在进程关闭标准错误后，把全部标准错误作为 UTF-8 文本读取。
+
+% 2 1 0 10bcadc5d623dd960e94b616d5a84e73
+
+% 3 1 0 053bca89dde09fb51d492c483004836e
+
+% 4 1 0 10753639f3c34d7d1321684e02f6e86a
+
+% 5 1 0 181c59cce455791f161134959572f5bc
+
+% 6 1 0 14ad23f18b78299b127df2f728587498
+
+% 7 1 0 14877495e6516e860f7982c5431eb1b8
+
+% 0 1 0 070ae920d65f1c6b1cdd9dad3af9301e
+
+% 1 1 0 08d9e501c1b545d800cd9a3570b2675b
+
+% 1 1 0 1db7830c1aac4f370d17b398a4684371
+
+@ 0 2 0 1dd547b486b68ee3176743746e08ed4d
++   entry .computable   把全部标准错误作为文本读入一个 `Stderr`
++   entry #text   进程写到标准错误的内容
+
+@ 0 1 0 06fe98b5059145bd0a8b3422f88453e8
++ entry .Process   系统上任何进程的句柄，按 `Pid` 指定：它的进程树、生命周期和信号
+
+% 1 1 0 1ae3d3116bfa40cf023eadd76b708056
+
+@ 0 7 0 00ad24ba95785c2c1af2960a2ec78117
++       `Process` 包装一个 `ProcessHandle`：操作系统进程的一个活动的、被跟踪的句柄，无论该进程是否由本程序启动。
++       `Process()` 是当前进程，`Process(pid)` 是任何正在运行的进程（如果没有进程具有该 pid，则抛出 `Pid.Error`），`Process.all` 是对当前进程可见的每个进程，`Process.roots` 是其中没有父进程的那些。
++       它是一个 `Process.Ref`——`pid`、`alive`、`attend()`、`kill()`、`abort()`——带有用于遍历进程树的 `#parent` 和 `#children`，并且是 `Durable` 的。
++       它是一种共享的能力：多个任务可以观察它，一个任务可以中止它。
+
+% 2 1 0 006fa466166a13a20f4eca5a5dfc7879
+
+% 3 1 0 192f7d78325e5e8b0ff2082137548376
+
+% 1 1 0 008c01b3d45b0c570c6d56acf78d49c5
+
+% 2 1 0 1659b40e5dba11b80e97c92c3d8d4d11
+
+% 0 1 0 083cda2dc9f7e28b12a10380a9a6304a
+
+% 0 1 0 1d757ab289525d340efeea2c18435104
+
+% 0 1 0 1868ce2aa8867d390288b3b17f8431f2
+
+% 0 1 0 1ccc10b52a62933508c81827528f471a
+
+% 1 1 0 073c8e0abab9d8ba1b9b14712a361c9b
+
+@ 0 2 0 12b056d12ed2bbbe0bc5f5fb652af2f5
++       在 `import soundness.*` 之下，`Process` 是这个类型，而不是 `java.lang.Process`；需要后者时要写出全名。
++       `Job` 通过 `Job#process` 获得它自己的 `Process`。
+
+% 0 1 0 108dd3f496360971119fe6c0a1889588
+
+% 1 1 0 0bde312c4cda853c1d5ba2cfd82d521d
+
+@ 0 7 0 186d867fc94d92901d56f182e7d35624
++   entry .apply   `Process()`：当前进程；`Process(pid)`：具有该 pid 的正在运行的进程
++       `Process(pid)` 需要一个 `Tactic[Pid.Error]`，当没有具有该 pid 的进程在运行时抛出。
++       结果是被跟踪的（`Process^`），因此它可以被使用，但不能存储在未跟踪的值中；要从 `capture` 或任务中取出它的 `pid` 或其他普通值。
++   entry .all   对当前进程可见的每个进程
++   entry .roots   每个没有父进程的可见进程
++   entry .Input   作为数据汇的进程标准输入，由 `Job#stdin` 写入
+
+% 1 1 0 1682eaa34be3bc4a1512e534a77aec81
+
+@ 0 8 0 1d6fb5c09c64d3a406b247fc9d862aac
++         `Job` 的输入所经由的类型，使 `java.io.OutputStream` 永远不会出现在 API 中：`Process.Input is Writable by Data` 和 `by Text` 是其伴生对象中的 given，`Job.writable` 把它们提升到作业本身。
++         用户不会构造它；它的构造器是内部的。
++     entry .data   把一个 `Data` 流写入进程的输入；需要一个 `Emit[Truncation.Error]`
++     entry .text   通过作用域内的 `Codepage`，把一个 `Text` 流写入进程的输入
++         需要一个 `Codepage`（`codepages.utf8Codepage`）和一个 `Emit[Truncation.Error]`。
++   entry .Ref   每个进程句柄都能做的事：`pid`、`alive`、`attend`、`kill`、`abort`、计时
+
+% 1 1 0 109167db08ec4749175293ecb3dd53da
+
+@ 0 27 0 0ca244d8e6c38f261f2e56791e6c602b
++         `Process` 和 `Job` 共有的特质：按 pid 对系统上某个进程的引用，带有其生命周期、两种信号，以及平台能报告时的启动时间和 CPU 使用量。
++         只需要等待或停止进程的代码可以接受一个 `Process.Ref`，并被交给两者中的任何一个。
++     entry #pid   进程的 `Pid`
++     entry #kill   用 `SIGKILL` 停止进程；需要一个 `Exec.Event is Loggable`
++     entry #abort   用 `SIGTERM` 请求进程停止；需要一个 `Exec.Event is Loggable`
++     entry #alive   进程是否仍在运行
++     entry #attend   等待进程退出
++     entry #startTime   进程启动的时间，作为任何 `Instantiable across Instants from Long` 的瞬时类型，或 `Unset`
++     entry #cpuUsage   已使用的 CPU 时间，作为任何 `Instantiable across Durations from Long` 的时长类型，或 `Unset`
++   entry #pid   进程的 `Pid`
++   entry #kill   通过 `ProcessHandle.destroyForcibly`，用 `SIGKILL` 停止进程
++   entry #abort   通过 `ProcessHandle.destroy`，用 `SIGTERM` 请求进程停止
++   entry #alive   进程是否仍在运行
++   entry #attend   阻塞直到进程退出
++   entry #parent   父进程，没有父进程时为 `Unset`
++       `Process().parent` 是启动本程序的 shell 或启动器。
++       该元素是一个被跟踪的 `Process`，因此要对它进行匹配，或用 `lay` 取出它的 `pid`。
++   entry #children   进程的直接子进程，作为 `Process` 句柄
++   entry #startTime   进程启动的时间，以任何瞬时类型表示，来自 `ProcessHandle.Info`
++       接受一个 `Instantiable across Instants from Long` 的类型（自纪元以来的毫秒数）：配合 aviation 使用 `startTime[Moment]`。
++       平台不报告时为 `Unset`，在 Scala Native 上始终如此，因为它的 javalib 缺少 `java.time`。
++   entry #cpuUsage   进程已使用的总 CPU 时间，以任何时长类型表示
++       接受一个 `Instantiable across Durations from Long` 的类型（纳秒）。
++       平台不报告时为 `Unset`，在 Scala Native 上始终如此。
+
+@ 0 1 0 1814b96938c4291f0f55415b5bd7361b
++ entry .Pid   进程标识符，自成一个类型：渲染为 `↯1234`，可从数字解析
+
+% 1 1 0 1c59299a5ec2f8ad1b31de3dfe0bc360
+
+@ 0 5 0 140b6d2d53891fd10fb4a8105613d967
++       `Pid(value: Long)` 是一个进程 id，有别于退出码或描述符编号，因此三者不会混淆。
++       它在显示、编码和检视时都是带有 `↯` 标记的数字（`Pid(1234L).show` 为 `↯1234`），从普通数字解码（`t"42".as[Pid]`），并以其显示形式代入 `sh"…"`。
++       `Job#pid` 和 `Process#pid` 会给出一个 pid，`Process(pid)` 会查找一个进程，而 `Executable#detach` 会返回一个 pid。
+
+% 2 1 0 116b10de28fd0ee407ee90141c42069f
+
+% 3 1 0 1cb9cef0af03bdab1debecf15ddb14c0
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1b777cb1845322fc1f510d62689408d7
+
+% 0 1 0 1f0ad54f7b0a3b11159b5af73d4e39ef
+
+% 0 1 0 03ecc438f50359221d395fabd132efa4
+
+% 1 1 0 095149f1a960a4a5074cdfc12ad4d778
+
+% 1 1 0 11419abd95cc2faf0e1a3b52e0bf586d
+
+% 0 1 0 0f13a7a65edd18f20a28574b7d16f17c
+
+@ 0 11 0 1bf11a3046604183061c9cd9a97953b6
++   entry .showable   把 pid 渲染为 `↯` 后跟其数字
++   entry .encodable   把 pid 编码为文本 `↯1234`
++   entry .inspectable   调试渲染，同样是 `↯1234`
++   entry .decodable   从文本中的十进制数读取 pid，否则抛出 `Number.Error`
++       `t"42".as[Pid]` 为 `Pid(42L)`；文本被解析为 `Long`，格式错误的值会通过 `Tactic[Number.Error]` 抛出 `Number.Error(text, Long, Unparseable)`。
++   entry .sshAgentPid   `SSH_AGENT_PID` 环境变量，读取为 `Pid`
++       一个 ambience `Variable["sshAgentPid", Pid]`，因此（作用域中有 `Environment` 时）`Environment.sshAgentPid` 就是正在运行的 SSH 代理的 pid；如果该变量不是数字，则抛出 `Number.Error`。
++       需要一个 `Tactic[Number.Error]`。
++   entry .Error   当给定 pid 的进程未在运行时抛出
+
+% 1 1 0 1cb8e8abeac70bc407efb678b596f897
+
+@ 0 5 0 01d0ce07c263d8eb1f74622811574ca9
++         错误 `↯/s.84.2`：_the process with PID `1234` is not running_。
++         当 `ProcessHandle.of` 什么也找不到时——进程已经退出，或者从未存在——由 `Process(pid)` 抛出，因而也由 `Job#process` 抛出。
++         构造它需要作用域中有一个 `Diagnostics`。
++     entry #pid   所查找的 pid
++   entry #value   该数字
+
+@ 0 1 0 1b0cd8c1c53265a411ab50d1d8f1ef3c
++ entry .Exec   运行命令的词汇：`Exec.Error` 以及所记录的 `Exec.Event`
+
+% 1 1 0 035d7529ba52d1ca0863f9b467f2d6ab
+
+@ 0 4 0 0e2f1325407068e6146e3a6a969ad539
++       这是一个命名空间，而不是类型：一次执行本身是一个 `Job` 或一个 `Process`。
++       `Exec.Error` 在命令无法运行时抛出，而 `Exec.Event` 是启动、退出和信号所记录的内容。
++       （`Executable#Exec` 是存放命令名称的类型成员，是共用这个词的另一样东西。）
+
+% 1 1 0 16939682ee1bc9d1158fd19e46a8ebdf
+
+@ 0 1 0 181e8efb763170340a0a011aea672b41
++   entry .Error   命令无法运行时抛出：二进制文件缺失，或读取其输出时被截断
+
+% 1 1 0 1cffaf1e3aefe5d008971e84aa55a46c
+
+@ 0 7 0 128db9d2bb8597521cc91714d68bf511
++         错误 `↯/s.84.1`：_execution of the command `ls -la` failed_。
++         当程序无法启动时——它不在 `PATH` 上，或者文件不可执行——由 `exec`、`fork`、`detach` 和 `Command.OnTerminal#exec` 抛出；当读取输出被截断时（一个 `Truncation.Error`，针对该命令重新作为此错误抛出；对于流水线，针对最后一个命令），由 `exec` 抛出。
++         它指明 `#command`，因此失败报告的是尝试执行了什么，而不是一个 errno；除非抛出者有输出要附带，否则 `#stdout` 和 `#stderr` 字段为空。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 1 1 0 11621829530a7bef0191b6af5796467c
+
+% 2 1 0 152bab8f97844ee716e34b9bf0145bcb
+
+% 3 1 0 0f286eebc258ce89150716543fe4abe7
+
+% 1 1 0 086e0058de4fcd1c1c7bfc2ea9a09335
+
+% 0 1 0 11a0917b1cbb9e8504cae93488cabe04
+
+% 0 1 0 0dda2a621eb2650303c17e584647fb65
+
+% 1 1 0 03f1867ec2ae181d0fe21bb1e4104da9
+
+@ 0 6 0 0d1dbbe6221d5ffc1575c2bb95a4ba1b
++         启动后以非零状态退出的程序不会抛出此错误：其状态就是其结果，作为 `Exit` 读取。
++     entry #command   无法运行的命令
++     entry #stdout   附带的任何标准输出，以 `Data` 表示；默认为空
++     entry #stderr   附带的任何标准错误，以 `Data` 表示；默认为空
++   entry .Event   运行命令时记录的内容：启动、退出、中止和终止
+
+% 1 1 0 1100e477caada65303b8b7395094d5b1
+
+@ 0 10 0 04d9e23836c2034514fa577e2dd8cf66
++         每个 `Event` 都带有标签 `Log.Process`。
++         `ProcessStart(command)` 由 `fork`、`exec`、`detach` 和终端会话以 `info` 级别记录；`PipelineStart(commands)` 对流水线同样如此；`ProcessExit(pid, code)` 由 `Job#exitStatus()` 记录，状态为零时以 `fine` 级别记录，否则作为警告记录；`AbortProcess(pid)` 由 `Job#abort()` 以 `info` 级别记录；`KillProcess(pid)` 由 `Job#kill()` 作为警告记录。
++         凡是运行这些操作的地方，作用域中都必须有一个 `Exec.Event is Loggable`；`logging.silentLogging` 会丢弃它们。
++     entry .communicable   把每个事件渲染为一条消息
++         _starting the process `ls -la`_、_starting the pipeline `cat x` `wc -l`_、_the process with PID `↯1234` exited with code `0`_、_aborted the process with PID `↯1234`_、_killed the process with PID `↯1234`_。
+
+@ 0 1 0 0e6ee3771c4b839111240ee02b85ad42
++ entry .Intelligible   表明命令的名称蕴含其结果类型的证据，供 `sh"…"()` 使用
+
+% 1 1 0 08466cd2a10bb47a10e92ee7eaad8b1c
+
+@ 0 8 0 0d9293da1264632c0f270269b81b852c
++       `"ls" is Intelligible to Chain[Text]` 表示，名为 `ls` 的命令在不带类型地应用时会被读取为 `Chain[Text]`：`sh"ls -la"()` 为命令的 `Exec` 类型成员（即其名称，作为字面量类型）召唤 `Intelligible` 证据，并以该证据的 `Result` 类型（继承自 `Resultant`）运行 `exec`。
++       该特质是密封的，其实例是擦除的：它们只为编译器选择类型而存在，在运行时没有任何开销。
++       其伴生对象扩展了 `PosixCommands`，因此每个 POSIX 工具的证据都无需导入即位于隐式作用域中；该列表之外的命令没有蕴含的类型，要用 `exec[T]()` 运行。
+
+% 2 1 0 04695fad23e0d0c0092b7670a291c409
+
+% 3 1 0 14ebac6af49678000c63b1cc496e68d1
+
+% 4 1 0 051db038c434ce401aaea86ada1dda00
+
+% 5 1 0 09a96f7d11c835dd18c476a405be9fff
+
+% 6 1 0 038b308eaf1f3ee11623a934bd6464f1
+
+% 7 1 0 07cfa489c1fdb13418eed6fdc2a0ebdb
+
+% 0 1 0 15b59a11e78fcbf509844b3818f65206
+
+% 0 1 0 081b7250f4fccf93059edc36d92955d6
+
+% 0 1 0 09f5703b2bbb916f14e0280e17a81aa3
+
+% 1 1 0 09ad1a66f4324e09043b0b4832522a6b
+
+@ 0 3 0 197f1994bf0505650c90f9ddf151333a
++       为自己的程序提供的实例是一个 `erased given ("mytool" is Intelligible to Text)`——写法与 `PosixCommands` 的 given 相同——但构造它需要伴生对象私有的 `Evidence` 类，因此实际上这个列表归库所有。
+
+% 0 1 0 012fe3f5e1c12ae60d6b800b3451c210
+
+% 1 1 0 073ef04bea83c9401fab61d04edb6d24
+
+% 2 1 0 0819c0b89642491a06cc98a63fe8fd8f
+
+@ 0 1 0 029df34668e50eee11456caa1173af2e
++   entry #Self   命令的名称，作为字面量类型，例如 `"ls"`
+
+@ 0 1 0 03eed665b45f61190715aa6257a374f5
++ entry .PosixCommands   每个 POSIX 工具所蕴含的结果类型，每个命令一个擦除的 given
+
+% 1 1 0 09d5409a3797568e1d703b1189d6a34c
+
+@ 0 11 0 138bbb330a4fe0b118e2111f953806c1
++       这个特质为每个 POSIX shell 工具容纳一个 `Intelligible` given，并混入 `Intelligible` 的伴生对象，因此无需导入即可找到它们。
++       每个 given 说明 `sh"<command> …"()` 返回什么：对于输出是整体读取的报告的工具（`echo`、`date`、`wc`、`pwd`、`uname`，即列表中的大多数），返回 `Text`；对于输出是值得在到达时逐行读取的工具（`cat`、`grep`、`head`、`ls`、`man`、`sed`、`sort`、`strings`、`tail`、`uniq`），返回 `Chain[Text]`；对于重点在于其效果而非输出的工具（`chgrp`、`chmod`、`chown`、`cp`、`kill`、`ln`、`mkdir`、`mkfifo`、`mknod`、`mv`、`newgrp`、`rm`、`rmdir`、`sleep`、`touch`），返回 `Exit`；而对于 `which`，返回调用方所要求的任何路径类型。
++       它们都是 `erased` 的：运行时不存在任何实例，选择完全由编译器做出。
++       `wait` 的 given 名为 `waitCommand`，因为 `wait` 是每个对象都有的方法。
+
+% 2 1 0 15955fb30e6f66a007d140d47a8bbe15
+
+% 3 1 0 09adb1eedd5c16fc0271067a3f9004d2
+
+% 4 1 0 1d7ce5296617bf911762ac6e073e3655
+
+% 5 1 0 0362177e7e164478112d86c87ed643ec
+
+% 6 1 0 192edac5649659a21aaf467ace3af26b
+
+% 7 1 0 0a98a8e1bfbd3c881381346eeaab2dea
+
+% 0 1 0 139853c9aee3ec3f05860b58dd7df61e
+
+% 0 1 0 14b66bc5404f0bda0fd6e126d1754824
+
+% 0 1 0 1b12cdf88eb0899b14281b30c660ff02
+
+% 1 1 0 047b65f521349cc317a1c667b60a8ff4
+
+% 0 1 0 14a2e30b34614dc1129d51bb0f37789d
+
+% 1 1 0 050a1f29592d72c50c9ac86c61919934
+
+@ 0 103 0 1f1326be7d1c5278167ad8f3c851cc2b
++   entry #alias   `alias`（列出或定义 shell 别名）以 `Text` 运行：命令结束后的全部输出
++   entry #ar   `ar`（维护归档库）以 `Text` 运行：命令结束后的全部输出
++   entry #at   `at`（把命令排入队列，稍后运行）以 `Text` 运行：命令结束后的全部输出
++   entry #awk   `awk`（模式扫描语言）以 `Text` 运行：命令结束后的全部输出
++   entry #basename   `basename`（把路径剥离到其最后一个路径段）以 `Text` 运行：命令结束后的全部输出
++   entry #batch   `batch`（把命令排入队列，在负载允许时运行）以 `Text` 运行：命令结束后的全部输出
++   entry #bc   `bc`（任意精度计算器）以 `Text` 运行：命令结束后的全部输出
++   entry #cat   `cat`（拼接文件）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #chgrp   `chgrp`（更改文件的组）以 `Exit` 运行：其状态即其结果
++   entry #chmod   `chmod`（更改文件的模式）以 `Exit` 运行：其状态即其结果
++   entry #chown   `chown`（更改文件的所有者）以 `Exit` 运行：其状态即其结果
++   entry #cksum   `cksum`（文件的 CRC 校验和与大小）以 `Text` 运行：命令结束后的全部输出
++   entry #cmp   `cmp`（逐字节比较两个文件）以 `Text` 运行：命令结束后的全部输出
++   entry #comm   `comm`（两个已排序文件共有或不共有的行）以 `Text` 运行：命令结束后的全部输出
++   entry #command   `command`（绕过 shell 函数运行命令）以 `Text` 运行：命令结束后的全部输出
++   entry #cp   `cp`（复制文件）以 `Exit` 运行：其状态即其结果
++   entry #crontab   `crontab`（编辑 cron 表）以 `Text` 运行：命令结束后的全部输出
++   entry #csplit   `csplit`（按上下文拆分文件）以 `Text` 运行：命令结束后的全部输出
++   entry #cut   `cut`（选取每行的列）以 `Text` 运行：命令结束后的全部输出
++   entry #date   `date`（打印或设置日期）以 `Text` 运行：命令结束后的全部输出
++   entry #dd   `dd`（复制并转换块）以 `Text` 运行：命令结束后的全部输出
++   entry #df   `df`（可用磁盘空间）以 `Text` 运行：命令结束后的全部输出
++   entry #diff   `diff`（两个文件之间的差异）以 `Text` 运行：命令结束后的全部输出
++   entry #dirname   `dirname`（把路径剥离到其所在目录）以 `Text` 运行：命令结束后的全部输出
++   entry #du   `du`（磁盘用量）以 `Text` 运行：命令结束后的全部输出
++   entry #echo   `echo`（写出其参数）以 `Text` 运行：命令结束后的全部输出
++   entry #ed   `ed`（行编辑器）以 `Text` 运行：命令结束后的全部输出
++   entry #env   `env`（打印或修改环境）以 `Text` 运行：命令结束后的全部输出
++   entry #expand   `expand`（把制表符转换为空格）以 `Text` 运行：命令结束后的全部输出
++   entry #expr   `expr`（对表达式求值）以 `Text` 运行：命令结束后的全部输出
++   entry #file   `file`（猜测文件的类型）以 `Text` 运行：命令结束后的全部输出
++   entry #find   `find`（遍历目录树）以 `Text` 运行：命令结束后的全部输出
++   entry #fold   `fold`（折叠长行）以 `Text` 运行：命令结束后的全部输出
++   entry #gencat   `gencat`（构建消息目录）以 `Text` 运行：命令结束后的全部输出
++   entry #getconf   `getconf`（配置值）以 `Text` 运行：命令结束后的全部输出
++   entry #getopts   `getopts`（解析选项参数）以 `Text` 运行：命令结束后的全部输出
++   entry #grep   `grep`（匹配某个模式的行）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #hash   `hash`（shell 的命令哈希表）以 `Text` 运行：命令结束后的全部输出
++   entry #head   `head`（文件的前几行）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #iconv   `iconv`（在字符编码之间转换）以 `Text` 运行：命令结束后的全部输出
++   entry #id   `id`（用户和组的身份）以 `Text` 运行：命令结束后的全部输出
++   entry #join   `join`（按公共字段连接两个文件）以 `Text` 运行：命令结束后的全部输出
++   entry #kill   `kill`（发送信号）以 `Exit` 运行：其状态即其结果
++   entry #ln   `ln`（创建链接）以 `Exit` 运行：其状态即其结果
++   entry #locale   `locale`（区域设置信息）以 `Text` 运行：命令结束后的全部输出
++   entry #localedef   `localedef`（编译区域设置定义）以 `Text` 运行：命令结束后的全部输出
++   entry #logger   `logger`（写入系统日志）以 `Text` 运行：命令结束后的全部输出
++   entry #logname   `logname`（登录名）以 `Text` 运行：命令结束后的全部输出
++   entry #lp   `lp`（把文件发送到打印机）以 `Text` 运行：命令结束后的全部输出
++   entry #ls   `ls`（列出目录）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #m4   `m4`（宏处理器）以 `Text` 运行：命令结束后的全部输出
++   entry #mailx   `mailx`（发送和阅读邮件）以 `Text` 运行：命令结束后的全部输出
++   entry #man   `man`（手册页）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #mesg   `mesg`（允许或拒绝发往终端的消息）以 `Text` 运行：命令结束后的全部输出
++   entry #mkdir   `mkdir`（创建目录）以 `Exit` 运行：其状态即其结果
++   entry #mkfifo   `mkfifo`（创建命名管道）以 `Exit` 运行：其状态即其结果
++   entry #mknod   `mknod`（创建特殊文件）以 `Exit` 运行：其状态即其结果
++   entry #mv   `mv`（移动文件）以 `Exit` 运行：其状态即其结果
++   entry #newgrp   `newgrp`（更改当前组）以 `Exit` 运行：其状态即其结果
++   entry #od   `od`（以八进制或其他进制转储文件）以 `Text` 运行：命令结束后的全部输出
++   entry #paste   `paste`（逐行合并文件）以 `Text` 运行：命令结束后的全部输出
++   entry #patch   `patch`（应用 diff）以 `Text` 运行：命令结束后的全部输出
++   entry #patchchk   `patchchk`（检查补丁）以 `Text` 运行：命令结束后的全部输出
++   entry #pax   `pax`（可移植归档工具）以 `Text` 运行：命令结束后的全部输出
++   entry #pr   `pr`（为打印而给文件分页）以 `Text` 运行：命令结束后的全部输出
++   entry #printf   `printf`（格式化输出）以 `Text` 运行：命令结束后的全部输出
++   entry #ps   `ps`（正在运行的进程）以 `Text` 运行：命令结束后的全部输出
++   entry #pwd   `pwd`（工作目录）以 `Text` 运行：命令结束后的全部输出
++   entry #read   `read`（把一行读入变量）以 `Text` 运行：命令结束后的全部输出
++   entry #renice   `renice`（更改进程的优先级）以 `Text` 运行：命令结束后的全部输出
++   entry #rm   `rm`（删除文件）以 `Exit` 运行：其状态即其结果
++   entry #rmdir   `rmdir`（删除空目录）以 `Exit` 运行：其状态即其结果
++   entry #sed   `sed`（流编辑器）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #sleep   `sleep`（暂停一段时间）以 `Exit` 运行：其状态即其结果
++   entry #sort   `sort`（对行排序）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #split   `split`（把文件拆分成若干部分）以 `Text` 运行：命令结束后的全部输出
++   entry #strings   `strings`（二进制文件中的可打印字符串）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #stty   `stty`（读取或设置终端的行规程）以 `Text` 运行：命令结束后的全部输出
++   entry #tabs   `tabs`（设置终端的制表位）以 `Text` 运行：命令结束后的全部输出
++   entry #tail   `tail`（文件的最后几行）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #tee   `tee`（把输入复制到文件和输出）以 `Text` 运行：命令结束后的全部输出
++   entry #test   `test`（对条件求值）以 `Text` 运行：命令结束后的全部输出
++   entry #touch   `touch`（更新文件的时间戳，必要时创建文件）以 `Exit` 运行：其状态即其结果
++   entry #tput   `tput`（终端能力）以 `Text` 运行：命令结束后的全部输出
++   entry #tr   `tr`（转换字符）以 `Text` 运行：命令结束后的全部输出
++   entry #tsort   `tsort`（拓扑排序）以 `Text` 运行：命令结束后的全部输出
++   entry #tty   `tty`（终端的设备名）以 `Text` 运行：命令结束后的全部输出
++   entry #umask   `umask`（文件创建掩码）以 `Text` 运行：命令结束后的全部输出
++   entry #unalias   `unalias`（删除别名）以 `Text` 运行：命令结束后的全部输出
++   entry #uname   `uname`（系统的名称）以 `Text` 运行：命令结束后的全部输出
++   entry #unexpand   `unexpand`（把空格转换为制表符）以 `Text` 运行：命令结束后的全部输出
++   entry #uniq   `uniq`（丢弃或计数重复的行）以 `Chain[Text]` 运行：惰性地给出其各行
++   entry #uudecode   `uudecode`（解码 uuencode 编码的文件）以 `Text` 运行：命令结束后的全部输出
++   entry #uuencode   `uuencode`（为邮件编码文件）以 `Text` 运行：命令结束后的全部输出
++   entry #waitCommand   `wait`（等待后台作业）以 `Text` 运行：命令结束后的全部输出
++   entry #wc   `wc`（统计行数、单词数和字节数）以 `Text` 运行：命令结束后的全部输出
++   entry #who   `who`（谁已登录）以 `Text` 运行：命令结束后的全部输出
++   entry #write   `write`（写入另一个用户的终端）以 `Text` 运行：命令结束后的全部输出
++   entry #which   `which`（在 `PATH` 上查找程序）以调用方所要求的路径类型运行
++       一个内联 given，适用于任何 `Instantiable across Paths from Text` 的类型：`val git: Path on Linux = sh"which git"()` 通过路径类型的 `Computable` 实例，把去除首尾空白的输出读取为路径。
++       该类型必须由期望类型确定，因为命令本身无法选择它。
+
+@ 0 1 0 1b7690d68689f9270f5bf4d5308717b5
++ entry .Parameterizable   某个类型的值如何在 `sh"…"` 中渲染为命令参数
+
+% 1 1 0 0ee8afeaff167c7c161c4fe0a6bff864
+
+@ 0 6 0 02bc27d20adc99690ddc3aa0e0bb0e91
++       `T is Parameterizable` 让 `T` 可以代入 `sh"…"` 插值器：`#show` 把它渲染为一个参数的文本，插值器随后按其位置进行转义，因此实例从不需要关心引号。
++       伴生对象的 `.encodable` 涵盖每个 `Encodable in Text` 的类型——`Path`、URL、`Pid`——而两者皆非的类型会在代入处产生编译错误。
++       `Text`、`List[Text]` 和 `Command` 通过它们自己的 `Sh` 插入规则代入，而不是通过这个类型类。
+
+% 2 1 0 0ffeb3fa6668767e0c4215e88f81d9d3
+
+% 3 1 0 1e7094cf67d5e5c802a78aaef264b6e9
+
+% 0 1 0 05aa700a541404ab10d2235b9156bea7
+
+% 0 1 0 1c2ed558c3c83b1a04de618d3efae7a8
+
+% 0 1 0 1a2e1d4fbae3b6cc150428cbfab687d4
+
+% 1 1 0 0d5f12cecd9cef8c1d05ebe1b79c2738
+
+% 1 1 0 017a72a3e78de0af057295bf970f7de3
+
+@ 0 6 0 13646779ef074c330280d02705cc0164
++   entry .encodable   任何 `Encodable in Text` 的类型都以其编码形式代入
++       `Path on Linux` 代入为 `/etc/hosts`，`Pid` 代入为 `↯42`，URL 代入为其文本。
++   entry #show   作为一个命令参数文本的值
++   entry #contramap   借助一个转换到本类型的函数，得到另一个类型的实例
++       `summon[Text is Parameterizable].contramap(f)` 是为自身带有文本形式的类型编写实例的常用方式。
+
+@ 0 1 0 18e365e0962fedda1a5cd39819a1b4cf
++ entry .Termios   终端的行规程：程序最常更改的 `stty` 开关
+
+% 1 1 0 016785d901d44df8188a5a02ca5cfe18
+
+@ 0 7 0 1fda0b7e66468cb1058c361364d4fb77
++       伪终端的设置，决定键入的内容如何到达程序，以及程序写出的内容如何到达屏幕；它们以所代表的 POSIX `termios` 标志命名，每个都是默认开启的 `Boolean`。
++       `.cooked` 是全部开启——行编辑、回显、信号以及 shell 所期望的转换——而 `.raw` 是全部关闭，正如全屏程序在绘制之前所设置的那样。
++       传给 `Command#pty` 的 `Termios` 在命令启动之前设置，而正在运行的命令的设置则通过 `Command.OnTerminal.Job#mode` 读取和更改。
+
+% 2 1 0 1f12dd13f45544e90485104bec8849d9
+
+% 3 1 0 0f8ea0588517d7f3187b7e2d2b2d25bd
+
+% 0 1 0 18d14fb02a5bccd812f3d5e1a6cb9e5a
+
+% 0 1 0 0dd0e35fac59405c1760aa8a2f61ad83
+
+% 0 1 0 12eae3018f89014410ab42b0c3b97c14
+
+% 1 1 0 10a3ed961d61dddf140e2ed313c9a771
+
+% 1 1 0 0194e6cc425498421dfa21e416f3b44f
+
+@ 0 14 0 0d50e9d2eada94a302b4c10b5c50e99e
++   entry .cooked   全部开关开启：输入以行为单位编辑和回显，`^C` 是一个信号
++   entry .raw   全部开关关闭：每个字节按键入原样送达，不回显，`^C` 是普通字节
++       即 `stty raw -echo` 所设置的内容，也是编辑器之类的全屏程序所需要的。
++       关闭 `canonical` 还会让读取在每个字节到达时就返回它。
++   entry .showable   按 `stty` 报告的方式渲染开关：`echo -icanon isig …`
++       每个开关以其 POSIX 标志名表示，关闭时加上前缀 `-`，顺序为 `echo`、`icanon`、`isig`、`iexten`、`icrnl`、`ixon`、`opost`。
++   entry #echo   `echo`：键入的字符是否回显到终端
++   entry #canonical   `icanon`：输入是以行为单位收集和编辑，还是按键入原样送达
++   entry #signals   `isig`：`^C` 和 `^Z` 是否向前台程序发送信号
++   entry #extensions   `iexten`：是否解释额外的行编辑字符
++   entry #translateReturn   `icrnl`：键入的回车是否作为换行到达
++   entry #flowControl   `ixon`：`^S` 和 `^Q` 是否暂停和恢复输出
++   entry #postprocessing   带 `onlcr` 的 `opost`：程序写出的换行是否作为回车加换行发送
+
+@ 0 1 0 0f4171910af8dd0c0b1a82bbb710dfd7
++ entry .Sh   `sh"…"` 插值器的解析器及其插入规则
+
+% 1 1 0 19e832559100fa22077cefbd14982d51
+
+@ 0 8 0 0c855056c559050f16830816ffb347b6
++       `sh"…"` 背后的机制：解析器（`.Runtime`），宏在编译时运行它以检查字面量，生成的代码在运行时运行它以用代入的值组装参数；解析器的 `.State` 和 `.Context`；代入所贡献的 `.Parameters`；格式错误的字面量所抛出的 `.Error`；以及上下文中的 `Insertion` given，它们说明 `Text`、`List[Text]`、`Command` 或任何 `Parameterizable` 值如何成为参数。
++       程序不会直接调用这些，但在插值处的作用域中放一个 `given Insertion[Sh.Parameters, T]` 是代入某个类型的一种方式，而通常的方式是 `Parameterizable`。
+
+% 1 1 0 1b66fb8153baf0721b160a602058f1c2
+
+% 0 1 0 0c36bedfd9467f701fd292a8c56265de
+
+@ 0 4 0 1f15903224d51dbb105e8eb5418b62a4
++   entry .Context   解析器所处的位置：`Awaiting` 一个单词、在 `Unquoted` 单词中、在 `Quotes2` 或 `Quotes1` 中
++       `Awaiting` 位于参数之间，`Unquoted` 位于裸单词内，`Quotes2` 位于双引号内，`Quotes1` 位于单引号内，其中反斜杠是字面字符。
++   entry .State   解析器的状态：上下文、待处理的转义、目前为止的参数，以及偏移量
+
+% 1 1 0 1f9c88a409aaa1eb1206521463be362c
+
+@ 0 11 0 0a923f7fe1945dfa17e162ec4d0495d6
++         `State(current, escape, arguments, offset, quoteStart)`：`Context`；上一个字符是否为尚未消费的反斜杠；已完成和正在构建的参数；已消费了多少字符（每次代入算作一个）；以及当前引号上下文的开引号的偏移量，或 `-1`，以便在未闭合的引号被打开的位置报告它。
++     entry #current   解析上下文
++     entry #escape   是否有待处理的反斜杠
++     entry #arguments   目前为止的参数，最后一个可能仍在构建中
++     entry #offset   已消费的字符数，每次代入算作一个
++     entry #quoteStart   当前引号上下文的开引号的偏移量，或 `-1`
++   entry .Parameters   一次代入所贡献的内容：零个或多个参数文本
+
+% 1 1 0 18075c1c458d5fc2020b4ffe5e12bd23
+
+@ 0 5 0 01e5cc081a0158e81375fc2e402a2f5a
++         `Text` 贡献一个，`List[Text]` 每个元素贡献一个，`Command` 贡献其各个参数。
++         不在引号内时，每个文本都是一个独立的参数（与相邻的字面文本相连）；在引号内时，它们用空格连接成引号所界定的那一个参数。
++     entry #params   所贡献的文本
++   entry .Error   格式错误的 `sh"…"` 字面量：未闭合的引号或多余的转义，附带其偏移量
+
+% 1 1 0 1c545533e8299adf147e3a0860590763
+
+@ 0 8 0 1113b31ffe25ff801e3172a0e00a6bd0
++         由解析器抛出，并由宏在出错的字符处报告为编译错误：_this double quote is never closed_、_this single quote is never closed_、_a command cannot end with an escape character_、_an escape character cannot appear immediately before a substitution_。
++         到了运行时，字面量已经检查过，因此不会出现此错误。
++     entry #detail   消息
++     entry #offset   错误在字面量中的位置，每次代入算作一个字符
++   entry .Runtime   解析器：`initial`、`parse`、`insert`、`skip` 和 `complete`
+
+% 1 1 0 1d740dabfafbdafa156c94451a6d7fb3
+
+@ 0 13 0 0e53393998c0274b0ca03cee729d9c06
++         一个作用于字面量各部分字符的小型状态机：宏在每次代入处用 `skip` 驱动它以检查字面量，生成的代码则用 `insert` 驱动它以拼接真实的值。
++         不供直接使用。
++     entry .initial   任何字符之前的状态：等待一个单词，没有参数
++     entry .parse   把字面量某一部分的字符送入状态
++     entry .insert   按上下文把一次代入的 `Parameters` 拼接进状态
++     entry .skip   在编译时值尚未知晓时，越过一次代入
++     entry .complete   结束：给出 `Command`，或在引号未闭合或末尾有转义时给出 `Sh.Error`
++   entry .nothing   `Nothing` 代入贡献空参数
++   entry .text   `Text` 代入恰好是一个参数，无论其内容如何
++   entry .list   `List[Text]` 代入为每个元素一个参数，在引号内则为用空格连接的一个参数
++   entry .command   `Command` 代入为其各个参数，因此 `sh"sh -c '$inner'"` 把它作为一个参数传递
++   entry .parameterizable   任何 `Parameterizable` 值都以其 `show` 文本代入，作为一个参数
+
+@ 0 1 0 0332a1f060f3a6b6006e367901d863d5
++ entry .internal   `sh"…"` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 06fc3b83935fabfc1682f67ea5932e6b
++       不供直接使用：这个对象的存在是为了让 `sh` 宏有一个稳定的归属。
++   entry .sh   该宏：在编译时解析字面量各部分，定位错误，并拼接运行时解析
++       用 `Sh.Runtime` 检查字面量（在导致 `Sh.Error` 的字符处报告它，并经由 `$$` 和 unicode 转义映射回源代码），为每个代入的类型召唤一个 `Insertion[Sh.Parameters, T]`（失败时给出 _can't substitute `T` into a sh-interpolator_），并产生一个以其第一个单词作为 `Exec` 类型来细化的 `Command`。

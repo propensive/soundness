@@ -1,0 +1,1174 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f3d23bc3a26a1d40d64c83ab97e4fea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1100799f5b35796d062bdee50e0e4861
++ info   哈希：任何值或流的摘要，算法即类型，弱算法须凭许可使用
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 1de776c63c6e09a90d801d9fec09fb6b
++     _Gastronomy_ 计算摘要。
++     算法是一个**类型**（`Sha2[256]`、`Sha1`、`Md5`、`Blake3`、`Murmur3`，或 corpuscular 的校验和 `Crc32`、`Crc64` 和 `Adler32`），因此 `Digest in Sha2[256]` 永远不会被误当作 `Digest in Md5`，而算法名称的拼写错误是编译错误，而不是 `NoSuchAlgorithmException`。
++     任何具有 `Digestible` 实例的值都可以直接用 `digest` 进行哈希：基本类型、`Text`、`Data`、各种集合，以及每个 case class 和枚举，它们的实例由其字段派生而来。
++     流、文件或目录则在数据流动时通过 `Checksummable` 用 `checksum` 进行哈希，占用的内存有界。
+
+% 2 1 0 048bb6badde73d1a0dafa7ecd7a4c3b0
+
+% 3 1 0 1491a9b2665b5b6e18b0027a156eba86
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 14be6cbd3a3feeb513077878dd31b0ce
+
+% 0 1 0 1d9905fd838e79f3131fb9996f7bc636
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 10e19cb57185554a1aac0c32c267213a
+
+% 1 1 0 0c7a6d8677fbdbf3117ceb8035b6fb99
+
+@ 0 2 0 01febbd81f600f7009d3789851599500
++     有三项决定始终是显式的，每一项都是一次按名称的导入（`import soundness.*` 不会引入其中任何一项，因为通配符导入不导入 given）：
+
+@ 0 18 0 07e8e28c850081740a5a8b004eb4d49e
++     - **提供者。**`Hashing` 提供者提供每种算法的实现，从 `providers` 包中选择：`providers.javaBaseProvider` 是 JDK 的 `MessageDigest` 和 `java.util.zip`（在 JVM 之外则是 Soundness 提供者所用的同一套纯 Scala 代码，因此该导入在每个平台上写法相同）；`providers.soundnessProvider` 是纯 Scala 的 `SoundnessHashing`，也是 `Blake3`、`Murmur3` 和 `Crc64` 的唯一来源。每种算法的 `Hash` given 都按结构要求一个具有该算法方法的提供者，因此仅在 JDK 提供者下使用 `digest[Blake3]` 是一个指出缺少 `Hash in Blake3` 的编译错误，而不是运行时失败。同时导入两个提供者也没问题；此时以词法方式导入的 `SoundnessHashing` 服务于每种算法。
++     - **许可。**MD5 和 SHA-1 已被攻破，而校验和与 `Murmur3` 根本不是密码学哈希，因此 `digest[Md5]` 需要 `cryptoPermits.permitDisallowedCrypto`（若仅为 SHA-1 则需要 `permitDeprecatedCrypto`），`digest[Crc32]` 需要 `cryptoPermits.permitNonCryptographicHashes`。这些许可是被擦除的 `Permit` 证据，由 `HashWeakness` 解析；SHA-2 和 BLAKE3 属于 `Concession.Acceptable`，不需要任何许可。
++     - **字母表。**`Digest` 是字节，在 `alphabets` 导入下用 monotonous 的 `serialize[Hex]` 或 `serialize[Base64]` 呈现；`show` 在作用域中的 `Alphabet[Base64]` 下将其呈现为 Base64，而 `inspect` 始终是带 `ᴰ` 后缀的小写十六进制。
+
+@ 0 2 0 07f41b4fc1b47f7013918948f97a57d6
++     通常只需 `Digest in algorithm` 类型就足以说明算法：声明为 `Digest in Sha2[256]` 的字段决定了 `payload.digest` 计算什么，无需类型参数。
+
+@ 0 8 0 03c3abadeb68629b1cb0552fc78a985a
++     除摘要之外，该库还持有共享的**密码学许可词汇**：`Concession`、`Permit`、`ProcessingPermit` 和 `cryptoPermits` 包，enigmatic（密码算法、HMAC、签名）和 telekinesis（TLS）也以它们设限，因此像 `cryptoPermits.permitDisallowedCrypto` 这样的一次导入同时涵盖弱哈希和弱密码算法；enigmatic 的签名密码算法所实现的 `Signing` 接口；`Hash#hmacName`，即 enigmatic 的 `hmac[Sha2[256]](key)` 所用的 JCE 名称；`Feistel`，一个作用于 64 位值的 Feistel 网络；以及在其 `multihash` 组件中，multiformats 规范的自描述 `Multihash` 封装，由 `Multicodec` 将每种算法映射到其注册代码。
+
+@ 0 1 0 1f1beb75a79fadfc050c016179f3bca2
++     各组件：
+
+@ 0 6 0 060ee34620ff8345071a0d3bba6cde53
++     - `gastronomy.core`：除 multihash 外的上述一切。它为 JVM、Scala.js 和 Scala Native 编译：BLAKE3、MurmurHash3、MD5、SHA-1 和 SHA-2 是纯 Scala 的，校验和则是 corpuscular 的累加器。在 JVM 上，`JavaBaseHashing` 以 `MessageDigest` 和 `java.util.zip` 为后端；在其他平台上，同一个对象转发给 `SoundnessHashing`，因此在任何平台上选择提供者的源代码都相同。
++     - `gastronomy.multihash`：`Multihash` 和 `Multicodec`，供基于内容寻址的调用者使用。
+
+@ 0 3 0 1bed0f6db3886bfa051336d655320582
++     一切都导出到 `soundness` 总括包，而 `providers` 和 `cryptoPermits` 选择包与总括包自己的同名包合并，因此用户写下 `import soundness.*`，然后按名称导入一个提供者以及所需的许可。
+
+% 0 1 0 1c6c9050beb10c0e049a8d11818fd40d
+
+% 0 1 0 18be7dab9dfafae60f304bb88a4a8a6a
+
+% 0 1 0 1800103d6e0e645e0678f732d821d7eb
+
+% 0 1 0 0e3c4b276c2978580f1782149071fdb6
+
+% 0 1 0 09fc521befbfb88712b00211704e1b65
+
+% 0 1 0 0a862621e96b74fa088e671ee11b9c8c
+
+% 0 1 0 1565a220b779649719d0d91fe2f6a950
+
+% 0 1 0 066a5dfac6ef62110cc5cc654f53465f
+
+@ 0 1 0 1222386a5372efba1d67e1132bbaa122
++ entry .digest   任何 `Digestible` 值的摘要，采用以类型指定的算法
+
+% 1 1 0 18f062cace8eeffd189994558c6b3813
+
+@ 0 7 0 1f7e4ae32540d25806f7731d50229cb5
++       `value.digest[Sha2[256]]` 将该值的字节（由其 `Digestible` 实例定义）送入该算法的一个新 `Digestion`，并将结果作为 `Digest in Sha2[256]` 返回。
++       它需要一个 `Hash in algorithm`（每种算法的伴生对象从作用域中的 `Hashing` 提供者派生它，因此必须有 `import providers.javaBaseProvider` 或 `providers.soundnessProvider`），以及一个被擦除的 `Permit[HashWeakness[algorithm]]`，它对 SHA-2 和 BLAKE3 始终可用，而对 MD5、SHA-1、校验和以及 MurmurHash3 则必须从 `cryptoPermits` 导入。
+
+@ 0 2 0 0662c9694dc664601274f0666afe173c
++       当期望类型指明了算法时，类型参数可以交给类型推断，这是数据模型中的常见形态：
+
+% 2 1 0 039422bc6c1611580e6ffb2873b30c30
+
+% 3 1 0 127f6535fea7a640076c7522644e2234
+
+% 4 1 0 1c9a9637db29b90d17ae4684dca1f6f8
+
+% 0 1 0 017595c65d7b1f3e03d6a341debdaf7d
+
+% 0 1 0 12e51cd9c719d4760cf522efab9a099a
+
+% 0 1 0 1e8d12137ea7e09d0631d0794c4c3ecd
+
+% 1 1 0 0d69d29901408d9219be1bab0cb7b9b5
+
+@ 0 3 0 02d33e4ee126d64402cdcdcda889942f
++       在每种算法下对相同字节求摘要，并附上所需的导入：SHA-256 只需一个提供者；SHA-1 已弃用，因此需要许可；MD5 已被禁止，因此需要范围更广的许可；而 BLAKE3 需要 JDK 所缺少的 Soundness 提供者：
+
+% 2 1 0 0fb561c485b8ed9a00ae42d62f383bb3
+
+% 0 1 0 0682180745758ffa02c5398259339c13
+
+% 1 1 0 02fcbc0ce2931023149697c071545525
+
+% 2 1 0 19f5ec89c68cd4ea1a99069bc5d935f9
+
+% 3 1 0 102aef6f796634970f68e7305ff82488
+
+% 0 1 0 15f3586e9477dd86192c9dd458a3bb19
+
+% 0 1 0 06bbd88dad10c484171770afc19467b0
+
+% 0 1 0 1d4ef2d9dd260e4716deab642b0ac558
+
+% 1 1 0 0b0f1c3a656b14110017d925b1fa08c8
+
+% 2 1 0 1174d950811fe9f71caa419775342927
+
+% 3 1 0 1a72d870d9605298002192c449cd192a
+
+% 0 1 0 1a71d33236587ff616d14ca261ea120b
+
+% 0 1 0 10993d5d46bc51bf0b168bd30494e798
+
+% 0 1 0 14abc023303b2a6a176ffa83b7cd9263
+
+% 0 1 0 0508b479775ade1c01e9dad42d2b544d
+
+% 1 1 0 19c6a2a98f32f3ab18c851fd6ae29f21
+
+% 2 1 0 1fc3e145d5da878615813c97b5317119
+
+% 3 1 0 1235fd71a813180f046f45ca980423b7
+
+% 0 1 0 116b9db17840920a1715d3d9ff31a35a
+
+% 0 1 0 1ae4a173b47a330c1e3b500b3efb78c6
+
+% 0 1 0 0a18327f5a6b1bb70c4acea9af41ead0
+
+% 0 1 0 1bc537a9038cb2b00f8f6cbba22f68bd
+
+% 1 1 0 113a1a14bfa2e4831a55662891e5dd8e
+
+% 0 1 0 19a2adf273afd6130d5ecbf89a9a9be9
+
+% 1 1 0 1698e130973478c71f0cb912ebdbfd50
+
+% 0 1 0 046d7243f9cd88f71fbe36d37e66f54f
+
+% 1 1 0 1cb863ff25cb531c158c74c3ed957597
+
+% 2 1 0 1068d97d65062845192f2603809ef5f5
+
+@ 0 5 0 0f4fdac221053e5a0a2781cc22e63fd0
++       值是整体求摘要的；`checksum` 对值*背后*的内容（流的数据块、文件的内容）求摘要而不持有它，`Digester` 则将多个值求摘要到同一个累加器中。
++       没有许可时，编译错误为 _this operation uses a sub-optimal algorithm, key length or mode — or a checksum in place of a hash; import the matching permit …_；没有提供者时，它会指出缺少的 `Hash in algorithm`。
+
+% 0 1 0 1bfd08a97d6c85bf0e07f22b607f4604
+
+% 1 1 0 0545231e274d711e1cd9db3a95875c32
+
+% 1 1 0 1c2351c4df4557091c3ca56d49f847b5
+
+% 1 1 0 1b6428ef5f8c76d608658343eef23aa5
+
+% 1 1 0 0ab1c74377b2f3060c372ed3fc894dbe
+
+@ 0 1 0 1d489b9219ac2ddd0c17e6570a5c6876
++ entry .checksum   值背后内容的摘要：流的字节、文件、目录
+
+% 1 1 0 0b63c3f3f579a3951c50f9451349c545
+
+@ 0 8 0 120477d95399690f1a042a13d2bda078
++       `source.checksum[Sha2[256]]` 对来源的 `Checksummable` 实例所送入的任何内容求摘要（对于任何 `Streamable by Data over Credit` 来源，是其流中按顺序排列的每个数据块，逐窗口排空，因此摘要在有界内存中计算；对于 galilei 的 `Path`，是文件的字节或目录中的常规文件），并返回一个 `Digest in Sha2[256]`。
++       它需要作用域中提供者所提供的 `Hash in algorithm` 以及被擦除的 `Permit[HashWeakness[algorithm]]`，与 `digest` 完全一样。
++       无论数据块以何种大小到达（包括每次一个字节），结果都相同，因为 `Digestion` 会跨窗口边界携带不完整的块。
+
+% 2 1 0 1766a9175c911e6f041392b409103364
+
+% 3 1 0 0bc6d47b7ca5f2b10a6a9327cc077bed
+
+% 4 1 0 1fe724334ac59c4f0748f46f8c70bed5
+
+% 5 1 0 0744cecd42c543c00e7d53e4f7304bb6
+
+% 0 1 0 0f556ea5641fbdef00cfebd6e16b99ad
+
+% 0 1 0 0c4b4fa434f617691edb7732565c0853
+
+% 1 1 0 05065f892194121211b244b133178ceb
+
+% 1 1 0 19e446626bc2190d065aa4e6f06245c7
+
+@ 0 4 0 05e0be2bb0ae4e960bd366a44586b7a5
++       单个 `Data` 值的校验和等于其 `digest`，因为它的流就是它自身。
++       会抛出错误的 `Checksummable`，例如 galilei 的路径实例（抛出 `Io.Error`，并采用作用域中的 `DereferenceSymlinks` 方针），会在其捕获集中携带其 `Tactic`，因此 `path.checksum[Blake3]` 必须位于 `safely`、`unsafely` 或某个处理函数之内。
+
+% 0 1 0 148fade1d3be9eb10765d90293800289
+
+% 1 1 0 0978700d97b7b6cc023b34fdbed726b1
+
+@ 0 1 0 18719ebd538b6a730f6f9c4637b6a043
++ entry .Checksummable   值的底层内容如何送入摘要，供 `checksum` 使用
+
+% 1 1 0 17ffe6de42d53d530b7163caee65aeec
+
+@ 0 6 0 06abfe55e7fd3bf51600360a9bfa9aac
++       一个只有一个方法 `#checksum` 的类型类，它将值*背后*的字节（而不是值自身的编码，那是 `Digestible` 的职责）追加到一个独占的 `Digestion`。
++       伴生对象的 `.streamable` 实例涵盖每种字节来源，galilei 又为路径添加了一个，因此 `checksum[algorithm]` 适用于 `Chain[Data]`、流、文件或目录。
++       `Checksummable` 可能捕获一个 `Tactic`（galilei 的实例就是如此），这就是该类型类不是 `Pure`、而 `checksum` 将其作为捕获参数接受的原因。
+
+% 1 1 0 155e484bd36691cb0c9274f85cf80a69
+
+@ 0 5 0 06ef329f50badfdd090d50a64b82dfff
++   entry .streamable   任何 `Streamable by Data over Credit` 来源，通过排空其流计算校验和
++       逐区域排空来源的流，并用按窗口的 `append` 将每个窗口追加到 `Digestion`，因此可重用的缓冲区就地哈希，从不复制。
++       该实例捕获构建它所用的 `Streamable`。
++   entry #checksum   将值背后的内容追加到一个独占的 `Digestion`
+
+@ 0 2 0 1002da69257e74f3190e3df684d8cc7c
++ entry .HashWeakness   算法所带的 `Concession`：`digest[algorithm]` 需要什么许可
++     从 `Algorithm` 到调用者必须持有其 `Permit` 的让步的匹配类型：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 2 0 03d451dee53b5e140fd2a094b7849e12
++     column  算法
++     column  让步
+
+% 0 1 0 0f1f8ee1f3c41b211ce8849f1051ec9a
+
+% 0 1 0 0a272c67f0e948ef0c1b70b4842e6972
+
+% 0 1 0 0c86a8101c51be0f070a8bb2d8b81ceb
+
+@ 0 1 0 1de4410911a76e481432bb7bfc71a256
++     row  任何其他算法：SHA-2 系列、BLAKE3  `Concession.Acceptable`，其许可 `Permit.acceptable` 始终位于作用域中
+
+% 1 1 0 093ad4247d11220c000727c16b7a134e
+
+@ 0 3 0 08f5bc9e9177e2d314b14427ace003f8
++     `digest`、`checksum` 和 enigmatic 的 `hmac` 都要求一个被擦除的 `Permit[HashWeakness[algorithm]]`，因此在按名称导入 `cryptoPermits` 中的某个 given 之前，弱哈希无法编译。
+
+@ 0 1 0 05695b8f2f575a0a1ab9671ff8c20bed
++ entry .Digest   哈希产生的字节，按其算法类型化为 `Digest in Sha2[256]`
+
+% 1 1 0 025fff6e6e92b92f152d1ea010a700e7
+
+@ 0 5 0 09b543c1588436721644b7eca8537e51
++       `Digest` 持有哈希的原始 `#data`，其 `#Form` 类型成员是产生它的 `Algorithm`，用 prepositional 的 `in` 写出：`Digest in Sha2[256]`。
++       两个摘要的字节相等时它们即相等，因此摘要可用作 `Map` 的键；而算法是一个幻影，并不存储在值中，这就是为什么需要跨越边界自我描述的摘要要用 `Multihash`。
+
+@ 0 2 0 105fdbd9d5d61f621dfc5538e786304d
++       摘要在 `alphabets` 导入下通过各种基编码呈现，因为它是 `Encodable in Data`；`show` 呈现的也是 Base64：
+
+% 2 1 0 1396ae8329b95e3c16c4b1847bc7177e
+
+% 0 1 0 10cfa796fc7efdee094df760d8310a0a
+
+% 1 1 0 173db88ed92b6d261aa4abd89b50e6d8
+
+% 2 1 0 0c8c7da128ab206a0aa3537c0dd3181c
+
+% 3 1 0 16e0c6d7908b8d8602ab2bde79857fc5
+
+% 0 1 0 07eb822edccd5bc3093e2ea644ac1ea3
+
+% 1 1 0 0f54cdf18860d3c51fd1c2219fcffc0a
+
+% 0 1 0 0413ff6776b9aed617917ee26675038e
+
+% 0 1 0 16b17a459d0e0fb317f7cc0cc21c2115
+
+% 1 1 0 1dc75635d3a2a85719166a10b3479ba9
+
+% 2 1 0 0eb0de291d3081d6092822715e50f84d
+
+% 3 1 0 099b30f3a9cf93181c19fa4873ebba15
+
+% 0 1 0 16d9fa7fc338aca40621bb2274f86ac8
+
+% 1 1 0 17016a91c5b40f5c04bd0c3cd20eebf5
+
+% 0 1 0 04d6332429842d3211314e042b89c515
+
+% 0 1 0 0ba2f7b7ffcf3be11cadea537f3caf16
+
+% 1 1 0 1a675c6b3add2558069dd5645b45293e
+
+% 2 1 0 045277a6d7aee6f0091f1a2c9fb849ae
+
+% 3 1 0 02c05e65f48085d3055d75da73de012c
+
+% 0 1 0 046758c796f39f601916211f28146558
+
+% 0 1 0 03946dcb2e454e510b2edfb3ad032fda
+
+% 0 1 0 0929d256b172ebe9032512491254918b
+
+% 1 1 0 03ea925c4d121c58197eb5e905d8ecbc
+
+% 2 1 0 0e9b0f41789f37ec110c7ae4c0729d9c
+
+@ 0 5 0 18eabc26d86102030d0edf4f5028d00a
++       摘要可以在 `Hex` 字母表和 `Tactic[Serialization.Error]` 下用 `.as[Digest in Sha2[256]]` 从十六进制文本读回；文本的长度不会对照算法检查，因为算法是一个幻影。
++       `Digest(data)` 从已有的字节构造一个摘要，而摘要本身也是 `Digestible`，因此可以被并入更大的值中再次哈希。
+
+% 1 1 0 0dffc2e74cf11f9609305afda5e22205
+
+% 1 1 0 11238b9d27f43beb1f73ca3f35a23b37
+
+@ 0 17 0 121366e66a42346a0c5ba7c510961924
++   entry .apply   `Digest[Sha2[256]](data)`：由已计算出的字节构成的摘要
++       将 `data` 包装为 `Digest in algorithm`，不检查其长度是否适合该算法，因为算法是一个幻影类型。
++       `digest` 和 `checksum` 用它构建其结果；调用者将它用于从存储中读取或从别处接收的摘要。
++   entry .showable   在作用域中的 `Alphabet[Base64]` 下将摘要呈现为 Base64 文本
++       `digest.show` 就是 `digest.data.serialize[Base64]`，因此它需要一个按名称导入的 Base64 字母表（`alphabets.base64Standard` 或 `alphabets.base64Url`），没有时无法编译。
++       调试呈现 `.inspectable` 什么都不需要。
++   entry .encodable   作为其字节的摘要，`Encodable in Data`
++       `digest.serialize[Hex]`、`serialize[Base64]` 以及其他每个 `Data` 消费者背后的实例：它产出 `#data`。
++       这也是摘要通过 `Digestible.encodable` 成为 `Digestible` 的原因。
++   entry .decodable   从十六进制文本读取摘要，即 `text.as[Digest in Sha2[256]]`
++       在作用域中的十六进制字母表（它决定接受哪种大小写）下将文本反序列化为 `Hex`，并用 `.apply` 包装这些字节。
++       它需要一个 `Deserializable in Hex` 和一个 `Tactic[Serialization.Error]`，后者在文本不是十六进制时抛出；长度不会对照算法检查。
+
+% 2 1 0 0a20f0506b708d8c0b1f0260cb49f2a6
+
+% 3 1 0 1ee8341ef9ac0ecc130fd92bf36e0e6f
+
+% 4 1 0 003617befc34311f0067b19297776293
+
+% 5 1 0 1fc457759ea0706108cd29ada0ad99f1
+
+% 0 1 0 144b15b3f77f8c2102cfba0e88521a34
+
+% 0 1 0 1f18d64d76616e931bb3a4d4677d4fcd
+
+% 1 1 0 1ba0398ff9da933715ded4a99773d636
+
+@ 0 11 0 1906daa2c5f828d9150c8346ca48db05
++   entry .inspectable   调试呈现：每个字节都是小写十六进制，带 `ᴰ` 后缀
++       始终可用，作用域中无需字母表，因此在 `show` 无法使用之处也能检视摘要：`64ec88ca…7f3cᴰ`。
++       后缀将这些数字标记为摘要，因为算法在运行时无法显示。
++   entry #data   摘要的字节
++       哈希的原始输出，按算法定义的顺序排列：`Sha2[256]` 为 32 字节，`Sha1` 为 20 字节，`Md5` 和 `Murmur3` 为 16 字节，`Crc32` 和 `Adler32` 为 4 字节，`Crc64` 为 8 字节。
++   entry #Form   产生该摘要的算法，一个 `Algorithm` 子类型
++       prepositional 的 `in` 所指的类型成员：`Digest in Sha2[256]` 就是 `Digest { type Form = Sha2[256] }`。
++       它是一个幻影，仅由类型携带。
+
+@ 0 1 0 04c5c0357ac96efd0ecbdbbd41437469
++ entry .Digestible   值的字节如何送入哈希；为 case class 和枚举派生
+
+% 1 1 0 144609ea98dfe415131d8108be9e6183
+
+@ 0 7 0 0308f083a805b39711b1b5b6917a3a13
++       `Digestible` 值是可以追加到 `Digestion` 的值：`#digest` 将该值的字节写入累加器，而对任何这样的值调用 `digest[algorithm]` 会构建出 `Digest`。
++       伴生对象为以下类型提供实例：基本类型（`Int` 和 `Long` 为大端序，`Double` 和 `Float` 按其原始位，`Boolean` 为一个字节，`Char` 和 `Short` 为两个字节）、`Text`（作为 UTF-8）、`Data`、`Digest`、任何 `Encodable in Data` 的类型、`Optional`、`List`、`Set`、`Sequence`、冻结数组、`Map` 和 `Chain`，并为每个积类型和和类型派生一个实例，因此 case class 按其字段顺序进行哈希，无需序列化步骤：
+
+% 2 1 0 128c69c10d0461901787e2a92462f5d1
+
+% 3 1 0 10855b0a2d62bb461ed4e98fee89a8bb
+
+% 4 1 0 062d33dba265cbe70377fa570f020955
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 16cb76c7068fad5a1a36161f492a167e
+
+% 0 1 0 0e7aa43b738bc6240282a300c2dd591a
+
+% 0 1 0 0240835e68a2b0f60b1bf05f82e9bfbf
+
+% 0 1 0 114592ed98428fc8057ca7b57c7aa09a
+
+% 1 1 0 193ed83f4df68e9e1e0e0f10f19e353b
+
+@ 0 6 0 0a5062ca15e18d950cbbf6becd4bdf10
++       派生的编码是一种拼接：字段按声明顺序贡献其字节，没有分隔符或长度，而和类型在分支的字段之前以 `Int` 贡献其分支的索引。
++       它是确定性的，并可跨平台移植，但不是单射的（`(t"ab", t"c")` 和 `(t"a", t"bc")` 的摘要相同），因此它是值的指纹，而不是序列化。
++       若需要带分帧的编码，请改为对值经 `serialize` 后的形式求摘要。
+
+@ 0 3 0 0a609264d1e56f8b0bae25b2890b6cb5
++       该类型类是 `Pure` 的：一个实例可以被交给任何独占的 `Digestion^`，而它本身不持有任何能力。
++       `#contramap` 通过一个映射到本类型的函数为另一个类型构建实例，正如 `Digestible.double` 是在 `Digestible.long` 之上构建的。
+
+% 1 1 0 0ca96b8649bc9d260f48451d29e299c4
+
+% 0 1 0 007afa5b20c3121f0a64ebd95acdee51
+
+@ 0 40 0 0c6c54d5df8193040f9049f1ba50f42a
++   entry .conjunction   派生积类型的实例：按顺序处理每个字段，各自通过其自己的实例
++       由派生机制用于任何带有 `ProductReflection` 的 case class 或元组；每个字段类型都需要有自己的 `Digestible`，它被惰性解析，因此递归类型也能派生。
++   entry .disjunction   派生和类型的实例：先是作为 `Int` 的分支索引，然后是该分支
++       由派生机制用于带有 `SumReflection` 的枚举和 sealed trait；序数区分那些字段恰好编码相同的分支。
++   entry .optional   `Optional[value]`：若已设置则为该值的字节，若为 `Unset` 则什么都没有
++       `Unset` 完全不贡献任何字节，因此 `Unset` 和 `t""` 的 `Optional[Text]` 摘要相同。
++       当类型已经包含 `Unset.type` 时不适用。
++   entry .list   `List[value]`：按顺序的每个元素
++   entry .set   `Set[value]`：每个元素，按集合的迭代顺序
++       以不同方式构建的、元素相同的 `Set` 可能以不同顺序迭代，因此这只对某个给定的集合值是稳定的。
++   entry .sequence   任何 `Sequence[value]`：按顺序的每个元素
++   entry .frozenArray   冻结的 `Array[value]^{}`：按顺序的每个元素
++   entry .map   `Map[key, value]`：每个键后跟其值，按迭代顺序
++   entry .stream   `Chain[value]`：按顺序的每个元素，在求摘要时强制求值
++   entry .int   `Int`，作为四个大端序字节
++   entry .long   `Long`，作为八个大端序字节
++   entry .double   `Double`，作为其 IEEE 754 原始位模式的八个字节
++   entry .float   `Float`，作为其 IEEE 754 原始位模式的四个字节
++   entry .boolean   `Boolean`，作为单个字节 1 或 0
++   entry .byte   `Byte`，即其本身
++   entry .short   `Short`，作为两个大端序字节
++   entry .char   `Char`，作为其 UTF-16 码元的两个大端序字节
++   entry .text   任何 `Text`，作为其 UTF-8 字节
++       无论作用域中有何 `codepages` 导入，始终是 UTF-8，因此文本的摘要在任何地方都相同。
++   entry .bytes   `Data`，按原样追加
++   entry .digest   `Digest`，作为其字节，因此哈希可以被再次哈希
++   entry .encodable   任何 `Encodable in Data` 的值，作为其编码
++       基于 `Encodable` 类型类的兜底实例：具有 `Encodable in Data` 实例的类型（`Hmac`、密钥、用户自己的类似 `Multihash` 的值）无需额外声明任何东西即可求摘要。
++   entry #digest   将值的字节写入一个独占的 `Digestion`
++       `digest(digestion, value)` 用 `Digestion#append` 追加该值的字节；累加器是 `Digestion^`，为调用者所独占，而实例本身是纯的。
++   entry #contramap   通过一个映射到本类型的纯函数，为另一个类型构建的 `Digestible`
++       `textDigestible.contramap[Person](_.name)` 只按名字对一个人求摘要。
++       该函数必须是纯的（`->`），因此所构建的实例保持为纯的，可在派生中使用。
+
+@ 0 1 0 1acc44d631eabfc8127a51a8ba1b1910
++ entry .Digester   作用于同一个累加器的一系列摘要步骤，在选定算法时运行
+
+% 1 1 0 181def30c54127540c276ec67430fc00
+
+@ 0 5 0 064ca7e0eb4489530ff05e465be42ad3
++       `Digester` 是一个从新的 `Digestion^` 到 `Unit` 的纯函数，由 `#digest` 一次一个值地逐步构建，由 `#apply[algorithm]` 运行，后者为作用域中该算法的 `Hash` 创建累加器，应用每个步骤并返回 `Digest`。
++       这样就能将多个值求摘要到同一个哈希中，而无需先拼接它们的字节；算法最后才选择，因此一个摘要器可以产出多个摘要：
+
+% 2 1 0 100ebde95cfb78520525fe769fc3b4ac
+
+% 3 1 0 16aab8c7c5d649871cfefc4e87421ebb
+
+% 4 1 0 0b50109839a62c0f18a738d17dec6bf4
+
+% 5 1 0 0322cd7819a0de521fc0f67cf248db30
+
+% 0 1 0 1f850b82824a22cb1948ddf5b3c33e46
+
+% 0 1 0 10a3058cf1d5eb5f0f1b5e7e72f6e1c5
+
+% 1 1 0 10330e72dd0c06d90fc7ea28ad3bd10d
+
+% 0 1 0 114c51c8f0dfcd431436cfb8d40f79b9
+
+% 1 1 0 14580b1236da0bb00a1022a76b9dc1fb
+
+@ 0 2 0 0c495c0b1a99c4d71a229d41f4443e1d
++       对一个值调用 `digest[algorithm]` 就是一个单步摘要器。
++       空摘要器是 `Digester(_ => ())`。
+
+% 1 1 0 181a14914a4aa0e808489c518a437267
+
+@ 0 8 0 11696fbf4dc8afa3187ec036e61caf39
++   entry #run   这些步骤，作为从新的 `Digestion^` 到 `Unit` 的纯函数
++   entry #apply   在为 `algorithm` 新建的累加器中运行这些步骤，并返回 `Digest`
++       `digester.apply[Sha2[256]]` 需要来自作用域中提供者的 `Hash in Sha2[256]`。
++       与对值调用 `digest` 不同，它不需要许可：门槛在值的 `digest` 和 `checksum` 处，而不在这里。
++   entry #digest   一个新的摘要器，它运行这些步骤，然后对另一个值求摘要
++       `digester.digest(value)` 为任何 `Digestible` 值追加一个步骤；原来的摘要器保持不变。
+
+@ 0 1 0 0d3330efef98c99d07bde1645b9c1965
++ entry .Hash   作为值的算法实现，从作用域中的 `Hashing` 提供者派生
+
+% 1 1 0 105638f9a2a123970572f960cee8fc4e
+
+@ 0 10 0 03ce92257f1ae773068b25972af92cef
++       `Hash in algorithm` 是 `digest`、`checksum` 和 `Digester#apply` 所解析的东西：它知道算法的 JCE 风格 `#name`（`SHA-256`）、其 HMAC `#hmacName`（`HmacSHA256`，供 enigmatic 的 `hmac` 使用），以及 `#initialize`，即来自提供者的 `Hashing.Function` 的一个新的独占 `Digestion`。
++       每种算法的伴生对象*按结构*从作用域中的任何 `Hashing` 派生其实例：`Sha2.hash` 需要一个 `Hashing { def sha2(bits: Int): Hashing.Function }`，`Blake3.hash` 需要一个 `Hashing { def blake3: Hashing.Function }`，因此所选提供者未实现的算法没有 `Hash`，在调用处无法编译。
++       corpuscular 校验和的实例位于此处，即 `Hash` 自己的伴生对象中（`.crc32`、`.crc64`、`.adler32`），因为 corpuscular 看不到 `Hashing`；解析方式相同。
+
+% 2 1 0 064c372c82e337f31324f01f47316ecf
+
+% 3 1 0 18ba4cee6442fdc602e89c8194c39c01
+
+% 4 1 0 0ce43c3eec1ed79115c97da83846e969
+
+% 0 1 0 0350a3ed80b9fa5b0af9839b9577504c
+
+% 0 1 0 01f697d2bcb1a7bb1e5a67a5c26bbddf
+
+% 0 1 0 12c36d9f0c3a67531759a9c624a9bbb2
+
+% 1 1 0 044a69e3a0b3768e05a0dc9e53650726
+
+@ 0 1 0 04d807024f88896c1b4e6843705236f6
++       `Hash(name, hmacName, function)` 为用户自己的提供者构建实例。
+
+% 0 1 0 1e233913a41da643039e4c7ba320f1ad
+
+% 1 1 0 1a285c74d40179fb115ade062ffe894c
+
+% 1 1 0 10974b89d1cb35fc1d270319b1612ed3
+
+@ 0 22 0 0878581814fafb250d4efa9f2bc9100c
++   entry .crc32   `Hash in Crc32`，来自具有 `crc32` 的提供者：两个提供者都有
++       名为 `CRC32`，HMAC 名称为 `HMAC-CRC32`。
++       用它求摘要需要 `cryptoPermits.permitNonCryptographicHashes`。
++   entry .crc64   `Hash in Crc64`，来自具有 `crc64` 的提供者：仅 Soundness 提供者
++       名为 `CRC64`（CRC-64/ECMA）。
++       JDK 没有 CRC-64，因此 `JavaBaseHashing` 不提供它，`digest[Crc64]` 只在 `providers.soundnessProvider` 下才能解析。
++       它需要 `cryptoPermits.permitNonCryptographicHashes`。
++   entry .adler32   `Hash in Adler32`，来自具有 `adler32` 的提供者：两个提供者都有
++       名为 `ADLER32`。
++       它需要 `cryptoPermits.permitNonCryptographicHashes`。
++   entry .apply   `Hash[algorithm](name, hmacName, function)`：基于提供者函数的实例
++       构建一个 `Hash in algorithm`，其 `initialize` 调用 `function.digestion()`。
++       伴生对象使用它；用户只有在添加算法或提供者时才需要它。
++   entry #Form   此哈希所计算的算法
++   entry #name   算法的 JCE 风格名称：`SHA-256`、`SHA1`、`MD5`、`BLAKE3`、`CRC32`
++   entry #hmacName   算法的 JCE HMAC 名称：`HmacSHA256`、`HmacSHA1`、`HmacMD5`
++       enigmatic 的 `hmac[algorithm](key)` 传给密码学提供者的名称，因此对于密码学提供者的 MAC 所支持的每种算法，都可以基于 gastronomy 哈希使用 HMAC。
++       对于 BLAKE3、MurmurHash3 和校验和，名称是 `HMAC-…`，没有任何 JCE 提供者实现它。
++   entry #initialize   用于一次计算的新的独占 `Digestion`
++       每次调用都开始一个新的累加器：向其 `append` 字节，并对其 `digest()` 一次。
++       它是 `Digestion^`，因此不能共享或存储。
+
+@ 0 1 0 1d7df5f7d120808c1723846fb5033a4c
++ entry .Hashing   哈希提供者：为其实现的每种算法提供一个 `Hashing.Function`
+
+% 1 1 0 10503f1d6432e62f184f7684f849c72e
+
+@ 0 6 0 1c009dd631f900c30aefffb7ff4bec2b
++       `Hashing` 提供者以 `Hashing.Function`（一个生成新 `Digestion` 的工厂）的形式提供每种哈希的实现。
++       该 trait 本身没有成员：每种算法的 `Hash` given 都按结构细化它（`Hashing { def sha2(bits: Int): Hashing.Function }`），因此提供者之间是*互不相交*的，而不是分等级的（`JavaBaseHashing` 有 `md5`、`sha1`、`sha2`、`crc32` 和 `adler32`；`SoundnessHashing` 拥有所有这些，外加 `blake3`、`murmur3` 和 `crc64`），而缺少的算法会在求摘要处成为编译错误。
+
+@ 0 5 0 1e9c32ef99a340060477717a1dcec9f0
++       提供者按名称从 `providers` 包中选择。
++       `providers.soundnessProvider` 就是 `SoundnessHashing` 对象本身；`providers.javaBaseProvider` 是标记 `Provider.JavaBase`，`.javaBaseHashing` 从它派生 `JavaBaseHashing`（enigmatic 也从它派生其 JDK 密码学实现），因此一次导入即可同时启用两者。
++       用户自己的提供者是一个扩展 `Hashing` 并具有上述方法的对象，绑定为 given。
+
+% 1 1 0 1ed1f85e514a225f004419c4cc4fa0ed
+
+% 0 1 0 042a58813b84eb3316475d0a6b66608b
+
+% 1 1 0 0020829eb9a34f2818e89d1b2bfd72dd
+
+@ 0 1 0 171dc8176b82898d078b39e18aaaded7
++   entry .Function   一种算法的实现：生成新 `Digestion` 的工厂
+
+% 1 1 0 13453d33324c47dd18d94c14e28faeb0
+
+@ 0 8 0 1a6ea9e0fc8bb9c31efafb454b61a7cb
++         `function.digestion()` 返回一个新的独占累加器；提供者针对每种算法的方法（`sha2(bits)`、`blake3`、`crc32`）返回一个这样的函数，而 `Hash` 将其包装起来。
++     entry #digestion   用于一次计算的新的独占 `Digestion`
++   entry .javaBaseHashing   `JavaBaseHashing`，只要导入了 `providers.javaBaseProvider` 即可用
++       位于 `Hashing` 隐式作用域中的 given，从 `Provider.JavaBase.type` 标记派生，因此按名称导入 JDK 提供者即可启用哈希，无需第二次导入。
++       在 JVM 上它是 `MessageDigest` 和 `java.util.zip`；在其他平台上，同一名称转发给纯 Scala 的 `SoundnessHashing`。
+
+@ 0 1 0 0c768c991e1a61331992483c7ab5dd8f
++ entry .Provider   多能力提供者的标记；`Provider.JavaBase` 是 JDK 的标记
+
+% 1 1 0 14afdf226a8362fb12ff2e7345bef317
+
+@ 0 6 0 0fe1a86b6ebd2e7311649965465510e7
++       提供不止一种能力的提供者（JDK 同时提供哈希和密码学）通过标记来选择：`providers.javaBaseProvider` 是 `Provider.JavaBase`，而 `Hashing.javaBaseHashing`（在此处）和 enigmatic 的密码学 given 各自从它派生其实现。
++       像 `SoundnessHashing` 这样的单能力提供者没有标记；它们的 `providers` given 就是能力对象本身。
+
+% 1 1 0 09e60e34a0ab5b661ad1489f178775c2
+
+@ 0 2 0 08084299190a4ef21493f9278f061cc1
++   entry .JavaBase   JDK 提供者：`MessageDigest` 和 `java.util.zip` 哈希，JCE 密码学
++       `providers.javaBaseProvider` 所提供的标记。
++       它自身没有成员。
+
+@ 0 1 0 01ffbd64fd51721108131bc6ffabeeff
++ entry .JavaBaseHashing   以 JDK 为后端的哈希提供者：MD5、SHA-1、SHA-2、CRC-32 和 Adler-32
+
+% 1 1 0 0b5aef387827961712be6e465ca8659f
+
+@ 0 8 0 063fd395549142c911754fdd28f135b1
++       默认提供者，通过 `import providers.javaBaseProvider` 获得。
++       它是唯一一个由两个组件声明的对象。
++       在 JVM 上（`gastronomy.core` 及其 `core-jvm` 源代码），`.md5`、`.sha1` 和 `.sha2` 以 `java.security.MessageDigest` 为后端，`.crc32` 和 `.adler32` 以 `java.util.zip.CRC32` 和 `Adler32` 为后端，全都就地追加窗口；它是该库中 `java.security` 唯一的所在。
++       在 Scala.js 和 Scala Native 上（`core-native`），同样的五个方法转发给 `SoundnessHashing` 的纯 Scala 实现，这些实现已对照 JDK 的实现逐字节验证，因此选择 JDK 提供者的代码在每个平台上的哈希结果都相同，无需修改源代码。
+
+@ 0 2 0 1d41bc05304e7dcf1df8773a2d846676
++       两个平台都不提供 `blake3`、`murmur3` 或 `crc64`：JDK 对它们都没有实现，因此这些算法的 `Hash` 只在 `providers.soundnessProvider` 下才能解析。
+
+% 1 1 0 132e29b1bc030a5906a234d0acbe776d
+
+% 1 1 0 1eb8cdfa43cef0d203454e2c32264f69
+
+@ 0 9 0 1199221c75ee2d4e01b6487942e9e68e
++   entry .md5   MD5，在 JVM 上为 `MessageDigest("MD5")`，在其他平台上为纯移植版本
++   entry .sha1   SHA-1，在 JVM 上为 `MessageDigest("SHA1")`，在其他平台上为纯移植版本
++   entry .sha2   按位数选择的 SHA-224、SHA-256、SHA-384 或 SHA-512，即 `MessageDigest("SHA-<bits>")`
++       `sha2(bits)` 接受 224、256、384 或 512；`Sha2.hash` 从类型 `Sha2[bits]` 提供该位数。
++   entry .crc32   CRC-32，在 JVM 上为 `java.util.zip.CRC32`，在其他平台上为 corpuscular 的累加器
++       32 位值以大端序写出，共四个字节。
++   entry .adler32   Adler-32，在 JVM 上为 `java.util.zip.Adler32`，在其他平台上为 corpuscular 的实现
++       32 位值以大端序写出，共四个字节。
+
+@ 0 1 0 080e1265f04ce29d1034e7f03a2916cb
++ entry .SoundnessHashing   纯 Scala 提供者：涵盖每种算法，包括 BLAKE3、MurmurHash3 和 CRC-64
+
+% 1 1 0 13797990ea721067015a844458112c16
+
+@ 0 9 0 0f2e8f37a7cd55a310eed2f928d2a720
++       通过 `import providers.soundnessProvider` 选择。
++       它用 Scala 实现了 MD5、SHA-1 和 SHA-2 系列（遵循 RFC 1321 和 FIPS 180-4，并在每个块填充边界处对照 JDK 交叉检查）、BLAKE3（在每种输入长度上对照官方测试向量检查）、MurmurHash3（与 Guava 的 `murmur3_128()` 逐字节一致），并直接使用 corpuscular 的 CRC-32、CRC-64 和 Adler-32 累加器。
++       它是唯一具有 `.blake3`、`.murmur3` 和 `.crc64` 的提供者，因此用这些算法求摘要的程序要导入它，单独导入或与 JDK 提供者一起导入均可。
++       两者都导入时，此提供者因位于词法作用域中而服务于每种算法；在 JVM 上，JDK 原生的 `MessageDigest` 计算 SHA-2 更快，因此既想在那里使用它、又想使用 BLAKE3 的程序应当限定各导入的作用域。
+
+% 1 1 0 15d8bd2ea6140bcb0a6f00f6d12b5b57
+
+% 0 1 0 1637ebd09fbc883e0124b55d202e9b9f
+
+% 0 1 0 0efb0b0cc8f40dfd17780c194d96f619
+
+@ 0 9 0 1552a16471ee58780ce7fd04be6ce4b0
++   entry .blake3   BLAKE3，256 位输出，来自 `Blake3.digestion()`
++   entry .murmur3   MurmurHash3 x64 128 位，种子为 0，来自 `Murmur3.digestion()`
++   entry .md5   纯 Scala 的 MD5
++   entry .sha1   纯 Scala 的 SHA-1
++   entry .sha2   按位数选择的纯 Scala SHA-224、SHA-256、SHA-384 或 SHA-512
++       `sha2(bits)` 接受 224、256、384 或 512；任何其他位数都按 512 处理。
++   entry .crc32   CRC-32（RFC 1952），corpuscular 的累加器
++   entry .crc64   CRC-64/ECMA，corpuscular 的累加器；其他提供者都没有它
++   entry .adler32   Adler-32，corpuscular 的累加器
+
+@ 0 1 0 1f5edc203cc99c601bb06d9b9e4e0117
++ entry .Sha2   作为单一类型的 SHA-2 系列：`Sha2[224]`、`Sha2[256]`、`Sha2[384]` 或 `Sha2[512]`
+
+% 1 1 0 04aea986d599481c1cb4f880d90cd8b9
+
+@ 0 3 0 1463ee031494be721b18a6bcb7798b2c
++       `Sha2[bits]` 是位数为 224、256、384 或 512 的 SHA-2 的算法类型，每个都是不同的类型，因此 `Digest in Sha2[256]` 和 `Digest in Sha2[512]` 不会混淆。
++       它属于 `Concession.Acceptable`，不需要许可，两个提供者都实现了它。
+
+% 2 1 0 0a0eee345558fa8d0f4d8772b9fb94e9
+
+% 3 1 0 10a10a91ae6cd6d016a4a6d806453325
+
+% 4 1 0 1b53db967d90c8bb10d06b6eb7af26a5
+
+% 0 1 0 1e16732a0b3e88fb034a49fc31ebb932
+
+% 0 1 0 1023e3b4c0d51d3a085379c804a32213
+
+% 0 1 0 07bcac96915192cd09957fe2db454c69
+
+% 1 1 0 1063c3a8cc8c057b081efe391fb2fa22
+
+@ 0 3 0 1aaeb40374c882b91b7f5668fa19343d
++       SHA-256 是常用的选择；对于较长的输入，SHA-512 在 64 位硬件上更快，而 SHA-224 和 SHA-384 是其截断版本，具有不同的初始状态。
++       multihash 代码为 `0x12`（256）、`0x13`（512）、`0x20`（384）和 `0x1013`（224）。
+
+% 1 1 0 15aebbfadfa3bb62074492dcf6b3be47
+
+% 1 1 0 18be6614cd3a041f1e5c4a51438f5d5f
+
+@ 0 4 0 0f1f86d201c1c7d318fbef6f83a71c8b
++   entry .hash   `Hash in Sha2[bits]`，来自任何具有 `sha2(bits: Int)` 的提供者
++       在隐式作用域中从作用域内的 `Hashing` 派生，位数取自类型；名为 `SHA-<bits>`，HMAC 名称为 `HmacSHA<bits>`。
++   entry #Bits   以位计的输出长度：即该类型自身的参数
+
+@ 0 1 0 1514509b2395288405615906b909751a
++ entry .Sha1   SHA-1，160 位：已弃用，只有在许可下才能求摘要
+
+% 1 1 0 145cf9bfcdd4856c0068626a1cb3962d
+
+@ 0 5 0 0eeccd45d3253439184c75a9d1de261a
++       SHA-1 在碰撞攻击面前已被攻破，保留它是为了仍需要它的格式，例如 Git 对象名称。
++       `digest[Sha1]` 需要作用域中有 `cryptoPermits.permitDeprecatedCrypto`（或任何包含它的许可：`permitDisallowedCrypto`、`permitCryptoThrough2030`），因为 `HashWeakness[Sha1]` 是 `Concession.Sha1`。
++       两个提供者都实现了它；multihash 代码为 `0x11`。
+
+% 2 1 0 097388d5131ca7ba1b63f1e8a0ae33c6
+
+% 3 1 0 0891e34c132374fb0425d0db60d5770a
+
+% 4 1 0 0bbe9f7787a0a1f00b8cfd48c7f15df6
+
+% 0 1 0 0f8044e61a9fbc7b028f71aad35cd1af
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 0 1 0 1ff29bca3d16468a162c3ca751b81775
+
+% 1 1 0 06bd201de18f417b0b4d4114222fb830
+
+% 2 1 0 0491bdf34b121201153d241eb0cc4bbb
+
+@ 0 2 0 129418beba5b0bed0807e7df13fc7e60
++   entry .hash   `Hash in Sha1`，来自任何具有 `sha1` 的提供者
++       名为 `SHA1`，HMAC 名称为 `HmacSHA1`。
+
+% 0 1 0 021c8cea78d2f2a70d279b6d4ef9767f
+
+@ 0 1 0 093af52c627d9356041f903f0e0cc39e
++ entry .Md5   MD5，128 位：已被禁止，只有在许可下才能求摘要
+
+% 1 1 0 0cab52cecbe5d9980511e29620b17993
+
+@ 0 4 0 1481b9c094c96cff1d55a6beb859ee96
++       MD5 已被彻底攻破，保留它是为了遗留的校验和以及兼容性。
++       `digest[Md5]` 需要作用域中有 `cryptoPermits.permitDisallowedCrypto`（或 `permitCryptoThrough2014` 及更晚的许可），因为 `HashWeakness[Md5]` 是 `Concession.Md5`。
++       两个提供者都实现了它；multihash 代码为 `0xd5`。
+
+% 2 1 0 1db98123ecefad47134629c081826019
+
+% 3 1 0 1f8ffc0442e2eaec00e8e29d03c6b528
+
+% 4 1 0 1c930cf5035c7c9a151b6ab9c6dea28b
+
+% 5 1 0 07b53c10f696213818c263cc615fcdae
+
+% 1 1 0 0e6d5529b0d8e0b10a58091c94f47209
+
+% 0 1 0 04539d2ab2a93ab10e15983fa7b613da
+
+% 1 1 0 055f648d244aad0618e0d6eb8525e6bd
+
+% 2 1 0 1a6eaf021b4ac6e907ba75b5cf6ca9ce
+
+@ 0 2 0 08cc5338f8c1095b04794d112e36dd7b
++   entry .hash   `Hash in Md5`，来自任何具有 `md5` 的提供者
++       名为 `MD5`，HMAC 名称为 `HmacMD5`。
+
+% 1 1 0 1181f5f48364377a0062130c1a595540
+
+@ 0 1 0 146e6495cb16ce1f1906392d84a9fb10
++ entry .Blake3   BLAKE3，256 位：具有带密钥模式和密钥派生模式的纯 Scala 哈希
+
+% 1 1 0 12b1f5cb4b661f25131a906e4927cfcf
+
+@ 0 7 0 04e389eacfe2198d1ab34e557742038b
++       BLAKE3 是一种现代的树形哈希，在软件中比 SHA-2 更快，并可扩展到任意输出长度。
++       JDK 没有它的实现，因此 `digest[Blake3]` 需要 `providers.soundnessProvider`；它不需要许可。
++       该算法的三种模式都在这里：普通哈希（通过 `digest`，或用 `.hashOf` 选择输出长度）、用 32 字节密钥进行消息认证的带密钥哈希 `.keyedHash`，以及从上下文字符串和密钥材料派生密钥的 `.deriveKey`。
++       三者都在其涵盖的每种输入长度上对照官方测试向量进行了检查。
+
+% 2 1 0 062a3fb8686b84711b3032f0869aef71
+
+% 3 1 0 08a9d973f8a2925710c36e0a5766375c
+
+% 4 1 0 1b8cddab5f923f331f270475be061280
+
+% 5 1 0 139c25f98f30913305e2826b230986ff
+
+% 0 1 0 0a347b577b1d4e3e0ac26503c18995b3
+
+% 0 1 0 0dacce37480955b2145bade393e7c0f6
+
+% 1 1 0 1fda78214523c095186231ec0a46fd04
+
+@ 0 1 0 01ac846678ba79900880d6531a5ffaed
++       multihash 代码为 `0x1e`。
+
+% 1 1 0 0baf73bc2a2be2691d561c71319662c9
+
+% 1 1 0 07f99e679131c6c7005ac9a0ac8ba31f
+
+@ 0 18 0 03c6f6e6894c9f260893808fc577f2ce
++   entry .hash   `Hash in Blake3`，来自具有 `blake3` 的提供者：即 Soundness 提供者
++       名为 `BLAKE3`，HMAC 名称为 `HMAC-BLAKE3`，没有任何 JCE 提供者实现它；带密钥的 BLAKE3 是 `.keyedHash`，而不是 HMAC。
++   entry .digestion   新的独占 BLAKE3 `Digestion`，32 字节输出
++       `SoundnessHashing.blake3` 所提供的东西：以任意窗口追加字节，并 `digest()` 一次。
++   entry .hashOf   冻结字节数组的 BLAKE3 哈希，可采用任意输出长度
++       `Blake3.hashOf(input, length)`：普通哈希，除非 `length` 另有指定，否则为 32 字节。
++       BLAKE3 的输出是一个可扩展的流，因此更长的长度是同一个流更长的前缀，而不是另一个哈希。
++   entry .keyedHash   输入在 32 字节密钥下的带密钥 BLAKE3 哈希，可采用任意输出长度
++       `Blake3.keyedHash(key, input, length)`：消息认证，其中密钥取代算法的初始状态。
++       密钥必须正好是 32 字节；任何其他长度都会引发 panic，即 _BLAKE3 key must be 32 bytes_。
++   entry .deriveKey   从上下文字符串和输入派生密钥材料，可采用任意输出长度
++       `Blake3.deriveKey(context, material, length)`：上下文（一段唯一的、特定于应用的文本，例如 `t"myapp 2026-01-01 session key"`）以派生密钥上下文模式进行哈希，得到一个密钥，然后在该密钥下对材料进行哈希，因此从同一材料为不同目的派生的密钥互不相关。
+
+% 0 1 0 149265e06bd177b419770a40d39735b9
+
+@ 0 1 0 1a31fed46c5699ac1f99edf7b421a1f2
++ entry .Murmur3   MurmurHash3，x64 128 位：一种快速的非密码学哈希，须凭许可使用
+
+% 1 1 0 028da0e631ca99531816c02d2c8d635c
+
+@ 0 7 0 1ec4ce6e9bbb09aa114165f60a99135b
++       MurmurHash3 是 Guava 的布隆过滤器和以哈希为键的结构背后的哈希：每 16 字节块只需几次运算，适用于非对抗性的输入，在这种场合下密码学摘要的多轮运算会多花数倍的工作量而毫无益处。
++       它在攻击者面前不提供任何抗碰撞性，因此 `digest[Murmur3]` 需要 `cryptoPermits.permitNonCryptographicHashes`（与校验和所需的许可相同），并且只有 Soundness 提供者实现了它。
++       输出是两个 64 位字 `h₁` 和 `h₂`，依次排列，各自为小端序，与 Guava 的 `murmur3_128()` 产生的结果逐字节一致。
+
+% 2 1 0 12c9e05f6d44330900e6dc18dd978b85
+
+% 3 1 0 0f8716ef0d42452e04a3a1101f53bb06
+
+% 4 1 0 00942df461dfcbc514c713ad2dcb4ddf
+
+% 1 1 0 0f8eebae756eaee41510bb0673591edf
+
+% 1 1 0 16e7898532c269b1062b0d6d681be60b
+
+% 0 1 0 1b7b6bd17c23add61671457c7667ea91
+
+% 1 1 0 12cd00af12f2ed530a6482fdae592112
+
+@ 0 2 0 18d71c6c4ba956c608b8b3bc82607281
++       带种子的 digestion 是 `.digestion(seed)`；提供者的种子为 0。
++       ulysses 的 `BloomFilter` 通过此类型求摘要。
+
+% 1 1 0 18050e552c2fa30302bcf334c6871f41
+
+% 1 1 0 15fd7ef364df6796015c7b792603bfbc
+
+@ 0 6 0 022536edf163fa6b1306d5b2cf141075
++   entry .hash   `Hash in Murmur3`，来自具有 `murmur3` 的提供者：即 Soundness 提供者
++       名为 `Murmur3-128`，HMAC 名称为 `HMAC-Murmur3-128`，没有任何东西实现它。
++   entry .digestion   新的独占 MurmurHash3 `Digestion`，带可选的种子
++       `Murmur3.digestion(seed)` 将两个状态字都从 `seed`（默认为 0）开始，供需要按实例加盐的哈希表使用；结果为 16 字节。
++       在 `digest()` 之前不会分配任何东西。
+
+% 1 1 0 188efd7ab4a9dfbd06a9695b36b72a09
+
+@ 0 5 0 1f294d772fa258e513dce9578a93e675
++ entry .Sha384   作为独立算法类型的 SHA-384，有 multihash 代码，但没有自己的 `Hash`
++     一个 384 位的 `Algorithm`，其 `Multicodec` 实例与 `Sha2[384]` 共用代码 `0x20`，因为它们是同一个函数。
++     求摘要要通过 `Sha2[384]` 进行：不会派生 `Hash in Sha384`，因此 `digest[Sha384]` 无法编译；该类型的存在是为了让值指名算法而无需位数参数。
+
+@ 0 4 0 0cb26e53643b2e030eb33768e87fc5bd
++ entry .Sha512   作为独立算法类型的 SHA-512，有 multihash 代码，但没有自己的 `Hash`
++     一个 512 位的 `Algorithm`，其 `Multicodec` 实例与 `Sha2[512]` 共用代码 `0x13`。
++     求摘要要通过 `Sha2[512]` 进行：不会派生 `Hash in Sha512`，因此 `digest[Sha512]` 无法编译。
+
+@ 0 9 0 109a581e2a68f91904e6e1df78571d21
++ entry .Feistel   作用于 64 位值的 Feistel 网络，由子密钥列表和轮函数构成
++     `Feistel(subkeys, round)(input)` 每个子密钥运行一轮：每一轮将值的低 32 位字移到高位字，并将低位字设为旧的高位字与 `round(low, subkey)` 的异或。
++     轮函数可以返回任何 `Int`，包括负数；异或结果被掩码为 32 位，而不做符号扩展。
++     没有子密钥时，输入原样返回；以相反顺序的子密钥倒着运行各轮即可逆转它们，这正是 Feistel 网络成为 64 位值上的双射的原因：一种保持格式的置换，用于混淆标识符或分片键。
++     除非轮函数是密码学函数，否则它并不是加密。
+
+% 2 1 0 064488eb45e1e24816091cafbe99a322
+
+% 3 1 0 11f10771423f59a80a5673ab82291c04
+
+% 0 1 0 024fa29e51e505d11f75e9022f953a89
+
+% 0 1 0 09f4d5568eff5b9010dd690620f0acb3
+
+% 0 1 0 089944efa9e3de6b0c34e53715a6b48f
+
+% 1 1 0 07c168d4f7b7ff310c8a5149de78ac3c
+
+@ 0 1 0 0f28feb0e24575c20f2519ffe8f77440
++ entry .Permit   被擦除的证据，表明可以*应用*某种弱算法、弱密钥长度或弱模式
+
+% 1 1 0 0846f436f03de26f1f7daa63a00492f4
+
+@ 0 6 0 1182f76beb3e1c3500b28f1b3b98c92f
++       `Permit[concession]` 是 `digest`、`checksum`、enigmatic 的 `hmac`、`encrypt` 和 `sign`，以及 telekinesis 的 TLS 配置在使用 NIST SP 800-131A 列为已弃用或已禁止的东西之前所要求的能力：`digest[Md5]` 需要 `Permit[Concession.Md5]`，`digest[Crc32]` 需要 `Permit[Concession.NonCryptographic]`。
++       它是被擦除的，因此在运行时没有任何开销；它是一道编译时的门槛。
++       `Permit` 也是一个 `ProcessingPermit`，因此它也涵盖验证和解密。
+
+@ 0 3 0 161d8c1ab71e87371b71658ab8650136
++       `Permit.acceptable` 用于 `Concession.Acceptable`，始终位于作用域中，这就是 SHA-2 和 BLAKE3 无需导入的原因。
++       其他每个许可都要从 `cryptoPermits` 包中按名称导入，每个许可都是它所授予的各个细粒度许可的交集：
+
+% 2 1 0 0e7653b187a0b5cf1a36b77b91e45cf6
+
+% 3 1 0 013daeb6fa3b09ac1a234263e4600f31
+
+% 4 1 0 06a07f69e51d20ca147241666787d1de
+
+% 5 1 0 16b65526d37a7d7902eae9bdb03b8fee
+
+% 0 1 0 04311b9196855fe3113adf9c913e7571
+
+% 1 1 0 0d0b17f3681e8c9401bf73670e151ea4
+
+@ 0 5 0 14f942d72721b075076fe2201580fba5
++       没有许可时，编译错误为 _this operation uses a sub-optimal algorithm, key length or mode — or a checksum in place of a hash; import the matching permit (`cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or `cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` or `cryptoPermits.permitDisallowedCrypto`) to allow it_。
+
+% 1 1 0 01844ce40b03a74300f2edc2148b4e1f
+
+% 1 1 0 019d3d38df5c082502a37d581713c439
+
+% 0 1 0 0ed11a9a5dc880a204dde93e8e746cba
+
+@ 0 1 0 061cfbb0ed6673ad0ef1e56e67312dd8
++   entry .acceptable   `Permit[Concession.Acceptable]`，始终位于作用域中：强算法无需导入
+
+@ 0 1 0 1d0aa24f0246f65107539e455e6caf5c
++ entry .ProcessingPermit   被擦除的证据，表明可以用弱算法*处理*已受保护的数据
+
+% 1 1 0 095cd698737c9e851bfe34a85106022c
+
+@ 0 6 0 1b8f9539970fed861ba847879280067a
++       NIST SP 800-131A 区分*应用*保护（加密、签名、哈希）与*处理*已受保护的数据（解密、验证），并允许后者使用更长时间，即“遗留使用”。
++       `ProcessingPermit[concession]` 只授予处理；`Permit` 扩展了它，两者都授予。
++       `cryptoPermits.permitLegacyCrypto` 是唯一纯粹用于处理的许可，针对 Triple-DES 和 DSA，供 enigmatic 的 `decrypt` 和 `verify` 使用；gastronomy 自己的操作都是应用保护，需要完整的 `Permit`。
+
+@ 0 3 0 0fc6301279b46fdb0d0d470ff5877aea
++       没有许可时，编译错误为 _this operation uses an algorithm whose status is "legacy use" or worse; import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to process existing data, or `cryptoPermits.permitDisallowedCrypto`) to allow it_。
+
+% 1 1 0 1fe2f6d4bb9f90731201244a7184d0d4
+
+% 1 1 0 1eadcc304db81ccd08161016bcb38a0f
+
+@ 0 1 0 1bf2b87e0d7b7e9f1c9c3965a4d8207b
++   entry .acceptable   `ProcessingPermit[Concession.Acceptable]`，始终位于作用域中
+
+@ 0 1 0 0ecfd2ed30e17f9d18e0ff6823ed3c52
++ entry .Concession   调用者可以做出的让步：每种算法、模式、密钥长度或 TLS 放宽各有一个标记
+
+% 1 1 0 0007b8adadee7a7302f995bcb4a40287
+
+@ 0 6 0 1398c9635b307f5818ad4421540740cf
++       一个让步指明程序通过导入许可而接受的一件具体的事：一种已被攻破的哈希、一种弱密码算法、一个过短的密钥、一种未经认证的模式，或一项宽松的 TLS 设置。
++       这些标记是没有成员的 sealed trait，仅用作 `Permit` 和 `ProcessingPermit` 的类型参数；它们全都位于此处，即最底层的密码学库中，因此 gastronomy 的哈希、enigmatic 的密码算法和 telekinesis 的 TLS 共用一套词汇和一组 `cryptoPermits` 导入。
++       `HashWeakness` 将每种哈希算法映射到其让步。
+
+@ 0 8 0 1813d1f82cd9bae416b0b8ffd8a558e4
++       哈希方面的让步是 `Md5`、`Sha1` 和 `NonCryptographic`（校验和与 MurmurHash3，它们并无缺陷，但不提供对抗性的抗碰撞性），而 `Acceptable` 表示没有任何弱点。
++       enigmatic 使用的密码算法方面的让步是 `Des`、`TripleDes`、`Rc2`、`Blowfish`、`SmallRsa`（不足 2048 位的 RSA 密钥）、`Dsa`、`Ecb` 和 `Unauthenticated`（任何非 AEAD 的分组密码模式）。
++       telekinesis 使用的 TLS 方面的让步是 `Tls10`、`Tls11`、`SmallDh`（不足 2048 位的临时 DH）、`CbcCipher`、`ExpiredCertificate`、`SelfSignedCertificate`、`UnverifiedHostname` 和 `UncheckedRevocation`。
+
+% 1 1 0 037dfa2cf4f30d1702a36b0d2f90f582
+
+% 1 1 0 1ffc6b2a90c931da05f2f96505160c9f
+
+% 0 1 0 0dd16d54dadc80a0145782e2b6b5bb10
+
+@ 0 23 0 0152d5972fa66e7e1b8a754defd8af9a
++   entry .Acceptable   完全没有弱点：SHA-2、BLAKE3、AES-GCM；其许可始终位于作用域中
++   entry .Md5   用 MD5 求摘要；由 `permitDisallowedCrypto` 以及 `permitCryptoThrough2014` 起的许可授予
++   entry .Sha1   用 SHA-1 求摘要；由 `permitDeprecatedCrypto`、`permitDisallowedCrypto`、`permitCryptoThrough2030` 授予
++   entry .NonCryptographic   用 CRC-32、CRC-64、Adler-32 或 MurmurHash3 求摘要；由 `permitNonCryptographicHashes` 授予
++       这不是算法的缺陷（校验和恰好做到了它所声称的），而是一种让步，承认威胁模型中没有对手，因为这些算法都抵御不了蓄意制造的碰撞。
++   entry .Tls10   接受 TLS 1.0；由 `permitLegacyTls` 授予
++   entry .Tls11   接受 TLS 1.1；由 `permitLegacyTls` 授予
++   entry .SmallDh   接受短于 2048 位的临时 Diffie-Hellman；由 `permitLegacyTls` 授予
++   entry .CbcCipher   接受 CBC 模式的 TLS 密码套件；由 `permitLegacyTls` 授予
++   entry .ExpiredCertificate   接受已过期的对端证书；由 `permitUntrustedCertificates` 授予
++   entry .SelfSignedCertificate   接受自签名的对端证书；由 `permitUntrustedCertificates` 授予
++   entry .UnverifiedHostname   接受名称与主机不匹配的证书；由 `permitUntrustedCertificates` 授予
++   entry .UncheckedRevocation   在不检查证书吊销的情况下连接；由 `permitUncheckedRevocation` 授予
++   entry .Des   DES；由 `permitDisallowedCrypto` 以及 `permitCryptoThrough2014` 起的许可授予
++   entry .TripleDes   Triple-DES；在 `permitDeprecatedCrypto` 下应用，在 `permitLegacyCrypto` 下处理
++   entry .Rc2   RC2；由 `permitDisallowedCrypto` 以及 `permitCryptoThrough2014` 起的许可授予
++   entry .Blowfish   Blowfish；由 `permitDisallowedCrypto` 以及 `permitCryptoThrough2014` 起的许可授予
++   entry .SmallRsa   密钥短于 2048 位的 RSA；由 `permitDisallowedCrypto`、`permitCryptoThrough2014` 起的许可授予
++   entry .Dsa   DSA 签名；在 `permitDisallowedCrypto` 下应用，在 `permitLegacyCrypto` 下处理
++   entry .Ecb   ECB 模式；仅由 `permitDisallowedCrypto` 授予
++   entry .Unauthenticated   任何未经认证的（非 AEAD）密码模式；由 `permitUnauthenticatedCrypto` 授予
+
+@ 0 1 0 1f619cfcb94cc097005e21dc9bdbb829
++ entry .Signing   签名算法所做的事：用私钥对字节签名，用公钥验证
+
+% 1 1 0 01fe16f60943fe2c1a6d57b08efd608a
+
+@ 0 6 0 006755e94d0e9e8f0b2f06e7fefef66b
++       enigmatic 的非对称密码算法（`Rsa`、`Ecdsa`）及其 HMAC 适配器所实现的接口，声明于此处，以便位于 enigmatic 之下的库可以将“某个能签名的东西”作为值接受。
++       密钥和签名都是原始的 `Data`；enigmatic 的 `PrivateKey#sign` 和 `PublicKey#verify` 是它的类型化、以许可设限的前端。
++   entry #sign   `data` 在 `privateKey` 下的签名，作为字节
++   entry #verify   `signature` 是否是 `data` 在 `publicKey` 下的签名
+
+@ 0 1 0 0bd4628af07e4889072e009a04e3c7d1
++ entry .providers   哈希提供者，每个都是要按名称导入的 given
+
+% 1 1 0 0895be6ddef80c5e1a2e35d8e47925b3
+
+@ 0 5 0 19d2cc4fc914d2ed1a299584b47803fb
++       由哪种实现计算摘要，取决于作用域中的 `Hashing` given，而这一选择从不隐式进行：`import soundness.*` 不会引入其中任何一个，要按名称导入其中一个或两个。
++       同一个包在总括包中合并后，还包含 enigmatic 的 `opensslProvider`，而 `javaBaseProvider` 除了启用此处的哈希，还启用 enigmatic 的 JDK 密码学。
+
+% 2 1 0 0af86422ea0451561ca76fea1ae1b7ce
+
+% 3 1 0 1dcd3ee2e264885a02d087c7ef8df630
+
+% 0 1 0 017022d7152b48d30afc99c6aa88cf83
+
+% 1 1 0 132c0eb0450e81080ad8691bc9b47938
+
+@ 0 13 0 0b3b0c108c2b0b57106620622abdf3ad
++       每种算法的 `Hash` 都从具有该算法方法的提供者派生，因此两个提供者是互补的，而不是分等级的：JDK 提供者缺少 `Blake3`、`Murmur3` 和 `Crc64`，同时导入两者也不会损失什么。
++       两者都在作用域中时，Soundness 提供者是以词法方式导入的，而 JDK 提供者是在隐式作用域中派生的，因此前者服务于每种算法；若要并用 JDK 原生的 SHA-2 和 BLAKE3，请用 `locally` 限定各导入的作用域。
++   entry .javaBaseProvider   JDK：在 JVM 上为 `MessageDigest` 和 `java.util.zip`，在其他平台上为纯移植版本
++       提供标记 `Provider.JavaBase`，`Hashing.javaBaseHashing` 从它派生 `JavaBaseHashing`（enigmatic 从它派生其 `JavaBaseCrypto`）。
++       支持 MD5、SHA-1、SHA-2、CRC-32 和 Adler-32；不支持 BLAKE3、MurmurHash3 或 CRC-64。
++   entry .soundnessProvider   纯 Scala 的 `SoundnessHashing`：涵盖每种算法，适用于每个平台
++       直接提供 `SoundnessHashing`。
++       它是 `Blake3`、`Murmur3` 和 `Crc64` 的唯一提供者。
+
+@ 0 1 0 1c6824325243d89719ecf06656b8a667
++ entry .cryptoPermits   密码学许可，每个都是要按名称导入的 given：程序接受何种弱点
+
+% 1 1 0 1ca7ee9e7f806c5806b9cf0da7f7c8f3
+
+@ 0 7 0 0e3cd5452367464d07fbf88db6a30d68
++       每个 given 都是细粒度 `Permit`（或 `ProcessingPermit`）的被擦除交集，以 NIST SP 800-131A 的算法状态（*已弃用*、*遗留使用*、*已禁止*）或某个年份命名，同样涵盖此处的哈希以及 enigmatic 和 telekinesis 中的密码算法和 TLS 设置。
++       各级别按包含关系嵌套：`permitDisallowedCrypto` 包含每个算法许可，而每个 `permitCryptoThrough<year>` 都包含更早年份的许可。
++       请导入能接纳程序所需之物的最窄许可，使让步保持可见：
+
+% 2 1 0 17a598f895fa69e81d99e2e7411df47e
+
+% 3 1 0 0dafcb23904c9d450459f4decb750589
+
+% 4 1 0 02d451b7ea25164518bf3f07983c2784
+
+% 1 1 0 034856616298a3c50819c15f1c22cb62
+
+% 0 1 0 11f0efd23d05601c10b5896f7bfaf0f1
+
+% 1 1 0 0423460e9cb44e7d0a14d24a7d7b955e
+
+@ 0 2 0 09f5d9f325f51e7c1c9f456a85f24ebb
++       默认情况下作用域中没有任何许可；`import soundness.*` 不导入 given，而用 `locally` 导入到某个代码块中的许可，其作用域仅限于该代码块。
+
+% 1 1 0 14057fabd98a7f5d106fecc003c5c510
+
+% 1 1 0 1f508ebc8dd6f0c804d582e28814ed64
+
+@ 0 34 0 05bc1f731f4f19db1b768c54c3774d82
++   entry .permitNonCryptographicHashes   用 CRC-32、CRC-64、Adler-32 或 MurmurHash3 求摘要
++       `Permit[Concession.NonCryptographic]`：声明威胁模型中没有对手（损坏检测、哈希表、布隆过滤器），这与已被攻破的哈希是不同的让步，因此它不包含在 `permitDisallowedCrypto` 中。
++   entry .permitDeprecatedCrypto   SHA-1 和 Triple-DES：可用但属过渡性质
++       `Permit[Concession.TripleDes] & Permit[Concession.Sha1]`：NIST 的“已弃用”状态。
++       供仍须计算 SHA-1 的程序导入，例如为了 Git 对象名称。
++   entry .permitDisallowedCrypto   每种已被攻破或未获批准的算法、密钥长度和模式，包括 MD5 和 SHA-1
++       针对 `Des`、`Rc2`、`Blowfish`、`TripleDes`、`Dsa`、`SmallRsa`、`Ecb`、`Unauthenticated`、`Md5` 和 `Sha1` 的 `Permit`：NIST 的“已禁止”状态，它涵盖每个更弱的算法许可。
++       它不包括 `NonCryptographic` 或 TLS 许可。
++   entry .permitLegacyCrypto   处理已用 Triple-DES 或 DSA 保护的数据：仅限解密和验证
++       `ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa]`：NIST 的“遗留使用”。
++       它不是 `Permit`，因此不允许新的加密或签名，也不允许任何 gastronomy 摘要。
++   entry .permitUnauthenticatedCrypto   任何未经认证的（非 AEAD）分组密码模式，供 enigmatic 使用
++       `Permit[Concession.Unauthenticated]`：除 AEAD 模式外的每种分组密码模式，由 enigmatic 设限。
++   entry .permitLegacyTls   TLS 1.0 和 1.1、较小的临时 DH 以及 CBC 套件，供 telekinesis 使用
++       针对 `Tls10`、`Tls11`、`SmallDh` 和 `CbcCipher` 的 `Permit`。
++       在 JDK 中重新启用它们会影响整个进程。
++   entry .permitUntrustedCertificates   已过期或自签名的对端证书以及主机名不匹配，供 telekinesis 使用
++       针对 `ExpiredCertificate`、`SelfSignedCertificate` 和 `UnverifiedHostname` 的 `Permit`。
++   entry .permitUncheckedRevocation   在不检查证书吊销的情况下连接，供 telekinesis 使用
++       `Permit[Concession.UncheckedRevocation]`。
++   entry .permitCryptoThrough2014   NIST 到 2014 年已禁止的每种算法：DES、MD5、RC2、Blowfish、较小的 RSA
++       针对 `Des`、`Md5`、`Rc2`、`Blowfish` 和 `SmallRsa` 的 `Permit`：具名级别之外的按年份选择。
++       它接纳 MD5，但不接纳 SHA-1 或 Triple-DES。
++   entry .permitCryptoThrough2024   同 2014，外加 Triple-DES 和 DSA
++       添加 `Permit[Concession.TripleDes]` 和 `Permit[Concession.Dsa]`，它们在 2023 年之后被禁止，并已从 FIPS 186-5 中移除。
++   entry .permitCryptoThrough2030   同 2024，外加 SHA-1：NIST 计划的逐步淘汰
++       添加 `Permit[Concession.Sha1]`，因此它接纳除非密码学哈希之外的每种哈希算法。
+
+@ 0 1 0 0e01d3874a366e8115817d6d708af554
++ entry .Multicodec   哈希算法的 multiformats 代码，用于将其摘要封装为 `Multihash`
+
+% 1 1 0 1ffda9c07bea55790416fa7daa71ca79
+
+@ 0 2 0 034368327f6bd5f31b72b39059208714
++       一个类型类，它*本身就是*从 `Algorithm` 到其在 multiformats 表中注册的代码和名称的映射：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 3 0 00dd020b122f811c0483ca706e3f9454
++       column  算法
++       column  代码
++       column  名称
+
+% 0 1 0 16e466bc2176019d1ac647512494d89d
+
+% 0 1 0 13c872a4a115562d079d3f93f06712f2
+
+% 0 1 0 167220d316d8779617523ae896c3aeb5
+
+% 0 1 0 040e094eecb2873c1ecd90f1e16907e8
+
+% 0 1 0 067c23cb8a99b6ad08b232d983bb2fa7
+
+% 0 1 0 06f980d42373e3d912538e240aabe414
+
+% 0 1 0 187e3ee681da449d0cb96bf28aac4d05
+
+% 1 1 0 03525ec6ede4c46118ffa26e5a0e75d5
+
+@ 0 7 0 0a979249c6401c97109548c2c2a07ec1
++       `Blake3` 和 `Md5` 在表中是草案条目，但含义明确且被广泛实现。
++       该类型类刻意是不完整的：没有实例的算法无法封装，对它而言 `Multihash(digest)` 无法编译。
++       校验和都没有实例：Adler-32 未注册，而 CRC-32 和 CRC-64 注册为 `hash` 而非 `multihash`，因为该规范将 multihash 保留给适合内容寻址的密码学函数；仍想封装校验和的调用者可以直接根据其代码构建 `Multihash(code, bytes)`。
+
+@ 0 3 0 1143e71dac8a149c145a26e6b1d06a26
++       位于 `gastronomy.multihash` 中。
++       `.name(code)` 给出本库所知代码的注册名称，用于描述其算法无法作为类型恢复的已解码封装。
+
+% 1 1 0 08eb6dd55029eb4e19857a673a9c403d
+
+@ 0 15 0 144a66594dd231cb119709d224319c8e
++   entry .sha1   `0x11`，`sha1`
++   entry .sha2_256   `0x12`，`sha2-256`
++   entry .sha2_512   `0x13`，`sha2-512`
++   entry .sha2_384   `0x20`，`sha2-384`
++   entry .sha2_224   `0x1013`，`sha2-224`：在封装中为两字节的 varint
++   entry .sha384   `0x20`，`sha2-384`，用于 `Sha384` 类型
++   entry .sha512   `0x13`，`sha2-512`，用于 `Sha512` 类型
++   entry .blake3   `0x1e`，`blake3`：表中的草案条目，但含义明确且被广泛实现
++   entry .md5   `0xd5`，`md5`：表中的草案条目
++   entry .name   本库所知代码的注册名称，或 `Unset`
++       `Multicodec.name(0x12)` 为 `t"sha2-256"`；`0x00` 为 `identity`。
++       上述集合之外的代码是合法的，可以在 `Multihash` 中表示，但在这里没有名称。
++   entry .apply   `Multicodec[algorithm](code, name)`：为用户自己的算法构建的实例
++   entry #code   算法的 multicodec 代码，即在 multiformats 表中注册的代码
++   entry #name   算法注册的 multicodec 名称，例如 `sha2-256`
+
+@ 0 1 0 0e430fec18785ba81edbff3a018af75c
++ entry .Multihash   自描述的摘要封装：varint 代码、varint 长度，然后是摘要的字节
+
+% 1 1 0 1c3bf2963f902a52101a4e90c617d361
+
+@ 0 6 0 13e75a94a52afb791a27912caad5d0f2
++       `Multihash` 是 multiformats 封装 `<varint code><varint length><digest bytes>`，摘要以这种形式跨越边界，而各方无需在带外就其算法达成一致；内容寻址存储、IPFS、IPLD、libp2p 和 `did:key` 交换的就是它。
++       它用 `.apply` 从类型化的摘要构建，由其 `Multicodec` 提供代码，因此封装永远不会声称一种与计算其摘要的算法不同的算法；并用 `.parse` 从字节读回。
+
+% 2 1 0 1068647e293210c907edba6e35557941
+
+% 3 1 0 1c58b78c9ce43287048338e421a7943c
+
+% 4 1 0 078b35135240dde50631db12d1de1b37
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0922a227fdd14a120160048e7d9057eb
+
+% 0 1 0 0012f465320673dd11788c6d28d9afc3
+
+% 0 1 0 0b697319f6a2b04e13ed46ad2d3958c9
+
+% 0 1 0 149505c7475cfc6a1ac922fe7ab88942
+
+% 1 1 0 1469907721a99e0a0035f509a64fa72c
+
+@ 0 6 0 1482f0e94bc275f01acd31f062e99a5e
++       `#code` 是一个普通的 `Int`，而不是 gastronomy 的 `Algorithm`：接收到的封装可能指名本库无法计算的函数，而这样的值是可表示的（可比较、可转发），而不是错误；当代码已知时，`#algorithm` 会给出它的名称。
++       摘要的长度是显式的，因此截断的摘要也是合法的封装。
++       两个 multihash 在其代码和字节都相等时相等。
++       varint 是规范中的无符号 LEB128，上限为九组。
++       位于 `gastronomy.multihash` 中。
+
+% 0 1 0 125b14230ef75a221afc63a7bfa8e086
+
+% 1 1 0 1fdb34207719c1011f6d3a71d58a5126
+
+@ 0 17 0 17def87615291044062cfd1901e74f18
++   entry .apply   `Multihash(digest)`：在其算法的代码下封装类型化的摘要；`Multihash(code, bytes)` 是原始形式
++       `Multihash(digest)` 需要摘要的算法是 `Multicodec`，这从其 `Digest in algorithm` 类型解析，因此没有注册代码的算法（例如校验和）无法编译。
++       case class 构造器 `Multihash(code, digest)` 接受任何代码和任何字节，用于本库不认识的算法或截断的摘要。
++   entry .parse   从字节读取封装，对格式错误的封装抛出 `Multihash.Error`
++       解码代码和长度两个 varint，并取其后正好 `length` 个字节。
++       声明的长度必须与后续字节相符：较少为 `Reason.Truncated`，较多为 `Reason.Trailing`，因为两者看似格式正确，却与任何东西都不相等；超过九组的 varint 为 `Reason.Oversize`。
++       它需要一个 `Tactic[Multihash.Error]`。
++   entry .Reason   封装无法读取的原因：`Truncated`、`Trailing` 或 `Oversize`
++       `Truncated`：_the data end before the declared digest length_（或在 varint 完整之前）；`Trailing`：_bytes remain after the declared digest length_；`Oversize`：_the varint exceeds the nine groups the specification permits_。
++       该枚举是带有这些消息的 `Communicable`，`Multihash.Error` 会嵌入它们。
++   entry .Error   由 `Multihash.parse` 对无法读取的封装抛出
+
+% 1 1 0 026740c0cb3130af14992bcb1eec7ed2
+
+@ 0 12 0 1bc52eb5281e95c211f0945c716c3d60
++         错误 `↯/s.66.1`，以 `Reason` 的序数作为其细节编号：_the multihash could not be read because `reason`_，其中 reason 是 `Multihash.Reason` 的消息之一。
++     entry #reason   适用的是哪个 `Multihash.Reason`
++   entry #code   算法的 multicodec 代码，作为 `Int`
++       varint 能容纳的任何代码，无论本库是否知道；`#algorithm` 给出已知代码的名称。
++   entry #digest   摘要的字节，长度为封装所声明的任意长度
++   entry #algorithm   代码的注册名称，例如 `sha2-256`，若未知则为 `Unset`
++       `Multicodec.name(code)`：指名本库不认识的函数的已解码封装会保留其代码和字节，只是没有名称。
++   entry #serialize   作为字节的封装：varint 代码、varint 长度、摘要
++       即存储或发送的内容；`Multihash.parse` 将其读回，两者可以往返转换。

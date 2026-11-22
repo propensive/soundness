@@ -1,0 +1,1096 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1eb977bd9176e51c01b1d4c1ae38a604
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 11a1f33127b56fc40a4e716c248db2b6
++ info   Rysunki SVG jako typowane wartości: kształty, ścieżki, transformacje, gradienty i tekst, renderowane do XML i z niego parsowane
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 139cda82622f6c3106cecf60a08c7537
++     _Savagery_ buduje SVG z wartości, a nie z napisów. Dokument SVG to XML pełen małych
++     języków – atrybut `d` ścieżki jest programem współrzędnych, `transform` potokiem funkcji,
++     kolory i długości mają własne składnie – a program, który je skleja, musi poprawnie obsłużyć
++     każdy z nich naraz. Tutaj `Point` jest położeniem, a `Delta` przesunięciem: to odrębne typy
++     z arytmetyką wektorową między nimi; ścieżka to `Svg.Outline` rozbudowywany nazwanymi
++     krokami; transformacja to wartość `Transform` zapisana na figurze, a nie zastosowana do jej
++     współrzędnych; a każdy mały język renderuje typ, który go rozumie, jako `in[Xml]` lub
++     `encode`.
+
+% 2 1 0 16bc3be5b4c2e7841da63d2575d5e190
+
+% 3 1 0 15f8d0a1f9731c2d1a5acccc7072b1fa
+
+% 0 1 0 1c686a28dfb100921079df0c99d85f8d
+
+% 0 1 0 08107ec6440ecda9007dbc44947efd2b
+
+% 0 1 0 059802db1f735e3b051a6f2af34c4d19
+
+% 0 1 0 080a590087f11f1000f3e7c4749ad2dd
+
+% 0 1 0 190676681080aeda1bcff66d68a3b1e1
+
+% 0 1 0 008f28746f575087165d84a9d02e1d3c
+
+% 1 1 0 0f7081b128bb2c090ec3e0a9ff06d942
+
+@ 0 7 0 0a49b890227a0b311c9adfd820fce48a
++     Figurami są `Svg.Rectangle`, `Svg.Ellipse` (oraz `Circle`, który ją tworzy), `Svg.Outline`,
++     `Svg.Polyline`, `Svg.Lettering` i `Svg.Group`, wszystkie będące `Svg.Figure`; każda może
++     nieść `id` (typu `Svg.Id`), typowany `style` CSS i listę `transforms`. `font` w
++     `Svg.Lettering` to `Font in Web`, który istnieje tylko dla kroju pisma z udostępnieniem w
++     zasięgu, więc `Svg` niosący tekst niesie też `@font-face`, które udostępnia ten krój pisma.
++     Definicje to `Svg.Def` – `Svg.LinearGradient` złożony ze `Stop` – a `Svg` składa definicje i
++     figury z rozmiarem, jednostką `unit` i `viewBox`.
+
+@ 0 7 0 09ea7095befaab251a665a5e41649487
++     Parsowanie działa w przeciwną stronę: `text.read[Svg]` i `text.load[Svg]` (lub
++     `data.load[Svg]`) odczytują tekst SVG z powrotem do typowanych figur, zgłaszając
++     `Svg.Error` dla korzenia, który nie jest `<svg>`, niepoprawnych danych ścieżki, niepoprawnego
++     koloru, długości lub viewBox albo szerokości i wysokości w różnych jednostkach. Nie jest
++     potrzebny żaden `XmlSchema`: XML pod spodem jest parsowany względem schematu swobodnego,
++     bo słownictwo SVG walidują typy figur. `svgConstruable` z pakietu `construables` to given,
++     importowany po nazwie, który pozwala skonstruować `Svg` z typu mediów `image/svg+xml`.
+
+@ 0 6 0 10b9cd54309cf07f1c23deb66d28d43a
++     Współrzędne są typu `Float`, tak jak zapisują je atrybuty SVG, a para liczb konwertuje się
++     do `Point` tam, gdzie oczekiwany jest punkt. Kąty to `Angle` z geodesy. Biblioteka to jeden
++     zbiór źródeł, `savagery.core`, zależny od xylophone (XML), cataclysm (CSS i fonty `Web`),
++     phoenicia, mosquito (którego `Affine` reeksportuje), kątów z geodesy, iridescence i
++     cardinality. Wszystko poza `Segment` jest eksportowane do modułu zbiorczego `soundness`, a
++     pakiet `construables` łączy się z pakietem modułu zbiorczego o tej samej nazwie.
+
+% 0 1 0 12d688908203c235122f0674a400804e
+
+% 0 1 0 0defe88869fdcb2d1e0b3c32fe34ca7c
+
+% 0 1 0 18c475b5829eed8d1b35d12a1577cfd3
+
+% 0 1 0 016bbca3f65e579a1b3cd7a1a652c505
+
+% 0 1 0 05abc848eede2e6210a27a23a1a67945
+
+% 0 1 0 06f438cba935a186007c8c82e03e2a03
+
+@ 0 1 0 17f160d9938e2e3c08308554244361be
++ entry .Svg   element dokumentu `<svg>`: rozmiar, definicje i figury, zapisywane do XML i z niego odczytywane
+
+% 1 1 0 1af40528c22003a5081467253987170e
+
+% 0 1 0 015d964c3979e2dc004628f8259c7d41
+
+@ 0 7 0 1e14276758fd1b471b14f9c2ab805105
++       Unset)`. `#width` i `#height` to rozmiar viewportu w `#unit` albo w jednostkach
++       użytkownika, gdy jednostka nie jest ustawiona; `#viewBox` to prostokąt przestrzeni
++       użytkownika pokazywany przez viewport, domyślnie własny rozmiar viewportu od początku
++       układu współrzędnych. Wyrenderowany jako `svg.in[Xml]` element niesie atrybuty `xmlns`,
++       `viewBox`, `width` i `height`, element `<defs>` zawierający `<style>` z regułami
++       `@font-face` dla każdego kroju pisma wymienionego w jego napisach, a po nim każdą
++       definicję, oraz figury – owinięte w jeden `<g transform="…">`, jeśli sam `Svg` ma
++       transformacje.
+
+% 2 1 0 13a3ff6b81a3f3d41fceab047471e982
+
+% 3 1 0 129823ae0d2e4d8819a43928e32cf24c
+
+% 0 1 0 0f476bb1bed2e90903b60d2aac27f35e
+
+% 0 1 0 1b264a13c5dada11151154fe838e67de
+
+% 0 1 0 068379e10db15bf91c3d5426ff8ffe9d
+
+% 0 1 0 16710377d55bddf1085ab4a381cb0758
+
+% 1 1 0 1147034b5f4a1fb304b56798bb4ab09f
+
+@ 0 5 0 11905a252a159c480ba5280266e1fbc9
++       `Svg` jest `Documentary`, więc `Document(svg, enc"UTF-8").show` to samodzielny plik `.svg`
++       z deklaracją XML; będąc pod spodem XML-em, osadza się też bezpośrednio w stronie HTML.
++       Parsowanie to `text.read[Svg]` (given `.aggregable`, który akceptuje i odrzuca deklarację
++       XML i każdy komentarz przed elementem), `text.load[Svg]` (`Document[Svg]` zachowujący
++       zadeklarowane kodowanie) lub `data.load[Svg]` z bajtów:
+
+% 2 1 0 06a2c4172fb5c1cf0d258bb70c4cb3aa
+
+% 3 1 0 165a1f4bc1f603e00013328021be8f0e
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 07b35e60826b05000eccca9b33f254a6
+
+% 0 1 0 0071ca290fc5137400722aab45d47eb0
+
+% 0 1 0 030f7b512294885c10d1fb5eff914848
+
+% 0 1 0 1805779925b8ab4809d6380947af3492
+
+% 1 1 0 082fd5dd347592110b20da35811aa891
+
+@ 0 5 0 1303f05152900786154322460f9bb0a5
++       `<g>` parsuje się jako `Group`, `<polyline>` i `<polygon>` jako `Polyline`, `<text>` jako
++       `Lettering`, `<circle>` i `<ellipse>` jako `Ellipse`, `<path>` jako `Outline`, a
++       `<linearGradient>` w `<defs>` jako `LinearGradient`; `id`, `transform` i `style` są
++       odczytywane na każdej figurze, a nieznany element (np. `<image>`) lub atrybut jest
++       pomijany. Figura zapisana i odczytana z powrotem renderuje się identycznie.
+
+% 0 1 0 10125a1ff41506be05cb1eadd9796eb7
+
+% 0 1 0 06ae4d247472223e1d344d92b570d5a1
+
+% 0 1 0 11cfb34fc283d1f2117693bdbd374fb8
+
+% 0 1 0 119c813ed6e203f71e51c3357fd9821a
+
+@ 0 11 0 0ac15e7c634ac5311c7ae4e5dc13e74c
++   entry .encodable   element `<svg>` z definicjami i figurami, jako `svg.in[Xml]`
++   entry .aggregable   `text.read[Svg]`: parsuje tekst SVG, odrzucając deklarację XML przed elementem
++       Wymaga w zasięgu `Tactic[Parse.Error]`, `Tactic[Xml.Error]` i `Tactic[Svg.Error]`. XML
++       jest parsowany względem `XmlSchema.Freeform`, więc wywołujący nie podaje schematu.
++   entry .loadable   `text.load[Svg]`: `Document[Svg]`, którego metadane to zadeklarowane kodowanie
++       Wymaga tych samych trzech taktyk. Gdy kodowanie nie jest zadeklarowane, domyślnie jest to UTF-8.
++   entry .loadableData   `data.load[Svg]`: `Document[Svg]` sparsowany z bajtów
++       Wymaga trzech taktyk i `Buffering` w zasięgu.
++   entry .showable   `Document[Svg]` jako samodzielny plik: deklaracja XML, a po niej element
++       `Document(Svg(10, 10), enc"UTF-8").show` zaczyna się od `<?xml version="1.0" encoding="UTF-8"?>`.
++   entry .Error   zgłaszany, gdy tekstu SVG nie da się odczytać jako `Svg`
+
+% 1 1 0 0ec5f00454840b261e6ca1f2a2c3abe2
+
+@ 0 4 0 14f0872777a2592a187a78253afb4094
++         Błąd `↯/s.130.1`: _the SVG could not be parsed because `reason`_, z własnym numerem
++         przyczyny jako podnumerem. Zgłaszany przez `read[Svg]` i `load[Svg]` za pośrednictwem
++         `Tactic[Svg.Error]`; XML, który nie jest poprawnie sformułowany, najpierw zgłasza
++         `Xml.Error` z parsera pod spodem.
+
+% 2 1 0 06c8803f0ecd8b3408cecf0884d6959d
+
+% 3 1 0 1208642a4d2069210140916f5b0fc6a2
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 125026af6512d63601ea36ca5f253e8e
+
+% 1 1 0 064ab119bb9a57891307e525cc56e6f8
+
+@ 0 1 0 08a50e0991d78cc60fcc899291700517
++     entry .Reason   powód, dla którego SVG nie dało się odczytać, każdy z numerem
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 155e0e6531bd609d0dcf6e3f39c4eec5
++         column  Przypadek
++         column  Kod
++         column  Komunikat
++         column  Uwaga
++         row  `NotAnSvg(label)`  1  _the root element was `<label>` instead of `<svg>`_  także gdy wśród węzłów fragmentu nie było `<svg>`
++         row  `MalformedPathData(data)`  2  _the path data `data` could not be parsed_  atrybut `d` z nieznanym poleceniem albo nieliczba tam, gdzie należała się liczba
++         row  `MalformedColor(color)`  3  _the color `color` could not be parsed_  `stop-color`, który nie jest `#rgb`, `#rrggbb`, `rgb(r, g, b)` ani jednym z nazwanych kolorów red, green, blue, black, white, yellow, cyan i magenta
++         row  `MalformedLength(length)`  4  _the length `length` is not a number with a unit_  `width` lub `height` korzenia; jednostka jest opcjonalna
+
+% 0 1 0 11ed89446bd4a9aa0f1195b6febde579
+
+% 0 1 0 0b9cee0e9ec04403171762af71ee9d1f
+
+% 1 1 0 03a199cd019c36391d388508c20a3433
+
+@ 0 7 0 02b5b4143c47aeae124b23c4ca0081f3
++     entry .communicable   przedstawia każdą przyczynę jako komunikat
++     entry #reason   `Svg.Error.Reason`
++   entry .Units   jednostka, w której wyrażone są `width` i `height` elementu `<svg>`: `Em`, `Ex`, `Px`, `In`, `Cm`, `Mm`, `Pt`, `Pc` lub `Percent`
++       `suffix` każdego przypadku to tekst zapisywany po liczbie: `mm`, `%`. `Svg` z
++       `unit = Unset` zapisuje gołe liczby, które SVG odczytuje jako jednostki użytkownika.
++       Nazwany `Units`, a nie `Unit`, co przesłoniłoby `scala.Unit`.
++   entry .ViewBox   atrybut `viewBox`: prostokąt przestrzeni użytkownika pokazywany przez viewport
+
+% 1 1 0 14423505540e9e220a02330aaf3cb303
+
+@ 0 9 0 1d21e2fd3b97f0740b79aaaed44c3e6f
++         `ViewBox(x, y, width, height)`. `Svg` bez viewBox zapisuje taki, który zaczyna się w
++         początku układu i ma jego własny rozmiar; viewBox odczytany z tekstu jest zachowywany i
++         zapisywany z powrotem bez zmian, więc `width="48.5mm" height="20mm" viewBox="0 0 48.5 20"`
++         z programu do rysowania przetrwa pełny obieg.
++     entry .showable   cztery liczby rozdzielone spacjami, tak jak zapisuje się atrybut
++     entry #x   lewa krawędź, w jednostkach użytkownika
++     entry #y   górna krawędź
++     entry #width   pokazywana szerokość
++     entry #height   pokazywana wysokość
++   entry .Parser   czytnik SVG pod `read[Svg]`: znajduje element `<svg>` i go dekoduje
+
+% 1 1 0 0fae4aa6a61b536d0486f234181092ac
+
+@ 0 18 0 1560d61aa6cf6ecd185f0bb05fc63d6e
++         Zwykle nie wywołuje się go bezpośrednio; `read[Svg]` i `load[Svg]` przechodzą przez niego.
++         Jego publiczne metody przyjmują już sparsowaną wartość `Xml`, co przydaje się, gdy SVG
++         jest jednym elementem większego dokumentu. Dane ścieżki obsługują polecenia `M`, `L`,
++         `H`, `V`, `C`, `Q` i `Z` w obu wielkościach liter, z niejawną linią po ruchu; `H` i `V` w
++         dowolnej wielkości liter stają się względnymi `Stroke.Draw`, bo nie istnieje bezwzględny
++         krok wyłącznie poziomy ani wyłącznie pionowy, co dla form bezwzględnych oznacza stratę
++         informacji. Listy transformacji rozpoznają `translate`, `scale`, `rotate`, `skewX`,
++         `skewY` i `matrix`, pomijając nieznane funkcje; `style` w wierszu jest dzielony na
++         deklaracje `name: value`; atrybut `points` przyjmuje pary rozdzielone białymi znakami lub
++         przecinkami.
++     entry .labelOf   etykieta elementu albo `<unknown>` dla każdego innego węzła
++     entry .findSvg   element `<svg>` wśród listy węzłów albo `Svg.Error(NotAnSvg)`, jeśli go nie ma
++         Wymaga `Tactic[Svg.Error]`.
++     entry .rootElement   element `<svg>` wartości `Xml`: ona sama albo ten spośród węzłów fragmentu
++         Zgłasza `Svg.Error(NotAnSvg(label))` dla elementu o każdej innej etykiecie.
++     entry .decodeSvg   element `<svg>` jako `Svg`, ze zdekodowanymi definicjami i figurami
++         Zgłasza `Svg.Error` dla niepoprawnej długości, niezgodnych jednostek, niepoprawnego
++         viewBox, niepoprawnych danych ścieżki lub niepoprawnego koloru gradientu.
++   entry .Id   identyfikator elementu, jako typ odrębny od tekstu
+
+% 1 1 0 13d39f2de2bb8e751f60f52a3c5d08b8
+
+@ 0 4 0 19aeeca7c61bf6ca1c04b12cb2a85e42
++         To, czego potrzebuje odwołanie do gradientu, cel animacji, element `<use>` lub rewizja
++         wykresu, by nazwać figurę lub definicję. `Svg.Id` jest pod spodem `Text`, ale odrębnym
++         typem nieprzezroczystym, więc identyfikatora nigdy nie myli się z tekstem, który
++         oznacza. Jest inspekcjonowany jako `Svg.Id(t"logo")`.
+
+% 2 1 0 1b34be3dde99a09a08535b4094753241
+
+% 3 1 0 0b55d9b857185983024fd3f258fd4572
+
+% 0 1 0 046f9451295a592e17c561bd1e6b2e08
+
+% 0 1 0 14dba756a1b5722c00356965252503ff
+
+% 1 1 0 0f86a20352a7486414db43eec1ddbe3b
+
+@ 0 4 0 00c5b934a0f3f68f1753fae49069f584
++     entry .apply   `Svg.Id(text)`: identyfikator z jego tekstu
++     entry .text   tekst identyfikatora, jako `id.text`
++     entry .inspectable   przedstawia identyfikator jako `Svg.Id(t"…")`, nazywając jego typ
++   entry .Def   wpis elementu `<defs>`; `LinearGradient` jest jedynym rodzajem
+
+% 1 1 0 04430ea67453d0ad177d4297f2dfdb28
+
+@ 0 4 0 1d60a408f839db3b00f9d860148932ec
++         Zapieczętowany trait: jego podtypy są przypięte do własnych źródeł savagery. Do
++         definicji odwołuje się jej `Svg.Id` w stylu figury.
++     entry .encodable   element definicji, jako `definition.in[Xml]`
++   entry .LinearGradient   `<linearGradient>` z identyfikatorem i typowanymi punktami koloru
+
+% 1 1 0 087561e8bfb610fd1c4dbfc6fa303988
+
+@ 0 2 0 08186c19f9c54caf0ab1946715f6a510
++         `Svg.LinearGradient(id, stops*)`, gdzie każdy `Stop` to przesunięcie w `[0, 1]` i kolor
++         dowolnego typu `Chromatic`. Sparsowane gradienty mają punkty `Color in Srgb`.
+
+% 2 1 0 0ae80f1a524a98df19ad5ac5a4e3b7a3
+
+% 3 1 0 0723bac5298d4d4704e3790c5b86ca38
+
+% 0 1 0 15f8a4db02ca848e16e52aed552d0fc0
+
+% 0 1 0 096f1522cce5f8331222955e3e431a5f
+
+% 1 1 0 0e9efcd945d4bf6c19eeebf1447fdf1b
+
+@ 0 12 0 0772ac678e6dbc361bcaa80ad731a45b
++     entry #id   identyfikator gradientu, do którego odwołuje się `fill` figury
++     entry #stops   punkty koloru, w kolejności
++   entry #width   szerokość viewportu, w `#unit` lub w jednostkach użytkownika
++   entry #height   wysokość viewportu
++   entry #defs   definicje, zapisywane wewnątrz `<defs>` po ewentualnym stylu `@font-face`
++   entry #figures   figury, w kolejności rysowania
++   entry #transforms   transformacje stosowane do całego rysunku: figury są owijane w niosący je `<g>`
++       Dodawane rozszerzeniami `translate`, `rotate`, `scale`, `skew` i `transform`, jak w
++       każdym `Transformable`.
++   entry #unit   jednostka, w której wyrażone są `#width` i `#height`, albo `Unset` dla jednostek użytkownika
++   entry #viewBox   pokazywany prostokąt przestrzeni użytkownika albo `Unset` dla rozmiaru viewportu od początku układu
++   entry #Metadata   co oprócz rysunku niesie `Document[Svg]`: jego `Encoding`
+
+@ 0 1 0 0b94e382eee646aa02cfb801079e623b
++   entry .Figure   zapieczętowany korzeń każdego rysowalnego elementu: prostokąta, konturu, elipsy, grupy, łamanej, napisu
+
+% 1 1 0 1d4ab37b6abd694504267b455d024ce9
+
+@ 0 5 0 0876925f265729dc0cc81f840104acb7
++         Każda figura renderuje się do swojego elementu SVG jako `figure.in[Xml]` przez
++         `.encodable` z obiektu towarzyszącego, jest inspekcjonowana jako nazwa przypadku z
++         etykietowanymi polami i może nieść `id`, `style` w wierszu oraz listę `transforms`, które
++         są zapisywane jako atrybuty `id`, `style` i `transform`, w tej kolejności, tylko gdy są
++         obecne. `Figure.fonts` zbiera fonty, którymi lista figur składa tekst, by `Svg` mógł nieść
++         ich reguły `@font-face`.
+
+% 2 1 0 09ce2c815455a8ef0d6378c12d52cd6a
+
+% 3 1 0 117274e3264c3bc206405d595f07cede
+
+% 0 1 0 0ef5d9b241f3d2dc08402604c884c9c1
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 1c615494544990270908b9a3f3286f99
+
+% 0 1 0 0e7380bb61c5dac21fdc464961bfba74
+
+% 0 1 0 1879adaf78d9a69d1ebc137d5b0d88c6
+
+% 0 1 0 073a3effe2b438640f6f8a948f00c144
+
+% 1 1 0 1863e60bc649e70012988078d9c651a9
+
+@ 0 3 0 1cce422a46d8335f0dfdab8febfe6a12
++         Transformacje dodaje się płynnie rozszerzeniami `translate`, `rotate`, `scale`, `skew` i
++         `transform` dla dowolnej figury `Transformable`; każde zwraca nową figurę z dołączoną
++         transformacją; geometria, z którą figurę zdefiniowano, jest geometrią, którą ona
++         zachowuje.
+
+% 0 1 0 1465dcb7c81c8ae608d7d4d35bdfc449
+
+% 0 1 0 06314687e9dd21a517880acefb632bd7
+
+% 0 1 0 07bb9dd8870b4db005e7df934f11e3dc
+
+% 0 1 0 1531472aec5b3b720a9be5499958e0cf
+
+% 0 1 0 1169c313788515680f37e547c9eea2ed
+
+% 0 1 0 1e56ead9fb2c0ea312ca2c881a73e864
+
+% 0 1 0 037937d755b665c51498128e49be195c
+
+@ 0 2 0 052d0b77abdd63e5105d97487b67f5e0
++     entry .encodable   element SVG figury, jako `figure.in[Xml]`, dla każdego podtypu
++         Ograniczony przez `Figure`, więc stosuje się do `Rectangle` czy `Outline` tak samo jak do
+
+% 0 1 0 0356bfc4f70a3f67056c5cdc60bfbd18
+
+@ 0 6 0 00f3233cd358c2060d8490561057875a
++     entry .inspectable   przedstawia figurę jako nazwę przypadku z etykietą każdego pola, z czytelnymi krokami i transformacjami
++         `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`: w przeciwieństwie do XML
++         operacje ścieżki nie są ściśnięte w jeden atrybut `d`.
++     entry .fonts   fonty, którymi lista figur składa tekst, łącznie z grupami
++     entry #fonts   fonty, którymi ta figura składa tekst: font `Lettering`, fonty napisów `Group`, w przeciwnym razie żadne
++   entry .Rectangle   `<rect>`: położenie, szerokość i wysokość
+
+% 1 1 0 1660e1fc5bc37172044d2dbc24b8877f
+
+@ 0 2 0 0bca65c379fcf7c81a5f3ff672412c38
++         `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`.
++         Położenie to lewy górny róg; para liczb konwertuje się do `Point`.
+
+% 2 1 0 16850180d3a2ab250d3f27fcbbe1604c
+
+% 3 1 0 090e718cb724baf400f9c3e44cddcb72
+
+% 0 1 0 10db5ada497e5b760b43b2e7b968e40e
+
+% 0 1 0 0ce1c4316cccdc001f5d3c1d722dc7ec
+
+% 0 1 0 08484d37cd95b3db027b8585dceb7cc6
+
+% 0 1 0 0b3c242d28f8bd4a0f463ef526666205
+
+% 1 1 0 04eebde1120d541f1f8ef641b25645e6
+
+@ 0 1 0 05d0e62ac8d7e841198948e3dd2f120f
++         Wzorzec ekstraktora nazywa wszystkie sześć pól: `case Rectangle(position, width, height,
+
+% 0 1 0 0ae798080ef43f1402405b00f7c186c5
+
+@ 0 7 0 081ca2445d4bb0130f7fd372d91f9a86
++     entry #position   lewy górny róg
++     entry #width   szerokość, w jednostkach użytkownika
++     entry #height   wysokość
++     entry #transforms   transformacje, zapisywane po kolei jako atrybut `transform`
++     entry #style   CSS w wierszu albo `Unset`
++     entry #id   identyfikator albo `Unset`
++   entry .Outline   `<path>`, budowany krok po kroku: kroki bezwzględne z przyrostkiem `To`, względne bez niego
+
+% 1 1 0 17a30151a4d40789058bf5233c946921
+
+@ 0 6 0 193dfd91ac4f722f0053be6bf1701dbf
++         `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`. `#ops` są
++         przechowywane **od ostatniego** – każdy krok jest doklejany na początek listy – i
++         renderowane po kolei jako atrybut `d`. Krokami są przypadki `Stroke`: ruch, linia, krzywa
++         sześcienna lub kwadratowa (z pierwszym punktem kontrolnym lub bez niego, dla gładkiej
++         kontynuacji), łuk i zamknięcie. Każda z płynnych metod dodaje jeden; wartości `Stroke`
++         można też podać bezpośrednio, jak robi to wykres kołowy dla swoich łuków.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 105003a32f7278cb035d2dd64bbfa908
++           label Pusta ścieżka
+
+% 1 1 0 1e689bd73ee43be609f7decaef0d1fb0
+
+% 0 1 0 1da4e266630b5b2600e44cafef459048
+
+% 0 1 0 01a845dee6ab13ae1bea424918cceeb5
+
+% 1 1 0 1d9122ad018fabd915ca3a5ff21e06ef
+
+@ 0 1 0 1c0c42635e0f230a0b626af5a3257794
++           label Ruch do początku
+
+% 1 1 0 1ff0b9388fdcdf341e09b99c9adc4902
+
+% 0 1 0 091b24e04bc9acfa07b0c025ea083b90
+
+% 0 1 0 0f8084b0ba1099130e9e8fe4ee2dce75
+
+% 1 1 0 0f6db969547369881455bb0ac7c8f5dd
+
+@ 0 1 0 0049a8d68dc3c7d60664db9a7112211c
++           label Linia do innego punktu
+
+% 1 1 0 1854c300f3a8cf5d1127346a049fecc0
+
+% 0 1 0 03e0a327e9da7ab213ff5de6450eff86
+
+% 0 1 0 1858603df920a6d80578e0c8ca677d25
+
+% 1 1 0 1fd95640572910df15de2b6c91fcbd2c
+
+@ 0 1 0 1cc3c2cbbede206c1cf01f6ab74ae88a
++           label Krzywa sześcienna z dwoma punktami kontrolnymi
+
+% 1 1 0 00668ba1f67b60731c7bd8a70363c80d
+
+% 0 1 0 11784179cc8f41451a87739d20a72f93
+
+% 0 1 0 1bf812d1fc1c39e61c26321408923659
+
+% 1 1 0 12b881568f4fe9cf08861c99505b9bb8
+
+@ 0 1 0 1d459c4f1cf7dc061b04ed8c9a192509
++           label Krok względny, jako Delta
+
+% 1 1 0 0821f775e6eddb2f0fda02e61073ecea
+
+% 0 1 0 0ab1fbf50eaeee1e029b1dd323b6b275
+
+% 0 1 0 11ff6739a524b1671927c3d77b907252
+
+% 1 1 0 09d4669147ff2bee0ae9c08d47692bdf
+
+@ 0 1 0 0ed66323eac7e724082346d6d4cd94d8
++           label Zamknięta z powrotem do początku
+
+% 1 1 0 09405ffd204edf61002fbd6e46f02db1
+
+% 0 1 0 11382bdc3b7112c611ba9110d884b696
+
+% 0 1 0 1a863cb2af09c9c40ff9fc4c0c10fe07
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 12ce468c0b9736171742e8ae1c969da8
++         Względna linia wzdłuż jednej osi jest zapisywana jako `h` lub `v`. Kroki kierunkowe
++         `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` i ich bliźniaki `move…` przyjmują po
++         jednej długości, w osiach SVG, w których `y` rośnie w dół: `lineUp(v)` rysuje
++         `Delta(0, -v)` (krok `v`), a `lineLeft(v)` rysuje `Delta(-v, 0)` (krok `h`).
+
+% 0 1 0 1dfb5831bdb66a1f1b3c108952c9493e
+
+% 0 1 0 1e1a578846bb0f81055995106fcbd9c9
+
+% 0 1 0 025a632d3f3ae64a1abf37926b1f8e08
+
+@ 0 24 0 05bd8f5ab2e50a031474f6bd73b92d0b
++     entry #ops   operacje ścieżki, od najnowszej
++     entry #style   CSS w wierszu albo `Unset`
++     entry #id   identyfikator albo `Unset`
++     entry #transforms   transformacje, zapisywane jako atrybut `transform`
++     entry #moveTo   `M`: ruch do punktu bezwzględnego
++     entry #lineTo   `L`: linia do punktu bezwzględnego
++     entry #move   `m`: ruch o `Delta`
++     entry #line   `l`, `h` lub `v`: linia o `Delta`, zapisywana jako `h` lub `v`, gdy biegnie wzdłuż jednej osi
++     entry #curve   `c` lub `s`: względna krzywa sześcienna, z oboma punktami kontrolnymi albo tylko z drugim
++         `curve(ctrl1, ctrl2, point)` to pełna krzywa sześcienna; `curve(ctrl2, point)` gładko
++         kontynuuje poprzednią krzywą, z odbitym pierwszym punktem kontrolnym.
++     entry #curveTo   `C` lub `S`: bezwzględna krzywa sześcienna, z oboma punktami kontrolnymi albo tylko z drugim
++     entry #quadCurve   `q` lub `t`: względna krzywa kwadratowa, z punktem kontrolnym albo gładko kontynuująca
++     entry #quadCurveTo   `Q` lub `T`: bezwzględna krzywa kwadratowa, z punktem kontrolnym albo gładko kontynuująca
++     entry #moveUp   względny ruch zapisywany jako `Move(Delta(0, -value))`
++     entry #moveDown   względny ruch zapisywany jako `Move(Delta(0, value))`
++     entry #moveLeft   względny ruch zapisywany jako `Move(Delta(-value, 0))`
++     entry #moveRight   względny ruch zapisywany jako `Move(Delta(value, 0))`
++     entry #lineUp   względna linia zapisywana jako `Draw(Delta(0, -value))`, renderowana `v -value`
++     entry #lineDown   względna linia zapisywana jako `Draw(Delta(0, value))`, renderowana `v value`
++     entry #lineLeft   względna linia zapisywana jako `Draw(Delta(-value, 0))`, renderowana `h -value`
++     entry #lineRight   względna linia zapisywana jako `Draw(Delta(value, 0))`, renderowana `h value`
++     entry #closed   `Z`: zamyka bieżącą podścieżkę z powrotem do jej początku
++   entry .Ellipse   `<ellipse>` albo `<circle>`, gdy jej promienie są równe
+
+% 1 1 0 10c808a32f58064b10342d2c73399624
+
+% 0 1 0 07ed1b52243c562605c5c4aa422c491b
+
+@ 0 3 0 1c874e85682b28af181bf0c3be3fda86
++         `angle` jest przechowywany w wartości, ale jeszcze nie zapisywany do elementu: elipsa
++         renderuje się z `cx`, `cy`, `rx` i `ry` (albo z `r`, jako `<circle>`, gdy `#circle` jest
++         prawdą). `Circle` tworzy elipsę o równych promieniach i zerowym kącie, a sparsowany
++         `<circle>` też jest `Ellipse`.
+
+% 2 1 0 175672264599232809270886375b4313
+
+% 3 1 0 10fde6e842bc4e30190ddb4e7746c4d1
+
+% 0 1 0 1f283c166c9003a9011a47c33978fe80
+
+% 0 1 0 05d4da257891c8a4010a8099214df18f
+
+% 1 1 0 001acbe931eef65b0b5d58be333c44cd
+
+% 0 1 0 085b3b5b1c55a6511e7eaa55010df8b8
+
+@ 0 9 0 060d67a6c045665d0fbacb85f185753d
++     entry #center   środek
++     entry #xRadius   promień poziomy
++     entry #yRadius   promień pionowy
++     entry #angle   obrót osi, `Angle`; nie jest zapisywany do elementu
++     entry #transforms   transformacje, zapisywane jako atrybut `transform`
++     entry #style   CSS w wierszu albo `Unset`
++     entry #id   identyfikator albo `Unset`
++     entry #circle   czy oba promienie są równe, tak że elementem jest `<circle>`
++   entry .Group   `<g>`: figury, które razem się przesuwają, mają styl i identyfikator
+
+% 1 1 0 0378bbfa81493dc111c2d69960918e20
+
+@ 0 4 0 16fe0f4d1968c17012bd8c1ca52dfe31
++         `Group(figures, id = Unset, style = Unset, transforms = Nil)`. Osie wykresu albo jedna z
++         jego serii to grupa, więc całą część można znaleźć i zastąpić po identyfikatorze, gdy się
++         zmienia. Jej `fonts` to fonty zawartych w niej napisów, więc `Svg` niesie jedno
++         `@font-face` na krój pisma, niezależnie od głębokości zagnieżdżenia tekstu.
+
+% 2 1 0 124adfa1ee2c3827181d338326f2d362
+
+% 3 1 0 16cd73cedf39c5ae09cea1a523750a1f
+
+% 0 1 0 14904f22ac23f3e01faa62295a70b870
+
+% 0 1 0 0916a8923a79a2d311a9a2c821ab484e
+
+% 0 1 0 0ce0da82d03b821714ddb2607b9141eb
+
+% 1 1 0 09fae7b3cd85b15d1c621b034acbb423
+
+@ 0 6 0 0b0480e805b844131d2ed483eec5f13c
++     entry #figures   figury, w kolejności rysowania
++     entry #id   identyfikator albo `Unset`
++     entry #style   CSS w wierszu albo `Unset`
++     entry #transforms   transformacje, stosowane do każdej zawartej figury
++     entry #fonts   fonty każdego zawartego napisu, rekurencyjnie
++   entry .Polyline   `<polyline>` przez punkty bezwzględne albo `<polygon>`, gdy jest zamknięta
+
+% 1 1 0 0c4f4bca5ff6c10411bffda11c0ab927
+
+@ 0 4 0 0eb7ef05fe56f7180145354a4900ec7f
++         `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`. Kształt
++         wykreślonej linii, obszaru pod nią albo obrysu słupka, bez operacji ścieżki dla każdego
++         wierzchołka: wykreślona linia i wypełniony obszar pod nią to ta sama figura różniąca się
++         jedną flagą.
+
+% 2 1 0 0fcf2b45370085e110ba3be98d81992e
+
+% 3 1 0 06463abc4bd9cf9005d544abc749fe47
+
+% 0 1 0 1b940cdabc50ac571a1d9401c0ad780e
+
+% 0 1 0 1dcab334f7cdb6ab15a4ec0272b0b753
+
+% 0 1 0 091fabe6c0d27d3f122df07364d544d3
+
+% 0 1 0 0532ac1a8376d4ff07718b9d20094d57
+
+% 1 1 0 1fb3d4f0537c12de11a73acf5b60f24c
+
+@ 0 6 0 071ff754b36f7cd51d156f01a6bc6204
++     entry #points   wierzchołki, w kolejności
++     entry #closed   czy ostatni punkt łączy się z pierwszym: `<polygon>` zamiast `<polyline>`
++     entry #id   identyfikator albo `Unset`
++     entry #style   CSS w wierszu albo `Unset`
++     entry #transforms   transformacje, zapisywane jako atrybut `transform`
++   entry .Lettering   `<text>`: ciąg znaków złożony w danym położeniu, zakotwiczony na początku, w środku lub na końcu
+
+% 1 1 0 1d8ebb267b934356068b5fa77bfbcd3a
+
+% 0 1 0 1412017480ff481e100b5e3ef298ab7d
+
+@ 0 5 0 05cefa34e130fc8f1a4c8bf99aeb6019
++         Unset, font = Unset, transforms = Nil)`. Nazwany od tego, czym jest w rysunku, bo `Text`
++         to typ napisowy. `#anchor` mówi, czy położenie jest początkiem, środkiem czy końcem ciągu
++         (`text-anchor`, pomijany dla `Start`), a `#baseline`, która linia glifów leży w tym
++         położeniu (`dominant-baseline`, pozostawiany rendererowi, gdy nie jest ustawiony). Tekst
++         jest escapowany: `a < b` renderuje się jako `a &lt; b`.
+
+% 2 1 0 116e80c534a7c84a0014565676f547ad
+
+% 3 1 0 11dab317146828dd1840d8b758ee9161
+
+% 0 1 0 1fc0abf00997532503e7239263ecf14a
+
+% 0 1 0 01d7220d7f0fda1d1e4a0e18f8b1b3be
+
+% 1 1 0 152fc778c9ff6a720c5f9e1eb0ced78d
+
+@ 0 6 0 0eb0b47d435b79cf18707f518fe57fb9
++         `#font` to `Font in Web`: odmiana pisma w parze z udostępnieniem dla jej kroju pisma,
++         istniejąca tylko tam, gdzie takie udostępnienie jest w zasięgu, więc krój pisma bez
++         udostępnienia nie może posłużyć do napisu w SVG. Deklaracje fontu (`font-family`,
++         `font-weight`, …) dołączają do stylu w wierszu, a `Svg` zapisuje do swoich definicji
++         `<style>` z regułami `@font-face` dla każdego kroju pisma wymienionego w jego napisach;
++         rodzina generyczna, taka jak `Web.sansSerifFont`, nie dodaje żadnej.
+
+% 2 1 0 0aac0b06dd2a5cbe16f1d4cdd9b63a91
+
+% 3 1 0 172102b55709b7721821ab6c1f65e836
+
+% 0 1 0 020998cd3ec9f4781ef2dbe8f889db11
+
+% 0 1 0 1eae9e655630c3df1fc8c5c6173f2efd
+
+% 0 1 0 1b0408c6001ad5aa17177fb893424a4b
+
+% 0 1 0 0a7c319645667e1110c5172d112a4098
+
+% 1 1 0 0106ea91fb634b7b1f91f97935ade059
+
+@ 0 3 0 15fa461afe7622ca0be217e8e7d1ef16
++         `Font(face)` wnioskuje medium z pola `Optional[Font in Web]`, do którego jest
++         przypisywany; gdzie indziej należy pisać `Web.font(face)`.
++     entry .Anchor   gdzie tekst leży względem swojego położenia: `Start`, `Middle` lub `End`
+
+% 1 1 0 0a8fee495b21d3231cfa278ee7cf3b5b
+
+@ 0 3 0 0c6154ee654f8e3e1db832c96d010ea6
++           Atrybut `text-anchor`, zapisywany tylko wtedy, gdy nie jest `Start`.
++       entry #text   wartość atrybutu: `start`, `middle` lub `end`
++     entry .Baseline   która linia tekstu leży w danym położeniu: `Alphabetic`, `Middle` lub `Hanging`
+
+% 1 1 0 0e02dd7a110a0dc4120aca8455a6847e
+
+@ 0 13 0 0beb301bae4755be10aa64af2e213c1e
++           Atrybut `dominant-baseline`. Nieustawiona linia bazowa zostawia wybór rendererowi, czyli
++           alfabetyczną linię bazową; `Hanging` zawiesza tekst poniżej położenia, czego wymaga
++           etykieta pod osią.
++       entry #text   wartość atrybutu: `alphabetic`, `middle` lub `hanging`
++     entry #position   punkt zakotwiczenia
++     entry #text   znaki, escapowane przy zapisie
++     entry #anchor   `Lettering.Anchor`
++     entry #baseline   `Lettering.Baseline` albo `Unset`
++     entry #id   identyfikator albo `Unset`
++     entry #style   CSS w wierszu albo `Unset`; deklaracje fontu są do niego dołączane
++     entry #font   `Font in Web` albo `Unset` dla domyślnego fontu renderera
++     entry #transforms   transformacje, zapisywane jako atrybut `transform`
++     entry #fonts   font, jako lista jednoelementowa, albo żaden
+
+@ 0 1 0 12c3d44a6d22bb8b1c385a50bfcc29ae
++ entry .Circle   tworzy `Ellipse` o równych promieniach: `<circle>`
+
+% 1 1 0 0bbe356bbac3bc79112fe3ce904925e7
+
+@ 0 3 0 184ed30fead6d0ae1290a8548299a4b5
++       `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` to `Svg.Ellipse` z
++       oboma promieniami równymi promieniowi i zerowym kątem. Nie ma typu `Circle`: dopasowanie
++       po figurach widzi `Svg.Ellipse`, którego `circle` jest prawdą.
+
+% 2 1 0 07e38f1b433aead3179d765fd75172d2
+
+% 3 1 0 1a7815f28dd35433153120ec4bb22056
+
+% 0 1 0 11494f920618b6b1134cb685c1a6d429
+
+% 0 1 0 155ecfccc7805a841833c4b32b44a400
+
+% 1 1 0 0b44a5571a163fab1515f6d8e116c038
+
+@ 0 1 0 048a99dafddb48470a44e60ce0cf3748
++   entry .apply   `Circle(center, radius, transforms, style, id)`: elipsa o tym promieniu
+
+@ 0 1 0 1f5795d2ab5dfadd0cd2a16508e6fa40
++ entry .Stroke   jedna operacja danych ścieżki: ruch, linia, krzywa, łuk lub zamknięcie
+
+% 1 1 0 0e9d1cab8e14b90b0335dc9a19f85240
+
+@ 0 9 0 046d430be927464d00cbb6b2002987ab
++       Przypadki łączą w pary formę bezwzględną, z przyrostkiem `To` i przyjmującą `Point`, ze
++       względną, przyjmującą `Delta`: `MoveTo(point)` / `Move(shift)`, `DrawTo(point)` /
++       `Draw(shift)`, `CubicTo(ctrl1, ctrl2, point)` / `Cubic(ctrl1, ctrl2, shift)` (których
++       pierwszy punkt kontrolny jest `Optional`: `Unset` gładko kontynuuje poprzednią krzywą, jak
++       `S` / `s`), `QuadraticTo(ctrl1, point)` / `Quadratic(ctrl1, shift)` (analogicznie `T` /
++       `t`, gdy punkt kontrolny nie jest ustawiony), `ArcTo(rx, ry, angle, largeArc, sweep,
++       point)` / `Arc(…, shift)` oraz `Close`. `Svg.Outline` przechowuje ich listę, od
++       najnowszego, a jego płynne metody je tworzą; wycinki wykresu kołowego są budowane
++       bezpośrednio z `MoveTo`, `DrawTo`, `ArcTo` i `Close`.
+
+% 2 1 0 0c51cf027029a6741a4ccf08ab6b3bd3
+
+% 3 1 0 130697da9d12d37109df4bc139b0528a
+
+% 0 1 0 16311d6ac92c76a01aace77b4e26e11f
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1c9a230863b1995d1e3c095b4ced85b7
+
+% 0 1 0 13dde68271081c2a03a0c080d3ce31b8
+
+% 0 1 0 0ee23ccf614bd01700a9a29310405222
+
+% 0 1 0 03c6a5bb7f218e2412f057a53b18e5dd
+
+% 0 1 0 11a2c465dccb49790b5ff0baa4f3aa22
+
+% 0 1 0 155cf17ec7a35f6a0b4f03be2702ca18
+
+% 1 1 0 0f9583bf3e618a3f01cd45302aaf4876
+
+% 0 1 0 04e908d0172218df0663ca8538622750
+
+% 0 1 0 190997c350639c25183b5b5610166ad7
+
+@ 0 8 0 1f7494430326bd8619e097e9ddf6ef87
++   entry .inspectable   przedstawia krok jako nazwę przypadku z polami, `MoveTo(Point(x:0.0F ╱ y:0.0F))`
++       Rozpisany ręcznie, a nie derywowany, bo forma danych ścieżki (`A 3.0 4.0 0.0 1 0 …`) gubi
++       nazwy przypadków, które czytelnik dopasowuje do źródła.
++   entry .encodable   krok jako tekst danych ścieżki, jako `stroke.encode`
++       `M x y`, `m dx dy`, `L x y`, `l dx dy` (albo `h dx` / `v dy`, gdy przesunięcie biegnie
++       wzdłuż jednej osi), `C c1, c2, p` / `S c2, p`, `Q c1, p` / `T p`, ich względne formy
++       pisane małymi literami, `A rx ry angle large sweep p` z flagami jako `1` lub `0`, oraz
++       `Z`. Łuk względny jest zapisywany z `A` i składowymi swojego przesunięcia, tak jak ma to
++       źródło.
+
+@ 0 2 0 087dabc951cce6cb1e3d680f127905d9
++ entry .Sweep   kierunek łuku: `Clockwise` lub `Counterclockwise`
++     Flaga kierunku w `Stroke.ArcTo` i `Stroke.Arc`: `Clockwise` to flaga sweep `1` w SVG.
+
+@ 0 3 0 06dfd56578205922196b901491e926f6
++ entry .Orientation   oś, wzdłuż której działa pochylenie: `Horizontal` (`skewX`) lub `Vertical` (`skewY`)
++     Drugi argument `Transform.Skew` i rozszerzenia `skew`, domyślnie `Horizontal`.
+
+@ 0 1 0 03fef6c6438371580bf7a950074a1f3d
++ entry .Transform   jeden wpis atrybutu `transform`: translacja, skalowanie, obrót, pochylenie lub macierz
+
+% 1 1 0 1498b184110eb7b703b62db7ea8ed2ca
+
+@ 0 5 0 1294352859177c6a0ce2001752b82f75
++       `Translate(vector: Delta)`, `Scale(x, y: Optional[Float])` (jednorodne, gdy `y` nie jest
++       ustawione), `Rotate(angle: Angle)`, `Skew(angle, orientation = Horizontal)` i
++       `Matrix(affine: Affine[Float])`. Lista `transforms` figury jest zapisywana po kolei,
++       rozdzielona spacjami, jako jej atrybut `transform`, a SVG stosuje je w tej kolejności;
++       płynne rozszerzenia `translate`, `scale`, `rotate`, `skew` i `transform` dołączają po
++       jednym.
+
+% 2 1 0 023a89b81086db7b1df79e6b32976db9
+
+% 3 1 0 014c58868652367a07a418a42b84f4ed
+
+% 0 1 0 117eada43ff48ad012a87b516e059f3c
+
+% 0 1 0 0d3f4e8a90633c321b42d30086fb3ad2
+
+% 0 1 0 04212f15c81033400c9bc7d8f22d062c
+
+% 0 1 0 14ee284f379d77a40655e80fa6558ef9
+
+% 0 1 0 1dc97e4e03b663a5090850a8de17402b
+
+% 0 1 0 146104f30392e35b1b27bd0b8a77b242
+
+% 1 1 0 1f6e9f696a3412f21bf5781bc53b663f
+
+% 0 1 0 0252254bbef4119b0256a66c6c1b3896
+
+% 0 1 0 0d2b4b57da1cad0d13760b97f507bcc0
+
+@ 0 6 0 125d2d4a5c230ca30015e6cf0c858d5e
++   entry .inspectable   przedstawia transformację jako nazwę przypadku z polami
++       Rozpisany przypadek po przypadku, bo instancja dla `Angle` to given najwyższego poziomu w
++       geodesy, a nie given z obiektu towarzyszącego.
++   entry .encodable   transformacja jako tekst atrybutu, jako `transform.encode`
++       `translate(dx,dy)`, `scale(x)` lub `scale(x,y)`, `rotate(degrees)`, `skewX(degrees)` lub
++       `skewY(degrees)` oraz `matrix(a,b,c,d,e,f)`.
+
+@ 0 1 0 0b538ad661ca262909adfacb7e960111
++ entry .Transformable   figura, której listę transformacji można odczytać i zastąpić, dzięki czemu stosują się do niej płynne transformacje
+
+% 1 1 0 01bba03178c0587e1d5982d671092ed1
+
+@ 0 5 0 1ed6229a4f0850bd1fdbbfcfc854164f
++       `value is Transformable` daje `transforms(value)` i `withTransforms(value, list)`.
++       Obiekt towarzyszący ma instancje dla `Svg.Rectangle`, `Svg.Outline`, `Svg.Ellipse`,
++       `Svg.Group`, `Svg.Polyline`, `Svg.Lettering` i samego `Svg`, czego wymagają rozszerzenia
++       `translate`, `scale`, `rotate`, `skew` i `transform`. `Transformable(get, put)` tworzy
++       instancję dla własnego typu z pary czystych funkcji.
+
+% 0 1 0 0a4dbde89e24e42c14fcc9338d478c14
+
+@ 0 12 0 184e348ced1390bd012fb142f5915720
++   entry .apply   `Transformable(get, put)`: instancja z gettera i funkcji zastępującej listę transformacji
++       Obie funkcje są czyste (`->`): instancja je przechowuje, a funkcja przechwytująca
++       uczyniłaby samą instancję klasy typów zdolnością.
++   entry .rectangle   transformacje `Rectangle`
++   entry .outline   transformacje `Outline`
++   entry .ellipse   transformacje `Ellipse`
++   entry .svg   transformacje `Svg`, które owijają jego figury w `<g>`
++   entry .group   transformacje `Group`
++   entry .polyline   transformacje `Polyline`
++   entry .lettering   transformacje `Lettering`
++   entry #transforms   lista transformacji wartości
++   entry #withTransforms   wartość z zastąpioną listą transformacji
+
+@ 0 6 0 074700bdc53f646d0b080bf09b578d48
++ entry .transform   dołącza dowolną `Transform` do figury: `figure.transform(Transform.Rotate(angle))`
++     Rozszerzenie dla dowolnej wartości `Transformable`, zwracające nową wartość z
++     transformacją dołączoną po tych, które już ma. Każde z pozostałych czterech rozszerzeń to
++     szczególny przypadek tego. Przy `import soundness.*` to leksykalne `transform` ma
++     pierwszeństwo przed rozszerzeniem `Affine#transform` z mosquito na skonstruowanym `Affine`;
++     tam, gdzie potrzebne są oba, tamto należy zaimportować po nazwie
++     (`import mosquito.Affine.transform`).
+
+@ 0 1 0 1f42360db2ee811200694438beced87d
++ entry .translate   dołącza translację o `Delta`: `figure.translate(Delta(3, 4))`
+
+% 1 1 0 03630288b440356d17053ac4e8c628c3
+
+% 2 1 0 1a16bf03b15040d00b646ac9e83c5256
+
+% 0 1 0 1f24307ede0980ec171023d61ebe95a8
+
+% 0 1 0 124cf80a6e10055914dd3d17f9ee8441
+
+% 0 1 0 14c7b1cf8fb52fa70d2d09c5c78efff4
+
+% 1 1 0 076636c1ae00de2c00314a64a1685382
+
+@ 0 1 0 173aa46c39abb8fc112d0a9be30fee12
++ entry .scale   dołącza skalowanie, jednorodne lub z dwoma współczynnikami: `figure.scale(2.0f)` lub `figure.scale(2.0f, 3.0f)`
+
+@ 0 1 0 16e5dcc357fc11e607367a0e8a8fc9f3
++ entry .rotate   dołącza obrót o `Angle` wokół początku układu: `figure.rotate(Angle.degrees(90))`
+
+% 1 1 0 176592b05e21ab2807d5134d3eae624b
+
+% 2 1 0 1066b6524b9711e51f53b4815173531a
+
+% 0 1 0 12c068f1a94da7521b73dcc4b2d6ccdd
+
+% 0 1 0 04f383fc59b4ec671f048724d59c747b
+
+% 1 1 0 0a68f5353bcad92911ed42b38bd94be8
+
+@ 0 2 0 182a338764615c091b576888f034c7aa
++     Transformacje składają się w kolejności stosowania: tutaj prostokąt jest przesuwany, a
++     następnie wynik obracany wokół początku układu.
+
+@ 0 1 0 157ed0ff2a08852f0f6ca72e596c2fc7
++ entry .skew   dołącza pochylenie o `Angle`, domyślnie poziome: `figure.skew(angle, Orientation.Vertical)`
+
+@ 0 1 0 1c574e5613cb8d661ba8c6779908ee3e
++ entry .Point   położenie: `x` i `y` typu `Float`
+
+% 1 1 0 17171eddf4f4cb351bd8fbb7e58f86e7
+
+@ 0 5 0 1f9233b00f1e94ed0f23a7de654e533a
++       `Point(x, y)`, przechowywany jako `Vector[Float, 2]` z mosquito. `Point` i `Delta` to
++       różne typy dla różnych rzeczy: punkt plus przesunięcie to punkt, punkt minus punkt to
++       przesunięcie, a dwóch punktów się nie dodaje. Para liczb dowolnego typu liczbowego
++       konwertuje się do `Point` tam, gdzie oczekiwany jest punkt, więc
++       `Svg.Rectangle((0, 0), 10, 5)` i `Svg.Outline().moveTo((3, 4))` nie potrzebują
++       konstruktora.
+
+% 2 1 0 1f993c201a76b2fa18ab181fd147745b
+
+% 3 1 0 12c27fc1f1d973d01f1a481ba764cf15
+
+% 0 1 0 168d4c4918f943d00739e139d42c9f0d
+
+% 0 1 0 000290bb8819496f02a59cfeea367290
+
+% 0 1 0 153a50d09b82a0f105e98a6c20afffc5
+
+% 0 1 0 1a876e694a8cbe1600d318c85d59524d
+
+% 0 1 0 0293730ce90e9e990f84f1ea29b4ddc5
+
+% 1 1 0 0da4fd2a3a276e911a2593090aea654f
+
+% 0 1 0 1b620aa02b0638bd088c67ff6b882507
+
+@ 0 10 0 0285acca1e5a3032116b519deafed4f1
++   entry .apply   `Point(x, y)` z dwóch wartości `Float`
++   entry .showable   forma danych ścieżki SVG: dwie liczby rozdzielone spacją
++   entry .inspectable   `Point(x:3.0F ╱ y:4.0F)`, by punktu nigdy nie pomylić z `Delta`
++   entry .fromTuple   para dowolnych typów liczbowych jako `Point`, wszędzie tam, gdzie oczekiwany jest `Point`
++   entry .addable   `point + delta`: przesunięty punkt
++   entry .subtractableByDelta   `point - delta`: punkt przesunięty z powrotem
++   entry .subtractableByPoint   `point - point`: `Delta` od drugiego punktu do pierwszego
++   entry #vector   leżący pod spodem `Vector[Float, 2]`
++   entry #x   współrzędna pozioma
++   entry #y   współrzędna pionowa, rosnąca w dół, jak w SVG
+
+@ 0 1 0 19675754fbbbde480801a03f16c9cca1
++ entry .Delta   przesunięcie: `dx` i `dy` typu `Float`
+
+% 1 1 0 0e7e1a1527b49de4026fe359be4760cd
+
+@ 0 4 0 0b8d38ad27cd16121fe19a24bec7c3b8
++       `Delta(dx, dy)`, przechowywane jako `Vector[Float, 2]` z mosquito. Przesunięcia można
++       dodawać, odejmować, negować i skalować przez `Int`, `Float` lub `Double` z dowolnej strony,
++       a także przesuwać nimi `Point`. Nazwane kierunki `Up`, `Down`, `Left` i `Right` to
++       przesunięcia jednostkowe, więc arytmetyka przesunięć czyta się wprost; krotka staje się
++       przesunięciem z jednoargumentowym `+` lub `-`.
+
+% 2 1 0 105468fd32782f6509f53fcf6e3b05d9
+
+% 3 1 0 11d75884a8096662024e57c5e0d8a9e8
+
+% 0 1 0 0b37e673495fe2ef18f306a5b47b878a
+
+% 0 1 0 040ee1e9a5f34c411d9d2a940169fe8f
+
+% 0 1 0 09dc78f5d436f22a1000321436c24964
+
+% 0 1 0 1baecd2843c60883055286cb2795261c
+
+% 1 1 0 188e0fb5bb3945c51f679e1d6830ecfa
+
+% 0 1 0 1721fefb328661f51326c57d703470c7
+
+% 0 1 0 0accbaf07b1697841e45e9a4d4dddbae
+
+@ 0 3 0 0ec82b1603ad32f006c4c00228967cb4
++   entry .apply   `Delta(dx, dy)` z dwóch wartości `Float`
++   entry .showable   dwie składowe rozdzielone spacją, tak jak dane ścieżki zapisują krok względny
++   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`, z etykietami odróżniającymi je od `Point`
+
+% 0 1 0 1571a1eeb7a23ddc1cf197f06e18c061
+
+% 0 1 0 041cc920e950d6b709437c0b9b389856
+
+% 0 1 0 02e5c78c518207ea12ea35bf795e1d8a
+
+% 0 1 0 159e8d64ca57acd1031606f8116d4213
+
+@ 0 1 0 09d537106a9102aa1ac8c2610d4c4477
++   entry .multiplicableDouble   `double * delta`, zaokrąglone do `Float`
+
+% 0 1 0 0df0932a882e99b5159aa9bc8ec78118
+
+% 0 1 0 1197e0b1064e12250e110e29aa215ba2
+
+@ 0 1 0 0c9866c79635bcff1408e5a039950e1b
++   entry .multiplicableByDouble   `delta * double`, zaokrąglone do `Float`
+
+% 0 1 0 06d461a08ce4b3611c90fa7596aac16b
+
+@ 0 3 0 186cd98253a2cb940b073879a98373ad
++   entry #vector   leżący pod spodem `Vector[Float, 2]`
++   entry #dx   składowa pozioma
++   entry #dy   składowa pionowa, dodatnia w dół
+
+@ 0 5 0 1a1b9b04c7ea836f16c43928fc537815
++   entry .Up   jednostkowe przesunięcie w górę: `Delta(0, -1)`, bo oś y w SVG skierowana jest w dół
++       `7*Up` to `Delta(0, -7)`.
++   entry .Down   jednostkowe przesunięcie w dół: `Delta(0, 1)`
++   entry .Left   jednostkowe przesunięcie w lewo: `Delta(-1, 0)`
++   entry .Right   jednostkowe przesunięcie w prawo: `Delta(1, 0)`
+
+@ 0 3 0 102a7baec3dc4b2503afbf1648671dfe
++ entry .unary_+   krotka dwóch liczb jako `Delta`: `+(3, 4)` to `Delta(3, 4)`
++     Rozszerzenie dla dowolnej pary typów liczbowych, dzięki któremu przesunięcie można zapisać
++     bez konstruktora: `rectangle.translate(+(3, 4))`.
+
+@ 0 2 0 02835127fdfb531e0cc2352fecf74e0b
++ entry .negatableTuple   krotka dwóch liczb zanegowana jako `Delta`: `-(3, 4)` to `Delta(-3, -4)`
++     Given `Negatable`, dzięki któremu jednoargumentowy `-` na parze daje przeciwne przesunięcie.
+
+@ 0 1 0 1b16167e55d302a51d598e7c6d0d6c99
++ entry .Stop   punkt koloru gradientu: przesunięcie w `[0, 1]` i kolor dowolnego typu `Chromatic`
+
+% 1 1 0 1baf7f77cc82eeeb0f9b5eff8fc926c0
+
+@ 0 4 0 1bb153710f68713918b55dee48dff138
++       `Stop(offset, color)`, gdzie przesunięcie to `0.0 ~ 1.0` z cardinality – liczba
++       ograniczona, więc przesunięcie spoza zakresu się nie kompiluje – a kolor to dowolny typ z
++       instancją `Chromatic`, np. wartość `WebColors` lub `Srgb`. Po wyrenderowaniu jako
++       `stop.in[Xml]` kolor ma postać sześciu cyfr szesnastkowych.
+
+% 2 1 0 1591796444acb78d0b6a46ee980b6674
+
+% 3 1 0 085b18e86d4978a215454316c2dfe5f7
+
+% 0 1 0 0fdf8ff4656033091c3b955b61e7b2e9
+
+% 1 1 0 089f9eb470ce1e7f1330d2a6901e2277
+
+% 0 1 0 175f1a93cada7442102b7a5cff901474
+
+@ 0 6 0 13bbd24357e1462607589bd894f52c55
++   entry .encodable   element `<stop>` z kolorem jako `#rrggbb`, jako `stop.in[Xml]`
++       Ograniczony jako `stop <: Stop[color]`, a nie przez goły parametr, więc jest bardziej
++       szczegółowy niż uniwersalny koder XML z xylophone.
++   entry #offset   miejsce na gradiencie, w którym leży punkt, od `0.0` do `1.0`
++   entry #color   kolor
++   entry #chromatic   instancja `Chromatic` typu koloru, przechwycona przy konstrukcji
+
+@ 0 1 0 1d3b82048428acb80a8d68ab646a2051
++ entry .Segment   surowe polecenie danych ścieżki: symbol i jego liczbowe lub logiczne parametry, jako tekst
+
+% 1 1 0 14f3150e4eb72d66138d898a13ad59c0
+
+@ 0 6 0 0e6ad8fe794695af1ac4962ab0af76ed
++       `Segment(symbol, parameters*)` renderuje się jako symbol, spacja i parametry rozdzielone
++       spacjami, z wartością logiczną jako `1` lub `0`. Niskopoziomowa funkcja pomocnicza,
++       nieeksportowana do modułu zbiorczego `soundness`; typowaną formą jest `Stroke`.
++   entry #symbol   litera polecenia
++   entry #parameters   liczby i flagi
++   entry #text   polecenie jako tekst danych ścieżki
+
+@ 0 8 0 1eb922ed1471ccad196aa32f22d40864
++ entry .Affine   dwuwymiarowa macierz afiniczna z mosquito, reeksportowana dla `Transform.Matrix`
++     `Affine(a, b, c, d, e, f)` przechowuje sześć istotnych elementów dwuwymiarowej
++     transformacji afinicznej w kolejności, w jakiej przyjmuje je `matrix(a, b, c, d, e, f)` w
++     SVG; savagery używa jej z `Float`. `Affine.identity[Float]` to macierz neutralna, a
++     rozszerzenia `transform(x, y)` i `andThen(next)` z mosquito stosują i składają macierze. Przy
++     `import soundness.*` te dwie nazwy przegrywają na skonstruowanym `Affine` z `transform` z
++     savagery i `andThen` dla funkcji, więc należy je zaimportować po nazwie:
++     `import mosquito.Affine.{andThen, transform}`.
+
+% 2 1 0 18d00d9e19c666f71a52131a869eb373
+
+% 3 1 0 1091f7143a5ec4a30edc4debbf491e4b
+
+% 0 1 0 13369e175144f8f30193a7762017dfda
+
+% 0 1 0 11d2d3356f39d1bb0fec138ada000dd7
+
+% 0 1 0 1dbfe704cecffbd1015c70abc4549c7c
+
+% 0 1 0 09b184e9ee68a8921a229b220a8fe85f
+
+% 1 1 0 1e7bd80ebda10a7a0add29eec6b27872
+
+@ 0 1 0 18fe6221f62aaad4193d8c75cdef0332
++ entry .construables   given, importowany po nazwie, który pozwala skonstruować `Svg` z jego typu mediów
+
+% 1 1 0 0c07f3d7d9a3901c1c82c5c97e26f8d8
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 0 1 0 1162d8fa985e498f135221164936da81
+
+% 1 1 0 1adca76ca22857b6101665ad11eb14a0
+
+% 0 1 0 147329cc30a7830c15ab8ed1c1431ac8
+
+@ 0 3 0 1aa7763bf33dc8ab064a7f8c1d0e707e
++       Wskazuje `Svg` jako typ konstruowany przez treść `image/svg+xml`, dla ścieżek kodu –
++       odpowiedzi HTTP, pliku według typu mediów – które wybierają typ według typu mediów.
++       `import savagery.*` go nie wprowadza.

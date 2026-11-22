@@ -1,0 +1,1503 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 095928856a7b87c9003c19e125c116bf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ab9b4e793d8620f0360221cd123c3d0
++ info   tabele dla terminala: kolumny, które zawijają się, skracają lub zwijają, aby zmieścić się w szerokości, rysowane w wybranym stylu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 07c8ec3f64fbd260183c44fb32c515d5
++     _Escritoire_ renderuje dane tabelaryczne jako tekst, dla terminala lub logu, i poważnie
++     traktuje to, czego nie potrafi łańcuch formatujący: dopasowanie kolumn o nierównej treści
++     do stałej szerokości. Każda kolumna deklaruje **strategię rozmiaru** – zawijanie jak
++     akapit, skracanie z wielokropkiem, stałą szerokość albo całkowite zwinięcie, gdy brakuje
++     miejsca – a silnik układu negocjuje między nimi szerokość, zawijając z dzieleniem wyrazów
++     tam, gdzie zawijanie jest dozwolone, i rysując wynik znakami ramek w stylu `Table.Style`
++     wybranym w zasięgu.
+
+@ 0 7 0 099bf17699c0603d09f9f104b8a0ed99
++     Trzy typy prowadzą tabelę od definicji do tekstu. `Scaffold` mówi, jak typ wiersza
++     rozkłada się na kolumny `Column` – tytuły, treść, wyrównanie, rozmiar – i nie przechowuje
++     danych. `Tabulation` to dane ułożone przez rusztowanie: tekst komórek, który nie odwołuje
++     się już do typu wiersza. `Grid` to tabulacja dopasowana do jednej szerokości, i to tu
++     kolumna może się zwęzić lub zniknąć, a `Grid#render` daje wiersze tekstu. Rozszerzenie
++     `tabulation` derywuje rusztowanie dla klasy case – kolumnę dla każdego pola, z tytułem z
++     nazwy pola – i stosuje je w jednym kroku:
+
+% 2 1 0 1c3c8d7641c3f563143392f9774375fb
+
+% 3 1 0 1be9bf7f82fa416300ecb43cb486e17e
+
+% 4 1 0 1daa686917ff022c1dd36492ec2edf93
+
+% 5 1 0 000ef79821b8cd6d058181be67717b10
+
+% 6 1 0 16990b46201f130f04b8a7638afe083f
+
+% 8 1 0 174949716ea3a4a902ea3a36cf56fd16
+
+% 0 1 0 0a933c99969146971adbeaff0d952e13
+
+% 0 1 0 0bdd87296f72401b14056af9e197f6cc
+
+% 0 1 0 0cb201a1a7e5888c1061dc4977756647
+
+% 0 1 0 0d4cc19e4ed8877a19cc6bbd56648ba5
+
+% 0 1 0 1928acc9c6f2122d1df7445f4aca7428
+
+% 0 1 0 10f6c0240f02f2a705538c8d31fbf9f0
+
+% 0 1 0 1ae9ecd62d2a9feb09e794a025b4d9d1
+
+% 0 1 0 1a08a429a3ab57f71dbcd27abb2979ad
+
+% 1 1 0 18afac828d31cd7a0795ddb0031c5988
+
+@ 0 2 0 1bc6747350bd78f7192800a52cfc8d77
++     Ułożenie tabeli wymaga czterech wartości kontekstowych, z których trzy wybiera się,
++     importując given po nazwie, ponieważ `import soundness.*` nie importuje givenów:
+
+@ 0 3 0 0d4362040fa6cb051cba4df1fa45ccf1
++     - `Table.Style` z pakietu `tableStyles` – linie, narożniki i dopełnienie;
++     - `Attenuation` z `columnAttenuation` – co się dzieje, gdy żaden układ kolumn nie mieści
++       się w szerokości: `ignoreAttenuation` mimo to renderuje, `failAttenuation` zgłasza
+
+% 0 1 0 18bda98e3df035201bfbf7fdb2eae58d
+
+@ 0 4 0 1268db66d1902ad61fa0162ffda42eb3
++     - `Text is Measurable` z pakietu `textMetrics` biblioteki hieroglyph – jak szeroki jest
++       znak, tak aby `wideCharacterWidthMetric` mierzył tekst CJK jego glifami o szerokości
++       dwóch komórek;
++     - `Hyphenation` z biblioteki polysyllabic, która w braku innego wyboru nie dzieli wyrazów,
++       chyba że zaimportowano `hyphenations.englishHyphenation`.
+
+@ 0 4 0 06088f054990026607cb291e9ac59484
++     Typem komórki jest dowolny `Textual`, którego elementami są `Char`: `Text` albo
++     `Teletype` z biblioteki escapade, dla koloru i stylu – wtedy szerokością komórki jest jej
++     widoczna szerokość, a nie długość jej kodów sterujących. Tabela jest `Printable`, więc
++     `Out.println(table)` układa ją w szerokości samego terminala.
+
+@ 0 7 0 035a5b3d3f75435310fe574fa344dfe5
++     Biblioteka to jeden zbiór źródeł, `escritoire.core`, budowany dla JVM, Scala.js i Scala
++     Native. Wszystko jest eksportowane do pakietu zbiorczego `soundness` z wyjątkiem `Layout`
++     i `Cells`, które należą do słownictwa przyrostowego silnika układu i są nazywane jako
++     `escritoire.Layout` i `escritoire.Cells`, a trzy pakiety wyboru `tableStyles`,
++     `columnAttenuation` i `columnar` łączą się z pakietami pakietu zbiorczego o tych samych
++     nazwach (`columnar` pakietu zbiorczego odzwierciedla każdą strategię oprócz
++     `ParagraphOrBreak`, nazywanej jako `escritoire.columnar.ParagraphOrBreak`).
+
+% 0 1 0 1533ba9a29e0837e05db9d84f90e1060
+
+% 0 1 0 0654786614c3936a0ed4b258ec28fe33
+
+% 0 1 0 0714919cbb0535390fb3f75ed5409dac
+
+% 0 1 0 0e190ac85cab1872158b6732c0e5e9f3
+
+% 0 1 0 08aac7f4e8505b5d0a1d38fd36dec3fa
+
+% 0 1 0 0acadc7925c00f6b05e7fb5c71f5da09
+
+% 0 1 0 1fb4685c37dd819d126e4427ef269fc0
+
+@ 0 1 0 186f893db4258575159952949d4cdcb1
++ entry .Scaffold   jak typ wiersza rozkłada się na kolumny: definicja tabeli, która nie przechowuje danych
+
+% 1 1 0 0ad772aeafca1b3617c541337ccf2dfa
+
+@ 0 5 0 13cf69a209f26bd41947094245e5571e
++       `Scaffold[row, text]` to uporządkowana lista kolumn `Column[row, text]`, budowana przez
++       `Scaffold[row](columns*)`: typ wiersza jest podany, a typ tekstu – `Text` lub `Teletype`
++       – jest wnioskowany z tytułów. Jest to etap przed danymi: `#tabulate` stosuje je do
++       `List[row]`, tworząc `Tabulation`, a `#layout` wyznacza szerokości kolumn na podstawie
++       samych tytułów, dla tabeli, która przyjmuje wiersze po jednym.
+
+% 2 1 0 0f4149b848f5baf200f30e6d4c9a750f
+
+% 3 1 0 032480b63252201705113db01b1201db
+
+% 4 1 0 1e5bc76c94dbc19a09b80c5279a9497e
+
+% 5 1 0 0a25cac0393d3a9113c6c0e30b8270c7
+
+% 6 1 0 156f791df8f1b80514f9ab3f3d06e044
+
+% 8 1 0 0f7b5df121917c241731d1da2bacc239
+
+% 0 1 0 05dd48c5e8f0a3a2163bdecd6d8b193c
+
+% 0 1 0 09bc0e714a96f3f2010eaac0ef5ae138
+
+% 1 1 0 1f99f7c6115c03371a96a563695153e3
+
+% 0 1 0 13fdd414253f330913c545a2056fb514
+
+% 0 1 0 1597df9ff60f7ac817ffe0247a785546
+
+% 1 1 0 1cc41f59339d113612c4955002f54d81
+
+@ 0 4 0 0803097aa840cfce17637153262cb5e8
++       Instancja `Tabulable` dla typu to funkcja zwracająca jego rusztowanie, więc typ, którego
++       kolumny nie są jego polami – rekord odczytany ze schematu albo obliczone kolumny do
++       wyświetlenia – tabularyzuje się, podając taką instancję. Derywowana instancja dla klasy
++       case buduje rusztowanie z jedną kolumną na każde pole.
+
+% 1 1 0 032a86194560c7860e1141455ac2f106
+
+% 1 1 0 150cf24210914690152e681b3e9aad8e
+
+% 1 1 0 02aadae0a18d7bad17a9a03bf5e40f31
+
+@ 0 24 0 02c8541d9fc4e7bd0f5d25717623c16e
++   entry .apply   `Scaffold[row](columns*)`: rusztowanie z podanych kolumn, w kolejności
++       Typ wiersza jest jedynym jawnym argumentem typu; typ tekstu jest wnioskowany z kolumn,
++       które wszystkie go współdzielą. Tytuł zapisany jako `t"…"` daje `Scaffold[row, Text]`;
++       zapisany jako `e"…"` daje `Scaffold[row, Teletype]`. Metoda przyjmuje wymazany parametr
++       `Void` między swoimi dwiema listami parametrów typu wyłącznie po to, aby typ wiersza
++       można było podać bez typu tekstu.
++   entry #columns0   kolumny, tak jak przekazano je do konstruktora
++       Parametr powtarzalny, z którego zbudowano rusztowanie; `#columns` to te same kolumny
++       jako tablica, którą czyta silnik układu.
++   entry #columns   kolumny jako tablica, w kolejności
++   entry #titles   komórki tytułów, jeden ich wiersz, każdy tytuł pocięty na wiersze tekstu
++       Tytuł może zawierać `\n`, co daje tytuł złożony z kilku wierszy; tytuły są przechowywane
++       jako lista jednoelementowa, aby można je było mierzyć i renderować jak każdy wiersz.
++   entry #cells   wiersz wyrażony przez kolumny, przed jakimkolwiek układem
++       `scaffold.cells(row)` odczytuje z wiersza treść każdej kolumny, tnie ją na wiersze
++       tekstu i mierzy ich szerokości, dając `Cells[text]`. Komórki nie zależą od żadnej
++       szerokości, więc można je sprawdzić względem `Layout` przez `Layout#accommodates`,
++       przyjąć przez `Layout#extend` i później wyrenderować według niego. Wymaga
++       `Text is Measurable`.
++   entry #layout   układ samych tytułów przy danej szerokości
++       `scaffold.layout(width)` wyznacza szerokości kolumn na podstawie roszczeń tytułów i
++       niczego więcej, dla tabeli budowanej przyrostowo: każdy wiersz wyraża się następnie
++       przez `#cells` i przyjmuje przez `Layout#extend`, które ponownie wyznacza szerokości
++       tylko wtedy, gdy komórki wiersza przekraczają to, co układ już widział. Wymaga w zasięgu
++       `Table.Style`, `Text is Measurable` i `Attenuation`.
+
+% 2 1 0 0a4e0130f39777230b9a5b284669ba00
+
+% 3 1 0 1f9c6d572d99634716a7200b6589a799
+
+% 4 1 0 0ac1f2f5bcaa87321a6cee6aad92ff60
+
+% 5 1 0 019cdfdc7944953d1875ac2f3bdf29b3
+
+% 6 1 0 0fd0126b046b38b10ee4d1385de47f61
+
+% 8 1 0 178d970dc95073b110e79ec24a6354ac
+
+% 9 1 0 12567b76eecab5b31ff61933855e6e54
+
+% 0 1 0 1aabe5dc8dd9c08d08e78dbc28afdf0a
+
+% 0 1 0 065fc42d5e73752e10e305f0a46eb3b1
+
+% 0 1 0 14443d6e4b917b4e0687c7d4091e91b4
+
+% 0 1 0 0bc9a9e06b8026e317e42d57188c9208
+
+% 0 1 0 1c603a6e5fb78e4c159b91a58652087e
+
+% 1 1 0 1b256aedaec410cd1bf1d49fc63afe41
+
+@ 0 4 0 0c33ddfa64a14ade051236ae8e000ba1
++   entry #tabulate   rusztowanie zastosowane do danych: `Tabulation`
++       `scaffold.tabulate(rows)` od razu odczytuje każdą kolumnę każdego wiersza jako tekst i
++       zapisuje dekoracje komórek każdego wiersza, więc wynik odwołuje się do typu wiersza
++       tylko jako do swojego składowego typu `Row`. Liczba wierszy jest ustalana raz, przy
++       budowie tabulacji.
+
+@ 0 1 0 16e5c43b2c514e561bc0330455edda74
++ entry .Column   jedna kolumna tabeli: jej tytuł, sposób odczytania komórki z wiersza i sposób wymiarowania
+
+% 1 1 0 0557c6ce0ab8bcb4138503d1f9b19622
+
+@ 0 4 0 15b9300eba125c04110460fbdec7eed6
++       `Column[row, text]` to tytuł, funkcja `#get` z wiersza w tekst komórki, wyrównanie
++       poziome i pionowe, strategia rozmiaru `Columnar` oraz opcjonalna dekoracja `#decorate`
++       dla każdego wiersza, stosowana do całej wyrenderowanej komórki. Zwykle kolumnę tworzy
++       się fabryką `Column.apply`; konstruktor klasy case przyjmuje każde pole jawnie.
+
+% 2 1 0 11b1789dad1e720319df90e33df20d3b
+
+% 3 1 0 1e23ffd19478818811fe238001204a40
+
+% 5 1 0 09f467296f15370c14474a4b406b41d6
+
+% 0 1 0 0735403db3d8866212fc89930ee2a1b5
+
+% 0 1 0 0c190945140937950b5334aebd736637
+
+% 0 1 0 085e11c0e92c2c061131cebbc2031e39
+
+% 0 1 0 1d5583d6e492b43e1c71df13ab47ca38
+
+% 0 1 0 1b5878396222e05e048afc64dec266e4
+
+% 1 1 0 03dabe431fce24d207cdad5e7b9d94c1
+
+@ 0 4 0 1fbb6521811ddeb519b3875b4f4b47ef
++       Wynik lambdy nie musi być tekstem: tytuł ustala typ tekstu, a wartość jest pokazywana
++       przez `Show` tego typu, więc `_.age` daje kolumnę wartości `Int` pokazanych jako tekst.
++       Domyślne wyrównanie pochodzi z `Column.Alignment[cell]` – liczby do prawej, tekst do
++       lewej – chyba że podano `textAlign` lub `verticalAlign`.
+
+% 1 1 0 0f5ad073c14a9b9112a1cdcf37372a23
+
+% 1 1 0 096d0ba24084c2ef0a29bfce5f8c59ea
+
+% 1 1 0 0cda5ed0e31c2ccd1e7fe3527d953176
+
+@ 0 6 0 07f16acfce9ae77a1102251eabb74558
++   entry .apply   `Column(title, textAlign, verticalAlign, sizing, decorate)(get)`: tworzy kolumnę
++       Pierwsza lista parametrów to tytuł i cztery opcjonalne ustawienia; druga to funkcja z
++       wiersza w wartość komórki, pokazywaną przez `Show` typu `Textual` tytułu. `textAlign` i
++       `verticalAlign` domyślnie przyjmują `Column.Alignment` dane dla typu komórki (`topLeft`,
++       gdy żadnego nie zdefiniowano); `sizing` domyślnie to `columnar.Paragraph`; `decorate`
++       domyślnie nie dekoruje.
+
+@ 0 3 0 19b3bf3f887550b61ef40c173df847ef
++       `decorate` to funkcja z wiersza w opcjonalne przekształcenie wyrenderowanej komórki –
++       treści i dopełnienia razem, po wyrównaniu – więc tabela `Teletype` może zamalować tło
++       całej komórki w zależności od wiersza, a dopełnienie także zostaje zamalowane:
+
+% 2 1 0 059beb5c4ddb65ba1087e86b2a4c6622
+
+% 3 1 0 130d093f823229c80fe45e4dfa4ff64d
+
+% 5 1 0 184f6f4f0e8e74fe098a646fc42b0bcb
+
+% 0 1 0 0cac9ec5634d4f46112fc40f2df5f30c
+
+% 0 1 0 1c94a3eebac7e4091da800c020dd43b0
+
+% 0 1 0 0db6d05ecd08f0650dfe3ea2d3d6f6ef
+
+% 0 1 0 1c7e2b6baf7058fc19c7b67bed0c7a2e
+
+% 0 1 0 1a370630b445212719da4ea3b65218a2
+
+% 1 1 0 0c42fea1f322cf541a4d8bdb3f4c7d2f
+
+@ 0 4 0 05e4621897b799e21c3ef6820b9e555e
++       Typ wiersza jest wnioskowany z lambdy albo podawany jawnie jako
++       `Column[Person, Text, Text](t"Name")(_.name)`, którego trzy argumenty typu to wiersz,
++       wartość komórki i typ tekstu.
++   entry .Alignment   domyślne wyrównanie tekstu i wyrównanie pionowe dla typu komórki
+
+% 1 1 0 16ec30c3096a105b0634eca98d6ad2a0
+
+@ 0 6 0 0b48c95074446f950f26e428d35535fc
++         `Column.Alignment[cell]` to wyrównanie, które przyjmuje kolumna wartości `cell`, gdy
++         `Column.apply` nie otrzymuje ani `textAlign`, ani `verticalAlign`: `Byte`, `Short`,
++         `Int` i `Long` są wyrównywane do prawej, `Text` do lewej, wszystkie do góry. Givens są
++         w obiekcie towarzyszącym, więc kolumna wartości `Int` jest wyrównana do prawej bez
++         importu; `topLeft` jest domyślne dla każdego innego typu. Typ jest kontrawariantny
++         względem typu komórki, więc wyrównanie dla `Any` służy każdemu typowi.
+
+% 2 1 0 1ec2d955ba95b00312f4e19a44156de4
+
+% 3 1 0 12053bc4cb4aa54d080c5da5a2c09b9d
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 09d91827be7882e51c6b831e0a3b9838
+
+% 0 1 0 01db5c232c2b009a01bf2ee72d19b9d3
+
+% 1 1 0 1058f95304f4d6df1336876734d6f75f
+
+@ 0 25 0 0283022d080cdde10c0ecffdea677e7a
++     entry .topLeft   do lewej, u góry: domyślne dla typu bez własnego wyrównania
++     entry .byte   komórki `Byte` wyrównują się do prawej
++     entry .short   komórki `Short` wyrównują się do prawej
++     entry .int   komórki `Int` wyrównują się do prawej
++     entry .long   komórki `Long` wyrównują się do prawej
++     entry .text   komórki `Text` wyrównują się do lewej
++     entry #text   wyrównanie poziome: `Left`, `Right`, `Center` lub `Justify`
++     entry #vertical   wyrównanie pionowe: `Top`, `Middle` lub `Bottom`
++   entry #title   nagłówek kolumny, w typie tekstu tabeli
++   entry #get   tekst komórki dla wiersza
++       Funkcja z wiersza w komórkę, już pokazaną jako tekst. W kolumnie utworzonej przez
++       `Column.apply` jest to lambda złożona z `Show` typu komórki.
++   entry #textAlign   jak wiersze tekstu komórki układają się w szerokości kolumny
++   entry #verticalAlign   gdzie znajduje się niska komórka w wierszu, który inne komórki uczyniły wyższym
++   entry #sizing   strategia `Columnar`, która decyduje o roszczeniu kolumny do szerokości
++   entry #decorate   przekształcenie wyrenderowanej komórki zależne od wiersza albo `Unset`, gdy go brak
++       Stosowane przez renderer po wyrównaniu i dopełnieniu, do całej komórki wraz z jej
++       odstępem, więc zamalowane tu tło pokrywa komórkę od krawędzi do krawędzi, a linie
++       pozostają bez dekoracji. Renderer nie wie nic o stylach: funkcja działa w typie tekstu
++       samej tabeli.
++   entry #contramap   ta sama kolumna, odczytująca z innego typu wiersza
++       `column.contramap(lambda)` dostosowuje kolumnę zdefiniowaną dla jednego typu wiersza do
++       dowolnego typu, z którego `lambda` potrafi utworzyć ten wiersz, zachowując tytuł,
++       wyrównanie, rozmiar i dekorację. W ten sposób kolumna zdefiniowana raz służy każdemu
++       typowi, który potrafi dostarczyć jej wartość:
+
+% 2 1 0 1716170d519c666d00426226fd43c0e4
+
+% 3 1 0 118137077992d9750ff3221bc17777da
+
+% 5 1 0 0424ba4d38d02fb817ae0e1d3c184a65
+
+% 0 1 0 1710987aa763233a12f8ea48d417f67a
+
+% 0 1 0 02df3ca5f32b5bd8155d22148c4f3680
+
+% 1 1 0 09f2700158de481f005d7dc115d9bb1c
+
+@ 0 3 0 156bf7bbed29b2a61e22c9d87876fa0e
++   entry #retitle   ta sama kolumna z innym tytułem
++       Dla wspólnej definicji tabeli, w której jeden z wywołujących chce innego nagłówka.
++       Derywowany `Tabulable` dla klasy case używa jej, aby nadać tytuł kolumnie każdego pola.
+
+@ 0 1 0 097cf5f8e7936e9410e5dda4d4d62fc3
++ entry .Columnar   strategia rozmiaru kolumny: jak kolumna rości sobie szerokość i jak komórka zostaje do niej dopasowana
+
+% 1 1 0 06dd487dc8259f1a013b2b6688529fea
+
+@ 0 5 0 126c4ecca2e4ef5d1dbc709678d76e43
++       `Columnar` odpowiada na dwa pytania. `#flex` opisuje roszczenie kolumny do szerokości
++       tabeli – jej szerokość minimalną i naturalną, jej apetyt na wolne miejsce i to, czy
++       może się całkowicie zwinąć – na podstawie zagregowanych `Metrics` wszystkich wierszy
++       tekstu, które kolumna wyświetli. `#fit` układa następnie wiersze jednej komórki w
++       szerokości ustalonej przez tabelę: zawijając, tnąc, skracając z wielokropkiem albo
++       pozostawiając je bez zmian.
+
+@ 0 7 0 0514a8fe66de1a5905d6084bb09739bb
++       Roszczenie jest funkcją wyłącznie zagregowanych metryk, które są maksimum metryk
++       każdego wiersza tekstu, więc układ może przenosić agregat, przyjąć nowy wiersz,
++       włączając do niego jego komórki, i wiedzieć – przez `#accommodates` – kiedy wiersz w
++       ogóle nie może zmienić kolumny. Dostępne strategie znajdują się w pakiecie `columnar`:
++       `Paragraph`, `ParagraphOrBreak`, `Fixed`, `Shortened` i `Collapsible`. Pojęcie jest
++       otwarte: własna strategia to obiekt lub klasa rozszerzająca `Columnar`, która
++       implementuje `flex(metrics, maxWidth)` i `fit`.
+
+@ 0 3 0 1e413edd5687623a06499fd664254f18
++       Szerokości wyznacza `Flex.solve` z biblioteki tessellate: dopóki minima kolumn nie
++       mieszczą się w szerokości, odrzucana jest zwijalna kolumna o najniższej randze; pozostałe
++       dzielą następnie szerokość proporcjonalnie do swojej wagi, w swoich granicach.
+
+% 1 1 0 03716a0d61bc0e910a6bfb4b2119572d
+
+% 1 1 0 1cda5137271126701c8af3b62e016f5c
+
+@ 0 18 0 167319ef49a50cac0bed215b0a6393aa
++   entry .metrics   zagregowane wewnętrzne szerokości pewnych wierszy tekstu
++       `Columnar.metrics(lines)` to maksimum `Flow.metrics` każdego wiersza tekstu: `Metrics`,
++       których `min` to najszersze niełamliwe słowo, a `natural` to najszerszy wiersz. Z niego
++       wywodzi się roszczenie każdej strategii. Wymaga `Text is Measurable`.
++   entry #flex   roszczenie kolumny do szerokości, na podstawie metryk jej treści
++       Postać abstrakcyjna, `flex(metrics, maxWidth)`, zwraca `Flex` z biblioteki tessellate:
++       minimalną i naturalną szerokość kolumny, jej wagę przy dzieleniu wolnego miejsca,
++       opcjonalne maksimum oraz to, czy kolumna się zwija, z rangą mówiącą, jak chętnie.
++       Przeciążenie przyjmujące tablicę wierszy tekstu najpierw mierzy je przez
++       `Columnar.metrics`.
++   entry #accommodates   czy komórka mieści się już w zagregowanym roszczeniu kolumny
++       `accommodates(aggregate, cell)` jest prawdziwe, gdy przyjęcie komórki o wewnętrznych
++       szerokościach `cell` pozostawia roszczenie – a więc i wyznaczone szerokości – bez zmian:
++       domyślnie wtedy, gdy jej szerokość minimalna i naturalna mieszczą się w szerokościach
++       agregatu. Strategia, której roszczenie pomija treść, nadpisuje je jako `true`, tak jak
++       robi to `columnar.Fixed`.
++   entry #fit   wiersze jednej komórki ułożone w szerokości ustalonej dla kolumny
++       `fit(lines, width, textAlign)` daje wiersze tekstu, które komórka wyświetla przy
++       szerokości `width`: zawinięte, pocięte, skrócone lub niezmienione, zależnie od strategii.
++       Wymaga `Text is Measurable` i `Hyphenation`, których strategie zawijające używają w
++       miejscach miękkiego podziału.
+
+@ 0 1 0 0a4015177a533e4608d86863f262e1e9
++ entry .columnar   strategie rozmiaru, każda będąca `Columnar` do wskazania w `sizing` kolumny `Column`
+
+% 1 1 0 001c6a9016030d801c5074159e08cad4
+
+@ 0 4 0 015c4ee1d2532c3a0d0aaa94ee0443a5
++       Strategie, które można nadać kolumnie, jako `sizing = columnar.Paragraph`. Są to obiekty
++       i klasy case, nie givens, więc `columnar.Paragraph` wskazuje się przy kolumnie; pakiet
++       istnieje po to, aby trzymać pięć nazw razem. Każda `Column` domyślnie używa `Paragraph`.
+
+@ 0 5 0 1fd7e0ca8fee1f150d7ff8a6df87ae62
++       O tym, która kolumna ustępuje pierwsza, gdy tabela jest za wąska, decydują strategie
++       wspólnie: kolumna `Collapsible` jest odrzucana, zanim cokolwiek innego zostanie ściśnięte,
++       najpierw ta o najwyższym progu; kolumna `Paragraph` zwęża się do swojego najdłuższego
++       słowa; kolumna `Fixed` nigdy się nie zmienia. Poniżej szerokości, przy której mieszczą się
++       minima, o tym, co się dzieje, decyduje `Attenuation` w zasięgu.
+
+% 2 1 0 054026c74a041d8f0594813067e0b13f
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0507dbfb6e78679212b4d09427049036
++         label Cztery kolumny w szerokoÅci, ktÃ³ra mieÅci je wszystkie
+
+% 1 1 0 1f16c9492479bbfc1d8bb797f4d28dfa
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 005e222dbd25f2d2051a12a129516222
+
+% 0 1 0 10ae11b7cd79fc430a817a2c431e17fa
+
+% 0 1 0 01ab3e628e2569af1d53b50b294be591
+
+% 0 1 0 1d32d0a653503b0617ccfc7fdc17876c
+
+% 0 1 0 0b720ddcee37421b1f6b71fad8964cad
+
+% 0 1 0 1158d1ee4590c91002c1cf394d8458dc
+
+% 0 1 0 0ca047fc40646cfc0d671c109389e25b
+
+% 0 1 0 095d49149687c8840e8dacd9ed2f5b31
+
+% 0 1 0 1e6a62d8ab955360047302060286fee1
+
+% 0 1 0 1c708dddfaa5c7f41fb6619975d05f80
+
+% 0 1 0 1ee50527a28a9b861406f328bfb27e52
+
+% 0 1 0 11d29021897434ea15b2a22261487afb
+
+% 0 1 0 128748c668ca2bd71f3948b5ff2c89b2
+
+% 1 1 0 07dbc942c065af100461933a737fc0c1
+
+@ 0 1 0 0a09a81f3dcbd9e9035b0ec0e04da198
++         label WÄziej: identyfikator, najbardziej zwijalna kolumna, znika pierwszy
+
+% 1 1 0 1ada8590e5d9ce951f38b8798cc3f879
+
+% 0 1 0 1934c501c05d223100702cf5011292c2
+
+% 1 1 0 0ce406f58ae96a31126e7a9299eb6212
+
+@ 0 1 0 1f08d76234bb391509ce642a3ace22a1
++         label Jeszcze wÄziej: opis siÄ zawija, poniewaÅ¼ akapit zwÄÅ¼a siÄ, zanim zniknie zwijalna kolumna o niskim progu
+
+% 1 1 0 0a2ea88228bcbe0714159f25cb8837aa
+
+% 0 1 0 14c8357ec235a03c073f4ad4f70fb4bd
+
+% 1 1 0 044e78c215e9b0a71f3553355a1f1fa3
+
+@ 0 1 0 1e90a930e0e8e46d0d82deb6b3bf12a4
++         label Przy najmniejszej szerokoÅci znika teÅ¼ liczba wierszy i zostajÄ tylko nazwa oraz zawiniÄty opis
+
+% 1 1 0 1236c97b55ce37a11c976ce308d9abff
+
+% 0 1 0 0338ff5ac3b993b91242835383eba058
+
+% 1 1 0 1bf991069964165518af02c262661706
+
+% 2 1 0 1e077409cb89f9890611e67c37cb31fa
+
+% 1 1 0 044ea6d591bc7a141c88b52f6d5a9f9b
+
+% 1 1 0 0eec5046767cbe731ba2298f19e0086f
+
+@ 0 12 0 1ee00c73a5051e751c64632aa8b134e5
++   entry .Paragraph   zawija na granicach słów; może zwęzić się do najdłuższego słowa, nigdy nie rośnie ponad najdłuższy wiersz
++       Strategia domyślna. Jej roszczenie to `Flex.content`: minimum równe najszerszemu
++       niełamliwemu słowu, szerokość naturalna równa najszerszemu wierszowi i waga równa ich
++       różnicy, więc kolumna, która ma więcej do wchłonięcia, bierze więcej wolnej szerokości.
++       Komórkę dopasowuje się przez `Flow.wrap`, które łamie wiersze na spacjach i w miejscach
++       miękkiego podziału wskazanych przez `Hyphenation` w zasięgu, i nigdy poniżej minimum:
++       słowo dłuższe niż szerokość wystaje poza nią, zamiast zostać ucięte.
++   entry .ParagraphOrBreak   zawija na granicach słów, gdzie może, i tnie w środku słowa, zamiast wystawać
++       Elastyczna między pojedynczą komórką a swoją szerokością naturalną, więc nie ma dolnej
++       granicy najdłuższego słowa: pod dostatecznym naciskiem komórka węższa niż jej
++       najszersze słowo jest dopasowywana przez `Flow.chop`, które tnie wiersze przy
++       szerokości tam, gdzie `Paragraph` by wystawał. Dla kolumn identyfikatorów, adresów URL
++       lub haszy, które źle się zawijają, ale nie mogą się wylewać. Nie jest odzwierciedlona w
++       pakiecie `columnar` pakietu zbiorczego, więc nazywa się ją w pełni jako
+
+% 0 1 0 1b26157efb8b40c30f2717acdd6b213d
+
+@ 0 1 0 02c423a408950dd2126427fd5727707b
++   entry .Fixed   kolumna o szerokości dokładnie `fixedWidth`, niezależnie od treści, skracana z wielokropkiem
+
+% 1 1 0 04b3a6e54a31b32816ce612144768a23
+
+@ 0 3 0 19895faf7531634715f3327bedf6eea2
++         Roszczenie kolumny jest sztywne i wynosi `fixedWidth`, a kolumna przyjmuje każdą
++         komórkę, ponieważ jej szerokość nie zależy od treści; komórka dłuższa niż szerokość jest
++         skracana przez `Flow.shorten` i kończy się `ellipsis` (`…`, chyba że podano inny).
+
+% 2 1 0 0a5c25c6509bc736150b967d5614e2e8
+
+% 3 1 0 1443911d7ee360661b7e130f8c6b6ee4
+
+% 4 1 0 04a9949514b7f4dc101169577292b593
+
+% 5 1 0 1a274662a76c000a11a3cb650316931c
+
+% 6 1 0 07ba6fc13d8b4723176a7ac9cb4be9d3
+
+% 0 1 0 1f34de467f7a85a71bb142beaf713df3
+
+% 0 1 0 1877e07315af70d41f8890f954653e03
+
+% 1 1 0 17e7b11b56fccf401348b255c9462f0e
+
+@ 0 3 0 08d7fc6e80f6961f0a34aee6471203df
++     entry #fixedWidth   szerokość w komórkach
++     entry #ellipsis   tekst kończący skróconą komórkę: domyślnie `…`
++   entry .Shortened   elastyczna między jedną komórką a szerokością naturalną; to, co przekracza ustaloną szerokość, jest ucinane z wielokropkiem
+
+% 1 1 0 1128db5dbeb5872c10f0d02f446d3066
+
+@ 0 7 0 0054b19fac2002d30ca16d24269cf17b
++         Podobnie jak w `Fixed`, komórka, która się nie mieści, jest skracana z wielokropkiem,
++         ale szerokość jest negocjowana, a nie stała: kolumna rości sobie szerokość naturalną,
++         może zwęzić się do jednej komórki i bierze wolną szerokość proporcjonalnie do różnicy.
++         `fixedWidth` nazywa pole, ale nie ogranicza roszczenia.
++     entry #fixedWidth   pole, z którym skonstruowano strategię
++     entry #ellipsis   tekst kończący skróconą komórkę: domyślnie `…`
++   entry .Collapsible   sztywna przy szerokości naturalnej, ale całkowicie usuwana z tabeli, gdy brakuje miejsca
+
+% 1 1 0 04e6f4a8fbd45d1f02e4341cd5e4fa10
+
+@ 0 5 0 00d8bc6178cbd5691b7b91aaea526861
++         Kolumna rości sobie dokładnie swoją szerokość naturalną i nigdy się nie zawija; gdy
++         minima kolumn nie mieszczą się w szerokości tabeli, kolumny zwijalne są odrzucane jedna
++         po drugiej, najpierw te o najwyższym progu `threshold`, aż reszta się zmieści.
++         Odrzucona kolumna nie kosztuje ani dopełnienia, ani linii. Progi mają znaczenie tylko
++         względem siebie, więc zwijalne kolumny tabeli są według nich szeregowane:
+
+% 2 1 0 07210a736482574011441052ffb53ea0
+
+% 3 1 0 0fc4c770ec58ca5f0b77a4ac41b94548
+
+% 4 1 0 095ae08837b61744066543167d71f33e
+
+% 5 1 0 09e2ca62c93c29721ba166d81205a9cb
+
+% 6 1 0 0f280dc4db892a3104a69afd2a203c88
+
+% 8 1 0 1819a4da142194c404845b49d46fd620
+
+% 0 1 0 0eee517777d7d4a80ca270d7320ce348
+
+% 1 1 0 082d8a8a18f888e3160c41afb3f89601
+
+% 0 1 0 160cd6177b032e08161b934045eaec10
+
+% 0 1 0 185172cd372f257405ccbaa6fd04a960
+
+% 0 1 0 1320f329659aa52c0d72d83eebf33fc5
+
+% 0 1 0 124ba8310c717c161af266b571b68b2c
+
+% 1 1 0 1d7d4e797b9a8b1d0140e64645386b75
+
+@ 0 1 0 08b23285abf54b7e148b5af9c64a1f43
++     entry #threshold   między `0` a `1`: jak chętnie kolumna się zwija, wyższe najpierw
+
+@ 0 1 0 1f6137fa530e9ef606d5d2a9341795dd
++ entry .Tabulation   dane ułożone przez rusztowanie: tekst komórek, gotowy do ułożenia w dowolnej szerokości
+
+% 1 1 0 11345f57ffb54bd31bcbadce0f198614
+
+@ 0 5 0 112d17664124374d0d3afb4bc289704b
++       `Tabulation[text]` to to, co `Scaffold#tabulate` (lub rozszerzenie `tabulation`) tworzy
++       z listy wierszy: każda komórka jest już odczytana jako tekst i pocięta na wiersze tekstu,
++       tak samo tytuły, wraz z dekoracjami każdego wiersza, a typ wiersza przetrwał jedynie jako
++       składowy typ `#Row`. Tabulacja nie zależy od żadnej szerokości: `#grid` dopasowuje ją do
++       jednej, a `#layout` wyznacza szerokości bez renderowania.
+
+% 2 1 0 1ecbcdbdc6db018811d8f46ec2e36f97
+
+% 3 1 0 1ca7b69f0bfced04035f1ca0bca69935
+
+% 4 1 0 0dd4820d7cb0fde10b7cd1e59cd6b5ae
+
+% 5 1 0 0ef23bac71bcfcb110640da5c6ab0747
+
+% 6 1 0 1c15b595355a9c0b169d0e5220d257ee
+
+% 8 1 0 00515848cfda9fad1292156fed00b111
+
+% 5 1 0 1f9bd3aaf70f887e0c99225205c32eda
+
+% 0 1 0 1b67d5af736278e513743a77366ff6e0
+
+% 0 1 0 1746775bdd709a191a15be972bb7fea3
+
+% 0 1 0 0bbdabd5b5efcf790eb431c6289c98b0
+
+% 1 1 0 13fa4905c4d736b61189f141d8ab70b5
+
+@ 0 3 0 10d8b4da85e699ae14eae9a58f819416
++       Tabulacja jest `Printable` przez `.printable`, więc `Out.println(tabulation)` układa ją
++       w szerokości terminala ze stylem, metryką, osłabieniem i dzieleniem wyrazów z zasięgu.
+
+% 1 1 0 00714b1e281bb8db17c2ced00d3bcd3d
+
+% 0 1 0 1a068b2df139f5b01d502af0b09eac40
+
+% 1 1 0 0536447c4a20415b14970f03d53a54f4
+
+@ 0 23 0 1adbd874e7f0a2410b16350c54f03142
++   entry .printable   drukuje tabulację w szerokości terminala
++       Given `Printable`, który układa tabelę w szerokości `termcap.width` i drukuje każdy
++       wiersz przez własny `Printable` typu tekstu. Wymaga w zasięgu `Table.Style`,
++       `Text is Measurable`, `Attenuation` i `Hyphenation` oraz `Printable` typu tekstu.
++   entry #Row   typ wiersza, z którego utworzono tabulację
++   entry #columns   kolumny rusztowania
++   entry #titles   wiersz tytułów: wiersze tekstu każdego tytułu
++   entry #rows   każdy wiersz danych: wiersze tekstu każdej komórki
++   entry #dataLength   liczba wierszy, policzona raz przy budowie tabulacji
++   entry #decorations   dekoracje każdego wiersza dla poszczególnych kolumn, zgodne z `#rows`; puste, gdy ich brak
++       Obliczane przy budowie tabulacji, ostatnim momencie, w którym istnieją wartości wierszy.
++   entry #layout   wyznaczone szerokości kolumn przy danej szerokości, z roszczeń tytułów i każdego wiersza
++       `tabulation.layout(width)` włącza komórki każdego wiersza do zagregowanych roszczeń
++       kolumn i raz wyznacza szerokości, dając `Layout`. Jego `widths` to szerokości, z którymi
++       renderuje `#grid`. Wymaga `Table.Style`, `Text is Measurable` i `Attenuation`.
++   entry #grid   tabulacja dopasowana do szerokości: `Grid`, którego `render` daje wiersze tekstu
++       `tabulation.grid(width)` wyznacza układ tak jak `#layout`, dopasowuje każdą komórkę do
++       szerokości jej kolumny i buduje `Grid` z dwóch sekcji – tytułów i wierszy – o wspólnych
++       szerokościach. Jeśli minima kolumn przekraczają `width` nawet po usunięciu każdej
++       zwijalnej kolumny, informowany jest `Attenuation` w zasięgu:
++       `columnAttenuation.failAttenuation` zgłasza `Table.Error`, a `ignoreAttenuation`
++       pozwala tabeli wystawać. Wymaga `Table.Style`, `Text is Measurable`, `Attenuation` i
++       `Hyphenation`.
+
+@ 0 1 0 0e22b3ea3c15208c18048050e9a7f69a
++ entry .Grid   tabela dopasowana do szerokości: sekcje wierszy przy ustalonych szerokościach kolumn, w danym stylu
+
+% 1 1 0 00c501401e9a49c11e10af9d2f8592cd
+
+@ 0 5 0 101774de23f5d44a07e6c14d24e6b20a
++       Ostatni etap przed tekstem. `Grid[text]` to lista sekcji `Table.Section` – każda to ciąg
++       wierszy `Table.Row` o wspólnych szerokościach kolumn – oraz `Table.Style`, w którym się
++       je rysuje. `Tabulation#grid` tworzy siatkę z dwiema sekcjami, tytułami i danymi;
++       `#render` rysuje ją jako `Chain` wierszy tekstu, z linią między sekcjami i górną oraz
++       dolną linią stylu wokół nich.
+
+% 2 1 0 092b3d09d4cc014007c1cb4025b904fe
+
+% 3 1 0 09a7ddf98732fe9803281bbb30cd2609
+
+% 4 1 0 11403dd6ee13d8e601440286f6ae596d
+
+% 5 1 0 115841f681753e9f0023da675d56d13a
+
+% 6 1 0 0943881071d320691f3ee1eb4aa52b8a
+
+% 8 1 0 0ad60f9609fa8c4f07acfc6d02603abd
+
+% 0 1 0 1dee97abd17142e21f28c06cb952d17a
+
+% 0 1 0 10c11ccd5a8dea4a062bb23c21c5dfb3
+
+% 0 1 0 0d9e0785fd10999d15ac727c40f55ebb
+
+% 1 1 0 03c5423c9a472566137d46c0232732e1
+
+@ 0 1 0 0cda048cd1c5789b09c450ea6eea8091
++       Siatka jest `Printable` przez `.printable`, więc można ją wydrukować bezpośrednio.
+
+% 1 1 0 11d0fb94e45637fc0a7a7b93d109b719
+
+% 1 1 0 0e9a7ab812d3c8ab126136cb51e2eb9f
+
+% 1 1 0 13a100aa32ae45951227d185f42c9046
+
+@ 0 21 0 1ccb62efffcbbe7f0d43a1fce2e372d3
++   entry .printable   drukuje siatkę, jeden wyrenderowany wiersz na wiersz terminala
++       Given `Printable`: `render` połączone znakami nowego wiersza, każdy wiersz drukowany
++       przez własny `Printable` typu tekstu. Wymaga `Text is Measurable` i `Printable` typu
++       tekstu.
++   entry .rowLines   wizualne wiersze tekstu jednego wiersza tabeli według szerokości jego kolumn
++       `Grid.rowLines(style, widths, row)` to `row.height` wierszy tekstu: każda komórka
++       dopełniona do szerokości swojej kolumny i wyrównana pionowo, otoczona dopełnieniem
++       stylu, udekorowana, jeśli komórka ma dekorację, i połączona glifami krawędzi stylu.
++       Dopełnienie odstępu należy do komórki, więc dekoracja pokrywa komórkę od krawędzi do
++       krawędzi, a linie pozostają gołe. Używane przez `Grid#render` i `Layout#lines`.
++   entry .rule   pozioma linia w poprzek kolumn o podanych szerokościach
++       `Grid.rule(style, widths, above, below)` rysuje linię o szerokości kolumn wraz z ich
++       obramowaniem, ze znakiem złącza wszędzie, gdzie styka się z nią krawędź kolumny; `above`
++       i `below` mówią, z których stron przylegają kolumny, więc górna linia ma tylko odgałęzienia
++       w dół, dolna tylko w górę, a linia pod tytułami jedne i drugie. Grubość linii to
++       odpowiednio `topLine`, `bottomLine` lub `titleLine` stylu.
++   entry #sections   sekcje, w kolejności, każda ze swoimi wierszami i ich wspólnymi szerokościami
++   entry #style   styl, w którym rysuje się siatkę
++   entry #render   siatka jako wiersze tekstu
++       `Chain[text]`: górna linia stylu (jeśli ją ma), wiersze każdej sekcji z linią między
++       sekcjami i dolna linia (jeśli istnieje). Wymaga `Text is Measurable`.
+
+@ 0 1 0 0031ca1d6b9043fd0fd4891f26225cf5
++ entry .Layout   ustalone szerokości kolumn tabeli i roszczenia, z których je wyznaczono
+
+% 1 1 0 0bfe58a789b298cf19974c50a0038367
+
+@ 0 8 0 0a32731d8c18bbdc13d5dad9ccc5959a
++       `Layout[row, text]` to wartość między zmierzeniem tabeli a jej wyrenderowaniem: które
++       kolumny przetrwały (`#survivors`, wraz z szerokościami), zagregowane roszczenia, z
++       których je wyznaczono, oraz szerokość i styl, przy których je wyznaczono. Jest
++       niemutowalny i przyrostowy: wiersz wyrażony jako `Cells` sprawdza się przez
++       `#accommodates` – jeśli mieści się w agregacie każdej kolumny, nie może zmienić żadnej
++       kolumny – i przyjmuje przez `#extend`, które daje ten sam układ, gdy nic się nie zmienia,
++       a w przeciwnym razie układ wyznaczony ponownie. Wiersze renderuje się następnie po jednym
++       przez `#lines`, a wysokość wiersza jest znana z `#height` bez renderowania, gdy żadna z
++       jego komórek się nie zawija.
+
+@ 0 5 0 16d4adca32d96d9d145ae6f80bd552be
++       To silnik stojący za `Tabulation#grid`, udostępniony dla tabeli budowanej lub
++       wyświetlanej wiersz po wierszu – rosnącego logu, odświeżanego ekranu – gdzie ponowne
++       układanie całej tabeli dla każdego wiersza byłoby marnotrawstwem. `Scaffold#layout`
++       tworzy pierwszy układ z samych tytułów. `Layout` nie jest eksportowany do pakietu
++       zbiorczego `soundness`, więc tam, gdzie trzeba zapisać ten typ, nazywa się go
++       `escritoire.Layout`.
+
+% 2 1 0 0da178ca35c6642d100af13cd380b491
+
+% 3 1 0 0cf69e3a2bfe2408081352c8499c1f15
+
+% 4 1 0 1b19f9ee650f318d12bdf92f08e0acae
+
+% 5 1 0 17c616517b28026d1bc8c08c90bc8451
+
+% 6 1 0 1e44d93c4ef8c1f908c7c250fc60b916
+
+% 8 1 0 0ec55c6d3955d1d203f48ac622b4c47b
+
+% 9 1 0 1b00b63163bf2c8d1d75c37ad66a958f
+
+% 1 1 0 1e44b10e0876b88909392ddcb68bc7de
+
+% 0 1 0 15435f1a707d242708708f2f1db47140
+
+% 0 1 0 096a0f437ab1fe9f021fdd15d6476d5c
+
+% 0 1 0 1f0350717c5fc7840c9101e3e14ca4cb
+
+% 0 1 0 11ec26587e55e3660a7470d55042df43
+
+% 1 1 0 028ac0f034713aa9062abaf1495b1f0a
+
+% 1 1 0 117c261f2f35d258097b705c62845d88
+
+% 0 1 0 07561285f8f13f5e0b4d73a7c5c109e5
+
+% 1 1 0 19c256660f1ee591183e4b390f66793e
+
+@ 0 52 0 0bc5b7315d3eca5410019b731a459f26
++   entry .nothing   puste agregaty, po jednym na kolumnę, dla układu, który jeszcze niczego nie przyjął
++   entry .aggregate   agregaty poszerzone o komórki wiersza, kolumna po kolumnie
++       `Layout.aggregate(aggregates, cells)` to `Metrics.max` obu, element po elemencie, więc
++       wynik rości sobie co najmniej tyle, ile którekolwiek z nich.
++   entry .solve   wyznacza szerokości kolumn przy danej szerokości z zagregowanych roszczeń
++       `Layout.solve(columns, titles, aggregates, width, style)` prosi `Columnar` każdej
++       kolumny o jej `Flex` na podstawie agregatu, odrzuca każdą kolumnę, która nie może zająć
++       żadnej szerokości (na przykład kolumnę `Paragraph`, której wszystkie komórki są puste),
++       odejmuje obramowanie stylu i pozwala `Flex.solve` z biblioteki tessellate zwinąć i
++       rozdzielić resztę. Jeśli minima pozostałych kolumn nadal przekraczają szerokość,
++       wywoływany jest `Attenuation` w zasięgu z minimum, którego tabela potrzebowała, i
++       szerokością, którą miała. Wymaga `Text is Measurable` i `Attenuation`.
++   entry #columns   kolumny, dla których wyznaczono układ
++   entry #titles   komórki wierszy tytułów
++   entry #aggregates   zagregowane roszczenia poszczególnych kolumn, z których wyznaczono szerokości
++   entry #width   szerokość, przy której wyznaczono układ
++   entry #survivors   kolumny, które przetrwały, jako pary `(index, width)` w kolejności
++       Kolumny odrzuconej przez zwinięcie brak; `#widths` to drugi element każdej pary.
++   entry #style   styl, z którego dopełnienia i linii wyliczono koszt obramowania
++   entry #widths   szerokości kolumn, które przetrwały, w kolejności
++   entry #cells   wiersz wyrażony przez kolumny układu
++       To samo co `Scaffold#cells`: treść każdej kolumny dla wiersza, pocięta na wiersze
++       tekstu i zmierzona.
++   entry #accommodates   czy komórki wiersza mieszczą się w zagregowanym roszczeniu każdej kolumny
++       Prawdziwe, gdy przyjęcie wiersza nie może zmienić roszczenia żadnej kolumny, według
++       `Columnar#accommodates` każdej kolumny; `#extend` zwraca wtedy dokładnie ten układ.
++   entry #extend   ten układ albo układ wyznaczony ponownie po włączeniu komórek wiersza
++       `layout.extend(cells)` to sam `layout`, jeśli zachodzi `#accommodates`, a w przeciwnym
++       razie `Layout.solve` na agregatach poszerzonych o komórki, przy tej samej szerokości.
++       Ponowne wyznaczenie może pozostawić każdą szerokość bez zmian – szersze roszczenie do
++       kolumny już unieruchomionej przez szerokość niczego nie zmienia – co wykrywa `#stable`.
++       Wymaga `Text is Measurable` i `Attenuation`.
++   entry #resize   te same roszczenia wyznaczone przy innej szerokości
++   entry #stable   czy dwa układy pokazują te same kolumny przy tych samych szerokościach
++       Porównuje `#survivors`: odświeżenie może pominąć już narysowane wiersze, gdy układ
++       rozszerzony o nowy wiersz jest stabilny względem tego, z którym je narysowano.
++   entry #tableRow   komórki wiersza dopasowane do szerokości kolumn, które przetrwały, jako `TableRow`
++       `layout.tableRow(cells, decorations)` dopasowuje wiersze tekstu każdej pozostałej
++       kolumny jej `Columnar#fit`, łączy każdą z jej dekoracją (odczytaną z `decorations` według
++       pozycji kolumny, `Unset` poza jej końcem) i mierzy wysokość wiersza. Wymaga
++       `Text is Measurable` i `Hyphenation`.
++   entry #lines   wiersz wyrenderowany według układu: jego wiersze tekstu
++       `layout.lines(cells, decorations)` to `Grid.rowLines` na `#tableRow`: wizualne wiersze
++       tekstu wiersza tabeli, z krawędziami stylu, jako `List`. Przekazuje się `Nil`, gdy
++       dekoracji brak.
++   entry #height   wysokość wiersza w wierszach tekstu, bez renderowania, tam gdzie to możliwe
++       Komórka, której szerokość naturalna mieści się w kolumnie, nie jest zawijana, więc ma
++       tyle wierszy tekstu, ile już ma; dopasowywana jest tylko komórka, która musi się
++       zawinąć, aby to ustalić. Wysokość wiersza to wysokość najwyższej komórki.
++   entry #titleLines   wiersze tytułów wyrenderowane według układu
++   entry #topRule   linia nad tytułami albo `Unset`, jeśli styl nie ma górnej linii
++   entry #titleRule   linia między tytułami a wierszami
++   entry #bottomRule   linia pod ostatnim wierszem albo `Unset`, jeśli styl nie ma dolnej linii
+
+@ 0 1 0 0ec157371fdc31dc1ffa4bf99ff75457
++ entry .Cells   komórki jednego wiersza jako wiersze tekstu, które każda wyświetli, z wewnętrznymi szerokościami każdej komórki
+
+% 1 1 0 04459079ac9403a30aa7ed3648a01443
+
+@ 0 5 0 0a60d8a01842c7eb01b879d36cda9d3c
++       `Cells[text]` to wiersz wyrażony raz ze swojej wartości – treść każdej kolumny pocięta
++       na wiersze tekstu i `Metrics` każdej komórki (jej najdłuższe słowo i najdłuższy
++       wiersz) – i niezależny od żadnej szerokości, więc układ może go sprawdzić przez
++       `Layout#accommodates`, przyjąć przez `Layout#extend` i wyrenderować przy dowolnych
++       szerokościach, które ustali. `Scaffold#cells` i `Layout#cells` tworzą go z wiersza;
++       `Cells.of` – z już pociętych wierszy tekstu.
+
+@ 0 2 0 01e9484c8b6675831a02c35485539dfc
++       `Cells` nie jest eksportowany do pakietu zbiorczego `soundness`: należy do słownictwa
++       samego silnika układu i jest dostępny jako `escritoire.Cells` tam, gdzie program
++       bezpośrednio steruje układem `Layout`.
+
+% 1 1 0 1bf2745827140ca11637086fa357772b
+
+@ 0 5 0 09e26f703a2ed38d1020bf6c69fb2acc
++   entry .of   komórki z już pociętych wierszy tekstu albo z wiersza przez jego kolumny
++       `Cells.of(lines)` mierzy wiersze tekstu każdej komórki; `Cells.of(columns, row)` najpierw
++       odczytuje z wiersza treść każdej kolumny. Oba wymagają `Text is Measurable`.
++   entry #lines   wiersze tekstu każdej komórki, według kolumn
++   entry #metrics   wewnętrzne szerokości każdej komórki, według kolumn
+
+@ 0 1 0 1afb71c47d68fc9313a5774f964970ce
++ entry .Columnation   płaska lista ułożona w kolumny, tak jak `ls` wypisuje katalog
+
+% 1 1 0 0b5d9690b7fd87ee1d96ee5e3c89b4cc
+
+@ 0 5 0 03755ed03e65aa281c28c0e47b69aa8e
++       Nie każde ułożenie tekstu w kolumnach jest tabelą. Listę krótkich elementów – nazw
++       plików, pozycji legendy – najlepiej czyta się tak, jak `ls` układa katalog: tyle kolumn,
++       ile pozwala szerokość, każdy element w jednej komórce, bez linii i bez tytułów.
++       `Columnation.layout` robi to dla listy wartości tekstowych; rozszerzenie `columnate` to
++       ta sama operacja jako metoda na liście.
+
+% 2 1 0 085520feec2df4f81a42503ded675462
+
+% 3 1 0 0ffad1b447eaae590d2bf6580fddfb43
+
+% 4 1 0 03376ea00520011906e1ac5250b25b94
+
+% 0 1 0 0101b07e86b55daa086adea1b4471053
+
+% 0 1 0 0adb5616908bde7b066482567bcb10df
+
+% 1 1 0 05edaf3adca1c7bd0cd142f38b58f1d7
+
+% 0 1 0 1446c8f20319f7a90544060b25fb8aa3
+
+@ 0 12 0 080320126412540f1aa4fe705433c969
++   entry .layout   elementy w tylu kolumnach, ile mieści się w szerokości, jeden wiersz tekstu na wiersz
++       `Columnation.layout(items, width, gap, uniform, downward, align)` wybiera największą
++       liczbę kolumn, przy której treść każdej kolumny mieści się obok pozostałych, z `gap`
++       komórkami (domyślnie dwiema) między sąsiadami. Preferowane są kolumny równej szerokości
++       – każda tak szeroka jak najszerszy element – ale układ z jedną kolumną więcej jest
++       dopuszczany, gdy elementy, które trafiają do którejś kolumny, okazują się węższe; wolna
++       szerokość jest wtedy rozdzielana z powrotem w stronę równości, przy czym żadna kolumna
++       nie rośnie ponad najszerszy element. `uniform = true` uwzględnia tylko układy o równej
++       szerokości; `downward = true` czyta elementy w dół każdej kolumny, a nie wzdłuż każdego
++       wiersza; `align` dopełnia każdą komórkę w obrębie jej kolumny, a wiersz wyrównany do
++       lewej nie ma dopełnienia za ostatnim elementem. Element szerszy niż szerokość nadal
++       zajmuje jedną kolumnę, a brak elementów nie daje żadnych wierszy. Wymaga
++       `Text is Measurable`.
+
+@ 0 4 0 032b6dd650fe0b970a219ebbaad352bf
++ entry .columnate   `items.columnate(width)`: lista tekstów w tylu kolumnach, ile się mieści, jeden wiersz tekstu na wiersz
++     Rozszerzenie dla `List[text]` dla dowolnego tekstu `Textual` o elementach `Char`, które
++     wywołuje `Columnation.layout` z tymi samymi parametrami: `gap` (domyślnie 2), `uniform`,
++     `downward` i `align` (domyślnie `TextAlignment.Left`). Wymaga `Text is Measurable`.
+
+% 2 1 0 0e7d00ae53db530a1a47ade535d07ded
+
+% 3 1 0 19c8239f1edf0c0c0111a20072503359
+
+% 4 1 0 1b017a3ce5fadea618929e83cf1bf835
+
+% 0 1 0 190a5b6e9007f2e617c1fae1d3b3a2fb
+
+% 0 1 0 1390c8fe0c491cd4046960afb18070e6
+
+% 0 1 0 01a3af942173c13d0d79201d80d95cf2
+
+% 0 1 0 16d5edd67043601e1aac056bfa822d3a
+
+% 1 1 0 0c9e62515a913b061f8c945ca876758d
+
+@ 0 7 0 12d4c1f2a951913117c27896fe20c9a0
++ entry .tabulation   `rows.tabulation`: lista stabularyzowana przez `Tabulable` typu jej elementów albo wartość przez jej `Tabular`
++     Dwa rozszerzenia. Dla `List[row]` `rows.tabulation` wymaga `row is Tabulable[text]` –
++     derywowanego dla dowolnej klasy case i danego dla `Int`, `Double` i `Text` – i daje
++     `Tabulation[text]` rusztowania zastosowanego do wierszy. Dla dowolnej wartości
++     `value.tabulation` wymaga `value is Tabular[text]`, który dostarcza zarówno rusztowanie,
++     jak i wiersze z samej wartości. Typ tekstu jest wnioskowany z instancji albo podawany
++     jako `rows.tabulation[Text]`.
+
+% 2 1 0 09103ff98c007bcf12f622df2b10e572
+
+% 3 1 0 14572310d18ddf1e0563fff8a11b7a6e
+
+% 4 1 0 1429e9389e94118d18d2d61c41f1d940
+
+% 5 1 0 1521453040be78e00668c920671bf8b4
+
+% 6 1 0 16baaadfaf46c19a09c82b390deb2da4
+
+% 8 1 0 12e10e68635ad90914af806a9a6745f9
+
+% 0 1 0 153366e790c43c4019b33ebfcf6570b1
+
+% 0 1 0 09fbf520876774db16cf7119b8e37a31
+
+% 1 1 0 0bfcc9d75a6a77d514b44d823c9574d8
+
+@ 0 1 0 0c47fb8f3bdea26a1a72ebe62dcf93dc
++ entry .Tabulable   klasa typów: jak typ rozkłada się na kolumny, tak aby lista jego wartości dała się stabularyzować
+
+% 1 1 0 03f5dfe5c405d61e1c6d84245fb9ebad
+
+@ 0 8 0 001dc88ebdaf431c044292867d6a8690
++       `row is Tabulable[text]` to funkcja `#table()` zwracająca `Scaffold[row, text]` dla
++       typu; `#tabulate` stosuje ją do listy. Jej obiekt towarzyszący derywuje instancję dla
++       dowolnej klasy case – kolumnę dla każdego pola, każdą z tytułem z nazwy pola rozdzielonej
++       na słowa i zapisanej wielkimi literami (`linesOfCode` staje się `Lines Of Code`), chyba że
++       `Table.Relabelling` dla tego typu w zasięgu stanowi inaczej – i dostarcza instancje dla
++       `Int`, `Double` i `Text`, każdą będącą jedną kolumną bez tytułu. Kolumną pola jest
++       własne rusztowanie `Tabulable` typu pola, dostosowane do rekordu przez
++       `Column#contramap`, więc pole typu klasy case wnosi z kolei kolumny tego typu.
+
+% 2 1 0 00f0833e57cb05540ca8d390d63ae212
+
+% 3 1 0 02665e3c438129761f74d934ba58db04
+
+% 4 1 0 10d6ade31d68f2a60a20b0569223921e
+
+% 5 1 0 00cdc2fedb82eff6112a933d9dc85d18
+
+% 6 1 0 1ba099b59eace20102c3045219dad201
+
+% 8 1 0 036763a341a22bd71e231455266dfa4a
+
+% 0 1 0 0cb87fe46047e4c31f447933b7e952ab
+
+% 1 1 0 1cd5f24293bdd17b1ae2b62c5ca7e766
+
+@ 0 1 0 198e514cf1cfbb6812ffcc9783e17419
++       Własna instancja to spoina dla typu, którego kolumny nie są jego polami:
+
+% 2 1 0 09c864bde7d45a7e1f5f31ee9475acec
+
+% 3 1 0 13b8fce14cda7dcc03c174445fcaf84d
+
+% 5 1 0 11a93fb44c0c63140d65cc0024284657
+
+% 0 1 0 1c5bbb395f608e0808899c97e264ce21
+
+% 0 1 0 18cd771cc8e8dfb30665a18088515510
+
+% 1 1 0 16374e28dd338be4000ae60aef4e8049
+
+@ 0 2 0 1a2891397b70614c18a5a524fc56effc
++       Derywowane są tylko instancje o komórkach `Text`: tabelę `Teletype` zapisuje się ręcznie
++       jako `Scaffold`.
+
+% 1 1 0 1fe79681b46ba7f3151f61be72112e35
+
+% 0 1 0 19471b843a9b1a4313446d19a24a66ff
+
+% 1 1 0 11022a05d60ca920162e754f336802c0
+
+@ 0 1 0 05f17f0a5b58c54513682b1a63108560
++   entry .JoinTabulable   derywowana instancja dla typu produktowego, na kolumnach jego pól
+
+% 1 1 0 1d6c5ad79e269a8b074d55726266842d
+
+@ 0 18 0 1d85e65eb2ac618005c8018a8ac0db98
++         Klasa, którą buduje derywacja: `Tabulable[Text]`, którego rusztowaniem są podane
++         kolumny. Użytkownik zwykle jej nie nazywa; tworzy ją `conjunction`.
++     entry #table   rusztowanie złączonych kolumn
++   entry .conjunction   derywuje instancję dla klasy case, jedna kolumna na pole
++       `Tabulable` każdego pola daje jego kolumny, które są dostosowywane do rekordu i
++       otrzymują tytuł z etykiety pola – przez `Table.Relabelling[derivation]`, jeśli jest w
++       zasięgu, a w przeciwnym razie przez rozdzielenie na słowa i zapisanie wielkimi literami.
++       To właśnie wywołuje given `derived` odziedziczony po `ProductDerivation` z biblioteki
++       wisteria, więc klasa case nie potrzebuje adnotacji, aby dało się ją stabularyzować.
++   entry .int   `Int` jako jedna kolumna bez tytułu, wyrównana do prawej, zwijalna
++       Kolumna zwija się przy progu `0.3`, więc samotna liczba jest pierwszym, co znika, gdy
++       rekord o kilku polach zostaje ściśnięty.
++   entry .double   `Double` jako jedna kolumna bez tytułu, wyrównana do prawej, zwijalna
++       Wymaga w zasięgu `Decimalizer`, który decyduje, ile miejsc dziesiętnych jest pokazywanych.
++   entry .text   `Text` jako jedna kolumna akapitowa bez tytułu, wyrównana do lewej
++   entry #table   rusztowanie dla typu
++   entry #tabulate   rusztowanie zastosowane do listy wartości typu: `Tabulation`
++       Rusztowanie jest budowane raz, leniwie, i ponownie używane przy każdym wywołaniu.
+
+@ 0 1 0 07fdddede2dd914e1bc8c064f03844f4
++ entry .Tabular   klasa typów: wartość, która sama jest tabelą, dostarczająca zarówno kolumny, jak i wiersze
+
+% 1 1 0 0131919259ce44d6009b765cbe44621c
+
+@ 0 5 0 0bc38037935b732b1bc8b36781298d5b
++       Podczas gdy `Tabulable` tabularyzuje *listę* wartości typu, `value is Tabular[text]`
++       tabularyzuje pojedynczą wartość, która zawiera swoje wiersze: `#table` daje rusztowanie
++       dla typu `#Element`, `#rows` wydobywa elementy, a `#tabulate` stosuje jedno do drugiego.
++       Obiekt raportu, wynik zapytania lub macierz tabularyzuje się, podając taką instancję, a
++       następnie `value.tabulation` przez rozszerzenie `tabulation`.
+
+% 0 1 0 14cf5b0f7cd386ae154b325859c91b76
+
+% 1 1 0 076129e3dbb377c706a737d356bc0735
+
+@ 0 4 0 11ec415a9f41b87b13762a839f9f1714
++   entry #Element   typ wiersza, który mają wiersze wartości
++   entry #table   rusztowanie dla wierszy wartości
++   entry #rows   wiersze wartości, jako lista `Element`
++   entry #tabulate   wartość jako `Tabulation`: `table(value).tabulate(rows(value))`
+
+@ 0 1 0 121792c0835d63381047c7ab2a1e49d0
++ entry .Table   przestrzeń nazw wyrenderowanej tabeli: jej komórki, wiersze, sekcje i styl oraz `Table.Error`
+
+% 1 1 0 1d9c2610075da2f1025644e482225de1
+
+@ 0 4 0 080122ef88e152320fa74953abaaeffe
++       `Table` to przestrzeń nazw, nie typ: definicja tabeli to `Scaffold`, dane przez nią
++       ułożone to `Tabulation`, a dopasowany wynik to `Grid`. `Table` zawiera elementy, z
++       których rysuje się siatkę (`Cell`, `Row`, `Section`), `Style`, w którym się ją rysuje,
++       `Relabelling`, który zmienia nazwy derywowanych kolumn, i `Error` zgłaszany, gdy tabela
++       nie może się zmieścić.
+
+% 1 1 0 18245c07c19fc87c025b4eaa570c242f
+
+% 1 1 0 08ac4623f24de3261236ba8714246cde
+
+@ 0 1 0 15efd5fe6440b7f404b22a587de8aaa1
++   entry .Error   tabela potrzebowała więcej szerokości, niż otrzymała
+
+% 1 1 0 13c64e7422b4aa3b1fe310c77283c596
+
+% 0 1 0 1c3baf28a1a67aaa19c60f3a9019a59a
+
+@ 0 7 0 1711d7736a8abba21bdd1822b76168ec
++         available_. Zgłaszany przez `columnAttenuation.failAttenuation`, gdy po odrzuceniu
++         każdej zwijalnej kolumny minimalne szerokości pozostałych kolumn wraz z obramowaniem
++         stylu nadal przekraczają szerokość, o którą poproszono siatkę lub układ. Granica jest
++         konkretna: kolumna `Paragraph` nigdy nie może być węższa niż jej najdłuższe słowo, więc
++         tabela, której kolumna opisu zawiera `Statically-checked`, nie zmieści się poniżej
++         szerokości tego słowa powiększonej o resztę. Przy `ignoreAttenuation` błąd nigdy nie
++         jest zgłaszany, a tabela zamiast tego wystaje.
+
+% 2 1 0 1678493ba205a3a20f9080eaa791a75e
+
+% 3 1 0 076b4200ea0a8cb209b08fe1f6e114af
+
+% 4 1 0 011f6d213f9a682c0faf0a7119f00436
+
+% 5 1 0 02f17a392685209c10738e4ace138e8d
+
+% 0 1 0 19dca18fec62fa2c0915fdaab9366f6a
+
+% 0 1 0 042c7f5eddbd6eb81fde4c13f24bb080
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 074cb3daeb2bac671b9b9c2132727c65
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1fe95e04628d69d902bfb9092fe2aa4b
+
+% 1 1 0 19c650f5c79797251faa76176f18cb4f
+
+@ 0 2 0 1b787198aa7d471009d76340f5614bea
++     entry #minimumWidth   najmniejsza szerokość, przy której wszystkie kolumny tabeli mogłyby się zmieścić
++     entry #availableWidth   szerokość, w której tabela miała się zmieścić
+
+@ 0 1 0 1414895c1ddb502a1456fd705f93cbbb
++   entry .Cell   jedna komórka po wyrenderowaniu: jej dopasowane wiersze tekstu, szerokość, wyrównanie i dekoracja
+
+% 1 1 0 0b5b192f1f0494480011d8135555d2e2
+
+@ 0 3 0 0452a5c779584ad70bac5cc01f8b5984
++         Zapis renderera dotyczący komórki po dopasowaniu jej przez `Layout#tableRow`: wiersze
++         tekstu, które wyświetla przy szerokości swojej kolumny, ich liczba, sposób ich
++         wyrównania i dekoracja. Użytkownik `Grid` lub `Layout` widzi je wewnątrz `Row`; nic
++         innego ich nie tworzy.
+
+% 0 1 0 0a69cc2976d15e111ff6bc44f2184551
+
+@ 0 9 0 1d721a5df34263d01f119498b34a53c2
++     entry #width   ustalona szerokość kolumny, w komórkach
++     entry #span   ile kolumn obejmuje komórka; zawsze `1`
++     entry #lines   dopasowane wiersze tekstu
++     entry #minHeight   liczba wierszy tekstu
++     entry #textAlign   jak każdy wiersz tekstu jest dopełniany do szerokości
++     entry #verticalAlign   gdzie znajdują się wiersze tekstu, gdy wiersz tabeli jest wyższy niż `minHeight`
++     entry #decorate   przekształcenie stosowane do każdego wyrenderowanego wiersza tekstu albo `Unset`
++     entry #apply   wiersz tekstu o danym indeksie, który wywołujący już sprawdził względem `minHeight`
++   entry .Row   jeden wiersz dopasowanych komórek, z jego wysokością w wierszach tekstu
+
+% 1 1 0 01e83dd3cede32ad08989e93b96bd865
+
+@ 0 3 0 1fb3144f25849e38198c4b9a0b85fd4c
++         Tworzony przez `Layout#tableRow` i renderowany przez `Grid.rowLines`. Wysokość wiersza
++         to liczba wierszy tekstu jego najwyższej komórki, a niższa komórka jest umieszczana w
++         nim według swojego wyrównania pionowego.
+
+% 0 1 0 116b240365aeef2f161801b468515628
+
+% 1 1 0 19c6bbfca8ad0a6d021a7a733d2fa05d
+
+@ 0 5 0 16cdc910f92ba7be0cab12b34824cc6d
++     entry #cells   dopasowane komórki, po jednej na każdą kolumnę, która przetrwała
++     entry #title   czy jest to wiersz tytułów
++     entry #height   liczba wizualnych wierszy tekstu, które zajmuje wiersz
++     entry #apply   komórka o danym indeksie kolumny
++   entry .Section   ciąg wierszy o wspólnych szerokościach kolumn
+
+% 1 1 0 1083d41494980b170ad5c2c57d0af3ef
+
+@ 0 3 0 1882c036e97ed7c61f8f2fca8bf2c6db
++         `Grid` to lista sekcji, rysowanych z linią między każdą parą. `Tabulation#grid` tworzy
++         dwie – tytuły i dane – o tych samych szerokościach; wiersze każdej sekcji są
++         renderowane według własnych szerokości `widths` sekcji.
+
+% 1 1 0 1575eaf3883b166b1a099395ea7c99b1
+
+@ 0 3 0 1590c183f9c3a58e06dd7ba2d45b13d0
++     entry #widths   szerokości kolumn, do których dopasowano wiersze sekcji
++     entry #rows   wiersze, leniwie, jako `Chain`
++   entry .Style   linie, narożniki i dopełnienie, którymi rysuje się tabelę
+
+% 1 1 0 197a508a5a57297001599647d4f08502
+
+@ 0 6 0 13d6dd5dba11bd6d055f7c62216179b1
++         `Style` mówi, ile dopełnienia ma każda komórka z każdej strony, jaka grubość linii –
++         `Blank`, `Thin`, `Thick` lub `Double` albo `Unset`, gdy linii w ogóle nie ma – rysuje
++         górną krawędź, dolną krawędź, linię pod tytułami, zewnętrzne boki i wewnętrzne
++         krawędzie kolumn, oraz który `LineCharset` (`Default`, `Rounded` lub `Ascii`)
++         dostarcza glify. Sześć stylów w pakiecie `tableStyles` obejmuje typowe wybory; własny
++         styl to wartość `Style` dana lokalnie.
+
+@ 0 3 0 003b78a55ef773171593fd24f15b7fab
++         Styl jest wartością kontekstową: `Tabulation#grid`, `Scaffold#layout` i givens
++         `Printable` go przyjmują, a `import soundness.*` żadnego nie wprowadza, więc jeden z
++         givenów `tableStyles` importuje się po nazwie.
+
+% 2 1 0 128dbd9f2c98837b054971c3baa3a692
+
+% 3 1 0 19c13802f1b329310d9ce34cae072d76
+
+% 0 1 0 1df9e0cdb273238d0289668a0347f8df
+
+% 0 1 0 1ae3d9f893e21b8e07020f237ffcaf7f
+
+% 1 1 0 1670080bce36129e0a50bdcdc22364c6
+
+@ 0 3 0 004f7b32eb8ea83002489ce0fcbd8adb
++         `Blank` i `Unset` się różnią: górna linia `Blank` jest rysowana jako pusty wiersz, co
++         zachowuje pionowe odstępy tabeli, podczas gdy `Unset` nie rysuje niczego. Treść
++         `Teletype` ze stylami układa się według widocznej szerokości w każdym stylu.
+
+% 0 1 0 0d3a2cbc8f3d6c5b094da7c81299bf57
+
+% 1 1 0 0ba4d0bdebcb60b613bc4638f35370d9
+
+@ 0 10 0 19e906402cfd8a7205f0fe814106363a
++     entry #padding   komórki na lewo i na prawo od treści każdej komórki
++     entry #topLine   grubość górnej krawędzi albo `Unset`, gdy górnej krawędzi brak
++     entry #bottomLine   grubość dolnej krawędzi albo `Unset`, gdy dolnej krawędzi brak
++     entry #titleLine   grubość linii między tytułami a wierszami albo `Unset`, gdy jej brak
++     entry #sideLines   grubość zewnętrznych krawędzi lewej i prawej; `Blank`, gdy ich brak
++     entry #innerLines   grubość krawędzi między kolumnami; `Blank`, gdy ich brak
++     entry #charset   który zestaw glifów rysuje linie: `Default`, `Rounded` lub `Ascii`
++     entry #columnCost   obramowanie, które dodaje jedna kolumna: jej dopełnienie z obu stron i jedna krawędź
++     entry #cost   obramowanie danej liczby kolumn: ich koszty i krawędź zamykająca
++   entry .Relabelling   zastępuje tytuły kolumn, które derywowana tabela bierze z nazw pól
+
+% 1 1 0 11637f8e1f26852519c1d957778011ea
+
+@ 0 5 0 0a7818469f6d8b651f7e492e0c6b7d18
++         `Relabelling[target]` to funkcja `#relabelling()` z nazw pól w tytuły, których chce się
++         zamiast nich, sprawdzana przez derywowany `Tabulable` dla `target`: pole wymienione w
++         mapie otrzymuje przypisany tytuł, a każde inne swoją nazwę rozdzieloną na słowa i
++         zapisaną wielkimi literami. Wystarczy given w zasięgu w miejscu derywacji; trait jest
++         kowariantny względem swojego celu, więc zmiana etykiet dla nadtypu obowiązuje jego
++         podtypy.
+
+% 2 1 0 0998b877742fad331769518095dd6358
+
+% 3 1 0 0606af2da98ed383058b56b8df5ffc9d
+
+% 4 1 0 18fffb517059ddb90d02af10134741d3
+
+% 5 1 0 007592fd79472c551975019da01e4060
+
+% 6 1 0 0bf86d6bb649dd331f3e5d4a77f1e9a0
+
+% 8 1 0 1872d32dc08fa5c30f0923ac6db8a1ff
+
+% 0 1 0 1ea399f97a94e0a215a7ed0446376a78
+
+% 0 1 0 085f4f4bf3dd92bc0be6df7de671526f
+
+% 1 1 0 0d1c317203c3c31a0768a0fbcabfb462
+
+% 0 1 0 161798c74f8e8f74066f72a21cca1ffe
+
+@ 0 3 0 1c20d3c2fe905c3810964c545b05e6fe
++     entry #relabelling   mapa z nazw pól w tytuły
++         Wywoływana raz i zapamiętywana; pole nieobecne w mapie zachowuje swój derywowany tytuł.
++     entry #apply   tytuł dla nazwy pola albo `Unset`, jeśli mapa jej nie wymienia
+
+@ 0 1 0 175531554e2e8f13120cef02c838f6c9
++ entry .Attenuation   co się dzieje, gdy kolumny tabeli nie mieszczą się w danej szerokości
+
+% 1 1 0 06a8e325cbbc46ba0dd7ce04cda3a8cf
+
+@ 0 7 0 1cd9b847a9e55c041e098a96e39c02cd
++       `Attenuation` jest wywoływany przez `Layout.solve` z minimalną szerokością, której
++       tabela potrzebowała, i szerokością, którą miała, gdy pierwsza przekracza drugą nawet po
++       odrzuceniu każdej zwijalnej kolumny. To polityka, a nie zachowanie ustalone przez
++       bibliotekę: raport zapisywany do pliku, gdzie nikt nie zobaczy, że kolumny zostały
++       zniekształcone, wymaga niepowodzenia; interaktywny widok, w którym użytkownik może
++       poszerzyć okno, wymaga wyrenderowania. Dwie polityki to givens pakietu
++       `columnAttenuation`, importowane po nazwie; każde `grid`, `layout`, `extend` i `resize`
++       wymaga jednej z nich w zasięgu.
+
+% 1 1 0 098e1dbf0fb6648a08e03fdfa4d3d415
+
+% 1 1 0 05d79cc39dd275a419b9c3b55bc8ff92
+
+@ 0 1 0 09736303e5339f940debcfe184e9fc32
++   entry #apply   wywoływany z minimalną szerokością, której tabela potrzebowała, i szerokością dostępną
+
+@ 0 1 0 0b7cc8d4da01974118882d16100dca51
++ entry .columnAttenuation   dwie polityki dla tabeli, która się nie mieści, każda będąca givenem do importu po nazwie
+
+% 1 1 0 1c60b8536f776713151cfaadb71cfc5e
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 067cf51cd6536cf5114d37a57402baae
+
+% 1 1 0 11e8a22fbadf82c30229d8d2d55d36a4
+
+@ 0 5 0 0a09fcc5df60bee10d178cbeb58ead70
++       `ignoreAttenuation` mimo wszystko renderuje tabelę, tak dobrze, jak pozwala szerokość, i
++       nie może zawieść, więc wybranie go nie wymaga obsługi błędów; `failAttenuation` zgłasza
++       `Table.Error`, zamiast tworzyć coś mylącego, i dlatego wymaga w zasięgu
++       `Tactic[Table.Error]` – `recover`, `safely` lub `strategies.throwUnsafely`. Żadnego z nich
++       nie ma w zasięgu bez importu, ponieważ `import soundness.*` nie importuje givenów.
+
+% 0 1 0 12a33ae65ce44b370c91c9f43b59baa7
+
+% 1 1 0 01fe6d3f165dc39b1730ca685925d016
+
+@ 0 7 0 15b5f964e0a741021c4141a5bb244d43
++   entry .failAttenuation   zgłasza `Table.Error`, gdy tabela nie może się zmieścić
++       Funkcja kontekstowa z `Tactic[Table.Error]` w `Attenuation`, który ją przechwytuje, więc
++       zaimportowanie givena wymaga także taktyki tam, gdzie tabela jest układana.
++       Błąd niesie minimalną potrzebną szerokość i szerokość dostępną.
++   entry .ignoreAttenuation   mimo wszystko renderuje tabelę, wystając poza szerokość
++       Nic nie robi, gdy dowiaduje się, że tabela się nie mieści: pozostałe kolumny zachowują
++       swoje minimalne szerokości, a wiersze tekstu wychodzą poza żądaną szerokość.
+
+@ 0 1 0 023ae57f100c5c371a10eff64c97be3a
++ entry .tableStyles   sześć gotowych stylów tabel, każdy będący givenem do importu po nazwie
+
+% 1 1 0 16b2f2af4972eaf518024ac765b83532
+
+@ 0 3 0 1a30d33dbe85af1d04d689c4568e7308
++       Rysowanie ramek wybiera given `Table.Style` w zasięgu, a wybór nigdy nie jest niejawny:
++       `import soundness.*` nie wprowadza żadnego z nich i jeden importuje się po nazwie. Ta
++       sama tabela w sześciu stylach:
+
+% 2 1 0 1af3453ca8730d5f0c26b557e1f321a2
+
+% 3 1 0 1362fc11a94297c40dbd29532fc52714
+
+% 4 1 0 0679ace4905d57a919c3fb0114b6ef9a
+
+% 2 1 0 0a39c0a79a98347209cbd0118637da64
+
+% 4 1 0 09f908ef9a5543ef196a29005ef0547a
+
+% 5 1 0 13eb0ad9d87244530dc55918a7b95778
+
+% 1 1 0 13b6574b0ce8d5cd0db290e720262e46
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 0 1 0 13563984c42cfb9614ebeba62a577d2a
+
+% 1 1 0 1dfeac7ecce8bbeb100e438c5ed4f402
+
+% 2 1 0 0185533d60613d921462c8ca2787d761
+
+% 0 1 0 19553389edd59bcb0640c004cbc6ea56
+
+% 1 1 0 0122fdb9f215c52c083e1853c591f57a
+
+% 0 1 0 0e60d91504b1554f13a77ad5caf7d466
+
+% 0 1 0 07aa1c07de347efb1827c123b90199c6
+
+% 0 1 0 09f18bc181aee3e31fca864317f1064f
+
+% 0 1 0 0b541a8d9e5eea2803aee1f394990811
+
+% 0 1 0 1547473fbc86976c0842ea068851e7f2
+
+% 0 1 0 1e771c0b413f3e210a07fcfd36d599e1
+
+% 0 1 0 17d879d7be8270e10e36028e2eeda5c0
+
+% 1 1 0 10fa8d3ca1d4596c0f517b8e82037ef7
+
+% 2 1 0 1ed51d07c91432d90b3dc5617bfc718e
+
+% 0 1 0 1f8b34474e85522a0a9145f99c2d095a
+
+% 1 1 0 1a9d933ca2dc92ee1b4d7d5efd6caefd
+
+% 0 1 0 0814c6a7953579240497149b8ae10393
+
+% 0 1 0 0b00da2589fdfa2708c3334339f49e4d
+
+% 0 1 0 148b71cfb44202c5122c7cb15e361174
+
+% 0 1 0 0eaad8ab4a286554144a5413158c0c97
+
+% 0 1 0 189e055d6850129818de5c260944ec78
+
+% 0 1 0 156b692f90fb488f11f20accce9516f9
+
+% 0 1 0 09a4571d16ae92d20331184dea6b563d
+
+% 1 1 0 06210e63e5bf5d3704bf758e04809535
+
+% 2 1 0 08e9fc68da2fe9d80f232768f28f2f2c
+
+% 0 1 0 04f1f84475e3bbb31857f0d0d9748c0c
+
+% 1 1 0 074002f0648e052f0c5da28c2ee2abc7
+
+% 1 1 0 1a0557f3cdbfc6c81591cec54facc84f
+
+% 1 1 0 162952dd784305ca11b576f82f02fae5
+
+% 2 1 0 0e73d5549e2300db1daaafa6f1736346
+
+% 3 1 0 1f17c20487eaf32f05a130bcd147d2ba
+
+% 4 1 0 07cdcbabe8dd637f13db551c2a5dafc4
+
+% 1 1 0 14df755ca0c96bed13230f2a8873d2c2
+
+% 0 1 0 1663d25d0c3fdc771fc0613084d608d1
+
+% 1 1 0 052ab5edc1c5a53a1b36c8d3d54c7ed4
+
+% 2 1 0 09424f56406982b31b6a920c388378d4
+
+% 0 1 0 15095dde40d6dbff12352129d2f06538
+
+% 1 1 0 08c97684fab165650d306f7922830b45
+
+% 0 1 0 14ddc487a6feff3c1b5a2bafb3493848
+
+% 1 1 0 0491dd816ec88a4a0284873dcdaf8f52
+
+% 2 1 0 110e4bf5aeca63261edf33b4afd378b5
+
+% 0 1 0 0c631bda6fe23b980501043abb67887a
+
+% 1 1 0 0df106ef07a423fd0733b809ca96aceb
+
+% 0 1 0 0dac36ff7bea52e6153f98fe1f80f62d
+
+% 1 1 0 135ec5837037683c18323f3429d93d17
+
+% 2 1 0 0413200090607bc41fdbe6c4f51a4a69
+
+% 0 1 0 1195dc1266cf29500f9dea72dc7e596e
+
+% 1 1 0 12dde3c08a999ff6060edeb3317be5f6
+
+% 1 1 0 10f5ba6f9852ec3a1bb3d00cf40c6897
+
+% 2 1 0 050c9229527e74bd099910bbfb057d5c
+
+% 3 1 0 1f95c5cdb1a54cdb096eba700d5db4b4
+
+% 4 1 0 040390d3fc3729611a836678906c70b9
+
+% 1 1 0 06ee91f4c98efe8c1cd849b9caf57231
+
+% 2 1 0 0fb3060a8198217c0ccfd1eb4d15db06
+
+@ 0 1 0 0f5e091dfc0c7e7a19d55ee32a305ba2
++       Własny styl to zamiast tego wartość `Table.Style` związana jako lokalny given.
+
+% 1 1 0 04cdd2954a74ae4306f31d18cdd77f9a
+
+@ 0 14 0 1a754cf3dea95e3c1253ef9d5f4d9f53
++   entry .thickTableStyle   grube góra, dół i boki; cienka linia tytułów i krawędzie kolumn; kwadratowe narożniki
++   entry .thinRoundedTableStyle   cienkie linie wszędzie, z zaokrąglonymi narożnikami
++   entry .horizontalTableStyle   cienkie linie górna, dolna i tytułów; bez linii pionowych
++       Komórki zachowują dopełnienie, więc kolumny są oddzielone dwiema spacjami tam, gdzie
++       byłaby krawędź.
++   entry .midOnlyTableStyle   cienka linia pod tytułami; puste wiersze nad tabelą i pod nią
++       Górna i dolna linia są `Blank`, a nie nieobecne, więc tabela zachowuje pionowe odstępy,
++       jakie miałaby tabela z obramowaniem, nie rysując obramowania.
++   entry .verticalTableStyle   cienkie krawędzie boczne i kolumn; bez linii poziomych
++       Linie poziome są `Blank`, więc każda jest wierszem końcówek krawędzi: `╷` powyżej i `╵`
++       poniżej.
++   entry .minimalTableStyle   cienka linia pod tytułami i nic więcej
++       Górna i dolna linia są `Unset`, więc tabela składa się z wiersza tytułów, jednej linii i
++       swoich wierszy.
+
+@ 0 8 0 1427dc48855fcea81e2dc08904f52889
++ entry .TextAlignment   jak wiersze tekstu komórki układają się w szerokości kolumny: `Alignment` z biblioteki tessellate
++     `TextAlignment` to alias dla `tessellate.Alignment`, przy czym wartość `TextAlignment` to
++     `tessellate.Alignment`, tak aby przypadki nazywały się `TextAlignment.Left`. `Left`
++     dopełnia z prawej; `Right` dopełnia z lewej; `Center` dzieli dopełnienie, kładąc
++     nieparzystą komórkę z prawej; `Justify` rozkłada spacje między słowami tak, aby każdy
++     wiersz oprócz ostatniego sięgał pełnej szerokości – układ gazetowy, który pasuje do
++     kolumny prozy i do niczego innego. Każdy ma `pad(content, width, last)`, które wykonuje
++     dopełnienie, a `last` mówi, czy wiersz jest ostatnim wierszem komórki, który `Justify`
++     pozostawia nierówny.
+
+% 2 1 0 01f41f52f60330951879d5b129b4dfde
+
+% 3 1 0 13b7c178a3752d360fc537edbe43ddec
+
+% 4 1 0 10258df820161faf19ad0c15da42dfa3
+
+% 0 1 0 05c19e16da48abc80f3703ec2316bc1b
+
+% 0 1 0 007fbf1e4cbb9bf21c7368e36bc20247
+
+% 0 1 0 07bfe80b3b763c7c0ecb581be49abb46
+
+% 0 1 0 14ddb12460c63c6f148e06e30e045aae
+
+% 1 1 0 0c68b523c7d2cba00957571a1d7f5a18
+
+@ 0 5 0 0df185897b4a3888029b99aef2733af0
++ entry .VerticalAlignment   gdzie komórka znajduje się w wierszu, który inna komórka uczyniła wyższym: `Alignment.Vertical` z biblioteki tessellate
++     Alias dla `tessellate.Alignment.Vertical`, z przypadkami `Top`, `Middle` i `Bottom`.
++     Zawinięta komórka czyni wyższym cały swój wiersz, a pozostałe komórki tego wiersza
++     znajdują się u góry, pośrodku lub u dołu dodatkowej wysokości, zależnie od
++     `verticalAlign` ich kolumny; `Top` jest domyślne dla każdego typu.

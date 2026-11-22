@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 001f90608b7dd22610ab692a46e148e2
++ # `↯/s.146.1` – `Shrink.Error`
+
+@ 0 1 0 0e6a3581b82c83fb0193d29a278f43cb
++ Zgłaszany, gdy ścieżki klas nie da się zmniejszyć do zamkniętego świata osiąganego z jej punktów
++ wejścia.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 146fc008d5517a990b24a43854e6709c
++ Zmniejszanie ponownie kompiluje klasy ze ścieżki klas z ich TASTy, bez składowych, do których nic
++ nie sięga, a następnie śledzi odwołania w powstałym bajtkodzie, aby zdecydować, które inne klasy
++ im towarzyszą. Ten błąd obejmuje zamknięty świat, który nie byłby poprawny, oraz nieprawidłowe
++ zakończenie działania mechanizmu zmniejszającego.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 0445185a914a06611a6ed8aa9e7b31b8
++ ### `↯/s.146.1.1` – `Unsound`
+
+@ 0 1 0 1ea7e942cbda33c20db5d8f6cad70bd9
++ **Przykład.** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
+
+@ 0 5 0 0a6beb09f5addefd16e83673c5aa63bf
++ Coś, co zostało zachowane, odwołuje się do czegoś, co nie zostało zachowane. Przyczyna niesie
++ każde takie odwołanie jako `problems`: każde znaleziono albo w drzewach kompilatora, zanim
++ wygenerowano jakikolwiek bajtkod, albo później w bajtkodzie. Obejmuje to też jednostkę, której nie
++ dało się ponownie skompilować ani przypiąć na jej miejscu, z własnymi błędami kompilatora jako
++ problemami.
+
+@ 0 4 0 054f9ecd59a5c94216c88c08bbb08648
++ **Rozwiązanie.** Odwołania wykonywanego wyłącznie przez refleksję analiza nie potrafi znaleźć:
++ należy zachować klasę, do której sięga, przez `keep` z `Shrink` lub `shrinkOptions.keep`.
++ Odwołanie, które analiza powinna była znaleźć, to usterka w niej; przypięcie jednostki, która
++ wykonuje odwołanie, przez `pin` lub `shrinkOptions.pin`, kopiuje tę jednostkę w niezmienionej
++ postaci i zachowuje wszystko, do czego się odwołuje.
+
+@ 0 1 0 1b762c079bc654b5142014f9af7b1a17
++ ### `↯/s.146.1.2` – `Failed`
+
+@ 0 1 0 03df6e2c0d24a7d11d98571df5e1a5ff
++ **Przykład.** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
+
+@ 0 1 0 184f587cfad810a00a1733b948aecece
++ Przyczyna niesie ślad stosu.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 02e06909ce28d85e05bef9ddc48783d3
++ - Źródło: `lib/abscission/src/core/abscission.Shrink.scala`

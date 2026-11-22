@@ -1,0 +1,547 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14b7ea2cc44022971599f7702adf9185
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e79e4695b1c25aa085ae9689953b275
++ info   记录和具名元组，其字段的类型来自代码编译时读取的 schema
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1e8127f8c079d09919e45f48bafacc90
++     _Polyvinyl_ 是 Soundness 中 schema 驱动的记录背后的类型提供器机制。
++     **规范**是一个扩展 `Specification` 的对象，它在调用代码编译时读取一个 schema（JSON Schema、XML Schema、TEL schema 文档、数据库的表定义），其 `record` 和 `tuple` 方法把原始数据转换为一个值，该值的字段恰好具有 schema 所声明的类型。
++     `record.name` 的类型检查结果为 `Text`，而 `record.nope` 无法编译，无需编写任何 Scala 类来镜像 schema。
+
+@ 0 1 0 0834dd4adcd801ed166db1a53f6f5320
++     各部分的组合方式如下：
+
+@ 0 10 0 0664c3fe8a052e101a4bf2b07848130c
++     - `Specification` 以 `Specification.Member` 的有序列表形式提供 schema，并提供少量作用于底层数据的原语：`access`、`absent` 和 `repeated`，对于更丰富的格式还有 `entries`、`kind`、`elements` 和 `pairs`；
++     - 每个 `Specification.Member` 是一个 `Specification.Member.Value`（标量，以类型标签命名）、一个由更多成员组成的 `Specification.Member.Record`，或一个由备选项组成的 `Specification.Member.Union`，并带有一个 `Specification.Multiplicity`：`One`、`Optional`、`Many` 或 `Keyed`；
++     - 每个类型标签的 `Intensional` 实例说明标量变成什么 Scala 类型，以及如何读取它的一个值；`Intensional.Fallible` 的读取可能失败；
++     - `record` 和 `tuple` 宏把这些组合起来，生成 `Record` 的结构化细化类型（惰性读取）或具名元组（及早读取）。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0312b5b1490cf40113dea322c192b2c9
+
+% 0 1 0 138e6f155c61d06f1b614e1acbe56630
+
+% 0 1 0 16e2f0b08bc444f40dc50acffb8c9a1a
+
+% 0 1 0 1854204de30aae1f097a5db828bd42ba
+
+% 0 1 0 1b06eaaee677f79211fa8f98f2a2ea36
+
+% 0 1 0 096cd005e507031b151f4a286aabfd00
+
+% 0 1 0 1e5b4ee5df4d29d0134b95df1bdea303
+
+% 0 1 0 0b5cc8f746dd9f3c0fd26f43b2590475
+
+% 0 1 0 1e1efd36401482cc05976ff2fb8d3853
+
+% 0 1 0 0c09b282f14c934105380f2d61776caf
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 0ecc7b9abca2d9ef19bb1a3bfec72653
++     具体的规范与其格式放在一起：jacinta 中的 `Json.Provider`、xylophone 中的 `Xml.Provider`、stratiform 中的 `Tel.Provider`，以及 OpenAPI 客户端的 `record()`。
++     Polyvinyl 本身对任何格式一无所知。
+
+@ 0 5 0 13814946ae99b7081ff36a8c97741498
++     **编译顺序。**
++     宏在调用处编译时求值规范对象，通过编译器的类路径加载其类，因此该对象必须在调用其 `record` 或 `tuple` 的代码之前编译：应在单独的文件中声明它。
++     编译器会为此对同一次运行中的不同文件排序，挂起调用方的编译单元，直到该对象被生成；而同时包含两者的单个文件无法排序。
+
+@ 0 7 0 03d6defeebaf71970d29dcf683434708
++     该库有一个发布的源集 `polyvinyl.core`，它可为所有平台编译，并完整导出到 `soundness` 总括包：`Intensional`、`Specification.Member`、`Specification.Multiplicity`、`Record` 和 `Specification`。
++     第二个组件 `polyvinyl.fixtures` 是内部的、不发布：它包含测试用的规范（基于小型 `Tree` 文档类型的 `TreeProvider`，以及 `PersonRecords`、`ShapeRecords` 等对象），这些测试需要它们在调用处之前编译；它也是一个完整 `Specification` 的简洁示例。
+
+@ 0 2 0 1f1a10506a35df8b0632f87cc55271e9
++     记录是一个 `Selectable`，因此读取记录的代码不应进行捕获检查：在捕获检查下，选择细化 `Record` 的 `Text` 字段目前会被拒绝。
+
+% 0 1 0 0aa68fcad3c751a111ec846d97a35e0a
+
+% 0 1 0 0dca070edc2c86bf1112695f8698ddca
+
+% 0 1 0 16187f063511b01604dea561fe643b12
+
+% 0 1 0 1c71f6f59de9a0780d892be6fd794b68
+
+% 0 1 0 021cb88f010b1f73025cf2443a5423e4
+
+@ 0 1 0 100beaa20e60510717c444d34cb67290
++ entry .Specification   一种文档格式上的类型提供器：以 `#fields` 表示的 schema，以及读取原语
+
+% 1 1 0 1fbc5970b762e715016eccc2ebfd7252
+
+@ 0 3 0 1c5fa61f0dee663c0a0aa9d890177dc1
++       `Specification` 是 schema 驱动的记录类型的来源对象。
++       具体的规范是一个 `object`（通常扩展某个格式的提供器类，如 `Json.Provider`），它声明：
+
+@ 0 6 0 011e8977a78be7b000563b4ea5d5da64
++       - `#Origin`，原始数据的类型（`Json`、`Xml`、`Tel`），以及 `#Form`，一个标记类型，其 `Intensional` 实例在其下查找；
++       - `#Failure`，任何字段在读取时都可能失败所抛出的错误；
++       - `#fields`，即 schema，形式为具名 `Member` 的有序列表；
++       - 原语 `#access`、`#absent` 和 `#repeated`，以及在格式具备时的 `#required`、`#entries`、`#kind`、`#elements`、`#pairs` 和 `#unoffered`。
+
+@ 0 4 0 007b8cd4c0642f4805e9307f2f7ce837
++       之后无需再声明任何内容，它就拥有 `#record` 和 `#tuple`：两者都是 `transparent inline`，在调用处以规范对象为接收者展开，因此宏通过类型找到该对象，加载它，并求值其 `#fields`。
++       因此该对象必须在调用代码之前、在单独的文件中编译。
+
+% 2 1 0 1ba2a1518413244d046144d495162184
+
+% 3 1 0 115a10cc3936fbe71a094491ee1e4fbc
+
+% 0 1 0 060c8756c5bc68ed03ef8b25b8228dda
+
+% 0 1 0 0b1657291b3efd4d0c5ac8aed6ec388b
+
+% 0 1 0 1fca43ca7261d78c05f46113f329e024
+
+% 0 1 0 0bc89da13a281f5d0a9d1813da65509c
+
+% 0 1 0 19cd78cf64ddf0201e9e5979281cca0b
+
+% 0 1 0 144ffbf443339eba1b39755e26d7410b
+
+% 0 1 0 18f5109599ebad670609d5653e74b597
+
+% 0 1 0 0c4026e4f15aef1514c17d49cf3d3754
+
+% 0 1 0 10234c844f7d73da0b755346d7aefc15
+
+% 0 1 0 12057c34d6bf407a097383a6c4098455
+
+% 0 1 0 1c2e2c134f494a6d1bc2d88ff3d7774d
+
+% 0 1 0 07b4b179c928eee30d3a5756aac40de3
+
+% 0 1 0 13d8ae79615cd9e517477034f73bfee9
+
+% 0 1 0 05042ad12966d193132c46df4bffd617
+
+% 0 1 0 047c59d1efb5309b0c5c45ecfd713942
+
+% 0 1 0 0711717e7789638f1ecefd9bd3906c58
+
+% 0 1 0 1eb3f0e0b5f7491d17ea9c45f88a172f
+
+% 0 1 0 064fc1ca2eee24a4068cf5e62c9a03e0
+
+% 0 1 0 028eb5f288598e2c15416a39418d0873
+
+% 0 1 0 1bd02338c9ee809209f8c3e9ce5c32f3
+
+% 0 1 0 09309df4f1d70f38003a2ee87aba12a1
+
+% 0 1 0 15436800a5b04cd91b753b845975dcf0
+
+% 0 1 0 10f0bbaeb36ee2851a58b00a0ae48660
+
+% 0 1 0 1b7e8e262e48d1d719ca96e099015f99
+
+% 1 1 0 02e618c23026e3680fa1de89cdbc137c
+
+@ 0 4 0 0643bd446b3c111e04aca73da73e8bf8
++       这样，在另一个文件中写 `object People extends TreeProvider(List(t"name" -> Member.Value(t"text")))`，就使 `People.record(tree).name` 成为类型为 `Text` 的字段。
++       `Intensional` 实例位于 `#Form` 类型的伴生对象中，因此无需导入即可找到。
+
+@ 0 3 0 0a234a897cd99b70160f71d983b0ef53
++       无法读取的 schema 会从 `#fields` 中以 `Specification.Error` 抛出，宏将其报告为调用处的编译错误，类型标签没有 `Intensional` 实例的字段也同样如此。
+
+% 1 1 0 17be0a99ef75a7420098461be2fa466c
+
+% 0 1 0 006eef61ad47c1da151826df85d6b981
+
+% 0 1 0 14c25f9bf061344b034538f2863046cc
+
+@ 0 1 0 11417341a0d8ec3d0c3a414c426b82f2
++   entry .Error   无法读取的 schema：在调用 `record` 或 `tuple` 之处报告为编译错误
+
+% 1 1 0 0847baaf210a3918063f4ddc85607ac8
+
+@ 0 94 0 17fdf5fc09e1c1de1b31c1ff3004b6bd
++         _the specification could not be read because `detail`_。
++         当规范的 schema 无法解析或组合时（文档格式错误、引用无法解析），由规范的 `#fields` 抛出。
++         `record` 和 `tuple` 宏在一个会中止编译的战术下读取字段，因此该错误表现为调用处的编译错误，而不是运行时错误。
++     entry #detail   schema 出了什么问题
++   entry .Raising   从 `form` 中的 `origin` 读取、字段以 `failure` 失败的规范
++       `Specification.Raising[form, origin, failure]` 即 `(Specification in form from origin) { type Failure = failure }`：宏引用规范对象时所用的类型，供 `.recordExpansion` 和 `.tupleExpansion` 使用。
++   entry .record   `Specification#record` 背后的宏实现
++       不直接调用：规范对象上的 `#record` 会拼接它，它根据对象的单例类型定位该对象，求值其 `#fields`，并构建细化的 `Record` 类型以及读取其字段所用的变换。
++       当接收者不是对象时，它以 _record and tuple can only be called on a specification object_ 中止。
++   entry .tuple   `Specification#tuple` 背后的宏实现
++       不直接调用：规范对象上的 `#tuple` 会拼接它。
++       它构建具名元组类型以及一次性读取所有字段的代码；当调用处找不到 `Tactic[Failure]` 时，它以 _the tuple's fields may raise `Failure`, but no Tactic for it is in scope_ 中止。
++   entry .recordExpansion   根据显式字段列表得到的细化 `Record` 类型及其变换
++       供另一个库的宏使用：该宏手头已有文档某一部分的字段（例如 OpenAPI 文档中的响应 schema），而规范对象只提供格式的原语和 `Intensional` 实例。
++       它返回细化的 `Record` 类型以及要传给 `#build` 的变换。
++       在宏中、在 `Quotes` 下运行。
++   entry .tupleExpansion   根据显式字段列表得到的具名元组类型及构建它的函数
++       与 `.recordExpansion` 相同，但用于具名元组形式：它返回具名元组类型，以及把源类型的值读入其中的代码。
++       在宏中、在 `Quotes` 下运行。
++   entry #Origin   规范所读取的原始数据的类型，如 `Json` 或 `Xml`
++   entry #Form   规范的 `Intensional` 实例在其下查找的标记类型
++       类型标签 `"text"` 的实例是一个 `"text" is Intensional in Form from Origin to Text`。
++       `Form` 通常就是提供器类本身，因此实例位于其伴生对象中，通过隐式作用域找到。
++   entry #Failure   每个字段在读取时都可能失败所抛出的错误
++       缺失的必需值、种类错误的值、违反 schema 约束的值。
++       记录的字段类型为 `Record.Field[result, Failure]`，因此每次访问都需要一个 `Tactic[Failure]`，调用方可以在一个战术下收集文档中的所有问题（使用 `validate` 和 `track`，每个字段一个 `venture`）。
++       规范所用的每个 `Intensional.Fallible` 实例都必须抛出 `Failure` 或其子类型。
++   entry #fields   schema：按顺序排列的记录字段，每个都是一个名称和一个 `Member`
++       在调用处编译时由宏求值。
++       记录的成员是无序的，但具名元组的元素遵循此顺序。
++       无法读取的 schema 会抛出 `Specification.Error`，它变成编译错误。
++   entry #access   值中某个具名字段的值，或表示缺失字段的哨兵值
++       每个 `Multiplicity.One` 和 `Multiplicity.Optional` 字段都通过此原语获取：JSON 对象的属性，或 XML 元素中带有该字段标注的子元素。
++       缺失的字段在这里不是错误；它是一个使 `#absent` 为真的值。
++   entry #absent   `#access` 返回的值是否代表缺失的字段
++       为真时，`Optional` 字段为 `Unset`。
++   entry #repeated   携带任意数量值的字段的所有值，按文档顺序排列
++       `Multiplicity.Many` 背后的原语：JSON 数组的元素，或在会重复字段的格式中带有该字段关键字的每个同级节点。
++       缺失的字段没有值。
++   entry #required   必须存在的字段的值，在格式要求时失败
++       应用于按 `Multiplicity.One` 读取的字段。
++       默认情况下，它原样返回值，由字段的 `Intensional` 实例处理缺失的值；规范可以重写它，为缺失的必需字段抛出其 `#Failure`。
++   entry #entries   键控字段按名称排列的值，用于 `Multiplicity.Keyed`
++       具有字典的格式会重写它；默认情况下它以 _this specification has no keyed fields_ 触发 panic，因此键控成员只有在它被重写时才可用。
++   entry #kind   值的种类，`Member.Union` 据此选择其备选项
++       `t"leaf"`、`t"node"`、`t"string"`、`t"array"`：规范为其值可能具有的形状所起的任何名称，与其联合的备选项所用的键种类相对应。
++       默认情况下它以 _this specification has no unions_ 触发 panic。
++   entry #elements   本身是序列的值的元素，用于联合的 `Many` 备选项
++       默认情况下它以 _this specification has no unions_ 触发 panic。
++   entry #pairs   本身是字典的值中的具名值，用于 `Keyed` 备选项
++       默认情况下它以 _this specification has no unions_ 触发 panic。
++   entry #unoffered   对种类不属于任何备选项的联合值失败
++       接收该值的种类和所提供的种类。
++       规范会重写它以抛出其 `#Failure`；默认情况下它以 _the value's kind, `kind`, is none the union offers_ 触发 panic。
++   entry #Context   记录成员读取时所处的上下文，用于其来源不在其值中的规范
++       例如一个打开的文件，记录只说明在其中何处查找。
++       由 `Specification.recordWith` 生成的记录在每次选择成员时，除了 `Tactic` 之外还要求一个上下文，并将其传给 `#accessWith`、`#repeatedWith`、`#entriesWith` 和 `#series`。
++       上下文在每个传递它的地方都受到跟踪，因此所指明的类型无需声明它是一个能力，但它可以是。
++       没有上下文的规范不定义它。
++   entry #accessWith   在上下文中的 `#access`
++       由 `recordWith` 生成的记录用它获取字段。
++       默认情况下它就是 `#access`。
++   entry #repeatedWith   在上下文中的 `#repeated`
++   entry #entriesWith   在上下文中的 `#entries`
++   entry #Series   多重性为 `Series` 的成员读取为的集合
++       规范自有的类型，取决于生成记录时的上下文以及元素的类型。
++   entry #series   根据读取单个元素的函数，生成 `Series` 成员的集合
++       该函数应用于一个值、一个上下文和一个战术，也正是宏本来会应用于 `Many` 成员每个元素的函数。
++       集合保留该函数，并在被请求元素时，在当时给定的上下文中读取该元素。
++       默认情况下它以 _this specification has no series_ 触发 panic。
++   entry #build   把一个值和一个字段变换包装为 `Record`
++       由生成的代码为每个记录和嵌套记录调用；默认为 `Record(data, transform)`。
++       变换是一个纯函数，因为记录会保留它。
++   entry #record   基于一个值的惰性读取记录，以每个字段一个带类型成员的方式细化
+
+% 1 1 0 007c1cb5af8091181fa8a2dcd1c3bee1
+
+@ 0 5 0 0ace6e003780f2c40d20dcd62c1303ce
++         `spec.record(value)` 声明的返回类型为 `Record`，但由于它是 `transparent inline`，其调用具有它的一个结构化细化类型：对于三个字段的 schema，为 `Record { def age: Record.Field[Int, Failure]; def name: Record.Field[Text, Failure]; def employed: Record.Field[Boolean, Failure] }`。
++         不在 schema 中的字段无法编译。
+
+@ 0 4 0 0f0ccf862cb718ca002fa23107baa166
++         记录持有原始值，并在每次选择字段时读取它，因此格式错误的字段只有在被读取时才会被发现，读取两次的字段也会被转换两次。
++         每次字段访问都通过选择该字段之处作用域中的 `Tactic[Failure]` 失败。
+
+% 2 1 0 00b4976bd926d33f125bbe7a3b261d25
+
+% 3 1 0 121a94869cd2721e1c6bc9283d4d2795
+
+% 4 1 0 1b812c3e122227de031c36ab55c04c88
+
+% 5 1 0 0c049e0247be77a104c3e9a14e6fb743
+
+% 6 1 0 13088df6c7d6fe6612ce9be68d700b80
+
+% 8 1 0 1b7d57d6d97740ba037a948ee7ae747d
+
+% 0 1 0 1cda08154806309318f088b013407e3d
+
+% 0 1 0 115eaaba5cfad25b03899f5c860e1633
+
+% 1 1 0 0b0653c6fead68b00ec26d7ca826325e
+
+@ 0 3 0 090a62edb826260e1766500faf3935ae
++         嵌套的 `Member.Record` 变成嵌套记录，`Many` 成员变成 `List`，`Optional` 成员变成 `Optional`，`Keyed` 成员变成 `Map[Text, _]`。
++   entry #tuple   基于一个值的及早读取具名元组，按 schema 顺序每个字段一个元素
+
+% 1 1 0 04ff8b7e8e4fffdc103afc65640b8d0f
+
+@ 0 4 0 068792a01a52975b110004e26bbc90ba
++         `spec.tuple(value)` 在构建元组时一次性读取所有字段：格式错误的字段会使构建失败，无论它是否被使用，因此元素具有其普通类型（`Int`，而非 `Record.Field[Int, Failure]`），并且调用处的作用域中必须有一个 `Tactic[Failure]`，没有它就无法编译。
+
+% 2 1 0 144c0768ca524bac028923e839dba54e
+
+% 3 1 0 06ba25ec2e8a8c3217e76e5bc362fdf0
+
+% 4 1 0 13d43eeecb193f8402c6c3c541c6a8ea
+
+% 5 1 0 0955b589a9f2bd2e1190d731f0f31e3a
+
+% 6 1 0 16036521f1651df404cfc8b1dce7ebf0
+
+% 8 1 0 1b9a71e35d0c4ef415b26a2d0454a5ae
+
+% 0 1 0 0acaa67d173345b31443c58194348e1b
+
+% 0 1 0 08b852a2f56771a90983bd9b2cafa156
+
+% 0 1 0 13776354efa1c93a1177916e170d9cc7
+
+% 1 1 0 0e37fdffe4f28a300b8a7f8060880544
+
+@ 0 2 0 01bef1c5f4bc78bf12e2bec4159f883d
++         嵌套的记录成员变成嵌套的具名元组，联合的记录备选项也变成嵌套元组。
+
+@ 0 1 0 18b4a4cafca3ead31a9fea0dfff7f8ec
++   entry .Member   规范 schema 中的一个字段：标量、嵌套记录或联合
+
+% 1 1 0 0b3bf64a5abea3e600d45492aafce34d
+
+@ 0 2 0 1f9074e137c197b3002eca37ca7ca304
++         规范的 `#fields` 是具名 `Member` 的列表，其顺序即具名元组元素所遵循的顺序。
++         共有三种：
+
+@ 0 8 0 0dd6d23bbeded09815af083f0e62ce73
++         - `Member.Value(fieldType, params, multiplicity)`：一个标量，由标签 `fieldType`（`t"text"`、`t"integer"`）的 `Intensional` 实例读取，该实例原样接收 `params`（一个界限、一个模式）；
++         - `Member.Record(fields, multiplicity)`：由更多成员组成的嵌套记录，由同一规范从该字段自身的值中读取；
++         - `Member.Union(alternatives, multiplicity)`：若干备选项，每个都以选择它的值的种类（由 `Specification#kind` 报告）为键，读取为它们类型的 Scala 联合类型。
+
+@ 0 2 0 0b04922c9a4ab46217a4e5443f26f0f3
++         每个成员都带有一个 `Multiplicity`，默认为 `One`，可用 `#optional`、`#many` 和 `#keyed` 设置。
+
+% 2 1 0 1468f666ba2632571dbec997dde2ab02
+
+% 0 1 0 10c83641e9ec49e30ab13c21bd7364fd
+
+% 1 1 0 0207a0cab5a7499a0bf4506eda1da0fb
+
+% 0 1 0 1e2fb9f2e29dd9980021853d34359368
+
+% 0 1 0 00343613fc5ffbdb100127d9a55f59d4
+
+% 1 1 0 00194a939c0357f71032585ee6ef9920
+
+% 0 1 0 12d529a03583becd0c5333702ab09647
+
+% 0 1 0 1956b32af6bb29250457fd2299849140
+
+% 1 1 0 1a382d4db2b976b11296eccb33aef446
+
+% 0 1 0 1166592741ffe09d0f8f67dffc4d3dff
+
+% 0 1 0 13d778ec4e5f83e40a7591aa293dec73
+
+% 1 1 0 1684f67196560de702b99859d6bef2d4
+
+% 0 1 0 124ba4f248340fc20e682d26dbade710
+
+% 0 1 0 01695ae756265dff093df446e8aa7709
+
+% 1 1 0 153518dd4f7d1c101037f60f366e8f67
+
+% 0 1 0 0845c0ee572c6b540865f9198bb5388f
+
+% 0 1 0 1b3bc51b641e4a581eff98734477948e
+
+% 0 1 0 1dd3a30aa1df9d420cddbf3ca2e46bc4
+
+% 1 1 0 196098c5347c0bac0aa5f2d272740a99
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 3 0 14317d5ff51da6a40af8640b5aa32b96
++         联合的备选项可以带有自己的多重性，因此只有一个备选项的联合会把一个多重性嵌套在另一个之中（`List[List[Text]]`）；单独的 `Member` 只带有一个。
+
+% 0 1 0 0a6c368f0b21219e1265105d86c78017
+
+% 0 1 0 1a199b8b1cd93f121f0f321014da98af
+
+@ 0 12 0 047f6eb3ec781e3515b147624a7813a5
++     entry .Value   标量字段，由其类型标签的 `Intensional` 实例读取
++       entry #fieldType   类型标签，如 `t"text"`，据此查找字段的 `Intensional` 实例
++           实例按确切的标签作为键：`t"Text"` 找不到 `"text"` 的实例，而没有实例的标签是编译错误，_could not find an Intensional instance for the field `name` with type `label`_。
++       entry #params   成员的参数，原样传给其实例
++           例如界限或模式，供用 `Intensional.parametric` 生成的实例使用。
++       entry #multiplicity   字段携带多少个值
++     entry .Record   由更多成员组成的嵌套记录
++       entry #fields   嵌套记录的字段，按顺序排列
++       entry #multiplicity   字段携带多少个嵌套记录
++     entry .Union   值可以具有若干形状之一的字段，按其种类选择
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 20 0 1c273ff4b56e8b440b76f9f0c8d00c9a
++           每个备选项都以选择它的值的种类（`Specification#kind`）为键，字段读取为各备选项类型的联合（`Text | List[Text]`）。
++           种类不属于任何备选项的值会传给 `Specification#unoffered`。
++           在元组中，记录备选项变成嵌套的具名元组。
++       entry #alternatives   各个备选项，每个都以选择它的值的种类为键
++       entry #multiplicity   字段携带多少个值
++     entry #multiplicity   字段携带多少个值
++     entry #of   具有另一种多重性的此成员
++     entry #optional   按 `Optional` 读取的此成员，值缺失时为 `Unset`
++     entry #many   按任意数量值的 `List` 读取的此成员
++     entry #keyed   按 `Map[Text, _]` 读取的此成员，其中每个值都对应一个名称
++     entry #series   按规范自有集合逐个元素读取的此成员
++   entry .Multiplicity   字段携带多少个值：一个、至多一个、任意数量，或按名称的任意数量
++       `One` 通过 `Specification#access` 和 `Specification#required` 恰好读取一个值；`Optional` 读取至多一个值，形式为 `Optional`，在 `Specification#absent` 为真时为 `Unset`；`Many` 通过 `Specification#repeated` 读取任意数量的值，形式为 `List`；`Keyed` 通过 `Specification#entries` 读取任意数量、各对应一个名称的值，形式为 `Map[Text, _]`。
++       `Series` 读取任意数量的值，形式为规范自有的集合，即其 `#Series`，由 `Specification#series` 生成，只在被请求元素时才读取该元素；它用于在 `#Context` 中读取的规范。
+
+@ 0 3 0 1a386b3bd90c18f41fd2115afe0f2098
++       宏自行应用多重性，因此 `Intensional` 实例只描述单个值，规范也无需再对可选性或重复作任何说明。
++       `Member` 用 `#of`，或 `#optional`、`#many` 和 `#keyed` 来取得多重性。
+
+@ 0 1 0 05b2f7a22824f92f09a5ddf9f99bc5a7
++ entry .Record   一个值，其字段的类型由规范决定，从其底层数据中惰性读取
+
+% 1 1 0 01256a4c1a3b8fb30ec5a18b8d6b4a02
+
+@ 0 5 0 101d7d3dbee135b20169b2c5891ec48d
++       `Record` 是基于一个原始值（其 `#recordData`）和一个从字段名称到该字段读取结果的函数（其 `#recordAccess`）的 `Selectable`。
++       它不是手工构建的：规范的 `record` 方法返回 `Record from Origin` 的结构化细化类型，每个 schema 字段对应一个成员，类型为 `Record.Field[result, Failure]`，因此被选择的字段具有 schema 中的类型，并通过调用方的 `Tactic` 读取。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 05af3bccaae7232102b763a9c4c9bc67
+
+% 0 1 0 120f060ef5cfca661bd1cdd26d5d66d3
+
+% 0 1 0 180089370c1d10780972ae432a4d7076
+
+% 0 1 0 044278a0f086c25013a038d69169575d
+
+% 1 1 0 1b77df62f0be3244068fb7bba1d8d215
+
+@ 0 5 0 0a45ab6df480da940d311ab7fd0cbace
++       它自身的成员特意采用了不寻常的名称（`recordData`、`recordAccess`），以便 schema 几乎可以声明任何字段名；原始数据通过扩展方法 `.data` 获取，名为 `data` 的 schema 字段优先于它。
++       与 `java.lang.Object` 的方法同名的 schema 字段（`notify`、`toString`）无法通过选择获取，只能通过 `#selectDynamic` 获取。
+
+% 1 1 0 037f76c84e5ff13018aa5d45cc0e2d8c
+
+@ 0 20 0 01e5c14f3d076e8d0be0ac6a8e307ab5
++   entry .Field   记录字段的类型：它的值，在读取它的代码的 `Tactic` 下读取
++       `Record.Field[result, failure]` 是纯上下文函数 `Tactic[failure]^ ?-> result`，在每个选择该字段之处应用，正如 `result raises failure` 那样。
++       由于它是纯的，提及记录的类型（例如以记录为载荷的错误）不捕获任何东西。
++   entry .apply   基于一个值和一个字段变换的记录
++       `Record(data, access)`：生成的代码构建记录的方式，由 `Specification#build` 调用。
++       访问器是一个纯函数，因为记录会保留它。
++   entry .data   记录的底层数据，类型为规范的 `Origin`
++       它是扩展方法而非成员，以便 schema 可以声明名为 `data` 的字段，该字段随后优先：细化类型的成员会在尝试扩展方法之前被选择。
++   entry #recordData   记录从中读取其字段的原始值
++   entry #recordAccess   从字段名称和记录数据到该字段读取结果的函数
++   entry #selectDynamic   按名称读取字段，与细化记录的字段选择相同
++       名称以 JVM 编码形式到达（`street-address` 为 `street$minusaddress`），在查找之前会被解码。
++       结果是字段的读取结果，即一个基于规范 `Tactic[Failure]` 的上下文函数，细化的字段类型会在调用处应用它；按名称调用时，由调用方进行类型转换并应用它。
++       不是字段的名称会以 _the record has no field named `field`_ 触发 panic。
+
+@ 0 1 0 1243bb4a6e9beba718cc43f2bcea7086
++ entry .Intensional   如何读取标量类型标签：它变成的 Scala 类型，以及如何读取一个值
+
+% 1 1 0 0da8945ec082949c1cb43f4c0fe55fa2
+
+@ 0 4 0 012b14412e2f378416a0311d64f611e9
++       规范为其 schema 可以指明的每个标量类型标签声明一个实例。
++       `"text" is Intensional in Form from Origin to Text` 从规范 `Origin` 的值中把 `Specification.Member.Value(t"text")` 读取为 `Text`；`Form` 是规范的标记类型，因此实例在其伴生对象中给出，无需导入即可找到。
+
+% 2 1 0 08652242f78d0b2004f187869f0a2fe5
+
+% 3 1 0 1332dfdad31ea9cd13523fb8223948f1
+
+% 0 1 0 0723387d36447c2802dcda6c5b7f85c2
+
+% 0 1 0 08f2ff5a34b9e4c8003f1c36f4420995
+
+% 0 1 0 040f32c4a66024181a3a2330549eff60
+
+% 0 1 0 0008f08f938ccae116a377729ed135f2
+
+% 0 1 0 1aec714bd69579831df92817866abefd
+
+% 0 1 0 087bd9b09db6efb7060285b6318299f2
+
+% 1 1 0 109ff7d3c0ec9ff41ea2e463ed4a9622
+
+@ 0 4 0 06d7cb2c2e1d06e21c5d01a02d5685bf
++       一个实例读取一个值：成员的 `Specification.Multiplicity` 由宏在其外围应用。
++       可能失败的读取则是 `Intensional.Fallible`，通常用 `Intensional.Reading` 生成。
++       实例保留其访问器，因此它捕获访问器所捕获的一切；基于纯函数的实例本身是纯的。
+
+% 1 1 0 05f258209aa23315014eba4d1806de66
+
+% 1 1 0 11df7d05bc42b12b171a55af59535d79
+
+@ 0 1 0 0e56a3fa84abed50152a2a79f81bb276
++   entry .Fallible   读取可能失败的 `Intensional`，通过其 `Error` 的 `Tactic` 失败
+
+% 1 1 0 16b41b321df325520f725efce156c4ea
+
+@ 0 4 0 142977d89304885d158146619359fc09
++         可能失败的读取（种类错误的值、超出界限的值、不匹配其模式的字符串）是一个 `Fallible`，其 `#transform` 接收一个 `Tactic[Error]`。
++         在记录中，字段在选择它的代码的 `Tactic` 下读取；在元组中，在构建元组之处的 `Tactic` 下读取。
+
+@ 0 9 0 06c8c241ef9c3e770c9892425ef638f5
++         实例的 `Error` 必须是规范的 `Failure` 或其子类型，使每个字段都以同一种方式失败；抛出其他错误的实例是编译错误，_the instance for `label` raises `error`, not the specification's `failure`_。
++         可失败性在这里声明，而不是作为 `raises` 结果声明，因为在捕获检查下，`raises` 结果无法实现抽象方法。
++     entry #Self   此实例读取的类型标签
++     entry #Error   读取可能抛出的错误
++     entry #transform   读取一个值，带有成员的参数，通过 `Tactic` 抛出
++   entry .Reading   基于值、其参数和 `Tactic` 的纯函数的 `Fallible` 实例
+
+% 1 1 0 17a83e990dde0bc512536346a59c4571
+
+@ 0 4 0 063b0222be71aecd0321528cd7712737
++         `Intensional.Reading[label, form, origin, result, error]` 是一个类，因此格式可以把它的每个可失败读取器声明为类类型的 given：以细化的 `Fallible` 为类型的 given 会是一个捕获 `any` 的字段，使持有它的对象成为一个能力。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 1 1 0 11621829530a7bef0191b6af5796467c
+
+% 0 1 0 0d3e9870591dc63401924cece0565571
+
+% 0 1 0 1a1315823408bce809a79f992364962d
+
+% 0 1 0 07009eedece20825038f65815972471c
+
+% 0 1 0 145b92940fec9a39046bcd6d77bf8f09
+
+% 0 1 0 07412f7cbbe51efb0c85f7c54860b0f1
+
+% 0 1 0 0d68c179663c3aea13a937c1f54493ee
+
+% 0 1 0 0e929d0885f3dc501a4c040152ccaa18
+
+% 1 1 0 123b18ed36c9eafe04c35744221ae67d
+
+@ 0 9 0 07f7b98d2ffbfb6415ef0830da83f30a
++   entry .apply   仅基于值的函数的实例
++       `Intensional(accessor)` 生成一个忽略成员参数的实例。
++       其标签、形式、源类型和结果类型来自它所定义的 given 的期望类型。
++   entry .parametric   基于值和成员参数的函数的实例
++       用于其读取取决于参数的类型标签，例如有界整数或模式：函数原样接收 `Specification.Member.Value` 的 `params`。
++   entry #Self   此实例读取的类型标签，一个字面量 `String` 类型，如 `"text"`
++   entry #transform   读取源类型的一个值，带有成员的参数

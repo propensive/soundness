@@ -1,0 +1,302 @@
+orthant 2 language
+
+@ 0 1 0 1c696909bd4341ce0381291a93d5b6f6
++ ## Dane binarne
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 3 0 0dada82510aa678f1092922894cd7b91
++ Ustrukturyzowane dane binarne składają się z rekordów o stałej szerokości: nagłówków plików,
++ pakietów sieciowych, komunikatów protokołów urządzeń. Czyta się je za pomocą
++ [klasy typów][klasa typów], która odwzorowuje bajty na typy Scali.
+
+@ 0 3 0 05fd6f9b835b6ac80716eed97943e8a3
++ Klasa case złożona z [typów liczbowych](numbers.md#numeric-types) o określonym rozmiarze opisuje
++ układ binarny. Każde pole podaje swoją dokładną szerokość i sposób odczytu swoich bajtów, więc
++ kształt rekordu jest jego definicją, a odczytanie wartości sprowadza się do podania jej typu
++ pod danym przesunięciem.
+
+@ 0 1 0 020e83f6d3bf79e3099f4eefbdebdd08
++ ### O układach binarnych
+
+@ 0 4 0 149efb825f23ffeb01fc8fa79052f9c7
++ Ręczne parsowanie struktury binarnej to arytmetyka na indeksach. Bajty od 4 do 7 to długość,
++ little-endian. Bajt 8 to flagi. Każde przesunięcie jest liczone względem poprzedniego, każda
++ szerokość jest stałą, którą trzeba utrzymywać w zgodzie ze specyfikacją, a zmiana jednego pola
++ po cichu przesuwa każde pole po nim.
+
+@ 0 6 0 04895b72c268a9af03f1e6d4c1856ccb
++ Tutaj układ jest [derywowany][derywacja] z klasy case. Typy o określonym rozmiarze mówią, ile
++ bajtów zajmuje każde pole i jak są one czytane: `U32` to cztery bajty czytane jako liczba
++ całkowita bez znaku, a `B16` to dwa surowe bajty. Derywacja składa pola w kolejności ich
++ deklaracji i wylicza każde przesunięcie. Jednokrotne opisanie układu i wyprowadzenie z niego
++ zarówno czytnika, jak i zapisywacza nie pozwala im się rozejść, co jest
++ [poprawnością](../../philosophy/correctness.md) dzięki posiadaniu jednej definicji.
+
+@ 0 2 0 0dab7bfd8ab0ef2001c3e80a89f0c88d
++ Wszystko pochodzi z pakietu `soundness`. Drugi import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 11ea3e0a24506b7019ada128db10be95
++ ### Opisywanie układu
+
+@ 0 2 0 07f67a6206d27a08112d69d3f5b3a08c
++ Rekord binarny to klasa case złożona z pól o stałej szerokości, która otrzymuje instancję
++ `Debufferable` przez derywację:
+
+% 2 1 0 11b1a2068929ac9d087d1c38908ea155
+
+% 0 1 0 139241d4db4d97351b28452e6aa1d402
+
+% 0 1 0 02bd61b63a8907370d582cb446f30099
+
+% 0 1 0 107de0e09508d7550f7ef3c9632e2608
+
+% 1 1 0 1abb4c5bb1b49e6619f8c64b057e36b5
+
+@ 0 2 0 02890d5a9b94ff641de377049e0f6cef
++ Szerokość każdego pola wynika z jego typu. Tutaj szerokości wynoszą cztery, dwa, dwa i cztery
++ bajty, więc rekord ma dwanaście bajtów. Mówi to `byteWidth`, bez wartości pod ręką:
+
+% 2 1 0 04cebf9846ba1eef0200fc91cf163611
+
+% 3 1 0 14b698d43b30b2370be5b13fd9242d4e
+
+% 4 1 0 0fd2d4d9df4115e80ab3b202bec66f00
+
+% 0 1 0 1b8a8e4e282a10cf1b676f54669a437b
+
+% 0 1 0 0adfbffcaecc29ca04dfb4d89e0e252a
+
+% 1 1 0 17eb65bd811a5a0f12a83c159164459c
+
+@ 0 2 0 1cb758ca251380401bcc6660cc4e1cb9
++ Rekordy się zagnieżdżają. Pole, którego typ sam jest rekordem `Debufferable`, wnosi całą swoją
++ szerokość, więc układ składa się z mniejszych układów i nie trzeba go spłaszczać ręcznie.
+
+@ 0 1 0 08c941c3efc87d830104e747fd7bc7b2
++ ### Odczyt
+
+@ 0 1 0 06ddfcccbb613bd21cbacb48b5fd9ec2
++ `unpackFrom` czyta wartość wybranego typu z bajtów pod danym przesunięciem:
+
+% 2 1 0 198aebf43aca210a1b38ee4563291af1
+
+% 0 1 0 144fa10c1bc85d1f04ce5d49cd502e62
+
+% 0 1 0 0a8618b702ce80570f7aaa8baa74042a
+
+% 1 1 0 0365bc83869c51c31831a9fb625e9bdb
+
+% 3 1 0 07034649838a4ee11bd9a9f397da0e8a
+
+% 4 1 0 0dea941356a9a51f0ce841946786792a
+
+% 5 1 0 093e0852a15ddf8701389d83cec6a421
+
+% 0 1 0 1f19f3b42ac63e0c0c6dcf7512b94078
+
+% 0 1 0 11f5a6f06c6cc9580cea7810a33087e9
+
+% 0 1 0 17eb49a3ba34b04600a8e4a56e010fd5
+
+% 1 1 0 138639e8e14fe47804a4f47405da3911
+
+@ 0 2 0 0422fc80bd14a36e1f3e61e5c9e570cb
++ W bloku `sextant`, nazwanym od przyrządu, który odczytuje pozycję, kolejne wywołania `unpack`
++ czytają jedną wartość po drugiej. Pozycja przesuwa się o szerokość każdej wartości:
+
+% 2 1 0 0a64394ff8ba55510ae1347468df57ca
+
+% 0 1 0 1d682ece67ec18bb153acae711f8d72a
+
+% 0 1 0 02c323d8ba32cc1a1c4c80724b80913d
+
+% 0 1 0 1b601fe5b0b8be8513a6e93ada7b0486
+
+% 1 1 0 003878100c6a57800413730978d656e6
+
+@ 0 3 0 12c85bac81eb53a7119985e556f78c91
++ Formaty binarne lubią powtarzane sekcje, a tablicę rekordów rozpakowuje się według ich liczby.
++ Wynikiem `unpack[Array[Pair]]` jest funkcja z liczby elementów w tablicę, więc tablica jest
++ czytana, gdy tylko liczba jest znana:
+
+% 2 1 0 0228f61d92c879710df6173be784622f
+
+% 0 1 0 18810e3d3ff829971680f33f88c1a657
+
+% 0 1 0 041cb2dbda85b4dd0de1720dd68708f7
+
+% 0 1 0 076e00d140ed59fd095815a121f0f803
+
+% 0 1 0 08c68d91746915350c3da06e2b370342
+
+% 0 1 0 131b0490ef919d291aec8f99af47208e
+
+% 0 1 0 143467146de84dfc1dbc5860cc65cdef
+
+% 1 1 0 0ea0ec97b9029207148e61860e181054
+
+% 3 1 0 132f34cdde6bd1071fc62d133ecd5304
+
+% 4 1 0 0450dd7bc3e64c311f9599219dd268c2
+
+% 5 1 0 0ec75f00187c678f13280a95acaa480a
+
+% 0 1 0 15a1fd3dfeb312b911d72250bd743390
+
+% 0 1 0 06924912a4ad1e3b1f9d23295368206e
+
+% 1 1 0 0703fc5266c24a5c0a34bc804bb8bb59
+
+@ 0 1 0 11926a309d48dff805211f857b0fbca1
++ ### Klasy typów
+
+@ 0 1 0 058d60929b6bf4cb08563604ef3a428b
++ Pracę wykonują trzy klasy typów:
+
+% 2 1 0 1fd759874e19a36915a79a8f07517fbd
+
+@ 0 5 0 15a243bdaf9a77e214b4db86856f60cf
++ column  Klasa typów
++ column  Opisuje
++ row  `Debufferable`  odczyt wartości z bajtów; szesnaście typów liczbowych o określonym rozmiarze ma instancje, a klasa case derywuje swoją z pól
++ row  `Bufferable`  zapis wartości do bajtów, z tą samą derywacją
++ row  `Unpackable`  to, czego żąda `unpack`: pojedyncza wartość `Debufferable` albo ich tablica
+
+% 1 1 0 0b911620ae75395f17f7b8c14d3b0683
+
+@ 0 2 0 13a4717e5c34138205e96fa1dc448647
++ `Unpackable` pozwala odczytać sekcję poprzedzoną liczbą jej elementów jednym wywołaniem zamiast
++ pętli.
+
+@ 0 4 0 05176fa1fae1111d15fcfacf9c9ecc16
++ Instancja podaje dwie rzeczy: `width`, czyli liczbę bajtów zajmowanych przez wartość, oraz
++ sposób odczytu tych bajtów z `Sextant` lub zapisu do niego. Obie są widoczne dla derywacji.
++ Całkowita szerokość rekordu jest sumą szerokości jego pól, a każde przesunięcie w nim jest
++ wyliczane w [czasie kompilacji][czas kompilacji].
+
+@ 0 2 0 198d5e016f168c3f01f2448ba044d8aa
++ `Debufferable.apply` buduje instancję z szerokości i funkcji bajtów oraz przesunięcia. W ten
++ sposób zdefiniowane są instancje prymitywne:
+
+% 2 1 0 16237db12c92c6c105f88c0a219721e2
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 1 0 1a71256a0d65e34713c2e8780aee5dde
+
+% 0 1 0 04106ea8e5150d2f0a7f901009b431f9
+
+% 0 1 0 034399488307589406f957ea755c963d
+
+% 0 1 0 09476e015abd24620b104f03ac87351f
+
+% 1 1 0 14df198d94b18228073ce32dc61487c8
+
+@ 0 3 0 1aaff2c857d7834a040c51499dcb2a34
++ Format, którego pola wymagają czegoś więcej niż odczytów o stałej szerokości, na przykład
++ napisu poprzedzonego swoją długością, definiuje w ten sam sposób własną instancję. Składa się
++ ona potem w derywowane rekordy jak każda instancja prymitywna.
+
+@ 0 3 0 00b23091f1f57aac0057c37a10bf0249
++ Typy o określonym rozmiarze ustalają, jak bajty są *interpretowane*, a nie tylko ile ich jest.
++ `B32` to cztery surowe bajty, `U32` czyta je jako liczbę całkowitą bez znaku, a `S32` jako
++ liczbę ze znakiem. Zwykłe typy Scali też mają instancje, dla układów, które łatwiej za ich
++ pomocą wyrazić:
+
+% 2 1 0 00e1b3fcd90584d001ab147f2c976023
+
+@ 0 5 0 079d3603c3cc63e91a2d7c1038ca2ab0
++ column  Szerokość w bajtach
++ column  Surowe bity
++ column  Bez znaku
++ column  Ze znakiem
++ column  Typ Scali
+
+% 0 1 0 080ed74fe9ffb7600a099bb590b5aa56
+
+% 0 1 0 16e5d4df692360ec15c3b0ce395aeac1
+
+% 0 1 0 09767375c3e6a6c2198a132d884001d0
+
+% 0 1 0 193ed2757ef747f20156a786659603cc
+
+% 1 1 0 0f9e81ed0bc8cd8b19e0680e86e68143
+
+@ 0 2 0 0a83adcc18df5960111907b3466ad013
++ `Bufferable` to strona zapisu, derywowana nad klasami case w ten sam sposób, więc układ
++ deklaruje się raz i służy on w obu kierunkach.
+
+@ 0 1 0 017137edaf3b91e000ffad69ca2e946c
++ ### Sekstant jest zdolnością
+
+@ 0 5 0 0c2c6a64afbdf16b0a0ad26eacb595c5
++ `Sextant` niesie mutowalną pozycję odczytu. To czyni rozpakowywanie efektem, a nie czystym
++ odczytem, a pozycja sprawia, że kolejne wywołania `unpack` posuwają się naprzód. Sekstant jest
++ więc wprowadzany przez blok `sextant`, który wyznacza jego zasięg, i jest
++ [zdolnością][zdolność] *na wyłączność*. Dwóch czytelników współdzielących jedną pozycję
++ konsumowałoby bajty, których oczekiwał drugi, więc kompilator nie pozwala na aliasowanie
++ sekstantu ani na jego ucieczkę z bloku.
+
+@ 0 2 0 1ec5fddf4c12503d0d2a1e6cc7368759
++ `offset` podaje bieżącą pozycję, na potrzeby formatu, który musi podać, gdzie zaczyna się
++ sekcja. `advance` przeskakuje dopełnienie albo pole, którego ten czytnik nie potrzebuje:
+
+% 2 1 0 193e2400f6add9b300bf7fc490d37488
+
+% 0 1 0 0fc08bf2d0db1c64122bdc87166ac4e9
+
+% 0 1 0 058a5f83f5b740540fc89c2f14141c4d
+
+% 0 1 0 095b4b3f5f6cf782056fd0e0db8cb143
+
+% 0 1 0 07d7e918eb0ce3470633934b8c1f1454
+
+% 1 1 0 11ca1e5735f9fe75125ed92bc6f0be86
+
+% 3 1 0 14bec06bf3a9d9ae141d1804dfe2349a
+
+% 4 1 0 1974c3a5eaacb1190200a2261abb57a9
+
+% 5 1 0 0aa308d0cc37fb4b0a4f518176962879
+
+% 0 1 0 1a3ff6adacdcf1e21f54fc69eb5f3e6b
+
+% 1 1 0 05f67ab38f6ab0080a6bc9b9aa0885ee
+
+@ 0 1 0 06dd6d731c46c0d11a8e206f5c8c4b77
++ Poza blokiem `sextant` nie ma pozycji, z której można czytać, i `unpack` się nie kompiluje:
+
+% 2 1 0 0b197c623930b09c1416eb8c44b2985a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0a4d642b26d9e7e50441d745a016c878
+
+% 1 1 0 15ce26665291dc570c3ffd9d6e6b0846
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 8 0 0adff5aec64a6a2a1d1aeab32a9cddbb
++ - [Liczby](numbers.md#numeric-types) opisuje typy o określonym rozmiarze, którymi deklaruje się
++   pola.
++ - [Flagi bitowe](flags.md) nazywa bity słowa przypadkami wyliczenia.
++ - [Strumienie](streams.md#parsing-with-a-cursor) czyta formaty, których rekordy nie mają stałej
++   szerokości.
++ - [CBOR](cbor.md) i [Protocol Buffers](protobuf.md) to formaty binarne, które opisują same
++   siebie.
++ - [Dźwięk](audio.md), [obrazy](images.md) i [kodowanie base](base-encoding.md) czytają i zapisują swoje bajty jako `Data`.

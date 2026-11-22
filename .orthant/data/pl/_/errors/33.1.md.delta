@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 01ab9429f62750d802d1f088c8ec4eec
++ # `↯/s.33.1` – `Motif.Error`
+
+@ 0 3 0 1373da2b2348116915771c294a6ef18e
++ Zgłaszany, gdy Praxinoscope nie może skompilować wyrażenia regularnego do jego postaci RE2 lub gdy
++ analiza nad skompilowanymi wyrażeniami nie może się zakończyć. Każdy wariant dokładnie wskazuje
++ problem.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 10 0 1a9f8c66ae73b626123333eda15a4283
++ Praxinoscope parsuje składnię wyrażeń regularnych RE2: ścisły podzbiór powszechnej składni
++ wyrażeń regularnych, który wyklucza każdą konstrukcję łamiącą gwarancję dopasowywania w czasie
++ liniowym. Gdy parser nie może przyjąć wejścia, zgłasza `Motif.Error`, niosący indeks znaku
++ `index`, przy którym wykryto problem, oraz `Reason` wyjaśniający, co było nie tak. Konstruowany
++ komunikat to `the regular expression could not be compiled because $reason at $index`. Dwa
++ kolejne warianty (`BudgetExceeded` i `Unverifiable`) nie wynikają z parsowania, lecz z analizy
++ zawierania (`subsumes`/`intersects`), której najgorszy przypadek jest wykładniczy i dlatego ma
++ ona budżet.
+
+@ 0 5 0 00dbf7de19a5aec415d490257d0bfebb
++ ## Warianty
++ Budżet, którego dotyczy `↯/s.33.1.18`, obejmuje iloczyn wszystkich badanych programów, więc
++ postać `subsumes` przyjmująca listę kandydatów – która rozstrzyga
++ `L(⋂candidates) ⊆ L(cover)` nad automatem iloczynowym kandydatów – może go wyczerpać na wzorcach,
++ z których każdy osobno zostałby rozstrzygnięty bez trudu.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 25 0 16cb2231d09e5a2c0a5f9fb399b2e439
++ column  Kod
++ column  Przyczyna
++ column  Znaczenie
++ column  Rozwiązanie
++ row  `↯/s.33.1.1`  `UnclosedGroup`  Grupę otwarto za pomocą `(`, ale nigdy nie zamknięto za pomocą `)`.  Dodać brakujący `)` lub poprzedzić `(` znakiem ucieczki, jeśli zamierzony jest dosłowny nawias.
++ row  `↯/s.33.1.2`  `NotInGroup`  Napotkano `)` bez odpowiadającego mu `(`.  Dodać brakujący `(`, poprzedzić `)` znakiem ucieczki, jeśli ma być dosłowny, lub usunąć zbłąkany nawias zamykający.
++ row  `↯/s.33.1.3`  `UnexpectedChar`  Znaleziono znak, który nie pasuje w tym miejscu, na przykład kwantyfikator bez niczego do powtórzenia lub zbłąkany znak w zakresie powtórzeń.  Przejrzeć wzorzec wokół zgłoszonego indeksu.
++ row  `↯/s.33.1.4`  `BadRepetition`  Zakres powtórzeń `{n,m}` ma `m < n`.  Zamienić granice miejscami lub użyć `{n,}`, jeśli górna granica nie jest potrzebna.
++ row  `↯/s.33.1.5`  `IncompleteRepetition`  Zakres powtórzeń otwarto za pomocą `{`, ale nigdy nie zamknięto za pomocą `}`.  Dodać brakujący `}`.
++ row  `↯/s.33.1.6`  `EmptyCharClass`  Klasa znaków `[…]` nie zawierała żadnych znaków.  Dodać do klasy co najmniej jeden znak lub usunąć puste `[]`.
++ row  `↯/s.33.1.7`  `UnclosedClass`  Klasę znaków otwarto za pomocą `[`, ale nigdy nie zamknięto za pomocą `]`.  Dodać brakujący `]` lub poprzedzić `[` znakiem ucieczki, jeśli zamierzony jest dosłowny nawias kwadratowy.
++ row  `↯/s.33.1.8`  `UnclosedEscape`  Wzorzec kończy się znakiem `\`, po którym nie ma nic do poprzedzenia.  Usunąć końcowy ukośnik wsteczny lub poprzedzić nim znak, który powinien po nim następować.
++ row  `↯/s.33.1.9`  `InvalidEscape`  Sekwencja ucieczki nie ma przypisanego znaczenia w składni RE2, na przykład poprzedzony znak alfanumeryczny bez specjalnej interpretacji, niepoprawna szesnastkowa sekwencja `\x` lub sekwencja właściwości Unicode (`\p{…}`), która nie jest jeszcze obsługiwana.  Usunąć ukośnik wsteczny, jeśli znak miał być dosłowny, lub poprawić sekwencję ucieczki.
++ row  `↯/s.33.1.10`  `InvertedRange`  Zakres w klasie znaków `[a-b]` ma koniec mniejszy niż początek.  Zamienić końce zakresu miejscami.
++ row  `↯/s.33.1.11`  `Backreference`  Wzorzec zawiera odwołanie wsteczne (`\1`…`\9` lub `\k<…>`). Odwołania wsteczne czynią dopasowywanie NP-trudnym, więc składnia RE2 celowo je wyklucza.  Przebudować wzorzec bez odwołań wstecznych lub użyć backendu wyrażeń regularnych JVM, który je obsługuje.
++ row  `↯/s.33.1.12`  `Lookaround`  Wzorzec zawiera lookahead (`(?=…)`, `(?!…)`) lub lookbehind (`(?<=…)`, `(?<!…)`), które składnia RE2 celowo wyklucza.  Przebudować wzorzec lub użyć backendu wyrażeń regularnych JVM, który obsługuje lookaround.
++ row  `↯/s.33.1.13`  `PossessiveQuantifier`  Wzorzec zawiera kwantyfikator zaborczy (`*+`, `++`, `?+` lub `{n,m}+`). Dopasowywanie zaborcze to mechanizm sterowania nawrotami, a dopasowywanie RE2 nigdy nie wykonuje nawrotów, więc ta konstrukcja nie ma tu sensu.  Użyć zwykłego kwantyfikatora zachłannego.
++ row  `↯/s.33.1.14`  `AtomicGroup`  Wzorzec zawiera grupę atomową (`(?>…)`), która, podobnie jak kwantyfikatory zaborcze, steruje nawrotami i nie ma znaczenia w dopasowywaniu RE2.  Użyć zwykłej grupy.
++ row  `↯/s.33.1.15`  `UnsupportedGroup`  Wzorzec używa nieobsługiwanej składni grupy, na przykład grupy nazwanej (`(?<name>…)` lub `(?P<name>…)`).  Użyć zwykłej grupy przechwytującej.
++ row  `↯/s.33.1.16`  `Flag`  Wzorzec zawiera flagi w wierszu (`(?i)`, `(?m)`, `(?s)`, …), które nie są jeszcze obsługiwane.  Wyrazić zamiar bezpośrednio we wzorcu, na przykład `[Aa]` zamiast flagi niewrażliwości na wielkość liter.
++ row  `↯/s.33.1.17`  `RepetitionTooLarge`  Granica powtórzeń w `{n,m}` przekracza 1000, ten sam limit, który narzuca RE2, ponieważ ograniczone powtórzenia są kompilowane przez rozwinięcie.  Użyć kwantyfikatora nieograniczonego lub przebudować wzorzec.
++ row  `↯/s.33.1.18`  `BudgetExceeded`  Analiza zawierania (`subsumes` lub `intersects`) zbadała więcej stanów, niż pozwala jej budżet. Zawieranie języków regularnych jest rozstrzygalne, ale w najgorszym przypadku wykładnicze.  Uprościć jeden lub oba wzorce albo zmniejszyć liczbę kandydatów w przecięciu.
++ row  `↯/s.33.1.19`  `Unverifiable`  Analizę zawierania podjęto na wzorcu zawierającym konstrukcję, której analiza nie potrafi modelować: granicę słowa (`\b` lub `\B`) albo kotwicę wiersza przy fladze `m`, które zależą od symboli otaczających pozycję, a nie od samej pozycji.  Usunąć granicę z porównywanych wzorców.
++ row  `↯/s.33.1.20`  `InvalidPosixClass`  Klasa znaków `[[:name:]]` wskazała nazwę spoza zbioru POSIX (`alnum`, `alpha`, `ascii`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`, `punct`, `space`, `upper`, `word`, `xdigit`).  Poprawić nazwę klasy. `[:name:]` poza otaczającą klasą znaków jest zwykłą klasą tych znaków, a nie klasą POSIX.
++ row  `↯/s.33.1.21`  `UnknownUnicodeClass`  Sekwencja `\p{…}` lub `\P{…}` nie wskazała ani kategorii ogólnej Unicode (`L`, `Lu`, `Nd`, …), ani pisma (`Greek`, `Han`, …).  Poprawić nazwę klasy. Nazwy pism są nazwami Unicode, zapisanymi tak, jak zapisuje je RE2 – `\p{Greek}`, a nie `\p{IsGreek}` jak w Javie.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 16925ae68c77d67b063afb3fb8b12c95
++ - Źródło: `lib/praxinoscope/src/core/praxinoscope.Motif.scala`

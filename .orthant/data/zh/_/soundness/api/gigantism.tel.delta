@@ -1,0 +1,152 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12c51ec2a255dfe307ae1a2f6c8a8e5f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c0b1b5741d01c6f05e4b0c520bc2c4d
++ info   元编程辅助工具：作用域内的每个 given 实例、宏的结果类型、调用处的导入
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 1291c08b85811cb200c43dac6bf0ae4e
++     _Gigantism_ 是一个小型工具包，服务于 Soundness 各库自己的宏，也服务于任何像它们一样、需要比 Scala 公开反射 API 更多编译器支持的库。
+
+@ 0 5 0 019c1c4f82f00505127179dc87dd9c68
++     它的核心功能是 `every[T]`，它把调用处可见的*每一个* `T` 的 given 实例（包括彼此有歧义、会被普通 `summon` 拒绝的实例）收集到一个 `Every[T]` 中。
++     库正是借此让使用者通过导入多个 given 来同时启用多个选项：`Boolean` 解码器收集 `Every[Truth]`，coaxial 的套接字收集作用域内的 `Every` 套接字选项。
+
+% 2 1 0 1aa7a7da55f13e3e07cd70c0b3e49155
+
+% 3 1 0 0fd3a53392543d5511cbd4b4dd3647bc
+
+% 0 1 0 1a12b930d81785af0cdb0afe65193532
+
+% 0 1 0 0c3293b2b2b128301d71855ae329f96b
+
+% 0 1 0 0fec5d581218f4890945106668d0ba3e
+
+% 0 1 0 0168540847d4a6341ab85d30168fd7c2
+
+% 0 1 0 041d27ca0f62882504744b38f137bde8
+
+% 0 1 0 1d702f3a53eeae5915bddd80620bdc6f
+
+% 0 1 0 0a79be357cd823be1aa8834531d4fb2b
+
+% 1 1 0 16446a5e2430100219877d6eda977191
+
+@ 0 3 0 048a9b46899a268e19297e88800ee581
++     与它并列的还有：`Macro[T]`，即宏实现的结果类型；`Lifts`，它把 Soundness 中由表达式组成的 `List` 提升为引用的列表和可变参数；以及 `metaprogramming.imports`，它列出宏调用处作用域内的导入。
+
+@ 0 4 0 1f8ebae719f41ea811625dc1f00dc2f4
++     `every` 和 `metaprogramming` 深入编译器的内部 API（`dotty.tools.dotc`），因此与构建 Soundness 所用的编译器版本绑定。
++     本库只有一个源集 `gigantism.core`，一切都导出到 `soundness` 总括包。
+
+% 0 1 0 09c4d1410d2ef3811f0fe94795bccf97
+
+% 0 1 0 19dff483c4b51ba71cc4ae0bde1647be
+
+% 0 1 0 1bce562b9ec6aaef0fdb047a1bfde797
+
+@ 0 1 0 1a54cd97dfdde41e04a33a6c83a7d91f
++ entry .Every   调用处可见的某类型的每个 given 实例，收集为一个列表
+
+% 1 1 0 1795abc8182d4f3905fc5a0a0c880462
+
+@ 0 4 0 102dcbb844481f271da70b843046c4c8
++       `Every[T]` 在 `#values` 中保存召唤它的地方作用域内的所有 given `T`。
++       它由 `every[T]` 构建，或者通过伴生对象的 `.default` given 作为上下文参数召唤，这无需导入：接受 `(using Every[Option])` 的方法能看到其调用者作用域内的每个 `Option` given。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 04b0044dd6433a0b04e8a680bdf25784
+
+% 0 1 0 04ea60bb96ff950e0c3026d4e670f2d0
+
+% 0 1 0 1abc9a1ab52eb50a1e4420c99214b47a
+
+% 0 1 0 0caf0dfd4031115204f8421a7d8a8426
+
+% 0 1 0 02b0368c71fde08a14bbe10217cecb65
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 3 0 160d3aff2c561ac202f298e0a72f6de8
++       无论实例是局部的、按名称导入的还是位于隐式作用域中，都会被找到，彼此有歧义的实例也全部包括在内；作用域外的实例则不包括。
++       这些值的顺序是未指定的。
++       作用域内没有实例时，`#values` 为空。
+
+% 0 1 0 05cd74e95943f8e6048971c9cdcf0a0c
+
+@ 0 11 0 00de7323de3b023410731949273dd4ec
++   entry .default   作为上下文参数，召唤由作用域内所有 `T` 实例组成的 `Every[T]`
++       一个透明内联 given：它在每个使用处展开，因此能看到那里作用域内的实例。
++   entry .summonAll   收集其展开处作用域内某类型的每个实例的宏
++       `every` 和 `.default` 背后的实现。
++       它反复搜索实例，同时忽略已经找到的那些，并通过编译器内部的 `AmbiguousImplicits` 从有歧义的搜索中恢复出两个备选项。
++   entry #values   找到的实例，以标准库的 `List` 表示
++       该列表是 Scala 标准库的，而不是 Soundness 的，因为所收集的实例可能带有能力，而 Soundness 的 `List` 不保存这类值。
++       `List.from(every[T].values)` 可对它进行转换。
+
+@ 0 4 0 0ef33791380a46530907b2dfef9476ec
++ entry .every   收集调用处可见的某类型的每个 given 实例，作为一个 `Every`
++     `every[T]` 展开为一个 `Every[T]`，其中保存调用处作用域内的每个 given `T`，包括彼此有歧义的实例。
++     作用域内没有实例时它不会失败：此时结果为空。
+
+% 2 1 0 1e6e0e9590e8cdb7097f7202cabe589d
+
+% 3 1 0 116aa2aee29b49a30f13bd01285ad581
+
+% 0 1 0 1d8ea0e093ca76b800e7f8d1610728f5
+
+% 0 1 0 0fd9f35046b3f6270f71df2216711b29
+
+% 0 1 0 145fad91442647bb15e9e560a201c5e3
+
+% 0 1 0 0757b072cb32fe1901cb1cbc36971cb4
+
+% 1 1 0 0c39eede3e04bc570eb616eca85395a6
+
+@ 0 3 0 0fa294985018e9120a922eba13d1898b
++ entry .Macro   宏实现的结果类型：`Quotes ?=> Expr[T]`
++     声明为返回 `Macro[T]` 的宏实现会以上下文参数的形式接收 `Quotes`，因此 `def impl(x: Expr[Int]): Macro[Text] = '{…}` 无需 `(using Quotes)`。
+
+@ 0 1 0 1f44a5ffd935e92c01ab85a71b6b3f42
++ entry .Lifts   把 Soundness 中由表达式组成的 `List` 提升为引用的列表和可变参数
+
+% 1 1 0 174d807dc6bbf97f1e363e627d3a7076
+
+@ 0 5 0 135c00abe6204d6b0cab5da6d047ac72
++       对应于 `Expr.ofList` 和 `Varargs`，供把提升后的表达式保存在 Soundness `List` 而不是标准库 `Seq` 中的宏代码使用。
++   entry .list   把由表达式组成的 `List` 提升为一个 `List` 的表达式
++   entry .varargs   把由表达式组成的 `List` 提升为可变参数实参 `Expr[Seq[T]]`
++   entry .Varargs   匹配可变参数实参，以 `List` 形式给出其元素表达式
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 3 0 1c33f3fb42989d8f0344c2764de6a915
++         `Lifts.varargs` 的提取器对应物：`case Lifts.Varargs(elements) =>` 匹配以字面实参写出的 `Expr[Seq[T]]`。
++     entry .unapply   可变参数实参的元素表达式，前提是它以字面实参写出
+
+@ 0 4 0 0461b64f53e3287918ee46b8d45b7571
++ entry .metaprogramming   针对作用域内的 `Quotes`，提供超出公开反射 API 的编译器功能
++     在宏实现内部，`metaprogramming` 把作用域内的 `Quotes` 包装为 `Metaprogramming`，从而 `metaprogramming.imports` 可以列出宏调用处可见的导入。
+
+@ 0 1 0 1262f1a883756bac0b4c1ac6357fd4f0
++ entry .Metaprogramming   针对某一个 `Quotes`，提供超出公开反射 API 的编译器功能
+
+% 1 1 0 034793d8705e9c3b0db32a1cd681c8ec
+
+@ 0 7 0 090f5c53810cc41b01c01e7c880cb99a
++       在宏实现内部用 `metaprogramming` 构建。
++       它深入编译器的内部上下文，因此依赖于编译器的版本。
++   entry #Import   宏调用处可见的一个导入
++     entry #wildcard   该导入是否为通配符导入 `import p.*`
++     entry #term   导入所来自的项，以 `TermRef` 表示
++   entry #quotes   它所包装的 `Quotes`
++   entry #imports   宏调用处作用域内的每个导入，最外层的在前

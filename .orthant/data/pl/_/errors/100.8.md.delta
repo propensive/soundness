@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1237f89b8efdb19516a5f5c145fb6286
++ # `↯/s.100.8` – `Url.Error`
+
+@ 0 1 0 11d8242c08695a7f13ba48b0626d5891
++ Zgłaszany, gdy wartości nie można sparsować jako poprawnego URL.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 03cb30f1dfc8ad9c1a7a61a728c8a7a5
++ Urticose sprawdza składnię URL względem oczekiwanych składników:
++ schematu, opcjonalnej części autorytetu (z nazwą hosta i portem), ścieżki, zapytania
++ i fragmentu. Każdy wariant wskazuje, gdzie parsowanie zawiodło. Komunikat
++ zawiera błędne wejście i przesunięcie, przy którym wystąpił błąd: `the URL $text
+
+% 0 1 0 091c8661bf61416c15e5cae3ec8feaa3
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 1758ee91a5dd424a1b775e08fcbdd9a2
++ ### `↯/s.100.8.1` – `Expected`
+
+@ 0 3 0 12252119d39c31320939a0661421ee82
++ Przy danym przesunięciu oczekiwano określonego tokenu, ale pojawił się
++ inny. Oczekiwanie to jedno z `Colon`, `More`, `LowerCaseLetter`,
++ `PortRange` lub `Number`.
+
+@ 0 1 0 15d56e3436df08a006e85f6fe6df6abe
++ **Przykład.** `[↯/s.100.8.1] the URL https://example is not valid: a colon was expected at 14`
+
+@ 0 2 0 10c3272aa1562c8915d0c9eaac21931a
++ **Rozwiązanie.** Należy poprawić URL tak, aby zawierał oczekiwany token przy
++ wskazanym przesunięciu.
+
+@ 0 1 0 18a057767bd575e715da027b50f507ed
++ ### `↯/s.100.8.2` – `BadHostname`
+
+@ 0 1 0 00c1c9e14db511f506652c6b0bd2356c
++ Składnik nazwy hosta w URL nie jest poprawną nazwą hosta DNS.
+
+@ 0 1 0 0d722ce365183acb04821b7eefdda81b
++ **Przykład.** `[↯/s.100.8.2] the URL http://exa_mple/ is not valid: exa_mple was not valid because the character _ is not allowed in a hostname at 7`
+
+@ 0 2 0 02efea0dff2882eb0a8c5c774661f6fe
++ **Rozwiązanie.** Należy zastąpić nazwę hosta składniowo poprawną;
++ reguły dotyczące nazw hostów opisuje `↯/s.100.10`.
+
+@ 0 1 0 164c8733ff5d5a2e03de63b52c9f6e7e
++ ### `↯/s.100.8.3` – `BadIpv6`
+
+@ 0 1 0 1f771bdefda4ce0103a9ab999546ad37
++ Literał IPv6 w nawiasach kwadratowych w składniku hosta jest niepoprawny.
+
+@ 0 1 0 0f3989a06481f3a118d88f6dc9e49b92
++ **Przykład.** `[↯/s.100.8.3] the URL http://[::1::]/ is not valid: the IPv6 address is not valid because :: appears more than once at 7`
+
+@ 0 2 0 18b529b604e8db46137bab70f0eb14cd
++ **Rozwiązanie.** Należy podać poprawny literał IPv6; reguły IPv6
++ opisuje `↯/s.100.2`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 03ed9d7974daf175016501a1a7064a9d
++ - Źródło: `lib/urticose/src/url/urticose.Url.scala`

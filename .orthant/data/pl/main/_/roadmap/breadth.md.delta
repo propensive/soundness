@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 2 0 1929cda851f58baa1629c06d27d88cdc
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/work/soundness/modules/`
++ oraz wykonuje pełny obieg wektorów przykładowych z RFC 7515/7516.
+
+@ 0 2 0 162c48f835fd768f0a9cfd9f73a3682c
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/work/soundness/modules/`
++ oraz przechodzi standardowy zestaw testów zgodności TOML.
+
+@ 0 2 0 1385aacb6e88e9540bce32e054ba8a53
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/work/soundness/modules/`,
++ a oskryptowana ceremonia rejestracji i asercji przechodzi względem referencyjnego
++ uwierzytelniacza.
+
+@ 0 2 0 1358c2667696ccd4117c4bca7d69240c
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/work/soundness/modules/`
++ oraz współpracuje z referencyjnym serwerem i klientem HTTP/3.
+
+@ 0 2 0 03cdd5b8ffa5b93710b6b0e94e148d08
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/work/soundness/modules/`,
++ a oskryptowana sesja przechodzi względem referencyjnego serwera IMAP.

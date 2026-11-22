@@ -1,0 +1,30 @@
+orthant 2 language
+
+@ 0 1 0 0e43190bab175e980c27f719e12f19cb
++ ### `↯/s.105.2.6` – `BadTag`
+
+@ 0 2 0 11dacab92aad8e891c53c037ffc151c0
++ Tag szyfru uwierzytelnionego nie przeszedł weryfikacji: szyfrogram, dane powiązane lub
++ nonce nie są tym, co zapieczętowano, albo klucz nie jest tym, którym je zapieczętowano.
+
+@ 0 1 0 19cdb20592782188093ffb6a7d9cb5a7
++ **Przykład.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+@ 0 2 0 0675a479b730d28c0058667a1b24cf0f
++ **Rozwiązanie.** Traktować dane jako sfałszowane lub uszkodzone i nie używać żadnej ich części.
++ Potwierdzić, że nonce i dane powiązane są dokładnie tymi, które przekazano do `seal`.
+
+@ 0 1 0 153ed8c0c255acbb0cb6a1d1954d7c01
++ ### `↯/s.105.2.7` – `BadWrap`
+
+@ 0 2 0 00ea0454ec6b67bd0fdfd23339a52e81
++ Opakowany materiał klucza nie przeszedł kontroli integralności wbudowanej w opakowywanie
++ kluczy: opakowano go innym kluczem, został zmieniony albo nie składa się z całkowitej liczby
++ bloków 64-bitowych.
+
+@ 0 1 0 17b17d9d86f73a5a064b0259a988d01f
++ **Przykład.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+@ 0 2 0 03acd4f006818d770927f160ff7bac33
++ **Rozwiązanie.** Potwierdzić, że klucz szyfrujący klucze jest tym, którym opakowano materiał, i
++ że opakowany materiał dotarł w całości.

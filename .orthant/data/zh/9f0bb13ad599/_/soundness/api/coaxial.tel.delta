@@ -1,0 +1,120 @@
+orthant 2 language
+
+@ 0 21 0 1c88bce5fcad4a4e07fe6defab6270bc
++     - `coaxial.core`：整个与平台无关的 API：`Socket`（其 `Backend`、`Option`、`Event`、`Service` 和 `Error`）、`Bind`，类型类 `Bindable`、`Connectable`、`Routable`、`Serviceable`、`Duplexable` 和 `Subscribable`，`Duplex`、`Uds`、`Multicast`、`Packet`、`UdpResponse`、`Control`、`Transmitter`、`Transmissible`、`Ingressive`，借出操作 `listen`、`listenOn`、`subscribe`、`transmit`、`react`、`exchange` 和 `duplex`，`connectableSessional` given 以及 `socketOptions` 包。
++       只要存在后端，它就能编译。
++     - `coaxial.jvm`：基于 `java.net` 和 `java.nio.channels` 的 `socketBackends.javaBaseSockets`（TCP、UDP、多播和 Unix 域套接字），TLS 层（`Tls`、`TlsAcceptance`、`Trust`，用于客户端的 `SecureEndpoint` 和用于服务器的 `SecurePort`，支持 ALPN 和双向认证），原始流 `Connection` 及其 `listenConnections` 借出操作，以及 `streamsDuplex`。
++     - `coaxial.native`（Scala Native）：`socketBackends.scalaNativeSockets`（TCP、UDP 和多播；Unix 域套接字会抛出 `Unsupported`），以及通过 OpenSSL 的 C API 实现的 `Tls` 和 `SecureEndpoint`：一个带验证但不支持 ALPN 的 TLS 客户端，没有服务器端 TLS，也没有 `TlsAcceptance`/`Trust`。
++     - `coaxial.wasi`（一个 Wasm 组件）：基于 `wasi:sockets` 的 `socketBackends.wasiSockets`：只支持 TCP，只能连接 IPv4 字面地址，没有 UDP、多播、Unix 域套接字或 TLS；另外还有 `wasiApis.wasiSocketsApi` WIT 接口和 `WasiSocketsApi` 类型。
++     - `coaxial.dns`：`Endpoint[Udp.Port]` 上的 `ask`：向名称服务器发送一条 DNS 消息并取得其应答，通过后端的一次性数据报交换完成。
+
+% 0 1 0 0ef0240ab34bf6181b42005fbe4aa220
+
+@ 0 81 0 0026cee60d2e94f80e45ba74dd55ff4a
++     entry #ServerSocket   已绑定且正在监听的流套接字（TCP 或 Unix 域）的句柄
++     entry #DatagramSocket   已绑定的数据报套接字的句柄
++     entry #MulticastSocket   在其每个接口上都已加入某个多播组的套接字的句柄
++     entry #Exchange   请求/响应客户端连接的句柄
++     entry #Courier   发后即忘的数据报目的地的句柄
++     entry #listenTcp   在一个接口或所有接口上，以给定选项绑定一个 TCP 端口
++         `listenTcp(port, interface, options)` 抛出 `Bind.Error`（`PortInUse`、`PermissionDenied` 或 `AddressUnavailable`，根据平台的失败归类），并返回 `#accept` 所接受的 `#ServerSocket`。
++         JVM 和 Native 后端绑定一个 `java.net.ServerSocket`（它遵循 `Timeout` 选项）；WASI 在 IPv4 通配地址上绑定一个 `wasi:sockets` TCP 套接字。
++     entry #listenDomain   以给定选项在某个路径上绑定一个 Unix 域套接字
++         在没有 Unix 域套接字的 Scala Native 和 WASI 上抛出 `Bind.Error(Unsupported)`。
++         在 JVM 上，套接字文件在 `Uds` 的路径上创建，且该文件必须尚不存在。
++     entry #accept   阻塞等待下一个传入连接，以 `Duplex` 的形式返回
++         处理函数从双工连接的 `source` 读取请求，接受循环用 `send` 写出响应。
++         接受失败时抛出 `Socket.Error(Accept)`，服务器停止时被中断的接受报告的正是这个错误。
++     entry #shutdown   关闭一个正在监听的流套接字，解除挂起的 `#accept` 的阻塞
++     entry #listenUdp   以给定选项绑定一个 UDP 端口，用于接收数据报
++         选项在绑定之前应用，因此 `ReuseAddress` 和 `ReusePort` 能够生效。
++         给出接口时，它成为套接字发出多播所用的接口。
++         `DatagramSize` 选项确定接收每个数据报所用的缓冲区（未设置时为 1472 字节）。
++         在 WASI 上返回一个 unit 句柄，那里的每个数据报操作都会抛出错误。
++     entry #receive   阻塞等待已绑定 UDP 套接字上的下一个数据报，以 `Packet` 的形式返回
++         `Timeout` 选项到期时抛出 `Socket.Error(Timeout)`，其他任何失败抛出 `Accept`。
++         长于 `DatagramSize` 的数据报会被截断到该长度。
++     entry #reply   向收到的数据包的发送者及其端口回发一个数据报
++         发送失败时抛出 `Socket.Error(Transmit)`。
++     entry #unbind   关闭已绑定的 UDP 套接字，解除挂起的 `#receive` 的阻塞
++     entry #exchangeUdp   从一个临时端口发送一个数据报，并阻塞等待一个回复
++         `exchangeUdp(endpoint, interface, options, data)` 是 DNS、NTP 或 STUN 查询的形态：一个新的套接字，发出一个数据报，收到一个 `Packet`，然后关闭套接字。
++         `options` 中的 `Socket.Option.Timeout` 限定等待时间，超时表现为 `Socket.Error(Timeout)`；回复带有其发送者，因此调用者可以检查它是否来自正确的地方。
++         `coaxial.dns` 中的 `ask` 就建立在它之上。
++         在没有 UDP 的 WASI 上抛出 `Transmit`。
++     entry #joinMulticast   以地址复用和端口复用方式绑定组的端口，并在每个接口上加入该组
++         `joinMulticast(multicast, interfaces, options)` 以 `SO_REUSEADDR` 和 `SO_REUSEPORT` 绑定端口（这是设计决定，而不是选项：同一主机上的多个订阅者共享该端口），然后在每个具有该组地址族地址的接口上加入该组（操作系统拒绝的接口会被略过），并一直保持这些成员关系，直到 `#leaveMulticast`。
++         之所以避免通配加入，是因为它会任意挑选一个接口，而且在 macOS 上不可靠。
++     entry #receiveMulticast   阻塞等待组投递的下一个数据报，以 `Packet` 的形式返回
++     entry #sendGroup   向组本身发送一个数据报
++         在 JVM 上，通过每个已加入的接口各发送一次（IPv6 链路本地组需要以接口作为其作用域）；在 Scala Native 上，按内核的默认多播路由发送一次。
++         失败时抛出 `Socket.Error(Transmit)`。
++     entry #sendTo   从组的套接字向一个单播目的地及端口发送一个数据报
++         用于回应请求了响应的发送者。
++         失败时抛出 `Socket.Error(Transmit)`。
++     entry #leaveMulticast   关闭组的套接字，放弃其成员关系，并解除挂起的接收的阻塞
++     entry #dialTcp   连接到远程 TCP 端点，进行一次请求/响应交换
++         抛出 `Socket.Error`，原因为 `Dns`（主机无法解析）、`Refused`、`Timeout` 或 `Connect`。
++         在 WASI 上，主机必须是 IPv4 字面地址（那里没有解析器），否则为 `Dns`。
++     entry #dialTcpPort   连接到本地主机上的 TCP 端口，进行一次请求/响应交换
++     entry #dialDomain   连接到 Unix 域套接字，进行一次请求/响应交换
++         在 Scala Native 和 WASI 上抛出 `Socket.Error(Unsupported)`。
++     entry #request   以流的方式发出请求，并半关闭输出一侧
++         以 `consume` 参数接受请求流：它在这里被耗尽并关闭，之后不能再使用。
++     entry #response   响应，作为一个新鲜的、只能使用一次的拉取流，在对端半关闭时结束
++         `response(exchange)` 需要一个 `Buffering`（填充窗口）和一个 `Tactic[Truncation.Error]`，后者在读取中途失败时抛出，并带有截至当时已读取的字节数。
++         该流捕获这个战术，因此要在创建它的地方读取。
++     entry #hangUp   关闭请求/响应连接
++     entry #duplexTcp   以持久 `Duplex` 的形式连接到远程 TCP 端点
++         通道是阻塞的，因此读取循环停驻在 `read` 中，而不是忙轮询；选项（以及给出接口时的本地绑定）在连接之前应用。
++         与 `#dialTcp` 一样抛出 `Socket.Error`。
++     entry #duplexDomain   以持久 `Duplex` 的形式连接到 Unix 域套接字
++         在 Scala Native 和 WASI 上抛出 `Socket.Error(Unsupported)`。
++     entry #routeUdp   从一个临时端口通往远程 UDP 端点的投递器
++         在创建投递器时解析端点的主机；给出接口时，它成为套接字发出多播所用的接口。
++     entry #routeUdpPort   通往本地主机上某个 UDP 端口的投递器
++     entry #dispatch   把整个流作为单个数据报发送到投递器的目的地
++         该流被 memoize 为一个数据报，因此它必须能装进一个数据报。
++   entry .Event   套接字记录的内容：开始监听、已连接和已关闭，每个都带有 `Log.Network` 标签
+
+@ 0 9 0 0f17e4e2a408c88900cff9e340b1fc0c
++           数据报套接字上的接收超时会抛出 `Socket.Error(Timeout)`；作用域内没有超时选项时，`coaxial.dns` 中的 `ask` 会加上一个五秒的超时。
++           对可选择通道没有意义，在那里会被跳过。
++           用 `socketOptions.timeout(ms)` 创建。
++       entry #milliseconds   等待时间
++     entry .NoDelay   `TCP_NODELAY`：立即发送小块写入，而不是等待 Nagle 算法；适用于 TCP
++         `socketOptions.noDelaySocketOption` 是它的 given。
++     entry .KeepAlive   `SO_KEEPALIVE`：探测空闲连接，以便发现已失效的对端；适用于 TCP
++         `socketOptions.keepAliveSocketOption` 是它的 given。
++     entry .Linger   `SO_LINGER`：`close` 为冲刷未发送的数据而阻塞多久，以秒计，或以 `Unset` 禁用；适用于 TCP 和 Unix 域
+
+@ 0 16 0 16e15c85ccf14a4e00013adc48012292
++         `subscribe` 作为上下文值借给其块的东西，也是处理函数在请求/响应形状之外发送时所能触及的东西：加入时的公告、离开时的告别、对看到（而非收到）的内容的响应。
++     entry #send   `send(data)` 发往整个组；`send(data, destination, port)` 发往某一个成员
++         两者失败时都抛出 `Socket.Error(Transmit)`。
++   entry .subscribable   任何 `Multicast`（或由其字面量端口细化的类型）`is Subscribable`，基于作用域中的 `Socket.Backend` 和 `Every[Socket.Option.Udp]`
++       经由 `Socket.Backend#joinMulticast` 在 `.interfaces` 所选的接口上加入。
++   entry .bindable   `Multicast is Bindable`，从 `Subscribable` 派生：在组上 `listen`
++       供只做响应的成员使用：处理函数为 `Packet => Multicast.Reply`，`listen` 借出的是不带发送的 `Socket.Service`。
++       `subscribe` 则是带发送的借出。
++   entry .interfaces   订阅所加入的接口：具有某个 MAC 地址的那个，或每个合适的接口
++       为 `Unset` 时，取除回环接口之外每个已启用且支持多播的接口，回环接口在 Linux 上无法承载多播（程序自己的数据报改由 `Socket.Option.MulticastLoop` 送回）；为 `MacAddress` 时，取具有该地址的接口。
++   entry #group   组的 IPv4 或 IPv6 地址
++   entry #port   组的 UDP 端口
+
+@ 0 1 0 06f4eda5c7e34415116c47481d34fe08
++ entry .ask   通过 UDP 向名称服务器发出的 DNS 查询：发出一条消息，收回其回答；位于 `coaxial.dns`
+
+@ 0 7 0 12cfed7dad2c246c12e8ee4b45b48d12
++       两个重载，都是指定名称服务器的 `Endpoint[Udp.Port]` 上的扩展方法。
++       `endpoint.ask(message: Dns.Message)` 从一个临时端口把消息作为一个数据报发送（`Socket.Backend#exchangeUdp`）并返回回复，回复必须带有查询的 ID 和它的第一个问题，否则它属于别的交换，并会抛出 `Dns.Error(Mismatch(id))`。
++       `endpoint.ask(name, rtype = Dns.Type.A)` 提出常见的问题——`name` 的 `rtype` 记录，请求递归，使用新的随机 ID——并返回作答的 `Dns.Record`。
+
+% 0 2 0 013a0522f0d72098022ec4d4325fd9b4
+
+@ 0 7 0 073ae4f5e3bde11507ecf4c53d268991
++       等待时间由作用域中的 `Socket.Option.Timeout` 限定，否则为五秒；丢失的数据报是 `Dns.Error(Timeout)`，由调用者决定是否再问——没有重传。
++       任何其他套接字失败都作为 `Socket.Error` 传出。
++       该方法需要作用域中有一个 `Socket.Backend` 和 `Every[Socket.Option.Udp]`，并抛出 `Dns.Error` 和 `Socket.Error`。
++       消息和记录类型是 urticose 的 `Dns`。
++       它叫 `ask` 而不是 `lookup`、`resolve` 或 `query`，因为 `soundness` 把这些名称分别留给了 anamnesis、syndesis 和 telekinesis。

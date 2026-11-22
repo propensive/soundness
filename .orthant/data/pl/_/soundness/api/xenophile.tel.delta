@@ -1,0 +1,3145 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b91f38cf531c1be0270d331a0076085
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1782437c7239863a0216a55b5ba6a864
++ info   obce systemy typów odczytywane podczas kompilacji kodu: typowana nawigacja po C, WIT, TypeScript, WebIDL i Kotlinie oraz emitowane przez nią wywołania
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1cc926106dabdba318e72ea4afe2ce1d
++     _Xenophile_ odczytuje własne definicje innego języka – nagłówek C, opis WIT WebAssembly,
++     plik deklaracji TypeScriptu, interfejs WebIDL lub `@Metadata`, które kompilator Kotlina
++     zostawia w pliku klasy – podczas kompilacji kodu Scali i sprawdza względem nich każde
++     *obce* wyrażenie. Wybór składowej obcego typu, zastosowanie obcej funkcji, indeksowanie
++     obcej tablicy: każdy krok jest rozwiązywany względem obcych deklaracji, a składowa, która
++     nie istnieje, lub argument niewłaściwego obcego typu jest błędem kompilacji Scali, a nie
++     niespodzianką w czasie wykonania.
+
+@ 0 7 0 1d4718a0cca3ff89070d8f2f366b32ba
++     Niosą to trzy abstrakcje. `Ecosystem` nazywa obcy świat (`Native` dla C, `Wit` dla
++     modelu komponentów, `Typescript`, `WebIdl`, `Kotlin`) i `Dialect`, który parsuje jego
++     definicje. `Interface` wiąże ekosystem z plikiem definicji na ścieżce klas kompilatora,
++     jako given. Wartość `Foreign` to wartość obcego typu, której rafinowany typ
++     `Foreign of "Point" from Native` zapisuje zarówno obcy typ (`Topic`), jak i ekosystem
++     (`Origin`); po jej składowych nawiguje się tak, jakby obce deklaracje były Scalą,
++     budując `Foreign.Expression` i rafinując typ na każdym kroku.
+
+% 2 1 0 1be9173591db88230242bfd83f9624eb
+
+% 3 1 0 01b4883010ce4bbc017b3f29c930f825
+
+% 4 1 0 1387c4aa9e803fc80ba512f69abddf3f
+
+% 5 1 0 0cb33ed9af73ff890e015e8830c5304c
+
+% 7 1 0 10ee9458fd13a37d04052fc74a01a690
+
+% 8 1 0 0eb26c46a4c0bff91db0a4fb636084d1
+
+% 10 1 0 1279d9d8849ea9c20803f2f69d604d25
+
+% 0 1 0 086f4d3d82d4c40505b0f925586533ea
+
+% 0 1 0 086f566f39c9230e005c8faeb0a60830
+
+% 0 1 0 1f7bfa05379596251e699c47a217124a
+
+% 0 1 0 08a7c23efd304350055f3713397085e6
+
+% 0 1 0 0c3e058f493e9ed808ddf418a73f17c0
+
+% 1 1 0 1696057e1ead95e20d8964fb0f1360ba
+
+@ 0 5 0 005e4bcd8f3c49ed0c931416492a8b2f
++     Wartości Scali przechodzą jako argumenty wszędzie tam, gdzie instancja `Interoperable`
++     odwzorowuje je na obcy typ – `Text` na `string` w C lub `string` w WIT, `Int` na `int` w
++     C, liczby o określonym rozmiarze z `hypotenuse` (`U8`, `S32`, `U64`, …) na ich szerokości
++     w WIT – przez konwersję `Foreign.converter`, która opakowuje wartość jako
++     `Foreign.Expression.Literal` typowane przez `Topic` instancji.
+
+@ 0 10 0 0c61ca43808ca6791207808bab0bfce5
++     Sama nawigacja *niczego nie wykonuje*: buduje wyrażenie. To, co uruchamia wyrażenie,
++     jest sprawą ekosystemu, a dla ekosystemów wykonujących się wewnątrz programu Scali
++     końcowym krokiem jest pojedyncze rozszerzenie `call`: `library.abs(-5).call[Int]()`
++     przekazuje w pełni zastosowaną nawigację do `Materializer`, który kompilacja umieściła
++     na ścieżce klas – wywołanie natywne Panama na JVM (`PanamaInvoke`), wywołanie
++     `dlsym`/`CFuncPtr` na Scala Native (`NativeInvoke`), import modelu komponentów w
++     komponencie Wasm (`WasmInvoke`), wywołanie `js.Dynamic` pod Scala.js (`JsInvoke`) lub
++     bezpośrednie wywołanie JVM do Kotlina (`KotlinInvoke`). To, który z nich, odczytuje się
++     ze składowej `Emission` ekosystemu, więc `call` jest jedną metodą dla każdego języka i
++     każdej platformy, a wiązanie C napisane raz kompiluje się bez zmian dla JVM i dla Scala
++     Native.
+
+@ 0 1 0 128ee1d47a9be1bc017b1746d60a0bd2
++     Biblioteka jest podzielona na komponenty według tego, co każdy wnosi:
+
+@ 0 26 0 1c2c3b6ceffc015c0e873bf6ce87fcc9
++     - `xenophile.core` – `Foreign`, `Interface`, `Ecosystem`, `Dialect`, `Prototype`,
++       `Interoperable`, `Materializer` i `call`. Niezależny od platformy: kompiluje się dla
++       JVM, Scala.js i Scala Native i nie zależy od żadnego ekosystemu ani backendu (do obu
++       dociera się refleksyjnie w czasie kompilacji, po nazwach, które zapisuje `Ecosystem`).
++     - `xenophile.cffi` – frontend C: ekosystem `Native` z jego markerami `Interoperable`,
++       parser i dialekt `CHeader` oraz `Address`, nieprzezroczysty surowy wskaźnik. Niezależny
++       od platformy.
++     - `xenophile.native` – backend JVM dla C: `PanamaInvoke` oraz oparte na Panama
++       `ForeignLibrary` (ładowanie bibliotek i rozwiązywanie symboli) i `ForeignBuffer`
++       (ręcznie zarządzana pamięć obca).
++     - `xenophile.scalanative` – `NativeInvoke`, backend Scala Native dla C, z bliźniakami
++       `ForeignLibrary` i `ForeignBuffer` dla Scala Native, które udostępniają tę samą
++       powierzchnię nad `dlopen`/`dlsym` i `malloc`. Kompilacja zależy od `xenophile.native`
++       *albo* `xenophile.scalanative`, nigdy od obu; ekosystem C nazywa oba, a `call` używa
++       tego, który znajdzie.
++     - `xenophile.wit` i `xenophile.wasm` – ekosystem `Wit` i `WitDialect` oraz backend Wasm:
++       `WasmInvoke`, postać marshallingu `Wasm` z jej kodekami oraz `Wasm.Handle`,
++       `Wasm.Case`, `Wasm.Variant` i `Wasm.Error` dla zasobów, wariantów i wyników WIT.
++     - `xenophile.typescript`, `xenophile.webidl` i `xenophile.js` – ekosystemy `Typescript`
++       i `WebIdl` z ich dialektami oraz `JsInvoke` z postacią `Js`, backend Scala.js wspólny
++       dla obu.
++     - `xenophile.kotlin` – ekosystem `Kotlin`, którego `KotlinDialect` czyta deklaracje z
++       plików klas na ścieżce klas kompilacji, a nie z pliku, `KotlinInvoke` oraz `Facade`,
++       która opakowuje żywą wartość Kotlina lub Javy tak, że
++       `make[kotlin.text.Regex](t"[0-9]+")` nawiguje bezpośrednimi, statycznie typowanymi
++       wywołaniami JVM: `companion`, `singleton` i `enumEntry` docierają do pozostałych
++       rodzajów deklaracji Kotlina.
+
+@ 0 4 0 0a76c890b0d1b9750747876b89a0f5f4
++     Wszystko jest eksportowane do modułu zbiorczego `soundness`. Biblioteka nie ma pakietów
++     wyboru: giveny `Interoperable` i giveny kodeków żyją w obiektach towarzyszących `Native`,
++     `Js` i `Wasm` i rozwiązują się przez zasięg niejawny, a jedynym givenem, który program
++     pisze sam, jest jego `Interface`, związany lokalnie lub jako given na poziomie pakietu.
+
+% 0 1 0 083fa6571cc46dd9034a13c47821d99e
+
+% 0 1 0 1028219a3d00cdf21807c700d45ce1cf
+
+% 0 1 0 0dbd39c03554902f18200af34a0bb685
+
+% 0 1 0 18bf3190878abca20c1da240d08b6f16
+
+% 0 1 0 11fc09598d3329e711597a2196f5b2b1
+
+% 0 1 0 0f4bd3eb8420b67e1b1054f33434f0ca
+
+@ 0 1 0 1d574c97efe6b9ad14d38027295a45da
++ entry .Foreign   wartość obcego typu, po której nawiguje się względem własnych deklaracji jej języka
+
+% 1 1 0 15d31170a9e3078602b8640ee730f808
+
+@ 0 8 0 147100b7be219dee18686a858392bf43
++       `Foreign` reprezentuje wartość obcego typu. Jego typ statyczny jest rafinowany obcym
++       typem jako literałem napisowym `Topic` i językiem źródłowym jako `Origin` – co zapisuje
++       się `Foreign of "Play" from Typescript` – oraz, gdy w miejscu rozpoczęcia nawigacji w
++       zasięgu był `Interface`, ścieżką definicji jako `Locus`. Korzeń tworzy się przez
++       `Foreign["Play", Typescript]`; odtąd wybór składowej (`play.scene`), zastosowanie
++       funkcji (`play.greet(t"hello")`) i indeksowanie tablicy (`play.tags(0)`) są każde
++       makrem, które wyszukuje składową w sparsowanych definicjach i rafinuje typ wyniku
++       zgodnie z tym, co mówią deklaracje.
+
+% 2 1 0 0b96b3c7acab3dd500d1061f05852be5
+
+% 3 1 0 1caf90dd903fe4ca0382207b4400cd57
+
+% 4 1 0 1d8a035082b19d2815c6ea9e3c9432af
+
+% 5 1 0 02af723ff57bcf3d170473b89d31211c
+
+% 3 1 0 057a9dfdfd0b621500f04524e3d22936
+
+% 4 1 0 096a910d8a4556c102fc247bd988e2a7
+
+% 6 1 0 08b15ce552ad66461f080f21ca33d9f6
+
+% 7 1 0 1c169dd72d6c212a1df08c8cdb20cd54
+
+% 8 1 0 0e46113a0601124c02378dcdc4917935
+
+% 9 1 0 1a78697f58b6463500651c079a3dbf61
+
+% 10 1 0 00692577e9729c820948cd8aa37620b4
+
+% 11 1 0 1a8678c416eb942318cc8b0ecf35d455
+
+% 12 1 0 043da4bdc002048a1d69d970e7edc1e4
+
+@ 0 4 0 1248335ea6ff95d11382e7f2e8c14779
++       Obcy typ, który deklaracje zapisują jako unię, jest unią typów literałowych
++       (`"string" | "undefined"`), a zastosowanie generyczne, takie jak `Array<string>` lub
++       `Map<number, string>`, to przyimkowe `over`: `"Array" over "string"`, `"Map" over
++       ("number", "string")`. Temat złożony nie ma składowych do wybrania.
+
+@ 0 4 0 1d040b8cd9c8d22619da375376db77d3
++       Każda nawigacja buduje `Foreign.Expression` – `#expr` – i niczego nie wykonuje.
++       Wyrażenie jest tym, co konsumuje środowisko uruchomieniowe ekosystemu: ekosystem
++       przeglądarkowy przedstawia je jako JavaScript, a `call` przekazuje w pełni zastosowane
++       wyrażenie do backendu na ścieżce klas, by wykonać je jako prawdziwe wywołanie C, Wasm,
++       JavaScriptu lub Kotlina.
+
+@ 0 7 0 1965852d528d0fc01308527488bd32e2
++       Argumenty mają typ `Foreign from Origin`: obca wartość z tego samego ekosystemu albo
++       wartość Scali z instancją `Interoperable` dla niego, którą `.converter` zamienia w
++       `Foreign.Expression.Literal` w miejscu wywołania. Makro sprawdza następnie `Topic`
++       każdego argumentu względem zadeklarowanego typu parametru przez zawieranie: `string`
++       spełnia parametr `option<string>` (`"string" | "none"`), typ ramienia `ok` spełnia
++       parametr WIT `result<ok, err>`, a `Address` w C (temat `pointer`) spełnia dowolny
++       parametr `ptr<T>`.
+
+@ 0 1 0 0508b45502571b100fdf47c505024734
++       Błędy kompilacji precyzyjnie nazywają problem: _xenophile: the foreign type Play has no
+
+% 0 1 0 12cbea840e8ca0650890e5ac4106f4dd
+
+@ 0 2 0 147d6b4adae19b7c1f21ec42537c8eff
++       expects an argument of foreign type string_ oraz _xenophile: no `Interface` with a
++       definitions path is in scope_, gdy nic nie wiąże ekosystemu z plikiem.
+
+@ 0 3 0 1e9479663ec9f3ba1694e6c13c3f6b6a
++       `Foreign` jest `Completable`: silnik uzupełniania pyta `.completions` o składowe obcego
++       typu odbiorcy, odczytane z definicji zapisanych przez `Locus` typu, więc obcy typ
++       uzupełnia się w edytorze tak jak typ Scali.
+
+% 1 1 0 087af66e7c14926a10bb8318a1314fa7
+
+% 0 1 0 0ec8b5043f9e436c059c3356edeb7780
+
+% 1 1 0 1a7020fb61ad5fbb030a833855c3a8c3
+
+@ 0 7 0 1435cf1b4a3309901400fec7852cbf2b
++   entry .apply   `Foreign["Play", Typescript]`: odwołanie do nazwanego obcego typu, jako korzeń
++       Makro transparent inline przyjmujące nazwę obcego typu jako typ literału napisowego oraz
++       `Ecosystem`, do którego należy. Wynikiem jest `Foreign of "Play" from Typescript`, ze
++       ścieżką definicji zapisaną jako `Locus`, gdy w tym miejscu w zasięgu jest `Interface`
++       dla ekosystemu; korzeń utworzony bez niego nadal nawiguje (każdy krok przywołuje
++       `Interface` od nowa), ale nie oferuje uzupełnień. Nazwa musi być literałem; w przeciwnym
++       razie: _xenophile: the foreign type name must be a string literal type_.
+
+@ 0 2 0 1ccf8b8d2f0ed52f1f53e0c0e716db38
++       Wewnątrz innej definicji `inline` rafinacja może zostać pozostawiona niejawna przez
++       odroczone rozwinięcie; związanie korzenia z `val` z jawną adnotacją typu, jak
+
+% 0 1 0 178a8aa0daab9fa400c79ce1b1fa1f88
+
+@ 0 27 0 07fa9408867cc1e50839c39ff9dd0d1d
++       utrwala ją, tak by konwersje argumentów mogły rozwiązać swój ekosystem.
++   entry .make   opakowuje `Expression` jako `Foreign`, bez rafinacji
++       `Foreign.make(expression)` to zwykły konstruktor wstawiany przez makra; jego typem
++       wyniku jest gołe `Foreign`, więc służy kodowi, który sam buduje wyrażenia, zamiast
++       nawigować.
++   entry .completions   składowe obcego typu odbiorcy, dla silnika uzupełniania
++       Wywoływane refleksyjnie przez `prophesy.Completable`: na podstawie `TypeRepr` odbiorcy i
++       dotychczas wpisanego prefiksu odczytuje `Topic`, `Origin` i `Locus` z rafinacji, parsuje
++       definicje w danym położeniu i wymienia każdą składową jako term lub metodę z jej
++       sygnaturą (`(string): Play`) przedstawioną symbolicznie. Odbiorca o złożonym temacie lub
++       taki, którego korzeń nie zapisał `Locus`, nie oferuje niczego.
++   entry .converter   wartość Scali z instancją `Interoperable` konwertuje się do literału `Foreign`
++       `Conversion[value, Foreign of Topic from Ecosystem]`, która pozwala przekazać `t"hello"`
++       tam, gdzie oczekiwany jest `Foreign from Typescript` o temacie `string`, albo związać
++       `Wasm.Handle of "tcp-socket"` jako `Foreign of "tcp-socket" from Wit`, a następnie po nim
++       nawigować. Wartość jest niesiona dosłownie wewnątrz `Foreign.Expression.Literal`, a obcym
++       typem jest `Topic` instancji. Przypięcie ekosystemu do `Origin` odbiorcy w
++       `#applyDynamic` pozwala konwersji wywnioskować jej parametry typu, więc gołego literału
++       `"…"` typu `String` nie da się skonwertować tam, gdzie da się `Text`: instancje C i WIT
++       są dla `Text`.
++   entry .Expression   AST budowane przez nawigację: odwołania, selekcje, zastosowania, indeksy, literały
++       `enum` o pięciu przypadkach. `Reference(name)` to korzeń, nazwany obcy typ lub wartość.
++       `Select(target, member, owner)` to wybór składowej, zapisujący obcy typ `owner`, z
++       którego ją wybrano; używa go backend potrzebujący układu typu (ewaluator C), a backend
++       samoopisujący się go ignoruje. `Apply(target, arguments)` to zastosowanie funkcji;
++       `Index(target, index)` – dostęp indeksowany do wartości typu tablicowego; a
++       `Literal(value)` – operand Scali niesiony dosłownie, tak jak tworzy go `.converter`.
+
+% 2 1 0 0ca306cfa6abf029101b20eadbae9fc0
+
+% 3 1 0 0fb68f296c59065508d0c2c1d3c9ade6
+
+% 0 1 0 0ed0d507c74e8c6104e7e6f731ab892c
+
+% 0 1 0 17cfdaf07c52ad8315e2e94086f1f429
+
+% 0 1 0 04e9886da843dd2a138f107da0ca4b9f
+
+% 0 1 0 17aa01922b501ef1118ebe3143404d62
+
+% 1 1 0 042820322229d194094d3f92fd8ffb4f
+
+@ 0 2 0 024fd2b73a7fd9be084606bcad238c50
++       Lista argumentów przypadku `Apply` to `List` z biblioteki standardowej, a nie z
++       Soundness.
++   entry .Type   obcy typ tak, jak podaje go dialekt: nazwany, unia lub zastosowanie generyczne
+
+% 1 1 0 030d94dbcaec305902ac6aecef2a5fc5
+
+@ 0 35 0 19b9eedd84f445c203ce0ca9545089f0
++         `enum`, którego `Dialect` używa do opisu typów składowych. `Named(name)` to zwykły typ
++         (`int`, `string`, `Play`); `Union(members)` to unia alternatyw (opcjonalna wartość WIT
++         to `Union(List(Named("string"), Named("none")))`); a `Applied(constructor,
++         arguments)` to zastosowanie generyczne, takie jak `Map<number, string>` w TypeScripcie,
++         `sequence<T>` w WebIDL, `list<T>`, `option<T>`, `result<ok, err>` i `tuple<…>` w WIT
++         oraz `ptr<T>`, `const<T>`, `array<T, n>` i `fn<result, params…>` w dialekcie C. Makra
++         odwzorowują je na typy: `Named` na jego typ literałowy, `Union` na unię typów
++         literałowych, a `Applied` na `constructor over arguments`.
++     entry #text   typ przedstawiony jako kod źródłowy: `Map<number, string>`, `string|undefined`
++   entry #expr   wyrażenie zbudowane przez tę nawigację
++       Drzewo `Foreign.Expression`: `Reference` dla korzenia, `Select` dla składowej, `Apply`
++       dla zastosowania, `Index` dla elementu. To właśnie sprawdza test i to przedstawia lub
++       wykonuje środowisko uruchomieniowe ekosystemu.
++   entry #selectDynamic   `foreign.member`: wybiera zadeklarowane pole lub metodę bez parametrów
++       Makro transparent inline, osiągane przez `Dynamic`. Składowa jest wyszukiwana w obcym
++       typie odbiorcy; wynikiem jest `Foreign` zadeklarowanego typu składowej, z przeniesionymi
++       `Origin` i `Locus`. Zarówno pole, jak i metodę bez parametrów można wybrać bez
++       argumentów – bezargumentową funkcję WIT, taką jak `` `get-random-u64` ``, wybiera się i
++       następnie wywołuje przez `call`, bez pustej listy argumentów – ale metodę z parametrami
++       trzeba zastosować: _xenophile: greet is a method of Play and must be called with
++       arguments_. Nieznana nazwa daje _xenophile: the foreign type Play has no member
++       nonexistent_.
++   entry #applyDynamic   `foreign.method(args…)`: stosuje zadeklarowaną metodę do argumentów obcych typów
++       Makro transparent inline, osiągane przez `Dynamic`. Każdy argument to `Foreign from
++       Origin` – nawigacja z tego samego ekosystemu lub wartość Scali skonwertowana przez
++       `.converter` – a jego `Topic` jest sprawdzany względem zadeklarowanego typu parametru
++       przez zawieranie. Liczba argumentów musi się zgadzać (_xenophile: greet expects 1
++       arguments, not 2_), argumenty muszą być zapisane bezpośrednio, a nie rozwinięte z
++       sekwencji, a wynik jest typowany zadeklarowanym wynikiem metody. Wybór pola tak, jakby
++       było metodą, daje _xenophile: scene is not a method of Play_.
++   entry #apply   `foreign(index)`: element obcej wartości typu tablicowego
++       Prawdziwe `apply`, mające pierwszeństwo przed `Dynamic`, więc `tags(0)` rozwiązuje się
++       tutaj. Temat odbiorcy musi być jednym z konstruktorów tablic – `sequence` i
++       `FrozenArray` w WebIDL, `Array` i `ReadonlyArray` w TypeScripcie, `list` w WIT –
++       zastosowanym do jednego typu elementu, a wynikiem jest `Foreign` tego typu elementu.
++       Każdy inny odbiorca daje _xenophile: this foreign type is not an indexable array type_.
+
+@ 0 1 0 1e98beb5beefd8cb1ceb6c9388b4ba26
++ entry .Interface   wiąże ekosystem z plikiem definicji na ścieżce klas kompilatora, jako given
+
+% 1 1 0 16bec7cb7305efb01b31350e1ee6e4e8
+
+@ 0 5 0 1ad6c4273b777df5123d67614b3d47ee
++       `Interface in Typescript at "/xenophile/definitions.ts"` to wartość, której typ
++       zapisuje ekosystem (`Form`) i ścieżkę jego definicji w ścieżce klas (`Locus`, typ
++       literału napisowego). Makra nawigacji przywołują `Interface` dla `Origin` odbiorcy i
++       czytają definicje z jego `Locus`; plik jest czytany i parsowany w czasie kompilacji,
++       więc musi być na ścieżce klas kompilatora, a nie tylko programu.
+
+% 2 1 0 03b4cdcf779a339e1ae582c67ba7aac5
+
+% 3 1 0 030a9f689721a919004ac542f0430c9c
+
+% 4 1 0 0e3a383055933b4b0901480f347ddd4a
+
+% 5 1 0 119ea1e22bf2f8301d9191823dbd2a19
+
+% 0 1 0 0f1bc84c3d453cb51ce10a5343f17112
+
+% 0 1 0 0fe31f6448b01fab0a9ce390f84dd017
+
+% 1 1 0 01f1e021eb5a26591c1ef38c3ed179e9
+
+@ 0 5 0 1f5216ffca7f337c1f8f6a98dcbda2f4
++       Przywoływany jest jeden `Interface` na ekosystem, więc dwa pliki definicji dla tej samej
++       gramatyki wymagają dwóch ekosystemów: drugi `trait Dom extends Ecosystem { type Grammar =
++       WebIdlDialect.type }` pozwala współistnieć prawdziwemu IDL DOM i syntetycznej próbce.
++       Ekosystem samorozwiązujący się, taki jak `Kotlin`, którego dialekt czyta pliki klas, w
++       ogóle nie potrzebuje `Interface`.
+
+@ 0 2 0 124ee8a446468f2513cb8717cadced5a
++       Sparsowane definicje są buforowane według ścieżki na czas przebiegu kompilacji, więc
++       łańcuch taki jak `play.scene.play` parsuje swój plik raz.
+
+% 1 1 0 136bcf1372d883d71e877bd104574af0
+
+% 1 1 0 1f12ec92ff296adf19117e26cc408c46
+
+@ 0 9 0 05f637b72efe8bf11f76010636c4d7b8
++   entry .apply   `Interface[Native](cp"/lib.h")` lub `Interface[Native]("/lib.h")`: interfejs nad ścieżką definicji
++       Dwa przeciążenia transparent inline. Pierwsze przyjmuje dowolny `Locative` – cokolwiek
++       niosącego typ ścieżki singletonowej `Locus`, w szczególności `Resource` z hellenism
++       utworzony przez `cp"…"`, który sprawdza istnienie pliku podczas kompilacji kodu. Drugie
++       przyjmuje ścieżkę w ścieżce klas jako literał `String`, dla kodu kompilowanego skrośnie
++       do Scala Native, gdzie `cp"…"` nie jest dostępne; jest ona sprawdzana, gdy nawigacja po
++       raz pierwszy ją odczytuje, z błędem _xenophile: could not read foreign definitions at
++       /lib.h on the classpath_, jeśli jej brak. Typem wyniku jest
++       `Interface { type Form = Native; type Locus = "/lib.h" }`, co przyimki `in`/`at`
++       zapisują jako `Interface in Native at "/lib.h"`.
+
+@ 0 1 0 069699ba16022554034afea7d663c00f
++ entry .Ecosystem   obcy język źródłowy: który `Dialect` go parsuje i które backendy mogą go wywoływać
+
+% 1 1 0 08868576ee823c4a0cc549075f9f4e63
+
+@ 0 6 0 0eabd287225619231e7621f1093f286f
++       Trait znacznikowy z dwiema składowymi typowymi. `#Grammar` to typ singletonowy obiektu
++       `Dialect`, który parsuje definicje języka; makra nawigacji ładują go refleksyjnie, tak
++       by `xenophile.core` nie zależał od żadnego ekosystemu. `#Emission` nazywa obiekt (lub
++       obiekty) `Materializer`, które potrafią wykonać wywołanie w danym języku, jako w pełni
++       kwalifikowane nazwy klas w typach literałowych, tak by `call` mógł znaleźć backend
++       wybrany przez kompilację bez zależności ekosystemu od niego.
+
+@ 0 2 0 00544e23e593664e15ff9e01e832a846
++       Dostarczone ekosystemy to `Native` (nagłówki C), `Wit`, `Typescript`, `WebIdl` i
++       `Kotlin`. Nowy ekosystem to trait, który nazywa dialekt:
+
+% 2 1 0 0e2206165197048703014bc04e066d92
+
+% 3 1 0 0331e04c777c13fb1e051b61e03220a0
+
+% 0 1 0 0c04e980d27e21ad1eee0f911114fbca
+
+% 0 1 0 144cbb4c2e3545181cd12df292ebb537
+
+% 1 1 0 08a41993f41759741dabb1aac09a6d9e
+
+@ 0 2 0 1abdd804a8b6bf5510c2efe1e047b727
++       Po ekosystemie bez `Emission` można nawigować, ale nie można go wywołać przez `call`:
++       _xenophile: the source language names no materializer (it defines no `Emission`)_.
+
+% 1 1 0 0067eb4e66fe93b104e7474b745edd5b
+
+% 0 1 0 00216f529c9d954d13bba428f58d583d
+
+@ 0 12 0 106c9e6d8380ec880bcba1db493520ce
++   entry #Grammar   typ singletonowy obiektu `Dialect`, który parsuje definicje tego języka
++       Ograniczony przez `Dialect`. Rozwiązywany w czasie kompilacji przez załadowanie pola
++       `MODULE$` obiektu przez własny classloader makra; gramatyka, której nie da się załadować,
++       daje _xenophile: could not load the grammar for the foreign source language_.
++   entry #Emission   w pełni kwalifikowane nazwy obiektów `Materializer`, które potrafią wyemitować wywołanie, jako typy literałowe
++       Pojedyncza nazwa lub unia nazw tam, gdzie język ma więcej niż jeden backend: dla
++       ekosystemu C jest to `"xenophile.PanamaInvoke" | "xenophile.NativeInvoke"`, po jednym na
++       platformę docelową. `call` ładuje pierwszego kandydata ze ścieżki klas; ponieważ żadna
++       prawdziwa ścieżka klas nie zawiera obu backendów C, decyduje zależność kompilacji, a ten
++       sam kod źródłowy kompiluje się dla każdej z nich. Składowa, która nie jest nazwą
++       literałową, daje _xenophile: the source language's `Emission` is not a materializer's
++       name_, a brak dającego się załadować – _xenophile: no materializer for this foreign
++       source language is on the classpath_.
+
+@ 0 1 0 0a28c0c9d35b7ae31c6f060a8588f8c4
++ entry .Dialect   gramatyka obcego systemu typów: parsuje definicje na prototypy składowych każdego typu
+
+% 1 1 0 1fe91fed73ab9d2e0420e455d9bf7791
+
+@ 0 6 0 0a0bd1ddf9a936d71e182b33d9f763ff
++       `Dialect` zamienia źródło definicji w `Map` od nazwy obcego typu do jego składowych,
++       każdej jako `Prototype`. Makra nawigacji wywołują `#parse` na tekście pliku
++       `Interface` lub, dla dialektu samorozwiązującego się, `#resolve` dla każdej nazwy typu.
++       Dostarczone dialekty to `CHeader.Dialect` (nagłówki C), `WitDialect`,
++       `TypescriptDialect`, `WebIdlDialect` i `KotlinDialect`; każdy jest obiektem, ponieważ
++       `Ecosystem` nazywa go przez typ singletonowy.
+
+% 2 1 0 12873ac8ea9ef2be100e1d8b01b0e49f
+
+% 3 1 0 1598c7d80883427700ec8722f72ada97
+
+% 0 1 0 07265e42135444b01e5b29344b294e20
+
+% 0 1 0 00ea39fa663f8dd6114763f56eed85ed
+
+% 0 1 0 0a0bda21d5e78ade04555925276df699
+
+% 1 1 0 16fe45164502e8d71a7b1997c011e4d5
+
+@ 0 3 0 03dd235b959a916a07990140f9588025
++       `parse` jest totalne w każdym dostarczonym dialekcie: źródło, które się nie parsuje,
++       niczego nie definiuje, a makro na podstawie pustego wyniku zgłasza _xenophile: the
++       foreign type Play is not defined_.
+
+% 0 1 0 0e1756fb0270505c143675e4fc8a7a46
+
+% 1 1 0 1d48a9c199711c720ab67a0a49a31b47
+
+@ 0 8 0 0579192d09ead6ab1c26df68f9319fdc
++   entry #parse   definicje w źródle jako mapa od nazwy typu do prototypów składowych
++   entry #resolves   czy ten dialekt odpowiada przez `resolve` dla każdego typu, zamiast parsować plik
++       Domyślnie `false`. Dialekt, którego definicje żyją w skompilowanych artefaktach na
++       ścieżce klas – `KotlinDialect`, czytający `@Metadata` z plików klas – zwraca `true`, nie
++       potrzebuje `Interface` (nie ma `Locus`) i nie zapisuje `Locus` w typach, które wytwarza.
++   entry #resolve   składowe jednego nazwanego typu, dla dialektu samorozwiązującego się; `Unset`, jeśli nieznany
++       Domyślnie `Unset`, a dla dialektu samorozwiązującego się, gdy typu nie ma na ścieżce
++       klas kompilacji: _xenophile: the foreign type Play is not defined on the compile
++       classpath_.
+
+@ 0 1 0 1352558b2aec667e1e068e4dbb50af6e
++ entry .Prototype   sygnatura jednej składowej obcego typu: jej parametry, wynik i adresowanie
+
+% 1 1 0 0caaa0780c86b6751fae5b8864a0f465
+
+@ 0 7 0 07cefc98fb9dcb941c4935714e7a4d1e
++       Klasa case, którą `Dialect` wytwarza dla każdej składowej. Pole nie ma `#parameters`
++       (`Unset`); metoda zapisuje typy swoich parametrów, w kolejności. `#result` to obcy typ,
++       który składowa wytwarza. Pozostałe pola służą ekosystemom, których składowe trzeba
++       zaadresować w miejscu wywołania: `#module` to identyfikator modułu WIT
++       (`wasi:random/random@0.2.0`), z którego składowa jest importowana, `#resource` – zasób
++       WIT, którego jest metodą, a `#static` – czy jest funkcją `static` lub `constructor`
++       tego zasobu, nieprzyjmującą odbiorcy.
+
+% 2 1 0 10b06693ffdcbd940bbe3281d800795c
+
+% 3 1 0 01d5b10729383fd703231dd1a8d32f48
+
+% 0 1 0 0cff1882001f099b1e66ab26f54bd2a3
+
+% 0 1 0 06b42f633f68953d145d975615118c07
+
+% 1 1 0 1bee7dfd84226d2f1e07f9e38453834d
+
+% 1 1 0 1de624507dd1ba8d1d2e46692857731a
+
+@ 0 11 0 0cba475f037e8642077bcbfd1b7b1911
++   entry #parameters   typy parametrów, w kolejności, lub `Unset` dla pola
++   entry #result   obcy typ wytwarzany przez składową
++   entry #module   moduł, przez który składowa jest adresowana, tam, gdzie ekosystem go potrzebuje
++       `Unset` dla gramatyk bez kwalifikatora modułu. Dla WIT jest to w pełni kwalifikowany
++       identyfikator interfejsu, który `WasmInvoke` przekazuje do importu modelu komponentów, a
++       składowa WIT bez niego daje _xenophile: api.f is not addressable as a WIT import (it has
++       no module id)_.
++   entry #resource   stanowy obcy typ (`resource` w WIT), którego metodą jest składowa, jeśli taki istnieje
++       Gdy jest ustawiony, `WasmInvoke` importuje składową jako `[method]resource.name` i
++       przekazuje `Wasm.Handle` odbiorcy jako jej pierwszy parametr.
++   entry #static   czy składowa zasobu nie przyjmuje odbiorcy: funkcja `static` lub `constructor` w WIT
++       `constructor` jest importowany jako `[constructor]resource`, inna funkcja statyczna jako
+
+% 0 1 0 17c5dc30689b69b713affe34b87db312
+
+@ 0 1 0 05dd048050dcaeba0153b5b3ecaaf7b4
++ entry .Interoperable   zapisuje, że typ Scali odpowiada obcemu typowi w ekosystemie
+
+% 1 1 0 084becf4848f3afa04a63fc13f5ce1fc
+
+@ 0 6 0 1381cb23580b63c6069e052f5f5c796a
++       `Int is Interoperable in Native of "int"` mówi, że `Int` można przekazać tam, gdzie
++       deklaracje C oczekują `int`. Jest to czysty znacznik na poziomie typów: makro nawigacji
++       używa go do sprawdzania typów argumentów, a `Foreign.converter` – do nadania
++       skonwertowanej wartości Scali typu `Foreign of Topic from Form`. Nie niesie żadnej
++       reprezentacji w czasie wykonania – przenoszenie wartości przez granicę jest pracą
++       backendu, przez `ForeignLibrary` na JVM, wywołanie Scala Native lub kodeki
++       `Encodable in Wasm`/`Decodable in Js`.
+
+@ 0 5 0 1313a78ce97226481a7c3b18bf313669
++       Instancje żyją w obiektach towarzyszących ekosystemów i rozwiązują się przez zasięg
++       niejawny: `Native` ma `int`, `long`, `short`, `char`, `double`, `float`, `boolean`,
++       `string` i `pointer`; `Wasm.Handle`, `Wasm.Case` i `Wasm.Variant` są interoperacyjne w
++       `Wit` z zasobem lub wariantem, który niosą, jako tematem; a obiekty towarzyszące `Wit`,
++       `Typescript`, `WebIdl` i `Kotlin` zawierają własne. Nowa instancja to jeden wiersz:
+
+% 2 1 0 0de78be3f4614802146ce9e74225d94a
+
+% 3 1 0 1500f22ed10b7c21119ea60150ef1a35
+
+% 0 1 0 163703dc46bd78b609dfdbc9a47944aa
+
+% 1 1 0 0a7cf184c7c36cab0b88a50a686f21d4
+
+% 1 1 0 036746767b2ba66b1bfbe22b9ee976d8
+
+@ 0 2 0 03d99b58ad3434de0a06d5f3bacce0eb
++   entry .apply   `Interoperable[Int, Native, "int"]()`: instancja dla typu Scali, ekosystemu i obcego typu
++   entry #Self   typ Scali, którego dotyczy instancja
+
+@ 0 1 0 1aed00f142bab51514f8603276973eda
++ entry .Materializer   backend, który zamienia w pełni zastosowaną obcą nawigację w drzewo, które ją wykonuje
+
+% 1 1 0 0e394004a1d7ba15190612f67dfd4ebb
+
+@ 0 8 0 077b2783a162824d0134469fed996be5
++       Końcowy krok `call`. Kroki przed nim – rozłożenie nawigacji na obcy typ, składową i
++       drzewa operandów oraz sprawdzenie wywołania względem definicji ekosystemu – są wspólne;
++       `Materializer` otrzymuje nawigację jako `Expr[Foreign]` i żądany typ wyniku, i emituje
++       wywołanie. Na każdy backend przypada jeden: `PanamaInvoke` (wywołanie natywne Panama na
++       JVM), `NativeInvoke` (wywołanie `dlsym`/`CFuncPtr` w Scala Native), `WasmInvoke` (import
++       modelu komponentów), `JsInvoke` (dynamiczne wywołanie Scala.js) i `KotlinInvoke`
++       (bezpośrednie wywołanie JVM). `Ecosystem` nazywa w swoim `Emission` te, które go
++       obsługują, a `call` ładuje ten, który kompilacja umieściła na ścieżce klas.
+
+@ 0 1 0 00df9d61daef554e0d8f5e2415ffc392
++       Nowy backend to `object` rozszerzający `Materializer`, nazwany przez `Emission`
++       ekosystemu.
+
+% 1 1 0 0368f615aff6d38b014b196dab45958c
+
+% 1 1 0 17ce38a2ca9aa29b10a26e94c61dc123
+
+@ 0 1 0 05043cdf1b40ef9f097f0b63a8191637
++   entry #materialize   emituje wyrażenie typu `result`, które wykonuje nawigowane wywołanie
+
+@ 0 7 0 15542a042902263202ad24bd7d1c4246
++ entry .call   `navigation.call[Result]()`: wykonuje w pełni zastosowane obce wywołanie przez backend na ścieżce klas
++     Jedyny krok końcowy dla każdego ekosystemu i każdej platformy docelowej. Rozszerzenie
++     inline dla `Foreign`: odczytuje `Origin` odbiorcy, znajduje `Materializer`, który nazywa
++     `Emission` ekosystemu i który zawiera ścieżka klas, i wstawia wywołanie emitowane przez
++     ten backend, typowane jako `Result`. To, który to backend, wynika z kompilacji:
++     nawigacja C staje się wywołaniem natywnym Panama, gdy na ścieżce klas jest
++     `xenophile.native`, a wywołaniem `dlsym`/`CFuncPtr`, gdy jest tam
++     `xenophile.scalanative`, więc jeden kod źródłowy kompiluje się dla obu.
+
+% 2 1 0 18c3a2ecb98ca7471bf6005a82f9a6cc
+
+% 3 1 0 10558cc99c201ec4145b600358193623
+
+% 4 1 0 0f12a64ab71a53590460ac9debac9bfd
+
+% 5 1 0 15618f2b4b277d7e0929c5f17ca72135
+
+% 7 1 0 09699c67ad67f09f12d5ff65f04705df
+
+% 8 1 0 13e1b19bc7578d101ae4fd07c1b224a5
+
+% 10 1 0 11af318dbe8caf4f012da3c799f2122e
+
+% 0 1 0 0627919273935dfb04b1e780c06ffc86
+
+% 0 1 0 0e0bbca71c46ee1a188c23d14170efae
+
+% 0 1 0 14045ac490fa3ac511c64e20cbf58474
+
+% 1 1 0 13f5a28e1f0fd4960547dbc3ff1c9085
+
+@ 0 5 0 151d7704394459e41bdaafecf5105ca4
++     `call` musi być zastosowane bezpośrednio do łańcucha nawigacji inline –
++     `interface.function(…)` lub gołej selekcji bezargumentowej funkcji, `interface.function`
++     – a nie do nawigacji związanej z `val`; w przeciwnym razie: _xenophile: `call` expects a
++     foreign function invocation, `interface.function(…)`_. Uchwyt zasobu WIT można związać z
++     `val` i po nim nawigować, ponieważ jego uchwyt jest odzyskiwany z wyrażenia w czasie
++     wykonania.
+
+@ 0 5 0 1b73ea724dc7de4c0c60f7c2c8b740f6
++     Typ wyniku wybiera wywołujący, a każdy backend sprawdza go względem deklaracji: wynik
++     `string` w C jako `Text`, wynik wskaźnikowy jako `Address`, `void` jako `Unit`; wynik
++     WIT przez jego kodek `Decodable in Wasm`, zasób jako `Wasm.Handle of "name"`,
++     `result<…>` rozpakowany (jego ramię `err` zgłaszane jako `Wasm.Error`), `option<T>` jako
++     `Optional`, `tuple<…>` jako krotka Scali, a `list<T>` jako `List`.
+
+@ 0 4 0 063683571c80dffc04016864e8c05092
++     `call` jest zwykłym `inline`, a nie `transparent`, tak by wewnątrz innej definicji
++     `inline` – na przykład w bibliotece publikującej given inline – rozwinięcie zostało
++     odroczone do dalszego miejsca wywołania, gdzie na ścieżce klas jest środowisko
++     uruchomieniowe platformy (Scala.js, scala-wasm, środowisko uruchomieniowe Scala Native).
+
+@ 0 1 0 19f14677fddf9c090789d6fd9ebf74ff
++ entry .Xenophile   implementacje makr stojące za `Foreign`, `Interface` i `call`
+
+% 1 1 0 00398b5f825741e3026c735b9d5ac20e
+
+% 2 1 0 1f0a0be7e1be45a80b503624aac02b0f
+
+@ 0 16 0 030f3e1b7755bcfd05902fd90adb2c82
++       Nie do bezpośredniego użytku: obiekt mieści makra nawigacji i wspólną maszynerię, której
++       używa każdy backend – odzyskiwanie obcego typu, składowej i drzew operandów nawigacji,
++       refleksyjne znajdowanie dialektu i materializatora ekosystemu oraz bufor sparsowanych
++       definicji na każdą kompilację.
++   entry .invoke   makro stojące za `call`: znajduje materializator odbiorcy i pozwala mu wyemitować wywołanie
++   entry .definitions   sparsowane definicje pod ścieżką w ścieżce klas, dla ekosystemu, buforowane na przebieg kompilacji
++       Czyta zasób przez classloader makra i parsuje go przez `Grammar` ekosystemu; _xenophile:
++       could not read foreign definitions at path on the classpath_, gdy zasobu brak. Backend
++       używa go do odczytania prototypu wywoływanej składowej.
++   entry .select   makro stojące za `Foreign#selectDynamic`
++   entry .index   makro stojące za `Foreign#apply`
++   entry .applied   makro stojące za `Foreign#applyDynamic`
++   entry .interface   makro stojące za `Interface[form](locative)`
++   entry .interfaceFromPath   makro stojące za `Interface[form]("/path")`
++   entry .root   makro stojące za `Foreign["name", Ecosystem]`
+
+@ 0 1 0 1410944d2902b2e0092eb6fc87084985
++ entry .Address   nieprzezroczysty wskaźnik C: surowy adres, jako który przez granicę przechodzi każde `T*` poza `char*`
+
+% 1 1 0 14a4b5798561658416b0975756c4ca34
+
+@ 0 6 0 0510f7c5eb66e91e09fc2ef2effc2e42
++       `Address` to nieprzezroczysty `Long` przechowujący surowy adres pamięci – niezależna od
++       platformy waluta dla każdego wskaźnika, który deklaruje nagłówek C, poza szczególnym
++       przypadkiem `char*`↔`Text`: bufor (`ForeignBuffer#pointer`), nieprzezroczysty uchwyt,
++       taki jak `EVP_MD*` z OpenSSL, zwracany przez jedno wywołanie i przekazywany do
++       następnego, lub parametr wyjściowy. Na JVM argument `pointer` podróżuje jako
++       `MemorySegment.ofAddress`, a na Scala Native jest rzutowany na `Ptr[Byte]`; wynik typu
++       wskaźnikowego wraca jako `Address`.
+
+% 2 1 0 06a334d2e8332f3618715df39811d798
+
+% 3 1 0 12b2b952b36c78e202a4a9f75abe62a1
+
+% 4 1 0 1e22ba3d54ac55b30176d0306f637b6b
+
+% 5 1 0 092026755fdb2df20b137d6667fb5235
+
+% 7 1 0 17b220c4c0ad8dd11f6fef98a42dd125
+
+% 8 1 0 0619dad1dd23003d063d1f2d8c4dc69f
+
+% 0 1 0 1f7b36c73255b9dc0a7f40ab06f6d773
+
+% 0 1 0 1bf88122c664325e14ca7de72206b511
+
+% 0 1 0 1d512ae7b0d818d61414847481dc2778
+
+% 0 1 0 0f85feb60123054c0a1f84facc8ab6d8
+
+% 1 1 0 056ce570d814efa00f1636e572ac6867
+
+@ 0 5 0 124b50ef289fa631040af3d18b7fa86f
++       `Address` spełnia *dowolny* parametr typu wskaźnikowego: dialekt C czyta `T*` jako
++       `ptr<T>`, a makro nawigacji akceptuje temat `pointer` dla każdego `ptr<T>`, więc
++       sprawdzenie jest dokładnie tak silne jak w samym C – liczba argumentów i bycie
++       wskaźnikiem, a nie tożsamość wskazywanego typu. Pamięć osiągalna przez `Address` jest
++       zarządzana ręcznie; bloki, które program przydziela sam, posiada `ForeignBuffer`.
+
+% 1 1 0 115e8401873c3452020b2a91d6bd1938
+
+% 1 1 0 14b0aa0530bcbfbb0a92b93ca727aaac
+
+@ 0 8 0 09ed8c549c5df5d11ff5f3ed13d3ab7d
++   entry .Null   wskaźnik pusty C, dla opcjonalnego parametru wskaźnikowego
++       `Address(0L)`. Przekazywany tam, gdzie API C akceptuje `NULL`, na przykład jako
++       nieużywane `impl` w `EVP_EncryptInit_ex`, lub jako wartość rezerwowa dla nieobecnego
++       bufora: `iv.lay(Address.Null)(_.pointer)`.
++   entry .apply   opakowuje surowy adres jako `Address`
++   entry .address   surowy adres jako `Long`
++       Rozszerzenie dla `Address`, eksportowane do `soundness` razem z `isNull`.
++   entry .isNull   czy adres jest zerowy
++       Rozszerzenie dla `Address`.
+
+@ 0 1 0 0cd1ce2efe4257001f2510d554b87acd
++ entry .Native   ekosystem C: deklaracje nagłówka jako obce typy, wywoływane natywnie na JVM lub Scala Native
+
+% 1 1 0 0eb377b6f2b90a0a1466a396102479ae
+
+@ 0 5 0 0c5a104c0e97b70a1ad0302f51020e88
++       `Native` to `Ecosystem`, którego definicjami są nagłówki C, parsowane przez
++       `CHeader.Dialect`, a którego wywołania wykonuje `PanamaInvoke` na JVM lub
++       `NativeInvoke` na Scala Native – jego `Emission` nazywa oba, a `call` używa tego
++       backendu, od którego zależy kompilacja. Jego obiekt towarzyszący zawiera znaczniki
++       `Interoperable`, które mówią, jaki typ Scali odpowiada każdemu typowi C, więc
++       rozwiązują się one bez importu.
+
+@ 0 5 0 1b99e9c55ba6aebb099207e2db101a0b
++       Każdy prototyp najwyższego poziomu w nagłówku jest składową syntetycznego obcego typu
++       `library`; `struct` lub `union` to obcy typ, którego składowymi są jego pola; `enum` to
++       `int`; `typedef` rozwiązuje się do tego, co nazywa. Jeden kod źródłowy, z nagłówkiem na
++       ścieżce klas kompilacji, obsługuje obie platformy. Nagłówek, na ścieżce klas kompilacji
++       jako `/xenophile/library.h`:
+
+% 0 1 0 10e2a4d5d2b5b1911d4868fe023412d3
+
+% 0 1 0 0bb93a401629baf31fb5d9a522eaaf99
+
+% 1 1 0 03a7da1c6837bdaa04b954987bc2407d
+
+% 0 1 0 01dfa24e67581b9f1c64f9138477770e
+
+% 0 1 0 001bcc15cba820931e2fa4801639d947
+
+% 0 1 0 0f67de2e9ec824bb01ef73f33db1f6b8
+
+% 0 1 0 0bc690f3b4dccbba011cad6de93ef1a7
+
+% 1 1 0 1f76509d21cc6e810e7f721a3f9feed2
+
+@ 0 1 0 08ea76fcb2b715a712137c33e2caa980
++       Kod źródłowy Scali, napisany raz:
+
+% 2 1 0 041e2060f7d64a6b0e4e9e03b623de6a
+
+% 3 1 0 197eb32aca7fecbd19014ad9b5b6f9d4
+
+% 0 1 0 1ec6ad87ff3f2c57067f801ec8403c22
+
+% 0 1 0 1365db57500d51050eff73d63646a179
+
+% 0 1 0 124060cd8b3b88e41cfe1f369455a920
+
+% 0 1 0 10785aec306afab30a07910a324ebcd2
+
+% 0 1 0 18a66fc388dd4ee900377c1618bfd1f2
+
+% 1 1 0 1a144805a5ff05ee1ade13e7c9f130b1
+
+@ 0 2 0 02717857718b0410123539d2333f0152
++       Czym staje się `call` na JVM, z `xenophile.native` na ścieżce klas, i na Scala Native, z
++       `xenophile.scalanative`:
+
+% 2 1 0 1d435c69ad3a29ac16e7bfc3d8e9da00
+
+% 0 1 0 0d5e679772ecd37c1b7aa70bd2e8d7cc
+
+% 1 1 0 0c173bfdab9cbdc91d781f7916ee8453
+
+% 2 1 0 065b7e60214390d71a6909ac538b8837
+
+% 0 1 0 039e6bedc748749d127b548ffb6e78b2
+
+% 2 1 0 15efbf7e63169a77013571e6dd2df4af
+
+% 0 1 0 1219d3e70f197184035c6de46a63f150
+
+% 0 1 0 1320d0957f377b9c0dbae6b11c74d4cf
+
+% 2 1 0 006b25a4d823d4b00c1ea85e9a4cb984
+
+% 0 1 0 0efe6ef6e0f7f1ad1910948a3799855c
+
+% 0 1 0 092a485032c2924010d597b542c4e55e
+
+% 0 1 0 02590ce8d376dbbc005bc5e2f5b800be
+
+% 0 1 0 0982b86cb3961ceb180cd56f48f585b8
+
+% 0 1 0 07b4aa71f08e639b03593f81248af8f3
+
+% 0 1 0 1bf6d9356aff737f09c3a15f150210f4
+
+% 1 1 0 06f70318b775842e13e1d6cc886e9919
+
+% 2 1 0 1b13754729b79e281bd80dab721837c2
+
+% 0 1 0 0adbbedee3f0b2211254ed1a5bc5d7dc
+
+% 2 1 0 188cb032678f14b11511b8ccc80b2434
+
+% 0 1 0 04b82ec8e520a6d4134b17ca212da6fc
+
+% 2 1 0 0368488bc1ba066601f4e44633cdfb90
+
+% 0 1 0 02e9767044417e4a0708a86cec5539b3
+
+% 0 1 0 1dc71cda140e0fc0194712ed14b2ce60
+
+% 0 1 0 1a426d76cd8ca9b81d643881716ef768
+
+% 1 1 0 026ad3020e46a96b01d5e13da477fb00
+
+% 2 1 0 1f653830ea5802bf108742f12975852c
+
+@ 0 7 0 1e760ca6e5b4aeed0342c95ebf805a5d
++       Oba obniżenia przenoszą wartości identycznie. Prymityw C przechodzi bez zmian; argument
++       `string` (`Text`) jest kopiowany do ograniczonej areny lub `Zone` na czas wywołania;
++       każdy inny wskaźnik podróżuje jako surowy `Address`; wynik `string` jest odczytywany z
++       pamięci natywnej, wynik wskaźnikowy staje się `Address`, a `void` daje `Unit`. Na obu
++       platformach symbol jest rozwiązywany w czasie wykonania z bibliotek załadowanych przez
++       `ForeignLibrary.register` i z domyślnego wyszukiwania procesu, więc biblioteka, której
++       brakuje pod zadeklarowanymi ścieżkami, zawodzi głośno przy rejestracji, a nie w czasie
++       konsolidacji.
+
+@ 0 5 0 160c09789f8fb33e0d16cf664927aa7f
++       Typy C, które program może wyrazić jako argumenty, to skalary `int`, `long`, `short`,
++       `char` (`Byte`), `double`, `float` i `bool`, napis C oraz wskaźniki. Struktury
++       przekazywane przez wartość leżą poza słownikiem marshallingu: *pola* struktury można
++       nawigować i typować, ale funkcji przyjmującej lub zwracającej strukturę przez wartość
++       nie można wywołać przez `call`, a na Scala Native daje to _xenophile: library.f uses a
++       struct type, unsupported on native_.
+
+% 0 1 0 148623a705a1a800036ae5fb3f1f1e25
+
+% 1 1 0 113a6c038bce90201d95783f13adfac0
+
+% 1 1 0 047e62a64f17fa221781da3e697cdccf
+
+% 1 1 0 1009aef2b524476b126251a280952480
+
+% 1 1 0 1efe1e6e702004290ad81b6a027fb41a
+
+@ 0 18 0 0ab60da78043b25209a82fbe4d44617a
++   entry .int   `Int` odpowiada `int` w C
++       Również to, do czego kanonizują się `unsigned int`, `int32_t`, `uint32_t` i każde
++       `enum`.
++   entry .long   `Long` odpowiada `long` w C
++       Również `long long`, długie typy bez znaku, `int64_t`, `uint64_t`, `intptr_t`,
++       `uintptr_t`, `size_t` i `ssize_t`, które `CHeader.Dialect` sprowadza do `long`, tak by
++       układ miał szerokość ośmiu bajtów.
++   entry .short   `Short` odpowiada `short` w C, ze znakiem lub bez
++   entry .char   `Byte` odpowiada `char` w C jako skalarowi – nie `char*`, które jest `string`
++   entry .double   `Double` odpowiada `double` w C
++   entry .float   `Float` odpowiada `float` w C
++   entry .boolean   `Boolean` odpowiada `bool` w C
++   entry .string   `Text` odpowiada napisowi C: zwykłemu `char*` lub `const char*`
++       Typem napisowym jest tylko *zwykły* `char*`; `unsigned char*` i `signed char*` zwyczajowo
++       oznaczają bufor bajtów i pozostają wskaźnikami. Argument `Text` jest kopiowany do
++       pamięci natywnej na czas wywołania, a wynik `char*` jest odczytywany jako tekst
++       zakończony znakiem NUL.
++   entry .pointer   `Address` odpowiada każdemu innemu wskaźnikowi C: `T*`, `void*`, nieprzezroczystemu uchwytowi, parametrowi wyjściowemu
++       Makro nawigacji akceptuje temat `pointer` dla każdego parametru `ptr<T>`, więc jeden typ
++       `Address` obsługuje każdy wskazywany typ.
+
+% 0 1 0 1db3c1dd2d7bcd35147497582257dff1
+
+@ 0 4 0 11f8adbc1a56e94e1e583ec8642a3eb8
++   entry #Emission   `"xenophile.PanamaInvoke" | "xenophile.NativeInvoke"`: backendy JVM i Scala Native
++       Dwa backendy różniące się platformą docelową, a nie językiem. Kompilacja zależy od
++       `xenophile.native` albo od `xenophile.scalanative`, nigdy od obu, a `call` bierze
++       pierwszy, który potrafi załadować.
+
+@ 0 1 0 117541144a1d2b75165edf7e352a8b57
++ entry .CHeader   frontend nagłówków C: jego model deklaracji, parser, `Dialect`, który go rzutuje, oraz jego błąd
+
+% 1 1 0 104b727c1f9795251a512ca38966828a
+
+@ 0 7 0 07ff9cf1876f2fd70d18171fd0471305
++       `CHeader` wczytuje nagłówek C – taki, jaki `cbindgen` emituje dla API `extern "C"`
++       skrzynki Rusta, lub ręcznie napisany podzbiór nagłówka biblioteki systemowej – do dwóch
++       widoków. `.Parser` wiernie zachowuje zadeklarowaną powierzchnię jako deklaracje
++       `.Declaration`: prototypy z ich dokładnym zapisem typów arytmetycznych i strukturą
++       wskaźników, typedefy, struktury i unie z ich polami oraz wyliczenia z wartościami ich
++       elementów. `.Dialect` to `Dialect`, który nazywa ekosystem `Native`, *rzut* tego modelu
++       na płaską postać, względem której przenoszą wartości backendy FFI.
+
+% 2 1 0 19e7be8483365ed91172d0905d3c4fd5
+
+% 3 1 0 07d232f8bd83b9af0ce69f6c4642bcce
+
+% 4 1 0 0849650c6c667acb02d9c9ad748befd9
+
+% 0 1 0 1c811ecd7f4a602b1f8e119ced194bd3
+
+% 0 1 0 1b0ecda694246a6911f5ed843277c573
+
+% 0 1 0 045bbce4d9954edc08e64cb8644e1c31
+
+% 0 1 0 0dcd22b3fbe6f8dd0429bcd17430395c
+
+% 0 1 0 09f84652c3fefe0618967d383f8c3beb
+
+% 0 1 0 1689419be140e80d05f021a29a9d2547
+
+% 0 1 0 10e11833b929d9591d3607f85dc84c5f
+
+% 0 1 0 1878e55c2a5732f20d08fafcacf8dd6b
+
+% 0 1 0 0fc680437387d2431f527ba68482f469
+
+% 0 1 0 060b9cd2cef2bbfc11dd5a5a07208025
+
+% 0 1 0 0a4d27162bf035b70c3a8b1fcc1ca5cf
+
+% 1 1 0 117fc8136e63d3921bf374cd90d60ed1
+
+@ 0 4 0 1c6f9a1f41f7964e0e960313b903b620
++       Wiersze preprocesora (`#include`, `#define`, strażniki dołączania) i komentarze są
++       pomijane: makra nie należą do parsowanego słownika. Każda inna konstrukcja, której
++       gramatyka nie akceptuje, jest twardym `CHeader.Error`, ponieważ częściowo odczytany
++       nagłówek zaniżałby kontrakt.
+
+% 1 1 0 1161354bb2210ab40597a24eed99bfce
+
+@ 0 1 0 1f8acac41023c2e00e85b4b083a430d8
++   entry .Declaration   jedna deklaracja nagłówka, tak jak zachowuje ją parser
+
+% 1 1 0 0be15a18cf69c0890d5e9173b767ec47
+
+@ 0 7 0 018165da82a340a90d45cacb2e6d2ef1
++         `enum` o czterech przypadkach. `Function(name, result, parameters, variadic)` to
++         prototyp, z ustawionym `variadic` dla końcowego `...`. `Alias(name, target)` to
++         `typedef`, w tym typedef wskaźnika do funkcji, którego celem jest
++         `fn<result, params…>` (opakowane w `variadic<…>`, jeśli jest zmiennoargumentowy).
++         `Structure(name, union, fields, opaque)` to `struct` lub `union`, z polami w kolejności
++         i z ustawionym `opaque` dla deklaracji zapowiadającej (`struct tag;`) bez
++         ciała. `Enumeration(name, cases)` to `enum` z nazwą i wartością każdego
++         elementu, liczonymi od zera lub od ostatniego jawnego `=`.
+
+@ 0 5 0 0673d2ac4334f9e5180d5ab35fd37614
++         Typy zachowują swój zapis: `unsigned long long` to `Named("unsigned-long-long")`,
++         `const char*` to `ptr<const<char>>`, `int values[4]` w polu to `array<int, 4>`, a
++         parametr tablicowy degraduje się do wskaźnika, który przekazuje wywołujący.
++     entry #named   zadeklarowana nazwa, niezależnie od przypadku
++   entry .Parser   wiernie parsuje nagłówek na jego deklaracje `Declaration`
+
+% 1 1 0 0239b18b4b503396107f6cfc32046461
+
+@ 0 8 0 109478536301392a1daf186875ba18e7
++         `CHeader.Parser.parse(source)` tokenizuje nagłówek (pomijając komentarze i wiersze
++         preprocesora) i odczytuje każdą deklarację: `extern` i `static` są pomijane, nazwa
++         parametru jest ignorowana (wywołania C są pozycyjne), `(void)` to pusta lista
++         parametrów, `const` na typie przekazywanym przez wartość znika, a `const` przez
++         wskaźnik jest zachowywane, `volatile` zaś jest ignorowane. Zgłasza `CHeader.Error` dla
++         błędu składni lub nieobsługiwanej konstrukcji.
++     entry .parse   deklaracje nagłówka, w kolejności; zgłasza `CHeader.Error`
++   entry .Dialect   `Dialect` dla C: nagłówek zrzutowany na to, co wywołanie natywne potrafi przenieść
+
+% 1 1 0 18ec7b3f277297f910c0a949ab32737f
+
+@ 0 9 0 1b55ea343ecc1af510c3e0a1a55f25b5
++         Gramatyka, którą nazywa `Native`. Parsuje przez `.Parser`, a następnie wymazuje to,
++         czego wywołanie natywne nie może użyć: każdy prototyp najwyższego poziomu staje się
++         składową syntetycznego typu `.library`; każde `struct` i `union` staje się obcym typem,
++         którego składowymi są jego pola nietablicowe; każde `enum` to `int`; każdy alias
++         `typedef` jest rozwiązywany przechodnio; zapisy o dokładnej szerokości i z
++         kwalifikatorem znaku sprowadzają się do prymitywu tego samego rozmiaru (`int32_t`,
++         `unsigned int` do `int`; `size_t`, `long long`, `int64_t` do `long`; `unsigned char`
++         do `char`); zwykły `char*` staje się `string`; a każdy inny wskaźnik staje się
++         `ptr<T>` o głębokości jeden. Pola tablicowe, typedefy wskaźników do funkcji i
++         nieprzezroczyste tagi nie są nawigowalne.
+
+@ 0 7 0 1b5ed47c792f293e06a0189d54571625
++         `parse` jest totalne: nagłówek, który się nie parsuje, niczego nie definiuje, a makro
++         nawigacji na podstawie pustego wyniku zgłasza _xenophile: the foreign type library is
++         not defined_, zamiast ujawniać błąd parsowania. Aby go zobaczyć, należy uruchomić
++         `CHeader.Parser.parse`.
++     entry .library   `t"library"`: syntetyczny obcy typ, który zawiera funkcje najwyższego poziomu nagłówka
++         `Foreign["library", Native]` to korzeń, przez który wywołuje się każdą funkcję C.
++     entry .parse   zrzutowane definicje nagłówka: `library` plus jeden typ na każdą strukturę i unię
++   entry .Error   zgłaszany, gdy nagłówka C nie dało się odczytać jako deklaracji
+
+% 1 1 0 050a20b038dfe8431a0f8a8d631b0583
+
+@ 0 6 0 14b600a1be1dde1e1644cbeea37353f3
++         Błąd `↯/s.59.4`: _the C header could not be read because `reason`_, gdzie przyczyną
++         jest niepowodzenie `Syntax` (_`detail`, near `tokens`_, cytujące kilka następnych
++         tokenów, lub _the end_) albo konstrukcja `Unsupported` (_the construct `x` is outside
++         the grammar this parser accepts_). Zgłaszany przez `CHeader.Parser.parse`;
++         `CHeader.Dialect.parse` go połyka i niczego nie definiuje.
++     entry .Reason   dlaczego nagłówka nie dało się odczytać: błąd składni lub konstrukcja odrzucana przez gramatykę
+
+% 1 1 0 00c93b16cebc53e61655867e66c1f802
+
+@ 0 5 0 1294d86183aa75fa1a62deabe190f205
++           Wyliczenie `Clarification` z `Syntax(detail, near)` (numer 1) i
++           `Unsupported(construct)` (numer 2).
++       entry #number   numer przyczyny w ramach błędu `↯/s.59.4`: 1 dla `Syntax`, 2 dla `Unsupported`
++     entry .communicable   przedstawia każdą przyczynę jako komunikat
++     entry #reason   przyczyna, jako `CHeader.Error.Reason`
+
+@ 0 1 0 0c2782be3620621216f772f28bb90d42
++ entry .ForeignBuffer   ręcznie zarządzany blok pamięci obcej, taki sam na JVM i Scala Native
+
+% 1 1 0 0a41c65a8edeec9717488ffe1a133cde
+
+@ 0 7 0 1a28c860e7b594551566c96006fd7a9b
++       Przenośna przestrzeń tymczasowa dla parametru C typu wskaźnikowego: bufor wejściowy
++       skopiowany z `Data`, bufor wyjściowy, który wypełnia wywoływana funkcja, a `#data`
++       odczytuje z powrotem, lub parametr wyjściowy odczytywany przez `#int`. Dwie
++       implementacje udostępniają jedną powierzchnię – na JVM (`xenophile.native`)
++       `MemorySegment` oparty na `Arena`, na Scala Native (`xenophile.scalanative`)
++       przydzielony przez `malloc` `Ptr[Byte]` – więc kod, który przydziela bufory wokół
++       `call`, kompiluje się skrośnie bez zmian. Obie kopiują: `Data` to pamięć sterty, której
++       wywoływana funkcja C nigdy nie może zatrzymać.
+
+% 2 1 0 087981d7b05bd8071f08e4477de75eba
+
+% 3 1 0 1d7e80b0aecfedf01262d0ab4f4cf903
+
+% 4 1 0 012af54485e35a3d03fd0c3c0aa93024
+
+% 5 1 0 02f556d3caadbd500aaf528b81c1c562
+
+% 7 1 0 1b8c7171b8fac644155eac5bafc664c7
+
+% 8 1 0 0741266757f2a9e0040d60c2943c5d82
+
+% 0 1 0 105cbec6434e16d703a115a7fe93fb3e
+
+% 0 1 0 16fd0fa672bf7c6c1877d1ac0dc9fb2b
+
+% 0 1 0 14b11a0b83330a0e1cfddd5bc55d2e1c
+
+% 0 1 0 1a5d7890a562f6d31818f5c79b41fdbc
+
+% 0 1 0 061aaf44f8b8986c04dcaafb7254e9b4
+
+% 0 1 0 140b88206e614ede0092e8e492d6e023
+
+% 1 1 0 06e47259124801d5139a8688577ccab5
+
+@ 0 2 0 1e7005ea38be598f118dca30403d7486
++       Czas życia jest jawny na obu platformach: bufor żyje do `#free`, a odczytanie go potem
++       jest niezdefiniowane. Zwykły kształt to `try … finally buffer.free()`.
+
+% 1 1 0 1bcced493d69da501028aef3c490c282
+
+% 1 1 0 097d0c6d4dd5149f0a5cd501fe9fb4f5
+
+@ 0 9 0 08306e2806d0a50d04bbc12e1eb35aac
++   entry .apply   `ForeignBuffer(size)`: niezainicjalizowany blok; `ForeignBuffer(data)`: blok zawierający kopię bajtów
++       Na JVM blok pochodzi ze świeżej współdzielonej `Arena`; na Scala Native – z `malloc`.
++   entry #size   długość bloku w bajtach
++   entry #pointer   adres bloku, do przekazania tam, gdzie parametr C jest wskaźnikiem
++   entry #data   pierwsze `length` bajtów bloku, skopiowane jako `Data`
++       Dla bufora wyjściowego: `output.data(outputLength.int)` po wywołaniu, które do niego
++       zapisało.
++   entry #int   32-bitowa liczba całkowita na początku bloku, dla parametru wyjściowego `int*`
++       Należy przydzielić `ForeignBuffer(4)`, przekazać jego `#pointer`, a następnie odczytać
++       wartość zapisaną przez wywoływaną funkcję.
++   entry #free   zwalnia pamięć: zamyka arenę lub wykonuje `free` na przydziale
+
+@ 0 1 0 1f28004c24a3c35c18e520900a3e6047
++ entry .ForeignLibrary   ładuje biblioteki natywne i rozwiązuje symbole C, na JVM przez Panamę, a na Scala Native przez `dlopen`
+
+% 1 1 0 09c4c77ff8e394e900f8ccf1fb94adca
+
+@ 0 6 0 0538f0b1d62397e4147bc09adc25fb35
++       `ForeignLibrary` to połowa ekosystemu C działająca w czasie wykonania, z
++       implementacją dla JVM w `xenophile.native` i dla Scala Native w `xenophile.scalanative`.
++       Obie ładują biblioteki według ścieżki w *czasie wykonania* i rozwiązują symbole z
++       załadowanego zbioru, więc program nie zależy od obcej biblioteki w czasie konsolidacji:
++       biblioteka nieobecna pod każdą z zadeklarowanych ścieżek powoduje głośny błąd przy
++       `.register`, z wymienieniem wypróbowanych ścieżek, a nie niezdefiniowany symbol w czasie
++       konsolidacji ani awarię z pustym wskaźnikiem przy pierwszym wywołaniu.
+
+% 2 1 0 1691ea74af829815063dda3838876858
+
+% 3 1 0 1326e970bf248ccd1d573c2047bbcb4e
+
+% 4 1 0 1e690a1d322aa1ff103b0cce8d2fe412
+
+% 5 1 0 183a51bddbc5e25a10aa1d62c2e45ee6
+
+% 0 1 0 0529b9288ac097ff16067bc0dd50c609
+
+% 0 1 0 03b3e6dd0808ed7a01e82e8363eb8c68
+
+% 0 1 0 006a38e336a46f261d975c8e914a1f6e
+
+% 0 1 0 148627337e864c7318918db2cae5ccae
+
+% 1 1 0 18140883da15985605e3a2d7625d0cb3
+
+@ 0 4 0 1ecda635996929f4107cb53f6db3b9fa
++       Rejestracja należy do inicjalizatora obiektu, który wykonuje wywołania, zanim jakiekolwiek
++       zadanie mogłoby do nich dotrzeć. Symboli szuka się najpierw w zarejestrowanych
++       bibliotekach, a potem w domyślnym wyszukiwaniu procesu – w bibliotece standardowej C i we
++       wszystkim, co jest już załadowane – więc `strlen`, `getpid` czy `getenv` rozwiązują się
++       bez rejestrowania czegokolwiek.
+
+@ 0 5 0 02f4c15607a203410d0f1cbc7881c12a
++       Obiekt dla JVM zawiera też elementy, których program potrzebuje, by ręcznie sterować
++       Panamą wokół nagłówka: `.apply` i `.system` dają instancję `ForeignLibrary`, której
++       `#handle` jest powiązanym `MethodHandle` dla nazwanej funkcji, a `.layout`, `.descriptor`,
++       `.segment`, `.bytes` i `.text` służą do układów oraz do kopiowania danych w obie
++       strony. Są dostępne tylko na JVM; typowane `call` przez `PanamaInvoke` nie potrzebuje
++       żadnego z nich.
+
+% 2 1 0 01d2f18431028ae80fb3427fd2be69f4
+
+% 3 1 0 1f8fd01dfd9cf81b009fafb45a4633d7
+
+% 0 1 0 113a6317b262e24408b1fb20b9a72910
+
+% 0 1 0 04827da43aef321f10eeb18a502e9ced
+
+% 0 1 0 1d5c8bfd5f0706eb175a6dbab38b9342
+
+% 0 1 0 13709101d03089fd18729ebbd1125692
+
+% 1 1 0 1eccd3f3b9f1aec71b011e2f2d9e0722
+
+% 1 1 0 131a5bd41ca5eabc1f6c3a1124bec4a0
+
+% 1 1 0 1a45b53ebe18aa341f461c397f848dc9
+
+% 1 1 0 16346032347fadd50adf30ea4a4770c5
+
+@ 0 37 0 1ecde117a5935f5c1101a6e91b5d51f3
++   entry .register   ładuje pierwszą z kilku kandydujących ścieżek biblioteki, na cały czas życia procesu
++       Próbuje kolejno każdej ścieżki – `SymbolLookup.libraryLookup` powiązanego z globalną
++       areną na JVM, `dlopen` z `RTLD_NOW` na Scala Native – zachowuje pierwszą, która się
++       załaduje, i dodaje ją do ścieżki wyszukiwania, z której `call` rozwiązuje symbole. Jeśli
++       żadna się nie załaduje, rzuca `IllegalArgumentException` (JVM) lub panikuje (Scala
++       Native), wymieniając ścieżki. Zarejestrowana biblioteka nigdy nie jest wyładowywana.
++       Rejestrację należy wykonać przed pierwszym wywołaniem, z inicjalizatora obiektu
++       dostawcy, by żadne współbieżne wywołanie nie ścigało się z rejestracją.
++   entry .downcall   zapamiętany `MethodHandle` Panamy dla symbolu, znaleziony tam, gdzie się znajduje
++       Tylko JVM: to, czym wiąże się wywołanie emitowane przez `PanamaInvoke`. Symbolu szuka się
++       w domyślnym wyszukiwaniu i w każdej zarejestrowanej bibliotece, wiąże z podanym
++       `FunctionDescriptor` i zapamiętuje według nazwy; symbol nieobecny nigdzie powoduje panikę
++       z komunikatem _no such foreign symbol: name (is its library `ForeignLibrary.register`ed?)_.
++   entry .apply   ładuje pierwszą z `paths` do `ForeignLibrary` nad prototypami sparsowanymi z `header`
++       Tylko JVM. Wyszukiwanie jest powiązane z `Arena` w zasięgu; funkcje najwyższego poziomu
++       nagłówka stają się sygnaturami, z których `#handle` buduje deskryptory. Rzuca
++       `IllegalArgumentException`, jeśli żadna ścieżka się nie załaduje.
++   entry .system   `ForeignLibrary` nad domyślnym wyszukiwaniem całego procesu, dla symboli libc
++       Tylko JVM: `Linker.nativeLinker.defaultLookup` w parze z prototypami nagłówka, do
++       wywoływania biblioteki standardowej C bez podawania pliku biblioteki.
++   entry .layout   `MemoryLayout` Panamy dla typu C, tak jak kanonizuje go `CHeader.Dialect`
++       Tylko JVM. `int`, `long`, `short`, `char`, `double`, `float` i `bool` odpowiadają
++       `ValueLayout` tej samej szerokości; wszystko inne – `string`, każdy wskaźnik, każda
++       nieprzezroczysta nazwa – to `ADDRESS`.
++   entry .descriptor   `FunctionDescriptor` prototypu: układy jego wyniku i parametrów
++       Tylko JVM. Wynik `void` to `FunctionDescriptor.ofVoid`.
++   entry .segment   kopiuje bajty do świeżo zaalokowanej pamięci natywnej w `Arena` w zasięgu
++       Tylko JVM.
++   entry .bytes   odczytuje `length` bajtów z `MemorySegment` jako `Data`
++       Tylko JVM.
++   entry .text   odczytuje zakończony znakiem NUL napis C z wyniku `ADDRESS` wywołania natywnego jako `Text`
++       Tylko JVM. Wynik adresowy wywołania natywnego jest segmentem o zerowej długości, więc
++       przed odczytaniem napisu reinterpretuje się go jako segment nieograniczony.
++   entry #handle   powiązany `MethodHandle` dla nazwanej funkcji tej biblioteki, z jej sparsowanego prototypu
++       Tylko JVM. Wywołuje się go przez `invokeWithArguments`, przekazując `MemorySegment` dla
++       parametrów wskaźnikowych i napisowych oraz opakowane typy prymitywne dla pozostałych.
++       Funkcja, której nagłówek nie zadeklarował, powoduje panikę z komunikatem _no such foreign
++       function: name_, a funkcja, której biblioteka nie eksportuje, powoduje wyjątek przy
++       wyszukiwaniu symbolu.
+
+@ 0 1 0 0a8c1364309cb5041b4b87b2694f4d97
++ entry .PanamaInvoke   backend C dla JVM: nawigowane wywołanie C staje się wywołaniem natywnym Panamy
+
+% 1 1 0 10d19e57d9f3a1c3182f37a8652dd597
+
+@ 0 6 0 1afa7d80c0935846004099b85aea6d15
++       `Materializer`, który `Emission` ekosystemu `Native` wymienia jako pierwszy, w
++       `xenophile.native`. Dla w pełni zaaplikowanej nawigacji, takiej jak `library.abs(-5)`,
++       odczytuje prototyp funkcji z nagłówka wskazanego przez `Interface` w zasięgu, buduje
++       `FunctionDescriptor` w czasie kompilacji z typów samego nagłówka i
++       emituje wywołanie przez `ForeignLibrary.downcall`, które rozwiązuje symbol w czasie
++       wykonania z zarejestrowanych bibliotek i domyślnego wyszukiwania oraz
++       zapamiętuje powiązany `MethodHandle`.
+
+@ 0 6 0 10a694c06f250d771178b85079741a7f
++       Marshalling: typ prymitywny C jest opakowywany dla `invokeWithArguments`; argument
++       `string` (`Text`) jest kopiowany do ograniczonej `Arena` otwartej na czas wywołania i
++       zamykanej w `finally`; każdy inny wskaźnik przechodzi jako `MemorySegment.ofAddress`
++       swojego `Address`. Wynik `string` jest odczytywany z powrotem jako `Text` przez
++       `ForeignLibrary.text`, wynik wskaźnikowy staje się `Address`, typ prymitywny jest
++       rozpakowywany, a `void` daje `Unit`. Liczba argumentów jest sprawdzana względem
++       prototypu: _xenophile: wrong number of arguments for library.abs_.
+
+@ 0 2 0 104111a3a323bdc710ec12ff8748badc
++       Nie do bezpośredniego użytku: `call` sięga do niego po nazwie. Ta sama nawigacja jest
++       obniżana przez `NativeInvoke`, gdy na ścieżce klas znajduje się zamiast tego
++       `xenophile.scalanative`.
+
+% 1 1 0 0b1a7b955564d7cc07bdadf2e3866add
+
+% 1 1 0 1d69d1351b4627b0101f57cbdf0115cc
+
+@ 0 1 0 06abe9c941100bc7068c280880553443
++   entry .materialize   emituje wywołanie natywne Panamy dla nawigowanej funkcji C
+
+@ 0 1 0 15a0f4384e385e9a1dd3a6a0e8a735bd
++ entry .NativeInvoke   backend C dla Scala Native: nawigowane wywołanie C staje się wywołaniem `dlsym`/`CFuncPtr`
+
+% 1 1 0 18be59882b74e0da0684eb9b06566a91
+
+@ 0 7 0 067ef5deee54c2330497b7fa4f83cf05
++       `Materializer`, który `Emission` ekosystemu `Native` wymienia jako drugi, w
++       `xenophile.scalanative`. Dla w pełni zaaplikowanej nawigacji odczytuje prototyp funkcji
++       z nagłówka, odwzorowuje każdy typ C na typ Scali o identycznym ABI (`int` na `Int`,
++       `char` na `Byte`, `string` na `CString`, każdy `ptr<T>` na `Ptr[Byte]`) i emituje
++       `CFuncPtr.fromPtr[CFuncPtrN[…]](ForeignLibrary.resolve(c"name"))(args…)`: symbol jest
++       rozwiązywany w czasie wykonania z zarejestrowanych bibliotek i z
++       `dlopen(null)`, a gdy nie jest powiązany, następuje panika zamiast zwrócenia null.
+
+@ 0 5 0 1cb0b45c474314cd0ff4554ba57db324
++       Marshalling odpowiada `PanamaInvoke`: argument `Text` jest konwertowany przez
++       `toCString` wewnątrz `Zone.acquire` otwieranego tylko wtedy, gdy potrzebuje go któryś
++       parametr; `Address` staje się `Ptr[Byte]`; wynik `string` jest odczytywany przez
++       `fromCString`; wynik wskaźnikowy jest obniżany do surowego adresu jako `Address`.
++       Struktura przekazywana przez wartość daje _xenophile: library.f uses a struct type,
++       unsupported on native_.
+
+@ 0 4 0 1abffe8dab8f7c9d165011903d541fc6
++       Samo makro działa na JVM i wymienia każdy punkt wejścia Scala Native po nazwie, zamiast
++       się do niego odwoływać, więc moduł kompiluje się bez środowiska Native; emitowane
++       wywołanie jest konsolidowane w miejscu wywołania `.native` w kodzie zależnym. Nie do
++       bezpośredniego użytku: `call` sięga do niego po nazwie.
+
+% 1 1 0 04c53970b11c9ad2099f9552338800bc
+
+% 1 1 0 1434b48a9d0598b00d6e55dd6e5aeaa0
+
+@ 0 1 0 156bb03063f6914910c30116f2401ae9
++   entry .materialize   emituje wywołanie Scala Native dla nawigowanej funkcji C
+
+@ 0 1 0 094c3e8233c9b33f06428bfc24ca31fd
++ entry .Js   jednolita postać, jaką przyjmuje wartość przekraczająca granicę JavaScriptu, z kodekami dla typów, które mogą ją przekroczyć
+
+% 1 1 0 0adce8143ba956b71c72203315bbeb3b
+
+@ 0 7 0 0891699ffe4516971e3e491366773eb1
++       `Js` opakowuje wartość przekształconą do typu nośnika, jako który przekracza
++       wywołanie JavaScriptu – `String` dla `Text`, `Boolean` albo `Byte`/`Short`/`Int` dla
++       liczb całkowitych o określonym rozmiarze; wszystkie one są w Scala.js reprezentowane
++       jako wartości JavaScriptu. Jedna postać pozwala `JsInvoke` przywołać kodek
++       dla dowolnego typu Scali bez znajomości z góry jego nośnika w JavaScripcie:
++       obiekt towarzyszący zawiera giveny `Encodable in Js` i `Decodable in Js`,
++       których składowa typu `Carrier` go nazywa, a wartość bez kodeka nie może przejść przez
++       granicę, co jest zgłaszane podczas kompilacji kodu: _xenophile: no way to read a T from
++       a JavaScript boundary_.
+
+@ 0 4 0 0a40cac5412f52f706c9684bf49ea47c
++       Kodeki obejmują `Text`, `Boolean` i liczby całkowite `hypotenuse` do 32 bitów – `S8`,
++       `S16`, `S32`, `U8`, `U16`, `U32` – które kanonizują się do `Byte`, `Short` i `Int`.
++       Jedynym typem liczbowym JavaScriptu jest double IEEE-754, więc `S64` i `U64` nie mają
++       wiernego nośnika bez `BigInt` i nie są dostarczane; nie ma też jeszcze typów
++       zmiennoprzecinkowych.
+
+% 2 1 0 1269a6162d3f50dd065c2996f831f638
+
+% 3 1 0 11b85e0e3b563087077f41347658f43e
+
+% 0 1 0 0a5e463ba173659b0dd7cbdf179b4e2b
+
+% 0 1 0 0878263787bdbf97028a912a85aeed4f
+
+% 0 1 0 035929cf6c7ac45e1b968fb2e361e1c6
+
+% 1 1 0 14c6b48d41a60d2e145f3e11d6f34320
+
+@ 0 1 0 053f99df6b75eb1f05d54a2d7aca8b43
++       Giveny znajdują się w obiekcie towarzyszącym i rozwiązują się bez importu.
+
+% 0 1 0 059e67525cdcbc8813fd7556c5f4fe19
+
+% 1 1 0 049009a1e3627f371142d3b8cb7e7952
+
+@ 0 20 0 1677a3bfc870ba8a141cb48a2678a13f
++   entry .apply   opakowuje wartość nośnika jako `Js`
++   entry .as   opakowana wartość w typie jej nośnika: `js.as[String]`
++       Rozszerzenie dla `Js`; niesprawdzane rzutowanie, więc nośnik musi być tym,
++       który wskazuje kodek.
++   entry .s8Encodable   `S8` przechodzi jako `Byte`
++   entry .s8Decodable   `S8` odczytany z `Byte`
++   entry .s16Encodable   `S16` przechodzi jako `Short`
++   entry .s16Decodable   `S16` odczytany z `Short`
++   entry .s32Encodable   `S32` przechodzi jako `Int`
++   entry .s32Decodable   `S32` odczytany z `Int`
++   entry .u8Encodable   `U8` przechodzi jako `Byte`, według swoich bitów
++   entry .u8Decodable   `U8` odczytany z bitów `Byte`
++   entry .u16Encodable   `U16` przechodzi jako `Short`, według swoich bitów
++   entry .u16Decodable   `U16` odczytany z bitów `Short`
++   entry .u32Encodable   `U32` przechodzi jako `Int`, według swoich bitów
++   entry .u32Decodable   `U32` odczytany z bitów `Int`
++   entry .boolEncodable   `Boolean` przechodzi jako on sam
++   entry .boolDecodable   `Boolean` odczytany jako on sam
++   entry .textEncodable   `Text` przechodzi jako `String`
++   entry .textDecodable   `Text` odczytany z `String`
++   entry #value   opakowana wartość nośnika, bez typu
+
+@ 0 1 0 18df650c94fc091b097f1cd1a3acd15b
++ entry .JsInvoke   backend JavaScriptu: nawigowane wywołanie WebIDL lub TypeScriptu staje się dynamicznym wywołaniem Scala.js
+
+% 1 1 0 187a8bdfadc0f84110e39861049c6a4d
+
+@ 0 6 0 002218ed99b9d5a303b5e6d864a14bbb
++       `Materializer` dla ekosystemów JavaScriptu, w `xenophile.js`. W pełni zaaplikowana
++       nawigacja `Foreign["Math", WebIdl].random()` z `call[…]()` staje się
++       `js.Dynamic.global.Math.random()`: właściciel zapisany w `Select` nawigacji jest
++       odczytywaną właściwością globalną, a składowa jest na nim aplikowana. Wynik jest
++       dekodowany przez kodek `Decodable in Js` żądanego typu, który odczytuje wartość
++       `js.Dynamic` w jej typie `Carrier`.
+
+@ 0 4 0 1a0462b0ee6eda4d1d4056356a12864a
++       Punkty wejścia `js.Dynamic` są wyszukiwane po nazwie na ścieżce klas kodu zależnego, więc
++       moduł nie potrzebuje zależności od biblioteki Scala.js, a makro działa na JVM; wywołanie
++       jest obniżane przez Scala.js w czasie konsolidacji, więc `call` na nawigacji JavaScriptu
++       materializuje się tylko w kompilacji `.js`.
+
+@ 0 3 0 11dac153870e0d8f0e297b147b61bb30
++       Ten backend materializuje wywołania bezargumentowe, `receiver.method()`; marshalling
++       argumentów przez `Encodable in Js` nie jest jeszcze dostępny. Nie do bezpośredniego
++       użytku: `call` sięga do niego po nazwie.
+
+% 0 1 0 036a0ecbe95988e4194a1b123aca816b
+
+% 1 1 0 0ec412baeecbe6cd082d538cd9262884
+
+@ 0 1 0 04de03231401fbf1058ed8d194e299c0
++   entry .materialize   emituje wywołanie `js.Dynamic` dla nawigowanej metody JavaScriptu
+
+@ 0 1 0 0e5497d4b3a6ac14030b59fd3c6816f3
++ entry .Wasm   jednolita postać, jaką przyjmuje wartość przekraczająca granicę WIT, z kodekami oraz typami uchwytu, przypadku, wariantu i błędu
+
+% 1 1 0 115d364f7f09e1350ba53ef7b3bcc2a0
+
+@ 0 8 0 19939840dd962be2145ecfff6b1b7642
++       `Wasm` opakowuje wartość przekształconą do typu nośnika, jako który przekracza funkcję
++       WIT: `String` dla `Text`, `Long` dla `U64`, `Array[Byte]` dla `Data` i tak dalej. Jedna
++       postać pozwala `WasmInvoke` przywołać kodek dla dowolnego typu Scali bez znajomości z
++       góry jego nośnika: obiekt towarzyszący zawiera giveny `Encodable in Wasm` i
++       `Decodable in Wasm`, których składowa typu `Carrier` nazywa typ akceptowany przez
++       kompilator scala-wasm w sygnaturze WIT, a wartość bez kodeka nie może przejść przez
++       granicę, co jest zgłaszane podczas kompilacji kodu: _xenophile: no way to pass a T across
++       a WIT boundary_ lub _no way to read a T from a WIT boundary_.
+
+@ 0 9 0 0198b258d1d2aa220fc7a190e99d9fe1
++       Kodeki liści obejmują `Text`, `Boolean`, `Char`, `Data` i osiem liczb całkowitych
++       `hypotenuse`, `S8`…`S64` i `U8`…`U64`. Złożone kształty WIT są z nich derywowane przez
++       `WasmInvoke` na podstawie deklaracji WIT: `tuple<…>` lub rekord jako krotka Scali,
++       `list<T>` jako `List`, `option<T>` jako `Optional`, `result<ok, err>` rozpakowany, z
++       `err` zgłaszanym jako `.Error`, a `resource` jako `.Handle`. Obiekt towarzyszący zawiera
++       też wartości po stronie Scali dla stanowych typów i typów sumy WIT: `.Handle` dla
++       zasobu, `.Case` dla przypadku wariantu lub wyliczenia bez ładunku oraz `.Variant` dla
++       przypadku z ładunkiem; każdy z nich jest `Interoperable in Wit` z typem WIT jako
++       tematem, więc przechodzi jako argument, a w przypadku uchwytu – umożliwia nawigację.
+
+% 2 1 0 0bf0130956cec282149c91815b906045
+
+% 3 1 0 0a6ea0b97bcc77190fa28b903c2acc77
+
+% 4 1 0 14472404254a214a0c6608dc62bbbb3a
+
+% 5 1 0 0568c5c382c9d2e4166ec060c20246d5
+
+% 0 1 0 12d95911c58a576c15c50a1257019cb8
+
+% 0 1 0 15214261642c6f0a0bc9ebcfdc69791e
+
+% 0 1 0 1ff3ff34c3091ce0192f875cac9a4f76
+
+% 0 1 0 1e12da9ef8b85a4c01f877411bd7df1f
+
+% 0 1 0 1dfb8c2a1095e0e7174e5f545a4b5779
+
+% 0 1 0 1ef2dc3fd705fd0c152a1758b8c60ae5
+
+% 0 1 0 1f5a66b8db336260156c577c84bce93c
+
+% 0 1 0 1dadc1de3d7217f814140fbde85ba224
+
+% 1 1 0 12277007bcc501e3069d88eb887de882
+
+@ 0 2 0 0aa6712aa08fc2c00514374c58cddab8
++       Kodeki `F32` i `F64` nie są jeszcze dostępne. Giveny znajdują się w obiekcie
++       towarzyszącym i rozwiązują się bez importu.
+
+% 0 1 0 06d0f66d3ce476d309d1b4701f21a7c9
+
+% 1 1 0 0e9f03cc7c9707cb1eb3b0fa88b386b7
+
+@ 0 31 0 1792d12b6024641e1570c8f6eae47374
++   entry .apply   opakowuje wartość nośnika jako `Wasm`
++   entry .as   opakowana wartość w typie jej nośnika: `wasm.as[String]`
++       Rozszerzenie dla `Wasm`; niesprawdzane rzutowanie, więc nośnik musi być tym, który
++       wskazuje kodek.
++   entry .s8Encodable   `S8` przechodzi jako `Byte`
++   entry .s8Decodable   `S8` odczytany z `Byte`
++   entry .s16Encodable   `S16` przechodzi jako `Short`
++   entry .s16Decodable   `S16` odczytany z `Short`
++   entry .s32Encodable   `S32` przechodzi jako `Int`
++   entry .s32Decodable   `S32` odczytany z `Int`
++   entry .s64Encodable   `S64` przechodzi jako `Long`
++   entry .s64Decodable   `S64` odczytany z `Long`
++   entry .u8Encodable   `U8` przechodzi jako `Byte`, według swoich bitów
++   entry .u8Decodable   `U8` odczytany z bitów `Byte`
++   entry .u16Encodable   `U16` przechodzi jako `Short`, według swoich bitów
++   entry .u16Decodable   `U16` odczytany z bitów `Short`
++   entry .u32Encodable   `U32` przechodzi jako `Int`, według swoich bitów
++   entry .u32Decodable   `U32` odczytany z bitów `Int`
++   entry .u64Encodable   `U64` przechodzi jako `Long`, według swoich bitów
++   entry .u64Decodable   `U64` odczytany z bitów `Long`
++   entry .boolEncodable   `Boolean` przechodzi jako on sam
++   entry .boolDecodable   `Boolean` odczytany jako on sam
++   entry .charEncodable   `Char` przechodzi jako on sam
++   entry .charDecodable   `Char` odczytany jako on sam
++   entry .textEncodable   `Text` przechodzi jako `String`
++   entry .textDecodable   `Text` odczytany z `String`
++   entry .dataEncodable   `Data` przechodzi jako zamrożona `Array[Byte]`, którą już jest
++       Nośnikiem jest `Array[Byte]^{}`: ta sama `byte[]`, którą most WIT przekazuje dla
++       `list<u8>`, czysta w sprawdzaniu przechwytywania, więc kodek pozostaje czystą wartością.
++   entry .dataDecodable   `Data` odczytane z zamrożonej `Array[Byte]`
++   entry .Error   gałąź `err` wyniku WIT `result<…>`, zgłaszana, gdy `call` ją zwróci
+
+% 1 1 0 0746df38bc5c869f1c23aaaf245cd57b
+
+@ 0 7 0 00fd56388291dbd217a30ecc3a16abac
++         _the WIT import returned the error `name`_, gdzie nazwa jest nazwą nieudanego
++         przypadku w zapisie lower-kebab-case (`not-permitted`, `dns-timeout`), tak jak
++         zapisałby ją `Wasm.Case`. Rzucany – a nie zgłaszany przez taktykę, ponieważ pochodzi z
++         wygenerowanego kodu – przez dekoder, który `WasmInvoke` emituje dla wyniku
++         `result<ok, err>`, gdy import zwraca gałąź `err`. Wartość błędu (np. przypadek
++         `error-code` z `wasi:filesystem`) jest przechowywana bez typu w `#value`; `#name`
++         ustala, który to przypadek, więc backend WASI tłumaczy niepowodzenia na własne
++         słownictwo:
+
+% 2 1 0 13d5788d75f4ca5008c9aca9211ebde4
+
+% 3 1 0 154f768b17dd99751c80b53e76938ae6
+
+% 4 1 0 14c5aaf7a44a77090cd5b18f63ad1654
+
+% 5 1 0 0bece07b529ad3f70dff1a5b67ae23b9
+
+% 0 1 0 0a20bf716729110e169170159e3a90bf
+
+% 0 1 0 1f9757bd95dbb672095b892521d79240
+
+% 0 1 0 1ed0d6a7c542dcf70b0ff8fa1cf0a53f
+
+% 0 1 0 129cde3dc77afda01c3485e8ba83b907
+
+% 1 1 0 082bfbc01414563609d208f4ea23e3f8
+
+@ 0 3 0 0f7b044124fa3f420e14baed318f6ff9
++     entry #value   wartość błędu WIT, bez typu
++     entry #name   nazwa nieudanego przypadku w zapisie lower-kebab-case
++   entry .Case   przypadek `variant` lub `enum` WIT bez ładunku, według nazwy, do przekazania jako argument
+
+% 1 1 0 1e15e1e8c74e145f091593950568db1b
+
+@ 0 8 0 04ed9d244e7ebec21a89096982b88de1
++         `Wasm.Case["ip-address-family"]("ipv4")` jest wartością typu WIT `ip-address-family`,
++         której przypadkiem jest `ipv4`: argument typu to nazwa wariantu, a argument – nazwa
++         przypadku w zapisie lower-kebab-case. Fantomowy `Topic` zapisuje wariant, więc wartość
++         jest `Interoperable in Wit of "ip-address-family"` i przekształca się w argument tego
++         obcego typu; w miejscu konsolidacji Wasm `call` wybiera w czasie wykonania pasujący obiekt
++         przypadku fasady według nazwy, a nazwa, która nie jest przypadkiem wariantu, powoduje
++         wtedy wyjątek. *Wynik* będący wariantem lub wyliczeniem jest odczytywany z powrotem
++         jako `Wasm.Case of "name"`, gdy zażąda się go w tej postaci; przypadek z ładunkiem
++         traci w ten sposób ładunek.
+
+% 2 1 0 1fa63375548b6d6417d6aa2100e24a83
+
+% 3 1 0 0c369babb628ef58160b7c52df5299d8
+
+% 4 1 0 07ebcb27af9f0ffb00bd4e0a504d4013
+
+% 5 1 0 004c201187f85f0d07a4e7ffbc655db5
+
+% 0 1 0 19921ce178355377099d4483c7a6e405
+
+% 0 1 0 1846b843f461e65616c11263262eed26
+
+% 0 1 0 15a5b0d78f92db390a73483cc937b221
+
+% 1 1 0 189d81c27e0c35e200cecdd0652863f0
+
+% 0 1 0 025434edd2de442b02fe97c335164393
+
+@ 0 7 0 18b1d685fc1d1d791580a7396e4c7728
++     entry .apply   `Wasm.Case["variant"]("case")`: nazwany przypadek nazwanego wariantu
++     entry .caseName   nazwa obiektu przypadku fasady w zapisie lower-kebab-case, odtworzona z jego klasy
++         `DnsTimeout` daje `dns-timeout`: tę samą pisownię, którą przyjmuje `apply`, używaną
++         przez dekoder, gdy wynik będący wariantem jest odczytywany jako `Wasm.Case`.
++     entry .interoperable   `Wasm.Case of topic` przechodzi tam, gdzie oczekiwany jest typ WIT `topic`
++     entry #name   nazwa przypadku w zapisie lower-kebab-case
++   entry .Handle   nieprzezroczysty uchwyt do zasobu WIT: stanowa obca wartość, nawigowalna i zwalnialna
+
+% 1 1 0 06a1befbea74de380e7c65de19ac56b7
+
+@ 0 9 0 176a593483d5c2820957974d1c4254eb
++         `Wasm.Handle of "tcp-socket"` to to, co zwraca `call[Wasm.Handle of "tcp-socket"]()`
++         dla funkcji WIT, której wynikiem jest zasób `tcp-socket`, oraz to, co zwraca
++         konstruktor (`Foreign["fields", Wit].constructor.call[Wasm.Handle of "fields"]()`).
++         Wartość bazowa jest przechowywana bez typu; fantomowy `Topic` zapisuje typ zasobu, co
++         czyni uchwyt `Interoperable in Wit of "tcp-socket"`, więc przechodzi jako argument i –
++         powiązany jako `Foreign of "tcp-socket" from Wit` – pozwala nawigować do metod zasobu,
++         z których każda jest importowana jako `[method]tcp-socket.name` z uchwytem
++         przekazywanym jako odbiorca. Odbiorca będący uchwytem może być `val`, w odróżnieniu od
++         innych nawigacji, ponieważ jego uchwyt jest odtwarzany z wyrażenia w czasie wykonania.
+
+% 2 1 0 09acc391e93d846d1b4e792acfa45aea
+
+% 3 1 0 0dee90297e11ae410ebcb058fd74b49f
+
+% 4 1 0 1366c501cae5390e0f7327c43aff3f96
+
+% 5 1 0 124a5822ac39a6da0c55281c82b21e1c
+
+% 0 1 0 0fda246e11cc4be405f1a44859c2a48f
+
+% 0 1 0 11d4937ea0d2494e13f56b2b63ae52d1
+
+% 0 1 0 0dada7757eb27ab915ac13e8604f3fac
+
+% 0 1 0 0dbcae82c91bd48606cbbe2c7d348f5d
+
+% 0 1 0 0050388eac40cda60cacebad5f50d252
+
+% 0 1 0 02df06dc7f2d60d7026975f5a456e0b8
+
+% 0 1 0 0fb1bd19f1c8752f0937d9cedf39c670
+
+% 1 1 0 1567ce980b50bac803297fd9a6482cab
+
+@ 0 4 0 00603de2fddcb3c51fe3adbdbe53dcca
++         Zasób ma właściciela: `handle.dispose()` – rozszerzenie inline eksportowane przez
++         moduł zbiorczy `soundness` z `xenophile.wasm`, oparte na `WasmInvoke.dispose` – emituje
++         import `[resource-drop]` zasobu. Każdy uchwyt uzyskany przez program powinien zostać
++         zwolniony, gdy program przestaje go używać, zwykle w `finally`.
+
+% 0 1 0 081934250f9f7f991af5f4b9e222ac50
+
+@ 0 3 0 02ba547f2e38bf40040c04517730bb7f
++     entry .interoperable   `Wasm.Handle of topic` przechodzi tam, gdzie oczekiwany jest zasób WIT `topic`
++     entry #value   instancja fasady zasobu, bez typu; ma znaczenie tylko w kodzie skompilowanym do Wasm
++   entry .Variant   przypadek `variant` WIT z ładunkiem, do przekazania jako argument
+
+% 1 1 0 152b74e759d29d040ad22580da489e51
+
+@ 0 10 0 06c9a1eff2794da601b6a5ad51abde3e
++         `Wasm.Variant["ip-socket-address", "ipv4"](payload)` jest wartością wariantu WIT
++         `ip-socket-address` w przypadku `ipv4`, niosącą `payload`. Wariant i przypadek są
++         literałowymi argumentami typu (oba w zapisie lower-kebab-case), ponieważ typ ładunku
++         różni się w zależności od przypadku, a przypadek fasady jest budowany bez dyspozycji w
++         czasie wykonania; typ ładunku w Scali jest wnioskowany przy drugiej aplikacji, przez
++         `.Applier`. Fantomowy `Topic` zapisuje wariant, więc wartość jest
++         `Interoperable in Wit of "ip-socket-address"`, a w miejscu konsolidacji Wasm `call`
++         konstruuje nazwany przypadek fasady wokół ładunku – ładunek będący rekordem lub krotką
++         jest budowany element po elemencie z krotki Scali, każdy liść przez swój kodek
++         `Encodable in Wasm`. Przypadek, którego wariant nie deklaruje, jest błędem kompilacji:
++         _xenophile: the variant ip-socket-address has no case ipv7_.
+
+% 2 1 0 135e4f69d15f5f7d1652b104a604697a
+
+% 3 1 0 17159d860e04504f1ad9a7c589c97d83
+
+% 0 1 0 0b38dc547ab7a5b61f61f0914cd26677
+
+% 0 1 0 1ec85b9bbe9abfee1dd6066f54efbd4e
+
+% 0 1 0 0d02faa827c2bd8d0174ee87b2cc37d3
+
+% 1 1 0 043434d5343300830b6ee82690f133b9
+
+@ 0 1 0 19aecf92ecc1a77804fc06e054407876
++         `Wasm.Case` jest odpowiednikiem bez ładunku.
+
+% 0 1 0 053cb53a8448a993102154e903ae25c3
+
+@ 0 2 0 07c731d965d9751c0eb6de71266ec33a
++     entry .apply   `Wasm.Variant["variant", "case"]`: `Applier`, który następnie przyjmuje ładunek
++     entry .Applier   drugi krok `Wasm.Variant[…, …](payload)`, który wnioskuje typ ładunku
+
+% 1 1 0 1df938ca5519259500c7f574eaa5ba02
+
+@ 0 6 0 19a2e378b64607de1be0f008b57b4814
++           Przechowuje wariant i przypadek ustalone przez argumenty typu; jego `apply` przyjmuje
++           ładunek i daje wartość `(Variant[payload] of topic) { type Case = name }`.
++       entry #apply   aplikuje ładunek, wnioskując jego typ w Scali
++     entry .interoperable   `Wasm.Variant` danego tematu przechodzi tam, gdzie oczekiwany jest ten wariant WIT
++     entry #payload   ładunek, w swoim typie Scali
++   entry #value   opakowana wartość nośnika, bez typu
+
+@ 0 1 0 09c3f4d628433c0c005a7aad4dcbe144
++ entry .WasmInvoke   backend Wasm: nawigowane wywołanie WIT staje się importem Component Model
+
+% 1 1 0 17a888fcb2f707bf0b265e61c0f9eb00
+
+@ 0 8 0 09ac1b495893edc91d1d850a2ae877eb
++       `Materializer` dla ekosystemu `Wit`, w `xenophile.wasm`. W pełni zaaplikowana nawigacja
++       – `Foreign["random", Wit]` wybierająca `get-random-u64` – z `call[U64]()` staje się
++       `witImportCall` z identyfikatorem modułu funkcji (`wasi:random/random@0.2.0`, `module`
++       prototypu) i jej nazwą w Component Model – `name`, `[method]resource.name`,
++       `[static]resource.name` lub `[constructor]resource` – którą kompilator scala-wasm obniża
++       do importu. Sygnatura importu jest opisywana strukturalnie na podstawie deklaracji
++       `.wit`, więc zagnieżdżone kształty, takie jak `list<tuple<string, string>>`, zachowują
++       dokładne typy.
+
+@ 0 7 0 06a3fc6884388c950f24357c1fec1520
++       Żądany typ wyniku steruje dekodowaniem, rekurencyjnie według wyniku WIT: `result<…>`
++       jest sprawdzany, a jego `err` rzucany jako `Wasm.Error`; `option<T>` staje się
++       `Optional`; zasób, którego zażądano jako `Wasm.Handle of "name"`, jest opakowywany;
++       `tuple<…>` lub rekord, którego zażądano jako krotki Scali, jest dekodowany element po
++       elemencie; `list<T>`, której zażądano jako `List[T]`, podobnie; wariant, którego
++       zażądano jako `Wasm.Case of "name"`, daje nazwę przypadku; funkcja `unit`, której wyniku
++       zażądano jako `Unit`, niczego nie dekoduje; a liść używa `Decodable in Wasm` danego typu.
++       Żądanie `Unit` od czegokolwiek innego niż `result` lub funkcja void daje
+
+% 0 1 0 061302caf03e87011b68d3dcf8f4b024
+
+@ 0 6 0 192c4c93f2c3f6d21c1f2ec0400b9065
++       Każdy argument przechodzi przez swój kodek `Encodable in Wasm`: `Optional[T]` (lub samo
++       `Unset`) wobec `option<T>` jako `java.util.Optional`; `Wasm.Handle` jako surowy uchwyt;
++       `Wasm.Case` jako obiekt przypadku fasady wybrany według nazwy; `Wasm.Variant` jako
++       nazwany przypadek fasady zbudowany wokół ładunku; krotka Scali wobec `tuple<…>` lub
++       rekordu element po elemencie; zwykła wartość wobec `option<T>` jako obecna wartość
++       opcjonalna, a wobec `result<…>` jako jej `Ok`.
+
+@ 0 3 0 0be887b46751c59312c158cfab953948
++       Każdy symbol scala-wasm jest wyszukiwany po nazwie na ścieżce klas kodu zależnego, więc
++       moduł kompiluje się na JVM, gdzie działa makro, a wywołanie materializuje się tylko w
++       miejscu wywołania konsolidowanym do Wasm. Nie do bezpośredniego użytku: `call` sięga do niego
++       po nazwie.
+
+% 1 1 0 0a39f343c0295914011ce9eef3535e15
+
+% 1 1 0 0ed06620379e6ccb05c2ff7a851f80c7
+
+@ 0 6 0 17a073f990b150dc0265abdb018949ae
++   entry .materialize   emituje wywołanie importu Component Model dla nawigowanej funkcji WIT
++   entry .dispose   makro stojące za `handle.dispose()`: emituje import `[resource-drop]` zasobu
++       Odczytuje typ zasobu z `Topic` uchwytu `Wasm.Handle`, znajduje jego moduł w definicjach
++       WIT wskazanych przez `Interface in Wit` w zasięgu i emituje `[resource-drop]name` z
++       uchwytem jako jedynym parametrem. Rozszerzenie `dispose()` dla `Wasm.Handle`, które je
++       wywołuje, jest zadeklarowane w pakiecie `soundness`, więc jest dostępne po
++       `import soundness.*`.
+
+@ 0 1 0 1b3718a4db59a3f40d8dc8b7f25348d3
++ entry .Facade   bezkosztowy, statycznie typowany widok żywej wartości Kotlina lub Javy, nawigowany tak, jakby była wartością Scali
+
+% 1 1 0 002ffb0c385e21b41a0bebc10e019861
+
+@ 0 8 0 017832e740c7bf6c14bf8f1c46633c6d
++       `Facade over T` opakowuje wartość JVM typu Scali `T` – łącznie z argumentami typu, więc
++       `Facade over kotlin.Pair[Text, Text]` wie, że oba jego komponenty są `Text` – i pozwala
++       sięgać do jej składowych tak, jakby deklaracje Kotlina były deklaracjami Scali. Każdy
++       dostęp do składowej jest rozwiązywany podczas kompilacji kodu na podstawie `@Metadata`,
++       które kompilator Kotlina zapisał w pliku klasy (przez `KotlinDialect`), i od razu
++       materializuje się jako bezpośrednie, statycznie typowane wywołanie JVM: bez refleksji, bez
++       obiektu opakowującego, a sama wartość jest przekazywana bez zmian. Na tym polega różnica
++       wobec wartości `Foreign`, która jest odroczonym wyrażeniem do wykonania przez inne
++       środowisko; fasada jest gorliwa, ponieważ świat Kotlina to ta sama JVM.
+
+@ 0 4 0 003c689631d084a71c81dbfbbf1d3a7b
++       Fasadę tworzy się przez `make[T](arguments)` (wywołanie konstruktora), `companion[T]`
++       (obiekt towarzyszący klasy), `singleton[T]` (`object` Kotlina) lub `enumEntry[T](name)`,
++       albo otrzymuje się ją jako wynik składowej innej fasady. Aby metadane mogły zostać
++       odczytane, biblioteka standardowa Kotlina musi znajdować się na ścieżce klas kompilacji:
+
+% 2 1 0 04e78b6a802e06b70ea262f31b9173f8
+
+% 3 1 0 080143291a192a981c137f8aa61570f8
+
+% 0 1 0 04a096d99f96b046007b7413f274312f
+
+% 0 1 0 1a01e95b2a634dd71c0846175eb0c0a5
+
+% 1 1 0 12e9fba820684ac70eba44757c9eb5f7
+
+% 0 1 0 05bd861325b8b2b908775f952da654ef
+
+% 0 1 0 0ab4bbf7da2224501432e5910c4611d4
+
+% 1 1 0 0c7a5ac800070f6f1ab02dae920d12a7
+
+@ 0 8 0 0b19f2294bcaec3606108a524e19337b
++       Metadane wnoszą dokładnie to, czego nie potrafi wyrazić sygnatura Javy. Wynik `String`
++       Kotlina jest odczytywany jako `Text`; wynik dopuszczający null `T?` jest `Optional`,
++       nieobecnym tam, gdzie Kotlin zwróciłby null, a typ prymitywny dopuszczający null jest
++       rozpakowywany do prymitywu Scali wewnątrz `Optional`; wynik będący typem prymitywnym,
++       `Unit` lub podstawionym parametrem typu przechodzi bez zmian; a każdy inny wynik o typie
++       Kotlina jest opakowywany jako kolejna fasada, więc nawigacja trwa dalej. Właściwość
++       odczytuje się jak składową (`regex.pattern`), właściwość `var` przyjmuje przypisanie
++       przez swój setter (`parameter.name = t"y"`), a przypisanie do `val` jest błędem
++       kompilacji. Właściwość `const` lub `@JvmField` jest odczytywana jako samo pole, do
++       którego się kompiluje.
+
+@ 0 9 0 1efd99764997a9d00669fb29e138598c
++       Argumenty są dopasowywane do parametru zadeklarowanego przez Kotlina: `Text` spełnia
++       parametr `String` lub `CharSequence`; fasada rozpakowuje się do wartości bazowej; `Int`
++       jest poszerzany do parametru `Long`, a `Conversion` w zasięgu wypełnia każdą inną lukę;
++       `List`, `Set` lub `Map` z Soundness (albo `Seq` ze stdlib) spełnia parametr
++       `java.util.Collection`, `Set` lub `Map` przez widok `asJava` o stałym czasie; tablica
++       Scali spełnia parametr tablicy Javy, do którego typu elementu jest przypisywalna.
++       Pominięte końcowe parametry, które deklarują wartości domyślne Kotlina, przyjmują je
++       (`regex.find(t"a7b")`), a argumenty mogą być nazwane
++       (`regex.find(startIndex = 2, input = t"1a2b")`), w dowolnej kolejności, przy czym
++       brakujące pozycje znów przyjmują wartości domyślne. Nadmiarowe argumenty trafiają do
++       końcowego `vararg`.
+
+@ 0 9 0 029ce23f7cd8b502122b13668736e6fb
++       Lambda Scali spełnia parametr typu funkcyjnego Kotlina, przez implementację wokół niej
++       interfejsu `kotlin.jvm.functions.FunctionN` (liczba argumentów od 0 do 2); jej własne
++       parametry mogą być zadeklarowane jako fasady, więc wartość wewnątrz również jest
++       nawigowalna, a wynik będący fasadą jest rozpakowywany dla Kotlina. Lambda podobnie
++       spełnia funkcyjny interfejs Javy (`Runnable`, `Predicate`, `Comparator`, listener)
++       przez dynamiczne proxy. Tam, gdzie jedyny funkcyjny parametr metody ma zwykły wynik, typ
++       fasady jest doprecyzowywany tak, by lambda *bez typów* wnioskowała typy swoich
++       parametrów (`list.removeIf(text => text.length > 1)`); gdzie indziej parametry lambdy
++       trzeba zapisać (`(m: Facade over MatchResult) => …`), ponieważ `Dynamic` nie daje
++       argumentowi oczekiwanego typu.
+
+% 2 1 0 1579a6ec367d585206447ba5a7b84f48
+
+% 3 1 0 0eab27f73fa22fe9135325672698e961
+
+% 1 1 0 1843d193ecbd713b109b583e29a0e503
+
+% 0 1 0 00e8b5dd5f9f48211816aed906b2c6f5
+
+% 0 1 0 0139ca2937d12df900879046a7a48b6b
+
+% 0 1 0 0aad7820ddd8f6490899075a34ab249f
+
+% 0 1 0 0637cdcc55d5fe880053c5ccebc2136c
+
+% 0 1 0 0967b43e724b8e820a33635b7e7ef73b
+
+% 1 1 0 09f3c4b8fbe10d9b1ac2650a0b79f2e3
+
+@ 0 7 0 1320e4544d191da21e81dbc8af1a2085
++       Zwykła klasa Javy – JDK, `android.jar`, dowolna biblioteka bez metadanych Kotlina –
++       rozwiązuje się przez opartą na refleksji ścieżkę rezerwową nad jej publiczną
++       powierzchnią, według tego samego modelu: metoda `getX()` lub `isX()` jest odczytywana
++       jako krótka właściwość `x`, metoda `setX(v)` zapisuje przez przypisanie `x = v`, a para
++       `setX(SamInterface)` staje się właściwością podobną do `var`, do której można przypisać
++       lambdę z wywnioskowanymi parametrami (`handler.filter = record => …`). Java nie deklaruje
++       dopuszczalności null, więc każdy wynik referencyjny klasy Javy jest odczytywany jako
++       określony.
+
+@ 0 7 0 03f970549e4e35931d80093473a584b8
++       Składowa, której klasa nie deklaruje, zła liczba argumentów, argument niemożliwy do
++       spełnienia, niejednoznaczne przeciążenie, składowa klasy wartości Kotlina (której nazwy w
++       JVM są zniekształcone), funkcja zawieszająca (pominięta w modelu) lub interfejs funkcyjny
++       o liczbie argumentów powyżej 2 są błędem kompilacji, sformułowanym tak, jak Kotlin
++       zadeklarowałby składową – _xenophile: kotlin.text.Regex has no member matchez; did you
++       mean: fun matches(CharSequence): Boolean_. Składowe fasady są też oferowane jako
++       uzupełnienia tabulatorem, wyświetlane w składni Kotlina, przez silnik uzupełniania,
++       który rozumie `Completable`.
+
+@ 0 5 0 1ed785f0ff8750330813e159bf902de8
++       `toString`, `equals` i `hashCode` są prawdziwymi składowymi samego opakowania fasady,
++       więc `Dynamic` nie może ich przechwycić: do tych metod wartości bazowej sięga się przez
++       `#k` (`pair.k.toString`). Typem fasady jest `Facade over T`, z `T` jako jej `Transport`,
++       składową typu dziedziczoną z `Transportive` z prepositional: typem Scali wartości bazowej,
++       łącznie z argumentami typu.
+
+% 0 1 0 15881a2fcc7476bd1938c1bbad54b131
+
+% 0 1 0 083abf3a29921c84183bb630278baaaa
+
+% 0 1 0 00fb118971462bd30908822e4f93d778
+
+% 0 1 0 1835ba137b16ee151d8d3621d4e477c8
+
+% 1 1 0 1568a6b3c7c680e20b25bfb4000ef991
+
+@ 0 57 0 056bbff2c1ab808a08c95804084e4217
++   entry .apply   opakowuje wartość JVM jako `Facade over T`
++       `Facade[T](value)` jest jedynym konstruktorem: zapisuje `T` jako `Transport` fasady i
++       zachowuje wartość bez zmian. Kod użytkownika rzadko go potrzebuje, ponieważ fasady budują
++       `make`, `companion`, `singleton` i `enumEntry`, a każdy nawigowany wynik przychodzi już
++       opakowany; w ten sposób tworzy się parametry lambdy będące fasadami i włącza do nawigacji
++       fasad wartość uzyskaną przez zwykłą interoperacyjność z Javą.
++   entry .completions   składowe fasady jako uzupełnienia tabulatorem, wyświetlane w składni Kotlina
++       Hak `Completable`, który silnik uzupełniania wywołuje refleksyjnie: składowe klasy
++       bazowej, każda jako `fun name(Type): Result` lub `val name: Type` w pisowni Kotlina, z
++       dopuszczalnością null jako `?`. Nie do bezpośredniego użytku.
++   entry #raw   wartość bazowa w jej wymazanym typie czasu wykonania, `Any`
++       Akcesor, który odczytuje emitowany kod; kod użytkownika woli `#k`, który odtwarza
++       dokładny typ statyczny.
++   entry #k   wartość bazowa w jej pełnym zapisanym typie Scali
++       Furtka z powrotem do zwykłej interoperacyjności na poziomie Javy (`k` od Kotlin):
++       `pair.k` jest `kotlin.Pair[Text, Text]` bez potrzeby rzutowania, dla API Javy, które
++       takiej wartości oczekuje, albo dla `toString`, `equals` i `hashCode`, których opakowanie
++       fasady nie może przechwycić.
++   entry #selectDynamic   odczytuje właściwość, pole `const`/`@JvmField` lub getter beana Javy
++       `facade.name` odczytuje właściwość Kotlina przez jej getter, właściwość `const` lub
++       `@JvmField` jako jej pole albo – dla klasy bez metadanych Kotlina – getter beana
++       `getName()` lub `isName()`. Wynik `String` jest odczytywany jako `Text`, wynik
++       dopuszczający null jako `Optional`, a wynik o typie Kotlina jako kolejna fasada. Nieznana
++       składowa jest błędem kompilacji, który wymienia bliskie nazwy w składni Kotlina.
++   entry #applyDynamic   wywołuje funkcję lub metodę, z argumentami dopasowanymi do zadeklarowanych parametrów
++       `facade.name(arguments)` rozwiązuje składową na podstawie metadanych Kotlina i widoku
++       klasy w Scali, wybiera przeciążenie spełniane przez każdy argument (dokładna zgodność ma
++       pierwszeństwo przed dopasowaniem, więc `Text` nigdy nie czyni niejednoznacznymi dwóch
++       przeciążeń w odmianie `String`), dopasowuje argumenty – `Text` do `String`, fasady
++       rozpakowane, lambdy do typów funkcyjnych i interfejsów funkcyjnych, kolekcje i tablice
++       przez mosty, liczby poszerzone – i emituje bezpośrednie wywołanie. Końcowe parametry z
++       wartościami domyślnymi Kotlina można pominąć; właściwość, po której następuje lista
++       argumentów, sięga do `operator fun get` Kotlina na wartości właściwości. Brakująca
++       składowa, niemożliwa do spełnienia lista argumentów lub niejednoznaczne przeciążenie są
++       błędem kompilacji przytaczającym składową tak, jak deklaruje ją Kotlin.
++   entry #applyDynamicNamed   wywołuje funkcję z argumentami nazwanymi (lub mieszanymi)
++       `regex.find(startIndex = 2, input = t"1a2b")`: każda nazwana wartość trafia na pozycję
++       swojego zadeklarowanego parametru, a wartości pozycyjne wypełniają najwcześniejsze
++       nieprzypisane pozycje; pozycja pozostawiona pusta musi deklarować wartość domyślną
++       Kotlina. Nieznana nazwa parametru jest błędem kompilacji wymieniającym zadeklarowane
++       nazwy, a brakujący parametr bez wartości domyślnej jest w błędzie wskazywany z nazwy.
++   entry #updateDynamic   przypisuje do właściwości `var` lub settera beana Javy
++       `facade.name = value` emituje setter Kotlina albo `setName(value)` dla klasy bez
++       metadanych. Gdy setter jest przeciążony (`setColor(int)` i `setColor(long)`),
++       przeciążenie, do którego wartość pasuje dokładnie, wygrywa z tym, do którego prowadzi
++       konwersja. Przypisanie do `val` lub do nazwy bez settera jest błędem kompilacji.
++   entry #tuple   komponenty klasy danych jako krotka Scali
++       `make[kotlin.Pair[Text, Text]](t"a", t"b").tuple` to `(t"a", t"b")`: funkcje
++       `componentN` po kolei, każda z typem doprecyzowanym przez fasadę. Klasa, która nie
++       deklaruje komponentów, jest błędem kompilacji.
++   entry #scala   jawna kopia kolekcji Kotlina lub Javy do odpowiednika z Soundness
++       `java.util.List` jest kopiowana do `List`, `java.util.Set` do `Set`, a `java.util.Map`
++       do `Map`, przy czym elementy `String` są odczytywane jako `Text`
++       (`regex.split(t"a1b2").scala` to `List[Text]`). Kopia jest jawna, ponieważ poza tym
++       fasada jest bezkosztowym widokiem; fasada nad jakimkolwiek innym typem jest błędem
++       kompilacji.
++   entry #apply   `facade(key)`: `operator fun get` Kotlina
++       Sięga do metody `get` klasy z podanymi argumentami, tak jak składnia indeksowania
++       Kotlina, więc `groups(0)` na fasadzie `MatchResult` to `groups.get(0)`.
++   entry #update   `facade(key) = value`: `operator fun set` Kotlina
++       Sięga do metody `set` klasy, odrzucając jej wynik.
+
+@ 0 7 0 1de87a936a8868ed17f81824ebbf7e6f
++ entry .make   konstruuje klasę Kotlina lub Javy przez jej fasadę: `make[T](arguments)`
++     `make[kotlin.Pair[Text, Text]](t"a", t"b")` rozwiązuje klasę na ścieżce klas kompilacji,
++     wybiera konstruktor spełniany przez każdy argument – z tymi samymi dopasowaniami, które
++     wykonuje wywołanie metody: `Text` do `String`, lambdy do typów funkcyjnych i interfejsów
++     funkcyjnych, kolekcje przez widoki `asJava`, poszerzanie liczb, `Conversion` w zasięgu – i
++     zwraca `Facade over T`. Konstruktor klasy generycznej jest typowany własnymi argumentami
++     typu fasady, więc `make[java.util.ArrayList[Text]](…)` wie, że jej elementy są `Text`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 08fddf93e85317de114896cfef3905b1
+
+% 0 1 0 11444c066bd65bb501d322d3e5696152
+
+% 0 1 0 1a7b3e190f5a5e5c0f6e7a4f13287770
+
+% 1 1 0 1d76e20df1e318bf06e0a829ababef3c
+
+@ 0 5 0 1a1d7c791da8e1be0bb06e0b0ca65209
++     Klasa, której nie ma na ścieżce klas kompilacji, lub brak konstruktora przyjmującego
++     argumenty są błędem kompilacji. Zwykła klasa Javy (bez metadanych Kotlina) jest
++     konstruowana przez opartą na refleksji ścieżkę rezerwową, więc klasy JDK działają równie
++     dobrze jak klasy Kotlina. Typ fasady jest doprecyzowywany metodami klasy, które przyjmują
++     interfejs funkcyjny, więc lambda bez typów przekazana do jednej z nich wnioskuje typy
++     swoich parametrów.
+
+@ 0 7 0 0083175227b4c04e0845e6db236b6f16
++ entry .companion   fasada obiektu towarzyszącego klasy Kotlina: `companion[T]`
++     `companion[kotlin.text.Regex].escape(t"a.b")` sięga do składowych `Regex.Companion`
++     przez jego pole statyczne. Klasa musi deklarować obiekt towarzyszący – klasa bez niego
++     jest błędem kompilacji, _xenophile: kotlin.Pair has no companion object_ – a składowe
++     obiektu towarzyszącego rozwiązują się z jego własnych metadanych, więc składowa klasy
++     wartości (której nazwy w JVM są zniekształcone, jak `kotlin.time.Duration.parse`) jest
++     odrzucana z diagnostyką wskazującą klasę wartości.
+
+@ 0 5 0 15744ea6be109c240d88eae40b6957f0
++ entry .singleton   fasada `object` Kotlina: `singleton[T]`
++     `singleton[kotlin.text.Typography].quote` sięga do składowych `object` przez jego
++     statyczne pole `INSTANCE`; właściwości `const` są odczytywane jako pola, do których się
++     kompilują. Typ, który jest klasą, a nie obiektem, jest błędem kompilacji,
++     _xenophile: kotlin.Pair is not a Kotlin object_, podobnie jak typ nieobecny na ścieżce
++     klas kompilacji.
+
+@ 0 8 0 1530b374472d432101837a2b56714a99
++ entry .enumEntry   fasada elementu `enum class`, według nazwy: `enumEntry[T]("NAME")`
++     `enumEntry[kotlin.text.RegexOption]("IGNORE_CASE")` to `Facade over RegexOption` dla tego
++     elementu, używalna wszędzie tam, gdzie oczekiwany jest typ wyliczenia – na przykład jako
++     argument konstruktora lub metody. Nazwa jest literałem, sprawdzanym względem elementów
++     deklarowanych w metadanych: nieznana nazwa jest błędem kompilacji wymieniającym
++     rzeczywiste elementy, _xenophile: kotlin.text.RegexOption has no entry IGNORE_CAES; its
++     entries are: IGNORE_CASE, MULTILINE, …_. Metoda nazywa się `enumEntry`, a nie `entry`,
++     ponieważ `entry` jest już eksportowane do `soundness` przez inną bibliotekę, a import z
++     symbolem wieloznacznym rozstrzygałby tę kolizję według kolejności na ścieżce klas.
+
+@ 0 1 0 1a430bf92c4d4da00f4ef26f7751c8c6
++ entry .Kotlin   ekosystem Kotlin/JVM: typy Scali odwzorowane na typy Kotlina, rozwiązywane z metadanych plików klas
+
+% 1 1 0 1a3581826ec3cc1a02b5f2b0e9ac2a70
+
+@ 0 8 0 1a76a18296ab4d1517ef4d171941b609
++       `Kotlin` to `Ecosystem`, którego definicje nie są plikiem tekstowym, lecz adnotacją
++       `@Metadata`, którą kompilator Kotlina zapisuje w każdym pliku klasy. Jego `#Grammar` to
++       `KotlinDialect`, który na żądanie rozwiązuje typ po nazwie ze ścieżki klas kompilacji,
++       więc `Interface` nie jest potrzebny: wartość `Foreign` nazywa klasę Kotlina
++       bezpośrednio, `Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]`, a `invoke`
++       materializuje nawigację przez `KotlinInvoke` jako bezpośrednie wywołanie JVM. Gorliwa
++       `Facade` jest zwyklejszą drogą do kodu Kotlina; ścieżka `Foreign` istnieje po to, by
++       świat Kotlina był adresowalny jak każdy inny ekosystem.
+
+% 2 1 0 188c84e78fcd39121e8d86592d039d9a
+
+% 3 1 0 07cffbd5982bd4c51ca62365ab326482
+
+% 0 1 0 1abf8b4381ed48bd07144fb4a363c886
+
+% 0 1 0 1e10f7c45032d9651ad379b1682e2d88
+
+% 0 1 0 04b55860b075726115fd834663d61557
+
+% 0 1 0 13f0595dedc21f5a15b83ec3214bfa81
+
+% 1 1 0 08433b024c3ba4fc1d868f447bcf640b
+
+@ 0 6 0 10d467950e94378c14e69907e085891a
++       Obiekt towarzyszący zawiera giveny `Interoperable`, które mówią, który typ Scali
++       odpowiada któremu typowi Kotlina – typy prymitywne, `Text` dla `kotlin.String`, `Unit`
++       oraz `Optional` dla dopuszczającego null `T?`, który dialekt odczytuje jako unię
++       `T | null` – oraz `Runtime`, jedyną refleksyjną krawędź ekosystemu. Giveny znajdują się
++       w obiekcie towarzyszącym, więc są w zasięgu niejawnym bez importu. Klasa nieobecna na
++       ścieżce klas, nieznana składowa, zła liczba argumentów lub argument złego typu są
++       błędem kompilacji.
+
+% 1 1 0 1086a7e069a14d4e0444b6cdcb1ce4dd
+
+% 1 1 0 07de4846cb5a93b712317e01c055def5
+
+% 0 1 0 1b0a7ba20cb6203e19da3c65cd5d51ae
+
+@ 0 19 0 0bd8a0243111b0211306eac4e361ff5e
++   entry .int   `Int` odpowiada `kotlin.Int`
++   entry .long   `Long` odpowiada `kotlin.Long`
++   entry .short   `Short` odpowiada `kotlin.Short`
++   entry .byte   `Byte` odpowiada `kotlin.Byte`
++   entry .boolean   `Boolean` odpowiada `kotlin.Boolean`
++   entry .double   `Double` odpowiada `kotlin.Double`
++   entry .float   `Float` odpowiada `kotlin.Float`
++   entry .char   `Char` odpowiada `kotlin.Char`
++   entry .text   `Text` odpowiada `kotlin.String`
++   entry .unit   `Unit` odpowiada `kotlin.Unit`
++   entry .none   `Unset` odpowiada `null` Kotlina
++       Typ Kotlina dopuszczający null `T?` jest odczytywany jako unia `T | null`, więc nieobecna
++       wartość `Optional` odpowiada alternatywie `null`, tak jak `Unset` odpowiada `none` z WIT
++       i `undefined` z TypeScriptu.
++   entry .optional   `Optional[T]` odpowiada dopuszczającemu null `T?`
++       Derywowany z własnej instancji `T`: `Optional[Text]` to `kotlin.String?`. Ograniczenie
++       `Mandatable` identyfikuje typ obowiązkowy, więc instancja stosuje się tylko do
++       rzeczywistej wartości opcjonalnej i nigdy nie konkuruje z instancją dla samego `T`.
++   entry .Runtime   jedyna refleksyjna krawędź: mosty `$default` Kotlina, wywoływane przez zapamiętane uchwyty metod
+
+% 1 1 0 01aadde6b6264d160fb68e937488e877
+
+@ 0 17 0 141edcf5692773650b23d02eb72c814b
++         Kotlin przechowuje wartości domyślne argumentów w syntetycznych metodach-mostach
++         `name$default`, które są oznaczone ACC_SYNTHETIC, a więc niewidoczne w tablicy symboli
++         kompilatora: nie można wyemitować bezpośredniego wywołania żadnej z nich. Wywołanie,
++         które pomija parametry z wartościami domyślnymi, rozwiązuje więc most raz dla każdego
++         kształtu wywołania do zapamiętanego `java.lang.invoke.MethodHandle` i wywołuje go
++         przez niego – ten sam kompromis czasu konsolidacji, który backend Panamy przyjmuje dla
++         `dlsym`. `Runtime` zawiera też wsparcie potrzebne lambdzie przekazanej przez proxy do
++         interfejsu funkcyjnego Javy. Nic z tego nie jest wywoływane przez kod użytkownika;
++         wywołania emitują makra fasad.
++     entry .dispatch   rozpakowuje fasadę zwróconą z dopasowanej lambdy, by Kotlin lub Java otrzymały surową wartość
++     entry .forwarder   handler wywołań stojący za proxy interfejsu funkcyjnego
++         Odpowiada lokalnie na `equals`, `hashCode` i `toString`, a jedyną metodę abstrakcyjną
++         przekazuje do lambdy.
++     entry .invokeDefault   wywołuje most `name$default` na klasie przez zapamiętany `MethodHandle`
++         Przyjmuje klasę właściciela, nazwę mostu i pełną tablicę argumentów (odbiorca, każdy
++         zadeklarowany parametr z nieobecnymi wypełnionymi zerami, maska bitowa nieobecnych
++         pozycji i znacznik null). Rzuca `IllegalStateException`, jeśli klasa nie ma takiego
++         mostu.
++   entry #Grammar   `KotlinDialect`, samorozwiązująca się gramatyka nad metadanymi plików klas
++   entry #Emission   nazwa materializatora, `xenophile.KotlinInvoke`
+
+@ 0 1 0 1c155f11830b4e0f06582e166f6c0368
++ entry .KotlinDialect   gramatyka Kotlina: składowe typu, odczytywane na żądanie z `@Metadata` na ścieżce klas kompilacji
+
+% 1 1 0 0e792371c01bf6cb190f3feebf8b02ef
+
+@ 0 11 0 1449b4cef4a67ab00482c53a43d20a20
++       `KotlinDialect` to `Dialect`, który daje ekosystemowi `Kotlin` jego definicje. Jest
++       samorozwiązujący się (`#resolves` jest prawdą): zamiast parsować zasób tekstowy,
++       `#resolve` ładuje nazwaną klasę przez classloader makr – bez uruchamiania jej
++       statycznych inicjalizatorów – odczytuje jej adnotację `kotlin.Metadata` za pomocą
++       kotlin-metadata-jvm i zwraca składowe jako neutralne wobec ekosystemu `Prototype`:
++       funkcje, właściwości `val` i `var` (przez ich gettery albo jako same pola dla `const` i
++       `@JvmField`) oraz konstruktory (pod nazwą `<init>`). Składowe fasady wieloplikowej są
++       zbierane z jej klas częściowych; klasę zagnieżdżoną można nazwać z kropkami
++       (`Regex.Companion`), a nazwa binarna rozdzielana `$` jest wyprowadzana. Funkcje
++       zawieszające są pomijane, ponieważ ich kształt w JVM przyjmuje ukryty parametr
++       kontynuacji, więc diagnostyka dla takiej funkcji to `no member`. Rozwiązania są
++       zapamiętywane według nazwy typu na czas trwania kompilacji.
+
+@ 0 8 0 0453e24f8fadcc8e0eb33a8e69788f0b
++       Typy są odwzorowywane na model obcy tak, jak nazywa je Kotlin: klasa przez w pełni
++       kwalifikowaną nazwę, aplikacja generyczna przez `Applied`, dopuszczający null `T?` jako
++       unia z `"null"`, a odwołanie do parametru typu jako `#<id>`, które `Facade` rozwiązuje
++       względem argumentów typu odbiorcy. Klasa bez metadanych Kotlina – JDK, `android.jar`,
++       dowolna zwykła biblioteka Javy – przechodzi na ten sam model zbudowany przez refleksję
++       nad jej publicznymi metodami, polami i konstruktorami, z prymitywami Javy i `String`
++       odczytywanymi pod ich nazwami z Kotlina; Java nie deklaruje dopuszczalności null, więc
++       każdy typ referencyjny jest odczytywany jako określony.
+
+@ 0 3 0 156a9aa077ad90de15bf842a84d44e9a
++       Obok neutralnych prototypów dialekt prowadzi tablicę pomocniczą z tożsamością JVM każdej
++       składowej (`JvmMember`), z której materializatory `KotlinInvoke` i `KotlinFacade`
++       emitują bezpośrednie wywołania; te wyszukiwania są wewnętrzne dla biblioteki.
+
+% 1 1 0 16883919157bd6601e8c419aa68559cd
+
+% 2 1 0 1341505e8ea0ea3a0f1c3a0406c7c663
+
+@ 0 9 0 0102e306e86ed66902a7cb8ae6a5d130
++   entry .parse   zawsze puste: ten dialekt nigdy nie parsuje zasobu tekstowego
++       Wymaga tego kontrakt `Dialect`; definicja Kotlina znajduje się w plikach klas, więc
++       `parse` zwraca pustą `Map`, a pracę wykonuje `#resolve`.
++   entry .resolves   `true`: dialekt odpowiada na `resolve` na żądanie, dla każdej nazwy typu
++   entry .resolve   składowe klasy Kotlina lub Javy według w pełni kwalifikowanej nazwy albo `Unset`, jeśli żadnej nie da się załadować
++       `KotlinDialect.resolve(t"kotlin.text.Regex")` to `Map` z nazwy składowej na `Prototype`
++       (przy przeciążonej nazwie wygrywa pierwsza deklaracja) albo `Unset`, gdy na ścieżce klas
++       kompilacji nie ma klasy o tej nazwie.
++   entry .JvmMember   tożsamość składowej na poziomie JVM: właściciel, nazwa, deskryptor, rodzaj i wartości domyślne
+
+% 1 1 0 04d6254ae094f0e6153520bd446a590d
+
+@ 0 17 0 0ce02c1a2424e8e10c3e79c6544079e7
++         Wpis tablicy pomocniczej, z którego emitują materializatory. Zapisuje klasę
++         deklarującą (`#owner`, która dla fasady wieloplikowej jest klasą częściową), `#jvmName`
++         i `#descriptor` w JVM, czy składowa jest `#static`, czy jest `#property`, czy jest
++         odczytywana bezpośrednio jako `#field`, jej `#arity`, które parametry deklarują
++         `#defaults`, nazwy parametrów (`#parameters`, dla argumentów nazwanych) oraz czy jest
++         `#vararg`. Składowe klasy wartości mają zniekształcone nazwy zawierające `-`, po czym
++         fasada je rozpoznaje i odrzuca.
++     entry #owner   nazwa klasy deklarującej
++     entry #jvmName   nazwa składowej w pliku klasy
++     entry #descriptor   deskryptor JVM składowej, `(Ljava/lang/String;)Z`
++     entry #static   czy składowa jest statyczna (funkcja najwyższego poziomu lub `@JvmStatic`)
++     entry #property   czy składowa jest właściwością, a nie funkcją
++     entry #field   czy właściwość jest odczytywana bezpośrednio jako pole (`const`, `@JvmField`)
++     entry #arity   liczba zadeklarowanych parametrów
++     entry #defaults   dla każdego parametru, czy deklaruje wartość domyślną
++     entry #parameters   zadeklarowane nazwy parametrów, po kolei
++     entry #vararg   czy ostatni parametr jest `vararg`
+
+@ 0 1 0 076df285618c45491f08594903357b26
++ entry .KotlinInvoke   materializator, który zamienia nawigację `Foreign` Kotlina w bezpośrednie wywołanie JVM
+
+% 1 1 0 17e89daff8edd0780439644f830321b8
+
+@ 0 11 0 19f159cc4fb36ea114b2265916bad680
++       Końcowy `Materializer` ekosystemu `Kotlin`, wymieniony w `Emission` ekosystemu `Kotlin`:
++       `invoke` (lub `call[T]()`) na w pełni zaaplikowanej nawigacji `Foreign … from Kotlin`
++       rozwiązuje właściciela, metodę i deskryptor JVM przez `KotlinDialect`, wybiera
++       przeciążenie, którego deskryptor spełniają typy Scali argumentów (typy prymitywne muszą
++       zgadzać się dokładnie, więc argumenty `Int` wybierają `(III)I` zamiast `(JJJ)J`), i emituje
++       wywołanie statyczne bez refleksji w czasie wykonania. Materializuje wywołania funkcji
++       najwyższego poziomu (statycznych); składowa instancji lub przeciążona nazwa to błąd
++       kompilacji – _xenophile: kotlin.text.StringsKt.trim is an instance member, which is not yet
++       supported_ – a drogą dla nich jest gorliwa `Facade`. Klasy części fasady wieloplikowej są
++       w kotlin-stdlib prywatne w pakiecie, więc wywołanie rozwiązane do jednej z nich może być
++       niedostępne, mimo że JVM dotarłaby do niej przez publiczną fasadę.
+
+% 1 1 0 0f05998450acd4d50c2ff1067544ebb1
+
+% 2 1 0 00feafafb88b343507a56d894b5fcf01
+
+@ 0 1 0 13ae2babc5a289251a82e0f0d3888292
++   entry .materialize   emituje statyczne wywołanie JVM dla nawigacji, rzutowane na żądany typ wyniku
+
+@ 0 1 0 0e610baf037b73131657f352ee40a0b7
++ entry .KotlinFacade   silnik makr stojący za `Facade`
+
+% 1 1 0 187d2483a75975090233d0c5a634c80f
+
+% 2 1 0 1a8746ae041812930651ae63680ceb74
+
+@ 0 7 0 18ee4d3b004fef3b1b5d9be48adf7885
++       Nie do bezpośredniego użytku: implementacje `selectDynamic`, `applyDynamic`,
++       `applyDynamicNamed`, `updateDynamic`, `tuple`, `scala`, `apply`, `update` i `k` z
++       `Facade` oraz `make`, `companion`, `singleton` i `enumEntry` najwyższego poziomu, które
++       rozwiązują każdy dostęp względem metadanych `KotlinDialect` i materializują go jako
++       bezpośrednie wywołanie JVM. Publiczne składowe `select`, `applied`, `appliedNamed`,
++       `update`, `discarded`, `construct`, `companion`, `singleton`, `enumEntry`, `tuple`,
++       `scalaCollection` i `unwrapped` to punkty wejścia makr, które wstawiają te metody inline.
+
+@ 0 1 0 0f510c5b575d9fc31907a41b6094ca92
++ entry .Typescript   ekosystem TypeScriptu: plik `.d.ts` odczytywany podczas kompilacji kodu i typy Scali odwzorowane na jego typy
+
+% 1 1 0 1183213d5cca1316039b2157620731cf
+
+@ 0 6 0 145d532f740202f116dfe2e863730ae2
++       `Typescript` to `Ecosystem`, którego definicjami są pliki deklaracji TypeScriptu. Given
++       `Interface in Typescript at "/path.d.ts"` wczytuje taki plik ze ścieżki klas, a wartość
++       `Foreign["Name", Typescript]` nawiguje następnie po zadeklarowanych typach: każdy wybór
++       składowej, aplikacja i indeksowanie są sprawdzane względem deklaracji przez
++       `TypescriptDialect`, czyli `#Grammar`, a nawigacja materializuje się przez backend JS
++       wymieniony w `#Emission` (`xenophile.JsInvoke`, w komponencie `xenophile.js`).
+
+% 2 1 0 187d1fd64c2bbf341a603821a4d7f40a
+
+% 3 1 0 107d017fe7267ef8067f59b8bb6f803c
+
+% 3 1 0 165baab06e2f990313d3ac3f4e191f67
+
+% 4 1 0 05f876155da5f3880263deb681fb50f0
+
+% 6 1 0 07feac87f7afbafc0607b35e41775810
+
+% 7 1 0 18bdd63bbb8950f209e6fa3a78df2a52
+
+% 8 1 0 09161bae47224870080a7f8c848064aa
+
+% 9 1 0 1301813804d8ec161da308afbde541a4
+
+% 10 1 0 057676dc2a041834138bdaa5990c4c98
+
+% 11 1 0 05ceae2bdac79cfa1671bdb59b5e99ca
+
+% 12 1 0 190d0bd029e9b92e0aad74734086b900
+
+@ 0 2 0 06d03b0ef28870ac173881385b96d419
++       Obiekt towarzyszący zawiera dwie rzeczy. Po pierwsze, givens `Interoperable`, dzięki
++       którym wartość Scali przechodzi jako argument, w zasięgu niejawnym bez importu:
+
+% 2 1 0 07eeaea1c62342f50c9da020f29a3ca3
+
+% 3 1 0 1895b2080c29fc2d0cf943a7e9f090f5
+
+% 0 1 0 0467d1b1e55774561556170d260c9a9b
+
+% 1 1 0 15851d6051e7bf511f068ccc13b59c2e
+
+% 0 1 0 011868b1f9dbc7940429533c76110a8e
+
+% 0 1 0 10dee50b1859058a19d436c13efde5de
+
+% 0 1 0 181eef5c6a8a7af80062f6e5630f473e
+
+% 0 1 0 077a5a5a80e1eb8d167f470890315caf
+
+% 0 1 0 0cc3faf74adfe1f705eafb44870f5d8f
+
+% 1 1 0 0f731014fc4647921ca920eba5e23622
+
+@ 0 5 0 05039512770db229158c615693542a25
++       Po drugie, model deklaracji i jego parser: `Typescript.Parser.parse` odczytuje źródło
++       `.d.ts` jako `Typescript.Declaration` – interfejsy, klasy, aliasy, wyliczenia, funkcje i
++       zmienne wraz z ich składowymi i `Typescript.Type` – na tyle wiernie, by dyscyplina
++       zgodności mogła je haszować, i zgłasza `Typescript.Error` dla wszystkiego spoza swojej
++       gramatyki, zamiast to przybliżać.
+
+@ 0 5 0 0378ba157b5aa377109ba671a5ebe7f7
++       Składowa, której plik nie deklaruje, to błąd kompilacji, _xenophile: the foreign type Play
++       has no member nonexistent_; podobnie zła liczba argumentów, _xenophile: greet expects 1
++       arguments, not 2_; i argument złego typu, _xenophile: greet expects an argument of foreign
++       type string_. Składowe typu są też oferowane jako uzupełnienia tabulatorem przez silnik
++       uzupełniania, który rozumie `Completable`.
+
+% 0 1 0 18dc3140d7e55f8f16bd0567105b6add
+
+% 1 1 0 0ff836ff681b956010307b969a46335d
+
+% 2 1 0 1d86b1249d5060240aaa437eb1a46dbe
+
+@ 0 8 0 1ce801ddc79091870fd616c2735ec5a2
++   entry .text   `Text` odpowiada `string`
++   entry .int   `Int` odpowiada `number`
++   entry .boolean   `Boolean` odpowiada `boolean`
++   entry .list   `List[T]` odpowiada `T[]`, czyli `Array<T>`
++       Derywowane z własnej instancji elementu: `List[Text]` to `Array<string>`, zapisywane jako
++       typ obcy `"Array" over "string"`.
++   entry .map   `Map[K, V]` odpowiada `Map<K, V>`
++       Derywowane z instancji klucza i wartości: typem obcym jest
+
+% 0 1 0 0df912f75c701d111c61da4b56ce60a3
+
+@ 0 9 0 0681f9a2a6007d4e116a41bef065b823
++   entry .undefined   `Unset` odpowiada `undefined`
++       Opcjonalna właściwość lub parametr `x?: T` jest odczytywany jako unia `T | undefined`,
++       więc nieobecna wartość `Optional` odpowiada alternatywie `undefined`. `null` TypeScriptu
++       również jest odczytywane jako `undefined`.
++   entry .optional   `Optional[T]` odpowiada `T | undefined`
++       Derywowane z własnej instancji `T`: `Optional[Text]` przechodzi tam, gdzie zadeklarowano
++       `string | undefined`. Ograniczenie `Mandatable` identyfikuje typ obowiązkowy, więc
++       instancja ma zastosowanie tylko do rzeczywistej wartości opcjonalnej i nigdy nie
++       konkuruje z instancją dla samego `T`.
++   entry .Declared   to, co wspólne dla każdej deklaracji: nazwa, zasięg przestrzeni nazw i informacja, czy jest eksportowana
+
+% 1 1 0 18e950d89f9c408c03d71831defb3c60
+
+@ 0 6 0 08095ce4f8129a8a0368548d3122aa5e
++         Zapieczętowany trait, który każdy przypadek `Typescript.Declaration` implementuje
++         przez własne parametry: `#name`, `#scope` i `#exported`.
++     entry #name   zadeklarowana nazwa
++     entry #scope   ścieżka przestrzeni nazw otaczających deklarację, od najbardziej zewnętrznej
++     entry #exported   czy konsument modułu może dotrzeć do deklaracji
++   entry .Declaration   deklaracja najwyższego poziomu pliku `.d.ts`: interfejs, klasa, alias, wyliczenie, funkcja lub zmienna
+
+% 1 1 0 1d3a24e08fdeda9409a2affe992910ab
+
+@ 0 10 0 01863be79ad6c0741a31712103db01fe
++         Wyliczenie sześciu kształtów deklaracji, które może zawierać plik deklaracji; każdy
++         niesie swoją nazwę `name`, zasięg przestrzeni nazw `scope` i informację, czy jest
++         `exported`. `Interface` zapisuje swoje parametry typu, klauzulę `extends` i składowe;
++         `Class` – parametry typu, klasę bazową, klauzulę `implements`, składowe i to, czy jest
++         abstrakcyjna; `Alias` – parametry typu i typ docelowy; `Enumeration` – swoje składowe
++         (nazwę i opcjonalną wartość) i to, czy jest `const enum`, które jest wstawiane inline do
++         konsumentów w czasie ich kompilacji, a więc stanowi istotnie inną gwarancję; `Function`
++         – swoje sygnatury (kilka, jeśli jest przeciążona, w kolejności deklaracji); a
++         `Variable` – swój typ i to, czy jest `const`. Trzy wspólne składowe są dziedziczone z
++         `Typescript.Declared`, który je dokumentuje.
+
+@ 0 3 0 1bbfc3b8180c409a11fe676258bf8830
++         `exported` znaczy to, co mówi, w chwili odczytu deklaracji: w module (pliku z
++         jakimkolwiek `import` lub `export` najwyższego poziomu) osiągalne są tylko deklaracje
++         eksportowane; w skrypcie globalnym – wszystkie; a ambientowa przestrzeń nazw
++         eksportuje wszystko, co zawiera.
+
+% 2 1 0 105ae66670af2a3800e2ad7d2cbbe4df
+
+% 3 1 0 02c4e8c37d71c20e03713af33fccde5f
+
+% 4 1 0 07f0712e399cbfc91b8910c0da4175c3
+
+% 0 1 0 091e9fefa56650cd0e781f57fbb42164
+
+% 0 1 0 0fcd44e34c195c5e0cb9476dc2e49cce
+
+% 0 1 0 1dd7438c8ddaad2b0469c3b283209bc9
+
+% 1 1 0 1f1e298361a57f49182b7444e902f687
+
+@ 0 11 0 16d9dc1869c9894a13d1daa8ae4c25a0
++     entry .Scope   ścieżka przestrzeni nazw deklaracji, od najbardziej zewnętrznej, jako `List[Text]`
++         `declare namespace a { namespace b { interface X {} } }` nadaje `X` zasięg
++         `List(t"a", t"b")`. Dwie deklaracje o tej samej nazwie w różnych przestrzeniach nazw to
++         różne kontrakty, więc zasięg jest częścią każdego `key`.
++     entry .qualify   rozszerzenie dla `Scope`: nazwa kwalifikowana zasięgiem, `a.b.X`
++         Pusty zasięg pozostawia nazwę bez zmian.
++     entry #declaredMembers   składowe, które przedstawia interfejs lub klasa; puste dla pozostałych kształtów
++         Nazwane inaczej niż parametr `members` obu tych przypadków, z którym metoda o tej samej
++         nazwie by kolidowała.
++     entry #key   nazwa deklaracji kwalifikowana zasięgiem, `a.b.X`
++   entry .Member   jedna składowa interfejsu, klasy lub obiektowego typu inline
+
+% 1 1 0 1985ada5455d828311a118789a0a37b1
+
+@ 0 25 0 17ee1c0bf81407bb183651434a036be2
++         Składowa ma `#name`, `#kind` (właściwość, metoda, getter, setter, sygnatura wywołania,
++         sygnatura konstrukcji lub sygnatura indeksu), swoje `#signatures` – kilka, jeśli metoda
++         jest przeciążona, w kolejności deklaracji, ponieważ TypeScript rozwiązuje wywołanie
++         względem nich po kolei – oraz modyfikatory `#visibility`, `#static`, `#readonly`,
++         `#optional` i `#isAbstract`. Właściwość i metoda o tej samej nazwie to różne kontrakty,
++         nawet gdy ich typy się zgadzają, dlatego rodzaj jest częścią składowej.
++     entry .Kind   czym jest składowa: `Property`, `Method`, `Getter`, `Setter`, `Call`, `Construct` lub `Index`
++         Rodzaj decyduje, jak konsument może odwołać się do składowej: sygnatura wywołania jest
++         osiągalna tylko przez wywołanie otaczającego typu, a sygnatura indeksu – przez jego
++         indeksowanie.
++     entry .Visibility   `Public`, `Protected` lub `Private`
++     entry #name   nazwa składowej; pusta dla sygnatur wywołania, konstrukcji i indeksu
++     entry #kind   `Typescript.Member.Kind` składowej
++     entry #signatures   typ składowej lub typy, jeśli jest przeciążona, w kolejności deklaracji
++     entry #visibility   `Typescript.Member.Visibility` składowej
++     entry #static   czy składowa jest `static`
++     entry #readonly   czy składowa jest `readonly`
++     entry #optional   czy składowa ma postać `x?: T`
++     entry #isAbstract   czy składowa jest `abstract`
++     entry #selector   klucz, przez który składowa jest adresowana w swojej deklaracji
++         Sama nazwa dla właściwości lub metody, `get x` i `set x` dla akcesorów, `()` dla
++         sygnatury wywołania, `new()` dla sygnatury konstrukcji i `[]` dla sygnatury indeksu,
++         dzięki czemu getter, setter i właściwość o tej samej nazwie pozostają odrębne.
++     entry #visible   czy składowa należy do kontraktu konsumenta: wszystko poza `private`
++         Składowa `protected` należy, ponieważ podklasa może do niej dotrzeć.
++   entry .Type   wyrażenie typu TypeScriptu
+
+% 1 1 0 077dc506053a6efb1c3e09cc69afbe10
+
+@ 0 18 0 1f51a00399d54ea612e5b10aa96f7b03
++         Zamknięte słownictwo: `Named` (z argumentami typu), `Literal` (typ literału napisowego,
++         liczbowego lub logicznego), `Union`, `Intersection`, `Tuple` (z opcjonalnymi
++         etykietami), `Array`, `Object` (składowe obiektowego typu inline), `Keyof`, `Typeof`,
++         `Indexed` (`T[K]`), `Predicate` (`x is T`) i `Function` (parametry, wynik, parametry
++         typu i to, czy jest sygnaturą konstrukcji `new (…) => T`). Słownictwo jest zamknięte
++         celowo: `Typescript.Parser` zgłasza błąd, zamiast zgadywać, gdy napotka typ warunkowy,
++         typ mapowany, typ literału szablonowego lub wiązanie `infer`, więc plik używający
++         któregoś z nich jest głośno odrzucany, zamiast zostać odczytany jako mniejszy
++         interfejs, niż deklaruje. Obiekt towarzyszący zawiera `LiteralKind`, `Parameter`
++         (parametr typu) i `Argument` (parametr wartości).
++     entry .LiteralKind   `String`, `Number` lub `Boolean`: rodzaj literału, którym jest `Literal`
++         Trzymane osobno od tekstu literału, ponieważ `"1"` i `1` to różne typy, których postaci
++         źródłowe różnią się tylko cudzysłowem, który lekser już usunął.
++     entry .Parameter   parametr typu: jego nazwa, ograniczenie `extends` i wartość domyślna
++       entry #name   nazwa parametru
++       entry #bound   ograniczenie `T extends U`, jeśli jest
++       entry #default   wartość domyślna `T = U`, jeśli jest
++     entry .Argument   parametr wartości funkcji, metody lub konstruktora
+
+% 1 1 0 044f8f45504175c81a9e7e25defd9962
+
+@ 0 11 0 09823c070ce8c2150484b950f375869a
++           `rest` oznacza `...args: T[]`, którego liczba argumentów jest nieograniczona, a
++           `optional` oznacza `a?: T` (lub parametr z wartością domyślną), który wywołujący
++           mogą pominąć; oba zmieniają to, jakie miejsca wywołania są poprawne, więc oba są
++           częścią kontraktu.
++       entry #name   nazwa parametru
++       entry #typed   zadeklarowany typ parametru lub `Unset`, jeśli nie został zapisany
++       entry #optional   czy parametr można pominąć
++       entry #rest   czy parametr jest parametrem `...rest`
++     entry #text   stabilne przedstawianie typu, takie jak zapisałoby je źródło
++         `string[][]`, `A & B`, `(event: string) => void`, `x is Play`. Służy diagnostyce;
++         kanoniczne kodowanie, które haszuje dyscyplina, jest strukturalne i należy do
++         dyscypliny.
++   entry .Error   zgłaszany, gdy nie można odczytać źródła `.d.ts`
+
+% 1 1 0 06eed16a5d6802f2133c70dd30808406
+
+@ 0 9 0 031fda3a46c686111ee6061aa4158cfb
++         Błąd `↯/s.59.1`: _the TypeScript declarations could not be read because `reason`_,
++         zgłaszany przez `Typescript.Parser.parse` (i `lex`). `#reason` to
++         `Typescript.Error.Reason`: błąd `Syntax` ze szczegółami i tokenem, przy którym
++         wystąpił; konstrukcja `Unsupported` – typ warunkowy, typ mapowany, typ literału
++         szablonowego, wiązanie `infer`, dekorator, sygnatura asercji, `unique symbol`,
++         obliczana nazwa właściwości – która celowo jest błędem, a nie cichym pominięciem,
++         ponieważ częściowo odczytany plik deklaracji jest mniejszym kontraktem, niż deklaruje;
++         albo nazwa `Duplicate`, gdy klasa, alias lub wyliczenie jest zadeklarowane dwukrotnie
++         w jednym zasięgu (interfejsy i funkcje się scalają, więc powtórzony interfejs jest
++         akceptowany).
+
+% 2 1 0 14574e9321804379125e2da85288de0e
+
+% 3 1 0 0cf2af781fe2b4920c8fe48ba0752f4f
+
+% 0 1 0 0dcf5a94cfe7395a020c0d3e19b56ac6
+
+% 0 1 0 1248dab7c4a2680a1b4c7aaa660f1613
+
+% 0 1 0 18d425a1d8e69d6516e5363d7bcc38b2
+
+% 1 1 0 15a5365c9388ee220fdd0da925b41c56
+
+@ 0 2 0 13a879bcfd2940ad1dd2f40727c76fad
++     entry .Reason   dlaczego nie można było odczytać źródła: `Syntax`, `Unsupported` lub `Duplicate`
++         Każdy przypadek niesie swój podnumer błędu:
+
+% 3 1 0 1403d7c9e8e2e85b085c732e12bf8146
+
+% 4 1 0 12ed1f3f9de5626d081f379d465caa01
+
+% 5 1 0 18f6fa8f83f6db65118f85f6e3977dda
+
+% 6 1 0 0fbe21ed3cdc2fba0784b9e3467b0606
+
+% 7 1 0 0ecd4b9c8bc125250507d957f0b77a73
+
+% 8 1 0 11df32c18c61db350cfc689a139c52f3
+
+% 9 1 0 194831842c69a72b14857303a890307e
+
+% 0 1 0 19a59d41ddbbd17312d513cc43c1245d
+
+% 1 1 0 19319437f8ff7fca0dca7d37a4cff717
+
+@ 0 3 0 17845cf703cba86305c1aee2a2fbc59f
++     entry .communicable   przedstawia przyczynę jako jej komunikat, zgodnie z tabelą przy `Reason`
++     entry #reason   `Typescript.Error.Reason`
++   entry .Parser   parser plików deklaracji TypeScriptu
+
+% 1 1 0 096cb6ff61c7feba0cb89bdc592e2276
+
+@ 0 11 0 16b88958527604e10cc3b7bf0f657b36
++         Parser *deklaracji*, a nie kompilator TypeScriptu: odczytuje kształty, które może
++         zawierać plik `.d.ts`, i nic z wyrażeń ani instrukcji. W tych granicach każda konstrukcja
++         jest albo rozumiana, albo odrzucana z `Typescript.Error` – nigdy pomijana, i to ta
++         właściwość pozwala dyscyplinie haszować to, co odczytuje. Obsługuje generyczne
++         interfejsy i klasy, klauzule `extends` i `implements`, przestrzenie nazw (zagnieżdżone
++         oraz `declare module`/`global`), przeciążenia (złączone w jedną składową z kilkoma
++         sygnaturami, po kolei), gettery i settery, sygnatury wywołania, konstrukcji i indeksu,
++         obiektowe typy inline, typy funkcyjne, krotki, typy literałów, `keyof`, `typeof`,
++         dostęp indeksowany i predykaty typów; instrukcje `import` i formy reeksportu nie wiążą
++         żadnego kontraktu i są pomijane. Komentarze są pomijane, a wartością literału
++         napisowego jest jego token, więc `"a"` i `'a'` są leksykowane identycznie.
+
+% 2 1 0 11059c00ed34f7491e7276046bd60d87
+
+% 3 1 0 0b6f49343408b81e1e597d78f73ab915
+
+% 4 1 0 0f9bee2d7ce514e71c216612f37aedf2
+
+% 0 1 0 09f163b2b4ab0d7f0863d277b5218edb
+
+% 0 1 0 192b0f63b35d1c2216ab5c2d722d46b7
+
+% 1 1 0 128b0bf02e25fe060d4f8b094d8adab3
+
+@ 0 13 0 1f3c75a3a526dd331d1ac97f0d22a0b9
++         Parser wymaga w zasięgu `Tactic[Typescript.Error]`: `strategies.throwUnsafely` lub
++         `safely`, by odczytać nieczytelny plik jako `Unset`.
++     entry .Token   token leksykalny: `Word`, literał `Str`, literał `Num` lub `Punct`uation
++       entry #show   token jako tekst, z literałem napisowym w pojedynczych cudzysłowach
++     entry .lex   tokeny źródła; zgłasza `Typescript.Error` dla niezakończonego napisu lub zbłąkanego znaku
++         Literał szablonowy (odwrotny apostrof) jest odrzucany na tym etapie jako `Unsupported`.
++     entry .parse   deklaracje źródła `.d.ts`; zgłasza `Typescript.Error`, jeśli nie można go odczytać
++         To, czy plik jest modułem (jakikolwiek `import` lub `export` najwyższego poziomu), czy
++         skryptem globalnym, rozstrzyga jedno przejrzenie całego strumienia tokenów przed
++         parsowaniem, ponieważ `export` na końcu pliku wstecznie decyduje o statusie deklaracji
++         na jego początku. Powtórzona nazwa klasy, aliasu lub wyliczenia w jednym zasięgu to błąd
++         `Duplicate`.
++   entry #Grammar   `TypescriptDialect`, gramatyka, która rzutuje deklaracje na model obcy
++   entry #Emission   nazwa materializatora, `xenophile.JsInvoke`
+
+@ 0 1 0 150490256cf7e07c15c63db1ff19562d
++ entry .TypescriptDialect   gramatyka TypeScriptu dla nawigacji obcej: deklaracje rzutowane na model obcy
+
+% 1 1 0 0f6f2845d4ba7816107a7bd380724150
+
+@ 0 9 0 1c86c28fb872cbac05b403dce3e19a89
++       Adapter `Dialect` nad `Typescript.Parser` i `Grammar` ekosystemu `Typescript`. `#parse`
++       odczytuje źródło `.d.ts` i rzutuje jego interfejsy i klasy na płaską postać, którą
++       odczytuje nawigacja `Foreign`: `Map` z kwalifikowanej zasięgiem nazwy każdego typu na
++       `Prototype` jego składowych. Rzutowanie jest z założenia stratne – prototyp opisuje
++       tylko to, czego miejsce wywołania potrzebuje do marshallingu – ale parsowanie pod nim
++       takie nie jest: generyczne interfejsy są odczytywane, a składowa dziedziczona przez
++       `extends` (albo przez `extends` i `implements` klasy) jest rozwiązywana względem
++       deklaracji z tego samego pliku, więc `B extends A` oferuje także składowe `A`. Typ
++       bazowy, którego plik nie deklaruje, niczego nie wnosi, ale też niczego nie usuwa.
+
+@ 0 7 0 13a2c6c29a12488c1416061c96404aba
++       Sygnatury indeksu, wywołania i konstrukcji nie mają nazwy, której mógłby użyć wybór
++       składowej, a składowa `private` nie jest do wywołania przez konsumenta, więc żadna z
++       nich nie jest rzutowana. Właściwość lub getter rzutuje się jako pole; metoda lub setter
++       – jako funkcja, z *pierwszą* zadeklarowaną sygnaturą, jeśli jest przeciążona (prototyp
++       zapisuje jedną liczbę argumentów, a TypeScript rozwiązuje względem sygnatur po kolei);
++       opcjonalna składowa lub parametr staje się unią z `undefined`; `T[]` staje się `Array`
++       zaaplikowanym do `T`; typ literału staje się typem nazwanym jego wartością; a `null`
++       jest odczytywane jako `undefined`.
+
+% 2 1 0 17adf4802164f7c90e877968896984d2
+
+% 3 1 0 109ce096bc6ccfa11c14b9a2935bb410
+
+% 0 1 0 0542db03a5bd8535074c960250fe344e
+
+% 0 1 0 1737ddc75d324a6f1779d1612ad8b77f
+
+% 1 1 0 11855fc782372d2117249475a8b399e9
+
+@ 0 4 0 0c847c6dbc1555bf0af1c40eb7af8733
++       `parse` jest totalne: źródło, którego nie da się sparsować, niczego nie definiuje (pusta
++       `Map`), zamiast zgłaszać błąd, a makro nawigacji zgłasza wtedy _the foreign type is not
++       defined_. Kod obliczający twierdzenie o zgodności nie może iść tą drogą i wywołuje
++       bezpośrednio `Typescript.Parser.parse`, gdzie nieczytelna deklaracja jest błędem.
+
+% 0 1 0 1be388b81f275341150ebdbf090d7940
+
+% 1 1 0 135fe45864cd29d70216be8463cd23fb
+
+@ 0 2 0 0d1894c47caab79f138e1e240552d0f7
++   entry .parse   każdy interfejs i klasa źródła `.d.ts`, według nazwy kwalifikowanej, z prototypami składowych
++       Totalne: nieczytelne źródło daje pustą `Map`.
+
+@ 0 1 0 106d6560b605d9e50cd98485a19a068d
++ entry .WebIdl   ekosystem WebIDL: interfejsy `.idl` odczytywane podczas kompilacji kodu i typy Scali odwzorowane na typy WebIDL
+
+% 1 1 0 1e793e1486694b49119501f8aad107a7
+
+@ 0 7 0 14a34f5c8f1cbb570eb86f10b3fc9495
++       `WebIdl` to `Ecosystem`, którego definicjami są fragmenty WebIDL – języka, w którym
++       specyfikacje platformy webowej deklarują DOM, w postaci publikowanej przez webref. Given
++       `Interface in WebIdl at "/path.idl"` wczytuje taki fragment ze ścieżki klas, a wartość
++       `Foreign["Node", WebIdl]` nawiguje po zadeklarowanych interfejsach: atrybuty są
++       odczytywane jako pola, operacje są aplikowane ze sprawdzeniem argumentów, a
++       dziedziczenie, mixiny i deklaracje częściowe rozwiązuje `WebIdlDialect`, czyli
++       `#Grammar`. Nawigacja materializuje się przez backend JS wymieniony w `#Emission`
++       (`xenophile.JsInvoke`).
+
+% 2 1 0 0d5a27fbf44a547208f79f1a992424b8
+
+% 3 1 0 046ef40de44c142d159e4678bfc92f92
+
+% 0 1 0 1c982deaa36de0be1328657b51b2ae31
+
+% 0 1 0 0302bbf4a81e49bf133106d9806df993
+
+% 0 1 0 11abf3fd6d64ef38004a48774fc4b63b
+
+% 0 1 0 0ff8769f1e643e89023f8c214e02828f
+
+% 0 1 0 196cdebefe2e3bfd1c199ee75e24c6d3
+
+% 1 1 0 18ed4cb7a3ffa86c0ff3cd68db128e30
+
+@ 0 8 0 17a5a3a66c3f6075185dd25b1de777a5
++       Typy liczbowe WebIDL są odczytywane pod nazwami jawnie określającymi szerokość i
++       odpowiadają liczbom stałej szerokości z Hypotenuse: `byte` to `s8`, `octet` – `u8`,
++       `short` – `s16`, `unsigned short` – `u16`, `long` – `s32`, `unsigned long` – `u32`,
++       `long long` – `s64`, `unsigned long long` – `u64`, `float` – `f32`, a `double` – `f64`;
++       `DOMString`, `USVString`, `ByteString` i `CSSOMString` to wszystkie `string`, któremu
++       odpowiada `Text`; nullowalne `T?` to unia `T | null`, której odpowiada `Optional`;
++       `sequence<T>` i `FrozenArray<T>` przyjmują `List`, a `record<K, V>` – `Map`. Givens
++       `Interoperable` są w obiekcie towarzyszącym, więc są w zasięgu niejawnym bez importu.
+
+@ 0 6 0 11321e1a0e83c0960a5fcf04810f6cab
++       Obiekt towarzyszący zawiera też model deklaracji i jego parser: `WebIdl.Parser.parse`
++       odczytuje fragment jako `WebIdl.Definition`, zachowując częściowość, tożsamość mixinów,
++       zasięgi `[Exposed]`, wymagane i opcjonalne składowe słowników oraz wartości wyliczeń –
++       to, czego potrzebuje dyscyplina zgodności, a czego nie potrzebuje nawigacja obca – i
++       zgłasza `WebIdl.Error` dla wszystkiego spoza swojej gramatyki. Argument złego typu to
++       błąd kompilacji, _xenophile: appendChild expects an argument of foreign type Node_.
+
+% 0 1 0 1d310b4f7744b4f11d605ac7bfb610fc
+
+% 1 1 0 079612012432fea9020c71988c00a94d
+
+% 2 1 0 028dceb81ce7ff1a0ffde981e4dc2cf0
+
+@ 0 26 0 1df7209c379a2650012caecd4d642e0d
++   entry .s8   `S8` odpowiada `s8`, czyli `byte` z WebIDL
++   entry .s16   `S16` odpowiada `s16`, czyli `short` z WebIDL
++   entry .s32   `S32` odpowiada `s32`, czyli `long` z WebIDL
++   entry .s64   `S64` odpowiada `s64`, czyli `long long` z WebIDL
++   entry .u8   `U8` odpowiada `u8`, czyli `octet` z WebIDL
++   entry .u16   `U16` odpowiada `u16`, czyli `unsigned short` z WebIDL
++   entry .u32   `U32` odpowiada `u32`, czyli `unsigned long` z WebIDL
++   entry .u64   `U64` odpowiada `u64`, czyli `unsigned long long` z WebIDL
++   entry .f32   `F32` odpowiada `f32`, czyli `float` z WebIDL
++   entry .f64   `F64` odpowiada `f64`, czyli `double` z WebIDL
++   entry .boolean   `Boolean` odpowiada `boolean`
++   entry .string   `Text` odpowiada `string`: `DOMString`, `USVString`, `ByteString` i `CSSOMString`
++   entry .sequence   `List[T]` odpowiada `sequence<T>`
++       Derywowane z własnej instancji elementu; typem obcym jest `"sequence" over topic`.
++   entry .frozenArray   `List[T]` odpowiada `FrozenArray<T>`
++       Derywowane z własnej instancji elementu; typem obcym jest `"FrozenArray" over topic`.
++   entry .record   `Map[K, V]` odpowiada `record<K, V>`
++       Derywowane z instancji klucza i wartości.
++   entry .nullable   `Unset` odpowiada `null`
++       Nullowalne `T?` jest odczytywane jako unia `T | null`, więc nieobecna wartość
++       `Optional` odpowiada alternatywie `null`.
++   entry .optional   `Optional[T]` odpowiada nullowalnemu `T?`
++       Derywowane z własnej instancji `T`. Ograniczenie `Mandatable` identyfikuje typ
++       obowiązkowy, więc instancja ma zastosowanie tylko do rzeczywistej wartości opcjonalnej
++       i nigdy nie konkuruje z instancją dla samego `T`.
++   entry .Argument   jeden argument operacji, konstruktora lub callbacku
+
+% 1 1 0 1860cef5f6670d1217389b5343f61146
+
+@ 0 9 0 1459b5ee6a28970d074f4bc540fe8a40
++         Jego `#name`, typ obcy `#typed` oraz to, czy jest `#optional`, `#variadic`
++         (`T... args`) lub niesie wartość domyślną `#default`; sama wartość to zachowanie, a nie
++         kontrakt, więc zachowuje się tylko jej obecność.
++     entry #name   nazwa argumentu
++     entry #typed   typ argumentu, w postaci kanonicznej, w jakiej sprowadza go dialekt
++     entry #optional   czy argument jest `optional`
++     entry #variadic   czy argument ma zmienną liczbę wartości
++     entry #default   czy argument deklaruje wartość domyślną
++   entry .Member   jedna składowa interfejsu, mixinu lub przestrzeni nazw: atrybut, operacja, stała lub konstruktor
+
+% 1 1 0 1a8337424af0b2470e26c26407bcbc7c
+
+@ 0 18 0 1c14ad5f30e4365e10c14982bd1ec702
++         `#kind` składowej, `#name`, typ `#typed` (typ atrybutu lub stałej albo wynik
++         operacji), jej `#arguments` oraz to, czy jest `#readonly` lub `#static`; operacja
++         specjalna (`getter`, `setter`, `deleter`) zapisuje swoje słowo kluczowe jako `#special`
++         i może być anonimowa. Obiekt towarzyszący zawiera `Kind`.
++     entry .Kind   `Attribute`, `Operation`, `Constant` lub `Constructor`
++     entry #kind   `WebIdl.Member.Kind` składowej
++     entry #name   nazwa składowej; pusta dla konstruktora lub anonimowej operacji specjalnej
++     entry #typed   typ atrybutu lub stałej albo typ wyniku operacji
++     entry #arguments   argumenty operacji lub konstruktora
++     entry #readonly   czy atrybut jest `readonly` (stała zawsze jest)
++     entry #static   czy składowa jest `static`
++     entry #special   słowo kluczowe operacji specjalnej, `getter`, `setter` lub `deleter`, jeśli jest
++     entry #selector   klucz składowej w jej kontenerze
++         Sama nazwa dla atrybutu lub stałej, nazwa z typami argumentów dla operacji (więc
++         przeciążenia mają różne selektory, `describe(string)`), `new(…)` dla konstruktora i
++         słowo kluczowe specjalne w nawiasach dla anonimowego gettera, settera lub deletera.
++   entry .Field   jedna składowa słownika: jej nazwa, typ oraz to, czy jest `required`, czy ma wartość domyślną
+
+% 1 1 0 130e1c3253a87c34042e2c90cdc2aff4
+
+@ 0 7 0 0a8b395d1e5345d01689505928bba970
++         Składowa wymagana wchodzi w tożsamość samego słownika – dodanie takiej psuje każdego
++         wywołującego, który konstruuje słownik – podczas gdy składowa opcjonalna stoi osobno.
++     entry #name   nazwa pola
++     entry #typed   typ pola
++     entry #required   czy pole jest `required`
++     entry #default   czy pole deklaruje wartość domyślną
++   entry .Definition   definicja najwyższego poziomu fragmentu WebIDL
+
+% 1 1 0 0b88f065c3845d191c87a19b301b049d
+
+@ 0 11 0 1f5a279791a10ad80a3a3eeec7eff1c7
++         Wyliczenie kształtów definicji: `Interface` (z rodzicem, zasięgami `[Exposed]`,
++         składowymi, elementami wewnętrznymi takimi jak `iterable<…>`, `maplike<…>`,
++         `setlike<…>` i `stringifier` oraz informacją, czy jest `partial`, `mixin` lub
++         `callback interface`), `Dictionary` (rodzic, pola, częściowość), `Namespace`,
++         `Enumeration` (jego wartości napisowe), `Alias` (`typedef`), `CallbackFunction` i
++         `Includes` (`Target includes Mixin;`). Deklaracje częściowe, mixiny i typedefy celowo
++         *nie* są tu rozwiązywane – rozwiązywanie to pierwszy krok tego, kto konsumuje model, a
++         włączenie go do parsowania zatarłoby strukturę, której potrzebuje deterministyczne
++         scalanie; `WebIdlDialect` to konsument, który spłaszcza je na potrzeby nawigacji.
++     entry #named   własna nazwa definicji; dla instrukcji `includes` – dołączający cel
++   entry .Error   zgłaszany, gdy nie można odczytać fragmentu WebIDL
+
+% 1 1 0 146bae0d4f748df411b86da060e9c245
+
+@ 0 7 0 15f7ee6e8ee155821e81fcbb27b264c9
++         Błąd `↯/s.59.2`: _the WebIDL could not be read because `reason`_, zgłaszany przez
++         `WebIdl.Parser.parse`. `#reason` to `WebIdl.Error.Reason`: błąd `Syntax` ze
++         szczegółami i tokenami, przy których wystąpił, konstrukcja `Unsupported` – celowo błąd,
++         a nie pominięcie, ponieważ częściowo odczytany kontrakt zdolności zaniża to, co plik
++         deklaruje – lub definicja `Duplicate`.
++     entry .Reason   dlaczego nie można było odczytać fragmentu: `Syntax`, `Unsupported` lub `Duplicate`
++         Każdy przypadek niesie swój podnumer błędu:
+
+% 3 1 0 11c76e5b3e4321211fa18be103ea6810
+
+% 4 1 0 167a5ebbc7dd3c8c0477b09e3bc2b713
+
+% 5 1 0 07e3845bd84f2e9f16219fa5c18823d7
+
+% 6 1 0 1e8b1fc6a9d8c6120a0892e5449c9f68
+
+% 7 1 0 13d66a20067adb0e0603a7ecb7e283bf
+
+% 8 1 0 00b8d7b575c33b341c5f385fcfa48028
+
+% 9 1 0 1c4b3ed558a9ea62041ac744f79b3e83
+
+% 10 1 0 1a1fa227a026aeeb1bf9e8dc96d45e94
+
+% 1 1 0 0a80452766080a9e03e39265a976d65a
+
+@ 0 3 0 130a897d46406c4f17e05a74b3efc3f7
++     entry .communicable   przedstawia przyczynę jako jej komunikat, zgodnie z tabelą przy `Reason`
++     entry #reason   `WebIdl.Error.Reason`
++   entry .Parser   parser deklaracji dla fragmentów WebIDL
+
+% 1 1 0 16251c4cc6e03ced06c34b10acd0d6fa
+
+@ 0 11 0 1f166251a2615c47143263360c351891
++         Odczytuje fragment, w postaci publikowanej przez specyfikacje i webref, jako
++         `WebIdl.Definition`: interfejsy, mixiny, deklaracje częściowe, interfejsy callbacków,
++         słowniki, przestrzenie nazw, wyliczenia, typedefy, funkcje callbacków i instrukcje
++         `includes`, wraz z ich atrybutami, stałymi, operacjami (w tym operacjami specjalnymi
++         `getter`/`setter`/`deleter` i składowymi `static`), konstruktorami, deklaracjami
++         wewnętrznymi i zasięgami `[Exposed]`. Każdy inny atrybut rozszerzony jest rozpoznawaną
++         strukturą i zostaje odrzucony. Typy są sprowadzane do postaci kanonicznej dokładnie
++         tak, jak robi to `WebIdlDialect` – typy liczbowe do nazw jawnie określających
++         szerokość, typy napisowe do `string`, `T?` do unii z `null`, `void` do `undefined` –
++         więc obaj czytelnicy jednego pliku zgadzają się co do nazwy typu. Konstrukcja spoza
++         słownictwa zgłasza `WebIdl.Error`, zamiast zostać pominięta; definicja musi kończyć
++         się `};`.
+
+% 2 1 0 06e5824e5017a6370225963e1d6e7193
+
+% 3 1 0 10cc4e6c29652c33033506fbc49a3762
+
+% 4 1 0 065343a1f9a0518c13bf005e685ebcfe
+
+% 0 1 0 17aecb4e1930c1cd1673d5cce04024b8
+
+% 0 1 0 086dcca6c472657010a2924e8634814d
+
+% 1 1 0 1fe0ff15b143a3bf02e6721ac8f704eb
+
+@ 0 5 0 17138455458a588b098f7c0867eb4383
++         Parser wymaga w zasięgu `Tactic[WebIdl.Error]`: `strategies.throwUnsafely` lub
++         `safely`, by odczytać nieczytelny fragment jako `Unset`.
++     entry .parse   definicje fragmentu WebIDL, po kolei; zgłasza `WebIdl.Error`, jeśli nie można go odczytać
++   entry #Grammar   `WebIdlDialect`, gramatyka, która spłaszcza deklaracje na potrzeby nawigacji
++   entry #Emission   nazwa materializatora, `xenophile.JsInvoke`
+
+@ 0 1 0 0d89a3618949f4360194c499d5dddb98
++ entry .WebIdlDialect   gramatyka WebIDL dla nawigacji obcej: interfejsy spłaszczone, aliasy rozwiązane
+
+% 1 1 0 16ebd015697c3e681294c960834c5862
+
+@ 0 7 0 12182d6bf79c187801460967e5f3b333
++       `Dialect` nad `WebIdl.Parser` i `Grammar` ekosystemu `WebIdl`. `#parse` odczytuje
++       fragment i rzutuje go na płaską postać, którą odczytuje nawigacja `Foreign`: `Map` z
++       nazwy każdego typu na `Prototype` jego składowych. `interface` (lub `namespace`) staje
++       się typem nawigowalnym, którego składowymi są jego atrybuty, stałe i nazwane operacje;
++       `dictionary` – typem, którego składowymi są jego pola; `enum` rozwiązuje się do
++       `string`. Konstruktory, anonimowe operacje specjalne i deklaracje wewnętrzne nie są
++       nawigowalne.
+
+@ 0 7 0 1f83a2310f21035200ca284caa4be11b
++       To, co parser trzymał osobno, dialekt scala, i to właśnie czyni prawdziwy DOM
++       nawigowalnym: dziedziczenie jest spłaszczane, więc składowe każdego typu obejmują
++       składowe całego jego łańcucha bazowego (`HTMLElement` oferuje `nodeName` z `Node`) i
++       każdego mixinu zastosowanego przez `includes`, przy czym własne składowe typu
++       przesłaniają odziedziczone o tej samej nazwie; ciało `partial interface` scala się z
++       typem, który rozszerza; a aliasy `typedef` i `enum` rozwiązują się przechodnio, więc
++       atrybut typu `typedef (DOMString or long) Identifier` jest odczytywany jako unia
++       `string | s32`.
+
+% 2 1 0 1aa43a537f037c451abb0f31ebc2acdf
+
+% 3 1 0 091cf5927c74afad046848dafd586deb
+
+% 0 1 0 0575e3419ecb9bab0d43e1ce293af011
+
+% 0 1 0 1ae46780453295401511d63b20ae4f1f
+
+% 1 1 0 01491687b7b38351039baf91a3b9218a
+
+@ 0 3 0 0c3c7c23bdde03bd159c55a4530b06ed
++       `parse` jest totalne: fragment, którego nie da się sparsować, niczego nie definiuje
++       (pusta `Map`), zamiast zgłaszać błąd, a nawigacja do niego zgłasza _the foreign type is
++       not defined_; to `WebIdl.Parser.parse` jest wywołaniem, które podaje przyczynę.
+
+% 0 1 0 1e1be313ef949142103dce6956d6e5bf
+
+% 1 1 0 043ff7ca32d0efa9160b09605782ea8f
+
+@ 0 2 0 1074fa249e95e6ff1315554d442733ad
++   entry .parse   każdy interfejs, przestrzeń nazw i słownik fragmentu, według nazwy, ze składowymi odziedziczonymi i z mixinów
++       Totalne: nieczytelny fragment daje pustą `Map`.
+
+@ 0 1 0 112f2b50cdb52af413d4eb8bce3cd6b9
++ entry .Wit   ekosystem WIT: interfejsy komponentów WebAssembly odczytywane podczas kompilacji kodu i typy Scali odwzorowane na typy WIT
+
+% 1 1 0 0b5a4c1eaa6f1c0f1c451c9251ceab9c
+
+@ 0 11 0 03e0830aee37d20e04b910fa8e097805
++       `Wit` to `Ecosystem`, którego definicjami są pliki WIT (WebAssembly Interface Types),
++       języka interfejsów Component Model. Given `Interface in Wit at "/path.wit"` wczytuje
++       taki plik ze ścieżki klas, a wartość `Foreign["api", Wit]` po nim nawiguje: funkcje
++       interfejsu są składowymi typu nazwanego od interfejsu, pola `record` są składowymi typu
++       nazwanego od rekordu, a metody `resource` są składowymi zasobu. Każda aplikacja jest
++       sprawdzana względem deklaracji przez `WitDialect`, czyli `#Grammar`, a `invoke`
++       materializuje ją przez backend Wasm wymieniony w `#Emission` (`xenophile.WasmInvoke`, w
++       komponencie `xenophile.wasm`) jako wywołanie importu komponentu, adresowanego
++       identyfikatorem modułu Component Model interfejsu (`wasi:random/random@0.2.0`). W ten
++       sposób backendy WASI bibliotek systemu plików, zegara, losowości, środowiska, stdio i
++       HTTP docierają do hosta.
+
+@ 0 2 0 185f80a2bd950ca600f440eda934be3c
++       Dialekt odczytuje deklarację WIT w słownictwie, które backend poddaje marshallingowi, a
++       typ obcy każdej nawigacji wynika z niego:
+
+% 2 1 0 15a0c3252b5bda351b431f8f49b008aa
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 168dbfab0a44f4fd0dfeb7e894fd6933
++         label Funkcja na napisach
+
+% 1 1 0 1d8ce48cda9074a00ab4836ba3ff9fc1
+
+% 2 1 0 0798a7dc508de997174544741db22693
+
+% 3 1 0 180c46b16f34f3b71cb46047891d4cde
+
+% 0 1 0 03b74ab4f1480fa815e6745849a6fdfe
+
+% 0 1 0 01282088aa6e7ad3014e18c8428a7e8d
+
+% 1 1 0 0fc6128fd83ff1c115924d71ed61b310
+
+@ 0 1 0 040f31028b50ac2f00be86d7e24b81d7
++         label Pole rekordu zachowuje swój typ o określonym rozmiarze
+
+% 1 1 0 107ce0bc54c507d91b580bac20653f4e
+
+% 2 1 0 007538bc20cce99a0455b6a740441111
+
+% 3 1 0 11ec6d8d45d5ab8d0d90b3932323f1bb
+
+% 0 1 0 13935e295743610e072c52d834816b89
+
+% 0 1 0 1c41a29868ed01c909ea96901bbbed12
+
+% 1 1 0 181312a82ddf51bf06e0f0c6cf268751
+
+@ 0 1 0 1dc9607675bf45c71438b466e7540649
++         label Wyliczenie to dyskryminator mieszczący jego przypadki
+
+% 1 1 0 024345b1d7ab7d071d074143b3842033
+
+% 2 1 0 127dc7bed46de35a190e11fd727b459d
+
+% 3 1 0 19bbec86b0b6571805dc9062863dc825
+
+% 0 1 0 11d1541f0b6bfcbd07a09dc0f5d46d39
+
+% 0 1 0 07d62e07983aacf7171c1be4f3f91f2b
+
+% 1 1 0 17e3f2336ec6ae3904f34beb76fac058
+
+@ 0 1 0 00a58e1f12478fcb1a1e7ea234e1e7c7
++         label Flagi to wektor bitowy o rozmiarze dopasowanym do ich składowych
+
+% 1 1 0 17728633d7fc2c17107af6b3df96f81d
+
+% 2 1 0 1244f43885ae56040e3582c35ba861a3
+
+% 3 1 0 1ba3037c86284173014279c34c1cec06
+
+% 0 1 0 096422f9eba2e8c5117a1fedd37fe878
+
+% 0 1 0 11868c03237c3e7616dda47880207e90
+
+% 1 1 0 12ef6379b264cbd301ebee5a48b0e3ce
+
+@ 0 1 0 1c52e038afaefe4a0bfa2772187f3831
++         label Lista to aplikacja, a opcja to unia z none
+
+% 1 1 0 02f78e81a6c2455104c9cc326a89913d
+
+% 2 1 0 17ac83536775664c0d73d750c485ac68
+
+% 3 1 0 1d3cf4d852024ff81aa895d066a55422
+
+% 0 1 0 164308f46ba2389016a1ede042f1da70
+
+% 0 1 0 0165c6e9e9f59fda161912a401615117
+
+% 0 1 0 02bdbafca7dbefa6153f90a4a69dbd35
+
+% 1 1 0 16c3b4b55ce8ef7710d8be684ca3e22a
+
+% 2 1 0 0aa2a66e733051801b985a1988f46102
+
+@ 0 3 0 05633b970d69d2760e6eb478ab994248
++       Obiekt towarzyszący zawiera givens `Interoperable`, dzięki którym wartość Scali
++       przechodzi jako argument, a wynik jest odczytywany. Są w obiekcie towarzyszącym, więc są
++       w zasięgu niejawnym bez importu:
+
+% 2 1 0 1311a0561e7af19b1dacff9f04c2d103
+
+% 3 1 0 1d7d98863b4c0e68123e3b80e04e6c0d
+
+% 0 1 0 0158b49e6b9e2933060b63ca46ead2c6
+
+% 0 1 0 1ff178f51e40806f01e08960664b0f34
+
+% 0 1 0 05102abf08aa17b213af29c53e58e9be
+
+% 0 1 0 0a6847b62d2f84b2021be93f60fd090a
+
+% 0 1 0 0d12c04b4c0a9a1c10a186651a589652
+
+% 0 1 0 063fea20113525b902e4e93f6bcc0765
+
+% 0 1 0 0730546b4be69e1a1a7521169acd4b1f
+
+% 1 1 0 146cbae6305908a113331c2813f6c80a
+
+% 0 1 0 0869d1cfb4040cf716e850f540f53019
+
+% 0 1 0 00b1f9dca6d60cd01e4131babd4ad60f
+
+% 0 1 0 064089fd7455778401efdba8aebe2964
+
+% 1 1 0 1cf66e37aa17120207211ad3c4086c61
+
+@ 0 2 0 144d447d0cbf7387030f0637a971901a
++       Liczby to typy stałej szerokości z Hypotenuse.
++       Argument złego typu to błąd kompilacji, _xenophile: add expects an argument of
+
+% 0 1 0 0be1b489634af97c00c08986505cfc35
+
+@ 0 7 0 1fdb973b98ee338e0bb9376ac0f42d57
++       Obiekt towarzyszący zawiera też model deklaracji i jego parser: `Wit.Parser.parse`
++       odczytuje źródło jako jeden `Wit.Document` na każdą sekcję `package`, każdy z jego
++       `Wit.Interface` (rekordami, wariantami, wyliczeniami, flagami, zasobami, aliasami,
++       funkcjami i klauzulami `use`, jako `Wit.Item`) i `Wit.WorldModel`, i zgłasza `Wit.Error`
++       dla wszystkiego spoza swojej gramatyki. `WitDialect.worlds` odczytuje importy i
++       eksporty świata jako identyfikatory Component Model, czego potrzebuje narzędzie
++       pakujące, by opisać komponent na podstawie świata, z którym został skonsolidowany.
+
+% 0 1 0 034c35e94d76782b1aa34fcd03444644
+
+% 1 1 0 00c0af6a59cca5bc1ad6232bda06484d
+
+% 2 1 0 00ff71d996ada2031a9a42fdbe9a5e55
+
+@ 0 37 0 055767c3c551d6af1348a969b022af29
++   entry .s8   `S8` odpowiada `s8`
++   entry .s16   `S16` odpowiada `s16`
++   entry .s32   `S32` odpowiada `s32`
++   entry .s64   `S64` odpowiada `s64`
++   entry .u8   `U8` odpowiada `u8`
++   entry .u16   `U16` odpowiada `u16`
++   entry .u32   `U32` odpowiada `u32`
++   entry .u64   `U64` odpowiada `u64`
++   entry .f32   `F32` odpowiada `f32`
++   entry .f64   `F64` odpowiada `f64`
++   entry .b8   `B8` odpowiada `b8`: typowi `flags` o co najwyżej 8 składowych
++       `WitDialect` rozwiązuje typ `flags` do wektora bitowego z Hypotenuse o rozmiarze
++       wystarczającym dla jego składowych: `b8` dla co najwyżej 8, `b16` dla co najwyżej 16,
++       `b32` dla co najwyżej 32 i `b64` powyżej.
++   entry .b16   `B16` odpowiada `b16`: typowi `flags` o 9 do 16 składowych
++   entry .b32   `B32` odpowiada `b32`: typowi `flags` o 17 do 32 składowych
++   entry .b64   `B64` odpowiada `b64`: typowi `flags` o więcej niż 32 składowych
++   entry .boolean   `Boolean` odpowiada `bool`
++   entry .char   `Char` odpowiada `char`
++   entry .string   `Text` odpowiada `string`
++   entry .data   `Data` odpowiada `list<u8>`: dane binarne jako niemutowalna tablica bajtów
++   entry .list   `List[T]` odpowiada `list<T>`
++       Derywowane z własnej instancji elementu; typem obcym jest `"list" over topic`. `List`
++       jest własną listą Soundness, którą backend Wasm poddaje marshallingowi przez granicę
++       WIT.
++   entry .none   `Unset` odpowiada `none`
++       `option<T>` jest odczytywane jako unia `T | none`, więc nieobecna wartość `Optional`
++       odpowiada alternatywie `none`.
++   entry .optional   `Optional[T]` odpowiada `option<T>`
++       Derywowane z własnej instancji `T`. Ograniczenie `Mandatable` identyfikuje typ
++       obowiązkowy, więc instancja ma zastosowanie tylko do rzeczywistej wartości opcjonalnej
++       i nigdy nie konkuruje z instancją dla samego `T`.
++   entry .Function   funkcja WIT: jej nazwa, nazwane parametry, opcjonalny wynik oraz to, czy jest `static` lub `constructor`
++     entry #name   nazwa funkcji; `constructor` dla konstruktora zasobu
++     entry #parameters   parametry, każdy jako nazwa i typ obcy, po kolei
++     entry #result   typ wyniku lub `Unset` dla funkcji, która niczego nie zwraca
++     entry #static   czy funkcja jest funkcją `static` zasobu
++     entry #constructor   czy funkcja jest `constructor` zasobu
++   entry .Item   jeden element interfejsu WIT
+
+% 1 1 0 05bca8589c25bf8e10a256fa2c5cfeb5
+
+@ 0 12 0 19d79babe103b6560cb656a464acdc55
++         Wyliczenie słownictwa elementów: `Alias` (deklaracja `type`), `Record` (nazwane pola),
++         `Variant` (przypadki, każdy z opcjonalnym typem ładunku), `Enumeration` (nazwy jego
++         przypadków), `Flags` (nazwy jego składowych), `Resource` (jego metody, konstruktory i
++         funkcje statyczne jako `Wit.Function`; puste dla `resource name;` bez ciała),
++         `Function` (funkcja wolna) i `Use` (klauzula `use`: interfejs, z którego czerpie, i
++         wprowadzane przez nią pary nazw (oryginalna, lokalna), istotne dla kwalifikacji,
++         mimo że odwołania są kodowane w pełni kwalifikowane).
++     entry #named   nazwa elementu; dla klauzuli `use` – interfejs, z którego czerpie
++   entry .Interface   interfejs WIT: jego nazwa i elementy, po kolei
++     entry #name   nazwa interfejsu
++     entry #items   `Wit.Item` interfejsu, w kolejności deklaracji
++   entry .WorldModel   deklaracja `world`: jej przywoływane importy i eksporty oraz jej elementy inline
+
+% 1 1 0 0f0f96f99bc68734005fe882ab6bd2f4
+
+@ 0 12 0 0aa309e7232e4dcd1dc36ce461ac3b20
++         `#imports` i `#exports` świata to identyfikatory interfejsów, do których się odwołuje
++         (tak jak zapisano, `wasi:io/streams@0.2.0` lub sama nazwa z tego samego pakietu); jego
++         elementy inline – `import name: func(…)`, `export name: interface { … }` – definiują
++         zamiast się odwoływać i są przechowywane osobno jako `#inlineImports` i
++         `#inlineExports`, każdy jako nazwa w parze ze swoją funkcją, nieobecną dla interfejsu
++         inline. `WitDialect.worlds` podaje postać kwalifikowaną.
++     entry #name   nazwa świata
++     entry #imports   interfejsy importowane przez odwołanie, po kolei, tak jak zapisano
++     entry #exports   interfejsy eksportowane przez odwołanie, po kolei, tak jak zapisano
++     entry #inlineImports   importy inline: każda nazwa ze swoją funkcją lub `Unset` dla interfejsu inline
++     entry #inlineExports   eksporty inline: każda nazwa ze swoją funkcją lub `Unset` dla interfejsu inline
++   entry .Document   jedna sekcja `package` źródła WIT: identyfikator pakietu, wersja, interfejsy i światy
+
+% 1 1 0 0edf2a8b7087b304102973f303920ca1
+
+@ 0 9 0 106e85ebcfa3eed907bdbaffec2bf8fe
++         Starannie dobrany plik `.wit` może zawierać kilka pakietów (podzbiory WASI, które
++         niosą backendy, tak robią), więc `Wit.Parser.parse` daje jeden dokument na każdą
++         deklarację `package`; każdy interfejs i świat należy do pakietu zadeklarowanego nad
++         nim. Źródło bez `package` ma nieobecne `#packageName`.
++     entry #packageName   identyfikator pakietu bez wersji, `wasi:random`, lub `Unset`
++     entry #version   wersja pakietu, `0.2.0`, lub `Unset`
++     entry #interfaces   interfejsy pakietu, po kolei
++     entry #worlds   światy pakietu, po kolei
++   entry .Error   zgłaszany, gdy nie można odczytać źródła WIT
+
+% 1 1 0 0251040db93f14b218bc0128c22c36f7
+
+@ 0 10 0 055347a992bbeebd034312436e963f85
++         Błąd `↯/s.59.3`: _the WIT could not be read because `reason`_, zgłaszany przez
++         `Wit.Parser.parse` i `WitDialect.worlds`. `#reason` to `Wit.Error.Reason`: błąd
++         `Syntax` ze szczegółami i tokenami, przy których wystąpił; konstrukcja `Unsupported` –
++         element `@unstable`, funkcja `async`, typ `stream` lub `future`, `include` świata albo
++         dowolne słowo kluczowe spoza słownictwa – która celowo jest błędem, a nie pominięciem,
++         ponieważ częściowo odczytany kontrakt jest mniejszym kontraktem, niż deklaruje plik, a
++         niestabilny element w opublikowanym kontrakcie byłby stabilnym twierdzeniem o
++         niestabilnej powierzchni; definicja `Duplicate`; albo nazwa typu `Unresolved`.
++     entry .Reason   dlaczego nie można było odczytać źródła: `Syntax`, `Unsupported`, `Duplicate` lub `Unresolved`
++         Każdy przypadek niesie swój podnumer błędu:
+
+% 3 1 0 0248c7e675eda422085d233d4276bee1
+
+% 4 1 0 197af9e99432415708316d8d0b266dcd
+
+% 5 1 0 011be00c42ebc3d21235a19e209887bb
+
+% 6 1 0 0ce6bedc51c3f22a1821b1ea2c42b967
+
+% 7 1 0 17923fe1a7c872af0b067787352c015a
+
+% 8 1 0 01f41add59f384cc1a756c4dfbd8a8b4
+
+% 9 1 0 02a1b11bf1393ccd167222b08dbf09d3
+
+% 10 1 0 001a77b930360175175992ad2ceeac0b
+
+% 0 1 0 170af8fadf8ecfaf13cb18933ffe8e68
+
+% 1 1 0 00b84005df70908404df157e37e04fbd
+
+@ 0 3 0 10bb796c61aa9a880fda78fbb1c189a2
++     entry .communicable   przedstawia przyczynę jako jej komunikat, zgodnie z tabelą przy `Reason`
++     entry #reason   `Wit.Error.Reason`
++   entry .Parser   parser deklaracji dla źródeł WIT
+
+% 1 1 0 04c3591eb972cd52179ce7a3f62d23d8
+
+@ 0 8 0 1e83a2626d2ffa131d1be90d306e950f
++         Odczytuje źródło WIT jako `Wit.Document`, zachowując zadeklarowaną powierzchnię w
++         całości: pakiety z ich wersjami, interfejsy z rekordami, wariantami, wyliczeniami,
++         flagami, zasobami (z metodami, funkcjami `static` i konstruktorami), aliasami `type`,
++         funkcjami i klauzulami `use` oraz światy z ich importami i eksportami, przez odwołanie
++         lub inline. Identyfikatory są w kebab-case; `%` maskuje słowo kluczowe i jest usuwane;
++         odwołanie do pakietu, takie jak `wasi:io/streams@0.2.0`, jest
++         jednym tokenem. Bramki `@since(…)` są konsumowane, ponieważ linia rodowa już zapisuje,
++         kiedy element się pojawił, natomiast `@unstable` jest odrzucane. Konstrukcja spoza
++         słownictwa zgłasza `Wit.Error`, zamiast zostać pominięta.
+
+% 2 1 0 118c486aefb5f01e1f6fa2091f2e1e2e
+
+% 3 1 0 0f378069915f5d7505fb93ac349f49c3
+
+% 4 1 0 1127f51925ea8b1d057ae2744cc496fc
+
+% 0 1 0 00cd849a1854beab0d690b8324582082
+
+% 0 1 0 09881f7004cd7b1b1c0f27518369b05e
+
+% 1 1 0 1d673b5bf18cd30b1eba180495579bfe
+
+@ 0 5 0 06d7a0aa6f954a671ba80f60663dd1bd
++         Parser wymaga w zasięgu `Tactic[Wit.Error]`: `strategies.throwUnsafely` lub `safely`,
++         by odczytać nieczytelne źródło jako `Unset`.
++     entry .parse   dokumenty źródła WIT, po jednym na sekcję `package`; zgłasza `Wit.Error`, jeśli nie można go odczytać
++   entry #Grammar   `WitDialect`, gramatyka, która rzutuje deklaracje na słownictwo marshallingu
++   entry #Emission   nazwa materializatora, `xenophile.WasmInvoke`
+
+@ 0 1 0 1d27b650fee8588417829c606d476e59
++ entry .WitDialect   gramatyka WIT dla nawigacji obcej: deklaracje rzutowane na słownictwo marshallingu oraz światy
+
+% 1 1 0 0b3c182da546f3210445c4277c479dce
+
+@ 0 15 0 169e1013b3df3488053d103181c9605f
++       `Dialect` nad `Wit.Parser` i `Grammar` ekosystemu `Wit`. `#parse` odczytuje źródło i
++       rzutuje je na płaską postać, względem której backend Wasm wykonuje marshalling: `Map` z
++       nazwy każdego typu na `Prototype` jego składowych. Funkcje interfejsu stają się
++       składowymi typu nazwanego od interfejsu, każda kwalifikowana identyfikatorem modułu
++       Component Model interfejsu – pakiet `wasi:random@0.2.0` i interfejs `random` dają
++       `wasi:random/random@0.2.0` – i w ten sposób backend adresuje import komponentu; pola
++       `record` stają się składowymi typu nazwanego od rekordu; metody `resource` stają się
++       jego składowymi, z zapisem zasobu i tego, czy każda jest `static` lub jest
++       konstruktorem, dzięki czemu wywołanie może przekazać dalej uchwyt odbiorcy. `enum`
++       sprowadza się do dyskryminatora bez znaku mieszczącego jego przypadki (`u8` do 256,
++       `u16` do 65536, `u32` powyżej), `flags` – do wektora bitowego mieszczącego jego
++       składowe (`b8`, `b16`, `b32` lub `b64`), `option<T>` – do unii `T | none`, `result`
++       zawsze niesie dokładnie dwa ramiona (brakujące są dopełniane przez `_`), a aliasy
++       `type` rozwiązują się przechodnio. Wariant lub zasób bez ciała nie ma nawigowalnych
++       składowych, ale nadal zapisuje moduł, który go definiuje, więc funkcja w innym miejscu,
++       która o nim wspomina, zostaje rozwiązana.
+
+% 2 1 0 1cc39431b44bde86143093528501f3f3
+
+% 3 1 0 0bfdfe6a3ff111b11426485eb59af323
+
+% 0 1 0 0283f6c39ef1579d00a4dd3cc039ea27
+
+% 0 1 0 04fa71cd170652970e8d86d187fcfb06
+
+% 0 1 0 003b45744ee1018306ac1068b31a008c
+
+% 1 1 0 104f4ba46ca362121dab2652184efc92
+
+@ 0 5 0 130e5f2c3b5f119d16069a3f134697f1
++       `parse` jest totalne: źródło, którego nie da się sparsować, niczego nie definiuje (pusta
++       `Map`), zamiast zgłaszać błąd; to `Wit.Parser.parse` jest wywołaniem, które podaje
++       przyczynę. `#worlds` to drugi czytnik: każdy `world` źródła wraz z jego importami i
++       eksportami jako w pełni kwalifikowanymi identyfikatorami Component Model, czyli tym, co
++       konfiguracja Wasm OCI Artifact zapisuje o komponencie.
+
+% 0 1 0 003baa2fa114eb1114704cdd23c491df
+
+% 1 1 0 14026b47182d98b800a556f67d838d54
+
+@ 0 9 0 04581e3fcde4642f1fcee9a19c5d9382
++   entry .parse   każdy interfejs, rekord, zasób i wariant źródła, według nazwy, z prototypami jego składowych
++       Totalne: nieczytelne źródło daje pustą `Map`.
++   entry .worlds   każdy `world` źródła, według nazwy, z jego importami i eksportami jako identyfikatorami Component Model
++       Sama nazwa interfejsu (`import monotonic-clock;`, wskazująca interfejs z tego samego
++       pakietu) jest kwalifikowana identyfikatorem pakietu, więc każdy identyfikator w wyniku
++       jest pełnym `namespace:package/interface@version`; `import name: func(…)` lub `export
++       name: interface { … }` inline nie odwołuje się do żadnego interfejsu i się nie pojawia.
++       Zgłasza `Wit.Error`, jeśli nie można odczytać źródła, więc wywołujący, który toleruje
++       plik niedający się sparsować, pisze `safely(WitDialect.worlds(source))`.
+
+% 2 1 0 169c1dc16b1e2aa906f48f6b63b106f7
+
+% 3 1 0 13d68feef630d104021ab1fbb6aa6698
+
+% 4 1 0 1939ad69189450bd1fc54ada0e1cdf19
+
+% 0 1 0 19a0a63727f7fb4f06cad7d51ff61d3e
+
+% 0 1 0 17725a7e0377255003658b1277c48c9b
+
+% 0 1 0 1ec19bcee46785b6198f00feeb84b0a3
+
+% 0 1 0 1b58c7d1aedd31ab120c1ba37edce14a
+
+% 0 1 0 100e2678cfc2b30810fe6bae03b5c2d8
+
+% 0 1 0 0fb0e8a3ea5ad10710737573c477d302
+
+% 0 1 0 14aa798c66f2f5eb1a05d93f71ea7931
+
+% 0 1 0 093ca65c8e4e753908420f707056a9cc
+
+% 1 1 0 0fc45b773cc4b7fc188c4b9a7db9b85a
+
+@ 0 1 0 0b9724b714ddfa5a160d1f4f2a999245
++   entry .World   nazwa świata, jego importy i eksporty jako identyfikatory interfejsów Component Model
+
+% 1 1 0 12778feb47a13502026bd65d9aa17499
+
+@ 0 6 0 0506fdfc9a1efafd1c58a106bf4dd17c
++         Co stwierdza świat: jakich zdolności hosta potrzebuje komponent (`#imports`) i jakie
++         interfejsy oferuje (`#exports`), każdy identyfikator kwalifikowany. Narzędzie pakujące
++         może opisać komponent na podstawie świata, z którym został skonsolidowany, bez
++         deasemblowania komponentu.
++     entry #name   nazwa świata
++     entry #imports   identyfikatory importowanych interfejsów, w kolejności deklaracji
++     entry #exports   identyfikatory eksportowanych interfejsów, w kolejności deklaracji

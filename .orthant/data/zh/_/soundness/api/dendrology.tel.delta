@@ -1,0 +1,663 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f334669e90a494c0f78f350d43958f5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0665e32f8fce328d036a93997d5c89ca
++ info   以文本绘制的树和有向无环图：图示计算瓦片，样式选择字符
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 117f500f2ba958561d8b986c69da0183
++     _Dendrology_ 在终端中绘制层次结构——文件列表、依赖图、类层次、版本控制历史——使用 `└─` 和 `├─` 这样的制表符，并将这种绘图涉及的两件事分开。
++     **图示**计算布局：对每一行，给出*瓦片*（哪些连接片段穿过该行）以及该行对应的节点。
++     **样式**将瓦片映射为文本，因此只需更改一个导入，同一布局就能以制表符或纯 ASCII 渲染，渲染为 `Text` 或带样式的终端输出。
++     `TreeDiagram` 绘制树，三种 DAG 图示则绘制任何存在拓扑排序的图——无环性的 `Dag`、冻结的 `Topology` 或 `Hasse`——其节点可以有多个父节点，这是树无法表现的。
+
+% 2 1 0 0b898a562ce00e1e165955fc4a05864b
+
+% 3 1 0 1a3498a63ca8e13510a2c72e6522f4d7
+
+% 0 1 0 0af70e80fa4ad64e1d117fcbeb40296b
+
+% 0 1 0 0820ae4d363e7fe2046b5c5bc9c1bf63
+
+% 0 1 0 07155c1b8c03ef03027e380a8ed0b5c4
+
+% 0 1 0 1b57927ee2f1b9520681fb213b51a8cc
+
+% 0 1 0 0a836080ff536113149150147ee58ed2
+
+% 0 1 0 12db5a83beb263be0d19d942177c6342
+
+% 0 1 0 1c621932b933926c0f911dba5f472a99
+
+% 0 1 0 18d655a7612588741dcc0bcfd9083a43
+
+% 0 1 0 1ee761de552167b608a82d759817342d
+
+% 0 1 0 0c21ca7fff1b71b804b0cb247754d517
+
+% 1 1 0 164ae009f486524011e4dd0dcacb6e5e
+
+@ 0 7 0 0e0adf2b1a04ab11124918a36f155cb7
++     三种图布局回答不同的问题。
++     `DagDiagram` 是密集的：每条边都绘制在连接瓦片组成的网格中，每个节点一行，适合边关系复杂的小图。
++     `LaneDagDiagram` 将每个节点作为圆点放在一条竖直泳道上，边在泳道之间流动，就像 `git log --graph` 绘制历史那样，适合并发分支很少的长图。
++     `LayeredDagDiagram` 按深度将节点排列到各层，并在每层内排序，使交叉的连线尽可能少，适合展示什么依赖什么，而非什么按什么顺序发生。
+
+% 2 1 0 0d3ba9d037bd30f91b00d292fec73c9e
+
+% 3 1 0 0266fbe8bf407d66168db2d46c1e9e31
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0a252e9fb29da47506084762266a9a9f
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 07fbbbde4f9068d6129148ee9ed805b3
+
+% 0 1 0 15f35e3234555baa19e5d603ec214289
+
+% 0 1 0 0d272dcd65e5c187071dc8eeef3d2103
+
+% 1 1 0 14e1644a14369c14170556c1b1aa49c9
+
+% 0 1 0 0d272dcd65e5c188071dc8eeef3d2104
+
+% 1 1 0 18ea9c6c3dd5cde41f34515a9df8b652
+
+% 0 1 0 0d272dcd65e5c189071dc8eeef3d2105
+
+% 1 1 0 0004e7845d7051a814fb1833080bf5bf
+
+@ 0 9 0 16c8ae738141214e03425433d1541ac5
++     样式是一个 given，通过按名称导入来选择——`import soundness.*` 不会引入任何样式，因为 `import pkg.*` 不导入 given——来自三个选择包之一：`treeStyles`（`squareTreeStyle`、`roundedTreeStyle`、`asciiTreeStyle`）用于 `TreeDiagram`，`dagStyles`（`boxDrawingDagStyle`、`asciiDagStyle`）用于 `DagDiagram`，`laneDagStyles`（`boxDrawingLaneDagStyle`、`asciiLaneDagStyle`）用于 `LaneDagDiagram` 和 `LayeredDagDiagram`。
++     泳道样式以显示单元格度量字形，因此还需要作用域中有一个 `Text is Measurable`，例如 `textMetrics.uniformMetric`。
++     每种样式都以其渲染的行类型参数化，因此图示可以直接渲染为带样式的终端文本，连接符用一种颜色，标注用另一种颜色。
+
+@ 0 6 0 0701bb5629edc10908bf85a3e65ff4cf
++     该库由两个源集组成。
++     `dendrology.tree` 包含 `TreeDiagram`、`TreeDiagram.Tile`、`TreeDiagram.Style`、`TreeDiagram.TextualStyle`、`Expandable` 和 `treeStyles`；`dendrology.dag` 包含三种 DAG 图示、`DagDiagram.Tile`、`DagDiagram.Style`、`LaneDagDiagram.Style`、它们的 `Textual…` 实现以及 `dagStyles` 和 `laneDagStyles` 包，并依赖于 `acyclicity`。
++     两者都导出到 `soundness` 总括包，三个选择包在那里与总括包自身的同名包合并。
+
+% 0 1 0 06bbc774ae7fdbc61de0343e47c15934
+
+% 0 1 0 08b2db919f72a5df0801a6484c644506
+
+% 0 1 0 035db606ae51c516159178415c1228de
+
+% 0 1 0 188c29f62fec82591cb4969a4e79f618
+
+% 0 1 0 10382b91050fba2518137db1ad1d00c7
+
+% 0 1 0 0c0b51cac88f77d614a500d8d654f29d
+
+@ 0 1 0 0780ba6e8d824256076536a815c22697
++ entry .TreeDiagram   布局为瓦片行的树，通过 `TreeDiagram.Style` 渲染
+
+% 1 1 0 00c931fd5745e7181695f5beba5f9993
+
+@ 0 6 0 07ab527d2b4eec2c0036b49dbf2f848a
++       `TreeDiagram[node]` 是一棵树的布局：每个节点一行，按深度优先顺序排列，每行带有其前缀的 `Tile`——节点自身对应一个分支或最后分支，每个祖先对应一个延伸符（如果该祖先后面还有兄弟节点）或一个空格。
++       它由树的根和到达子节点的方式构建——用 `by` 传入一个函数，或用 `apply` 借助节点类型上的 `Expandable` 实例——并用一个从节点到标注的函数和作用域中的 `Style` 渲染。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1d8a23d6a11d6ea503b696f232fa1031
+
+% 1 1 0 172c73d914bec8cc06e00d83314fd4ca
+
+% 2 1 0 14bf2a0fee83411819292640a1081dbb
+
+% 0 1 0 02e81fb51ebbaa8a010c47f9c99f4d83
+
+% 1 1 0 0b1433e1f32fe11603d2839fbd64f75a
+
+% 2 1 0 1cdce820c477016d011813ea9284e22b
+
+% 3 1 0 1b1aff0537ce56660b668a8738726dee
+
+% 0 1 0 1d5c4a982af3caad12d316f0577b6562
+
+% 0 1 0 02b5e675c4cbe1651df43444f0c4165c
+
+% 0 1 0 041020412b11fa63078ba015c6b4e4ac
+
+% 1 1 0 0f214fdcc95a9f881a475c3ee31a631a
+
+% 2 1 0 174cb40d3e57f2890c554e414234081f
+
+% 0 1 0 165f494df68731db05637c088c0a7db9
+
+% 1 1 0 124913126072a5c70fb72f1204572a98
+
+% 2 1 0 04249946e0b440271b0c888fd415be8a
+
+% 3 1 0 1ebb6e1f4a604b3610270a25faf48174
+
+% 0 1 0 19e31c38e9a52e8618351c706bad4a1a
+
+% 0 1 0 02dbf9e8244cfe671466e2fd5974f83b
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 0802712a9f7a76450f73c24bad18c5e0
+
+% 1 1 0 0fc71f7fa9a48c621f841cbbb09c3321
+
+% 2 1 0 1dbda23303f4967a0078b7059c2c8ae6
+
+% 0 1 0 0951c603af19bed809b5327120fa2929
+
+% 0 1 0 0b523f9c7621838b0cc5cfa9a5497037
+
+% 0 1 0 00b1e83da28cfbd11467bf6f03a4e39e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 11472c8473b5b2641d310407a71153b2
++       各行是一个 `Chain`，惰性生成：大树或深树按消费的程度绘制，无限树也照样能绘制，因为渲染一行只需要祖先的兄弟节点数，而不需要后续节点的后代。
++       图示也是 `Printable` 的（作用域中有 `Style[Text]` 且节点为 `Showable` 时），因此可以直接写入 `Out`，每个节点显示为 `▪ node`。
+
+@ 0 3 0 060e86d157a0b6a10fb5b9a697ac4468
++       各行是公开的——`nodes`、`tiles` 和 `map`——因此使用者可以自己渲染各行：为某类节点使用彩色标注，为另一类添加注解，而制表符仍由样式负责。
+
+% 0 1 0 0abd66b646a5c82d0cebdf7d2216d754
+
+% 0 1 0 194141aa304dced20ae531329d08516c
+
+% 0 1 0 143523fd146ddb861fa278aa357a6ee0
+
+% 0 1 0 1f2e77b0f34cb35d0b9138fac91c55a3
+
+@ 0 4 0 19db8aec390451b103bc24e87aef9de0
++   entry .apply   给定根的图示，通过节点类型的 `Expandable` 实例查找子节点
++       `TreeDiagram(roots*)` 用于带有 `given node is Expandable` 的节点类型：当节点类型的子节点正是它所说的子节点时——文件系统路径、依赖、语法节点——这是合适的形式。
+
+% 2 1 0 18bf1c7bd331e0650126e567995ca122
+
+% 3 1 0 09b9420ebeed85cc145340f19d9beb45
+
+% 2 1 0 0990919c0d1a050b01de5e3a6d54a7a0
+
+% 0 1 0 097add2b36cdb59e056d0fcbfc689ea5
+
+% 0 1 0 072495fb837d7e6c0789c1f7965bf4e5
+
+% 1 1 0 02dd0e853fd250f416402fb71da24b12
+
+@ 0 17 0 0e3c526da2cb7b670b1392d34788c93d
++   entry .by   给定根的图示，通过函数查找子节点
++       `TreeDiagram.by[node](node => children)(roots*)`：当结构已在手中，或同一类型要按不同关系绘制时，这是合适的形式。
++   entry .printable   将图示写入终端，每个节点显示为 `▪ node`
++       需要作用域中有 `Style[Text]`（`treeStyles` 之一）和 `Showable` 的节点类型；各行以换行符连接。
++   entry #lines   每行的瓦片和节点，以惰性 `Chain` 表示
++   entry #render   渲染后的各行文本：每个节点的标注，前面加上通过作用域中的 `TreeDiagram.Style` 渲染的瓦片
++       `diagram.render(node => label)`，标注的类型是样式所渲染的行类型——使用 `treeStyles` 的 given 时为 `Text`，有相应样式时也可以是带样式的终端类型。
++   entry #flow   各行的标注按宽度自动换行，续行使用样式的后续瓦片
++       `diagram.flow(width)(node => label)`：每个节点的内容排入不超过 `width`（包括其瓦片前缀）宽的若干行，续行使用 `Style#followOn` 瓦片——分支下方延续一个延伸符，最后一个子节点后面跟一个空格——因此树的线条会延续到换行的标注之后。
++       需要作用域中有 `Text is Measurable`（例如 `textMetrics.uniformMetric`）和 `Hyphenation`，且标注类型是基于字符的 `Textual`。
+
+% 2 1 0 0a43bc05565e878d194094868adeb35f
+
+% 3 1 0 13822e8cc962803f122eb87cd3752714
+
+% 0 1 0 18ce7c3e0a0994cb1e5cef2e9db10256
+
+% 1 1 0 1c1f6c4810f8e7410b33584f00e545dc
+
+% 2 1 0 1cb4a5950d7cd45c08ef4de921ea830f
+
+% 0 1 0 192fe055434ef8531e65551e898946a8
+
+% 0 1 0 08c25fad3e8b9c4500c16de8370a96f2
+
+% 0 1 0 111a6fa455a31de2169a5bfe39f2ca72
+
+% 1 1 0 1b125b505306846b0d3d112c1c47c6d2
+
+@ 0 7 0 0b05470c231ff6e20290e69244ec8302
++       如果样式的后续瓦片比普通瓦片宽，则两种都会度量，内容按较紧的预算换行，因此任何行都不会超过 `width`。
++   entry #map   每行由一个关于其瓦片和节点的函数渲染
++       `diagram.map(tiles => node => row)`：`render` 的一般形式，供自己渲染各行的使用者使用。
++   entry #nodes   每行的节点，按绘制顺序
++   entry #tiles   每行的瓦片，按绘制顺序
+
+@ 0 6 0 1a502b6324cd290b1ce0fa399057102b
++   entry .Tile   树行前缀中的一个片段：分支、最后分支、延伸符或空格
++       一个有四个分支的枚举。
++       `Branch`（`├─`）标记后面还有兄弟节点的节点，`Last`（`└─`）标记兄弟节点中的最后一个；在它们左侧，当某个祖先后面还有兄弟节点时，`Extender`（`│ `）将该祖先的线条向下延伸经过该节点，否则用 `Space` 填充该列。
++       `Style` 规定每种瓦片对应的文本。
++   entry .Style   将一行树瓦片和一个标注渲染为一行的类型类
+
+% 1 1 0 1db10213c8e9dce0110cabcee221dc18
+
+@ 0 7 0 0fd7c245ed42499c06fd06f3ec33d3ec
++         `Style[line]` 将一个 `List[Tile]` 和类型为 `line` 的节点标注转换为渲染后的一行，`TreeDiagram#render` 和 `#flow` 从作用域中获取的正是它。
++         它以行类型参数化，因此图示既可以渲染为 `Text`，也可以渲染为带样式的终端输出。
++         `TextualStyle` 用四小段文本为任何 `Textual` 行类型实现它，这就是新样式所需的全部；`treeStyles` 包提供了三种现成的样式。
++         样式是 `Findable` 的，因此图示的 `Printable` 实例能在作用域中找到它。
+
+% 0 1 0 0acff1f4781516081c0fe2a074fffa02
+
+% 1 1 0 12b2711ff1817d521143f742bfa12be7
+
+@ 0 6 0 10abcaab3a97e6f7119430f46aead6af
++     entry #serialize   将一行的瓦片和标注渲染为一行
++     entry #followOn   多行节点的续行：相同的泳道，没有分支字形
++         供 `TreeDiagram#flow` 用于换行标注的第二行及之后各行：延伸符继续，最后一个子节点的分支让位于空格。
++         默认实现重复 `serialize`，适用于不绘制独特续行前缀的样式。
++   entry .TextualStyle   用四段文本为任何 `Textual` 行类型构建的 `TreeDiagram.Style`
+
+% 1 1 0 10fdfc421539f76400aa7a0eeca9c1f0
+
+@ 0 3 0 18c40d5257f1d1b70485cf5e4d055926
++         `TextualStyle(space, last, branch, extender)` 给出每种 `Tile` 的文本；一行就是各瓦片的文本相连，再接上标注。
++         各段通常为两个字符宽，以便各列对齐，但并非必须如此。
+
+% 2 1 0 071221007e0aa6c00182f4fa9bf4c402
+
+% 3 1 0 04ae79e3753c97f5064060fd509e466b
+
+% 0 1 0 08026cfc0bf8fe2d0efb1d1495635dad
+
+% 1 1 0 1ca0a8551b1fca4c190865f5284c73d0
+
+@ 0 2 0 0c912ff2506bf95a19065e7068d8db58
++         在续行上，`branch` 渲染为 `extender`，`last` 渲染为 `space`，因此竖线会延续到换行标注的下方。
+
+% 0 1 0 0d3798c8daa025960d108dcb3277a25e
+
+% 1 1 0 05b4e57e74ed1a6016ad97a906327b95
+
+@ 0 8 0 1a4f066511896ad71f5cecbc232ed818
++     entry #space   `Space` 瓦片的文本：位于最后一个子节点下方
++     entry #last   `Last` 瓦片的文本：通往节点最后一个子节点的分支
++     entry #branch   `Branch` 瓦片的文本：通往后面还有兄弟节点的子节点的分支
++     entry #extender   `Extender` 瓦片的文本：祖先的线条向下延伸经过某个节点
++     entry #serialize   各瓦片的文本相连，再接上标注
++     entry #followOn   各瓦片的续行文本相连，再接上标注
++     entry #text   一个瓦片的文本
++     entry #followOnText   续行上一个瓦片的文本：分支为 `extender`，最后分支为 `space`
+
+@ 0 4 0 1d2361cdaf71fdb912fbd917112cc68f
++ entry .Expandable   知道自身子节点的节点类型的类型类
++     `given node is Expandable = _.children` 让 `TreeDiagram(roots*)` 通过类型而非调用时传入的函数找到每个节点的子节点。
++     `children` 返回节点类型自身的 `List`。
+
+@ 0 1 0 075642825a22014e0bf7b7839dfa74c6
++ entry .treeStyles   三种现成的树样式，每种都是按名称导入的 given
+
+% 1 1 0 03157ac1c0980b991f369a740dcbff24
+
+@ 0 2 0 0dfa476c754beb0414a3840d62d5a226
++       `import soundness.*` 不会引入其中任何一种；按名称导入一种，它就为任何 `Textual` 行类型提供 `TreeDiagram.Style`。
+
+% 2 1 0 16a68449831e16840d752e138e701052
+
+% 3 1 0 16925aba1a19bd1f1717ce59f377efa7
+
+% 0 1 0 14d9b15a0f712180194822fc61a44203
+
+% 1 1 0 03d9f4a02ba63bc31f1772da5a0055ff
+
+@ 0 3 0 0676e7f23acd29b41eafdae98347898c
++   entry .squareTreeStyle   `├─`、`└─` 和 `│ `：直角拐角
++   entry .roundedTreeStyle   `├─`、`╰─` 和 `│ `：最后分支是弯曲的
++   entry .asciiTreeStyle   `|-`、`+-` 和 `| `：仅用 ASCII，适用于必须在任何终端中保持完好的输出
+
+@ 0 1 0 0de0077fd444077d07bb853faff8b0fd
++ entry .DagDiagram   图的密集绘制：每个节点一行，每条边都在连接瓦片组成的网格中
+
+% 1 1 0 0211904a07c9994b043d190e39f50f33
+
+@ 0 6 0 0d1e07230571d1c515a10cabf675cab2
++       `DagDiagram(graph)` 布局任何存在拓扑排序的图——`Dag`、冻结的 `Topology[node]^{}` 或 `Hasse`——每个节点一行，按拓扑顺序排列（依赖在前），每行左侧为每个较早的节点留一列，放置在该处开始、经过或结束的边的瓦片。
++       结果不会失败：可能含有环的 `Digraph` 在被 `acyclic` 转换之前无法绘制。
++       它通过作用域中来自 `dagStyles` 包的 `Style` 渲染。
+
+% 2 1 0 19bcd9faae6fc5fe14cb5088d5299bbd
+
+% 3 1 0 0b028d6b16c820c80f13e56d08f7dc0e
+
+% 4 1 0 141f4adbd65cb70c08746fd981f3840c
+
+% 1 1 0 1c02b8b1353d1e7b16793973b181a857
+
+% 0 1 0 0066612ddb1c1ec41d6049406cf7e1b3
+
+% 0 1 0 1aa7d22e928966770a377aa71762f507
+
+% 0 1 0 0d446be4798dc4180048d00208ed27a4
+
+% 0 1 0 194e4e4a3e3f6fe010750cce4dd0e1f3
+
+% 0 1 0 150d56a39a24275f0c8b86d50d9f1882
+
+% 0 1 0 116ec5e9e250b775100d5e8cd9a4e107
+
+% 0 1 0 1671092abd97b57114eab42538e5112a
+
+% 0 1 0 0e3450b1c21f1d4b04bef1b3d8b14a20
+
+% 1 1 0 088d4f2cd1c77e1100267392d563684d
+
+@ 0 4 0 1ae31b90d3c2ced80651243ab34f8297
++       整个布局在创建图示时计算，是一个边长为图大小的方形网格，这使它适合边关系复杂的小图，而不适合长历史；后者应使用 `LaneDagDiagram`。
++       作用域中有 `Style[Text]` 且节点为 `Showable` 时，图示是 `Printable` 的。
+
+% 0 1 0 03052f1d99dd8911037f0509daf775ec
+
+% 0 1 0 17bf87312473321b024665cc3824f67e
+
+% 0 1 0 1542ba2eaaf3e6a80a09ff74f7a28db0
+
+% 1 1 0 0d234d39e1e3d3a20a698a746636b6c9
+
+@ 0 10 0 087633732ce5077c00197432f8560c10
++   entry .apply   任何 `Nodal` 且 `Topological` 的图的密集布局
++       从作用域中获取图的 `Nodal` 和 `Topological` 实例，`Dag`、冻结的 `Topology` 和 `Hasse` 都从各自的伴生对象提供这些实例，因此调用时无需导入。
++   entry .printable   将图示写入终端，每个节点显示为 `▪ node`
++       需要 `Style[Text]`（`dagStyles` 之一）和 `Showable` 的节点类型。
++   entry #lines   每行的瓦片和节点，按拓扑顺序
++   entry #size   行数：每个节点一行
++   entry #render   渲染后的各行文本，每个节点的标注位于其瓦片之后，通过作用域中的 `DagDiagram.Style` 渲染
++   entry #nodes   每行的节点，按绘制顺序
++   entry #tiles   每行的瓦片
+
+@ 0 9 0 0b3be08743fc38140b4412f568b1d42b
++   entry .Tile   DAG 绘图的一个单元格：节点、泳道、拐角、T 形接头、交叉或空格
++       一个有十四个分支的枚举，以其臂所指的罗盘方位命名。
++       `Space`；`Vertical` 和 `Horizontal` 泳道；拐角 `CornerNe`、`CornerNw`、`CornerSe` 和 `CornerSw`；T 形接头 `TeeN`、`TeeS`、`TeeE` 和 `TeeW`；`Crossing`，即水平泳道从一条继续延伸的竖直泳道上方经过而不与之相连；`Junction`，即四个方向的泳道在此交汇；以及 `Node`，即泳道图示上节点的圆点。
++       `DagDiagram` 使用前八种；`LaneDagDiagram` 和 `LayeredDagDiagram` 使用全部十四种。
++       `Style` 或 `LaneDagDiagram.Style` 规定每种瓦片对应的文本。
++   entry .Style   渲染密集 `DagDiagram` 一行的类型类
+
+% 1 1 0 0758779b853b145f086d306139efc446
+
+@ 0 5 0 07618b000ae4d7d61626d6d600947e98
++         `Style[line]` 将一行的 `List[Tile]` 和节点标注转换为类型为 `line` 的渲染行，`DagDiagram#render` 从作用域中获取的正是它。
++         `TextualStyle` 用八段文本为任何 `Textual` 行类型实现它；`dagStyles` 包提供一种制表符样式和一种 ASCII 样式。
++         它是 `Findable` 的，因此图示的 `Printable` 实例能找到它。
+
+% 0 1 0 0e2197ac044d89b41803924668c24785
+
+% 1 1 0 1469f3cfb0bffdb01e4d25d0f0499828
+
+@ 0 2 0 037834f6a0cc86d900e4e1a68bbb1127
++     entry #serialize   将一行的瓦片和标注渲染为一行
++   entry .TextualStyle   用八段文本为任何 `Textual` 行类型构建的 `DagDiagram.Style`
+
+% 1 1 0 09fdaa9b5d3e2db906b0139a2626f2f9
+
+@ 0 3 0 131710096c8699f300ef159fd9ea6f3d
++         `TextualStyle(space, cornerNe, vertical, teeE, horizontal, teeN, crossing, junction)` 给出 `DagDiagram` 绘制的每种瓦片的文本；其他任何 `Tile` 都渲染为 `space`。
++         一行就是各瓦片的文本相连，再接上标注。
+
+% 2 1 0 00936060487783930cc1c3fff8e3a630
+
+% 3 1 0 101a3b58c20831ec1d5d64c783920e81
+
+% 0 1 0 13e34be9c88dfd901b8d6da902aa5452
+
+% 0 1 0 14f158ff6e096c380c8099438cbd56c6
+
+% 1 1 0 05013786c247157d1cbc06dbb1708a24
+
+% 0 1 0 12875549150dd68906f2c58d35fdb947
+
+% 1 1 0 1eff0fb1a4e77ef20f98887bf6102de3
+
+@ 0 11 0 00c7214cbbd4f2170a480803f18e2c03
++     entry #space   `Space` 瓦片的文本
++     entry #cornerNe   `CornerNe` 瓦片的文本：从泳道转入节点所在行的边
++     entry #vertical   `Vertical` 瓦片的文本：经过某行的泳道
++     entry #teeE   `TeeE` 瓦片的文本：向右分出分支的泳道
++     entry #horizontal   `Horizontal` 瓦片的文本：沿某行延伸的边
++     entry #teeN   `TeeN` 瓦片的文本：从上方汇入某行的边
++     entry #crossing   `Crossing` 瓦片的文本：被一条边穿过的泳道
++     entry #junction   `Junction` 瓦片的文本：两侧都有边汇入的泳道
++     entry #serialize   各瓦片的文本相连，再接上标注
++     entry #text   一个瓦片的文本
++     entry #followOnText   续行上一个瓦片的文本：泳道延续，其他一律为空格
+
+@ 0 1 0 1c6a9f634ecd15ab0e5e6327f572c9da
++ entry .dagStyles   两种现成的密集 `DagDiagram` 样式，每种都是按名称导入的 given
+
+% 1 1 0 196a078c36b2e6ff02049c9365a81557
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 182ebf4dbe9c492618ebc3331433fad5
+
+% 1 1 0 11707fba0431780c048f7cf6e5eadc13
+
+@ 0 2 0 03cd80877f9f6f781935e26f13e25ec0
++   entry .boxDrawingDagStyle   制表符：`└─`、`│ `、`├─`、`──`、`┴─`、`│─`、`┼─`
++   entry .asciiDagStyle   仅用 ASCII：`+-`、`| `、`--`、`|-`
+
+@ 0 1 0 18f82f9b622fd645058061be9c8bf859
++ entry .LaneDagDiagram   图的泳道绘制：节点作为竖直泳道上的圆点，边在泳道之间流动
+
+% 1 1 0 0d32c43fc7f442490d78a6b587bf4a8f
+
+@ 0 7 0 0b99bf5fe0bfdb650d87f656903435b0
++       `LaneDagDiagram(graph)` 按绘制版本控制历史的方式布局任何存在拓扑排序的图——`Dag`、冻结的 `Topology[node]^{}` 或 `Hasse`：每个节点是少数几条竖直泳道之一上的一个 `Node` 瓦片，按拓扑顺序自上而下排列（依赖在前），每两个节点行之间有一个连接行，将每条边沿其泳道向下引导，并弯向它所到达节点的列。
++       通往紧接着的下一个节点的边笔直延伸；较长的边占用一条自己的泳道，选择离其节点最近的一条，而延续经过某行的泳道绘制为 `Vertical`。
+
+% 2 1 0 0c9ac9b40cbd25140537343825a3d87e
+
+% 3 1 0 0fa52ba20face9bc1114900eab2cb109
+
+% 4 1 0 060b517ea48502ac068cbf8c5a76d962
+
+% 5 1 0 09520b37c88e073315cc5d800f3938f1
+
+% 6 1 0 0c53dcc50cfa62d41db6fa5a526c3e40
+
+% 8 1 0 19f94674433d89d11483d9525de5098e
+
+% 0 1 0 053e074e454ac70a0762e8d11f8922a1
+
+% 0 1 0 109979bff7d2453a1185fd71f291c56e
+
+% 1 1 0 14435a31bb9532ad1462aabb5f9bd6d1
+
+@ 0 3 0 05adfb2cfd1fe930078ede187b497b6b
++       逐节点的字形可以标记选定的节点——当前提交、失败的构建——这通过双函数的 `render` 实现，其各列会加宽以容纳最宽的字形，按显示单元格度量，因此宽字符也能正确布局：
+
+% 2 1 0 0dfa7066e80e44e10522fa6910938b4e
+
+% 3 1 0 1c9779c976db50ea0da6f0947d06ff82
+
+% 4 1 0 1adba957929452ab02f45e189b2735b6
+
+% 5 1 0 0765b2514ea026f2138f2701f83b5bbf
+
+% 6 1 0 1d6d96eb49268893000dd512a5fe6909
+
+% 0 1 0 1841869fabc7534b0ec69b5a5e688c3c
+
+% 0 1 0 1006ef1a1bf1b33603e908eed06a409c
+
+% 0 1 0 17232ad95f7174a8019d5861cb63381e
+
+% 1 1 0 089e6b13652466531a1f1e531497838d
+
+@ 0 4 0 1beebeb840282b811f112ab0d143e30a
++       绘制不会失败：`Digraph` 在被 `acyclic` 转换之前无法绘制。
++       它通过作用域中来自 `laneDagStyles` 包的 `Style` 渲染，该包还需要一个 `Text is Measurable`；作用域中有 `Style[Text]` 且节点为 `Showable` 时，图示是 `Printable` 的，每个节点标注为 ` node`。
+
+% 1 1 0 1f0995fbb9aa9c291b69f1779a7c2c02
+
+% 2 1 0 12f2ecb5ff53a24d15657617b6473907
+
+% 0 1 0 0a355cba2b21775b042055b7241a29d9
+
+% 1 1 0 0e2a7f8640eb2027014918bed32b5bfb
+
+@ 0 19 0 146dec3bbcbe137701a2efc9cedae3ab
++   entry .apply   任何 `Nodal` 且 `Topological` 的图的泳道布局
++       从作用域中获取图的 `Nodal` 和 `Topological` 实例；`Dag`、冻结的 `Topology` 和 `Hasse` 无需导入即可提供它们。
++       空图没有任何行。
++   entry .printable   将图示写入终端，每个节点标注为 ` node`
++       需要 `Style[Text]`（`laneDagStyles` 之一，外加 `Text is Measurable`）和 `Showable` 的节点类型。
++   entry #lines   每行的瓦片，节点行还带有其节点；连接行为 `Unset`
++   entry #size   行数，节点行和连接行合计
++   entry #render   渲染后的各行文本，每个节点后接一个标注，也可以再加上逐节点的字形
++       `render(label)` 用样式的 `node` 字形（制表符样式中为 `● `）绘制每个节点，并将 `label(node)` 附加到其所在行。
++       `render(glyph, label)` 则改用 `glyph(node)` 绘制每个节点，将节点所在列加宽到该列中最宽的字形，按样式的 `width` 以显示单元格度量，因此连接行保持对齐。
++   entry #compact   去掉纯穿越连接行后的图示
++       只有 `Vertical` 泳道（多于一条）和空格的连接行，没有表达周围各行未表达的任何信息，因此 `compact` 将其删除；恰好只有一条泳道的行——通往下一个节点的直接边——会保留，任何有弯折的行也会保留。
++   entry #nodes   每个节点行的节点，按绘制顺序
++   entry #tiles   每一行的瓦片，包括连接行
+
+@ 0 1 0 166e3430296b44ea00069f28d6ecf524
++   entry .Style   渲染 `LaneDagDiagram` 或 `LayeredDagDiagram` 一行的类型类
+
+% 1 1 0 0f2a1c7ccf7098f61090fba5de33f31c
+
+@ 0 6 0 12932abe54e170141691dff723a84aec
++         `Style[line]` 将一行的 `List[DagDiagram.Tile]`、要在特定列绘制的字形、每列的宽度以及一个可选的标注转换为类型为 `line` 的渲染行，并度量字形的显示宽度，以便确定各列的大小。
++         `TextualStyle` 用十四段文本为任何 `Textual` 行类型实现它；`laneDagStyles` 包提供一种制表符样式和一种 ASCII 样式。
++         它是 `Findable` 的，因此这些图示的 `Printable` 实例能找到它。
+
+% 0 1 0 0d6fa53f124066ee0a813b224a8a3ca5
+
+% 1 1 0 14e55338eaf0c40101cf3c46420e6419
+
+@ 0 3 0 026e14c0dd1d80c10008885a78cab0ed
++     entry #serialize   将一行的瓦片、按列排列的字形、各列宽度和一个可选标注渲染为一行
++     entry #width   字形的显示宽度，用于确定其所在列的大小
++   entry .TextualStyle   用十四段文本为任何 `Textual` 行类型构建的 `LaneDagDiagram.Style`
+
+% 1 1 0 198626dac4131de215ebc7f58904da98
+
+@ 0 6 0 00735429fcc7463911316437d4772d36
++         `LaneDagDiagram.TextualStyle(space, vertical, horizontal, cornerNe, cornerNw, cornerSe, cornerSw, teeN, teeS, teeE, teeW, junction, crossing, node)` 给出每种 `DagDiagram.Tile` 的文本，并接受一个 `Text is Measurable`，以显示单元格而非代码单元度量字形，因此宽字符和组合标记都能正确布局。
++         每段都是两个字符：第一个是单元格本身，第二个重复填充，将该列补足到其宽度，因此 `──` 水平线会拉伸，而 `│ ` 泳道不会。
+
+% 2 1 0 038e2b8b06bd0e12007ce4617004e66d
+
+% 3 1 0 1b272ee4939d0e7219fc45c64f29f9fc
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 11c57b17ae0ec3551131daca41701825
+
+% 0 1 0 0aa5f2be5178474602a84622c80b976e
+
+% 0 1 0 0d664198e814ff7c08c4faa76e3492c4
+
+% 1 1 0 0a931c1da1fa82371cc42e4970fecb9f
+
+% 0 1 0 19bae180d50b69740f071bbc31c0ad17
+
+% 1 1 0 055ff67c06d14938100632222f6a4af6
+
+@ 0 17 0 156974dcad9728a91333fbab67ab0e0b
++     entry #space   `Space` 瓦片的文本
++     entry #vertical   `Vertical` 瓦片的文本：经过某行的泳道
++     entry #horizontal   `Horizontal` 瓦片的文本：沿某行延伸的边
++     entry #cornerNe   `CornerNe` 瓦片的文本：从上方来、向右转的边
++     entry #cornerNw   `CornerNw` 瓦片的文本：从上方来、向左转的边
++     entry #cornerSe   `CornerSe` 瓦片的文本：从右侧来、向下转的边
++     entry #cornerSw   `CornerSw` 瓦片的文本：从左侧来、向下转的边
++     entry #teeN   `TeeN` 瓦片的文本：从上方汇入的水平线段
++     entry #teeS   `TeeS` 瓦片的文本：向下分出分支的水平线段
++     entry #teeE   `TeeE` 瓦片的文本：向右分出分支的泳道
++     entry #teeW   `TeeW` 瓦片的文本：从左侧汇入的泳道
++     entry #junction   `Junction` 瓦片的文本：四个方向的泳道在此交汇
++     entry #crossing   `Crossing` 瓦片的文本：从一条继续延伸的泳道上方经过的水平线段
++     entry #node   `Node` 瓦片的文本：默认圆点，在未给节点指定字形时使用
++     entry #width   字形的显示宽度，通过创建样式时使用的 `Text is Measurable` 度量
++     entry #serialize   每个瓦片的单元格补足到其所在列的宽度，节点的圆点处换成字形，再接上标注
++     entry #text   一个瓦片的文本
+
+@ 0 1 0 1abd654fc15f027c00c92ca6d25dda8e
++ entry .laneDagStyles   两种现成的泳道图示和分层图示样式，每种都是按名称导入的 given
+
+% 1 1 0 1b13a9fd135a926f193c6e128c0ec886
+
+@ 0 3 0 1fc38e1134f496fc05d38f6cea1cfaa1
++       每种都需要作用域中有一个 `Text is Measurable` 才能解析，例如 `textMetrics.uniformMetric`（每个字符一个单元格）或 `textMetrics.wideCharacterWidthMetric`（东亚宽字符占两个）。
+
+% 2 1 0 0175b5f98f3925ad198568a65c0299d5
+
+% 3 1 0 06630d130c039d590ca62747c9034f96
+
+% 1 1 0 09e77b8c253dc539029e46591e96f1fe
+
+% 2 1 0 0eae6388424b52131e60219eb2082a22
+
+% 1 1 0 1f103ce10b1066681522dd8b9c845e2f
+
+@ 0 2 0 0daad4ee44dbcfc71f85fb93412c4b6d
++   entry .boxDrawingLaneDagStyle   带圆角的制表符，节点用 `● `
++   entry .asciiLaneDagStyle   仅用 ASCII：`| `、`--`，每个拐角和 T 形接头都用 `+ `，节点用 `* `
+
+@ 0 1 0 1e521d75e420412200583ba3b038576c
++ entry .LayeredDagDiagram   图的分层绘制：节点按深度分层，并排序以使交叉的边很少
+
+% 1 1 0 06115fdb7075ef4c1c21326c729f7cb6
+
+@ 0 7 0 0460af5ccd2de3530fc6b1d34e1078ec
++       `LayeredDagDiagram(graph)` 按图的 `layered` 排列布局任何存在拓扑排序的图——`Dag`、冻结的 `Topology[node]^{}` 或 `Hasse`：每个节点位于某一层，依赖在依赖者之上，层内节点的排序使交叉最少，跨越多层的边笔直穿过中间各层。
++       每层是由各列上的 `Node` 瓦片组成的一行，层与层之间有一个连接行，将每条边从其上方的列弯到下方的列。
++       节点取其在上一层中各邻居所在列的中位数列，因此直的边保持笔直。
+
+% 2 1 0 09659f94e5f713f019d86312f8dc25d0
+
+% 3 1 0 1c1a75830820168f1b71c85c7f49c82a
+
+% 4 1 0 151785a6a42b89c019e2a3b4cff4b615
+
+% 5 1 0 1945b4b790273bf10d0610bbd002e087
+
+% 6 1 0 1da72a54d1b626a5053d46b2585ff803
+
+% 8 1 0 1a37899868cf3c8f001616a7d4bf7850
+
+% 0 1 0 0eda4dd176f925900b2d270c2eba6d1c
+
+% 1 1 0 14cc69ec0210ddbe0c60c2ec340b76a7
+
+@ 0 8 0 19e562c7cbf0687d0fbd85d531369e37
++       作用域中的 `Ranking` 决定分层：默认情况下，节点位于其最深依赖的下一层，因此所有不依赖任何节点的节点共处第一行；`import rankings.balancedRanking` 将每个有依赖者的节点下拉到其最浅依赖者的上一层，从而缩短从只为深处某个节点供数据的源节点出发的长边。
++       因此，给定图渲染出的各行取决于分层方式和交叉最小化，二者任一改变时，存储的预期结果都必须重新生成。
++       它与 `LaneDagDiagram` 一样，通过作用域中的 `LaneDagDiagram.Style` 渲染；作用域中有 `LaneDagDiagram.Style[Text]` 且节点为 `Showable` 时，它是 `Printable` 的，每个节点显示为 `● node`。
+
+% 1 1 0 019484f43722048f085d07b5e780b01d
+
+% 2 1 0 1c91c253edc06c0c1a85e2ed9a399c94
+
+% 0 1 0 13d604bce2dc305e142226ae17590555
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+@ 0 16 0 188f98a6d8b5238d0b36b3fd4c991ee6
++   entry .apply   任何 `Nodal` 且 `Topological` 的图的分层布局，按作用域中的 `Ranking` 进行
++       接受图的 `Nodal` 和 `Topological` 实例以及一个 `Ranking`（除非导入了 `rankings.balancedRanking`，否则为伴生对象中的 `Ranking.LongestPath`）。
++       空图没有任何行。
++   entry .printable   将图示写入终端，每个节点显示为 `● node`
++       需要 `LaneDagDiagram.Style[Text]`（`laneDagStyles` 之一，外加 `Text is Measurable`）和 `Showable` 的节点类型。
++   entry #rows   每行的瓦片以及各列上的节点；连接行没有节点
++   entry #size   行数，层行和连接行合计
++   entry #render   渲染后的各行文本，每个节点由字形函数绘制，各列加宽以容纳字形
++       `render(glyph)`：每个节点在其所在列绘制为 `glyph(node)`，每列的宽度等于其中最宽的字形，按样式的 `width` 以显示单元格度量，因此连接行保持对齐。
++       没有单独的标注：像 `t"● $node  "` 这样的字形本身就带有标注。
++   entry #tiles   每一行的瓦片，包括连接行
++   entry #nodesAt   每一行中按列排列的节点；连接行为空

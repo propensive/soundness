@@ -1,0 +1,161 @@
+orthant 2 language
+
+@ 0 1 0 112e00a0bd848b011c4e0e445a493659
++ info   wykresy SVG z typowanych danych: słupki, linie, punkty, wykresy kołowe, histogramy, wykresy pudełkowe i pierścieniowe
+
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - Kształt wynika z typów. `Series[x, y]` to nazwany ciąg punktów; typ odciętej decyduje o
++       osi: `Text`, enum lub `Chart.Category` jest `Categorical`, a liczba, `Duration`,
++       `Instant` lub dowolna `Quantity` jest `Continuous`. `Samples[y]` to surowe pomiary,
++       `Chart.Estimate` – wartość wraz z jej przedziałem, `Noted` – wartość z notatką, a `Dag`
++       węzłów `Weighted` i `Progressive` to graf zależności.
++     - Rodzaj jest wartością – `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
++       `Histogram()`, `Boxes()` lub `Annulus()` – a `data.chart(kind)` kompiluje się tylko
++       wtedy, gdy instancja `Plottable` stwierdza, że dany rodzaj potrafi narysować kształt
++       danych: wykres kołowy z trzech serii albo linia poprowadzona przez etykiety kategorii to
++       błąd kompilacji.
++     - Dopasowanie – zakres, przekształcenie i podziałki każdej osi – wybiera `Calibration`
++       kluczowana typem wartości osi, a nadpisuje je given w zasięgu, import z `calibrations`
++       lub argument rodzaju. Wynikiem jest `Scale` lub `Bands`: zwykłe dane, dzięki czemu
++       wykres może stwierdzić, czy nowe dane wciąż mieszczą się na jego osiach.
++     - Styl to wartość `Chart.Style` – domyślnie `Chart.Standard` – z metodą dla każdego
++       rysowanego komponentu, `ChartPalette` kolorów nazwanych według roli oraz `FontMetric`,
++       który mierzy tekst na potrzeby układu.
+
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     Niezgodne połączenie się nie kompiluje: seria kategorialna nie może być `Lines()`, kolekcja
++     serii nie może być `Pie()`, `Samples` nie może być `Bars()`, a `Dag`, którego węzłom
++     brakuje `Weighted` lub `Progressive`, nie może być `Annulus()`.
+
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       `Chart[data, form, fit, style]` przechowuje swoje dane (`#data`), swój rodzaj (`#form`),
++       dopasowanie (`#fit`) obliczone przez rodzaj na podstawie danych oraz instancję
++       `Plottable`, która je łączy. Tworzy go rozszerzenie `chart`, a nie konstruktor. Typ
++       dopasowania jest własnym typem rodzaju – `Bars.Fit` z `bands` i `ordinate`, `Lines.Fit` z
++       dwiema skalami, `Annulus.Fit[node]` ze swoimi pasami – a typ stylu jest traitem stylu
++       rodzaju, więc wykres słupkowy renderuje się względem `Bars.Style`, a kołowy względem
++       `Pie.Style`; `Chart.Standard` implementuje je wszystkie.
+
+@ 0 9 0 072fce925d770d9e02e5a9a1c5d675b3
++   entry .Legend   położenie legendy: `Hidden`, `Right` lub `Bottom`
++       Wybiera je `Chart.Style#legend`. `Right` układa obok wykresu próbkę
++       koloru i nazwę każdej serii jedną pod drugą, `Bottom` rozmieszcza je wzdłuż dolnej
++       krawędzi w jednym wierszu, a `Hidden` nie rysuje legendy i nie rezerwuje na nią miejsca.
++       Wykres pierścieniowy nie ma legendy bez względu na to ustawienie.
++   entry .Axis   oś, którą rysuje metoda stylu kartezjańskiego: `Abscissa` lub `Ordinate`
++       Przekazywana do metod `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`,
++       `arrowhead`, `axisBreak` i `labelRoom` z `Chart.Cartesian`, tak aby jedno nadpisanie
++       mogło traktować oś poziomą inaczej niż pionową.
++   entry .Anchoring   miejsce umieszczenia napisu, jak zdecydowało rozmieszczenie: punkt i wyrównanie
+
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         Rozszerza `Chart.Style` o komponenty osi i parametry ich układu. Położenia podawane są
++         we współrzędnych rysunku; styl decyduje o kształcie, obrysie i o tym, gdzie leży
++         etykieta względem swojego znacznika osi. `Bars.Style`, `Lines.Style`, `Scatter.Style`,
++         `Boxes.Style` oraz (przez `Bars.Style`) `StackedBars.Style` i `Histogram.Style`
++         rozszerzają go; `Pie.Style` i `Annulus.Style` nie, bo nie mają osi.
+
+@ 0 8 0 0891e807181f12b60920a4f6d3afeed6
++         Implementuje naraz `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
++         `Scatter.Style`, `Boxes.Style`, `Pie.Style` i `Annulus.Style`, więc jedna wartość w
++         zasięgu nadaje styl dowolnemu wykresowi. Każdy parametr ma wartość domyślną: `width =
++         640.0`, `height = 400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize =
++         12.0`, `legend = Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`,
++         `abscissaTitle` i `ordinateTitle` nieustawione, `strokeWidth = 2.0`, `markerRadius =
++         3.5`, `markers = false`, `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole =
++         0.0`, `sectorGap = 2.0` i `bandGap = 2.0`. Renderowanie dowolnego komponentu zmienia się
++         nadpisaniem w anonimowej podklasie:
+
+@ 0 15 0 1a99d3afece48c15170f5b17c966e665
++         Wynik `Chart#drawing`: rozmiar płótna, ewentualne definicje SVG oraz `Ledger` z `Svg.Id`
++         w `Figure`, zawierający `backdrop`, potem (dla wykresu kartezjańskiego) `grid`,
++         `abscissa`, `ordinate`, `series-0`, `series-1`, … i `legend`; wykres kołowy ma `wedges`
++         i `legend`; pierścieniowy – `rank-0`, `rank-1`, …. Identyfikatory to to, co wskazuje
++         `Chart.Revision.Replace`, a każdy staje się `id` elementu `<g>` w SVG.
++     entry .encodable   cały rysunek jako jeden `Svg`, jako `drawing.in[Svg]`
++     entry #width   szerokość płótna, ze stylu
++     entry #height   wysokość płótna, ze stylu
++     entry #defs   definicje SVG potrzebne rysunkowi; standardowe rodzaje nie mają żadnych
++     entry #parts   części według identyfikatora, w kolejności rysowania
++   entry .encodable   wykres jako `Svg`, jako `chart.in[Svg]`, z komponentami, których wymaga
++       Wymaga w zasięgu własnego typu stylu wykresu (`Bars.Style` dla wykresu słupkowego;
++       `Chart.Standard` spełnia wymagania każdego rodzaju), `ChartPalette`, `FontMetric` i
++       `Arranger`, a wszystkie mają wartości domyślne w obiektach towarzyszących.
++       `chart.in[Svg].in[Xml].show` to tekst SVG.
++   entry .Revision   co zmieniło się między jednym rysunkiem wykresu a następnym
+
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` istnieje tylko tam, gdzie rodzaj potrafi
++       narysować dane: wykres kołowy wymaga jednej serii kategorialnej, liniowy – osi liczbowych,
++       a pierścieniowy – `Dag` z ważonymi, postępowymi węzłami. Rodzaj to `Form`, dopasowanie to
++       `Result` (więc dopasowanie wykresu jest własnym dopasowaniem rodzaju, z widocznymi
++       osiami), a styl to `Operand`, ograniczony przez `Chart.Style`. Standardowe instancje
++       znajdują się w obiekcie towarzyszącym każdego rodzaju – `Bars.series`,
++       `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Annulus.dag`, … – więc są
++       znajdowane bez importu; instancja `traversable` obejmuje dowolną kolekcję serii lub
++       próbek (`List`, `Set` lub `Sequence`), a jej dowód przechodzenia jest rozstrzygany przed
++       klasami typów typów elementów.
+
+@ 0 8 0 10d090d5a3debda7022c250b95d296cc
++   entry #fit   wybiera osie na podstawie danych: `Result`, na przykład `Lines.Fit`
++   entry #accommodates   czy dopasowanie wciąż obejmuje nowe dane, tak by rewizja mogła zastąpić jedną część
++       Dla rodzaju kartezjańskiego: każde położenie i przedział leżą w obrębie skal, a każda
++       kategoria jest znanym pasem; dla wykresu kołowego: kategorie się nie zmieniły; dla
++       pierścieniowego: kształt i wagi grafu się nie zmieniły.
++   entry #draw   renderuje dane względem dopasowania jako `Chart.Drawing`
++       Przyjmuje styl (`Operand`), `ChartPalette`, `FontMetric` i `Arranger` jako wartości
++       kontekstowe.
+
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   rozmiar węzła wykresu pierścieniowego: jego udział w kącie poziomu i w grubości pasa
++     `node is Weighted` daje `weight(node): Double`. W `Annulus` wycinek węzła zakreśla taką
++     część obrotu swojego pasa, jaką jego waga stanowi w sumie poziomu, a pas jest tak gruby,
++     jak udział jego poziomu w wadze całego grafu. Waga ujemna liczy się jako zero.
+
+@ 0 5 0 124bcb22acae8dcd16f6400eea87d86d
++ entry .Progressive   jak daleko zaszedł węzeł wykresu pierścieniowego, od 0 (nierozpoczęty) do 1 (gotowy)
++     `node is Progressive` daje `completion(node): Double`, przycinane do `[0, 1]` przy
++     rysowaniu. Węzeł niesie własny postęp, więc wykres pierścieniowy aktualizuje się jak każdy
++     wykres – nowym `Dag` o tym samym kształcie, którego węzły zaszły dalej – a zastępowane są
++     tylko pasy, których wycinki wypełniły się bardziej.
+
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   graf zależności jako koncentryczne pasy: jeden na poziom, każdy węzeł to wycinek wypełniony w takim stopniu, w jakim jest ukończony
+
+@ 0 10 0 1d16274da5ae74870b75e0bde129fae8
++       Rodzaj wykresu dla `Dag[node]` z acyclicity, którego węzły są `Weighted` i `Progressive`,
++       z `Ranking` w zasięgu (domyślnym z obiektu towarzyszącego w acyclicity; `import
++       rankings.balancedRanking` rysuje każdy węzeł możliwie blisko węzłów od niego zależnych).
++       Węzły, które od niczego nie zależą, tworzą najbardziej wewnętrzny pas, a każdy kolejny
++       pas – węzły o jeden poziom dalej, więc kompilacja wypełnia się od środka na zewnątrz.
++       Wycinek węzła obejmuje kąt proporcjonalny do jego wagi w obrębie poziomu, w kolejności
++       sprawiającej, że leży nad zależnościami, do których został przyciągnięty, a pas jest tak
++       gruby, jak udział jego poziomu w całkowitej wadze. Wycinek wypełnia się zgodnie z ruchem
++       wskazówek zegara w takim stopniu, w jakim węzeł jest ukończony, a reszta ma przygaszony
++       odcień; kolorem jest pierwszy kolor palety, cieniowany zależnie od położenia wycinka.
++       Wykres pierścieniowy nie ma etykiet, osi ani legendy.
+
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
+
+@ 0 3 0 0c218c9188a3bb0711c8d394d44717cf
++         Nie ma tu stopnia ukończenia; jest on odczytywany z węzłów przy każdym rysowaniu.
++     entry #bands   pasy, od najbardziej wewnętrznego
++   entry .Style   komponenty wykresu pierścieniowego: ukończona część i reszta każdego wycinka oraz fuga
+
+@ 0 11 0 0c3ca24d87538fed06175a0f6738d39a
++         Rozszerza `Chart.Style`. `Chart.Standard` dostarcza `hole`, `sectorGap` i `bandGap`.
++     entry #hole   część promienia wydrążona od środka, wspólna z `Pie.Style`
++     entry #sectorGap   szerokość w pikselach fugi między sąsiednimi wycinkami
++     entry #bandGap   szerokość w pikselach fugi między sąsiednimi pasami
++     entry #shade   kolor wycinka zależny od jego położenia, wyprowadzany z pierwszego koloru palety
++         `x` i `y` biegną od -1 na lewej lub dolnej krawędzi wykresu pierścieniowego do 1 na
++         prawej lub górnej: od lewej do prawej barwa obraca się o trzydzieści stopni, a od dołu
++         do góry kolor przechodzi od ciemniejszego o jedną piątą, przez czystą barwę, do
++         jaśniejszego o jedną piątą.
++     entry #sector   ukończona część wycinka węzła, z jego operacji ścieżki: `sector-N`
++     entry #remainder   nieukończona część, w przygaszonym odcieniu: `sector-N-rest`
++   entry .dag   `Dag` ważonych, postępowych węzłów można narysować jako wykres pierścieniowy, jeśli dany jest `Ranking`

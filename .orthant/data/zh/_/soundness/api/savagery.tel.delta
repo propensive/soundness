@@ -1,0 +1,981 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1eb977bd9176e51c01b1d4c1ae38a604
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 11a1f33127b56fc40a4e716c248db2b6
++ info   以带类型的值表示的 SVG 绘图：形状、路径、变换、渐变和文本，可渲染为 XML，也可从 XML 解析
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 139cda82622f6c3106cecf60a08c7537
++     _Savagery_ 从值而不是字符串构建 SVG。
++     SVG 文档是充满小语言的 XML——路径的 `d` 属性是一段坐标程序，`transform` 是一条函数管道，颜色和长度各有自己的语法——而拼接它们的程序必须同时把每一种都写对。
++     在这里，`Point` 是位置，`Delta` 是位移，它们是不同的类型，二者之间有向量运算；路径是通过具名步骤逐步构建的 `Svg.Outline`；变换是记录在图形上的 `Transform` 值，而不是施加到其坐标上；每种小语言都由理解它的类型渲染，如 `in[Xml]` 或 `encode`。
+
+% 2 1 0 16bc3be5b4c2e7841da63d2575d5e190
+
+% 3 1 0 15f8d0a1f9731c2d1a5acccc7072b1fa
+
+% 0 1 0 1c686a28dfb100921079df0c99d85f8d
+
+% 0 1 0 08107ec6440ecda9007dbc44947efd2b
+
+% 0 1 0 059802db1f735e3b051a6f2af34c4d19
+
+% 0 1 0 080a590087f11f1000f3e7c4749ad2dd
+
+% 0 1 0 190676681080aeda1bcff66d68a3b1e1
+
+% 0 1 0 008f28746f575087165d84a9d02e1d3c
+
+% 1 1 0 0f7081b128bb2c090ec3e0a9ff06d942
+
+@ 0 7 0 0a49b890227a0b311c9adfd820fce48a
++     图形有 `Svg.Rectangle`、`Svg.Ellipse`（以及创建椭圆的 `Circle`）、`Svg.Outline`、`Svg.Polyline`、`Svg.Lettering` 和 `Svg.Group`，它们都是 `Svg.Figure`；每个图形都可以携带一个 `id`（一个 `Svg.Id`）、一个带类型的 CSS `style` 和一个 `transforms` 列表。
++     `Svg.Lettering` 的 `font` 是 `Font in Web`，只有当某个字体族在作用域中有供给时它才存在，因此携带文本的 `Svg` 也携带使该字体族可用的 `@font-face`。
++     定义是 `Svg.Def`——由 `Stop` 组成的 `Svg.LinearGradient`——而 `Svg` 把定义和图形与尺寸、`unit` 和 `viewBox` 组装在一起。
+
+@ 0 7 0 09ea7095befaab251a665a5e41649487
++     解析则反方向进行：`text.read[Svg]` 和 `text.load[Svg]`（或 `data.load[Svg]`）把 SVG 文本读回带类型的图形，当根元素不是 `<svg>`、路径数据格式错误、颜色、长度或 viewBox 格式错误，或者宽度和高度的单位不同时，抛出 `Svg.Error`。
++     不需要 `XmlSchema`：底层的 XML 按自由格式的 schema 解析，因为 SVG 的词汇由图形类型来验证。
++     `construables` 包中的 `svgConstruable` 是一个按名称导入的 given，它使 `Svg` 可以从 `image/svg+xml` 媒体类型构造。
+
+@ 0 6 0 10b9cd54309cf07f1c23deb66d28d43a
++     坐标是 `Float`，与 SVG 属性的写法一致，而在需要 `Point` 的地方，一对数字会转换为 `Point`。
++     角度是 geodesy 的 `Angle`。
++     该库只有一个源集 `savagery.core`，它依赖 xylophone（XML）、cataclysm（CSS 和 `Web` 字体）、phoenicia、mosquito（重新导出了它的 `Affine`）、geodesy 的角度、iridescence 和 cardinality。
++     除 `Segment` 之外的所有内容都导出到 `soundness` 总括包，`construables` 包与总括包自己的同名包合并。
+
+% 0 1 0 12d688908203c235122f0674a400804e
+
+% 0 1 0 0defe88869fdcb2d1e0b3c32fe34ca7c
+
+% 0 1 0 18c475b5829eed8d1b35d12a1577cfd3
+
+% 0 1 0 016bbca3f65e579a1b3cd7a1a652c505
+
+% 0 1 0 05abc848eede2e6210a27a23a1a67945
+
+% 0 1 0 06f438cba935a186007c8c82e03e2a03
+
+@ 0 1 0 17f160d9938e2e3c08308554244361be
++ entry .Svg   `<svg>` 文档元素：尺寸、定义和图形，可写入 XML，也可从 XML 读取
+
+% 1 1 0 1af40528c22003a5081467253987170e
+
+@ 0 8 0 12bcac1e3d4a14450dcf4e540a35449e
++       `Svg(width, height, defs = Nil, figures = Nil, transforms = Nil, unit = Unset, viewBox = Unset)`。
++       `#width` 和 `#height` 是视口的尺寸，以 `#unit` 为单位，未设置时以用户单位计。
++       `#viewBox` 是视口所显示的用户空间矩形，默认为从原点开始、与视口自身尺寸相同的矩形。
++       以 `svg.in[Xml]` 渲染时，该元素携带 `xmlns`、`viewBox`、`width` 和 `height` 属性，一个 `<defs>`（其中先是一个 `<style>`，包含其文字所指名的每个字体族的 `@font-face` 规则，然后是每个定义），以及各个图形——如果 `Svg` 本身有变换，图形会被包装在一个 `<g transform="…">` 中。
+
+% 2 1 0 13a3ff6b81a3f3d41fceab047471e982
+
+% 3 1 0 129823ae0d2e4d8819a43928e32cf24c
+
+% 0 1 0 0f476bb1bed2e90903b60d2aac27f35e
+
+% 0 1 0 1b264a13c5dada11151154fe838e67de
+
+% 0 1 0 068379e10db15bf91c3d5426ff8ffe9d
+
+% 0 1 0 16710377d55bddf1085ab4a381cb0758
+
+% 1 1 0 1147034b5f4a1fb304b56798bb4ab09f
+
+@ 0 5 0 11905a252a159c480ba5280266e1fbc9
++       `Svg` 是 `Documentary`，因此 `Document(svg, enc"UTF-8").show` 是一个带有 XML 声明的独立 `.svg` 文件；由于底层是 XML，它也可以直接嵌入 HTML 页面。
++       解析可用 `text.read[Svg]`（即 `.aggregable` given，它接受并丢弃元素之前的 XML 声明和任何注释）、`text.load[Svg]`（保留所声明编码的 `Document[Svg]`），或者从字节解析的 `data.load[Svg]`：
+
+% 2 1 0 06a2c4172fb5c1cf0d258bb70c4cb3aa
+
+% 3 1 0 165a1f4bc1f603e00013328021be8f0e
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 07b35e60826b05000eccca9b33f254a6
+
+% 0 1 0 0071ca290fc5137400722aab45d47eb0
+
+% 0 1 0 030f7b512294885c10d1fb5eff914848
+
+% 0 1 0 1805779925b8ab4809d6380947af3492
+
+% 1 1 0 082fd5dd347592110b20da35811aa891
+
+@ 0 5 0 1303f05152900786154322460f9bb0a5
++       `<g>` 解析为 `Group`，`<polyline>` 和 `<polygon>` 解析为 `Polyline`，`<text>` 解析为 `Lettering`，`<circle>` 和 `<ellipse>` 解析为 `Ellipse`，`<path>` 解析为 `Outline`，`<defs>` 中的 `<linearGradient>` 解析为 `LinearGradient`；每个图形都会读取 `id`、`transform` 和 `style`，未知的元素（例如 `<image>`）或属性会被跳过。
++       写出后再读回的图形渲染结果完全相同。
+
+% 0 1 0 10125a1ff41506be05cb1eadd9796eb7
+
+% 0 1 0 06ae4d247472223e1d344d92b570d5a1
+
+% 0 1 0 11cfb34fc283d1f2117693bdbd374fb8
+
+% 0 1 0 119c813ed6e203f71e51c3357fd9821a
+
+@ 0 11 0 0ac15e7c634ac5311c7ae4e5dc13e74c
++   entry .encodable   带有定义和图形的 `<svg>` 元素，形如 `svg.in[Xml]`
++   entry .aggregable   `text.read[Svg]`：解析 SVG 文本，丢弃元素之前的任何 XML 声明
++       需要作用域中有 `Tactic[Parse.Error]`、`Tactic[Xml.Error]` 和 `Tactic[Svg.Error]`。
++       XML 按 `XmlSchema.Freeform` 解析，因此调用者无需给出 schema。
++   entry .loadable   `text.load[Svg]`：一个 `Document[Svg]`，其元数据是所声明的编码
++       需要同样的三个战术。
++       未声明编码时，编码默认为 UTF-8。
++   entry .loadableData   `data.load[Svg]`：从字节解析的 `Document[Svg]`
++       需要这三个战术以及作用域中的一个 `Buffering`。
++   entry .showable   作为独立文件的 `Document[Svg]`：先是 XML 声明，然后是元素
++       `Document(Svg(10, 10), enc"UTF-8").show` 以 `<?xml version="1.0" encoding="UTF-8"?>` 开头。
++   entry .Error   当 SVG 文本无法读取为 `Svg` 时抛出
+
+% 1 1 0 0ec5f00454840b261e6ca1f2a2c3abe2
+
+@ 0 4 0 14f0872777a2592a187a78253afb4094
++         错误 `↯/s.130.1`：_the SVG could not be parsed because `reason`_，以原因自身的编号作为子编号。
++         由 `read[Svg]` 和 `load[Svg]` 通过 `Tactic[Svg.Error]` 抛出；格式不良好的 XML 会先由底层解析器抛出 `Xml.Error`。
+
+% 2 1 0 06c8803f0ecd8b3408cecf0884d6959d
+
+% 3 1 0 1208642a4d2069210140916f5b0fc6a2
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 125026af6512d63601ea36ca5f253e8e
+
+% 1 1 0 064ab119bb9a57891307e525cc56e6f8
+
+@ 0 1 0 08a50e0991d78cc60fcc899291700517
++     entry .Reason   SVG 无法读取的原因，每个都有编号
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 155e0e6531bd609d0dcf6e3f39c4eec5
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `NotAnSvg(label)`  1  _the root element was `<label>` instead of `<svg>`_  片段的节点中没有 `<svg>` 时也会出现
++         row  `MalformedPathData(data)`  2  _the path data `data` could not be parsed_  `d` 属性中有未知命令，或应为数字之处不是数字
++         row  `MalformedColor(color)`  3  _the color `color` could not be parsed_  `stop-color` 不是 `#rgb`、`#rrggbb`、`rgb(r, g, b)`，也不是具名颜色 red、green、blue、black、white、yellow、cyan 和 magenta 之一
++         row  `MalformedLength(length)`  4  _the length `length` is not a number with a unit_  根元素的 `width` 或 `height`；单位是可选的
+
+% 0 1 0 11ed89446bd4a9aa0f1195b6febde579
+
+% 0 1 0 0b9cee0e9ec04403171762af71ee9d1f
+
+% 1 1 0 03a199cd019c36391d388508c20a3433
+
+@ 0 7 0 02b5b4143c47aeae124b23c4ca0081f3
++     entry .communicable   把每个原因渲染为消息
++     entry #reason   `Svg.Error.Reason`
++   entry .Units   `<svg>` 元素的 `width` 和 `height` 所带的单位：`Em`、`Ex`、`Px`、`In`、`Cm`、`Mm`、`Pt`、`Pc` 或 `Percent`
++       每个分支的 `suffix` 是写在数字之后的文本：`mm`、`%`。
++       `unit = Unset` 的 `Svg` 写出裸数字，SVG 将其读作用户单位。
++       命名为 `Units` 而不是 `Unit`，因为后者会遮蔽 `scala.Unit`。
++   entry .ViewBox   `viewBox` 属性：视口所显示的用户空间矩形
+
+% 1 1 0 14423505540e9e220a02330aaf3cb303
+
+@ 0 9 0 1d21e2fd3b97f0740b79aaaed44c3e6f
++         `ViewBox(x, y, width, height)`。
++         没有 viewBox 的 `Svg` 会写出一个从原点开始、与其自身尺寸相同的 viewBox；从文本读取的 viewBox 会被保留，并按原样写回，因此绘图工具的 `width="48.5mm" height="20mm" viewBox="0 0 48.5 20"` 在往返中得以保持。
++     entry .showable   以空格分隔的四个数字，与属性的写法一致
++     entry #x   左边缘，以用户单位计
++     entry #y   上边缘
++     entry #width   所显示的宽度
++     entry #height   所显示的高度
++   entry .Parser   `read[Svg]` 底层的 SVG 读取器：找到 `<svg>` 元素并对其解码
+
+% 1 1 0 0fae4aa6a61b536d0486f234181092ac
+
+@ 0 18 0 1560d61aa6cf6ecd185f0bb05fc63d6e
++         通常不直接调用；`read[Svg]` 和 `load[Svg]` 都经由它。
++         它的公共方法接受已解析的 `Xml` 值，当 SVG 是更大文档中的一个元素时，这很有用。
++         路径数据支持大小写两种形式的 `M`、`L`、`H`、`V`、`C`、`Q` 和 `Z` 命令，移动之后隐含一条直线；任一种大小写的 `H` 和 `V` 都会变成相对的 `Stroke.Draw`，因为不存在绝对的仅水平或仅垂直笔画，这对绝对形式而言是有损的。
++         变换列表识别 `translate`、`scale`、`rotate`、`skewX`、`skewY` 和 `matrix`，并跳过未知的函数；内联的 `style` 被拆分为 `name: value` 声明；`points` 属性接受以空白或逗号分隔的数对。
++     entry .labelOf   元素的标注，对任何其他节点则为 `<unknown>`
++     entry .findSvg   节点列表中的 `<svg>` 元素，没有时为 `Svg.Error(NotAnSvg)`
++         需要一个 `Tactic[Svg.Error]`。
++     entry .rootElement   `Xml` 值的 `<svg>` 元素：它本身，或片段的节点中的那一个
++         对任何其他标注的元素抛出 `Svg.Error(NotAnSvg(label))`。
++     entry .decodeSvg   把 `<svg>` 元素解码为 `Svg`，并解码其定义和图形
++         对格式错误的长度、不匹配的单位、格式错误的 viewBox、格式错误的路径数据或格式错误的渐变颜色抛出 `Svg.Error`。
++   entry .Id   元素标识符，作为与文本不同的类型
+
+% 1 1 0 13d39f2de2bb8e751f60f52a3c5d08b8
+
+@ 0 4 0 19aeeca7c61bf6ca1c04b12cb2a85e42
++         渐变引用、动画目标、`<use>` 元素或图表修订需要它来指名一个图形或定义。
++         `Svg.Id` 底层是 `Text`，但它是一个独立的不透明类型，因此标识符永远不会与它所标注的文本混淆。
++         它检视为 `Svg.Id(t"logo")`。
+
+% 2 1 0 1b34be3dde99a09a08535b4094753241
+
+% 3 1 0 0b55d9b857185983024fd3f258fd4572
+
+% 0 1 0 046f9451295a592e17c561bd1e6b2e08
+
+% 0 1 0 14dba756a1b5722c00356965252503ff
+
+% 1 1 0 0f86a20352a7486414db43eec1ddbe3b
+
+@ 0 4 0 00c5b934a0f3f68f1753fae49069f584
++     entry .apply   `Svg.Id(text)`：由文本得到的标识符
++     entry .text   标识符的文本，形如 `id.text`
++     entry .inspectable   把标识符渲染为 `Svg.Id(t"…")`，指名其类型
++   entry .Def   `<defs>` 元素中的一项；`LinearGradient` 是唯一的种类
+
+% 1 1 0 04430ea67453d0ad177d4297f2dfdb28
+
+@ 0 4 0 1d60a408f839db3b00f9d860148932ec
++         一个密封特质：它的子类型固定在 savagery 自己的源代码中。
++         图形通过样式中的 `Svg.Id` 引用定义。
++     entry .encodable   定义的元素，形如 `definition.in[Xml]`
++   entry .LinearGradient   带有标识符和带类型色标的 `<linearGradient>`
+
+% 1 1 0 087561e8bfb610fd1c4dbfc6fa303988
+
+@ 0 2 0 08186c19f9c54caf0ab1946715f6a510
++         `Svg.LinearGradient(id, stops*)`，其中每个 `Stop` 是 `[0, 1]` 中的一个偏移量和任意 `Chromatic` 类型的一种颜色。
++         解析得到的渐变具有 `Color in Srgb` 色标。
+
+% 2 1 0 0ae80f1a524a98df19ad5ac5a4e3b7a3
+
+% 3 1 0 0723bac5298d4d4704e3790c5b86ca38
+
+% 0 1 0 15f8a4db02ca848e16e52aed552d0fc0
+
+% 0 1 0 096f1522cce5f8331222955e3e431a5f
+
+% 1 1 0 0e9efcd945d4bf6c19eeebf1447fdf1b
+
+@ 0 12 0 0772ac678e6dbc361bcaa80ad731a45b
++     entry #id   渐变的标识符，图形的 `fill` 引用它
++     entry #stops   色标，按顺序排列
++   entry #width   视口的宽度，以 `#unit` 或用户单位计
++   entry #height   视口的高度
++   entry #defs   定义，写在 `<defs>` 中，位于任何 `@font-face` 样式之后
++   entry #figures   图形，按绘制顺序排列
++   entry #transforms   施加于整个绘图的变换：图形被包装在携带这些变换的 `<g>` 中
++       通过 `translate`、`rotate`、`scale`、`skew` 和 `transform` 扩展方法添加，与任何 `Transformable` 一样。
++   entry #unit   `#width` 和 `#height` 所用的单位，用户单位时为 `Unset`
++   entry #viewBox   所显示的用户空间矩形，为 `Unset` 时是从原点开始、与视口尺寸相同的矩形
++   entry #Metadata   `Document[Svg]` 除绘图之外携带的内容：它的 `Encoding`
+
+@ 0 1 0 0b94e382eee646aa02cfb801079e623b
++   entry .Figure   每个可绘制元素的密封根：矩形、轮廓、椭圆、组、折线、文字
+
+% 1 1 0 1d4ab37b6abd694504267b455d024ce9
+
+@ 0 5 0 0876925f265729dc0cc81f840104acb7
++         每个图形都通过伴生对象的 `.encodable` 以 `figure.in[Xml]` 渲染为其 SVG 元素，以分支名称和带标注的字段检视，并可以携带一个 `id`、一个内联 `style` 和一个 `transforms` 列表，它们仅在存在时按此顺序写为 `id`、`style` 和 `transform` 属性。
++         `Figure.fonts` 收集一组图形排版文本所用的字体，以便 `Svg` 携带它们的 `@font-face` 规则。
+
+% 2 1 0 09ce2c815455a8ef0d6378c12d52cd6a
+
+% 3 1 0 117274e3264c3bc206405d595f07cede
+
+% 0 1 0 0ef5d9b241f3d2dc08402604c884c9c1
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 1c615494544990270908b9a3f3286f99
+
+% 0 1 0 0e7380bb61c5dac21fdc464961bfba74
+
+% 0 1 0 1879adaf78d9a69d1ebc137d5b0d88c6
+
+% 0 1 0 073a3effe2b438640f6f8a948f00c144
+
+% 1 1 0 1863e60bc649e70012988078d9c651a9
+
+@ 0 3 0 1cce422a46d8335f0dfdab8febfe6a12
++         变换通过任何 `Transformable` 图形上的 `translate`、`rotate`、`scale`、`skew` 和 `transform` 扩展方法以流式方式添加，每个都返回追加了该变换的新图形；图形定义时的几何形状就是它保留的几何形状。
+
+% 0 1 0 1465dcb7c81c8ae608d7d4d35bdfc449
+
+% 0 1 0 06314687e9dd21a517880acefb632bd7
+
+% 0 1 0 07bb9dd8870b4db005e7df934f11e3dc
+
+% 0 1 0 1531472aec5b3b720a9be5499958e0cf
+
+% 0 1 0 1169c313788515680f37e547c9eea2ed
+
+% 0 1 0 1e56ead9fb2c0ea312ca2c881a73e864
+
+% 0 1 0 037937d755b665c51498128e49be195c
+
+@ 0 9 0 10931fa66134379d19a8702fd5d9acfb
++     entry .encodable   对每个子类型，图形的 SVG 元素，形如 `figure.in[Xml]`
++         以 `Figure` 为界，因此它既适用于 `Figure`，也同样适用于 `Rectangle` 或 `Outline`。
++     entry .inspectable   把图形渲染为其分支名称，每个字段都带标注，笔画和变换清晰可读
++         `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`：与 XML 不同，路径操作不会被压缩到一个 `d` 属性中。
++     entry .fonts   一组图形排版文本所用的字体，包括组中的
++     entry #fonts   此图形排版文本所用的字体：`Lettering` 的字体，`Group` 中各文字的字体，否则为空
++   entry .Rectangle   `<rect>`：一个位置、一个宽度和一个高度
+
+% 1 1 0 1660e1fc5bc37172044d2dbc24b8877f
+
+@ 0 2 0 0bca65c379fcf7c81a5f3ff672412c38
++         `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`。
++         位置是左上角；一对数字会转换为 `Point`。
+
+% 2 1 0 16850180d3a2ab250d3f27fcbbe1604c
+
+% 3 1 0 090e718cb724baf400f9c3e44cddcb72
+
+% 0 1 0 10db5ada497e5b760b43b2e7b968e40e
+
+% 0 1 0 0ce1c4316cccdc001f5d3c1d722dc7ec
+
+% 0 1 0 08484d37cd95b3db027b8585dceb7cc6
+
+% 0 1 0 0b3c242d28f8bd4a0f463ef526666205
+
+% 1 1 0 04eebde1120d541f1f8ef641b25645e6
+
+@ 0 9 0 1255b9a271989cbf165877e0597e53fb
++         提取器模式指名全部六个字段：`case Rectangle(position, width, height, transforms, style, id)`。
++     entry #position   左上角
++     entry #width   宽度，以用户单位计
++     entry #height   高度
++     entry #transforms   变换，按顺序写为 `transform` 属性
++     entry #style   内联 CSS，或 `Unset`
++     entry #id   标识符，或 `Unset`
++   entry .Outline   `<path>`，逐步构建：绝对步骤带 `To` 后缀，相对步骤不带
+
+% 1 1 0 17a30151a4d40789058bf5233c946921
+
+@ 0 6 0 193dfd91ac4f722f0053be6bf1701dbf
++         `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`。
++         `#ops` 以**最后者在前**的顺序保存——每一步都被添加到列表头部——并按顺序渲染为 `d` 属性。
++         步骤是 `Stroke` 的各个分支：移动、直线、三次或二次曲线（带或不带第一个控制点，后者用于平滑延续）、弧线和闭合。
++         每个流式方法添加一个步骤；也可以直接给出 `Stroke` 值，饼图的弧线就是这样做的。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 105003a32f7278cb035d2dd64bbfa908
++           label 空路径
+
+% 1 1 0 1e689bd73ee43be609f7decaef0d1fb0
+
+% 0 1 0 1da4e266630b5b2600e44cafef459048
+
+% 0 1 0 01a845dee6ab13ae1bea424918cceeb5
+
+% 1 1 0 1d9122ad018fabd915ca3a5ff21e06ef
+
+@ 0 1 0 1c0c42635e0f230a0b626af5a3257794
++           label 移动到起点
+
+% 1 1 0 1ff0b9388fdcdf341e09b99c9adc4902
+
+% 0 1 0 091b24e04bc9acfa07b0c025ea083b90
+
+% 0 1 0 0f8084b0ba1099130e9e8fe4ee2dce75
+
+% 1 1 0 0f6db969547369881455bb0ac7c8f5dd
+
+@ 0 1 0 0049a8d68dc3c7d60664db9a7112211c
++           label 画直线到另一个点
+
+% 1 1 0 1854c300f3a8cf5d1127346a049fecc0
+
+% 0 1 0 03e0a327e9da7ab213ff5de6450eff86
+
+% 0 1 0 1858603df920a6d80578e0c8ca677d25
+
+% 1 1 0 1fd95640572910df15de2b6c91fcbd2c
+
+@ 0 1 0 1cc3c2cbbede206c1cf01f6ab74ae88a
++           label 三次曲线，带两个控制点
+
+% 1 1 0 00668ba1f67b60731c7bd8a70363c80d
+
+% 0 1 0 11784179cc8f41451a87739d20a72f93
+
+% 0 1 0 1bf812d1fc1c39e61c26321408923659
+
+% 1 1 0 12b881568f4fe9cf08861c99505b9bb8
+
+@ 0 1 0 1d459c4f1cf7dc061b04ed8c9a192509
++           label 相对步骤，以 Delta 表示
+
+% 1 1 0 0821f775e6eddb2f0fda02e61073ecea
+
+% 0 1 0 0ab1fbf50eaeee1e029b1dd323b6b275
+
+% 0 1 0 11ff6739a524b1671927c3d77b907252
+
+% 1 1 0 09d4669147ff2bee0ae9c08d47692bdf
+
+@ 0 1 0 0ed66323eac7e724082346d6d4cd94d8
++           label 闭合回起点
+
+% 1 1 0 09405ffd204edf61002fbd6e46f02db1
+
+% 0 1 0 11382bdc3b7112c611ba9110d884b696
+
+% 0 1 0 1a863cb2af09c9c40ff9fc4c0c10fe07
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 12ce468c0b9736171742e8ae1c969da8
++         沿一个轴的相对直线写作 `h` 或 `v`。
++         方向性步骤 `#lineUp`、`#lineDown`、`#lineLeft`、`#lineRight` 及其对应的 `move…` 各接受一个长度，采用 SVG 的坐标轴，其 `y` 向下增长：`lineUp(v)` 绘制 `Delta(0, -v)`（一个 `v` 步骤），`lineLeft(v)` 绘制 `Delta(-v, 0)`（一个 `h` 步骤）。
+
+% 0 1 0 1dfb5831bdb66a1f1b3c108952c9493e
+
+% 0 1 0 1e1a578846bb0f81055995106fcbd9c9
+
+% 0 1 0 025a632d3f3ae64a1abf37926b1f8e08
+
+@ 0 24 0 05bd8f5ab2e50a031474f6bd73b92d0b
++     entry #ops   路径操作，最近的在前
++     entry #style   内联 CSS，或 `Unset`
++     entry #id   标识符，或 `Unset`
++     entry #transforms   变换，写为 `transform` 属性
++     entry #moveTo   `M`：移动到一个绝对点
++     entry #lineTo   `L`：画直线到一个绝对点
++     entry #move   `m`：按一个 `Delta` 移动
++     entry #line   `l`、`h` 或 `v`：按一个 `Delta` 画直线，沿一个轴时写作 `h` 或 `v`
++     entry #curve   `c` 或 `s`：相对三次曲线，带两个控制点或只带第二个
++         `curve(ctrl1, ctrl2, point)` 是完整的三次曲线；`curve(ctrl2, point)` 从前一条曲线平滑延续，第一个控制点取其反射。
++     entry #curveTo   `C` 或 `S`：绝对三次曲线，带两个控制点或只带第二个
++     entry #quadCurve   `q` 或 `t`：相对二次曲线，带控制点，或平滑延续
++     entry #quadCurveTo   `Q` 或 `T`：绝对二次曲线，带控制点，或平滑延续
++     entry #moveUp   相对移动，写作 `Move(Delta(0, -value))`
++     entry #moveDown   相对移动，写作 `Move(Delta(0, value))`
++     entry #moveLeft   相对移动，写作 `Move(Delta(-value, 0))`
++     entry #moveRight   相对移动，写作 `Move(Delta(value, 0))`
++     entry #lineUp   相对直线，写作 `Draw(Delta(0, -value))`，渲染为 `v -value`
++     entry #lineDown   相对直线，写作 `Draw(Delta(0, value))`，渲染为 `v value`
++     entry #lineLeft   相对直线，写作 `Draw(Delta(-value, 0))`，渲染为 `h -value`
++     entry #lineRight   相对直线，写作 `Draw(Delta(value, 0))`，渲染为 `h value`
++     entry #closed   `Z`：把当前子路径闭合回其起点
++   entry .Ellipse   `<ellipse>`，半径相等时为 `<circle>`
+
+% 1 1 0 10c808a32f58064b10342d2c73399624
+
+@ 0 4 0 128aedf114a6b3cf0ea3361e12ac355d
++         `Ellipse(center, xRadius, yRadius, angle, transforms = Nil, style = Unset, id = Unset)`。
++         `angle` 保存在值上，但尚未写入元素：椭圆以 `cx`、`cy`、`rx` 和 `ry` 渲染（当 `#circle` 为真时，以 `r` 渲染为 `<circle>`）。
++         `Circle` 创建半径相等、角度为零的椭圆，解析得到的 `<circle>` 也是 `Ellipse`。
+
+% 2 1 0 175672264599232809270886375b4313
+
+% 3 1 0 10fde6e842bc4e30190ddb4e7746c4d1
+
+% 0 1 0 1f283c166c9003a9011a47c33978fe80
+
+% 0 1 0 05d4da257891c8a4010a8099214df18f
+
+% 1 1 0 001acbe931eef65b0b5d58be333c44cd
+
+% 0 1 0 085b3b5b1c55a6511e7eaa55010df8b8
+
+@ 0 9 0 060d67a6c045665d0fbacb85f185753d
++     entry #center   中心
++     entry #xRadius   水平半径
++     entry #yRadius   垂直半径
++     entry #angle   坐标轴的旋转角，一个 `Angle`；不写入元素
++     entry #transforms   变换，写为 `transform` 属性
++     entry #style   内联 CSS，或 `Unset`
++     entry #id   标识符，或 `Unset`
++     entry #circle   两个半径是否相等，从而元素为 `<circle>`
++   entry .Group   `<g>`：一同移动、设置样式和标识的图形
+
+% 1 1 0 0378bbfa81493dc111c2d69960918e20
+
+@ 0 4 0 16fe0f4d1968c17012bd8c1ca52dfe31
++         `Group(figures, id = Unset, style = Unset, transforms = Nil)`。
++         图表的坐标轴或其某个系列就是一个组，因此当它变化时，可以通过标识符找到并替换整个部分。
++         它的 `fonts` 是其中各文字的字体，因此无论文本嵌套多深，`Svg` 都为每个字体族携带一条 `@font-face`。
+
+% 2 1 0 124adfa1ee2c3827181d338326f2d362
+
+% 3 1 0 16cd73cedf39c5ae09cea1a523750a1f
+
+% 0 1 0 14904f22ac23f3e01faa62295a70b870
+
+% 0 1 0 0916a8923a79a2d311a9a2c821ab484e
+
+% 0 1 0 0ce0da82d03b821714ddb2607b9141eb
+
+% 1 1 0 09fae7b3cd85b15d1c621b034acbb423
+
+@ 0 6 0 0b0480e805b844131d2ed483eec5f13c
++     entry #figures   图形，按绘制顺序排列
++     entry #id   标识符，或 `Unset`
++     entry #style   内联 CSS，或 `Unset`
++     entry #transforms   变换，施加于其中的每个图形
++     entry #fonts   其中每个文字的字体，递归收集
++   entry .Polyline   经过若干绝对点的 `<polyline>`，闭合时为 `<polygon>`
+
+% 1 1 0 0c4f4bca5ff6c10411bffda11c0ab927
+
+@ 0 4 0 0eb7ef05fe56f7180145354a4900ec7f
++         `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`。
++         它是绘制出的折线、其下方的区域或条形轮廓的形状，无需为每个顶点写一个路径操作：绘制出的折线与其下方的填充区域是同一个图形，只差一个标志。
+
+% 2 1 0 0fcf2b45370085e110ba3be98d81992e
+
+% 3 1 0 06463abc4bd9cf9005d544abc749fe47
+
+% 0 1 0 1b940cdabc50ac571a1d9401c0ad780e
+
+% 0 1 0 1dcab334f7cdb6ab15a4ec0272b0b753
+
+% 0 1 0 091fabe6c0d27d3f122df07364d544d3
+
+% 0 1 0 0532ac1a8376d4ff07718b9d20094d57
+
+% 1 1 0 1fb3d4f0537c12de11a73acf5b60f24c
+
+@ 0 6 0 071ff754b36f7cd51d156f01a6bc6204
++     entry #points   顶点，按顺序排列
++     entry #closed   最后一个点是否连接到第一个点：是 `<polygon>` 而不是 `<polyline>`
++     entry #id   标识符，或 `Unset`
++     entry #style   内联 CSS，或 `Unset`
++     entry #transforms   变换，写为 `transform` 属性
++   entry .Lettering   `<text>`：放置在某个位置的一串字符，锚定于其起点、中点或终点
+
+% 1 1 0 1d8ebb267b934356068b5fa77bfbcd3a
+
+@ 0 6 0 1d60090a8bfab192106758b6a3228630
++         `Lettering(position, text, anchor = Anchor.Start, baseline = Unset, id = Unset, style = Unset, font = Unset, transforms = Nil)`。
++         以它在绘图中的身份命名，因为 `Text` 是字符串类型。
++         `#anchor` 表示该位置是这串字符的起点、中点还是终点（`text-anchor`，为 `Start` 时省略），`#baseline` 表示字形的哪条线落在该位置上（`dominant-baseline`，未设置时交给渲染器决定）。
++         文本会被转义：`a < b` 渲染为 `a &lt; b`。
+
+% 2 1 0 116e80c534a7c84a0014565676f547ad
+
+% 3 1 0 11dab317146828dd1840d8b758ee9161
+
+% 0 1 0 1fc0abf00997532503e7239263ecf14a
+
+% 0 1 0 01d7220d7f0fda1d1e4a0e18f8b1b3be
+
+% 1 1 0 152fc778c9ff6a720c5f9e1eb0ced78d
+
+@ 0 6 0 0eb0b47d435b79cf18707f518fe57fb9
++         `#font` 是一个 `Font in Web`：一个字样与其字体族的供给配对，只有在作用域中有这样的供给时它才存在，因此没有供给的字体族无法为 SVG 排版文字。
++         字体的声明（`font-family`、`font-weight`……）并入内联样式，而 `Svg` 会在其定义中写入一个 `<style>`，包含其文字所指名的每个字体族的 `@font-face` 规则；`Web.sansSerifFont` 这样的通用字体族不会添加任何规则。
+
+% 2 1 0 0aac0b06dd2a5cbe16f1d4cdd9b63a91
+
+% 3 1 0 172102b55709b7721821ab6c1f65e836
+
+% 0 1 0 020998cd3ec9f4781ef2dbe8f889db11
+
+% 0 1 0 1eae9e655630c3df1fc8c5c6173f2efd
+
+% 0 1 0 1b0408c6001ad5aa17177fb893424a4b
+
+% 0 1 0 0a7c319645667e1110c5172d112a4098
+
+% 1 1 0 0106ea91fb634b7b1f91f97935ade059
+
+@ 0 3 0 15fa461afe7622ca0be217e8e7d1ef16
++         `Font(face)` 从它被赋给的 `Optional[Font in Web]` 字段推断媒介；在其他地方写 `Web.font(face)`。
++     entry .Anchor   文本相对于其位置的放置方式：`Start`、`Middle` 或 `End`
+
+% 1 1 0 0a8fee495b21d3231cfa278ee7cf3b5b
+
+@ 0 3 0 0c6154ee654f8e3e1db832c96d010ea6
++           `text-anchor` 属性，仅当它不是 `Start` 时写出。
++       entry #text   属性值：`start`、`middle` 或 `end`
++     entry .Baseline   文本的哪条线落在该位置上：`Alphabetic`、`Middle` 或 `Hanging`
+
+% 1 1 0 0e02dd7a110a0dc4120aca8455a6847e
+
+@ 0 13 0 0beb301bae4755be10aa64af2e213c1e
++           `dominant-baseline` 属性。
++           未设置的基线交给渲染器决定，即字母基线；`Hanging` 使文本悬挂在该位置下方，正如坐标轴下方的标签所需要的那样。
++       entry #text   属性值：`alphabetic`、`middle` 或 `hanging`
++     entry #position   锚点
++     entry #text   字符，写出时会被转义
++     entry #anchor   `Lettering.Anchor`
++     entry #baseline   `Lettering.Baseline`，或 `Unset`
++     entry #id   标识符，或 `Unset`
++     entry #style   内联 CSS，或 `Unset`；字体的声明追加到其后
++     entry #font   `Font in Web`，或 `Unset` 表示使用渲染器的默认字体
++     entry #transforms   变换，写为 `transform` 属性
++     entry #fonts   字体，作为单元素列表，或为空
+
+@ 0 1 0 12c3d44a6d22bb8b1c385a50bfcc29ae
++ entry .Circle   创建半径相等的 `Ellipse`：一个 `<circle>`
+
+% 1 1 0 0bbe356bbac3bc79112fe3ce904925e7
+
+@ 0 3 0 184ed30fead6d0ae1290a8548299a4b5
++       `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` 是两个半径都等于该半径、角度为零的 `Svg.Ellipse`。
++       不存在 `Circle` 类型：对图形的匹配看到的是 `circle` 为真的 `Svg.Ellipse`。
+
+% 2 1 0 07e38f1b433aead3179d765fd75172d2
+
+% 3 1 0 1a7815f28dd35433153120ec4bb22056
+
+% 0 1 0 11494f920618b6b1134cb685c1a6d429
+
+% 0 1 0 155ecfccc7805a841833c4b32b44a400
+
+% 1 1 0 0b44a5571a163fab1515f6d8e116c038
+
+@ 0 1 0 048a99dafddb48470a44e60ce0cf3748
++   entry .apply   `Circle(center, radius, transforms, style, id)`：该半径的椭圆
+
+@ 0 1 0 1f5795d2ab5dfadd0cd2a16508e6fa40
++ entry .Stroke   路径数据中的一个操作：移动、直线、曲线、弧线或闭合
+
+% 1 1 0 0e9d1cab8e14b90b0335dc9a19f85240
+
+@ 0 9 0 046d430be927464d00cbb6b2002987ab
++       各分支把一个带 `To` 后缀、接受 `Point` 的绝对形式，与一个接受 `Delta` 的相对形式配对：`MoveTo(point)` / `Move(shift)`、`DrawTo(point)` / `Draw(shift)`、`CubicTo(ctrl1, ctrl2, point)` / `Cubic(ctrl1, ctrl2, shift)`（其第一个控制点是 `Optional`：`Unset` 表示从前一条曲线平滑延续，如 `S` / `s`）、`QuadraticTo(ctrl1, point)` / `Quadratic(ctrl1, shift)`（控制点未设置时同样对应 `T` / `t`）、`ArcTo(rx, ry, angle, largeArc, sweep, point)` / `Arc(…, shift)`，以及 `Close`。
++       `Svg.Outline` 持有它们的一个列表，最近的在前，其流式方法创建它们；饼图的扇形直接由 `MoveTo`、`DrawTo`、`ArcTo` 和 `Close` 构建。
+
+% 2 1 0 0c51cf027029a6741a4ccf08ab6b3bd3
+
+% 3 1 0 130697da9d12d37109df4bc139b0528a
+
+% 0 1 0 16311d6ac92c76a01aace77b4e26e11f
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1c9a230863b1995d1e3c095b4ced85b7
+
+% 0 1 0 13dde68271081c2a03a0c080d3ce31b8
+
+% 0 1 0 0ee23ccf614bd01700a9a29310405222
+
+% 0 1 0 03c6a5bb7f218e2412f057a53b18e5dd
+
+% 0 1 0 11a2c465dccb49790b5ff0baa4f3aa22
+
+% 0 1 0 155cf17ec7a35f6a0b4f03be2702ca18
+
+% 1 1 0 0f9583bf3e618a3f01cd45302aaf4876
+
+% 0 1 0 04e908d0172218df0663ca8538622750
+
+% 0 1 0 190997c350639c25183b5b5610166ad7
+
+@ 0 8 0 1f7494430326bd8619e097e9ddf6ef87
++   entry .inspectable   以分支名称及其字段渲染笔画，如 `MoveTo(Point(x:0.0F ╱ y:0.0F))`
++       逐一写出而不是派生，因为路径数据形式（`A 3.0 4.0 0.0 1 0 …`）丢掉了读者对照源代码时所依据的分支名称。
++   entry .encodable   笔画的路径数据文本，形如 `stroke.encode`
++       `M x y`、`m dx dy`、`L x y`、`l dx dy`（位移沿一个轴时为 `h dx` / `v dy`）、`C c1, c2, p` / `S c2, p`、`Q c1, p` / `T p`，以及它们的小写相对形式，标志写作 `1` 或 `0` 的 `A rx ry angle large sweep p`，以及 `Z`。
++       相对弧线用 `A` 及其位移的分量写出，与源代码的写法一致。
+
+@ 0 2 0 087dabc951cce6cb1e3d680f127905d9
++ entry .Sweep   弧线的方向：`Clockwise` 或 `Counterclockwise`
++     `Stroke.ArcTo` 和 `Stroke.Arc` 的扫描标志：`Clockwise` 对应 SVG 的扫描标志 `1`。
+
+@ 0 3 0 06dfd56578205922196b901491e926f6
++ entry .Orientation   斜切所沿的轴：`Horizontal`（`skewX`）或 `Vertical`（`skewY`）
++     `Transform.Skew` 和 `skew` 扩展方法的第二个参数，默认为 `Horizontal`。
+
+@ 0 1 0 03fef6c6438371580bf7a950074a1f3d
++ entry .Transform   `transform` 属性中的一项：平移、缩放、旋转、斜切或矩阵
+
+% 1 1 0 1498b184110eb7b703b62db7ea8ed2ca
+
+@ 0 5 0 1294352859177c6a0ce2001752b82f75
++       `Translate(vector: Delta)`、`Scale(x, y: Optional[Float])`（`y` 未设置时为等比缩放）、`Rotate(angle: Angle)`、`Skew(angle, orientation = Horizontal)` 和 `Matrix(affine: Affine[Float])`。
++       图形的 `transforms` 列表按顺序、以空格分隔写为其 `transform` 属性，SVG 按该顺序应用它们；流式扩展方法 `translate`、`scale`、`rotate`、`skew` 和 `transform` 各追加一项。
+
+% 2 1 0 023a89b81086db7b1df79e6b32976db9
+
+% 3 1 0 014c58868652367a07a418a42b84f4ed
+
+% 0 1 0 117eada43ff48ad012a87b516e059f3c
+
+% 0 1 0 0d3f4e8a90633c321b42d30086fb3ad2
+
+% 0 1 0 04212f15c81033400c9bc7d8f22d062c
+
+% 0 1 0 14ee284f379d77a40655e80fa6558ef9
+
+% 0 1 0 1dc97e4e03b663a5090850a8de17402b
+
+% 0 1 0 146104f30392e35b1b27bd0b8a77b242
+
+% 1 1 0 1f6e9f696a3412f21bf5781bc53b663f
+
+% 0 1 0 0252254bbef4119b0256a66c6c1b3896
+
+% 0 1 0 0d2b4b57da1cad0d13760b97f507bcc0
+
+@ 0 6 0 125d2d4a5c230ca30015e6cf0c858d5e
++   entry .inspectable   以分支名称及其字段渲染变换
++       逐个分支写出，因为 `Angle` 的实例是 geodesy 中的顶层 given，而不是伴生对象中的 given。
++   entry .encodable   变换的属性文本，形如 `transform.encode`
++       `translate(dx,dy)`、`scale(x)` 或 `scale(x,y)`、`rotate(degrees)`、`skewX(degrees)` 或 `skewY(degrees)`，以及 `matrix(a,b,c,d,e,f)`。
+
+@ 0 1 0 0b538ad661ca262909adfacb7e960111
++ entry .Transformable   变换列表可以读取和替换的图形，因此流式变换可以作用于它
+
+% 1 1 0 01bba03178c0587e1d5982d671092ed1
+
+@ 0 5 0 1ed6229a4f0850bd1fdbbfcfc854164f
++       `value is Transformable` 提供 `transforms(value)` 和 `withTransforms(value, list)`。
++       伴生对象为 `Svg.Rectangle`、`Svg.Outline`、`Svg.Ellipse`、`Svg.Group`、`Svg.Polyline`、`Svg.Lettering` 以及 `Svg` 本身提供了实例，这正是 `translate`、`scale`、`rotate`、`skew` 和 `transform` 扩展方法所要求的。
++       `Transformable(get, put)` 用一对纯函数为自定义类型创建实例。
+
+% 0 1 0 0a4dbde89e24e42c14fcc9338d478c14
+
+@ 0 12 0 184e348ced1390bd012fb142f5915720
++   entry .apply   `Transformable(get, put)`：由变换列表的 getter 和替换函数得到的实例
++       两个函数都是纯的（`->`）：实例保留它们，而捕获能力的函数会使类型类实例本身成为一个能力。
++   entry .rectangle   `Rectangle` 的变换
++   entry .outline   `Outline` 的变换
++   entry .ellipse   `Ellipse` 的变换
++   entry .svg   `Svg` 的变换，它们把其图形包装在一个 `<g>` 中
++   entry .group   `Group` 的变换
++   entry .polyline   `Polyline` 的变换
++   entry .lettering   `Lettering` 的变换
++   entry #transforms   值的变换列表
++   entry #withTransforms   替换了变换列表的值
+
+@ 0 6 0 074700bdc53f646d0b080bf09b578d48
++ entry .transform   向图形追加任意 `Transform`：`figure.transform(Transform.Rotate(angle))`
++     任何 `Transformable` 值上的扩展方法，返回一个新值，该变换追加在已有变换之后。
++     其他四个扩展方法都是它的特例。
++     在 `import soundness.*` 下，对于构造出的 `Affine`，这个词法作用域中的 `transform` 优先于 mosquito 的 `Affine#transform` 扩展方法；两者都需要时，按名称导入后者（`import mosquito.Affine.transform`）。
+
+@ 0 1 0 1f42360db2ee811200694438beced87d
++ entry .translate   追加按 `Delta` 的平移：`figure.translate(Delta(3, 4))`
+
+% 1 1 0 03630288b440356d17053ac4e8c628c3
+
+% 2 1 0 1a16bf03b15040d00b646ac9e83c5256
+
+% 0 1 0 1f24307ede0980ec171023d61ebe95a8
+
+% 0 1 0 124cf80a6e10055914dd3d17f9ee8441
+
+% 0 1 0 14c7b1cf8fb52fa70d2d09c5c78efff4
+
+% 1 1 0 076636c1ae00de2c00314a64a1685382
+
+@ 0 1 0 173aa46c39abb8fc112d0a9be30fee12
++ entry .scale   追加缩放，等比或按两个系数：`figure.scale(2.0f)` 或 `figure.scale(2.0f, 3.0f)`
+
+@ 0 1 0 16e5dcc357fc11e607367a0e8a8fc9f3
++ entry .rotate   追加绕原点按 `Angle` 的旋转：`figure.rotate(Angle.degrees(90))`
+
+% 1 1 0 176592b05e21ab2807d5134d3eae624b
+
+% 2 1 0 1066b6524b9711e51f53b4815173531a
+
+% 0 1 0 12c068f1a94da7521b73dcc4b2d6ccdd
+
+% 0 1 0 04f383fc59b4ec671f048724d59c747b
+
+% 1 1 0 0a68f5353bcad92911ed42b38bd94be8
+
+@ 0 2 0 182a338764615c091b576888f034c7aa
++     变换按其应用顺序组合：这里矩形先被平移，然后结果绕原点旋转。
+
+@ 0 1 0 157ed0ff2a08852f0f6ca72e596c2fc7
++ entry .skew   追加按 `Angle` 的斜切，默认为水平方向：`figure.skew(angle, Orientation.Vertical)`
+
+@ 0 1 0 1c574e5613cb8d661ba8c6779908ee3e
++ entry .Point   一个位置：`x` 和 `y`，均为 `Float`
+
+% 1 1 0 17171eddf4f4cb351bd8fbb7e58f86e7
+
+@ 0 5 0 1f9233b00f1e94ed0f23a7de654e533a
++       `Point(x, y)`，以 mosquito 的 `Vector[Float, 2]` 保存。
++       `Point` 和 `Delta` 是表示不同事物的不同类型：点加位移是点，点减点是位移，两个点不能相加。
++       在需要 `Point` 的地方，任意数值类型的一对数字都会转换为 `Point`，因此 `Svg.Rectangle((0, 0), 10, 5)` 和 `Svg.Outline().moveTo((3, 4))` 不需要构造函数。
+
+% 2 1 0 1f993c201a76b2fa18ab181fd147745b
+
+% 3 1 0 12c27fc1f1d973d01f1a481ba764cf15
+
+% 0 1 0 168d4c4918f943d00739e139d42c9f0d
+
+% 0 1 0 000290bb8819496f02a59cfeea367290
+
+% 0 1 0 153a50d09b82a0f105e98a6c20afffc5
+
+% 0 1 0 1a876e694a8cbe1600d318c85d59524d
+
+% 0 1 0 0293730ce90e9e990f84f1ea29b4ddc5
+
+% 1 1 0 0da4fd2a3a276e911a2593090aea654f
+
+% 0 1 0 1b620aa02b0638bd088c67ff6b882507
+
+@ 0 10 0 0285acca1e5a3032116b519deafed4f1
++   entry .apply   由两个 `Float` 得到 `Point(x, y)`
++   entry .showable   SVG 路径数据形式：以空格分隔的两个数字
++   entry .inspectable   `Point(x:3.0F ╱ y:4.0F)`，因此点永远不会被误认为 `Delta`
++   entry .fromTuple   在任何需要 `Point` 的地方，把任意数值类型的一对数字作为 `Point`
++   entry .addable   `point + delta`：位移后的点
++   entry .subtractableByDelta   `point - delta`：反向位移后的点
++   entry .subtractableByPoint   `point - point`：从第二个点到第一个点的 `Delta`
++   entry #vector   底层的 `Vector[Float, 2]`
++   entry #x   水平坐标
++   entry #y   垂直坐标，与 SVG 中一样向下增大
+
+@ 0 1 0 19675754fbbbde480801a03f16c9cca1
++ entry .Delta   一个位移：`dx` 和 `dy`，均为 `Float`
+
+% 1 1 0 0e7e1a1527b49de4026fe359be4760cd
+
+@ 0 4 0 0b8d38ad27cd16121fe19a24bec7c3b8
++       `Delta(dx, dy)`，以 mosquito 的 `Vector[Float, 2]` 保存。
++       位移可以相加、相减、取负，可以在任意一侧乘以 `Int`、`Float` 或 `Double` 进行缩放，并可以使 `Point` 发生位移。
++       具名方向 `Up`、`Down`、`Left` 和 `Right` 是单位位移，因此位移运算读起来很直白；元组加上一元 `+` 或 `-` 就成为位移。
+
+% 2 1 0 105468fd32782f6509f53fcf6e3b05d9
+
+% 3 1 0 11d75884a8096662024e57c5e0d8a9e8
+
+% 0 1 0 0b37e673495fe2ef18f306a5b47b878a
+
+% 0 1 0 040ee1e9a5f34c411d9d2a940169fe8f
+
+% 0 1 0 09dc78f5d436f22a1000321436c24964
+
+% 0 1 0 1baecd2843c60883055286cb2795261c
+
+% 1 1 0 188e0fb5bb3945c51f679e1d6830ecfa
+
+% 0 1 0 1721fefb328661f51326c57d703470c7
+
+% 0 1 0 0accbaf07b1697841e45e9a4d4dddbae
+
+@ 0 3 0 0ec82b1603ad32f006c4c00228967cb4
++   entry .apply   由两个 `Float` 得到 `Delta(dx, dy)`
++   entry .showable   以空格分隔的两个分量，与路径数据写相对步骤的方式一致
++   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`，带有标注以便与 `Point` 区分
+
+% 0 1 0 1571a1eeb7a23ddc1cf197f06e18c061
+
+% 0 1 0 041cc920e950d6b709437c0b9b389856
+
+% 0 1 0 02e5c78c518207ea12ea35bf795e1d8a
+
+% 0 1 0 159e8d64ca57acd1031606f8116d4213
+
+@ 0 1 0 09d537106a9102aa1ac8c2610d4c4477
++   entry .multiplicableDouble   `double * delta`，舍入为 `Float`
+
+% 0 1 0 0df0932a882e99b5159aa9bc8ec78118
+
+% 0 1 0 1197e0b1064e12250e110e29aa215ba2
+
+@ 0 1 0 0c9866c79635bcff1408e5a039950e1b
++   entry .multiplicableByDouble   `delta * double`，舍入为 `Float`
+
+% 0 1 0 06d461a08ce4b3611c90fa7596aac16b
+
+@ 0 3 0 186cd98253a2cb940b073879a98373ad
++   entry #vector   底层的 `Vector[Float, 2]`
++   entry #dx   水平分量
++   entry #dy   垂直分量，向下为正
+
+@ 0 5 0 1a1b9b04c7ea836f16c43928fc537815
++   entry .Up   向上的单位位移：`Delta(0, -1)`，因为 SVG 的 y 轴指向下方
++       `7*Up` 是 `Delta(0, -7)`。
++   entry .Down   向下的单位位移：`Delta(0, 1)`
++   entry .Left   向左的单位位移：`Delta(-1, 0)`
++   entry .Right   向右的单位位移：`Delta(1, 0)`
+
+@ 0 3 0 102a7baec3dc4b2503afbf1648671dfe
++ entry .unary_+   把由两个数字组成的元组作为 `Delta`：`+(3, 4)` 是 `Delta(3, 4)`
++     任意一对数值类型上的扩展方法，因此写位移时可以不用构造函数：`rectangle.translate(+(3, 4))`。
+
+@ 0 2 0 02835127fdfb531e0cc2352fecf74e0b
++ entry .negatableTuple   把由两个数字组成的元组取负作为 `Delta`：`-(3, 4)` 是 `Delta(-3, -4)`
++     使一对数字上的一元 `-` 成为反向位移的 `Negatable` given。
+
+@ 0 1 0 1b16167e55d302a51d598e7c6d0d6c99
++ entry .Stop   渐变的色标：`[0, 1]` 中的偏移量和任意 `Chromatic` 类型的颜色
+
+% 1 1 0 1baf7f77cc82eeeb0f9b5eff8fc926c0
+
+@ 0 4 0 1bb153710f68713918b55dee48dff138
++       `Stop(offset, color)`，其中偏移量是 cardinality 的 `0.0 ~ 1.0`——一个有界数，因此超出范围的偏移量无法编译——颜色可以是任何具有 `Chromatic` 实例的类型，例如 `WebColors` 值或 `Srgb`。
++       以 `stop.in[Xml]` 渲染时，颜色为六位十六进制数字。
+
+% 2 1 0 1591796444acb78d0b6a46ee980b6674
+
+% 3 1 0 085b18e86d4978a215454316c2dfe5f7
+
+% 0 1 0 0fdf8ff4656033091c3b955b61e7b2e9
+
+% 1 1 0 089f9eb470ce1e7f1330d2a6901e2277
+
+% 0 1 0 175f1a93cada7442102b7a5cff901474
+
+@ 0 6 0 13bbd24357e1462607589bd894f52c55
++   entry .encodable   颜色为 `#rrggbb` 的 `<stop>` 元素，形如 `stop.in[Xml]`
++       以 `stop <: Stop[color]` 为界，而不是作用于一个裸类型参数，因此它比 xylophone 的兜底 XML 编码器更具体。
++   entry #offset   色标在渐变上的位置，从 `0.0` 到 `1.0`
++   entry #color   颜色
++   entry #chromatic   颜色类型的 `Chromatic` 实例，在构造时捕获
+
+@ 0 1 0 1d3b82048428acb80a8d68ab646a2051
++ entry .Segment   原始的路径数据命令：一个符号及其数值或布尔参数，以文本表示
+
+% 1 1 0 14f3150e4eb72d66138d898a13ad59c0
+
+@ 0 6 0 0e6ad8fe794695af1ac4962ab0af76ed
++       `Segment(symbol, parameters*)` 渲染为符号、一个空格，以及以空格分隔的参数，布尔值写作 `1` 或 `0`。
++       这是一个未导出到 `soundness` 总括包的底层辅助类型；`Stroke` 是其带类型的形式。
++   entry #symbol   命令字母
++   entry #parameters   数字和标志
++   entry #text   作为路径数据文本的命令
+
+@ 0 8 0 1eb922ed1471ccad196aa32f22d40864
++ entry .Affine   mosquito 的二维仿射矩阵，为 `Transform.Matrix` 重新导出
++     `Affine(a, b, c, d, e, f)` 按 SVG 的 `matrix(a, b, c, d, e, f)` 接受参数的顺序，保存二维仿射变换的六个有效元素；savagery 以 `Float` 使用它。
++     `Affine.identity[Float]` 是中性矩阵，mosquito 的 `transform(x, y)` 和 `andThen(next)` 扩展方法用于应用和组合矩阵。
++     在 `import soundness.*` 下，对于构造出的 `Affine`，这两个名称分别被 savagery 的 `transform` 和函数的 `andThen` 优先，因此要按名称导入它们：`import mosquito.Affine.{andThen, transform}`。
+
+% 2 1 0 18d00d9e19c666f71a52131a869eb373
+
+% 3 1 0 1091f7143a5ec4a30edc4debbf491e4b
+
+% 0 1 0 13369e175144f8f30193a7762017dfda
+
+% 0 1 0 11d2d3356f39d1bb0fec138ada000dd7
+
+% 0 1 0 1dbfe704cecffbd1015c70abc4549c7c
+
+% 0 1 0 09b184e9ee68a8921a229b220a8fe85f
+
+% 1 1 0 1e7bd80ebda10a7a0add29eec6b27872
+
+@ 0 1 0 18fe6221f62aaad4193d8c75cdef0332
++ entry .construables   一个按名称导入的 given，使 `Svg` 可以从其媒体类型构造
+
+% 1 1 0 0c07f3d7d9a3901c1c82c5c97e26f8d8
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 0 1 0 1162d8fa985e498f135221164936da81
+
+% 1 1 0 1adca76ca22857b6101665ad11eb14a0
+
+% 0 1 0 147329cc30a7830c15ab8ed1c1431ac8
+
+@ 0 3 0 1aa7763bf33dc8ab064a7f8c1d0e707e
++       把 `Svg` 指名为 `image/svg+xml` 正文所构造的类型，供那些按媒体类型选择类型的代码路径使用——HTTP 响应、按媒体类型处理的文件。
++       `import savagery.*` 不会引入它。

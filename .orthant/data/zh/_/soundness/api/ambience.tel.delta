@@ -1,0 +1,1060 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ae0722c90c6237148bcb0a16790148
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0325dc246f6294d401080ab1c59d6889
++ info   程序的周遭环境——环境变量、系统属性、目录、平台——以带类型的上下文值表示
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1d7e76ad8678c89b1327d577f137253a
++     _Ambience_ 表示程序从其启动之处继承的一切——它的**环境变量**、JVM 的**系统属性**、**工作目录**、**临时目录**、**终端**的能力、它所运行的**操作系统**和**处理器**——并以带类型的上下文值表示它们，取代原始平台通过全局静态调用取得的可为 null 的字符串。
+
+@ 0 9 0 0f450a662a51d902142490ee73988668
++     每个来源都是一个小特质：`Environment` 根据变量名给出其可选文本，`System` 根据属性名给出其值，`WorkingDirectory` 和 `TemporaryDirectory` 各自指明一个目录。
++     读取其中之一的方法将它作为 `using` 参数接收，因此方法对周遭环境的依赖在其签名中可见，而测试、沙箱或服务多个 shell 的守护进程都可以提供另一个。
++     读取是带类型的：变量作为 `Environment` 的成员读取（`Environment.editor[Text]`，其中驼峰式名称变为 `EDITOR`），属性作为 `System.properties` 的点分成员路径读取（`System.properties.user.home[Text]()`），每次读取都解码为所请求的类型，值未设置时抛出 `Environment.Error` 或 `Property.Error`。
+
+% 2 1 0 198d39ceea5367d8138fd92793819f97
+
+% 3 1 0 1a5f85489df042c40e68cdeec815a5bc
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0b7cb11b02bb3caa18ba79acd2078896
+
+% 0 1 0 0ace4261ef6d4a551809f4e58e68044d
+
+% 0 1 0 1964e0c0ab2318060bc72be6ef63c5e4
+
+% 0 1 0 1416e8b10accf58c0b7b1a98ad9aba13
+
+% 1 1 0 096f4d52568a0a7b0741fb04ac0ec519
+
+@ 0 7 0 0c693c224ca3dce2081471a32afd8b29
++     真实的环境和属性从不自动处于作用域中：每一个都是选择包中的 given，需要按名称导入，因为 `import soundness.*` 不会导入 given。
++     这些包是 `environments`（`javaBaseEnvironment`、`emptyEnvironment`，以及其他库添加的守护进程和 WASI 环境）、`systems`（`javaBaseSystem`、`emptySystem`）、`workingDirectories`、`temporaryDirectories`、`termcaps` 和 `wasiApis`。
++     `Environment` 只是从名称到 `Optional[Text]` 的单个函数，因此为某个代码块构建的环境就是一个 lambda，而 `variables(name = value)` 会在作用域中的环境之上叠加一个变量。
+
+@ 0 5 0 16face481582b2c6188e92421662a828
++     在这些原始来源之上，`Xdg` 和 `Directories` 以任意类型的路径给出 XDG 基础目录规范中的标准目录（及其 Windows 对应目录），`Configurator` 从同一前缀下的属性和变量中读取应用程序的设置，而 `Searchpath` 是搜索一组目录（例如 XDG 数据目录和配置目录）的路径平面的标记。
+
+@ 0 7 0 15c2bef8503b6fcd164c436d0982811d
++     该库有两个源集。
++     `ambience.core` 包含以上所有内容，可编译到 JVM、Scala.js 和 Scala Native，其中 `javaBase…` 系列 given 读取 `java.lang.System`。
++     `ambience.wasi` 添加了 `environments.wasiEnvironment` 和 `workingDirectories.wasiWorkingDirectory`，它们读取 Wasm 组件的 `wasi:cli/environment` 接口。
++     其他库也会向这些选择包中添加内容：`ethereal` 提供 `environments.daemonEnvironment` 和 `workingDirectories.daemonClientWorkingDirectory`，`exoskeleton` 提供 `environments.daemonClientEnvironment`。
+
+@ 0 5 0 134710ff87567b211304a28aa09c083e
++     所有内容都导出到 `soundness` 总括包，由此带来一个需要了解的后果：`soundness.System` 就是本库的 `System`，它会在任何导入 `soundness.*` 的文件中遮蔽 `java.lang.System`。
++     在这样的文件中，直接写 `System.nanoTime`、`System.out` 或 `System.arraycopy` 会失败，报错 _value nanoTime is not a member of object ambience.System_；应写 `java.lang.System.nanoTime`，或者 `import java.lang as jl` 后写 `jl.System.nanoTime`。
+
+% 0 1 0 1a3e04a0feab57591fd3a69458462447
+
+% 0 1 0 0a62f8c2677f33ff12490bfd7d7217b0
+
+% 0 1 0 1a367ad8479398ab0f0d2f22876aaafd
+
+% 0 1 0 10bd8e9a57aa9a3417d6f0d432db7fe6
+
+% 0 1 0 0dfdd4c5d9d24c6a0f5632a6ff364be8
+
+% 0 1 0 0c729b8dc575319f1fcb051812e6a706
+
+% 0 1 0 163d836e9113ed981f93e3bffc3da373
+
+@ 0 1 0 09e7b1df389424e6118c7bb6a9b9c3ca
++ entry .Environment   环境变量，作为通过带类型成员访问读取的上下文值
+
+% 1 1 0 1d7c12e5f839d8e915e148d784b541ce
+
+@ 0 6 0 0bf46fdebd4aa7f30ec809e67ec051a4
++       `Environment` 是程序环境变量的来源：`#variable` 根据名称给出其文本，若未定义则给出 `Unset`；在环境能够枚举时，`#entries` 列出所有变量。
++       真实的环境是 `environments.javaBaseEnvironment`，需按名称导入；`environments.emptyEnvironment` 不定义任何变量；由于该特质只有一个抽象方法，从名称到 `Optional[Text]` 的 lambda 就可以作为测试或代码块的环境。
+
+@ 0 8 0 1e739b7d7b2632b3169737ff52f8aa90
++       伴生对象是读取变量的途径。
++       `Environment.editor[Text]` 读取 `EDITOR`：驼峰式的成员名变为约定的大写蛇形变量名（`xdgConfigHome` 即 `XDG_CONFIG_HOME`），而类型参数指明值应解码成什么类型，这通过该名称和类型对应的 `Variable` 实例完成。
++       `Variable` 的伴生对象为知名变量（`home`、`path`、`shell`、XDG 系列变量）提供了以路径为类型的实例，为 `columns` 提供了 `Int` 实例，还为任意名称提供了以 `Text` 或任何 `Decodable in Text` 类型读取的通用回退实例。
++       不是合法标识符的名称，或者只在运行时才知道的名称，用 `Environment[Text](t"NAME")` 读取。
+
+% 2 1 0 1a1989673cd679fe02b089a5cb6ffb4f
+
+% 3 1 0 002f5a1fbcf42e91176ba40fdbf1ea5e
+
+% 4 1 0 00975588de2a7386148c7bfb23c374f9
+
+% 5 1 0 0343515aba20356c055947912966fbe1
+
+% 0 1 0 0b476c8febecfeb40bf175c6fdd1fb12
+
+% 0 1 0 00c56a8c4b2f54d019e0a85925b6d794
+
+% 0 1 0 08885577ed81330510e9f1c8c6000711
+
+% 1 1 0 185d36df378f82b902055d4639d1d5c0
+
+@ 0 2 0 0b7c4ddc7001a15008ee4f87e7124b2b
++       两种形式都需要作用域中有一个 `Environment`，并在变量未定义时抛出 `Environment.Error`；在读取外面包一层 `safely(…)` 可将缺失的变量变为 `Unset`。
+
+@ 0 2 0 1b7cd15d2b9dd31212305eedfea3f2f9
++       环境是一种能力，因此代码块可以在另一个环境下运行，且较窄作用域中的 given 优先：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0256ac8744d8fca8148b67cc8fc2f4f9
+
+% 1 1 0 001a4d3c1d78540507e27a538e330405
+
+% 2 1 0 02b4ece742652eea1e5ac5553e56a9ef
+
+% 3 1 0 1f76e06923a71b1107ca9d81390692ff
+
+% 0 1 0 0c4919636905be9c0089637c4e456fcf
+
+% 0 1 0 0e9d74ebf196ec1f01b58969a6749a96
+
+% 1 1 0 028151b6884edbe402fff473921963fd
+
+% 2 1 0 12c41b2fa36a0ecd11d190ace3b77b4e
+
+% 0 1 0 05fdee043c624cce18f502be09e782de
+
+% 0 1 0 1d768113772db8ca0ebef4ccddea05c3
+
+% 0 1 0 0952fe6a1d85d5b918e2e6115e54e9b3
+
+% 1 1 0 064c9cda3160844a058ec426b6e81e70
+
+% 2 1 0 07cc003ab7efbfbf14868d78eaaa01b0
+
+% 0 1 0 041099fe0e9195c519c9f6106e1e5c54
+
+% 0 1 0 0d675e9872832c8b1aa563846e2fca1d
+
+% 0 1 0 19b9917ea74aa5ff0aa2d119bfafe8d9
+
+% 1 1 0 05d7a7ce5155b71d031a4b4130c7bd99
+
+% 2 1 0 03a6e6d368e6cd00128e2061eda029ef
+
+% 3 1 0 1f6f245a38d0557508c45fd1eb8bd6fc
+
+% 0 1 0 15874479aae17c2c023c3693c414396c
+
+% 0 1 0 0343df635c53915f0e840f2ab59c92c3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1e7726e78bf941d709ddfd59b31f80fb
++       常驻守护进程服务来自多个 shell 的调用，每个调用都有自己的环境，而 JVM 的全局环境属于启动该守护进程的那个 shell：在守护进程中，调用的环境是 `environments.daemonClientEnvironment`（来自 `exoskeleton`），启动守护进程的环境是 `environments.daemonEnvironment`（来自 `ethereal`）。
+
+@ 0 2 0 149d0af039019efa15eb0716ecce9da4
++       `Environment` 是 `Findable` 的，因此在文件系统库提供此功能时，可以相对于它解析 `Path`。
+
+% 0 1 0 11c98e954ae661ec0e8837f5842581a9
+
+% 0 1 0 014d10d2df187ba61a52410e3badc3ca
+
+% 0 1 0 106f93f9d4d35300075a00109b441520
+
+% 1 1 0 02d842228f65ee861020024dae3faff3
+
+@ 0 20 0 1bd9d7f3355a5dc91d5509efc647b8e0
++   entry .apply   按运行时名称读取变量，并解码为所请求的类型
++       `Environment[Text](t"HOME")` 读取由该文本命名的变量，通过该类型（`Text`，或任何 `Decodable in Text` 的类型）的 `Variable[Label, T]` 实例完成，若变量未定义则抛出 `Environment.Error`。
++       它需要作用域中有一个 `Environment`。
++       这种形式用于直到运行时才知道的名称，或不是标识符的名称；知名变量用成员访问更简单，即 `Environment.home[Text]`。
++   entry .selectDynamic   成员访问形式：`Environment.xdgConfigHome[Text]` 读取 `XDG_CONFIG_HOME`
++       任何标识符都是 `Environment` 的成员：驼峰式名称由 `Variable` 实例的 `defaultName` 转换为大写蛇形（`xdgConfigHome` 转为 `XDG_CONFIG_HOME`，`term` 转为 `TERM`），然后从作用域中的 `Environment` 读取变量，其文本由对应名称和类型参数的实例解码。
++       变量未定义时，通过作用域中的 `Tactic` 抛出 `Environment.Error`。
++       类型参数通常是必需的：`Environment.home[Text]`，或 `Environment.home[Path on Linux]`，其中 `Variable.home` 实例可读取任何 `Instantiable across Paths from Text` 类型的路径。
++   entry .provided   来自作用域中任意 `Environment.Provider` 的 `Environment`
++       这是伴生对象中的 given，因此无需导入：只要某个 `Provider`——例如携带其被调用时所处环境的 CLI 调用——是 given，就可以直接召唤 `Environment`。
++   entry .Provider   携带规范环境的事物，例如 CLI 调用
+
+% 1 1 0 0770fb226302a92809c54bc7a17ab4dd
+
+@ 0 5 0 1ff3ab2fcb8928fd13cb58210bfa994a
++         只有一个成员 `#environment` 的特质。
++         拥有自己环境的类型（例如守护进程的一次调用）扩展它，而 `Environment.provided` 使得只要该提供者是 given，其环境就是作用域中的环境。
++     entry #environment   该提供者携带的环境
++   entry .Error   读取的变量未定义时抛出
+
+% 1 1 0 00116a48cc56ffeb16975691b148aeb7
+
+@ 0 12 0 127669a81ef344010da7ff623f3e6438
++         错误 `↯/s.62.2`：_the environment variable `variable` was not defined_。
++         由 `Environment.apply` 和成员访问形式通过作用域中的 `Tactic[Environment.Error]` 抛出；`safely(Environment.editor[Text])` 则读取为 `Unset`。
++     entry #variable   未定义的变量的名称，即查找时所用的名称（`EDITOR`）
++   entry #variable   按名称取得的变量值，若未定义则为 `Unset`
++       唯一的抽象方法：变量的原始文本，未经解码。
++       `Environment.apply` 和成员访问形式调用它并解码结果。
++   entry #entries   在环境能够枚举时为所有变量；不能枚举时为 `Unset`
++       JVM 的环境和空环境能够列出自身；由 lambda 构建的环境不能，会给出 `Unset`。
++       在可枚举的环境下启动的子进程恰好获得这些变量，这就是 `variables(…)` 既将其覆盖值加入查找、也加入条目的原因。
+
+@ 0 1 0 0a1020ce0ac9a869098200ce734f8ad6
++ entry .Variable   一个环境变量如何按其驼峰式标注命名和解码
+
+% 1 1 0 0d114563a5fbfabc0eea851c42b618e9
+
+@ 0 4 0 0567fbbaf893434d0aa6f3287f893c7d
++       `Variable[alias, T]` 是 `Environment.alias[T]` 背后的类型类：对于 `"xdgConfigHome"` 这样的标注，它知道变量的真实名称（`#defaultName`：若实例覆盖了 `#name` 则为 `#name`，否则为大写蛇形的标注），也知道如何将其文本 `#read` 为 `T`。
+
+@ 0 9 0 05aeafe2fb3c426f1f948de53c70aeee
++       伴生对象为知名变量提供了实例，每个实例以其标注为键：`home`、`mail`、`shell`、`oldpwd`、`windowid`、`editor`、`pager`、`manpager`、`sshAuthSock`、`xdgDataHome`、`xdgConfigHome`、`xdgBinHome`、`xdgStateHome`、`xdgCacheHome` 和 `xdgRuntimeDir` 读取任何 `Instantiable across Paths from Text` 类型的单个路径；`path`、`xdgDataDirs` 和 `xdgConfigDirs` 读取路径列表，按作用域中 `System` 的 `path.separator` 属性（没有该属性时按 `:`）拆分；`columns` 读取 `Int`；`lang`、`display` 和 `term` 读取 `Text`。
++       父特质 `Protovariable` 提供了适用于任意标注的两个回退实例：`generic` 原样读取文本，`decoder` 将其读取为任何 `Decodable in Text` 的类型。
+
+% 2 1 0 1affe5879f8eb62a0ab9982977b5828e
+
+% 3 1 0 1233e51fae1678dc1c0e6e0c9b810488
+
+% 4 1 0 072f8d0ec777510709bb8c8633e748fd
+
+% 5 1 0 17e73b5504ec236319883e6ce0a27d57
+
+% 2 1 0 1db942de6b944095175375276bc01e9f
+
+% 0 1 0 158269893f0dd576004514aecc25e00b
+
+% 0 1 0 029553d59986e24208b8a7a40b1e3f2c
+
+% 0 1 0 14e05c31469a27a01cde3b7ee9c72f3d
+
+% 1 1 0 076371086a8acb520bc597e3510a21ed
+
+@ 0 2 0 0fb1a05c1dfb7225158a7b154f738095
++       程序可以为某个变量声明自己的实例，即一个 given `Variable["myVar", MyType]`，然后用 `Environment.myVar[MyType]` 读取它。
+
+% 1 1 0 1fa89e911652bccb0d7df2a47b920aa8
+
+% 0 1 0 16a5743014b6cd080d83baf50e4ce7de
+
+@ 0 27 0 1efce0b365ae2b840378b051ea3f7a65
++   entry .path   `PATH`，作为按平台路径分隔符拆分的路径列表
++       需要一个 `System` 以取得 `path.separator` 属性，回退为 `:`。
++   entry .xdgDataDirs   `XDG_DATA_DIRS`，作为路径列表
++   entry .xdgConfigDirs   `XDG_CONFIG_DIRS`，作为路径列表
++   entry .xdgDataHome   `XDG_DATA_HOME`，作为路径
++   entry .xdgConfigHome   `XDG_CONFIG_HOME`，作为路径
++   entry .xdgBinHome   `XDG_BIN_HOME`，作为路径
++   entry .xdgStateHome   `XDG_STATE_HOME`，作为路径
++   entry .xdgCacheHome   `XDG_CACHE_HOME`，作为路径
++   entry .xdgRuntimeDir   `XDG_RUNTIME_DIR`，作为路径
++   entry .home   `HOME`，作为路径
++   entry .mail   `MAIL`，作为路径
++   entry .shell   `SHELL`，作为路径
++   entry .oldpwd   `OLDPWD`，作为路径
++   entry .windowid   `WINDOWID`，作为路径
++   entry .editor   `EDITOR`，作为路径
++   entry .pager   `PAGER`，作为路径
++   entry .manpager   `MANPAGER`，作为路径
++   entry .sshAuthSock   `SSH_AUTH_SOCK`，作为路径
++   entry .columns   `COLUMNS`，作为 `Int`
++   entry .lang   `LANG`，作为文本
++   entry .display   `DISPLAY`，作为文本
++   entry .term   `TERM`，作为文本
++   entry #defaultName   变量的真实名称：若设置了 `#name` 则为它，否则为大写蛇形的标注
++       `"xdgDataHome"` 变为 `XDG_DATA_HOME`，`"term"` 变为 `TERM`。
++   entry #name   覆盖推导名称的显式变量名；默认为 `Unset`
++   entry #read   将变量的文本解码为实例的类型
+
+@ 0 1 0 0f83ea4835cfdc30086862bcb919c01a
++ entry .Protovariable   适用于任意标注的回退 `Variable` 实例：作为文本，或作为任何可解码的类型
+
+% 1 1 0 194f85c634f85aae02792332c85b3763
+
+@ 0 7 0 17b9882047c7229c1eebfaa1456c43f4
++       `Variable` 伴生对象的父特质，持有适用于每个标注的两个实例，其优先级低于 `Variable` 自身中的具名实例：因此 `Environment.anything[Text]` 将任意变量读取为文本，而 `Environment.anything[Int]` 用 `Int is Decodable in Text` 实例对其解码。
++       通常不直接引用。
++   entry #generic   任意变量，作为其原始文本
++   entry #decoder   任意变量，解码为 `Decodable in Text` 的类型
+
+@ 0 1 0 1e95c5e7fb844ef702db36ac540a0a44
++ entry .variables   在作用域中的环境之上叠加具名变量，运行一个代码块
+
+% 1 1 0 03b9973a9eb7a9cb1a65f8e28263487e
+
+@ 0 6 0 1de2ad24be9a060809fa892119680a05
++       `variables(name = value, …)(block)` 以驼峰式为每个变量命名，并以约定的大写蛇形形式设置它——`gitIndexFile` 即 `GIT_INDEX_FILE`——叠加在作用域中的 `Environment` 之上，在代码块执行期间有效，代码块将新环境作为上下文参数接收。
++       对其他名称的查找会落到外层环境，且覆盖值也会加入 `Environment#entries`，因此在代码块中启动的子进程会继承它们。
+
+% 2 1 0 1414ae2358a23dba0a6b655478ec52b5
+
+% 3 1 0 1448e1d2ec6b8b2a1bbbf2d00cd55f76
+
+% 4 1 0 05393be4fef8b3700331a9de5540c914
+
+% 5 1 0 198ec65b9b7565a30ee96bca53156f80
+
+% 0 1 0 16ce3674082ca7c1008b4d3830316240
+
+% 0 1 0 0cdde077800b59d303517d825b887fa4
+
+% 1 1 0 054d5dfd2f270dad007de0004eb7593e
+
+@ 0 5 0 1182492daddec909020f04285da1bd6c
++       值的类型为 `Text`；需要一个外层 `Environment`。
++   entry .applyDynamicNamed   `variables(name = value)(block)` 背后的具名参数应用
++       不按名称调用：编译器将 `variables(gitIndexFile = t"…")` 改写为它。
++       每个参数名从驼峰式转换为大写蛇形，代码块将扩展后的 `Environment` 作为上下文参数接收。
+
+@ 0 1 0 094804a0177fb1da0803d726eb986741
++ entry .System   系统属性，作为上下文值，以及从中读取的平台信息
+
+% 1 1 0 1bb25ce51598f9ba0c0700aaa0d1862f
+
+@ 0 3 0 02301ebd09c52d8512dbf2f351dce777
++       `System` 根据属性名给出其文本，或 `Unset`；JVM 自身的是 `systems.javaBaseSystem`，需按名称导入，`systems.emptySystem` 不定义任何属性。
++       从名称到 `Optional[Text]` 的 lambda 就是测试用的 `System`。
+
+@ 0 7 0 1469945d832d587a0b4ad707f0d2d336
++       属性通过 `.properties` 读取，点分名称写成成员路径，末尾是一次应用，其类型参数指明值解码成的类型：`System.properties.user.home[Text]()`、`System.properties.file.separator[Char]()`。
++       伴生对象的 `Property` 实例知道标准属性的类型（`java.home` 和 `user.home` 为路径，`os.arch` 为 `Architecture`，`java.class.version` 为 `Int`），任何其他属性读取为 `Text` 或任何 `Decodable in Text` 的类型。
++       未定义的属性会抛出 `Property.Error`。
+
+% 2 1 0 19956707363a88110a0990b3a39cc3a2
+
+% 3 1 0 1c845264d8b077eb0d8e728d3be855d2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 2 1 0 087b335af072e54313f73e94aaa91dfd
+
+% 0 1 0 1f54db1f7aab7b201b30e4478a3d1616
+
+% 0 1 0 06b1d9e830c3722c1be85b8459e97bf3
+
+% 0 1 0 16f80f6518dde20a0751fedf1730d626
+
+% 0 1 0 1f17ae85827c54680c0fe828fa43b3ba
+
+% 1 1 0 0d286dea9c6b29971ab1091cc3088b05
+
+@ 0 4 0 02453407a24e860215fdf4e5474104b1
++       属性和环境变量的相似之处在于都是文本键值数据，不同之处在于来源：属性作为 `-D` 参数传给 JVM，以点分小写命名；变量从 shell 继承，以大写蛇形命名。
++       两者都在读取之处解码，而不是以文本形式向内传递。
+
+@ 0 2 0 1ea8c3bb606158320b7dc47f24471932
++       在导入 `soundness.*` 的文件中，这个 `System` 会遮蔽 `java.lang.System`：要使用 Java 的那个，应写 `java.lang.System.nanoTime`。
+
+% 0 1 0 1b38210a2abcbdf40bdf0d2d20009f4a
+
+% 0 1 0 1d35dbfba5489b2411c6b352fbd50c75
+
+% 1 1 0 0849b07617ed304f1ce0bd2f8c5ac46f
+
+% 1 1 0 012039e2d429496d0ec7b8ab7f3a1cd8
+
+@ 0 9 0 0ac70d5e5807efac072737c98d6f84df
++   entry .os   当前运行的操作系统，从 `os.name` 属性解码
++       `System.os` 从作用域中的 `System` 读取 `os.name` 并将其解码为 `Os`，因此程序匹配的是 `Os.MacOs`，而不是该属性的众多拼写。
++       若属性未定义，它与带类型的属性读取一样会 panic，而不是抛出错误；宽松的检查是 `system(t"os.name").let(_.as[Os])`。
++   entry .architecture   当前运行的处理器架构，从 `os.arch` 属性解码
++       `System.architecture` 读取 `os.arch` 并将其解码为 `Architecture`，`aarch64` 或 `arm64` 解码为 `Arm(64)`。
++       若属性未定义则 panic。
++   entry .properties   读取属性的点分名称路径的根
+
+% 1 1 0 1f555c67d2e24e2318538377a349c3ee
+
+@ 0 4 0 008f1a4d072d26e115ab986484b67189
++         `System.properties.a.b.c[T]()` 读取属性 `a.b.c`：每次成员访问都给 `Property.Access` 增加一段，最后的应用通过该名称和类型对应的 `Property` 实例，从作用域中的 `System` 读取属性。
++         `System.properties[T](t"a.b.c")` 按运行时名称读取属性。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0c768c6e82769c890f2f559fbfa153a3
+
+% 0 1 0 0f424c3bd82258290ca5264e02688012
+
+% 0 1 0 01fee8fb56043e7b06894305cef3b4ca
+
+% 0 1 0 1fa8088dd27ac886097738cc33374440
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 1767b6a2284e073d1a985bd50f37a5d0
++     entry .apply   按运行时名称读取属性，并解码为所请求的类型
++         需要一个 `System`，以及该类型的 `Property` 实例：`Text`，或任何 `Decodable in Text` 的类型。
++         若属性未定义则抛出 `Property.Error`。
++     entry .selectDynamic   开始一个点分属性名：`System.properties.user` 是一个 `Property.Access["user"]`
++   entry #apply   按名称取得的属性值，若未定义则为 `Unset`
++       唯一的抽象方法，给出原始文本。
++       带类型的读取调用它并解码结果。
+
+@ 0 1 0 1f071c669121416502dd5fc668aa0c0a
++ entry .Property   一个系统属性如何按其点分名称解码为某个类型
+
+% 1 1 0 01bfb6185fa03a97182bb9f0a52c5b58
+
+@ 0 11 0 13fc4425408a450e087e0eb470e135b5
++       `name is Property of T` 是 `System.properties.<name>[T]()` 背后的类型类：对于字面量属性名，它知道如何将可选文本 `#read` 为 `T`，也知道属性缺失时该怎么做。
++       伴生对象为标准 JVM 属性提供了实例，因此每个属性都读取为其自然类型：`java.home`、`user.home` 和 `user.dir` 读取为任何 `Instantiable across Paths from Text` 类型的路径；`file.separator` 和 `path.separator` 读取为 `Char`；`os.arch` 读取为 `Architecture`；`java.class.version` 读取为 `Int`（Java 21 为 `65`）；`java.version`、`java.vendor`、`java.vendor.url`、`java.runtime.version`、`line.separator`、`user.name`、`os.name` 和 `os.version` 读取为 `Text`。
++       任何其他属性读取为 `Text`（`.generic`）或任何 `Decodable in Text` 的类型（`.decoder`），未定义时各自通过作用域中的 `Tactic` 抛出 `Property.Error`。
+
+@ 0 3 0 125d677733cb047e0bf299add87317d8
++       具有固定类型的标准实例在属性缺失时会 panic 而不是抛出错误，因为 JVM 总会定义它们；通用实例，以及 `javaRuntimeVersion` 和 `javaClassVersion`，需要一个 `Tactic[Property.Error]`。
+
+% 2 1 0 11deb9504159bb8d04d6106817561c8a
+
+% 3 1 0 1ac7f8570ab6e2b01dc3e249cd474a87
+
+% 4 1 0 00a630d33852e98b179711b72ec812b2
+
+% 2 1 0 1e118d80a98b6e58146e844ea4a69a16
+
+% 2 1 0 1c6f19df4592e92f0505f9dabfe33a55
+
+% 0 1 0 1a36588bd13bc7761b5f272d62408ca5
+
+% 0 1 0 154a33a426ce4bea1cd581ec48bca12f
+
+% 0 1 0 03e9248d87d000ab17e56961da312e01
+
+% 1 1 0 007e75e469a97f9d026d06260729f01f
+
+@ 0 2 0 0dfaba1eb2b4d651131a59ba0fc1c0da
++       属性名中是 Scala 关键字的部分，例如 `java.class.path` 中的 `class`，要写在反引号中。
+
+% 1 1 0 14e9fa31ecbfc4370518c70bb12caa2f
+
+@ 0 24 0 1dd13fa3288ba26f17f6f871363a713c
++   entry .apply   由作用于属性文本的函数构造 `Property` 实例
++       `Property[name, T](text => …)` 是这样一个实例：用该函数解码已定义的属性，属性未定义时 panic；伴生对象中的固定类型实例就是这样写的，程序也用它为自己的属性声明类型。
++   entry .generic   任意属性，作为其原始文本；未定义时抛出 `Property.Error`
++   entry .decoder   任意属性，解码为 `Decodable in Text` 的类型；未定义时抛出 `Property.Error`
++   entry .javaHome   `java.home`，作为任意类型的路径
++   entry .javaVersion   `java.version`，作为文本
++   entry .javaVendor   `java.vendor`，作为文本
++   entry .javaVendorUrl   `java.vendor.url`，作为文本
++   entry .javaRuntimeVersion   `java.runtime.version`，作为文本（`21.0.2+13-LTS`）；未定义时抛出 `Property.Error`
++   entry .javaClassVersion   `java.class.version`，作为类文件的主版本号（Java 21 为 `65`）
++       该属性是 `65.0` 这样的小数；需要的是其整数部分。
++       若属性未定义或无法解析，则抛出 `Property.Error`。
++   entry .fileSeparator   `file.separator`，作为 `Char`
++   entry .pathSeparator   `path.separator`，作为 `Char`
++   entry .lineSeparator   `line.separator`，作为文本
++   entry .userName   `user.name`，作为文本
++   entry .userHome   `user.home`，作为任意类型的路径
++   entry .userDir   `user.dir`，作为任意类型的路径
++   entry .osName   `os.name`，作为文本；`System.os` 将其解码为 `Os`
++   entry .osVersion   `os.version`，作为文本
++   entry .osArch   `os.arch`，作为 `Architecture`
++   entry .Access   部分写出的点分属性名，通过成员访问扩展，通过应用读取
+
+% 1 1 0 14c9825ca80392e700962be76ebbb942
+
+@ 0 8 0 0ef522fa16c1ae2d00ffb807b82d7e00
++         `System.properties.user` 是一个 `Property.Access["user"]`；`.home` 将它扩展为 `Property.Access["user.home"]`，`[Text]()` 读取它。
++         名称携带在类型中，因此 `Property` 实例在编译时按完整的点分名称选定。
++     entry #selectDynamic   将名称扩展一个点分段
++     entry #applyDynamic   将名称扩展一段，并在同一步中读取属性
++     entry #property   目前已写出的点分属性名，作为字符串
++     entry #apply   从作用域中的 `System` 读取该具名属性，解码为类型参数
++   entry .Error   读取的属性未定义时抛出
+
+% 1 1 0 18b579df03306f341c3d064d42215466
+
+@ 0 7 0 1407dcb62b7edd2713de2a33e0857912
++         错误 `↯/s.62.1`：_the system property `property` was not defined_。
++         由 `generic` 和 `decoder` 实例以及 `javaRuntimeVersion` 和 `javaClassVersion` 通过作用域中的 `Tactic[Property.Error]` 抛出；读取自身所需属性的其他库也会抛出它，例如读取 `path.separator` 的 `LocalClasspath`。
++     entry #property   未定义的属性的点分名称
++   entry #read   根据属性名，将属性的可选文本解码为实例的类型
++   entry #Self   属性的名称，作为字面量字符串类型
+
+@ 0 1 0 0c0ffe09742f3bec05963b9aeedd57b0
++ entry .Os   程序所运行的操作系统，作为从 `os.name` 解码的值
+
+% 1 1 0 05b2ee11de9c0ca41f2a713a89c626d5
+
+@ 0 5 0 08585d286048eb04071a66e6b09c28ba
++       JVM 报告的操作系统的枚举——`Linux`、`MacOs`、`Windows`、`FreeBsd`、`OpenBsd`、`NetBsd`、`Solaris`、`Aix`——以及表示未知系统的 `Other(name)`，后者保留名称。
++       `System.os` 从作用域中的 `System` 读取当前运行的操作系统，`text.as[Os]` 解码任意 `os.name` 文本，匹配小写后的前缀，因此 `Mac OS X`、`Windows Server 2022` 和 `SunOS` 都会按预期解码。
+
+% 2 1 0 01195e2fdfbe5db315124042bbb46fd7
+
+% 3 1 0 014c928cd6d53f720fa64e832b635487
+
+% 4 1 0 187952b2457681741c9a4d346fdc03f3
+
+% 0 1 0 1220e20f34579bf212c889064351e978
+
+% 0 1 0 1cbf715806d4298901ba7e70d5264e7e
+
+% 0 1 0 136340b1f787c34717a33394e4fddfc8
+
+% 0 1 0 1edeb008775f795c01c0befbf6d824fc
+
+% 0 1 0 078b75a71c5f865a1d0de5b4fc6d7534
+
+% 0 1 0 0a9e8869826248051d375545acf80354
+
+% 0 1 0 0ca450fa96fece13019541dce60d30ef
+
+% 1 1 0 16264cb2f124b9ed1bd596359b3fb918
+
+@ 0 2 0 175331663abcc8131cbd091e909c15e3
++       `Os` 不是 `Vm.intercept` 的目标；虚拟机的事件通过 `Vm` 拦截。
+
+% 1 1 0 1e6cddd58a414e77147e9a39aee1fd4c
+
+% 1 1 0 1444876cb50919f113c779a702a8c765
+
+@ 0 3 0 0f42c4f286e74fca1c64b79c814a907f
++   entry .decodable   按小写后的前缀将 `os.name` 文本读取为 `Os`
++       `linux`；`mac` 或 `darwin`；`windows`；`freebsd`；`openbsd`；`netbsd`；`sunos` 或 `solaris`；`aix`；其他任何名称都是 `Other(name)`。
++       解码从不失败。
+
+@ 0 1 0 12b57ffc905b7ce40bd6e1a7dc886da2
++ entry .Architecture   处理器架构，作为从 `os.arch` 解码的值
+
+% 1 1 0 15331d44f8d6658614f397de8fd9425e
+
+@ 0 6 0 013fb02147d0c562088602b33b3275c3
++       处理器系列及其字长的枚举：`X86(32 | 64)`、`Arm(32 | 64)`、`Ppc(32 | 64, littleEndian)`、`Sparc(32 | 64)`、`Mips(32 | 64)`、`S390(31 | 64)`、`RiscV`，以及表示未知架构的 `Other(name)`。
++       `System.architecture` 从作用域中的 `System` 读取当前运行的架构，因此按架构选择本地库或代码路径的代码匹配的是一个值，而不是拼写因平台而异的字符串。
+
+% 2 1 0 1e51da224403fa8a1493b14d693873f0
+
+% 3 1 0 0b52713bae955a4807935bbc15724a89
+
+% 0 1 0 080a4de4179f6d0b1ae8480a6d4b0338
+
+% 0 1 0 0d00e155056ed7c00dc60bb188137a1e
+
+% 0 1 0 13b2b22fd4e8504608b26b97b361ca2c
+
+% 1 1 0 07999a09aabfdc361ee891209fafe515
+
+% 1 1 0 10767315774c248615edc017fb5c82eb
+
+% 1 1 0 007fe401b42c65c3016f696874bb2165
+
+@ 0 2 0 0a4537fbffbcd8f211b47bded4a48631
++   entry .decodable   将 `os.arch` 文本读取为 `Architecture`
++       解码从不失败；无法识别的名称保留为 `Other(name)`：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+% 0 1 0 0bb3d2f9ecf5719e1030ff89f146c273
+
+@ 0 1 0 1fea34b488c9e575090cfaadadeef366
++       column  架构
+
+% 0 1 0 1b41c302e0b78e960e0bd4c4ce1f53c3
+
+% 0 1 0 14f1f3aa299b6f771d83effb086e45b4
+
+% 0 1 0 17f1beda082592a314be602788e3e539
+
+% 0 1 0 0b0955c91e2ebc8c19a79fcb437fe8a0
+
+% 0 1 0 1edd57828f6229451d25c9b9c7bea453
+
+% 0 1 0 15e6459a87081ec807eb921f319c01b7
+
+@ 0 1 0 1efb3b7db1ccc9ca0dedfac6b8842270
++       row  `ppc64le`  `Ppc(64, true)`，小端序
+
+% 0 1 0 07ccb0649395579e0fbc9e94364eb01d
+
+% 0 1 0 0f264fb83952242b03a0e79df7511262
+
+% 0 1 0 1bc4a759e74bfa500f58137070c0084e
+
+% 0 1 0 0477af65dc1641dc1da4989d20afe196
+
+% 0 1 0 139345cb9ce11e581d2b9cb4f2c9a31e
+
+% 0 1 0 089794724002307b1bd99c2ff71ef626
+
+% 0 1 0 10992186dd28f66a0d009fcfe4e91280
+
+@ 0 1 0 117e71103d41fd7100c41e7bfc0a0071
++       row  其他任何名称  `Other(name)`
+
+% 1 1 0 16cb0dc7fe44f38d1ba13441370ad6ee
+
+@ 0 7 0 02550e117b84ec981ff2895dba2086cd
++ entry .Vm   程序所运行的虚拟机：`Vm.intercept` 的目标
++     一个自身没有成员的对象。
++     虚拟机引发的事件——关闭、未捕获的异常、垃圾回收——都在这里被拦截，方式是 `parasite` 库中的 `Vm.intercept[Shutdown]`、`Vm.intercept[Fault]` 和 `Vm.intercept[GarbageCollection]`，该库将这些事件声明为可在此目标上拦截。
++     目前只有 JVM 提供这些事件，但原则上没有一个是 JVM 特有的，因此目标是 `Vm`，而不是分阶段执行的装置 `Jvm`。
+
+% 2 1 0 06aff328f3d275d50c1367dbcc480db4
+
+% 3 1 0 13f4b4dadf37bfbf18ea07af5f51bf5b
+
+% 0 1 0 165462afad97f91204a9c33272297e1b
+
+% 0 1 0 1334ebfb7f1c19870ee5acdbaefefb39
+
+% 1 1 0 1a6a52a25899c6ca078ad125828d4a05
+
+@ 0 1 0 0afc52d4b273fe2f0f81f51707adbf88
++ entry .WorkingDirectory   程序启动时所在的目录，作为上下文值
+
+% 1 1 0 09001a04b14f07da17c0d5812b91f678
+
+@ 0 9 0 0b3f4424ca8527701540a9845dbda81d
++       `WorkingDirectory` 以 `#directory()` 文本指明一个目录；相对于工作目录解析相对路径的方法将它作为 `using` 参数接收，而不是从全局读取 `user.dir`。
++       需要按名称导入的工作目录位于 `workingDirectories` 包中：`javaBaseWorkingDirectory` 是 JVM 的 `user.dir`，`systemWorkingDirectory` 从作用域中的 `System` 读取 `user.dir`，`wasiWorkingDirectory` 是 Wasm 组件的初始目录，`daemonClientWorkingDirectory`（来自 `ethereal`）是守护进程每次调用发起时所在的目录。
++       `WorkingDirectory(path)` 由任意路径值构造一个工作目录，顶层的 `workingDirectory[Path on Linux]` 将作用域中的工作目录解析为某个路径类型。
+
+% 2 1 0 01b033a4b739d5ad011265a97418ff46
+
+% 3 1 0 054b9ff855c313650b66c7fd507f5831
+
+% 4 1 0 1ad427f18900ed511ccf4688e2e3a152
+
+% 1 1 0 06a942ff3853a560118ebcb82d23fca2
+
+% 0 1 0 02ab150339f5b3121d8aa703e8ffadb7
+
+% 0 1 0 07d1673df12056240cdd99dc28a89592
+
+% 0 1 0 0f1640e4ec19692916b0da9338a2acb9
+
+% 1 1 0 175b8efdcbbe57e71f0cd95e5fc54e5b
+
+% 0 1 0 07653f6d3bf18c5f08320d45a283d1fc
+
+% 0 1 0 01ba52eeeb1156d418e416e22d0e88ac
+
+@ 0 5 0 02d56471e87cd93f01befbe441e3f981
++   entry .apply   由任何 `Abstractable across Paths to Text` 的路径类型构造工作目录
++   entry .provided   来自作用域中任意 `WorkingDirectory.Provider` 的 `WorkingDirectory`
++       这是伴生对象中的 given，因此无需导入：只要某个提供者（例如 CLI 调用）是 given，就可以直接召唤其工作目录。
++   entry .Provider   携带规范工作目录的事物，例如 CLI 调用
+
+% 1 1 0 0e470651f2a5735a13ef093fa94639bf
+
+@ 0 5 0 0c4ba2d9e366c8ec06c68e4374000925
++         只有一个成员 `#workingDirectory` 的特质。
++         守护进程的每个客户端都有自己的工作目录，因此由调用类型提供它，而 `WorkingDirectory.provided` 使其成为作用域中的工作目录。
++     entry #workingDirectory   该提供者携带的工作目录
++   entry .Error   需要工作目录但没有时抛出
+
+% 1 1 0 1db732683ab7fbc50039d7b02136fe5c
+
+@ 0 4 0 05ced1bf6ec5a2bc023d6ff764848317
++         错误 `↯/s.62.3`：_there is no working directory_。
++         由必须解析相对路径却没有可供解析的 `WorkingDirectory` 的代码抛出，例如客户端无法报告工作目录的守护进程调用。
++   entry #directory   工作目录，作为文本
+
+@ 0 1 0 173421742de01ad212fd4754558baba1
++ entry .TemporaryDirectory   存放临时文件的目录，作为上下文值
+
+% 1 1 0 1e9b6f8f4feda3c2179e8e601420e056
+
+@ 0 7 0 123bf059d50b55c315c4d575916012d8
++       `TemporaryDirectory` 以 `#directory()` 文本指明一个目录，`#path[T]` 将其实例化为任意路径类型。
++       需要按名称导入的临时目录位于 `temporaryDirectories` 包中：`javaBaseTemporaryDirectory` 读取 JVM 的 `java.io.tmpdir`，`systemTemporaryDirectory` 从作用域中的 `System` 读取同一属性，`environmentTemporaryDirectory` 从作用域中的 `Environment` 读取 `TMPDIR`、`TMP` 和 `TEMP` 中的第一个。
++       顶层的 `temporaryDirectory[Path on Linux]` 将作用域中的临时目录解析为某个路径类型。
+
+% 2 1 0 1331aab65dd429ce058084c66f1de237
+
+% 3 1 0 0c308ee9b93d428612a8c6f67e8fba93
+
+% 4 1 0 14feef47ac7ab656165a42a4ddca494e
+
+% 1 1 0 1d2f89ca805c77dc1ae07a68ba3ee9a6
+
+% 0 1 0 024a9a989c160a771559e8ae038c8e65
+
+% 1 1 0 19d0f14375d19684068264ca45199c1b
+
+% 0 1 0 184f2bb714060bc80993d6ed18bcbb2c
+
+% 0 1 0 066ea94f4552b7c3070d2bdde9078ad3
+
+@ 0 2 0 0ce9262043a90a1b14ea413bb0e52020
++   entry #directory   临时目录，作为文本
++   entry #path   临时目录，作为任何 `Instantiable across Paths from Text` 类型的路径
+
+@ 0 5 0 0d05d317f9d6a2851e7e3ba7a550e2f6
++ entry .workingDirectory   作用域中的 `WorkingDirectory`，解析为某个路径类型：`workingDirectory[Path on Linux]`
++     需要一个 `WorkingDirectory`，以及一个 `Representative of Paths` 的路径类型。
++     文本在该类型有可信实例化时通过它实例化——工作目录来自操作系统，因此不做校验——否则从普通文本实例化。
++     该方法是 `inline` 的，因此可以在守护进程的 `cli` 块中展开。
+
+% 2 1 0 078856e95be189021eb62f49ce3054ac
+
+% 3 1 0 12eb4f531cc93eca07fc4199959a0dee
+
+% 4 1 0 0721ebfb25f9111c008e5b5960c64e2d
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 0e659f2b8aacbd33091432e0917fd237
+
+% 1 1 0 1e6d856f1f4cf30a1fe12c664648e9b8
+
+@ 0 3 0 166e9a132d46ab7603dad8d47b7f7c65
++ entry .temporaryDirectory   作用域中的 `TemporaryDirectory`，解析为某个路径类型：`temporaryDirectory[Path on Linux]`
++     需要一个 `TemporaryDirectory`，以及一个 `Representative of Paths` 的路径类型；与 `workingDirectory` 一样，文本通过该类型的可信实例化进行实例化。
+
+% 2 1 0 146e1fb118e898c0154087cd98ab2e3c
+
+% 3 1 0 08114d4895a2e535130aabf79de230ca
+
+% 4 1 0 15214bff81f30ea11ba959cd8b78fec5
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 0 1 0 18110d55acc0a0fe1014aea42bb09efa
+
+% 1 1 0 054151ef2fc37d7214dc4d0294d55ad4
+
+@ 0 1 0 0b0dde005d4773cd00e6a841b27c0a31
++ entry .Xdg   XDG 基础目录：环境中已设置的取自环境，未设置的取规范的默认值
+
+% 1 1 0 0dbfe5cdb1ad6b551cb808954931907a
+
+@ 0 7 0 1bc8b197fe20eb68104e604656cd8626
++       XDG 基础目录规范规定了程序的数据、配置、缓存和状态应放在哪里：在用户环境（`XDG_DATA_HOME`、`XDG_CONFIG_DIRS`……）已设置时遵从它，未设置时回退到规范给出的、位于主目录（来自 `user.home` 属性）之下的默认值。
++       每个方法都以要返回的路径类型作为类型参数，并需要作用域中有一个 `Environment` 和一个 `System`。
++       `Directories` 是同一组目录，只是在 Windows 上替换为 Windows 的位置。
+
+% 2 1 0 01175245239c855b0967dd4e55519a3d
+
+% 3 1 0 1d847361c1b15f4b16eeff0963f9902c
+
+% 4 1 0 085afba393a9f33e1501ae27a25cb222
+
+% 5 1 0 00c4d62322d494581730e29925e3482c
+
+% 6 1 0 0225916e262914c61f589d7ede78b504
+
+% 0 1 0 0539575999d841d41d4bb44d725b6f85
+
+% 0 1 0 1554a67897f2fc6b08d630da33ddbebd
+
+% 0 1 0 17510b5afba3525d0532d48b8897c418
+
+% 1 1 0 0ee376145b5a5f0e046025f684c81b87
+
+@ 0 2 0 1197680b12499580026ee0fd03dd963e
++       使用这些目录而不是硬编码的 `~/.myapp`，才能让程序的文件落在用户的备份、同步和清理工具所预期的位置。
+
+@ 0 4 0 0fb364795bee41fa087646c7eeb1aa92
++       `Xdg.Data` 和 `Xdg.Config` 是两个 XDG 搜索路径平面：`Path on Xdg.Data` 表示一个在 `dataHome` 和 `dataDirs` 的每一项中按此优先顺序搜索的子路径，`Path on Xdg.Config` 同样在 `configHome` 和 `configDirs` 中搜索。
++       搜索本身由 `galilei` 库完成。
+
+% 0 1 0 023f67cec20ed9f4125a58a5f411ef34
+
+% 0 1 0 06046212a76742f008400e63f2f842c2
+
+% 1 1 0 14ab07b5603d38a7075d9a95f75b3a5c
+
+@ 0 12 0 1909db4f66579187024b95f3daad609f
++   entry .Data   覆盖 `dataHome` 和 `dataDirs` 的搜索路径平面，是一个 `Searchpath`
++       `Path on Xdg.Data` 是 `myapp/schema.json` 这样的子路径，通过先搜索数据主目录、再搜索每个数据目录来解析。
++       解析逻辑位于 `galilei` 中。
++   entry .Config   覆盖 `configHome` 和 `configDirs` 的搜索路径平面，是一个 `Searchpath`
++   entry .dataHome   `$XDG_DATA_HOME`，或 `~/.local/share`
++   entry .configHome   `$XDG_CONFIG_HOME`，或 `~/.config`
++   entry .cacheHome   `$XDG_CACHE_HOME`，或 `~/.cache`
++   entry .stateHome   `$XDG_STATE_HOME`，或 `~/.local/state`
++   entry .runtimeDir   `$XDG_RUNTIME_DIR`，或 `Unset`：规范没有为它给出默认值
++   entry .bin   `$XDG_BIN_HOME`，或 `~/.local/bin`
++   entry .dataDirs   按路径分隔符拆分的 `$XDG_DATA_DIRS`，或 `/usr/local/share` 和 `/usr/share`
++   entry .configDirs   按路径分隔符拆分的 `$XDG_CONFIG_DIRS`，或 `/etc/xdg`
+
+@ 0 1 0 1743797024c97a9a0f96c8e47c353712
++ entry .Directories   标准用户目录：在 Windows 上为 Windows 的位置，在其他平台上为 XDG 的位置
+
+% 1 1 0 10f049cf462dbcbd0244508e41418353
+
+@ 0 8 0 07caa6fd7f80c57d12e168f3fff5c586
++       与 `Xdg` 相同的目录，按平台选择：当作用域中的 `System` 报告的 `os.name` 解码为 `Os.Windows` 时，数据、配置、缓存和状态主目录是漫游或本地的 `AppData` 目录（来自 `APPDATA` 和 `LOCALAPPDATA`，未设置时为主目录下的约定默认位置），运行时目录和 `bin` 位于本地 `AppData` 之下，数据目录和配置目录为 `PROGRAMDATA`；在其他所有平台上，或在 `os.name` 缺失时，每个目录都是 `Xdg` 中同名的目录。
++       每个方法都以路径类型作为类型参数，并需要一个 `Environment` 和一个 `System`。
+
+% 2 1 0 0f7b5a0d3cd65d2e1af24410cb9ebbc1
+
+% 3 1 0 1aba79a7c819a3200c6455ca8e7891b1
+
+% 4 1 0 16cab6c210e738da018746555d1430e0
+
+% 5 1 0 0607ccf1380205f90cd444f4117e2d24
+
+% 6 1 0 09662ba56456b4bb13a8f561ba1456a6
+
+% 0 1 0 110340846c4383ca0c4088c52ba7329a
+
+% 0 1 0 05addcb1e6fdb0f1191e1afade21d28a
+
+% 1 1 0 16b84b03aab0beb6116f1c8164d7be37
+
+% 1 1 0 138c61ed304315240f62d43a10e57a4a
+
+@ 0 11 0 156ec816009ebf611f014423ce581bbf
++   entry .home   用户的主目录，来自 `user.home`，作为任意类型的路径
++       只需要一个 `System`；若 `user.home` 未设置则 panic，而 JVM 总会设置它。
++   entry .homeText   用户的主目录，来自 `user.home`，作为文本
++   entry .dataHome   在 Windows 上为漫游 `AppData`；在其他平台上为 `Xdg.dataHome`
++   entry .configHome   在 Windows 上为漫游 `AppData`；在其他平台上为 `Xdg.configHome`
++   entry .cacheHome   在 Windows 上为本地 `AppData`；在其他平台上为 `Xdg.cacheHome`
++   entry .stateHome   在 Windows 上为本地 `AppData`；在其他平台上为 `Xdg.stateHome`
++   entry .runtimeDir   在 Windows 上为本地 `AppData` 下的 `Temp`；在其他平台上为 `Xdg.runtimeDir`，可能为 `Unset`
++   entry .bin   在 Windows 上为本地 `AppData` 下的 `Programs`；在其他平台上为 `Xdg.bin`
++   entry .dataDirs   在 Windows 上为 `PROGRAMDATA`（或 `C:\ProgramData`）；在其他平台上为 `Xdg.dataDirs`
++   entry .configDirs   在 Windows 上为 `PROGRAMDATA`（或 `C:\ProgramData`）；在其他平台上为 `Xdg.configDirs`
+
+@ 0 1 0 1debff874c1a76dc0f8380b0da7eb661
++ entry .Searchpath   搜索一个有序真实目录列表的路径平面的标记
+
+% 1 1 0 104dfb73990e8b9916d12f01a37f29b4
+
+@ 0 6 0 08541c818e4ddbb5029d8566b1cbe17e
++       _搜索路径平面_将一个有序的目录列表——XDG 数据目录，或 `$PATH`——合并为单一的可搜索视图，使得 `Path on Xdg.Data` 指明的子路径在第一个包含它的目录中找到。
++       平面通过扩展 `Searchpath` 来选择启用，`Xdg.Data` 和 `Xdg.Config` 就是这样做的；随后伴生对象在隐式作用域中提供每个这样的平面所需的 `serpentine` given：路径以 `%` 为根，根编码为空（因此路径读作 `myapp/config.json`），每个段都受 `.Rules` 约束。
+
+@ 0 5 0 162f10410f58be291a2d57117e3e6d1f
++       搜索路径平面有意不提供 `Filesystem` 实例：`galilei` 中受 `Filesystem` 约束的绝对路径操作不得作用于虚拟路径，否则它们会把它当作字面的平台路径来解析。
++       合并机制——平面解析到的有序路径前缀、首个匹配的解析，以及合并并带遮蔽的列表——是 `galilei` 的 `Searchpaths`。
+
+% 1 1 0 157cee268583eb6d1a25bd04d3b4b61e
+
+@ 0 9 0 199394f4df31560e041f31c45ae2a025
++   entry .Rules   搜索路径中的段可以是什么
++       段不得包含 `/`，也不得为 `.`、`..` 或空。
++   entry .nominative   使搜索路径受 `.Rules` 约束的 given
++   entry .submissible   允许从根 `%` 构建任意搜索路径平面上的路径的 given
++   entry .radical   搜索路径平面的根 `%` 如何写出：写为空
++       根隐含在每一项的文本中，因此平面上的路径仅编码为其各段。
++   entry .eradicable   搜索路径平面的根 `%` 如何读取：总是 `%`，不消耗任何文本
++       读取根不会失败，因此这个 given 是纯的，不接收战术。
+
+@ 0 1 0 13eaf2a7388dd4ef187f556bbb90c739
++ entry .Configurator   应用程序设置的来源，以驼峰式名称为键，按优先级组合
+
+% 1 1 0 16fd9a701e799ca90c0b2ecad87b16b6
+
+@ 0 7 0 1d97d6ae803b9a210741e473cb6bf15d
++       `Configurator` 从一个来源按规范的驼峰式名称（`logLevel`）读取设置，该来源负责映射到其本身的命名空间：`Configurator.environment` 从作用域中的 `Environment` 读取 `MYAPP_LOG_LEVEL`，`Configurator.properties` 从 `System` 读取 `myapp.log.level`，两者都位于应用程序的 `Configurator.Prefix` 之下。
++       配置器用 `#++` 组合，组合顺序即优先级顺序：先查询左边的来源，它没有的名称落到右边。
+
+@ 0 5 0 01bbbf532f66a658078c8571f80d9cce
++       声明一个 `Prefix` given，就会启用标准级联 `.default`：系统属性优先于环境变量，而优先于两者的命令行则由查询配置器的那个类型处理。
++       词法作用域中的 `Configurator` given 会覆盖默认值，因此任何格式的配置文件都可以作为从名称到 `Optional[Text]` 的 lambda 加入级联。
+
+% 2 1 0 0a4c54f7c0138df607a99177d029a3f9
+
+% 3 1 0 126666be8523138f0b19bd51e20cce74
+
+% 4 1 0 1af5ed6893cdb6c90aa0da839cd5de97
+
+% 1 1 0 1d8f69c74a89a2bc051c7f337ce8df6c
+
+% 0 1 0 02944b0aaca1d06c01145f8c66b251c5
+
+% 0 1 0 0f3070a45a4a607b0451cb3741a55674
+
+% 0 1 0 054c318487834e5402d24c96de9e7baa
+
+% 1 1 0 00bbddae21571ae71b0086eacde0501a
+
+@ 0 3 0 0895963e51418e8417763cd3544951fa
++       配置器是一种能力：它会触及程序之外，因此该类型在出现的任何地方都会被追踪，读取设置的方法接收 `using Configurator`。
++       由于读取没有副作用，它是共享的，而不是独占的。
+
+% 1 1 0 0ce892106d1df1761ae5a77d96a05387
+
+% 1 1 0 0b1d72277dcebbb00b9d1e9e45969349
+
+@ 0 1 0 15f550a5b8112471009b453c780e79c5
++   entry .Prefix   应用程序的名称，作为其变量（`MYAPP_`）和属性（`myapp.`）的前缀
+
+% 1 1 0 1cdcdec98d7ba1d70d341ff3ce7dc7cd
+
+@ 0 17 0 131854d4c1fca8711ee1fddd075761ff
++         作为 given 声明一次，即 `given Configurator.Prefix = Configurator.Prefix(t"myapp")`：用于环境时转为大写，用于属性时转为小写。
++     entry #name   应用程序的名称
++   entry .environment   作用于作用域中 `Environment` 的配置器：`logLevel` 读取 `MYAPP_LOG_LEVEL`
++       驼峰式名称被转换为大写蛇形，并加上大写的 `Prefix` 和一个下划线作为前缀。
++       需要一个 `Prefix` 和一个 `Environment`。
++   entry .properties   作用于作用域中 `System` 的配置器：`logLevel` 读取 `myapp.log.level`
++       驼峰式名称被转换为点分小写，并加上小写的 `Prefix` 和一个点作为前缀。
++       需要一个 `Prefix` 和一个 `System`。
++   entry .default   标准级联，属性先于环境，由一个 `Prefix` given 启用
++       `properties ++ environment`。
++       这是伴生对象中的 given，因此只要作用域中有 `Prefix`、`Environment` 和 `System`，就会召唤它；词法作用域中的 `Configurator` given 优先于它。
++   entry #read   按驼峰式名称取得的设置文本，若此来源没有该设置则为 `Unset`
++   entry #++   组合两个配置器，以本配置器优先
++       `this ++ that` 从 `this` 读取，对于它没有的名称则落到 `that`。
++       结果是一个捕获两者的新配置器。
+
+@ 0 5 0 1365510f230a20241f1184d7facb902a
++ entry .WasiEnvironmentApi   `wasi:cli/environment` 的 WIT 接口类型，即 `ambience.wasi` 所绑定的
++     `Interface in Wit at "/ambience/environment.wit"`：`wasiApis.wasiEnvironmentApi` given 的类型，`environments.wasiEnvironment` 和 `workingDirectories.wasiWorkingDirectory` 依据它进行类型检查。
++     仅存在于 `ambience.wasi` 源集中。
+
+@ 0 1 0 108d3bec66d5225b1c83ae2a6864c5ce
++ entry .environments   需要按名称导入的环境：JVM 的、空的、守护进程的、Wasm 组件的
+
+% 1 1 0 0807c36e69d237a20584db6417a9b77a
+
+@ 0 3 0 1a407e7a0933acbf17eced75b38be3f4
++       `Environment.editor[Text]` 从哪个环境读取，取决于作用域中的 `Environment` given，而这个选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，需要按名称导入一个。
+
+% 2 1 0 10340a0175b049291595da3c79e806ab
+
+% 3 1 0 00bbefa6701b340f0a9ed1bd7b9d1e2b
+
+% 4 1 0 0aac264ffd36bf281e1a9ba44fa27711
+
+% 1 1 0 18be41699109ab5d1232b7933ec23fab
+
+@ 0 27 0 0d550f6dffb8ce9218d8f02ff5d869fc
++       `javaBaseEnvironment` 适用于普通程序。
++       `emptyEnvironment` 用于测试和沙箱。
++       由其他库提供的两个守护进程环境，将调用的环境与守护进程启动时的环境区分开来。
++       `Environment` 是从名称到 `Optional[Text]` 的单个函数，因此自定义的环境就是绑定为局部 given 的 lambda。
++   entry .javaBaseEnvironment   JVM 启动时的环境，来自 `java.lang.System.getenv`
++       可枚举：`entries` 是整个环境。
++       在守护进程中，这不是任何调用的环境：启动器以一个经过清理的环境启动守护进程，而每次调用自己的环境随调用一起到达，即 `daemonClientEnvironment`。
++   entry .emptyEnvironment   不定义任何变量的环境；`entries` 是空映射
++       用于测试或沙箱：每次读取都是 `Unset`，因此每次带类型的读取都会抛出 `Environment.Error`。
++   entry .wasiEnvironment   Wasm 组件的环境，来自 `wasi:cli/environment` 的 `get-environment`
++       位于 `ambience.wasi` 源集中。
++       这是一个 `inline` given，使得 Wasm 组件导入在召唤它的位置、在为 Wasm 目标编译的代码中物化；链接 WASI 的应用程序只召唤它一次。
++       它不能枚举：`entries` 为 `Unset`。
++   entry .daemonEnvironment   启动守护进程的那次调用的环境；由 `ethereal` 提供
++       启动器以自己的一个经过清理的环境启动守护进程，使守护进程的状态不取决于碰巧是谁启动了它，并通过守护进程的标准输入发送启动器自身启动时的环境。
++       这个 given 就是该环境，保存在内存中。
++       需要它而不是当前调用环境（即 `daemonClientEnvironment`）的场合很少；没有启动器时（直接运行 JVM），它就是 JVM 自己的环境。
++   entry .daemonClientEnvironment   守护进程当前调用的环境；由 `exoskeleton` 提供
++       需要作用域中有一个 `Cli`，即该调用，它就是该调用的环境：运行命令的 shell 的变量，而不是启动守护进程的 shell 的变量。
++       守护进程的命令处理函数应当读取的就是这个环境。
+
+@ 0 1 0 088f696d1a9ef99507612b46fb37a6d3
++ entry .systems   需要按名称导入的系统属性来源：JVM 的，或空的
+
+% 1 1 0 14289a3b4141987c0b56d6712c2f3839
+
+@ 0 4 0 019ad472de358c790b2f3b145b221543
++       作用域中的 `System` 是 `System.properties.user.home[Text]()`、`System.os` 和标准目录读取的来源。
++       `import soundness.*` 不会引入它；需要按名称导入一个，或者在测试中将从名称到 `Optional[Text]` 的 lambda 绑定为局部 given。
+
+% 2 1 0 19152476ffc093c407fa0dde68e53073
+
+% 3 1 0 02dccd6c703bbf9b0b422900c907afba
+
+% 4 1 0 0aa91e08461bdd2617793da40ba5e5ed
+
+% 1 1 0 09edd48417069cc1186a47efbecc2f9a
+
+@ 0 5 0 1b41a1cc95e091e01e78be9eb36cfc8b
++   entry .javaBaseSystem   JVM 的属性，来自 `java.lang.System.getProperty`
++   entry .emptySystem   不定义任何属性的系统
++       用于不得依赖其所运行的 JVM 的测试：每次读取都是 `Unset`，因此每次带类型的读取都会抛出 `Property.Error`，对于固定类型的标准属性则会 panic。
+
+@ 0 1 0 128dbafcc9b281c01b24da0cc2438165
++ entry .workingDirectories   需要按名称导入的工作目录：JVM 的、`System` 的、守护进程客户端的、Wasm 组件的
+
+% 1 1 0 08d666635422cfb01e52abd0c924c77d
+
+@ 0 2 0 1a06965150b8422c0866c960ae0e76f7
++       作用域中的 `WorkingDirectory` 就是 `workingDirectory[Path on Linux]` 所解析的目录，也是解析相对路径的基准。
++       需要按名称导入一个：
+
+% 2 1 0 1c6b1cbea4e849df185c344da890592f
+
+% 3 1 0 0da9faba7317361505f737b9f165d0ab
+
+% 1 1 0 02f0a1de411ca3650fe6699dd43a745b
+
+% 1 1 0 1650bc3f29b2f41e06be7deff50afb6c
+
+@ 0 14 0 14d5e0437875341a0d5853cf900fc29c
++       在守护进程中，每次调用发起时所在的目录是 `daemonClientWorkingDirectory`，而不是 JVM 的目录。
++   entry .javaBaseWorkingDirectory   JVM 的 `user.dir` 属性
++       即特化到 `systems.javaBaseSystem` 的 `systemWorkingDirectory`。
++   entry .systemWorkingDirectory   从作用域中的 `System` 读取的 `user.dir`
++       需要一个 `System`，这样测试可以通过固定系统来固定工作目录；若属性未设置则 panic。
++   entry .wasiWorkingDirectory   Wasm 组件的初始目录，来自 `wasi:cli/environment` 的 `initial-cwd`
++       位于 `ambience.wasi` 源集中；这是一个 `inline` given，在召唤它的位置物化。
++       没有初始目录的组件回退为 `/`。
++   entry .daemonClientWorkingDirectory   守护进程当前调用发起时所在的目录；由 `ethereal` 提供
++       需要作用域中有一个 `Cli`，即该调用，它就是该调用的工作目录。
++       守护进程的每个客户端都有自己的工作目录，而 JVM 的 `user.dir`——守护进程启动时所在的目录——对此毫无体现。
+
+@ 0 1 0 0fd42a0252d1dc05195ad7b0abb975c9
++ entry .temporaryDirectories   需要按名称导入的临时目录：按属性、按 `System` 或按环境
+
+% 1 1 0 16b4f42220052eab0b9810a5f9a2fe4a
+
+@ 0 2 0 0f83f653ad41200c1619f033b0646408
++       作用域中的 `TemporaryDirectory` 就是 `temporaryDirectory[Path on Linux]` 所解析的目录。
++       需要按名称导入一个：
+
+% 2 1 0 02e22c2aabccebba08bf747b7a3ed8ac
+
+% 3 1 0 00cd0373596019fd09fe4e13597c5758
+
+% 1 1 0 1976e8a9892575e11938274e6155615f
+
+% 1 1 0 162cabfc523420a919f00deeafc51756
+
+@ 0 7 0 1c2a2bd7736ef7a70b1473f5078c9b6d
++   entry .javaBaseTemporaryDirectory   JVM 的 `java.io.tmpdir` 属性
++       若属性未设置则 panic，而 JVM 总会设置它。
++   entry .systemTemporaryDirectory   `java.io.tmpdir`，需要作用域中有一个 `System`
++       接收一个 `System`，以便声明这一依赖，尽管读取的值是 JVM 自身的 `java.io.tmpdir` 属性。
++   entry .environmentTemporaryDirectory   作用域中 `Environment` 里 `TMPDIR`、`TMP` 和 `TEMP` 中的第一个
++       需要一个 `Environment`；若三个变量都未设置则 panic。
+
+@ 0 1 0 0f2cf028a00cd76f16e2eea138518715
++ entry .termcaps   从环境读取的终端能力，作为需要按名称导入的 given
+
+% 1 1 0 08652e9a778fe49e1835bc2137d24c68
+
+@ 0 5 0 02e523c06549f6e9033ae02db5a38dab
++       `Termcap` 说明终端能做什么——是否接受 ANSI 转义序列、颜色深度、宽度和高度——带样式的输出会按它进行渲染。
++       固定的终端能力（`basicTermcap`、`xterm256Termcap`、`xtermTrueColorTermcap`）位于 `anticipation` 库的 `termcapDefinitions` 包中；本包的 `environmentTermcap` 则从环境推断终端能力。
+
+% 2 1 0 02ed90dc2f7e1a6d0f62e7d5b3597452
+
+% 3 1 0 00b8c50e6e36f2dc0b962964a58aeaad
+
+% 4 1 0 1adc803990b18f3a198caafeff5c4fd0
+
+% 0 1 0 165058a3772bd3eb1204a3645a2b08e1
+
+% 1 1 0 02409bb69148b234133155bcfe2bf791
+
+@ 0 7 0 0c2b566dc9e2778c1f220122ff07c431
++   entry .environmentTermcap   由 `COLUMNS` 和 `COLORTERM`，或由 `tput colors` 描述的终端
++       需要一个 `Environment`。
++       假定支持 ANSI 转义序列。
++       宽度在调用上下文设置了 `COLUMNS` 时取其值；在它缺失或格式错误时——例如输出被重定向到文件或管道——宽度不受限制，任何内容都不换行。
++       颜色深度在 `COLORTERM` 为 `truecolor` 时为 `TrueColor`，否则通过运行 `tput colors` 读取，失败时回退为 `NoColor`。
++       两者都在首次被请求时惰性地计算一次。
+
+@ 0 1 0 1e7a2f5c2998491c1ba876aca0281577
++ entry .wasiApis   `ambience.wasi` 的 WIT 接口定义，作为需要按名称导入的 given
+
+% 1 1 0 1cb12a0ff555ebaf07c86a3076488d48
+
+@ 0 5 0 1ff18f5dc0fe4c0709667bbaa7dae494
++       WASI 导入的 `call` 物化器会查询作用域中的接口，以取得函数的模块 id。
++       仅存在于 `ambience.wasi` 源集中。
++   entry .wasiEnvironmentApi   `wasi:cli/environment` 接口，来自捆绑的 `/ambience/environment.wit`
++       一个 `WasiEnvironmentApi`，从类路径资源读取。
++       在使用 `environments.wasiEnvironment` 或 `workingDirectories.wasiWorkingDirectory` 的地方按名称导入它。

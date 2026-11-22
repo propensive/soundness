@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 1 0 1e31b6c8ad7c9e9614d5038f040041fd
++ # `SN-660` – Metoda rozszerzająca interpolatora musi być `inline` (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 3 0 0b492283b067c74e0a1ec9e5a330d239
++ To sprawdzenie należało do API `Interpolator` z Contextual, które zostało zastąpione klasą typów
++ `Interpolable`. Metodę prefiksową deklaruje się teraz jako `transparent inline` w ramach wzorca,
++ a wymóg egzekwuje sygnatura, a nie sprawdzenie.

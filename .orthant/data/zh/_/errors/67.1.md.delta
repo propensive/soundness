@@ -1,0 +1,33 @@
+orthant 2 language
+
+% 0 1 0 006f41d6da55aec4163f35aeb35a3144
+
+@ 0 1 0 141589cadb84a0891050f70817a0c9a1
++ 当 Hellenism 在类路径上找不到资源时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 04b07f98ffc6fad50209fbd648b01ddf
++ Hellenism 按名称解析资源；当没有任何类路径条目包含所请求的资源时，会抛出此错误。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1ea4d62b2e47805d0e04bd31844862bd
+
+% 1 1 0 1d933ccc1022e8f913c9d782dd527429
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 08ef24e345b008710e8b7e6fc812aee3
++ 确认资源路径（相对于类路径根）正确，并确认该资源已包含在构建制品中。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0c9ca67fa18d73091e3903a69f85d78c
++ - 源代码：`lib/hellenism/src/core/hellenism.Classpath.scala`

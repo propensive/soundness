@@ -1,0 +1,70 @@
+orthant 2 language
+
+% 0 1 0 058d43f16a5e3ecf18da47c44d3c9e1b
+
+@ 0 1 0 1e3ca82d892fddae1f6391500c1f8d2f
++ 当 Exoskeleton 无法执行 `tmux` 可执行文件时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1da77a8e402d8dbd17077325085e8a3f
++ Exoskeleton 的 `Tmux` 集成会调用外部的 `tmux`。
++ 如果该可执行文件不在 `PATH` 上（或不可执行），就会抛出此错误。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 011ac4e91eb82ef10b81150c3c3cad99
+
+% 1 1 0 0833bef0db2eff3413a91240607dc052
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 043ade3193b878f919abc802da9c4be6
++ 安装 `tmux`，并确保它位于进程的 `PATH` 上。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0753f07cb10fafad111b0526cd74c9d0
+
+@ 0 1 0 0a3252c6988503f11cb22deb4e80a197
++ 要求 tmux 运行的 shell 不在 `PATH` 上。
+
+@ 0 1 0 08916296ac190b2d1ae4f07bbd6dfb89
++ **示例。** `` [↯/s.109.1.1] can't drive tmux: the shell binary `fish` is not installed ``
+
+@ 0 1 0 03e1037dad80d3b2150114c7d6a0c2d2
++ **解决方法。** 安装该 shell，或者指定一个已存在的 shell。
+
+% 0 1 0 1d979ae56af034410775d0b756b1f688
+
+@ 0 1 0 0d41f571a8ce9dca1b86f363370de658
++ 在程序驱动 tmux 会话期间，该会话结束了。
+
+@ 0 1 0 0b421c4a1927f3b60238626f0f8d96e6
++ **示例。** `[↯/s.109.1.2] can't drive tmux: the tmux session terminated unexpectedly`
+
+@ 0 1 0 111ce5bce032110b1021275d594d949f
++ **解决方法。** 会话被终止了，或者其中的命令已退出。检查 tmux 服务器自己的日志。
+
+% 0 1 0 14b2493552c89b4a0a16bf6478d0a4ff
+
+@ 0 1 0 1a92403c3753d7eb15eab8adbd6a1d06
++ `tmux` 可执行文件根本无法执行。
+
+@ 0 1 0 029d705545fb12310d31d65c183780db
++ **示例。** `[↯/s.109.1.3] can't drive tmux: could not execute tmux`
+
+@ 0 1 0 1e65d483559313ac145a237281e5dfd0
++ **解决方法。** 安装 tmux，或者确保它位于进程的 `PATH` 上。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 15e7999c8ccca650055c23c279685e0a
++ - 源代码：`lib/exoskeleton/src/rig/exoskeleton.Tmux.scala`

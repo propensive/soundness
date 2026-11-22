@@ -1,0 +1,202 @@
+orthant 2 language
+
+@ 0 1 0 02b5c4e68591d68a045bed8cc52a1334
++ ## Podświetlanie składni
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 104804ad023954de09f99a905afeae02
++ Kod źródłowy Scali podświetla sam kompilator Scali. Język nie jest przybliżany wyrażeniami
++ regularnymi. Na źródle uruchamia się prawdziwy tokenizer, a na życzenie cały frontend
++ kompilatora, więc podświetlenie jest dokładnie takie, jak odczytuje je kompilator.
+
+@ 0 3 0 0b3fcc52cd8e8b8f0e19d32c082bac7c
++ Wynikiem jest `SourceCode` złożony z tokenów z akcentami, wyświetlany jako ostylowane wyjście
++ [terminala](terminal.md#styled-text) albo jako [HTML](html.md). Na głębszych poziomach zawiera
++ on *typy* swoich wyrażeń, komunikaty diagnostyczne kompilatora, a nawet uzupełnienia.
+
+@ 0 1 0 06b65ff84c0bb4f6083b5428de27fdcc
++ ### O podświetlaniu
+
+@ 0 5 0 11ed38018675f7e61f1d251f240000d1
++ Scala opiera się niedbałemu podświetlaniu. Jej miękkie słowa kluczowe są słowami kluczowymi
++ tylko w określonych pozycjach. Jej składnia givens i znaczące wcięcia pokonują gramatyki
++ oparte na wzorcach. Pliki podświetlania w edytorach gonią język, wydanie po wydaniu. Jedynym
++ programem, który zawsze poprawnie tokenizuje Scalę, jest kompilator, więc niezawodnym
++ narzędziem do podświetlania jest kompilator, grzecznie poproszony.
+
+@ 0 1 0 1132bb56f6eac2a70988983a27ce5bd4
++ Uruchamia się go na trzech głębokościach, a każdą z nich wybiera given z pakietu
+
+% 0 1 0 10bb0f8f881e2dac004f336cef9cb21a
+
+% 2 1 0 171a3ad92a0e6f5c0e912a0e23743fe9
+
+@ 0 1 0 08e226ae6e3c4913114e5dbdc8f6f98b
++ column  Głębokość
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 6 0 1e71b1a7447a0c7c158dea4b7117315e
++ column  Wymaga
++ column  Daje
++ row  tokenizacja  `tokenizedScala`, domyślny  samego tekstu  sklasyfikowane tokeny
++ row  sprawdzenie typów  `typecheckedScala`  kompilatora i ścieżki klas  typy i diagnostykę z frontendu
++ row  sprawdzenie typów  `sessionScala`  rozgrzanej sesji kompilatora  to samo, w obrębie sesji
++ row  kompilacja  `compiledScala`  kompilatora i ścieżki klas  diagnostykę, którą wytwarzają dopiero późniejsze fazy
+
+% 1 1 0 1c5e3d1e4d3a93ab0b47e0a8f0ce9f1e
+
+@ 0 3 0 02bcc09e97520a5a1db04276f6e7cc5e
++ Podświetlony token, który zna swój typ, to
++ [składalność](../../philosophy/composability.md) między kompilatorem a tym, co wyświetla kod.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Wszystko pochodzi z pakietu `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 114e2dd9ed60151f1bd0af305ab50b7e
++ ### Podświetlanie
+
+@ 0 2 0 012bd69f11a905690e8ca1cfd7c7524e
++ `Scala.highlight` tokenizuje źródło na wiersze tokenów z akcentami, takich jak słowa kluczowe,
++ identyfikatory, liczby, napisy i modyfikatory, gotowe do wyświetlenia:
+
+% 2 1 0 1ed338af11b10cc91f87a202c2e33649
+
+% 0 1 0 0ee9faaf14ddabb5116b898574ab190c
+
+% 1 1 0 1d21896b22ed8da602e4ee62999c61aa
+
+@ 0 1 0 19ff25aa2684c8091cb812827eca9a5c
++ Akcenty to kategorie, którym paleta przypisuje kolory:
+
+% 2 1 0 0479038c5e0ecce70e4e8601a52affbc
+
+@ 0 9 0 0b6f22caf04995e51131297fe8b27722
++ column  Akcent
++ column  Oznacza
++ row  `Keyword`  słowa kluczowe inne niż modyfikatory
++ row  `Modifier`  słowa kluczowe będące modyfikatorami
++ row  `Term`, `Typal`  definicje
++ row  `Symbol`  operatory
++ row  `Parens`  nawiasy
++ row  `Number`, `String`  literały, w tym interpolowane
++ row  `Error`, `Unparsed`  tokeny, które nie wyszły czysto
+
+% 1 1 0 011927ac33a7e05d0ab44dad23d328a2
+
+@ 0 2 0 1545d73b7037a8a30ad4ea6891b5f412
++ Domyślną głębokością jest tokenizacja, która nie potrzebuje niczego poza tekstem.
++ `Java.highlight` robi to samo dla źródeł Javy.
+
+@ 0 3 0 0674d25c297fcab114205f7aa16d6131
++ Paleta, podana jako given, odwzorowuje akcenty na [kolory](colors.md), a renderery ANSI, z
++ numeracją lub bez, zamieniają `SourceCode` na wyjście terminala. Wydzielone bloki kodu `scala`
++ i `java` w dokumencie [Markdown](markdown.md) są wyświetlane za pomocą tego samego
++ mechanizmu.
+
+@ 0 1 0 0911216a77e5b2e20bbf39af20c40a72
++ ### Typy i diagnostyka
+
+@ 0 3 0 11fc70ae788b3a2e14a10210c316aba0
++ Z [kompilatorem](compiler.md) i [ścieżką klas](classpath.md) w zasięgu `typecheckedScala`
++ uruchamia frontend, a każdy identyfikator ma typ, który nadał mu kompilator. To różnica między
++ pokolorowaniem `xs` jako identyfikatora a wiedzą, że jest to `List[Int]`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0749446bb3e8240819004b617c4e26b0
+
+% 0 1 0 1e804ef02d58fd58093e38ba542f1190
+
+% 0 1 0 044555dea3bc12de0e1d4878c46292e3
+
+% 0 1 0 1b9581162a71724f01d0cd507c8b5897
+
+% 1 1 0 0fc8b19d5946eea41efedf1cb1033119
+
+@ 0 2 0 102faf44a03408ba08799c135fa2b8f2
++ `typecheckedScala` pochodzi z modułu `harlequin.typed`, jedynej części mechanizmu
++ podświetlania, która zależy od kompilatora.
+
+@ 0 3 0 1e3028571ff7fe6b038d6ba70b5c75ee
++ Źródło z błędami typów nie przestaje być podświetlane. Jest podświetlane *wraz ze swoimi
++ błędami*. Każda `Diagnostic` ma swój span i komunikat, czyli to, czego potrzebują narzędzia
++ dokumentacyjne i edytory:
+
+% 2 1 0 0c6d8894d004321a000b1dc422a88993
+
+% 0 1 0 1ea951da86610c4d06bf32700bb2cf27
+
+% 1 1 0 1959c108744d9de7152c28cf1aff2e6d
+
+@ 0 1 0 12fb9d6403ad24ff1fc8a11ed4f80083
++ ### Uzupełnianie
+
+@ 0 2 0 08843279c52d270b1bcd4a43159e0fb2
++ Pozycja karetki zamienia podświetlanie w uzupełnianie. Własny interaktywny silnik kompilatora
++ proponuje, co mogłoby nastąpić, wraz z rodzajami i sygnaturami:
+
+% 2 1 0 089aec4ce3a538c610d827305ef2aa23
+
+% 0 1 0 1af12c2883e0ff1f061b68ae1c7dac73
+
+% 0 1 0 0c03c02c9aefe9bc08261aed1f60bc45
+
+% 1 1 0 0a2d5f1c72405fca18278c7a0e735ed6
+
+@ 0 3 0 19d72e24c4b6539b15b19d9ad85077c1
++ Przy głębokości ze sprawdzaniem typów propozycjami są tu `map`, `max`, `mkString` i inne
++ składowe `List[Int]` zaczynające się od `m`. Pochodzą one od tego samego kompilatora, który
++ ostatecznie skompiluje kod, więc nigdy nie są zgadywaniem.
+
+@ 0 6 0 05c8b4224fe6ae510840fbd2f5af3b3a
++ Składowe po `.` to łatwy przypadek. Trudniejszy jest goły identyfikator w trakcie pisania,
++ ponieważ zawierająca go instrukcja nie przechodzi sprawdzania typów. Jest to dokładnie jej
++ stan podczas pisania, a kompilacja wsadowa odrzuca taki kod. Uzupełnienia pochodzą więc z
++ interaktywnego sterownika kompilatora, który zachowuje kod z błędami. Termy i typy w zasięgu
++ są uzupełniane wszędzie tam, gdzie stoi karetka, a w pozycji typu propozycje są zawężane do
++ typów, modułów i pakietów.
+
+@ 0 1 0 15b083b39f1b849a043c9c43ed99a7ec
++ ### Uzupełnianie słów kluczowych i składowych dynamicznych
+
+@ 0 1 0 17c727c18c8c58bf0e77959ccfc6397e
++ Dwa rodzaje propozycji, których kompilator nie potrafi złożyć, są dostarczane obok jego
++ własnych.
+
+@ 0 5 0 09c2257f91b1ff80110139b1c233383c
++ *Słowa kluczowe* są gramatyczne, a nie semantyczne. To, co może nastąpić, zależy od tokenów
++ przed karetką, a nie od jakiejkolwiek tablicy symboli. Drzewo trie nad odwróconymi
++ kontekstami tokenów, wyprowadzone z korpusu prawdziwego kodu Scali i sięgające wstecz tylko
++ tak daleko, jak to istotne, odpowiada, które słowa kluczowe mogą nastąpić i czego gramatyka
++ tam oczekuje. `case ` oferuje więc to, od czego może zaczynać się przypadek, a pozycja, która
++ musi być typem, nie oferuje żadnych słów kluczowych.
+
+@ 0 5 0 07595c7debf3a28f19287fba358381d4
++ Składowe *dynamiczne* w ogóle nie mają symboli, które można by zaoferować. Gdy karetka stoi na
++ selekcji, której kwalifikator wywodzi się z `scala.Dynamic`, obiekt towarzyszący typu jest
++ pytany, jakie składowe dopuszcza jego rafinacja, o ile implementuje on interfejs służący do
++ udzielania takiej odpowiedzi. W ten sposób wartość [obca](foreign-interop.md) jest
++ uzupełniana składowymi, które wymieniają jej obce deklaracje, i w ten sposób każdy typ
++ `Dynamic` może oferować rzetelne uzupełnienia zamiast żadnych.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 4 0 154962b908d4ff2709cb81e953c43f20
++ - [Kompilator](compiler.md) opisuje uruchamianie kompilatora Scali z programu.
++ - [LSP](lsp.md) dostarcza edytorowi uzupełnienia i diagnostykę.
++ - [Markdown](markdown.md) wyświetla podświetlone bloki kodu.
++ - [Terminal](terminal.md) i [HTML](html.md) to dwie postacie wyjścia.

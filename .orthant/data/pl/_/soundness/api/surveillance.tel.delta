@@ -1,0 +1,510 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cec90b7d674f3271e8749aa998f2007
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02195584dbd3f15d0f09d0f205f9badf
++ info   obserwowanie katalogów i plików pod kątem zmian jako ograniczonego zasięgiem strumienia typowanych zdarzeń
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1ee710e1ead1bc5319e758a341a6a33f
++     _Surveillance_ obserwuje system plików. Ścieżkę lub kolekcję ścieżek *otwiera się* jako
++     `Watch`, a wewnątrz bloku `Watch.Handle` dostarcza zmiany w miarę ich zachodzenia –
++     utworzenie, modyfikację lub usunięcie pliku, utworzenie katalogu – jako leniwy `Chain`
++     zdarzeń `Watch.Event` albo zgrupowane w `Watch.Batch` po tym, jak drzewo przez pewien czas
++     pozostaje spokojne. Rejestracja w systemie operacyjnym trwa dokładnie tak długo jak blok,
++     a sprawdzanie przechwytywania ogranicza do niego uchwyt i
++     jego strumienie.
+
+% 2 1 0 19e4fe697eee4c04071f3ac244df9a7c
+
+% 3 1 0 1dd8b6e02b28c817193abf3a06741b08
+
+% 4 1 0 0b6e525faaea92591b5f262b57b3d780
+
+% 5 1 0 0dd7f231ef971f2e1f22b5504e07ae08
+
+% 6 1 0 0a8e76785e7ef6bf1ed0f9ffbef164de
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 1 1 0 0900a2265c4a843e011512393b059fc3
+
+% 2 1 0 0b11e91e5fd1dfc2190e626c461f5436
+
+% 4 1 0 0866633c31cdcd740a20c4f0dfbcf334
+
+% 0 1 0 0a04c15b6b6b12f3197202aea2435fe1
+
+% 0 1 0 14e900dcabf9791b0d4f312cf17ed9fe
+
+% 0 1 0 1cbbbffc9a109c771c27a04eab9757ed
+
+% 0 1 0 1f1ff5fec060a3480705c707a18d5d67
+
+% 0 1 0 0cfe35b29a17aa33021840f75b365879
+
+% 0 1 0 0605e5c3918a344d06f80a4418b6815f
+
+% 1 1 0 0202d68fa0be0eab06d1f66f60e56257
+
+@ 0 5 0 0523fbfba1a858be0e52d040ca8bd912
++     Wykrywanie zmian jest delegowane do backendu `Watcher`. Bez importu obowiązuje
++     `Watcher.default`: `JavaBaseWatcher`, działający na własnej usłudze powiadomień systemu
++     operacyjnego (`java.nio.file.WatchService`). Tam, gdzie jest ona niedostępna lub
++     zawodna – w niektórych sieciowych lub kontenerowych systemach plików – `PollingWatcher`,
++     tworzony przez `watchers.polling(interval)`, porównuje zamiast tego migawki każdego
++     katalogu; wybiera się go, wiążąc go jako lokalny given.
+
+@ 0 3 0 0134fd908841c7de1ca0ff3928f3000e
++     Obserwacja obejmuje bezpośrednie wpisy katalogu, a nie całe jego poddrzewo; ścieżka
++     wskazująca plik obserwuje katalog nadrzędny, filtrowany do tej jednej nazwy. Kilka
++     ścieżek otwartych razem dzieli jeden strumień zdarzeń.
+
+@ 0 4 0 0f71b27d6d0b2a2202fafed0eed7f652
++     Biblioteka ma jeden zestaw źródeł, `surveillance.core`, dla JVM, zbudowany na
++     nadzorowanych zadaniach parasite i `Relay` z turbulence. Wszystko jest eksportowane do
++     modułu zbiorczego `soundness`, a obiekt `watchers` jest odwzorowany jako pakiet; jego
++     given `javaBaseWatcher` importuje się po nazwie, ponieważ `import watchers.*` nie
++     importuje givenów.
+
+% 0 1 0 1fbee5f213f4d1fe081534fcf5d8afae
+
+% 0 1 0 06f08944f4f7469904d6dfee1dc6b36b
+
+% 0 1 0 15522c39789a5bf60860023ec1d1bedd
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 059481c7daae3a6313a97724b8d0db4e
++ entry .Watch   rejestracja obserwowanych ścieżek, jej zdarzenia i forma `open[Watch]`
+
+% 1 1 0 0226f03064affea91fd75f43a7c10b4c
+
+@ 0 5 0 0ea0762f1f160d500693f3d1f4dd5ec3
++       `Watch` to forma, jako którą otwiera się ścieżkę, aby ją obserwować, oraz typ aktywnej
++       rejestracji. Zwykle wchodzi się przez `path.open[Watch]() { watcher ?=> … }`, za
++       pośrednictwem `.openable` (lub `.allOpenable` dla kolekcji ścieżek), co rejestruje
++       ścieżki, pożycza blokowi `Watch.Handle` i wyrejestrowuje je, gdy blok się kończy,
++       niezależnie od sposobu zakończenia.
+
+% 2 1 0 0b10f6816318b6951efdcb4cae814190
+
+% 3 1 0 11fe5550dd95af671fa0237a1df9ec61
+
+% 4 1 0 18067d56d85bff7404e9157f837924fb
+
+% 5 1 0 12f0f30b750e68180a48f63051644fb6
+
+% 6 1 0 0662418e09b06159148156743ecc3fd3
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 1 1 0 1ca4051cbfa31eb90edc8424bc1d7df0
+
+% 2 1 0 0f843481ddf7bfb51610b28f4d439bd2
+
+% 0 1 0 0f260a972238d9a80f3ba7ec91cc7aa9
+
+% 0 1 0 105557c15c5f7df51bc55e423196b996
+
+% 0 1 0 00c02426123d7cbe04e2d04de6291257
+
+% 0 1 0 0328b3aae07ae1d41ae8dcd661649d5c
+
+% 1 1 0 1b4065caeb67b27b0a87da545c57c17a
+
+@ 0 5 0 05d095af2de4f8f91096d5c43ef5a9ef
++       Wartość `Watch` można też utworzyć bezpośrednio przez `Watch(paths)`, poza jakimkolwiek
++       zasięgiem; wtedy trzeba wywołać `#unregister`, aby anulować rejestrację i zakończyć
++       `#stream`, który inaczej nigdy się nie kończy. Obserwowanie jest czystą obserwacją, więc
++       żadna operacja na uchwycie nie jest ograniczona uprawnieniem: tryb przekazany
++       do `open` nie ma znaczenia, a domyślny, `Read`, opisuje to najlepiej. Nie ma flag.
+
+@ 0 2 0 1ae9dd7987a697b0016d15d308f27480
++       Rejestracja zgłasza `Watch.Error`, gdy ścieżka nie istnieje, nie jest katalogiem, nie
++       może być obserwowana przez tego użytkownika lub przekroczyłaby limit obserwacji systemu
++       operacyjnego.
+
+% 0 1 0 1d9c0f8cf350dba70b5f6ef80fd671fd
+
+% 0 1 0 0942472d38af86f11ec5265b46eb5df7
+
+% 0 1 0 13151c5f897a71ea1004d94940b10ae7
+
+@ 0 23 0 101a45138aa53f9618ecec5b399071fc
++   entry .apply   rejestruje dowolną kolekcję ścieżek w `Watcher` z zasięgu, zwracając aktywny `Watch`
++       `Watch(paths)` przyjmuje dowolną kolekcję `Traversable` wartości ścieżek, które są
++       `Abstractable across Paths to Text` – soundnessową `List(…)` lub `Iterable` z biblioteki
++       standardowej – i wymaga `Watcher` oraz `Tactic[Watch.Error]`. Każdy katalog jest
++       obserwowany w całości; każda inna ścieżka obserwuje swój katalog nadrzędny, filtrowany
++       do jej własnej nazwy; a ścieżki w tym samym katalogu dzielą jedną rejestrację. Wynik
++       przechwytuje watcher i musi zostać wyrejestrowany przez `Watch#unregister`;
++       `open[Watch]` robi to sam.
++   entry .openable   otwiera pojedynczą ścieżkę jako `Watch`: `path.open[Watch]() { watcher ?=> … }`
++       Given `Openable` dla dowolnego typu ścieżki `Abstractable across Paths to Text`, w
++       obiekcie towarzyszącym, a więc w zasięgu niejawnym. Wymaga `Watcher` (wystarczy
++       domyślny) i `Tactic[Watch.Error]`, pożycza blokowi `Watch.Handle` i wyrejestrowuje
++       ścieżkę, gdy blok się kończy.
++   entry .allOpenable   otwiera kolekcję ścieżek jako `Watch`, z jednym strumieniem zdarzeń dla nich wszystkich
++       Given `Openable` dla dowolnego `Iterable` ścieżek: `List(a, b).open[Watch]() { … }`.
++       Jest sparametryzowany konkretnym typem kolekcji, ponieważ `Self` instancji `Openable`
++       jest dopasowywany inwariantnie. Wymaga `Watcher` i `Tactic[Watch.Error]`.
++   entry .Openable   instancja `Openable` stojąca za `.openable`, jako nazwana klasa
++       `path is Openable in Watch` bez flag (`Operand` to `Nothing`) i z `Watch.Handle` jako
++       uchwytem. Nazwana, a nie anonimowa, ponieważ anonimowa instancja odświeża typ
++       zdolności uchwytu w wywnioskowanym `Result`.
++   entry .AllOpenable   instancja `Openable` stojąca za `.allOpenable`, dla kolekcji ścieżek
++       Jak `Watch.Openable`, z kolekcją ścieżek jako `Self`.
++   entry .Handle   ograniczona zasięgiem zdolność, którą otrzymuje blok `open[Watch]`, ze strumieniami obserwacji
+
+% 1 1 0 1ee7668a7222111d132e89f897a675c3
+
+@ 0 4 0 0134b516294619eb0ed8d0e19e600f91
++         Uchwyt pożyczany przez `path.open[Watch]()`. Jest zdolnością na wyłączność,
++         ograniczoną do bloku, więc ani on, ani strumień z niego wyprowadzony nie może
++         przeżyć rejestracji. Wewnątrz bloku jest parametrem kontekstowym, a `watch` z
++         najwyższego poziomu udostępnia go po nazwie.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 16b3543e7f032ae81c6bf699ed4343a9
+
+% 0 1 0 1f98cbc7a3762ff907317e8e4d607571
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1fc240acafda73dd16e0bbcd13b68942
+
+% 0 1 0 14be27296813c09f01fd32982431482b
+
+% 0 1 0 0956572607c4da38011e2ebe1d00f2bd
+
+% 0 1 0 19c658cdfc89d55407aab23dd4284c29
+
+% 0 1 0 0206b6cb3861a8221ac433b3f70ca798
+
+% 1 1 0 0ff69adcca9f0d7101b984b8b125656b
+
+@ 0 9 0 01313af621ca3d241ab4d23602df02ea
++     entry #stream   każde zdarzenie, pojedynczo, w chwili nadejścia
++         Leniwy `Chain` zdarzeń `Watch.Event`, który blokuje do następnego zdarzenia i kończy
++         się, gdy rejestracja zostaje anulowana. Jest opróżnianiem kolejki zdarzeń przez
++         jednego właściciela: dwa przejścia rywalizują o te same zdarzenia.
++     entry #batches   zdarzenia zgrupowane w jeden `Watch.Batch`, ilekroć drzewo przez pewien czas pozostaje spokojne
++         `batches(quiet)` przyjmuje dowolną wartość czasu trwania (`0.2*Second`) i dostarcza
++         `Watch.Batch` za każdym razem, gdy przez tyle czasu nie nadeszło żadne zdarzenie,
++         więc seria zapisów z edytora jest zgłaszana raz, gdy już się uspokoi.
++   entry .Event   jedna zmiana w obserwowanym katalogu: plik utworzony, zmodyfikowany lub usunięty albo katalog utworzony
+
+% 1 1 0 114894661fe3d54b010f9c2ed18b8292
+
+@ 0 4 0 0cf2b2619fd048f51ba83d72aff5f9c7
++         Każde zdarzenie zapisuje obserwowany katalog, `#dir`, jako tekst oraz nazwę wpisu w
++         nim, który się zmienił; `#path` łączy je w ścieżkę typu wybranego przez
++         wywołującego. Cztery przypadki są też eksportowane na poziomie pakietu, więc
++         `case NewFile(dir, file) =>` dopasowuje bez przedrostka `Watch.Event`.
+
+% 2 1 0 16bf44ee3267c2bf0c9102e17c375c4a
+
+% 3 1 0 1430c2699a407ec101bd69d48763a9b9
+
+% 0 1 0 030be54b7b55daab163c354cd82809c2
+
+% 0 1 0 1cd57a509834acff1f3cd443d0aa87cf
+
+% 0 1 0 1d43ec24cb5718890eeb94407a6d469c
+
+% 0 1 0 1bd3500b44f60ab81e55f30c95b1c6c2
+
+% 0 1 0 0e71f00a4f5f276a06bc9b278814d55f
+
+% 0 1 0 00384e3497dc8fa30b24850ae933ec2a
+
+% 1 1 0 193f6d00f3cbe36615d424b6d0b2479e
+
+@ 0 21 0 169258fdc5c580b109b51d117bc83032
++         Backend systemu operacyjnego zgłasza modyfikację tak, jak robi to platforma, co może
++         oznaczać kilka zdarzeń dla jednego zapisu; backend odpytujący zgłasza jedną
++         modyfikację na każdą zmianę rozmiaru lub czasu modyfikacji między skanami i nie widzi
++         zmiany, która pozostawia oba bez zmian. Żaden nie zgłasza modyfikacji katalogu.
++     entry .NewFile   w obserwowanym katalogu utworzono plik lub cokolwiek, co nie jest katalogiem
++       entry #dir    obserwowany katalog, jako tekst
++       entry #file   nazwa nowego wpisu w katalogu
++     entry .NewDirectory   w obserwowanym katalogu utworzono katalog
++       entry #dir         obserwowany katalog, jako tekst
++       entry #directory   nazwa nowego katalogu w obserwowanym katalogu
++     entry .Modify   zmodyfikowano plik w obserwowanym katalogu
++       entry #dir    obserwowany katalog, jako tekst
++       entry #file   nazwa zmodyfikowanego pliku w katalogu
++     entry .Delete   usunięto wpis z obserwowanego katalogu
++       entry #dir    obserwowany katalog, jako tekst
++       entry #file   nazwa usuniętego wpisu w katalogu
++     entry #dir   obserwowany katalog, w którym zaszła zmiana, jako tekst
++     entry #path   pełna ścieżka zmienionego wpisu, jako ścieżka typu wybranego przez wywołującego
++         `event.path[Path on Local]` (lub dowolny `Instantiable across Paths from Text`) łączy
++         katalog z nazwą wpisu i normalizuje wynik.
++   entry .Batch   zdarzenia jednego okresu spokoju, od najstarszego, tak jak dostarcza je `Watch.Handle#batches`
+
+% 1 1 0 1cf6e3988e8ead480caa821f5259f428
+
+@ 0 2 0 1f008ce211e159c801202b31bd3fb448
++         Seria aktywności zakończona okresem bez zdarzeń. `#paths` wymienia dotknięte ścieżki,
++         każdą raz, czego zwykle potrzebuje pętla przebudowująca po zmianie.
+
+% 2 1 0 0f70d9fd1d4d25f91fa560fd87b6f97f
+
+% 3 1 0 1e2e5052093b9daf162ef52fdf36ad4b
+
+% 0 1 0 1944d60232be8ac216d9b36559c93d13
+
+% 0 1 0 176b1cb9e1bc47ab09b715391fb23c61
+
+% 1 1 0 04d9acb9cd0cdfe30641bb136cfd9fa9
+
+@ 0 3 0 0837ca601a9ae82703df6ac8e9d79e54
++     entry #events   zdarzenia partii, od najstarszego
++     entry #paths   każda ścieżka dotknięta w partii, każda raz, w kolejności pierwszego wystąpienia
++   entry .Error   zgłaszany, gdy ścieżki nie można obserwować
+
+% 1 1 0 1c1c7266736a016819d286e51608a1b3
+
+@ 0 6 0 1e8914aa822ecebb1fe77df81f73c24d
++         Błąd `↯/s.98.1`: _the path could not be watched because …_, z jedną z czterech
++         przyczyn: `LimitExceeded` (_the operating system's limit on watched paths has been
++         exceeded_, na przykład `max_user_watches` w inotify), `Nonexistent` (_the path does
++         not exist_), `NotDirectory` (_the path is not a directory_, na przykład gdy katalog
++         nadrzędny obserwowanej ścieżki jest zwykłym plikiem) i `PermissionDenied` (_the user
++         does not have permission to watch the path_). Zgłaszany przez `Watch(paths)` i przez
++         `open[Watch]` podczas tworzenia rejestracji.
+
+% 2 1 0 1f7509c748d84da5115f1bea69793b50
+
+% 3 1 0 0e7f33ca5fef07811940731617bc79a5
+
+% 2 1 0 19f07633c5ebab7d1134f09bdb4d9b48
+
+% 0 1 0 0365816d401b8f550e7b2e4ce5f43e05
+
+% 0 1 0 1c18700b15c5094a14dcd2a72d989c8f
+
+% 1 1 0 1e1724985f5e53510b8af9e9b30d51af
+
+@ 0 1 0 1921f2c6669278f803ae717fa6be1cf9
++     entry .Reason   dlaczego ścieżki nie można obserwować: limit, brakująca ścieżka, nie-katalog lub uprawnienia
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 0f85849e3216eb8601b925d62bf60d39
++           Podnumer błędu `↯/s.98.1` dla każdego przypadku to jego `#number`:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Przypadek
++           column  Kod
++           column  Komunikat
++           column  Uwaga
+
+% 0 1 0 0b86d78e39d8163a0a40a93a8ea597d0
+
+% 0 1 0 07c27b661e05978d02d03ab08775c9a2
+
+% 0 1 0 1bcdaceca128ab5d1d8c4d146d26a7a1
+
+% 0 1 0 1903ed76d535d0c11f6a48d55535ec40
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 10 0 02e1138ef99dbfc91e9f726e8d549bd4
++       entry #number   podnumer przyczyny w błędzie `↯/s.98.1`
++     entry .communicable   przedstawia każdą przyczynę jako frazę kończącą _the path could not be watched because …_
++     entry #reason   dlaczego ścieżki nie można obserwować
++   entry #stream   każde zdarzenie, pojedynczo, aż do wyrejestrowania obserwacji
++       Leniwy `Chain` zdarzeń `Watch.Event`, który kończy się po wywołaniu `#unregister`.
++       Przechodzenie po nim blokuje na każde kolejne zdarzenie.
++   entry #batches   zdarzenia zgrupowane w `Watch.Batch` po każdym okresie spokoju o podanej długości
++   entry #unregister   anuluje rejestrację i kończy strumienie zdarzeń
++       Zatrzymuje dostarczanie przez backend zdarzeń dla katalogów tej obserwacji i kończy
++       `#stream` oraz `#batches`. `open[Watch]` wywołuje ją, gdy jego blok się kończy.
+
+@ 0 1 0 1f8c4a695fed81f30554d967332e9f1e
++ entry .Watcher   backend wykrywający zmiany w systemie plików: usługa systemu operacyjnego lub odpytywanie
+
+% 1 1 0 14ef38233d7893db1fadebc06df8daea
+
+@ 0 4 0 1335a6861b1253c607b02b95f0e3c29b
++       `Watcher` zamienia zbiór katalogów w `Watcher.Registration`, która umieszcza zdarzenia w
++       przekaźniku w miarę ich zachodzenia. Jest zdolnością, ponieważ backend uruchamia własne
++       nadzorowane zadania. Bez importu używany jest `.default` – `JavaBaseWatcher`, usługa
++       powiadomień systemu operacyjnego; inny backend to lokalny given:
+
+% 2 1 0 0de631d57a6af9911fec4ebc3aaca67b
+
+% 3 1 0 035bc8bfe664adbe14b4a81c7d6d848d
+
+% 4 1 0 0fc36e21c8da89fe12aaa16da83d5ce0
+
+% 5 1 0 1a06e5d224a0ce11041ace5b6b690622
+
+% 6 1 0 099ad4df0407981418e3a585b19600c7
+
+% 1 1 0 032851a103b17b3b10f22217df890ee2
+
+% 2 1 0 16342e128f1e3a4b066f9b9693226476
+
+% 0 1 0 1d4781735a53c0a60594adce157c0e33
+
+% 0 1 0 1766004f9e6ad64d018324657f50ac4d
+
+% 0 1 0 06059c908e8e2bba1feef70571f80aca
+
+% 0 1 0 001c43f3bad8720118135eb0e76ae901
+
+% 1 1 0 0525be26ac13424111baafcfbcfea576
+
+@ 0 2 0 103b0dde1128e7841474c1d17adc4ae9
++       Ponieważ domyślny given jest zdolnością, kod, który po niego sięga, przechwytuje go;
++       ciało testu, które to robi, wykonuje się w miejscu, a nie z odroczeniem.
+
+% 0 1 0 000684d38425cd661c3e655c5b440194
+
+% 0 1 0 14079390e23581eb0c7e824e312b210c
+
+% 0 1 0 194f24a587f87d570feefd374a2f2cf6
+
+@ 0 4 0 192dad57f084cf7e1beece336ef75d96
++   entry .default   `JavaBaseWatcher`, backend używany, gdy żaden inny `Watcher` nie jest w zasięgu
++       W obiekcie towarzyszącym, a więc w zasięgu niejawnym bez importu; lokalny given lub
++       zaimportowany `watchers.javaBaseWatcher` ma przed nim pierwszeństwo.
++   entry .Registration   jedna rejestracja w backendzie, którą kończy `#cancel`
+
+% 1 1 0 00240a7cbf32d2990613fadfc4a9897e
+
+@ 0 8 0 0395e38047ac106603db3c4d8997ed2a
++         To, co zwraca `Watcher#watch`: jej anulowanie zatrzymuje dostarczanie dalszych
++         zdarzeń dla katalogów zarejestrowanych w tym wywołaniu. Anuluje ją `Watch#unregister`.
++     entry #cancel   zatrzymuje dostarczanie zdarzeń dla zarejestrowanych katalogów
++   entry #watch   rejestruje katalogi, każdy z filtrem nazw wpisów, dostarczając zdarzenia do przekaźnika
++       `watch(directories, spool)`: każdy katalog jest sparowany z czystym predykatem na
++       nazwach jego wpisów, a zdarzenia dla pasujących nazw trafiają do `Relay`. Zgłasza
++       `Watch.Error`, jeśli katalogu nie można zarejestrować. `Watch(paths)` buduje filtry i
++       ją wywołuje; użytkownik rzadko wywołuje ją bezpośrednio.
+
+@ 0 8 0 15ffb10ada6c837e119e5e097c135129
++ entry .JavaBaseWatcher   `Watcher` działający na usłudze powiadomień systemu operacyjnego, domyślny
++     Opakowuje `java.nio.file.WatchService` (inotify w Linuksie, odpowiednik platformy gdzie
++     indziej). Jedna usługa i jedno zadanie odpytujące są wspólne dla wszystkich rejestracji w
++     procesie, a usługa jest zamykana, gdy nic nie jest obserwowane. Obserwowany katalog, który
++     zostaje usunięty, wypada z rejestru. Niepowodzenia rejestracji są odwzorowywane na
++     `Watch.Error`: brakująca ścieżka na `Nonexistent`, plik na `NotDirectory`, odmowa dostępu
++     na `PermissionDenied`, a każde inne niepowodzenie wejścia-wyjścia – w praktyce limit
++     obserwacji platformy – na `LimitExceeded`. Jest to `Watcher.default`, a
++     `watchers.javaBaseWatcher` go nazywa.
+
+@ 0 9 0 1ff2bce5389de95903d0c72426a20df1
++ entry .PollingWatcher   `Watcher`, który porównuje migawki każdego katalogu w stałych odstępach
++     `PollingWatcher(interval)`, zwykle tworzony przez `watchers.polling(interval)`, z dowolną
++     wartością czasu trwania. W każdym odstępie listuje każdy obserwowany katalog, zapisuje
++     rodzaj, czas modyfikacji i rozmiar każdego wpisu i porównuje z poprzednim skanem, aby
++     zgłosić utworzenia, modyfikacje i usunięcia. Nie wymaga wsparcia systemu operacyjnego,
++     kosztem opóźnienia ograniczonego odstępem i ślepoty na zmianę, która pozostawia rozmiar
++     i czas modyfikacji bez zmian. Każda rejestracja ma własne zadanie w tle, przerywane przy
++     jej anulowaniu; rejestracja zgłasza `Watch.Error` z `Nonexistent` lub `NotDirectory`, gdy
++     ścieżka nie istnieje lub nie jest katalogiem.
+
+@ 0 3 0 178aa252cf81974c0225b73597fde6bc
++ entry .watch   `Watch.Handle` z zasięgu, wewnątrz bloku `open[Watch]`
++     `watch` zwraca kontekstowy uchwyt z jego dokładnym typem przechwytującym, więc blok może
++     pozostawić parametr uchwytu bez nazwy, na wzór `file` z galilei:
+
+% 2 1 0 0de38f91409432e7048e9e7d08c28998
+
+% 3 1 0 072dca177d6844590a0631fb490c3ad4
+
+% 4 1 0 07d6d1ba64a6b2201914428bf5c2c734
+
+% 5 1 0 0fb30dd4a814e2fc04e399971570877d
+
+% 6 1 0 147ec8287a822eb51fab7ab230dd8458
+
+% 1 1 0 07780dfd83bc4a2306ed804b6de043b1
+
+% 2 1 0 00f24ba15c6c4a5814e87714a6d0bcbf
+
+% 4 1 0 1bfa65880625561f17c2355f3b2ce46a
+
+% 0 1 0 06e706e29e477d481db882527c5d0d6e
+
+% 0 1 0 0d3696a5aa9004f614fcbe9549654c9e
+
+% 1 1 0 112124f2a1b878790832a4136cda43f9
+
+@ 0 10 0 0755c22d4ff684f6139c76bb6a2b9b69
++ entry .NewFile   `Watch.Event.NewFile`, eksportowany do dopasowań: w obserwowanym katalogu utworzono plik
++     Przypadek zdarzenia, eksportowany do pakietu, aby dopasowanie mogło zapisać
++     `case NewFile(dir, file)`. `dir` to obserwowany katalog, a `file` nazwa nowego wpisu w
++     nim.
++ entry .NewDirectory   `Watch.Event.NewDirectory`, eksportowany do dopasowań: utworzono katalog
++     Przypadek zdarzenia, eksportowany do pakietu, aby dopasowanie mogło zapisać
++     `case NewDirectory(dir, name)`.
++ entry .Modify   `Watch.Event.Modify`, eksportowany do dopasowań: zmodyfikowano plik w obserwowanym katalogu
++     Przypadek zdarzenia, eksportowany do pakietu, aby dopasowanie mogło zapisać
++     `case Modify(dir, file)`.
++ entry .Delete   `Watch.Event.Delete`, eksportowany do dopasowań: usunięto wpis z obserwowanego katalogu
++     Przypadek zdarzenia, eksportowany do pakietu, aby dopasowanie mogło zapisać
++     `case Delete(dir, file)`.
+
+@ 0 1 0 1c2f8aff7ac55a470737b59b246a813e
++ entry .watchers   backendy `Watcher`, jako given do zaimportowania po nazwie lub wartość do związania jako given
+
+% 1 1 0 12fc3630351ab2fe09cf60f512fd9763
+
+@ 0 4 0 12055b3d80002d47155fabd0f3862913
++       O tym, który backend wykrywa zmiany, decyduje given `Watcher` w zasięgu; bez niego
++       obowiązuje `Watcher.default`. Ten obiekt, odwzorowany w module zbiorczym jako pakiet
++       `watchers`, zawiera alternatywy: `javaBaseWatcher`, aby jawnie wskazać domyślny, oraz
++       `polling`, metodę tworzącą backend odpytujący dla danego odstępu.
+
+% 2 1 0 11c9e5536f9d14471202e970c3566088
+
+% 0 1 0 184d48e7399fe047179e0899a9dba6bf
+
+% 1 1 0 0dc5c595e538b6cd19dfdb1c478872c5
+
+% 1 1 0 0789caafcbbe72d91ef9fd6d698649de
+
+% 2 1 0 08cb52a3a311347f15372abb1d04e019
+
+% 0 1 0 197abd435889b83c121bd7bd3e7ca19e
+
+% 1 1 0 0a33e51c2ef3f06003ae8013f6f4e809
+
+% 0 1 0 101474dc7ff312710f54beccd36d954c
+
+% 1 1 0 062a25796f11c45c14b996233bdac195
+
+% 2 1 0 1f2e98f8c952ce8f09cb30d651dd5db9
+
+% 1 1 0 1f00d35fe7b87642088a3901f92ca6b5
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0c69d1e293bc3b2005d069dcfbae7d6a
++       `javaBaseWatcher` jest givenem, więc trzeba go importować po nazwie: `import watchers.*`
++       nie importuje givenów.
++   entry .javaBaseWatcher   usługa powiadomień systemu operacyjnego, `JavaBaseWatcher`, jako given
++   entry .polling   tworzy `PollingWatcher`, który skanuje w podanym odstępie
++       `watchers.polling(interval)` przyjmuje dowolną wartość czasu trwania i zwraca `Watcher`.
++       Jest metodą, a nie givenem, więc wiąże się ją lokalnie:
++       `given Watcher = watchers.polling(0.05*Second)`.

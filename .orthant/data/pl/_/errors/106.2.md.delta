@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 034521a36c271d7c1f86f106004c533d
++ # `↯/s.106.2` – `JsonPointer.Error`
+
+@ 0 1 0 16b7e94f7205b3f90afbfe475dbc515c
++ Zgłaszany, gdy nie można rozwiązać wskaźnika JSON.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 173017d0ef47177f0b34bde670ebaa9c
++ Jacinta rozwiązuje wskaźniki JSON zgodnie z RFC 6901. Konstruktor przyjmuje `reason: Reason`;
++ przedstawiony komunikat to `the JSON pointer could not be resolved because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 2 0 0ce9f3323010cab5021e70adfcef5654
++ (`↯/s.106.2.1`, `UnknownDocument`, wycofano, gdy `JsonPointer` utracił nigdy niewypełniany URL
++ dokumentu i `JsonPointer.Registry`; pozostałe numery nie uległy zmianie.)
+
+@ 0 1 0 00dd5d5779c0f95f1477eb240a154ecb
++ ### `↯/s.106.2.2` – `ExpectedHash`
+
+@ 0 1 0 01c29b357a79e9d80c0e5d213f43e9e8
++ Referencja JSON nie zaczyna się od `#`.
+
+@ 0 1 0 105e3c4dee51a790105a64c459096fa9
++ **Przykład.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+@ 0 1 0 0e02c3730b3808551133a6b50f498754
++ **Rozwiązanie.** Rozpocząć referencję od `#`, jak w `#/play/title`.
+
+@ 0 1 0 034c98f84dc358491b08ae76143624e5
++ ### `↯/s.106.2.3` – `ExpectedSlash`
+
+@ 0 1 0 06fbbc8ff422674809e73432ced72b39
++ Fragment referencji JSON nie zaczyna się od `/`.
+
+@ 0 1 0 1eebdd34b53ab9cd0b440a81e81db782
++ **Przykład.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+@ 0 1 0 045bcb580c6de5281b75c7ff0313c11f
++ **Rozwiązanie.** Rozpocząć fragment od `/`, jak w `#/play`. Poprawny jest też sam `#`,
++ adresujący cały dokument.
+
+@ 0 1 0 06c60eb430a43dda148893f098ee48aa
++ ### `↯/s.106.2.4` – `BadEscape`
+
+@ 0 1 0 1b3c92628749be9715451d7fbc0415f1
++ Po `~` w referencji JSON nie następuje `0` ani `1`.
+
+@ 0 1 0 05c7364129967dc101f1e6e394871984
++ **Przykład.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+@ 0 1 0 12b5dc6f91211c980559d07428049b1b
++ **Rozwiązanie.** Literalny `~` zapisać jako `~0`, a literalny `/` jako `~1`. Żadna inna sekwencja
++ ucieczki nie jest zdefiniowana.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 1969b177843c517a1349e53956b6ebf8
++ - Źródło: `lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` – błędy typowanego dostępu do JSON

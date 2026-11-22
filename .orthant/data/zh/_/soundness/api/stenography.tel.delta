@@ -1,0 +1,511 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14e21a8867c6e7a21db4bf55b994e582
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1447a95b76b921dd031f266e0fadad65
++ info   将 Scala 类型呈现为用户会写出的源代码文本，并根据作用域中的导入加以缩写
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1300579f39ef6b100ce93d78d6e63735
++     _Stenography_ 把一个 Scala 类型转换为程序员在代码中某一位置会为它写出的文本：`Int | String & Double`、`Addable by Int to Double`、`(e: Enumeration) => e.Value`、`Text^{alpha}`。
++     编译器自身对类型的呈现是完全限定的、展开了别名的，并且充斥着各种编码——`scala.collection.immutable.List`、`Addable { type Operand = Int; type Result = Double }`、`ImpureFunction1`——这些不应出现在错误消息、生成的源文件、补全或诊断信息中。
++     Stenography 将类型写回其源代码形式，每个名称只限定到作用域中的导入所要求的程度，并优先采用语言提供的中缀写法和箭头写法。
+
+@ 0 2 0 0b95176a0979e6ba007ba998f33ed679
++     最简单的用法是 `Syntax.name` 宏，它根据调用处的导入呈现一个类型：
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1148cd3617ded5031ba322678eba732a
+
+% 0 1 0 1687b3d9b19bc18e0f12bc63f6982c15
+
+% 0 1 0 0bb0505edb40618d0f88611f6df648d0
+
+% 0 1 0 082c09bc7b2014fd0bd8e91364bd8736
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 9 0 1c81e8f679911e3a06155026f38b6c1a
++     呈现分两步进行，以便第二步可以针对不同的作用域重复执行。
++     第一步，`Syntax(repr)` 把编译器的 `TypeRepr` 转换为一棵 `Syntax` 树，它只依赖于类型本身：树中每个具名实体都是一个 `Designator`，即由项选择和类型选择组成的路径，例如 `scala.collection.immutable.List`。
++     第二步，`Syntax#text` 根据一个 `Imports` 把树写成文本；`Imports` 说明哪些作用域已被导入（因此其成员不加限定地写出）、哪些类型可以通过 `export` 以其末端名称访问、可以使用哪些中缀类型别名，以及是否启用了纯函数（从而决定未标注的函数类型用哪种箭头写出，`->` 还是 `=>`）。
++     同一棵树在 `Imports.empty` 下写出时是完全限定的；`Syntax#qualified` 就是它的简写。
+
+@ 0 7 0 02899eb9619e783a0c928094e88e9d8b
++     本库覆盖 Scala 3 的全部类型语法：以最少括号写出的联合类型和交集类型，应用类型、投影类型、细化类型和结构类型，具名元组和无名元组，函数类型、上下文函数类型、依赖函数类型和多态函数类型，类型 lambda，匹配类型，传名类型，单例类型和常量类型，带界限的通配符，`into` 类型，递归类型（其绑定者由 `Bindings` 命名），skolem，以及带有能力各种细化（`*`、`.rd`、`.only[…]`、`.except[…]`）的捕获集。
+
+@ 0 6 0 16ecec08337f58c507902df1286cde62
++     `Syntax` 树在宏内部构建，因为 `TypeRepr` 只存在于有 `Quotes` 的地方；之后它可以被带出宏，在多个作用域中写出，或作为普通枚举加以检查。
++     以类型来解释错误的库（frontier 的缺失 given 诊断信息、spectacular 的 `Showable` 回退、hyperbole 的树查看器）在自己的宏中调用 `stenography.internal.name`，而在任何宏之外呈现类型的 REPL 则用 `Imports.resolve` 构建其 `Imports`。
+
+@ 0 4 0 0f466604e65acc7f11821cc059e9dcd2
++     本库只有一个源集 `stenography.core`，它依赖 Scala 编译器本身（`dotty.tools.dotc`），因此只能用于宏以及与编译器一同运行的工具。
++     `Bindings`、`Designator`、`Imports` 和 `Syntax` 都导出到 `soundness` 总括包。
+
+% 0 1 0 1cfa1a2310d59d131831e179d184934b
+
+% 0 1 0 0c88889fc7d11e111f531a8adece9aee
+
+% 0 1 0 120a19e4b9a9f0a21f91ffa2cca36d1e
+
+% 0 1 0 0baef3a6c8c706b9171aa3cf9ebba10c
+
+@ 0 1 0 1400eb3874d362891c9948d508f5b6f0
++ entry .Syntax   以源代码形式表示的 Scala 类型树，根据 `Imports` 写成文本
+
+% 1 1 0 1cea33b59e91a09d00030d78284f61d3
+
+@ 0 6 0 1dd07cc2965744b413728e633ff51b6c
++       `Syntax` 是类型的源代码形式，表示为一个枚举，其分支就是 Scala 类型语法中的各种形状。
++       它在宏内部由 `Syntax(repr)` 从编译器的 `TypeRepr` 构建，只依赖于类型本身；`#text` 根据一个 `Imports` 写出它，由后者决定每个名称限定到什么程度、使用哪些中缀别名以及写出哪种函数箭头。
++       宏 `Syntax.name[T]` 一次完成这两步，根据其调用处的导入进行呈现。
+
+% 2 1 0 1412ac0252058b001636e61c5106cfd4
+
+% 3 1 0 1b39f33a83629c3f029531d9e46169c8
+
+% 0 1 0 089c8ba99d3b004e183c06aed6229d95
+
+% 0 1 0 0ecb0695eabe1c6a1958cbd63f6a00a8
+
+% 0 1 0 19b0d86582df3a801208d9f1230a8076
+
+% 0 1 0 0d4a828c1194bfdb1b444f12709ba13a
+
+% 1 1 0 179364db19e11836006927d6e7a93a13
+
+@ 0 2 0 000c0c9d0f7f6e9e09281bba568ea979
++       树也可以手工构建，宏之外的代码正是这样写出一个只知道名称的类型：
+
+% 2 1 0 0f0cd60e399d70e91d3ea857d8c7da70
+
+% 3 1 0 030ae3249bab2d0403c57af8546b71fc
+
+% 5 1 0 098782f3f390dd310fcfdd24672b3871
+
+% 0 1 0 127d84e02523cad916fe396f8a3b095e
+
+% 0 1 0 161acb50fcc5324e1f7e9b753a8b7090
+
+% 0 1 0 1a02613fcef71a1a036280a10b8de8c9
+
+% 1 1 0 0e2f88e9650d0e7a0d1705fc5108cdbd
+
+@ 0 1 0 18de972073b0b30d0648b9e64ed1368e
++       随着树中更多的作用域被导入，同一棵树被进一步缩写：
+
+% 2 1 0 0507785a76d733af0d6af8323587d18c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0819cf0e426907b71a480e20527d3bd4
++         label 未导入任何内容：每个名称都完全限定
+
+% 1 1 0 08838cfb32d91b0c11a9671a1b7999d5
+
+% 2 1 0 0e399d7cde3529dc12858604d9543844
+
+% 0 1 0 139075daa21cb9c203cac9a96fc719f5
+
+% 0 1 0 0bd79b32e6a0be4b0dfaf1667643735f
+
+% 1 1 0 0633fbcac5f22dc107377e8bb1ec97ee
+
+@ 0 1 0 1473fe2345915cee14f4f8c58f17a803
++         label 导入了 `scala` 包，源代码中总是如此
+
+% 1 1 0 0ad86d9418ac983c0dd30d510df4bc49
+
+% 2 1 0 1e676385d3ceb1c40bd4913fb6c27faf
+
+% 3 1 0 1ad827e55ee0c7cc18a45858c4162244
+
+% 0 1 0 00fd9abfd657f31207c485e8028c9921
+
+% 0 1 0 012909aac739213118fee808e10d9d8f
+
+% 1 1 0 188c222fd7471fc804feff1ffbb61881
+
+@ 0 1 0 186777d1d5ac3643068e5ba114ad5a81
++         label 同时导入了 `anticipation`：`Text` 失去其前缀
+
+% 1 1 0 1f0d8a6242c3b67e0ccc808dbc4861ff
+
+% 2 1 0 1d6b040b34be9ca611120bf1514d1858
+
+% 3 1 0 13f28ad23f3fd7c505f787fb5f5c8193
+
+% 4 1 0 00b18298e9d23a4e022421e9ec69e098
+
+% 0 1 0 112d48f4f19f7f3a07fe164977d24576
+
+% 1 1 0 1f32b7480fb8a0a80af16c3190eb868a
+
+% 0 1 0 05b6a15d1e793f36154a31e300191648
+
+% 1 1 0 0d3312db0e1f5dcb1c854c3ff0ae4865
+
+@ 0 1 0 18eff3eaa478e5131e5d221054318ee4
++         label 导入了 `scala.collection.immutable`：类型呈现为用户会写出的样子
+
+% 1 1 0 1d0845b4c56c192804274987fe5b8afd
+
+% 2 1 0 15d52d71b927bb780b715d3ad207192d
+
+% 3 1 0 0f22fe4ddec1232f006bcdcd583fe2b5
+
+% 4 1 0 0a47a6a7a92affeb05cb5475b84dcc44
+
+% 0 1 0 028ac6950383d03109fde4d64e1ff819
+
+% 0 1 0 099edc09fb47b2ec0ac036cd98188a38
+
+% 0 1 0 178c776c95dc90111c169b65293a9bca
+
+% 0 1 0 09b2733af996417615859ba144e2a9ba
+
+% 1 1 0 0daf58a8b515e39e11d818978090b24d
+
+% 0 1 0 15bbc002e0d3830915c52c7b82d0fde4
+
+% 1 1 0 181a77936f06c76c07bb998cd8942752
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 1 0 06482bc69e0a141315c42611719a975e
++       该枚举的各个分支，每个都是树的一个节点：
+
+@ 0 32 0 0e896c5e92a41d301df4523e08f29ddc
++       - `Simple(designator)`，具名类型，写作 `designator.text`；以及 `Value(designator)`，稳定路径的单例类型，用 `.type` 写出。
++       - `Symbolic(text)` 和 `Primitive(text)`，原样写出的文本：类型参数、捕获根、`?`，或者 `42L`、`"hello"` 这样的常量类型。
++       - `Application(left, elements, infix)`，应用类型 `List[Int]`；若设置了 `infix`（类型构造器被声明为 `infix`）且其名称可以不加限定地访问，则改写为 `A op B`。
++       - `Infix(left, middle, right)`，二元运算符类型：`|`、`&`、`is`、`<:`、`>:`、`=>`，类型参数与主体之间的 `=>>`，以及任何中缀别名。
++       - `Prefix(middle, right)` 和 `Suffix(left, suffix)`：`into T`，传名类型 `=> T` 和 `-> T`，`case P => R`，重复参数 `T *`，灵活类型 `T?`，到达能力 `c*` 以及只读的 `c.rd`。
++       - `Projection(base, text)`，类型投影 `A#B`，细化或中缀的基类型会加上括号；以及 `Selection(left, right)`，路径选择 `a.B`。
++       - `Structural(syntax, types, terms)`，细化 `Play { type A = X; def f: Y }`，其别名成员可以改用中缀别名写出：`Play { type Form = Json }` 写作 `Play in Json`。只为类型设定界限的成员 `type A <: X` 保持为 `Declaration`，永远不会用别名写出。
++       - `Named(isUsing, name, syntax)`，具名参数或具名元组元素 `x: Int`，或者 `using x: Int`。
++       - `Sequence(style, syntaxes)`，置于 `(`、`[` 或 `{` 括号中的逗号分隔列表：元组、类型参数、捕获集。
++       - `Declaration(method, syntaxes, result)`，成员的签名 `(x: Int): String`，由 `Syntax.signature` 生成。
++       - `Compound(syntaxes)`，依次写出的若干棵树。
++       - `Match(scrutinee, cases)`，匹配类型，在一行中写作 `T match { case A => B; case C => D }`。
++       - `Capturing(base, refs)`，带捕获集的类型：`T^{a, b}`，`refs` 为空时写作 `T^{}`，为 `Unset`（全集）时写作 `T^`。
++       - `Function(parameters, contextual, impure, refs, result)`，函数类型，其箭头记录了它是否为上下文函数（`?=>`）、是否不纯（`=>` 而非 `->`），以及它的捕获集（`->{a}`）。
+
+@ 0 2 0 005a18451eb6610511caeac328057993
++       这些分支是普通的枚举分支，因此树可以被匹配、改写和重建，delicious 正是这样在呈现出的诊断信息中替换占位符的。
+
+% 1 1 0 15a086eb44eed6280326b9b636d07031
+
+% 1 1 0 06572ad00e7222ae13e1d3ba157fec9f
+
+% 0 1 0 17d386c15d4a320a02489d2ac1a5f889
+
+@ 0 11 0 1575b55dcdd8937d14bfeb1d32881f24
++   entry .name   `Syntax.name[T]`：根据调用处的导入，将类型呈现为源代码文本
++       一个宏，把类型 `T`（可以是任何种类，因此也可以给出类型构造器或类型 lambda）呈现为用户在调用处会写出的文本。
++       它所依据的导入包括 `scala` 和 `scala.Predef`、调用处作用域中的每个导入（包括 REPL 在之前各行中积累的导入）、外围编译单元的包及其顶层导入。
++       在这些作用域中，它还会收集 `export` 别名的目标，从而在 `import soundness.*` 下，经 `soundness` 重新导出的类型以其末端名称写出；并收集细化单个类型成员的中缀类型别名，从而在 `by` 处于作用域中时，`Addable { type Operand = Int }` 写作 `Addable by Int`。
++       未标注的函数类型在调用处启用了纯函数时用 `->` 写出，否则用 `=>` 写出。
+
+% 2 1 0 154014bc00f9524f1c52e8534443356d
+
+% 3 1 0 176a0d5526cf9a011f9d0f707a706f7f
+
+% 0 1 0 0bb37d658f84dca915554b803dc6a7cb
+
+% 0 1 0 08321e15dd62435909c5b13ad6d8da46
+
+% 0 1 0 12f8c6032d99171116ee6c29617584b6
+
+% 0 1 0 1f9fc7e17e14c9101327ccd0c51ddada
+
+% 0 1 0 1a4056dfa3d3038f061c1595d012b195
+
+% 1 1 0 0d528995eba1c2d705461fecf14d2616
+
+@ 0 12 0 05e3d8c59beebb1f193af59635909adf
++       结果是一个字面量 `Text`，在代码编译期间计算得出。
++       在一次编译运行中，已呈现类型的树以及已搜索作用域的摘要都会被缓存，因此针对大作用域呈现许多类型的开销只需付出一次。
++   entry .apply   `Syntax(repr)`：在宏内部将编译器类型转换为 `Syntax` 树
++       接收一个 `quotes.reflect.TypeRepr`，要求作用域中有 `Quotes` 和 `Bindings`（默认为新建的 `Bindings()`），并返回其树。
++       树只依赖于类型，而不依赖于它将被写出的位置：在 `#text` 之前，不缩写任何名称，不替换任何中缀别名，也不选择箭头。
++       结果以类型为键缓存在 `Bindings` 中，因此用同一个 `Bindings` 转换两次的树只构建一次。
++       方法无法识别其形状的类型会以其类型符号的引用重试，若仍不成功则成为 `Primitive("<unknown>")`，因此转换永远不会失败。
+
+% 2 1 0 15c8cc62ebf3272905eb67e4e26ed4a8
+
+% 3 1 0 097ca85afea2127017b35b72c229a830
+
+% 4 1 0 06b1dea1a06c850e16d7caf875d49ed5
+
+% 5 1 0 1af2142bf08d5f5b16ee84be6aab1048
+
+% 6 1 0 0e6607b5a624f4670ef7f72c0928cad4
+
+% 0 1 0 0f74df59b7862a02004c96137f1a6096
+
+% 0 1 0 103c7298589449d91259ffe356e1da39
+
+% 1 1 0 0084c92faaf9e946167101b17569e7ac
+
+@ 0 53 0 17eb79cd2798320a15b8b0a98f49d6a1
++       skolem，即编译器为依赖方法的不稳定实参生成的 `?1`，会写成它所代表的类型；从 skolem 中选出的类型成员，若该类型为其别名，则写成该成员的别名，若该类型只为其设定界限，则写成该类型上的投影。
++   entry .term   宏内部项引用的 `Designator`
++       用 `Syntax(…)` 转换一个 `quotes.reflect.TermRef`，并返回所得 `Value` 的指示符，例如导入中所指名的包或对象的指示符。
++       若引用转换后不是 `Value`，则引发 panic。
++   entry .signature   以 `Syntax.Declaration` 表示的成员声明类型，用于写出成员的签名
++       接收成员的名称及其以 `TypeRepr` 表示的信息，要求作用域中有 `Quotes` 和 `Bindings`。
++       方法类型变为其参数列表和结果 `(x: Int): String`；无参数或传名成员只变为其结果 `: Int`；有界类型成员变为其界限 `? <: Int`；类型 lambda 变为其类型参数和主体。
++       结果的 `method` 标志说明它是项成员（`def`）还是类型成员（`type`）。
++   entry .clause   以源代码文本表示的参数子句：`(x: Int, y: Text)`、`(using Play)` 或 `[T <: U: Bound]`
++       呈现一个 `quotes.reflect.ParamClause`。
++       对于项子句，每个参数都以其名称和类型写出，声明为 `inline` 的写上 `inline`，设置了 `showUsing` 时在上下文参数前写上 `using`；匿名上下文参数只写出其类型，单个无名参数则不加括号。
++       名为 `evidence$…` 的参数是上下文界限脱糖的产物，会被省略，因为它们改为写作类型参数上的界限。
++       对于类型子句，每个参数都以其界限以及 `context` 中为其名称给出的上下文界限写出，`context` 即 `.contextBounds` 生成的映射。
++   entry .contextBounds   从方法的 `evidence$` 参数中恢复出的上下文界限
++       接收方法的参数子句，返回从每个类型参数名称到其声明时所带界限的映射：`T is Showable` 或 `Showable[T]` 变为 `T` 上的界限 `Showable`，一个参数上的多个界限变为序列 `{A, B}`。
++       `.clause` 需要它才能写出 `[T: Showable]`，而不是一个 `evidence$1` 参数。
++   entry .typeBounds   带界限的类型，`T <: U`、`T >: L` 或两者兼有，省略平凡的界限
++       接收被限定名称的 `Syntax` 及其下界和上界。
++       下界 `Nothing` 和上界 `Any` 会被省去，相等的界限写成它们所固定的类型，而捕获集参数（编译器将其编码为界限 `>: CapSet <: CapSet^`）按其声明的形式写作 `cap^`，只带上非平凡的界限：`cap^ >: {alpha}`。
++   entry .symbolic   以 `Syntax.Symbolic` 表示的名称，去掉编译器合成名称的 `_$` 前缀
++       用于从编译器读取的类型参数或其他裸名称，其 `_$1` 之类的合成形式不应原样呈现给用户。
++   entry .Space   表示单个空格的 `Syntax.Symbolic`，用于组装词法单元序列
++   entry .Colon   表示 `: ` 的 `Syntax.Symbolic`，位于名称与其类型之间
++   entry .Comma   表示 `, ` 的 `Syntax.Symbolic`，位于列表元素之间
++   entry .Open   表示 `(` 的 `Syntax.Symbolic`，开启参数列表或元组
++   entry .Close   表示 `)` 的 `Syntax.Symbolic`，关闭参数列表或元组
++   entry .OpenType   表示 `[` 的 `Syntax.Symbolic`，开启类型参数列表或类型实参列表
++   entry .CloseType   表示 `]` 的 `Syntax.Symbolic`，关闭类型参数列表或类型实参列表
++   entry .Plus   表示 `+` 的 `Syntax.Symbolic`，协变标记
++   entry .Minus   表示 `-` 的 `Syntax.Symbolic`，逆变标记
++   entry #text   以源代码文本写出的树，按 `Imports` 的指示进行限定和缩写
++       要求作用域中有 `Imports`。
++       每个 `Designator` 都按 `Designator#text` 的方式写出，在它或其所有者被导入时不加限定；中缀类型构造器在其名称可以不加限定地访问时写作 `A op B`；被 `Imports#aliases` 中某个中缀别名细化的细化成员用该别名写出；没有捕获集的函数类型在设置了 `Imports#pureFuns` 时写作 `->`，否则写作 `=>`，纯的传名类型也是如此。
+
+@ 0 6 0 1baf1837426a41ed1d9b79f1f9bc3aef
++       只在优先级需要时才由 `#precedence` 添加括号：`|` 结合得最松，其次是 `&`，然后是箭头；位于箭头左侧的函数类型会加括号，而右侧的不会，因为函数类型是右结合的。
++       `is` 和 `by` 这样的字母中缀运算符得分最低，因此参数为此类类型的函数类型写作 `(Addable by Int) => String`，带有 Scala 严格来说并不需要的括号。
+
+% 2 1 0 0ea813c0acf48f0f10b1e9562e353e3c
+
+% 3 1 0 15be5ee0b7d50f6607f84b381fb90188
+
+% 0 1 0 0a65363eb26896221944a57fca260c03
+
+% 0 1 0 0418f429eaba032b08538656e06753c3
+
+% 0 1 0 08004fd0c2f24c060faa2d96fb58832c
+
+% 0 1 0 079f451888d40a8f0e2fad9a47197195
+
+% 1 1 0 0cc6c905b6ce412e1b6bb0e6bf450674
+
+% 0 1 0 1ecb8b5aec035adc013c1c12903b6259
+
+% 0 1 0 11aac173b07289ea1f2e09f36000d83c
+
+% 1 1 0 10da702b471cccc70fbc194be8f04554
+
+@ 0 10 0 1acbbe2118c3e4721ef9ac0a8e62a8ba
++   entry #qualified   完全限定地写出的树：即根据 `Imports.empty` 的 `#text`
++       每个名称都带完整路径，不使用中缀别名，并假定启用了纯函数，因此 `->` 和 `=>` 保持区分。
++       这是用于日志、缓存键或比较的形式，在这些场合读者的导入是未知的。
++   entry #precedence   节点结合的紧密程度，从 0（最松）到 10，决定 `#text` 在何处加括号
++       具名类型、应用类型、序列及其他原子为 10；投影类型或带捕获的类型为 9；中缀运算符类型按其运算符的首字符计分，与 Scala 运算符的规则一致（`|` 为 1，`^` 为 2，`&` 为 3，`=` 和 `!` 为 4，`<` 和 `>` 为 5，`:` 为 6，`+` 和 `-` 为 7，`*`、`/` 和 `%` 为 8，字母为 0）；函数类型为 4；细化、前缀、后缀或具名节点为 0，因此它被包含在何处都会加括号。
+
+@ 0 1 0 0de7ef02bb5713900d89d8e9df9dc7df
++ entry .Designator   指向具名类型或项的路径，例如 `scala.collection.immutable.List`，表示为由选择组成的树
+
+% 1 1 0 00f50c614ea8c2021d30c5cb2cee496e
+
+@ 0 5 0 159f1c1ccf1a6fab185c37425f6097e2
++       `Designator` 通过从顶层名称到达某个类型或项的选择路径来指称它：第一段为 `Top(name)`，从父级选出的项为 `Term(parent, name)`，从父级选出的类型为 `Type(parent, name)`。
++       `Syntax.Simple` 或 `Syntax.Value` 持有一个指示符，`#text` 根据一个 `Imports` 写出它，并在导入允许的范围内尽可能省略路径。
+
+% 2 1 0 19876269adb392221d912a2689e123c6
+
+% 3 1 0 00674bb27b1ad0150d180b3fcbe58498
+
+% 5 1 0 1b79724abdae8fe210b22eaf3b6b110d
+
+% 0 1 0 14926348caf5dfeb1ec2511ee6fc9ff2
+
+% 0 1 0 1d09e66e4f5ef5f812e81595f083cce9
+
+% 0 1 0 1ce44134b65051d911b73b6661f74cce
+
+% 0 1 0 158263d2e3f160d30392834c6d637b73
+
+% 0 1 0 0e2d6d92cb52198b1e736193be9e0d81
+
+% 1 1 0 09ec5bf824dd31e00478ade30352ec48
+
+@ 0 4 0 02d860a12df47c421be2ed20cae358f8
++       在 `Designator(text)` 读取的文本形式中，后跟 `.` 的段是项，后跟 `#` 的段是类型，正如 Scala 写投影 `List#Value` 一样；最后一段总是项，因此类型要用 `.member` 从其父级构造。
++       `#text` 写出同样的分隔符。
+
+@ 0 6 0 0ca5f75b1d9267ec0789e9683cb8773a
++       通过 `.top`、`.term`、`.member`、`.apply`、`#child`、`#companionObject` 和 `#companionType` 构造的每个指示符都会被驻留，因此以这些方式构造的相等指示符是同一个实例，比较时先按引用比较。
++       相等性仍然是结构性的，用分支构造器构建的指示符与驻留的指示符相等；哈希值只计算一次。
++       驻留表以弱引用持有其条目，因此不会使任何指示符保持存活。
+
+% 1 1 0 0c52b8390278fddd195826f380d32644
+
+% 1 1 0 1ec21088465b883101b06845762386a3
+
+@ 0 28 0 0b11e774a20880b209e4879133aad8b2
++   entry .apply   `Designator(text)`：从点号和 `#` 分隔的文本形式解析出的指示符
++       第一段成为 `Top`，后跟 `.` 的每一段成为 `Term`，后跟 `#` 的每一段成为 `Type`；最后一段是 `Term`。
++       `Designator(t"scala")` 是 `scala` 包的指示符，`Imports` 正是这样指称一个已导入的作用域。
++   entry .top   顶层指示符 `Top(name)`，已驻留
++   entry .term   从父指示符选出的项 `Term(parent, name)`，已驻留
++   entry .member   从父指示符选出的类型 `Type(parent, name)`，已驻留
++       这是构造 `scala.collection.immutable` 包中 `List` 这类类型的指示符的方式，因为 `Designator(text)` 会把最后一段当作项。
++   entry #name   路径的最后一段：`scala.collection.immutable.List` 的 `List`
++   entry #parent   选出本指示符的那个指示符，对于 `Top` 则为 `Unset`
++   entry #child   从本指示符选出的指示符：若 `isType` 则为类型，否则为项
++   entry #companionObject   与类型指示符同名的项；若本指示符不是类型，则为其自身
++   entry #companionType   与项指示符同名的类型；若本指示符不是项，则为其自身
++   entry #qualified   以文本表示的完整路径 `scala.collection.immutable.List`：即根据 `Imports.empty` 的 `#text`
++   entry #text   `Imports` 所允许的最短路径形式
++       要求作用域中有 `Imports`。
++       若 `Imports#direct` 包含该指示符（它可通过 `export` 访问），或其父级已被导入，则只写出它的名称；否则递归地写出其父级，父级为类型时后跟 `#`，为项时后跟 `.`，然后是名称。
++       因此在导入了 `scala` 时，`scala.collection.immutable.List` 写作 `collection.immutable.List`。
++   entry #symbol   本指示符的父级与其名称之间的分隔符
++       父级为类型时是 `typeSymbol`（默认 `#`），为项或 `Top` 时是 `termSymbol`（默认 `.`），而对于没有父级的 `Top` 则是空文本。
++   entry #render   在类型后用 `⌗` 写出的完整路径，用于 `#` 可能被误读的显示场合
++       与 `#qualified` 相同，但从类型中选出成员时写作 `⌗` 而非 `#`，用于不能与 Scala 投影或 URL 片段混淆的呈现。
+
+@ 0 1 0 131d5c2ea608339b021f591c0d6af00b
++ entry .Imports   类型写出处有哪些名称在作用域中：已导入的作用域、导出、中缀别名、箭头
+
+% 1 1 0 04b42165cfd1429604d211314904053e
+
+@ 0 2 0 128dcbff2c68ed6e12650134d1d98680
++       `Imports` 是 `Syntax#text` 和 `Designator#text` 用来决定在源代码中某一位置如何写出类型的依据。
++       它是一个有四个字段的 case class：
+
+@ 0 11 0 11148fbcef48778608cb9803f3746812
++       - `#designators`，其成员可以不加限定地访问的作用域：被通配导入的包和对象的指示符，以及外围包的指示符。
++       - `#direct`，虽然其所有者未被导入、却可以通过末端名称访问的指示符，`export` 别名的目标就是如此：在 `import soundness.*` 下，`jacinta.Json` 写作 `Json`，因为 `soundness` 导出了它。
++       - `#aliases`，从被细化的类型成员名称到作用域中细化该成员的中缀类型别名的映射，`"Form" -> t"in"`，从而 `Play { type Form = Json }` 可以写作 `Play in Json`。
++       - `#pureFuns`，被写入的代码是否启用了纯函数，捕获检查意味着启用。它决定未标注的函数类型写作 `->` 还是 `=>`。
+
+% 2 1 0 1079131f4b0cdbd40fd289413aa13308
+
+% 3 1 0 0ab1fd7463515e91068dc8fb51cc5093
+
+% 0 1 0 11faadc27e365dfb1b309a2be90583a6
+
+% 0 1 0 1a39e656c46c15e11d5849f2b7dbdad2
+
+% 0 1 0 14e441ece2a8d085144554448e1e2cd4
+
+% 0 1 0 18e1598559df8d82015055ed06820bb5
+
+% 1 1 0 00916fd94c3f2d910bdeddfa8497f059
+
+% 0 1 0 187de40e5817f10f1a697d8b17b4dad6
+
+% 0 1 0 048189146b6724221c07432fa82c45ef
+
+% 1 1 0 16df7ae0cd2912c5174ccd88a363370b
+
+@ 0 7 0 00ac6ddc02cfee1c18fe231fb6fa7430
++       在宏内部，`Syntax.name` 和 `stenography.internal.name` 会自行构建调用处的 `Imports`。
++       在任何宏之外呈现类型的代码——根据会话的导入缩写诊断信息的 REPL、文档工具——必须手工构建一个，并且应当用 `.resolve` 而非构造器来构建，因为只有这样才会包含每个已导入作用域的导出和中缀别名。
++       这些字段是标准库的 `Set` 和 `Map`，写作 `scala.collection.immutable.Set`，因为它们与编译器代码共享。
+
+% 1 1 0 13cb9f88fd3b7cbe16e38c3078ad84c1
+
+% 1 1 0 18664b639d2682d50ad5e0fc700b14c0
+
+@ 0 37 0 117df9373a1783b41507bddaed0adb6b
++   entry .empty   没有作用域、导出或别名，启用纯函数：一切都完全限定
++       即 `Syntax#qualified` 和 `Designator#qualified` 所依据的 `Imports`。
++   entry .resolve   由已导入作用域构成的 `Imports`，并以每个作用域的导出和中缀别名加以扩展
++       `Imports.resolve(designators, direct)` 即 `Imports(designators, direct)`，其中 `direct` 以 `designators` 中每一项的 `.exports` 扩展，`aliases` 由每一项的 `.infixAliases` 填充，从而经由 `soundness` 这类通配导入的前导包访问的类型会按用户会写出的样子呈现。
++       它需要编译器的 `dotty.tools.dotc.core.Contexts.Context`，并且该上下文必须安装了 quote 缓存，宏的上下文就是如此，`delicious.Reifier` 也会在独立的上下文上安装它。
++       若两个作用域为同一成员提供了中缀别名，则选择按名称排在最前的别名，因此结果不依赖于作用域的顺序。
++   entry .exports   可通过某个作用域的 `export` 别名以末端名称访问的指示符
++       接收一个包或对象的指示符（例如 `Designator(t"soundness")`）以及编译器的 `Context`，返回其中声明的每个导出类型别名的目标，连同该目标的伴生对象：在 `import soundness.*` 下，`Textual` 和 `Textual.text` 都不加限定地写出。
++       只有重命名其目标、或按顺序恰好以自身类型参数应用其目标的别名才算数；重新组织其参数的别名（元组类型、`Some`、`<:<`）不会使其目标可通过名称访问。
++       无法解析或无法读取其声明的作用域不贡献任何内容，因为呈现绝不能抛出异常。
++   entry .infixAliases   某个作用域中声明的、各自细化单个类型成员的中缀类型别名
++       接收作用域的指示符和编译器的 `Context`，返回从被细化成员的名称到别名的映射：对于 `infix type in[refined, form] = refined { type Form = form }`，得到 `"Form" -> t"in"` 这一对。
++       别名必须恰好接收两个类型参数，第一个作为细化的父类型，第二个作为成员的别名；其他中缀别名没有双操作数形式，会被跳过。
++       若作用域中有两个别名细化同一成员，则按名称排在最前的胜出。
++       从不抛出异常。
++   entry #designators   其成员不加限定地写出的作用域
++   entry #direct   以末端名称写出的指示符，`export` 别名的目标就是如此
++   entry #aliases   每个被细化成员名称所对应的、要写出的中缀类型别名，如 `"Form" -> t"in"`
++   entry #pureFuns   写出类型处是否启用了纯函数，从而使 `->` 与 `=>` 相区分
++       设置它时（这是默认值，也是启用捕获检查时的情形），没有捕获集的函数类型写作 `A -> B`，不纯的写作 `A => B`。
++       未设置时，每个函数箭头都写作 `=>`，因为此时 `A => B` 表示未标注的 `FunctionN`。
++   entry #has   某个指示符是否为 `#designators` 中的已导入作用域之一
++   entry #hasDirect   某个指示符是否在 `#direct` 中，即可通过末端名称访问
+
+@ 0 1 0 19405b1566cdd57b0ed4690247f74fcc
++ entry .Bindings   递归类型绑定者的名称以及树的缓存，在转换类型时共享
+
+% 1 1 0 016d6dad02bd98f6035533809f0699f2
+
+@ 0 7 0 1a038558e02c45b210bc0a8a3b208f5d
++       `Syntax(repr)` 以上下文参数的形式接收一个 `Bindings`。
++       它持有两样只依赖于所转换类型的东西：为每个递归类型的绑定者起的名称，使细化中的自引用写法保持一致；以及已构建的树的缓存。
++       其中没有任何内容依赖于树将被写出的位置，因此一个 `Bindings` 可以由一次编译运行中的所有转换共享，`stenography.internal.name` 就共享一个；`Bindings()` 新建一个，并且是未提供时的默认值。
+
+@ 0 2 0 01151e270ecc28c205703cedb2dadc26
++       由于名称是共享的，若之前用同一个 `Bindings` 转换的类型使用了相同的候选名称，递归类型的绑定者可能会被编号，如 `self2`。
+
+% 1 1 0 0d764bf990e449d101eed75ecdfda28e
+
+@ 0 5 0 012064abb0e4c6b008dd6c5509dbcb14
++   entry #nameFor   绑定者的名称，即候选名称或其编号变体，每次询问都相同
++       接收绑定者（按引用比较）和一个传名的候选名称，候选名称由递归类型的基类型派生而来，首字母小写。
++       第一个请求某个候选名称的绑定者得到原样的名称，之后的绑定者得到候选名称后跟 `2`、`3`、…。
++       对同一绑定者再次询问，返回它最初得到的名称。
+
+@ 0 1 0 1cfb93edc6f80c3d1142fbf203397885
++ entry .internal   宏一侧的入口：根据宏展开处的导入呈现的类型
+
+% 1 1 0 0c17b4f2f6250a640115131155887558
+
+@ 0 5 0 1ef7d71237f8ba6c1c0f196787086250
++       `internal.name` 是库自己的宏为其用户呈现类型时调用的方法：frontier 用它写出缺失 given 诊断信息中的类型，spectacular 的 `Showable` 用它为无法显示的类型命名，hyperbole 用它为树加标注。
++       它做 `Syntax.name` 所做的一切，但在现有宏内部以 `TypeRepr` 或 `Type` 的形式接收类型，而不是在调用处以类型实参接收。
+
+% 2 1 0 083f6d6cf7a996741352e0bd41121ccf
+
+% 3 1 0 0a51089a434a49770c1224827722f1d7
+
+% 4 1 0 18b1639d6d841f270efc692dc22840db
+
+% 5 1 0 073d8bbc0ed3dd0914d3b489b9389d15
+
+% 6 1 0 06725d3956a69aea0efcbdaeab26629a
+
+% 0 1 0 09dfdaaa771a79d20e9bc403c61159ba
+
+% 1 1 0 019db1a78837e85b13b2f0d2b8561c9b
+
+@ 0 7 0 1a7473f3ecd59ec10e8dfb5dfc19503a
++       所用导入是宏展开处的导入，收集方式与 `Syntax.name` 相同，包括每个通配导入的作用域以及编译单元自身所在包的导出和中缀别名。
++       在一次编译运行中，转换得到的树、每个作用域的摘要以及每个作用域列表的摘要并集都会被缓存，每个编译器一个缓存，只保留最近一次运行，并以软引用持有，因此被丢弃的编译器不会被保持存活。
++       在没有编译器支持的 `Quotes` 之外，`name` 退而只使用导入本身。
+
+% 1 1 0 072bb948a500b3f1018bbe5643439df8
+
+@ 0 4 0 005f789f7c602d2a0d8d1f880bc38d7c
++   entry .name   根据当前宏展开处的导入，将类型呈现为源代码文本
++       接收一个 `quotes.reflect.TypeRepr`，或在作用域中有 `Quotes` 时接收一个类型实参，返回 `Syntax.name` 在展开处会产生的文本。
++   entry .designator   `Syntax.name` 背后的宏：以 `Text` 字面量表示的呈现结果

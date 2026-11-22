@@ -1,0 +1,1034 @@
+orthant 2 language
+
+% 0 1 0 1a5b4d7f5100bcea1559caf970e7cb81
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 5 0 13218cffd6f6cc490126acd80666e17b
++ [XML](https://en.wikipedia.org/wiki/XML) 文本解析为 `Xml` 值。
++ case class 借助由其形状[派生]的编码器和解码器与 XML 相互转换，文档的元素可以被导航和查询。
++ 用 `x"…"` [插值器]按字面写出的 XML 在[编译时]被解析和检查，因此格式错误的片段无法编译。
+
+@ 0 3 0 0de5d4e9b1e7445b0e8a2e8f34c9d408
++ 其设计与 [JSON](json.md) 的设计相呼应。
++ 解析时结构与类型保持在一起。
++ 转换是派生出来的，而不是手写的。
++ 无法完成的转换会抛出一个指明原因的带类型错误。
+
+@ 0 1 0 060494ebcd4a3090039193bd25e98b9c
++ ### 关于 XML
+
+@ 0 5 0 016d8070808345f316b4a5f0eda96b9c
++ XML 的常用 API 是 [DOM](https://en.wikipedia.org/wiki/Document_Object_Model)。
++ 它是一棵无类型的树，元素通过字符串名称获取，文本则要手工取出并解析。
++ 当文档与代码的预期不符时，这种不匹配会表现为 `null` 或失败的类型转换。
++ XML 本身已经很冗长，一个什么都不检查的接口只会让它更糟。
+
+@ 0 5 0 11d7333f361721581dfaadedeba25026
++ 在这里，XML 与 Scala 类型之间的转换由类型派生而来。
++ case class 变为一个元素，每个字段对应一个子元素；枚举变为一个以其分支命名的元素，因此没有什么需要手工保持同步。
++ 字面量在写出时即被检查，失败的转换是一个带类型的 `Xml.Error`。
++ `Xml` 值是[不可变]的，每次编辑都产生一个新值，这与[不可变性](../../philosophy/immutability.md)一致。
+
+@ 0 2 0 15433966f3c4945b06504b98537cb8c4
++ 一切都来自 `soundness` 包。
++ 作用域中有一个 schema 和一个错误[策略]，最后一个导入使示例能够打印其结果：
+
+% 2 1 0 0f8dc632a664d4731acc384146b8c787
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d2427c27ad8baeb0c18f94adb6d4425
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 3 0 199df14c714381d313ad544b2eddb151
++ schema 是一种选择，像字符集或策略一样导入。
++ `freeformXmlSchema` 接受任何元素和任何属性。
++ 当文档的形状已知时，由 [XSD](#typed-records-from-an-xml-schema) 取而代之。
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### 解析
+
+@ 0 1 0 0d85337c92dd788703d200498d317715
++ `read[Xml]` 把文本解析为 `Xml` 值，`show` 再把它写出：
+
+% 2 1 0 101cefb7deffc54203d14dc6c2cf333e
+
+% 0 1 0 1d49a5ad6747e10b153f60e72b732adf
+
+% 1 1 0 115b5740f941a151177dc3cd1bd3dd8b
+
+% 3 1 0 1012ae7ed97458e412cf23969febfc93
+
+% 4 1 0 03c9d2783fdba4d4191c55f44a306b76
+
+% 5 1 0 0c416dd08118a6581428b84024459089
+
+% 0 1 0 14357d017465598900fc8e1f9451fa89
+
+% 1 1 0 0c0dadb66265e6e40d20fc13720830df
+
+@ 0 1 0 0e075aadae5e61f815023a221afeff3e
++ 不是格式良好的 XML 的文本会产生错误，错误说明了哪里出错以及出错的位置：
+
+% 2 1 0 0616ad8ff679a80314f47706b9072060
+
+% 3 1 0 1afa208229a3187c020be1d8e5b2925b
+
+% 4 1 0 1d22c0bb77026147121ce8d4d3fac91c
+
+% 5 1 0 054df1c14b47f3c504842bd72167549d
+
+% 0 1 0 17887aad19a36e5016e99fd0ac5ea123
+
+% 1 1 0 0b50d5ffe2c4e1bc1a13ebc9f8cdc0e7
+
+@ 0 4 0 024899c2611aec9208213ba12d69f102
++ `load` 读取整个文档，并保留其 `<?xml?>` 头部。
++ `read` 给出内容，而 `load` 给出一个 `Document`，它把根与其 `Header` 配对：版本，以及给出时的编码声明和 standalone 声明。
++ 因此文档写回时其声明保持完整：
+
+% 2 1 0 0c4ddca42f3d58230772975f6aebbf68
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 06242af158dec53f156a013155dd3d45
+
+% 0 1 0 14a88fe271d504aa113454919318b8a2
+
+% 1 1 0 10f9d5af8a39f6ba009628009cd0afe1
+
+@ 0 3 0 00dd44874357d923013c915b90451393
++ `read` 和 `load` 既接收文本，也同样接收字节来源：[文件](filesystem.md)、[HTTP 响应](http-client.md)的正文、[类路径](classpath.md)资源。
++ 字节被直接解析，作用域中不需要 `Charset`，因为解析器自行读取 UTF-8：
+
+% 2 1 0 14de5b6708e83cf21530d9e76369cbaf
+
+% 3 1 0 14727a42cfa94c1b068d6388a653d849
+
+% 4 1 0 1abf69806ac007940e01fe7d37c6f8e5
+
+% 0 1 0 02dedf8887e1abdd049f7aabb4c794d7
+
+% 0 1 0 0ab6cf2da46e96690f20f83ab5f6dacf
+
+% 1 1 0 1c36bb08acf7ff2d0fc4d8f640fa8263
+
+@ 0 2 0 07f22b437d0db19b18f04acaf8b5c55c
++ 序言中的任何内容，例如注释、处理指令或 `<!DOCTYPE>`，都作为根之前的节点保留。
++ 因此样式表指令在读取和写出后依然存在。
+
+@ 0 1 0 04a6447031aeb5a90198fdecf41f0da5
++ ### 节点类型
+
+@ 0 3 0 10bd3b26febbb8f2019c9980f6042584
++ `Xml` 值是规范所定义的节点种类之一。
++ 每种都是 `Xml` 伴生对象中的一个独立类型，而不是带标签的字符串。
++ 除了元素和文本之外，它们还保存了其他库往往会抹平的内容：
+
+% 2 1 0 13407574745bf935094448ce0cdcabfd
+
+@ 0 9 0 0e9a3997c7c10490145b50bb2decafdb
++ column  类型
++ column  保存的内容
++ row  `Xml.Element`  名称、属性和子节点
++ row  `Xml.Text`  字符数据
++ row  `Xml.Cdata`  `<![CDATA[…]]>` 节，作为节保留
++ row  `Xml.Comment`  `<!-- … -->` 注释，无论出现在何处
++ row  `Xml.ProcessingInstruction`  目标及其数据，包括数据为空的情况 `<?target?>`
++ row  `Xml.Doctype`  `<!DOCTYPE>` 声明，原样序列化回去
++ row  `Xml.Fragment`  没有单一父节点的节点序列，例如序言加上根
+
+% 1 1 0 03a4618900e62d2f08c649edcee24030
+
+@ 0 2 0 1ff4021aa1b04bcd0c49938d3a996579
++ CDATA 节保持为节，因此包含 `<not a tag>` 的文本在读取和写出后依然存在，不会被转义成别的东西。
+
+@ 0 2 0 0c05b091a861c8251fe03e7adb3c646c
++ 预定义实体在读取文档时被解析，在写出时再次被转义。
++ 数字字符引用也是如此，十进制和十六进制皆可：
+
+% 2 1 0 04a99d33e6036d881733d70765bf3497
+
+@ 0 2 0 14c8fa9796ff491c13328307abee1588
++ column  实体
++ column  字符
+
+% 0 1 0 001f6f40b97b95f6199109fd65ff61ef
+
+% 0 1 0 0c3c8b51ff98a5c505bbba426ba2949c
+
+% 0 1 0 17429324136d6a9f0461c24fe4337003
+
+% 0 1 0 0f08ed14cfe1cabf02629ab5ffd89e16
+
+% 0 1 0 09dc4fd35dbe0f3206eedc60f1a30e02
+
+@ 0 1 0 0b63f049e128ee76076b3516a041c578
++ row  `&#NNN;`, `&#xHHH;`  具有该码点的字符
+
+% 1 1 0 0308f92efe9b2e251e34408b236aafd5
+
+@ 0 1 0 0bd022f65de6e8f60034860fe3c0f564
++ ### 读取值
+
+@ 0 2 0 0a8c140fe4a58fb0198b39b8be112e07
++ `as` 把 `Xml` 值转换为 Scala 类型。
++ 无法按该类型读取的内容会抛出 `Xml.Error`：
+
+% 2 1 0 15627981c9637df50e40306c889f2a93
+
+% 3 1 0 09ddcca47c97e3631ddd699ec6c20b54
+
+% 4 1 0 150ddedcfacd84d71441564ba15e2e6f
+
+% 0 1 0 0defe56d040df6f705f8e2c8845acc9e
+
+% 1 1 0 0d37cda11bb2294b00147982156dd95e
+
+% 3 1 0 09e89aac798ae08d0610e95c9ddb3899
+
+% 4 1 0 0b9d7038de8643000ba5da06ade2fd95
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 02c4c22c0db12a87013a61fb1951c6e9
+
+% 1 1 0 1539964ed07bc1960ddd37bde9ce16cc
+
+@ 0 1 0 122767b78bbcdf991e0b390b940ae9b5
++ ### case class
+
+@ 0 3 0 1ff2b9292e0c49310b8a175ea17dbf60
++ case class 可以原样参与 XML。
++ 它的编码器和解码器由其字段派生。
++ 值变为一个以类型命名的元素，每个字段对应一个子元素，并且无论子元素的顺序如何都能读回：
+
+% 2 1 0 1f39b4d73748e14f1643779aef125999
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 1512fe8ee27a4a4c0d550c6150eb7916
+
+% 1 1 0 19b54e2b4656af2b18dc556cf4101104
+
+% 3 1 0 1c87714fbf974cef0f76ea0410ec4ab4
+
+% 4 1 0 0888a18bcb8242f305ae0e7f7a635ac6
+
+% 5 1 0 15d5d739b33c77190a30f626c16e7765
+
+% 0 1 0 10350ec34b7e6c450607fa7dfd077b31
+
+% 0 1 0 02d90a7699600a3f1ff9373d77403406
+
+% 1 1 0 09dae05f6d42896913f7b6bfb5bd90a3
+
+@ 0 3 0 14618ffb7a21f3330af4ba612f003dd2
++ `in[Text over Xml]` 把值直接编码为其 XML 文本，与 `read[Person in Xml]` 相对应；`in[Data over Xml]` 则以作用域中的 `Codepage` 把同样的文本写成字节。
+
+@ 0 2 0 0e842e03619d3238066100d23caf4459
++ 标记为 `@attribute` 的字段变为属性而不是子元素，并作为属性读回：
+
+% 2 1 0 1cb9806d117e7a5103d1ede3bcdb6754
+
+% 0 1 0 0ebbd88b884a069403d8cd7d8ae8d396
+
+% 1 1 0 139b1189d74c96a510479003195c6ea0
+
+% 3 1 0 16d426cdac3390fe1553e37ba014650d
+
+% 4 1 0 1527725b9082a3440b9cff28f69fe549
+
+% 5 1 0 1bfeaf11baec67dd1707894a25d38e3b
+
+% 0 1 0 14065b1992b5b3a90212788acc50a219
+
+% 1 1 0 139777e24bbab3831007ad3fd5843194
+
+@ 0 3 0 0e14c87919e8097d0b1d7a3e3bcbfe8a
++ 当 Scala 名称与 XML 名称应当不同时，`@name` 为元素或属性重命名。
++ `@name[Xml]` 把重命名限制在 XML 中，其他格式各自保持原样。
++ 它也会重命名枚举*变体*的元素，因此 `Light.Stop` 可以写作 `<red>`：
+
+% 2 1 0 124305d66e905da107f48bb91f75bbb2
+
+% 0 1 0 1a62de65f428a3821fef2470e29d9f0c
+
+% 0 1 0 1965ca9f15c723e60087c097018fca1b
+
+% 0 1 0 09ac0b9523c391041a4aa3d5d797de99
+
+% 0 1 0 03778125128b6a7c01ec348e9d95fb21
+
+% 0 1 0 0f632127c80b5c2a0c0c070cf5c90f91
+
+% 1 1 0 1c6ecfac39801a6b011cb9bd8995daaa
+
+% 3 1 0 0d70dfa7cc0dd03a191aaa9b1a215649
+
+% 4 1 0 1331890b9954f5be121d058ca917fa34
+
+% 5 1 0 174c500fdddae11206c18ddfb27bceec
+
+% 0 1 0 0cd91ab6af65f6581299f5ad6148c9fa
+
+% 1 1 0 12ebb00f7714553c1423ef0fd7e6f0f5
+
+@ 0 2 0 0283de28921d50cb108d5d268444e9c7
++ 和类型按其元素的名称解码，名称选择变体。
++ 与任何变体都不匹配的名称会抛出 `Xml.Error`，绝不会落入某个默认值。
+
+@ 0 4 0 1a52bd05aff995c40872f5caa8cfe713
++ 值为 `Unset` 的 `Optional` 字段直接缺席：没有子元素，或者对于 `@attribute` 字段而言，没有属性。
++ 没有该元素的文档把该字段解码为 `Unset`。
++ `Map` 字段的每个条目变为一个子元素，其中包含一个 `<key>` 和一个 `<value>`，因此键不必是有效的元素名称，可以是任何能编码为 XML 的类型：
+
+% 2 1 0 166627a76e7c91de1bf42c7c07f91a8a
+
+% 0 1 0 1d2972392278035404a5c078465e988b
+
+% 1 1 0 158db5fcc58b19601e2babd3ee1d9208
+
+% 3 1 0 1fb834f9e0b0c98c0c15a625638da881
+
+% 4 1 0 0a23b88525f106e71fb5574b12227fa3
+
+% 5 1 0 18f46406e9cc22ba1a94ff1167bc3523
+
+% 0 1 0 1df91123581eff95093a594356535eed
+
+% 1 1 0 1b77a1fa953438e91c94fc8ebae887bb
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ 总结如下：
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+% 0 1 0 17f75ff859390a221ad2d8b01876bf13
+
+% 0 1 0 1a7803f3d875842b13d2db8c8eff5135
+
+@ 0 8 0 1a664caa3d91aff81986ca87c0eca18d
++ row  case class  以类型命名的元素
++ row  字段  以字段命名的子元素
++ row  `@attribute` 字段  属性
++ row  `@name` 或 `@name[Xml]` 标注  被重命名的元素或属性
++ row  和类型的变体  以变体命名的元素
++ row  值为 `Unset` 的 `Optional` 字段  没有元素，或没有属性
++ row  集合字段  每项一个元素，以字段命名，按顺序排列
++ row  `Map` 字段  每个条目一个元素，包含一个 `<key>` 和一个 `<value>`
+
+% 1 1 0 054d82b2bcbe373812b5ab9ff391daa5
+
+@ 0 1 0 051c71d587cb261403059804f8a948dc
++ [注解](annotations.md)介绍了 `@name` 和 `@attribute` 以及它们如何被读取。
+
+@ 0 1 0 0e526d4e0ef4bf5615c6639d48279867
++ ### 解码能容忍什么
+
+@ 0 3 0 15ec19f364d0e19c109dd08717b1b26e
++ 真实的 XML 并不整洁，而坚持整洁的解码器用处不大。
++ 位于类型所期望的子元素之间的文本、注释和处理指令都会被忽略。
++ 字段之间夹杂着文字的文档，解码时就像这些文字不存在一样：
+
+% 2 1 0 1265061361d23f5f0d55a116c95cbcd5
+
+% 0 1 0 0ad4c763c14992741babaf43b6a42bd7
+
+% 0 1 0 0fefefd3642a94451f16d5e447e8d973
+
+% 1 1 0 106ca959cc26b7fd0ff9cff85a954d87
+
+% 3 1 0 1bc6a54c7197669c033bdeead38a4300
+
+% 4 1 0 0be8bf091a6cff3717ec52d1ffb939e7
+
+% 5 1 0 1f3742c255748bc101e12f793ac91677
+
+% 0 1 0 0ccc3d5d09e684350e2dee5ec811e582
+
+% 1 1 0 10c90b1614f29f3611a73d053269c62d
+
+@ 0 5 0 09cded0a180770d4067c54785f05e4b1
++ 文本中的实体在读取时被展开。
++ 重复的元素按文档顺序汇集到集合字段中，它们不必彼此相邻：`<name>` 之前的一个 `<songs>` 和之后的另一个仍然按出现顺序组成一个列表。
++ 递归类型通过其自身的派生来处理，因此任意深度的树都无需手写编解码器即可编码和解码。
+
+@ 0 4 0 0968c5f3dc5dfed2128cc16b979aa99a
++ 当嵌套值完全缺失时，其类型的 `Default` 会把原本关于其各字段的一连串错误变为一个错误，位于该值本应出现的位置。
++ 默认值用于继续进行，这正是向人报告结果的验证过程所需要的。
+
+@ 0 1 0 1151c7d6cada787503480bdb36c13930
++ 必需而缺失的字段是错误：
+
+% 2 1 0 1d2d20eb04346117107dadd634dcae8d
+
+% 3 1 0 03f3209ef9470873019075f860e65f84
+
+% 4 1 0 18a9f897f36a889208130ac02f330bcb
+
+% 5 1 0 023ab8d2db2e725e14c08f7add168076
+
+% 0 1 0 06f1511ac83bf1ee0f65eccc84a96391
+
+% 1 1 0 04224982c2becb5c114f1839b8d35524
+
+@ 0 2 0 025a2fa334fba4440c85683c42f5ed8b
++ `Optional` 字段还有两种方针，来自 `optionalityOptions` 包，如[解码](decoding.md#policies-for-optional-fields)所述：
+
+% 2 1 0 1ff5e61f994af8121ff43395e4a39323
+
+@ 0 5 0 0acdb05a3cc3ad2c150e8383a52ebf32
++ column  若字段的元素或属性
++ column  读取为
++ column  除非
++ row  在文档中被省略  `Unset`  `strictXmlAbsence` 使其成为错误
++ row  存在但被内部解码器拒绝  错误  `lenientXmlFaults` 将其读取为 `Unset`
+
+% 1 1 0 123146cac3ebd7f91d30bbb932ad4f1d
+
+@ 0 2 0 171252e34cdb184d1abacdd4128b6e26
++ 在 `strictXmlAbsence` 下，缺失的元素或属性是 `Xml.Error.Reason.Missing`。
++ XML 没有 null。
++ 空元素是一个存在的值，因此没有针对 null 的方针。
+
+% 2 1 0 02e351f73d54053b085ef9028bdd0ffe
+
+% 0 1 0 1528c823dd1f27e7140501dbf09796f6
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 1aab369d319ecf041be6924012ac5dbb
+
+% 0 1 0 0a763b744de804771b7587cfac77a506
+
+% 1 1 0 052978b837fda5971b356200042e1dbe
+
+% 3 1 0 13f6fcf69e9b2da61026c6781e441237
+
+% 4 1 0 1c478652cfe8cb3b132057fa514ffc43
+
+% 5 1 0 127d5ec370bd32fd170400b580d0447f
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 1623911c54169aa30c26d0879ab292c7
++ ### 按字面写出 XML
+
+@ 0 2 0 05e99ee5058f5c3b12f0fd0397cf76fa
++ `x"…"` 插值器直接写出 XML，并在编译时检查它。
++ 值会被代入其中：
+
+% 2 1 0 05605feb9c39adff17394dfdbd7c290e
+
+% 0 1 0 1a8b5d78ec8ed14c1c6038f705c9cca6
+
+% 0 1 0 0606f04fdc3c49e70681ec491a78a8d5
+
+% 1 1 0 0245df36de56cb281dcb94f9c88ed645
+
+% 3 1 0 0eadef371e1100b10bddeba1217ed608
+
+% 4 1 0 0a4c84077963517211dd8dd0306d6685
+
+% 5 1 0 0ec145773d096c53089a21f891bcfb9a
+
+% 0 1 0 13c5096791909db71d77f2acd710875d
+
+% 1 1 0 0ce04751122f52f50232b326dfc39ed2
+
+@ 0 1 0 14bb7e3585c6bfe419adfb3fa369b633
++ 格式错误的片段在写出处即被拒绝：
+
+% 2 1 0 16fc70e5178bb9a5006634b02e1ba6b3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1ae8a61dc6f9cac405e0e8657525f408
+
+% 1 1 0 12b5d5fa74a119a51b8d1f73e8234847
+
+@ 0 1 0 09a0a67442af0c6d0e4768244b27fadd
++ ### 导航
+
+@ 0 2 0 08a3caa172629a2f0a2ddb11070a0e66
++ 启用动态访问后，子元素可以像成员一样访问，并且各步可以链式相连。
++ 索引在重复的元素中进行挑选：
+
+% 2 1 0 19bcc95b1815d8540493c0bb3ae5bf29
+
+% 0 1 0 097699de8b97547d1e075261e7e093d0
+
+% 0 1 0 063481d4c27394a613195dc1aa372975
+
+% 0 1 0 1346c8bceec4d2cf1db5e1e7ff7a049c
+
+% 1 1 0 0831b42ca06142a50ddff899f25c9152
+
+% 3 1 0 188e637e7250de99070cd613652017d4
+
+% 4 1 0 0325531e1741ca7c01776ebd9db1b720
+
+% 5 1 0 075ad843b7bab3eb1cd98f4ad037a0a0
+
+% 0 1 0 067235cb6c29a7430fcc95e734a689dc
+
+% 0 1 0 13d9a4bfa0dd4a5b03c8251d3b36a8dc
+
+% 1 1 0 1538893383ead53d1c9106303ae6c396
+
+@ 0 3 0 097e4b46ac33dff8040bb83522acce98
++ 该导入在其作用域的其余部分授予 `Xml is Dynamical` 许可。
++ `dynamically[Xml]:` 则只对单个代码块授予它，如 [JSON](json.md#fields-as-members) 中所述。
+
+@ 0 1 0 0d2e6eedb43452ee0cdfb9035ea44b00
++ ### 更新
+
+@ 0 4 0 05ab92758f8c6b6a1d2147ffed6cb9b4
++ 元素通过[透镜](optics.md)更新。
++ 透镜可以穿过多个层级，并可以携带 `Each` 之类的光学组件，一次修改所有匹配的元素。
++ 由于 `Xml` 值是不可变的，更新会产生一个新文档。
++ 透镜及其光学组件都是 given，从 `optics` 包中按名称导入：
+
+% 2 1 0 032a2098f84e8c170b905706cdbd39c3
+
+% 0 1 0 0e8b0f597208a5bb0f7c9a1596fbbed0
+
+% 0 1 0 0e1c25d0bea4b040162d8ae90c160f7e
+
+% 1 1 0 0875652788427e4b191d92853d15df52
+
+% 3 1 0 042b4940dc9e5bbb1be02de5d10219a8
+
+% 4 1 0 0eaa72322f84805e0a94f3222e3c7aba
+
+% 5 1 0 02e03f58df9bf60c0acd1709e4744c98
+
+% 0 1 0 17d639bd154672c4013b00fa7a56341e
+
+% 0 1 0 1323c3d68bcd181219eeebf260f45134
+
+% 1 1 0 0c72eb77f0d7a0980b6bcc53c43694be
+
+@ 0 3 0 1a7e6b3527340a781b37e797420300e4
++ `=` 右侧的值不必已经是 XML。
++ 任何能编码为 XML 的东西，例如 case class、`Int` 或 `Text`，都会在赋值时被编码，无需导入。
++ 其他格式则需要一个导入，例如 `conversions.encodableToJson`。
+
+% 2 1 0 158c777d3d52cd591e364ddbe8f75ee4
+
+% 0 1 0 0a80e1960125e7bd142538df7069c82e
+
+% 1 1 0 19a6fb60af3c319708c9d595b94005ff
+
+% 3 1 0 0bd215b83ec01feb092826336bdff705
+
+% 4 1 0 023e64a36a26daa11d180dd3fc75e575
+
+% 5 1 0 174ce1e25de569bf1d2b1837ee5646d1
+
+% 0 1 0 1e56e6e52819f88c0c368c7bf724a7e1
+
+% 1 1 0 0dd4b591bdf0fce304c740529dcc0163
+
+@ 0 1 0 0bb0bf3d6e9d87581c8c726161712ecc
++ ### 路径与查询
+
+@ 0 3 0 093db66562c7f474018d14ca0fe40891
++ [XPath](https://en.wikipedia.org/wiki/XPath) 指称文档中的一个位置。
++ `xp"…"` 插值器写出 XPath，并在编译时检查它。
++ 没有位置的步表示第一个匹配项，`@` 指称属性：
+
+% 2 1 0 0e9bb6bf6b220cd30439e1e530c02192
+
+% 3 1 0 0cca12438760521301274a1118484509
+
+% 4 1 0 103f410518e8c9a102b298e580c9e195
+
+% 0 1 0 044722476a5608491e3c33f997d7e7dd
+
+% 0 1 0 1251cc07d207e17b15d27ef42b558ac0
+
+% 0 1 0 0d6059579c5cd5d207b8df1989d78c36
+
+% 1 1 0 0cb984499013d67602f21ed45c3f3f64
+
+@ 0 2 0 190a29662f6f858505f40772d1e63f39
++ 位置和累积的错误都以路径报告，因此解码大型文档时产生的错误会指明导致它的元素。
+
+@ 0 2 0 1dc4c61e8e320932003f6cb185b899f0
++ 同一个插值器可以写出完整的 [XPath 1.0](https://www.w3.org/TR/xpath-10/) 表达式，由文档对其作答：
+
+% 2 1 0 0320bd860b56bc7c01eb5ed3de101f4a
+
+@ 0 5 0 05977264f02aa1b10daf5966e4ab3506
++ column  方法
++ column  返回
++ row  `select`  匹配的节点，作为片段
++ row  `selectText`  第一个匹配项的文本
++ row  `evaluate`  任意表达式的值，无论是数字、布尔值、字符串还是节点集，作为 `XPath.Value`
+
+% 1 1 0 13beae88362f7e1613ae41f228bb9d34
+
+@ 0 3 0 0191cae5b4e066f60a8cff761b3e9eb0
++ 轴、针对属性和文本的谓词以及核心函数库都受支持。
++ 这正是[浏览器自动化](web-automation.md)的定位器或在配置文件中查找所需要的：
+
+% 2 1 0 1745db8d84deee2b09d498734166eef3
+
+% 0 1 0 003bc0399a2fe18e0d360eb3110c2b13
+
+% 0 1 0 1b1392b920b2014e0d542f680f54b98d
+
+% 1 1 0 0bffe2cad93f2d2903983c01e0a87bf1
+
+% 3 1 0 1a05cbd5d2b8dc9c1b17387976372fcd
+
+% 4 1 0 0383196e5e3bebbf1e61100538156be0
+
+% 5 1 0 09a16275f58cf1f817abb555b71a9326
+
+% 0 1 0 0c12400b725a445803dc4dff8c7d19d5
+
+% 0 1 0 0cff22dae12b1ccc0c847283d5526fae
+
+% 0 1 0 0bebad06564f05041061ebd00a75e0dc
+
+% 1 1 0 1b4f6e8df6e9476219ab699acc0733e5
+
+@ 0 2 0 0cf44c087a32fc3703252bdd53f08067
++ 引擎不支持的表达式，或者未提供的变量，会抛出一个说明此情况的 `XPath.Error`。
+
+@ 0 1 0 0bca99a19709fedb1e335ab6089fb04b
++ ### 命名空间
+
+@ 0 4 0 0ebd042a0bfa69ab022ce60e71e596ec
++ 解析器在读取时解析命名空间。
++ 声明 `xmlns="…"` 或 `xmlns:p="…"` 作为属性保留，因此文档写回时与读入时完全相同。
++ 该声明还为元素及其后代绑定前缀。
++ 每个 `Xml.Element` 都把在它那里生效的绑定作为其 `scope` 携带，并通过这些绑定解析自己的名称：
+
+% 2 1 0 17c2e43f05cfc0c50828882eb827eb68
+
+% 0 1 0 1d49456734a8749410e7460b2553ecf7
+
+% 0 1 0 0484fe1d80d81b4117bfaf7df9c0db5d
+
+% 0 1 0 19c7aa180339ad09046771dfe1cbb8b3
+
+% 1 1 0 06015025b10e57b805d77f5dcd475a69
+
+% 3 1 0 19a42713ee607586152f0d452c5b7909
+
+% 4 1 0 1f88521f825e4fa6013831456718617e
+
+% 5 1 0 179bd40d15a11c760445bcddcfc57d37
+
+% 0 1 0 18a363621ec7311d1e1d81e41adf7700
+
+% 0 1 0 0ea1c39a4aba20e81bdfd510122beb4a
+
+% 0 1 0 097694ac5612727f01945a74853a8ca3
+
+% 1 1 0 057dac583c7a8217121fee16b024f02a
+
+@ 0 4 0 024ec2c1a2b6691c039150eebfb96166
++ 当两个名称的命名空间 URI 和本地部分都一致时，它们就是同一个名称，无论绑定它们的前缀是什么。
++ 带前缀的名称在其前缀已被绑定时按解析后的名称进行选择，无论绑定来自文档中的声明，还是来自作用域中给出的 `Xml.Scope`。
++ 因此代码所用的前缀不必与文档所用的相同：
+
+% 2 1 0 1616246c0f2864c008f30bf5b7ab5318
+
+% 0 1 0 012f33218e0a3e200abdf6c8ccc44493
+
+% 0 1 0 1b25857fcf8344420a61d33011b888ea
+
+% 0 1 0 1dfe6b1d1355ef4913542b3ba0fbd486
+
+% 0 1 0 16fc43c3c2ff552e0422cafda20c398f
+
+% 0 1 0 1488e22de93821de1b4700615e98159b
+
+% 1 1 0 1a586d27fcfce97501b501170dfebf19
+
+@ 0 5 0 163f333d6f48c3980b5fdf1c70966b20
++ `Namespace` 把一个前缀（其 `Self`）绑定到一个 URI（其 `Topic`）。
++ 两者都是单例类型，因此绑定在使用它的每个地方都会被检查。
++ 使用了未声明前缀的 `x"…"` 字面量会从作用域中的 given 获取绑定。
++ `xp"…"` 路径对其所测试的名称也是如此，因此 `xp"//svg:rect"` 按命名空间匹配。
++ `XPath#in(scope)` 重新绑定路径的前缀。
+
+@ 0 2 0 0410840a75f19e0b1947c06984a69b32
++ 没有绑定的前缀是错误，这是 Namespaces 推荐标准所要求的。
++ 在没有声明 `p` 的情况下解析 `<p:a/>` 会抛出 `Parse.Error`：
+
+% 2 1 0 070a3dadde5c00a51018177ad9711e68
+
+% 3 1 0 016f25ab68bfe2c20645be2885f0370b
+
+% 4 1 0 113d18a6383a001a1623617ed9d18f59
+
+% 5 1 0 0d555702d6787a47052d0cb140944a1b
+
+% 0 1 0 03bda57bcd72bdb714d9328d23201881
+
+% 1 1 0 13ea151a43a6772717e50674050c8847
+
+@ 0 2 0 1c42a2458dc52eff0be82230f950e676
++ 在没有为 `p` 提供 `Namespace` given 的情况下写 `x"<p:a/>"` 无法编译。
++ 导入 `namespaceOptions.lenientNamespaces` 则会让未绑定的前缀解析为无命名空间。
+
+@ 0 5 0 154a3fd54a2996b300d8877c5f093b24
++ 写出 `Xml` 树时，元素可能使用其作用域所绑定、但上方没有任何节点声明过的前缀或默认命名空间。
++ 此时会为它写出该声明。
++ 因此，在代码中构建的子树，或者通过选择从文档中截取的子树，写出时会带上它所需的每个命名空间。
++ 作用域不参与相等性：解析得到的元素与手工构建的同一元素相等。
+
+@ 0 1 0 02aab486137e7eb90232dbb8a98e6967
++ 派生的编解码器用注解把 case class 置于某个命名空间中：
+
+% 2 1 0 1538172f168e593c045e3412de9b8b87
+
+% 0 1 0 170f02590120466d12fc92eea5acea48
+
+% 0 1 0 122e829e1c116a4705819e5e8cb1bd33
+
+% 0 1 0 1c432394d7ced4650d325016598cbf6a
+
+% 1 1 0 0e2056b0a59f7306057226ba0afe4aee
+
+% 3 1 0 076cd507ae04fa8916909190f0919028
+
+% 4 1 0 17b7d8f6efd14dfd1cce02dd6a2c4f78
+
+% 5 1 0 145884429b5adb761f3bbc326c1666bf
+
+% 0 1 0 17c58995ef1703d918137097d2083d8b
+
+% 1 1 0 017c216ba8d5cd080b5d17485c39a546
+
+@ 0 2 0 1e9acf29c825c17d173ccc2fa899b04a
++ 字段的元素与类处于同一命名空间，`as[Order]` 读取元素解析到该命名空间的文档，无论文档如何为它们加前缀。
++ 可选的做法有：
+
+% 2 1 0 12bebbf7aa97b8481412d213f1023c00
+
+@ 0 7 0 0319cc484062cca1050dd7394bc0dfc1
++ column  声明
++ column  效果
++ row  类上的 `@xmlns("urn:shop")`  类的元素及其字段的元素都在该命名空间中
++ row  类上的 `@xmlns("urn:shop", qualified = false)`  字段的元素不属于任何命名空间，与 `elementFormDefault="unqualified"` 下相同
++ row  字段上的 `@unqualified`  该字段的元素不属于任何命名空间
++ row  `given Rect is Xml.Namespaced = Xml.Namespaced(t"…")`  为无法加注解的类型指定命名空间
++ row  无  字段的元素只按名称匹配，无论文档把它们置于哪个命名空间
+
+% 1 1 0 0765075bf13053ef0ea093fe5bb78e6a
+
+@ 0 1 0 059b27ef75e5d7c40b69221409d8bf98
++ ### 格式化
+
+@ 0 2 0 13a6615be5f32fa204d2641727636291
++ 输出格式是作用域中的一个 given。
++ 紧凑格式省略空白，缩进格式则为人类读者添加换行和缩进：
+
+% 2 1 0 0899a825b23bb8c00a93bd020866a2e2
+
+% 3 1 0 03d3befc9d71872a0c699c9a6e3936d1
+
+% 4 1 0 183c30760e09e97c0d12fdd91d9120bb
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 10341f685333994f002a4b711d105d7d
+
+% 0 1 0 1a85d81d085608fd0b5da4076ee63b7d
+
+% 1 1 0 17d2f47ea3dcc8ca186d259c39fe0329
+
+@ 0 2 0 0ea8415665eec08913fc6eff2c6806b4
++ `show` 把整个节点呈现为一个 `Text`。
++ 大型文档在发送之前不必整个保存在内存中：
+
+% 2 1 0 12374c2aefae53d105e385d966a6ae48
+
+@ 0 9 0 043d2a2db1c152ff1f790a2233280c81
++ column  形式
++ column  序列化所在
++ column  交出的内容
++ row  `show`  调用者的线程  一个 `Text`
++ row  `Xml.emit[Text](document, f)`  调用者的线程  每个文本块在填满时交给 `f`
++ row  `Xml.emit[Data](document, f)`  调用者的线程  每个块在填满时以 UTF-8 字节交给 `f`
++ row  `Xml.lend(document)`  调用者的线程  每个块借给一个函数，不复制
++ row  `Xml.emit(document)`  纤程  文本，通过迭代器
++ row  以 `Text` 计的 `Streamable`  纤程  文本，作为流
+
+% 1 1 0 10fc163bf25042ca180f490b21ed1584
+
+@ 0 2 0 19758fc00cad74260bd83c80ea32a16a
++ 推送形式的 `Xml.emit` 序列化一个带头部的 `Document[Xml]`，并在每个块填满时将其交出。
++ 这适合写入文件、[套接字](sockets.md)或 `OutputStream`：
+
+% 2 1 0 1b6af2d0a379547c08c6f5d2ee1d4fae
+
+% 3 1 0 0519b9d1b3a7d76f116e266f5484beed
+
+% 4 1 0 0c5e23de690fc8351fe707544cfa755c
+
+% 0 1 0 0448cffdfbb7500a1c705bb34302fcfd
+
+% 1 1 0 1e7d662f8147d13e0e3ab3b8a1f665cb
+
+@ 0 4 0 0aab0283b80f8a47000f1f5ef00c51f0
++ `Xml.lend` 甚至省去了复制到每个 `Data` 块的开销。
++ 它把写入器自己的缓冲区作为 `Region` 借给消费者，同时附带一个区间，证明其中每个索引都在范围之内。
++ 两者都只在调用期间有效，规则与[流](streams.md)的 `lend` 相同：
+
+% 2 1 0 1937483e72ae995e1e3aaafadb7279ff
+
+% 3 1 0 1cabe01e3803c93f1baa6997b5a95bea
+
+% 4 1 0 0b8f83125044e62a0577ba9725b7fc43
+
+% 0 1 0 0d5cdcc77d0ddae01307b192b57384bf
+
+% 0 1 0 0b6c56309af1e6a11860107c4b30ec55
+
+% 1 1 0 0be9eea4aa82623c025a1b98dc57045a
+
+@ 0 2 0 0968fbba3fe776ad0e53f64ddd6d2a62
++ 当消费者改为拉取时，`Xml.emit(document)` 和 `Document[Xml]` 的 `Streamable` 实例在 [`supervise`](concurrency.md) 块之下于纤程上序列化：
+
+% 2 1 0 155020b961109acf0a5873221f5b91e4
+
+% 3 1 0 00a2f0f038a370551868bd68f7020cdb
+
+% 4 1 0 190b241218407590009bbf6cca3b147a
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 01d762b569c09bc81d0cc4a88401b97d
+
+% 1 1 0 142349933fbe3dbf0b57e5a4610e01b8
+
+@ 0 1 0 10246ca00ae1b3ed129e48cb651099b9
++ ### 跳过树
+
+@ 0 4 0 005fe0151751ee8d045f4bcc8cab8bc2
++ 只要格式是紧凑的，带有 `Xml.Printable` 实例的记录就会被直接写出，不构建树。
++ 缩进格式仍然通过树来呈现。
++ 打印器在编译时为没有 `@name` 或 `@attribute` 注解、也没有命名空间的记录派生，并写出相同的文本：
+
+% 2 1 0 10b030d135fb37d218af10c91c1e00ba
+
+% 0 1 0 0f73f8a8cecef5e80d39c1dbb0d26055
+
+% 1 1 0 0f1b03372b0c2e1309eb16be08495ffa
+
+% 0 1 0 1770c5a1ff31d7ae1b1094c0eed8b973
+
+% 0 1 0 0904924c439801580f6aeeaa1f8c3d0e
+
+% 1 1 0 1f8e1a8966da6e681bd176f02b7bccaf
+
+% 0 1 0 1f5308f945b757961819ef2763d281c7
+
+% 0 1 0 0624dcbdfb176bc904bb09b95986b95b
+
+% 0 1 0 0910f13897ed9586093f85cbd70f3164
+
+% 1 1 0 18741e6348a5f39506fc0001fa57f3d6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 099d5ef9b62536800e11ab92d1098a25
++ `Xml.Printable.emit` 每次写出一块文本，在每块填满时将其交给一个函数。
++ 记录可以用 `derives Xml.Direct` 一次性在其伴生对象中同时生成解析器和打印器。
++ 之后，一个导入即可为作用域中的每条记录选择路径，与 [JSON](json.md#skipping-the-tree) 的做法相同：
+
+% 2 1 0 028ad63e854f642a0516e8196d6fdbdc
+
+@ 0 6 0 19960e366efcef181933276e595d45fe
++ column  导入
++ column  对于记录
++ column  对于其他任何类型
++ row  `codecs.direct`  生成的解析器和打印器  派生的编解码器，经由树
++ row  `codecs.derived`  派生的编解码器，即使作用域中有直接实例  派生的编解码器，经由树
++ row  `codecs.strict`  生成的解析器和打印器  指明该类型的编译错误
+
+% 1 1 0 02f15f3cb71e31ea1a7b4813b733537d
+
+@ 0 2 0 0a9d96162fcbb9d00974c04e8406f89b
++ 在 `codecs.strict` 下，凡是 `read[Play in Xml]` 或 `in[Text over Xml]` 原本会回退到树的地方，都会产生错误。
++ 这些模式是互斥的选择，因此每次只导入一个。
+
+@ 0 1 0 0627f60fe0bb46571dfc1b4b12d1772d
++ ### 来自 XML Schema 的类型化记录
+
+@ 0 3 0 08f4a67e337064ad10f45ab1a1de832f
++ 有时文档的形状以 XML Schema（XSD）给出，而不是以 Scala 类型给出。
++ `Xml.Provider` 在编译时读取 schema，并从与之匹配的 XML 产生类型化记录。
++ 一个提供器对象持有该 schema：
+
+% 2 1 0 1819f6d04f85dc2e058b7eacfaaaf26f
+
+% 3 1 0 059aa88b7f6a88da013d45a08730cbae
+
+% 4 1 0 1957a25d18ce8c5a1bc1958cb694ecb5
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 086d3d52457db4e61b6dccf9b0faa1ef
+
+% 1 1 0 0ad9398fc0c45e9615d3fabcf0e6b3ee
+
+@ 0 3 0 1b07d4990061aa9d0ec9751f9f7cb1e7
++ 它的 `record` 方法把 `Xml` 值转换为记录。
++ 记录对 schema 根元素的每个子元素和属性各有一个成员，每个成员都具有 schema 所声明的类型：
+
+% 2 1 0 194de6aaaf6f00921c8a014b96a466ed
+
+% 3 1 0 174bcaf198d0e3550f0f2d1a8d68d072
+
+% 4 1 0 184574bb87fcbc1118527a24fcc3d92c
+
+% 0 1 0 0c4281a2be49860505daf60e3c08fb34
+
+% 0 1 0 1ecd72055ec689e6140c9dace77e0cff
+
+% 0 1 0 1ab3bdad95e25c1a027b87bd296d74bb
+
+% 0 1 0 033dc3bf73b50b5a1069cadb0131d7a7
+
+% 0 1 0 081f35520ab9aee608b242559df295db
+
+% 1 1 0 14fa25ef99a2112d187b427e3d810775
+
+@ 0 2 0 1156676e87d2e1b31bc908ece80beaf5
++ `quantity` 是 `xs:positiveInteger` 的限制，`comment` 带有 `minOccurs="0"`，`partNum` 在读取时会根据 schema 中零件编号的模式进行检查。
+
+@ 0 3 0 1830a1c339e1daba18780463ff7e75c8
++ schema 可以是 `Xsd` 值、`Xml` 文档、schema 的文本，或者任何能作为文本读取的东西，例如类路径资源。
++ 当 schema 声明了多个全局元素时，根是具有复杂内容的那一个，或者用 `root = t"Envelope"` 选定。
+
+@ 0 1 0 02d971b7567fbeec0b653ab0983c1e4e
++ 子元素和属性按本地名称变为字段，其形状由 schema 决定：
+
+% 2 1 0 1141ddacf85255b0001d05e1bc138b2c
+
+@ 0 8 0 013458af6d3e52d11dc1f40901b72024
++ column  schema 中有
++ column  字段为
++ row  带 `minOccurs="0"` 或 `nillable` 的元素  `Optional`
++ row  `maxOccurs` 允许多于一个的元素  `List`
++ row  `choice` 的一个备选项  `Optional`
++ row  与子元素同名的属性  以 `` `@name` `` 访问
++ row  带有简单内容和属性的元素  其文本以 `text` 访问，若有属性名为 `text` 则以 `` `#text` `` 访问
++ row  扩展  其前面是其基类型的字段
+
+% 1 1 0 04e5c20c21c0ca551b0c9e71d1a324ac
+
+@ 0 1 0 1d6b37617008c72806f601d4970ae345
++ 每个字段都具有其 XSD 类型对应的 Scala 类型：
+
+% 2 1 0 0548fa07d87dd8451f97b23e3e870f03
+
+@ 0 3 0 01ce1868a36447e10e13aa784537e023
++ column  XSD 类型
++ column  Scala 类型
++ row  `xs:string` 以及记号、名称和标识符类型，`xs:QName`，二进制类型，`xs:gYear` 及相关类型  `Text`
+
+% 0 1 0 1bc0d6e79c89a07218de964842525c42
+
+% 0 1 0 0e8168e5fccf571d148fb0a950053ef8
+
+@ 0 1 0 12110b0363750e5b0069d33975a0b19a
++ row  `xs:integer`、`xs:long` 以及无符号、正和负整数类型  `Long`，并检查其隐含的界限
+
+% 0 1 0 1a675e242e047ee503204a23f05651f1
+
+@ 0 3 0 1ef324d171591f2608b6a6887e25f23a
++ row  `xs:dateTime`、`xs:date`、`xs:time`、`xs:duration`、`xs:anyURI`  作用域中某个接口所实例化的类型，否则为 `Text`
++ row  `xs:NMTOKENS`、`xs:IDREFS` 以及任何 `xs:list`  `List[Text]`
++ row  `xs:anyType`、`xs:any`、递归类型、未解析的引用  `Xml`
+
+% 1 1 0 183323dfad7d8d011cae71c280ae8dd4
+
+@ 0 6 0 10622358396f9c3a17f600a5c3c930f6
++ 限制的约束面在读取字段时被检查：`enumeration`、`pattern`、包含和排除的界限、长度约束面以及数字位数约束面。
++ 检查失败会抛出带有原因的 `Xml.Provider.Error`，缺失必需元素或其类型无法读取的值也是如此。
++ 每个错误都通过读取该字段的代码的[战术]抛出，因此对每个字段使用 `venture` 的 `validate` 可以[收集文档中的所有问题](errors.md#ventures-and-guards)。
+
+@ 0 4 0 07dd6bae876853291b8b7880dd4e2f56
++ 提供器按解析后的名称匹配文档的元素。
++ 当 schema 通过 `elementFormDefault`、`form` 或指向全局元素的 `ref` 限定某个子元素时，该子元素应位于 schema 的目标命名空间中。
++ 否则它应不属于任何命名空间，无论文档使用什么前缀。
++ 位于其他命名空间中的元素被视为缺席。
+
+@ 0 5 0 0a41af2ffcd7c7ff0f0646cd7241e3d3
++ 替换组、`xsi:type`、标识约束和混合内容都按 schema 不含它们时的声明来读取。
++ `import` 或 `include` 会记录在 `Xsd` 中，但不会被获取，因此来自另一个 schema 的类型被读作原始的 `Xml`。
++ 提供器不验证文档：它检查的是程序所读取的内容。
++ [JSON](json.md#typed-records-from-a-schema) 为 JSON Schema 提供了相同的功能，[记录](records.md)介绍了记录本身。
+
+@ 0 1 0 14848c7be3aacf191c8277bd3621132f
++ ### 位置与错误
+
+@ 0 3 0 0a8574c49001f4ce169c665518f3e416
++ 格式错误的文档会抛出 `Parse.Error`。
++ 它的位置不仅仅是一个行号，而是一个范围：出错文本的偏移量和长度。
++ 因此工具可以精确地在不匹配的结束标签或未终止的属性下划线，而不是整行。
+
+@ 0 2 0 1b98b413880144bb1db5de43db9d45b3
++ *格式良好*的内容的位置可以按需记录，方式与 [JSON](json.md#source-positions) 相同：
+
+% 2 1 0 0905e95e09ba68570c7fc6bf10429aeb
+
+% 0 1 0 0486d8c05db7d50203b07ad1a55e9c35
+
+% 0 1 0 038b184b531285f400bfa490ba8e76d1
+
+% 0 1 0 0d1f5cd1608cfb5c10542eae54fddcc8
+
+% 1 1 0 01102fbacc9134af041d945a79ea894b
+
+@ 0 3 0 103b537f8b1f3ea718106dcf9e7148b4
++ 在[累积失败](errors.md#accumulating-failures)的策略下，解码会一次性报告文档中的所有错误，每个都带有指向失败元素的路径，而不是在第一个错误处停止。
+
+@ 0 1 0 1f4afa9c022a98981b11bbf69ef14226
++ ### 通过 HTTP 传输 XML
+
+@ 0 3 0 04c77650b54aae271450bfe01ee79c9a
++ `Xml` 值可以是请求正文或响应正文，媒体类型为 `application/xml`，正文到达时被解析回 `Xml`。
++ 因此 XML API 的使用和提供都无需在 XML 层与 [HTTP](http-client.md) 层之间添加任何胶水代码。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 5 0 068e0550cb37b5a00eccfb4cb7ba6bd3
++ - [HTML](html.md) 为网页使用相同的节点类型和插值。
++ - [SVG](svg.md) 和[数学标记](mathematical-markup.md)是带有类型化构建器的 XML 词汇。
++ - [JSON](json.md) 和 [YAML](yaml.md) 共用 `read`、`as` 和 `in` 这套词汇。
++ - [派生](derivation.md)、[插值](interpolation.md)、[OpenAPI](openapi.md) 和 [TEL](tel.md) 介绍了 XML 编解码器如何构造、检查和传输。

@@ -1,0 +1,348 @@
+orthant 2 language
+
+% 0 1 0 059813cd421ea60903ec060a153cc1f9
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 3 0 154460b61707ca7812f1a80de945c9b1
++ [Agent Client Protocol](https://agentclientprotocol.com/) to sposób, w jaki edytor lub dowolny
++ program steruje agentem programistycznym. Claude Code, Gemini CLI i rosnąca grupa innych mówią
++ nim przez standardowe wejście i wyjście agenta.
+
+@ 0 4 0 121281aff808d7150d775d0932fddd23
++ Tutaj zaimplementowano kliencką połowę protokołu, w wersji 1, do użytku z poziomu programu.
++ Uruchamia ona agenta, otwiera sesję, wysyła prompt i obserwuje, jak praca agenta spływa z
++ powrotem jako wiadomości, przemyślenia, wywołania narzędzi i plany. W tym czasie odpowiada na
++ żądania, które kieruje do niej agent: o zgodę na działanie, o dostęp do plików i o terminale.
+
+@ 0 1 0 11415b39be6819ae1223cecdca3e8213
++ ### O ACP
+
+@ 0 5 0 14d429ee015de6511cfdc2ff4d6d1523
++ Protokół to JSON-RPC w obu kierunkach jednocześnie. Klient wywołuje agenta przez `initialize`,
++ `session/new` i `session/prompt`. Agent oddzwania w trakcie tury, z powiadomieniem
++ `session/update` dla każdej porcji postępu oraz z żądaniami, które blokują jego pracę, dopóki
++ klient nie odpowie. Prompt nie jest więc wywołaniem funkcji, lecz *turą*: jednym długotrwałym
++ żądaniem, którego odpowiedź nadchodzi dopiero po wszystkim, co agent w nim zrobił.
+
+@ 0 6 0 02cf97c9b7fbbf03013cd109abcf2037
++ Tura jest modelowana bezpośrednio. `prompt` blokuje, dopóki agent nie poda, dlaczego tura się
++ zakończyła, a aktualizacje równolegle spływają do handlerów zarejestrowanych przed połączeniem.
++ Możliwości, które klient ogłasza, są wyprowadzane z tych rejestracji, więc deklaracja nigdy nie
++ może się rozminąć z implementacją. Każde żądanie i powiadomienie jest wartością typowaną, a nie
++ dokumentem JSON, w duchu [uczciwych sygnatur](../../philosophy/honest-signatures.md).
+
+@ 0 2 0 1e5e93f50a7cfc560ee7e18a9f5f4d88
++ Połączenie potrzebuje kilku własnych [zdolności][zdolność]: sposobu na uruchomienie zadań
++ czytającego i piszącego, [strategii][strategia] błędów, katalogu roboczego dla agenta i miejsca do
++ wypisywania:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 1 0 11c75ad04fddfed01193e61901334e7d
++ Przykłady na tej stronie sterują agentem w innym procesie, dlatego są kompilowane, ale nie
++ uruchamiane.
+
+@ 0 1 0 0ea395a0630a6eda1f8e8d097da3c28e
++ ### Łączenie
+
+@ 0 4 0 0f5bfeae6d0f06d806c58f5e61e70d90
++ `Acp.connect` uruchamia agenta, wymienia `initialize` i pożycza połączenie na czas trwania bloku.
++ Pierwszy blok rejestruje handlery. Drugi zawiera żywe połączenie, osiągalne przez
++ `Acp.connection`. Wymiana działa jako równoległe zadania, więc całość znajduje się wewnątrz bloku
++ `supervise`:
+
+% 2 1 0 0905689ad02b4e9706c73942994509ea
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 05b3a5f10c8575381e5ce60579e3e51f
+
+% 0 1 0 1b3abf5c761cf1761a92dd6f6ecbb7f0
+
+% 0 1 0 044c4344427ca9df0e72190601336221
+
+% 0 1 0 1486fa01e69496d01f7a3e26cb63222c
+
+% 0 1 0 1d89e0bba45db8591be197331765d8f5
+
+% 0 1 0 1d8464dc622084341b7de4a4aa703cc7
+
+% 0 1 0 037378e43f8ac748168b5094db490052
+
+% 0 1 0 0e4c5c97129a328d1d1fb051307207dd
+
+% 0 1 0 184959beb7a59dc9124b6bc6119ad642
+
+% 0 1 0 0e75d483da150893175734bc9c9db664
+
+% 0 1 0 1ee360b9b37074ef16ede97b97bee2a4
+
+% 1 1 0 10dbaa6adee01cce1cd1de93a0d08a3b
+
+@ 0 4 0 15de2b6c90c116df159812024b52e30d
++ Wartość drugiego bloku jest wartością `connect`. Tutaj jest to przyczyna zatrzymania tury. Gdy
++ blok się kończy, wymiana zostaje rozebrana, a agent działający jako podproces zostaje zabity,
++ więc nic nie przeżywa agenta, z którym rozmawia. Agent, który już działa, za gniazdem lub jako
++ kontrolka w teście, łączy się przez `Acp.Endpoint.streams(input, output)` zamiast przez
++ polecenie.
+
+@ 0 4 0 0e2b2ccc192682b511e7ab57ef3b2ef4
++ Możliwość, która nie została zarejestrowana, nigdy nie jest ogłaszana. Klient, który nie
++ rejestruje handlera `readFile`, nie zgłasza obsługi systemu plików, a zgodny agent nie będzie o
++ nią prosił. `Acp.capabilities` koryguje wyprowadzoną deklarację w ostateczności i jest stosowane
++ przy inicjalizacji.
+
+@ 0 1 0 01436171463637951572abd6815e7c16
++ ### Aktualizacje
+
+@ 0 2 0 0fde1b6d87c82524015a7bb2901e612e
++ Każdy handler odczytuje swój ładunek przez kontekstowe akcesory i każdemu pożyczany jest
++ `Acp.sessionId`, którego dotyczy:
+
+% 2 1 0 1611af32d9e5ba151eab414fa60ba487
+
+% 0 1 0 13b99fac3a00e7b417ac5196ac1b6887
+
+@ 0 7 0 049204541d6296c00ab87c26c76b268c
++ column  Akcesory ładunku
++ column  Odpowiedź
++ row  `Acp.updated`  `Acp.update`  nic
++ row  `Acp.permission`  `Acp.toolCall`, `Acp.options`  `Acp.Selected` lub `Acp.Cancelled`
++ row  `Acp.readFile`  `Acp.path`, `Acp.line`, `Acp.limit`  `Text` pliku
++ row  `Acp.writeFile`  `Acp.path`, `Acp.content`  nic
++ row  `Acp.terminals`  argumenty każdej operacji  jeden zestaw `Acp.Terminals`
+
+% 1 1 0 045ef0e8fd3ec15316c095746546da59
+
+@ 0 1 0 0c69a9f12b1b396d16814f9a722d110f
++ Aktualizacja to jeden z przypadków `SessionUpdate` protokołu:
+
+% 2 1 0 0a4a4eba9d33a3fb0e16e86eadd15698
+
+% 0 1 0 10a2117ac8a12dbe1d7277674832ea53
+
+% 0 1 0 032d6db32b21ea12125b79f3b3d430eb
+
+% 0 1 0 05d2ca26e2c16fac148783e82f5725d1
+
+% 0 1 0 013b93cfff7f4313019908387ed8fa92
+
+% 0 1 0 1560bba0172dae171db84e55fa7449a1
+
+% 0 1 0 0d788cbcdb2df32902d65b00e315a974
+
+% 0 1 0 0cbb0651c783579812159c20af3957bf
+
+% 0 1 0 05bbf74fc4185d560acfb8a329c6f29f
+
+% 0 1 0 1de020d828f18794068a05dba8ace6d4
+
+% 0 1 0 1e7077c4dcb2ee5510de3e2e05f3f4f6
+
+% 1 1 0 105bbd6f286bbd7b0ab71d7d267b836a
+
+@ 0 1 0 1d5674e65b15265211c8772bbc806516
++ ### Zgody
+
+@ 0 2 0 0361e9d73bf155d90f3f753aa67b4a81
++ Agent, który zamierza działać, prosi o zgodę i oferuje listę opcji. Handler wybiera jedną przez
++ `Acp.Selected` albo odpowiada `Acp.Cancelled`. Każda opcja ma jeden z czterech rodzajów
+
+% 0 1 0 15dec472b00367e41dea9adfefed236d
+
+% 2 1 0 1dc57e887a643fd314d59271db0e5624
+
+@ 0 5 0 00ced07bd217cacf12855cfa16438f1b
++ column  Decyzja
++ column  Raz
++ column  Zawsze
++ row  Zezwól  `AllowOnce`  `AllowAlways`
++ row  Odrzuć  `RejectOnce`  `RejectAlways`
+
+% 1 1 0 16d513125a674392051bf79fe8304694
+
+@ 0 1 0 1f775dc7f6a45a491bec7a3016e47677
++ Polityka jest więc filtrem na nich:
+
+% 2 1 0 0af0f9663602734814189720bc5ffb99
+
+% 0 1 0 12e6e63f340cf2f70b5dd82e22e5cd29
+
+% 0 1 0 10ddac9dc3100fd91ce0bfca3c8aff2f
+
+% 0 1 0 020f3adfede71f0e146548adf0e37715
+
+% 1 1 0 12c718c3cf05ff1403b88cc41522a06f
+
+@ 0 1 0 0eaedd603989ec550684394527fb5b18
++ ### System plików i terminale
+
+@ 0 4 0 0061083f9fdbda2706109ce3eb5562a5
++ Agent pracuje z widokiem świata należącym do *klienta*, jeśli klient go oferuje. `Acp.readFile` obsługuje żądania
++ agenta dotyczące odczytu pliku, co może obejmować niezapisany stan edytora. `Acp.writeFile`
++ obsługuje jego żądania zapisu pliku. Handler odczytu widzi `path` oraz opcjonalnie początkowy
++ `line` i `limit` liczby wierszy. Handler zapisu widzi `path` i `content`:
+
+% 2 1 0 186fdeb25586506a0a0813ee62dc25e3
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 14531aacb26e7aa30418d568441c63c7
+
+% 0 1 0 1ddae0ce6e19dffa1218090f607894bf
+
+% 0 1 0 0a741453b39d49bf0db49ac1f267b28c
+
+% 0 1 0 18428ad0a06025ac1811ab9f63f5ad38
+
+% 0 1 0 1e9a1c4825a093e0152ea087e215a2fc
+
+% 0 1 0 100aed76d584784b1a97380f6b6a2bc4
+
+% 1 1 0 1a9cd378cc60dfeb0f8c0d4810a10551
+
+@ 0 3 0 0532154ada8137a11d4eb811b476abc4
++ Terminale są ogłaszane jako jedna możliwość. Pięć operacji – utworzenie terminala, odczyt jego
++ wyjścia, czekanie na jego zakończenie, zabicie go i zwolnienie – dostarcza się razem jako jeden
++ zestaw `Acp.Terminals` do `Acp.terminals`.
+
+@ 0 1 0 11b47e421d6c37bb1452912897d06265
++ ### Sesje
+
+@ 0 1 0 155febbf66d84269134d08b12521778a
++ Połączenie zarządza sesjami za pomocą czterech metod:
+
+% 2 1 0 072c41390aaad93708f921b3bbd5bd0e
+
+@ 0 7 0 01ba95806a02a66719ec7cf7d0d52043
++ column  Metoda
++ column  Przyjmuje
++ column  Działanie
++ row  `newSession`  katalog roboczy i opcjonalnie `Acp.McpServer`y  otwiera sesję
++ row  `loadSession`  identyfikator sesji, katalog roboczy i opcjonalnie `Acp.McpServer`y  wznawia sesję, odtwarzając jej historię przez handler aktualizacji
++ row  `setMode`  identyfikator sesji i identyfikator trybu  przełącza między trybami podanymi w `modes` sesji
++ row  `authenticate`  identyfikator metody ogłoszonej przy `initialize`  uwierzytelnia się u agenta
+
+% 1 1 0 0d9c2f37e53d4f660aa3f765513e47ea
+
+@ 0 2 0 0f04dbfc65058a2a1f9c5eb2cbbb87dc
++ Agent, który wymaga uwierzytelnienia, mówi o tym przez `Acp.Error` z przyczyną `AuthRequired`, a
++ `authenticate` na to odpowiada.
+
+@ 0 1 0 1116191169f1793a19b6cc66bb8200c9
++ ### Przyczyny zatrzymania
+
+@ 0 1 0 1db65e0691e5e54a005dcccf61cf3e40
++ `prompt` zwraca `Acp.StopReason`:
+
+% 2 1 0 007191d021386ae81ebea37903be4409
+
+@ 0 7 0 173de7e57b92fa810cff6806d7fbeb7b
++ column  Przyczyna zatrzymania
++ column  Znaczenie
++ row  `EndTurn`  agent skończył
++ row  `MaxTokens`  agentowi skończyły się tokeny
++ row  `MaxTurnRequests`  agentowi skończyły się żądania na turę
++ row  `Refusal`  agent odmówił
++ row  `Cancelled`  klient anulował turę
+
+% 1 1 0 05ca11f203dcec9610f290a4bc43bbad
+
+@ 0 1 0 19167f39cd895172140283cd65116a9e
++ ### Anulowanie
+
+@ 0 4 0 1e6fd674996b4b2c1deaf90e8731d002
++ `Acp.connection.cancel(sessionId)` powiadamia agenta, a tura kończy się przyczyną zatrzymania
++ `Cancelled`. Żądanie zgody, które w tym momencie oczekuje lub nadejdzie przed następną turą,
++ otrzymuje automatycznie odpowiedź `Cancelled`, jak wymaga protokół. Otwarcie nowej tury
++ resetuje sesję.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Błędy
+
+@ 0 2 0 0b6b7acd23dc0f2d150f9c2c0a98ca57
++ Każdy błąd zgłoszony przez agenta i każdy błąd w wymianie to `Acp.Error`, którego przyczyną jest
++ jedna z poniższych:
+
+% 2 1 0 0e0f961499f5fca303f7a6510e88e8c0
+
+@ 0 9 0 06a8ddd1f113048c06439334f2d759d0
++ column  Przyczyna
++ column  Kod przesyłowy
++ column  Zgłaszana, gdy
++ row  `Parse`  -32700  wiadomości nie dało się sparsować jako JSON
++ row  `InvalidRequest`  -32600  wiadomość nie była poprawnym żądaniem JSON-RPC
++ row  `MethodNotFound`  -32601  nie rozpoznano nazwy metody
++ row  `InvalidParams`  -32602  parametry nie były poprawne dla metody
++ row  `Internal`  -32603  wystąpił błąd wewnętrzny
++ row  `AuthRequired`  -32000  agent wymaga uwierzytelnienia
+
+% 0 1 0 0f2bed8aa7e6961717544fd19f931ad4
+
+% 0 1 0 0fb388a8af0428691bc88c4b1630f557
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+@ 0 1 0 0ca66822143ec22214873951c1925a1f
++   cell  agent odpowiada na `initialize` wersją protokołu inną niż 1
+
+% 1 1 0 01d95ccf16dd4b610b157efb9967874d
+
+@ 0 4 0 0954af12d1833080034d287b4445d709
++ Błąd zgłoszony wewnątrz handlera jest przekształcany w odpowiedź z błędem niosącą kod przesyłowy
++ przyczyny, więc usterka w kliencie zostaje zgłoszona agentowi i nie zawiesza tury. `connect`
++ przyjmuje opcjonalny `Acp.Observer`, który widzi każdą wiadomość w obu kierunkach, gdy przechodzi
++ przez transport, na potrzeby logowania lub śledzenia protokołu.
+
+@ 0 1 0 18dd4b95a36f0c8c08050f00aeb9e187
++ ### Treść
+
+@ 0 3 0 1ef7010df76d375d07c1e6d15c099018
++ ACP przejmuje słownictwo treści z MCP: `TextContent`, `ImageContent`, `AudioContent`,
++ `ResourceLink` i `EmbeddedResource`. Typy są współdzielone z [MCP](mcp.md), więc treść
++ przechodzi między oboma protokołami bez tłumaczenia.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 188366174a83879f0bc31d0074e872d3
++ - [MCP](mcp.md) to protokół siostrzany, przez który agent sięga po narzędzia.
++ - [LLM](llm.md) komunikuje się z modelami językowymi bezpośrednio, bez agenta pośrodku.
++ - [Procesy](processes.md) opisuje polecenie `sh"…"`, które uruchamia agenta.
++ - [Współbieżność](concurrency.md) opisuje `supervise`, wewnątrz którego działa wymiana.
++ - [System plików](filesystem.md) opisuje operacje na plikach, których używają handlery.
++ - [RPC](rpc.md) opisuje JSON-RPC, na którym zbudowano protokół.

@@ -1,0 +1,66 @@
+orthant 2 language
+
+% 0 1 0 1f5647fd9b5488071810097c07764555
+
+@ 0 1 0 11eebab3d1875f1f1e942d04b9fd03db
++ 当某个值不是有效的语义化版本时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 0c0e13f86b8424251fe53c8a37e607f7
++ Revolution 根据 SemVer 2.0 语法 `MAJOR.MINOR.PATCH[-prerelease][+build]` 验证输入字符串。
++ 构造器记录出错的 `version` 和一个 `reason: Reason`；渲染出的消息是 `$version is not a valid semantic version because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 109b6cc2125405e7115edc859968154b
+
+@ 0 2 0 1c882979f94e977014e330aa6730a83f
++ 字符串完全不符合 SemVer 语法（例如数字部分少于三个，或分隔符无法识别）。
+
+@ 0 1 0 0fe497957a1055441c38402d11f0ae8b
++ **示例。** `[↯/s.97.1.1] 1.2 is not a valid semantic version because the string did not match the SemVer 2.0 grammar`
+
+@ 0 2 0 0a79d2ad06af8fe000734e8a47d522eb
++ **解决方法。** 提供完整的 `MAJOR.MINOR.PATCH` 字符串，其后可选地跟随 `-prerelease` 和 `+build`。
+
+% 0 1 0 07e12691febfa23b1fc8c2f9b91434e2
+
+@ 0 2 0 0137e4d2539996e81b45fcde3beddf7e
++ 字符串包含一个后面没有任何内容的 `-` 或 `+` 分隔符，即空的预发布标识符或构建标识符。
+
+@ 0 1 0 11870c646f0929db0c1b8e307a771933
++ **示例。** `[↯/s.97.1.2] 1.2.3- is not a valid semantic version because a prerelease or build identifier was empty`
+
+@ 0 2 0 030e31e682e84d511370bbc498092793
++ **解决方法。** 要么移除末尾的分隔符，要么在其后提供一个非空的标识符。
+
+% 0 1 0 1c6ee96c68397a2009a3dc70640fabb2
+
+@ 0 3 0 04077104e29a6ee71f72a12cc149280f
++ 某个数字标识符（`MAJOR`、`MINOR`、`PATCH` 之一，或预发布部分中的数字段）带有前导零，而这是 SemVer 所禁止的。
+
+@ 0 1 0 092a43c672586193075d4f943902ae4d
++ **示例。** `[↯/s.97.1.3] 01.2.3 is not a valid semantic version because a numeric identifier had a leading zero`
+
+@ 0 1 0 058256d6b189789e092d5f781dc2c284
++ **解决方法。** 去掉数字标识符中的前导零。
+
+% 0 1 0 1e401e50408b6df01df2574b90345169
+
+@ 0 2 0 001d0195d410381008c191144410e6f1
++ 预发布标识符或构建标识符中包含允许集合 `[0-9A-Za-z-]` 以外的字符。
+
+@ 0 1 0 05667393eebffb6d10f93b17a95ab73d
++ **示例。** `[↯/s.97.1.4] 1.2.3-alpha! is not a valid semantic version because an identifier contained a character outside [0-9A-Za-z-]`
+
+@ 0 1 0 02a6b38b42db2cb00b71dbdb8b394ec5
++ **解决方法。** 移除或转义无效的字符。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1e2a6502152c747a1ae41f1e0168daa7
++ - 源代码：`lib/revolution/src/core/revolution.Semver.scala`

@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 091f1328bf50fd4f189e9ad8d5adfe05
++ # `↯/s.24.9` – Wzorzec niewyczerpujący
+
+@ 0 2 0 11160283b03b28a71c810f99ad95b4bb
++ Zgłaszany przez makro analizy wzorców z Contingency, gdy funkcja częściowa nie obejmuje
++ każdego możliwego typu błędu.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 1b5059f8de47d79b170f071dd21a0548
++ Wzorce `mitigate`/`recover` muszą obejmować każdy wariant błędu, który może do nich trafić. Gdy
++ brakuje przypadku, następuje to zatrzymanie.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12891d439455e9d81123e1e381e8b410
+
+% 1 1 0 1df1542f8f43242b034c593ffea5d868
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 1f211329fdc04c83160a3a4a5e960911
++ Dodać brakujące przypadki albo użyć przypadku domyślnego z symbolem wieloznacznym.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Źródło: `lib/contingency/src/core/contingency.internal.scala`

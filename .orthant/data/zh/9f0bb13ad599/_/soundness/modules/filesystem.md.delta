@@ -1,0 +1,168 @@
+orthant 2 language
+
+@ 0 4 0 076f3a2c7175aad905094f6428929d7f
++ 磁盘上的文件通过已经描述了它们的带类型[路径](paths.md)来读写。
++ `Path on Local` 具有触及磁盘的操作：打开以读取或写入，将其创建为文件或目录，列出其子项，复制、移动和删除。
++ 每个操作都声明了它可能抛出的错误。
+
+% 0 1 0 07a6bbccfdc10c36118bf8c330ca242d
+
+% 0 1 0 1e08e13d7ad73e8b06fccd1c9451ef37
+
+@ 0 9 0 09472bfee23aa8780d430b81cdd4858a
++ column  导入
++ column  决定
++ row  `filesystemBackends.javaBaseFilesystem`  由哪种实现触及磁盘：这里是 `java.nio`
++ row  `pathInterfaces.pathOnLocal`  标准目录以哪种路径类型给出
++ row  来自 `filesystemOptions` 的五个  方针问题的答案，在[复制、移动和删除](#copying-moving-and-deleting)中说明
++ row  `charsets`、`codepages`、`textSanitizers`  字节如何变成文本、文本如何变成字节；[字符](characters.md)对它们有说明
++ row  `environments`、`systems`、`temporaryDirectories`  [环境](environment.md)、系统属性和临时目录从何而来
++ row  `strategies.throwUnsafely`  错误作为异常抛出；[错误](errors.md#choosing-a-strategy)介绍了其他策略
++ row  `stdios`、`termcapDefinitions`  示例在哪里打印结果
+
+% 0 1 0 0ad34dc7ef8466c117a9041d5906cbf7
+
+@ 0 4 0 147dc8c57905f0090c0f6c64e0ab2d19
++ 默认情况下，创建操作拒绝毁掉任何东西。
++ 在已存在的东西上创建是 `Io.Error`；在不存在的父目录下创建也是如此，除非导入了 `filesystemOptions.createParents`，正如这里所做的。
++ 无论导入了什么，都可以用一个标志在发生之处说明这两种意图中的任何一种：
+
+@ 0 7 0 16fb572e6cc32f1402ae4baac6748de7
++ `hold` 映射整个文件以便就地修改，并借出一个 `Holding`：一个既可以存储也可以加载的 `Terrain`。
++ `set8`、`set16`、`set32` 和 `set64` 在某个偏移处存储一个整数，`write` 存储一些 `Data`，`zero` 清除一个范围，`move` 在文件内复制一个范围，`expand` 使持有区变长，文件也随之变长。
++ 不存在的文件会被创建，大小为传给 `hold` 的大小。
++ 在代码块的时长内，文件上持有一把排他锁，因此对同一文件的第二次 `hold`，无论在本程序还是其他程序中，都会以 `Busy` 被拒绝：
+
+% 2 1 0 0f3c4b9942efdd081df38bf6eafdd2be
+
+% 3 1 0 177034a6d9894cbe127cbf3eae086fd7
+
+% 4 1 0 054a5474f62499da0a27b7acf9cc7681
+
+% 0 1 0 0af503765f93353d0df404e5d3c69bc0
+
+% 0 1 0 1c5c36c18c1959fd0f77c99d72c55579
+
+% 0 1 0 15b561bea16c7fa31aa61d31c281b743
+
+% 0 1 0 17df5e4110d84b3905d413d42e1a8f69
+
+% 0 1 0 0f2775ab3cab1ac7117e9be7db3cdea5
+
+% 0 1 0 057efa6db286cdf1064285e5f8199fd2
+
+% 0 1 0 1eb09499a06180c012723d68125c5448
+
+% 0 1 0 00802cf9c0b1f1c4184307590f2bb478
+
+% 1 1 0 0aea9e473a740da0017fd73374d836cb
+
+@ 0 7 0 02555c401ec87a6918c92d82f27c5fa8
++ 持有区不给出指向其内存的地址，因为 `expand` 可能移动它：每次加载和存储都在某个偏移处进行，持有区的 `slice` 也经由它读取，因此之后依然有效。
++ 代码块结束时，所存储的内容就在文件中。
++ 就地修改的格式正是经由它修改的，就像 [RaTEL](tel.md#ratel) 的镜像由拥有它的程序修改一样。
++ `Holding(size)` 是堆上的持有区，用于尚未成为文件的镜像。
++ 在 JVM 和 Scala Native 上，文件可以映射以供修改；WASI 既不能映射也不能锁定文件，因此报告 `Unsupported`。
+
+@ 0 3 0 0842c470117a4cba1a2a1189913eb77e
++ `observe` 给出一个 `Observer`，它读取所有者发布的内容。
++ 它的 `map` 借出其所持版本的 `Terrain` 视图，它的 `refresh` 把它移到该名称现在所指向的版本，并说明是否有这样的版本：
+
+% 0 1 0 1bbca05c3d1bc9580b5665ebbe8cdca2
+
+% 0 3 0 1ff26da9489229c61aff298fe794b21b
+
+@ 0 4 0 15815165a3adbf851793b882b34d4012
++ 观察者不加锁，因此它从不延迟所有者，所有者也从不延迟它。
++ 发生 `refresh` 时正在使用的视图，无论在本线程还是其他线程上，都在其代码块结束之前保持有效。
++ 两个版次恰好在它们是文件的同一版本时相等；它们之间没有顺序。
+
+@ 0 4 0 00bc870c28c4b9601fe8c8dab4a6d6bb
++ 传给 `claim` 和 `observe` 的类型，就是在该名称下发布的内容。
++ 对于就地读取的形式，观察者的 `open` 会映射当前版本，并在一个代码块中把它作为该类型打开：`Ratel of Playbill` 的观察者打开一个 `Playbill` 的镜像，并拒绝任何其他东西的镜像，如 [RaTEL](tel.md#ratel) 所示。
++
++ 观察者会使它已映射的版本保持存在，即使该名称下已有更新的版本替换了它，因此长期存在的观察者在得知有新东西时应调用 `refresh`，无论是从消息还是通过[监视](#watching-for-changes)该名称得知。
++ 这把锁是建议锁，在同一台机器自身的文件系统上相互协作的程序之间是可靠的，但在网络文件系统上则不然。
+
+@ 0 6 0 0e5ce7e73de4158f1720e7710640f9bb
+
+@ 0 8 0 10f3fcf8c82d6c4212bb3847d07244c9
++ column  问题
++ column  是
++ column  否
++ row  替换目的地已有的东西？  `overwritePreexisting`  `failOnPreexisting`
++ row  删除目录之前先清空它？  `deleteRecursively`  `deleteOnlyEmpty`
++ row  创建缺失的父目录？  `createParents`  `requireParents`
++ row  跟随符号链接？  `dereferenceSymlinks`  `preserveSymlinks`
++ row  原子地移动？  `moveAtomically`  `moveNonAtomically`
+
+% 0 1 0 0c1835cc187004d314b03272bc4ef7ec
+
+% 0 4 0 0d4d5b87a0846880033f872371cd899c
+
+% 0 1 0 165ceb6e1937d87b0dfe97b5d3b085aa
+
+@ 0 43 0 03721c2519adc866044f8709d2a55acd
++ column  布局
++ column  目录
++ column  只读
++ row  `Home`  `~`  否
++ row  `Home.Cache`  `~/.cache`，或 `$XDG_CACHE_HOME`  否
++ row  `Home.Config`  `~/.config`，或 `$XDG_CONFIG_HOME`  否
++ row  `Home.Local`  `~/.local`  否
++ row  `Home.Local.Bin`  `~/.local/bin`，或 `$XDG_BIN_HOME`  否
++ row  `Home.Local.Lib`  `~/.local/lib`  否
++ row  `Home.Local.Share`  `~/.local/share`，或 `$XDG_DATA_HOME`  否
++ row  `Home.Local.State`  `~/.local/state`，或 `$XDG_STATE_HOME`  否
++ row  `Base`  `/`  否
++ row  `Base.Boot`  `/boot`  是
++ row  `Base.Dev`  `/dev`  否
++ row  `Base.Dev.Shm`  `/dev/shm`  否
++ row  `Base.Efi`  `/efi`  是
++ row  `Base.Etc`  `/etc`  否
++ row  `Base.Home`  `/home`  否
++ row  `Base.Proc`  `/proc`  否
++ row  `Base.Proc(pid)`  `/proc/<pid>`  是
++ row  `Base.Proc.Sys`  `/proc/sys`  是
++ row  `Base.Root`  `/root`  否
++ row  `Base.Run`  `/run`  否
++ row  `Base.Run.Log`  `/run/log`  否
++ row  `Base.Run.User`  `/run/user`  否
++ row  `Base.Srv`  `/srv`  否
++ row  `Base.Sys`  `/sys`  是
++ row  `Base.Tmp`  `/tmp`  否
++ row  `Base.Usr`  `/usr`  是
++ row  `Base.Usr.Bin`  `/usr/bin`  是
++ row  `Base.Usr.Include`  `/usr/include`  是
++ row  `Base.Usr.Lib`  `/usr/lib`  是
++ row  `Base.Usr.Share`  `/usr/share`  是
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  是
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  是
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  是
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  是
++ row  `Base.Var`  `/var`  否
++ row  `Base.Var.Cache`  `/var/cache`  否
++ row  `Base.Var.Lib`  `/var/lib`  否
++ row  `Base.Var.Log`  `/var/log`  否
++ row  `Base.Var.Spool`  `/var/spool`  否
++ row  `Base.Var.Tmp`  `/var/tmp`  否
+
+@ 0 6 0 1610caae51f739a60fbfe549b33fe7f8
++ 大多数布局是固定的位置。
++ [XDG 规范](environment.md#standard-directories)允许用户移动的五个位置则不是：`Home.Config` 通常是 `$HOME/.config`，但当用户把 `$XDG_CONFIG_HOME` 设为绝对路径时，它就是 `$XDG_CONFIG_HOME`。
++ 应用一个布局会构造所要求的任何目录类型的值，因此同样的名称既适用于 `Path on Local`，也适用于任何其他表示。
+
+@ 0 5 0 1e6e64ccc98c34b21b9e72e2a13cf126
++ 许多文件不是在一个位置，而是沿着一组位置查找的：图标位于 XDG 数据目录中存放它的那一个，配置文件位于若干位置中的第一个。
++ `Searchpaths.Stems` 实例按顺序指名要尝试的目录。
++ 对应平面上的相对路径用 `discover` 解析为其中第一个包含它的目录，或解析为 `Unset`：
+
+% 0 1 0 0a9c7cabe0be34810f28ad757cda9796
+
+% 0 2 0 01cf3bfe0c9892600d0e18f210b3580a
+
+% 0 1 0 00cb6418191de455117c8274c4ff2ad1
+
+% 0 1 0 1271d4d30a1427360bcc88397a941d7c
+
+% 0 1 0 1ae5474dbd0db4ae06de468d53dbd2a3

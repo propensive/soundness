@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 00d86367a96ef12003dfc89c82494938
+
+@ 0 2 0 17d1045161d1c26a031bb1df94400dae
++ 当 Phoenicia 无法读取字体文件，或向一个无法设置某字样的供给请求该字样时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 6 0 037e9c87e496846000947f2a0b2c506c
++ Phoenicia 解析字体文件（通常为 TrueType/OpenType），当文件缺少必需的表、使用未知格式或未通过魔数检查时，报告此错误。
++ 当某个 `Font` 由一个字体族的 `Typesettable` 供给所未覆盖的 `Face`（字重、倾斜、字宽、变体或特性）构造时，它也会报告此错误，使文档不会继续采用合成或替换的渲染。
++ 消息为 `the font could not be used because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 15 0 0cb32a6fa27d64c719fbb7d376703295
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.89.1.1`  `MissingTable`  在字体文件中找不到由 `tag` 标识的必需表。  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  使用包含必需表的字体；许多字体子集化工具可能会去掉必需的表。
++ row  `↯/s.89.1.2`  `UnknownFormat`  找到了某个表，但其内容与 Phoenicia 能读取的任何格式版本都不匹配。  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  使用符合 OpenType/TrueType 规范受支持版本的字体。
++ row  `↯/s.89.1.3`  `MagicNumber`  字体的开头字节与预期的魔数不匹配，表明该文件不是 Phoenicia 能识别的字体。  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  确认该文件是 TrueType 或 OpenType 字体且未损坏；检查文件是否以二进制模式打开。
++ row  `↯/s.89.1.4`  `MissingEncoding`  该字体没有声明本读取器可用的字符到字形映射。  `[↯/s.89.1.4] the font contains no usable character encoding`  使用带有 Unicode `cmap` 子表的字体。只带有旧式 Macintosh 编码或符号编码的字体无法把字符映射到字形。
++ row  `↯/s.89.1.5`  `UncoveredWeight`  该供给没有提供所请求字重的字样。  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  嵌入该字重的文件（或其 `wght` 轴涵盖该字重的可变字体），在链接供给的覆盖范围中声明该字重，或请求该供给已有的字重。
++ row  `↯/s.89.1.6`  `UncoveredSlant`  该供给没有斜体（或没有正体）字样。  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  把斜体文件加入该供给，或以正体设置该字样。
++ row  `↯/s.89.1.7`  `UncoveredStretch`  该供给没有提供所请求字宽的字样。  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  添加窄体或宽体文件，或使用正常宽度。
++ row  `↯/s.89.1.8`  `UnknownAxis`  该字样变动了字体所不具有的轴。  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  查看字体的 `fvar` 表中定义了哪些轴；`Sfnt.fvar` 会列出它们。
++ row  `↯/s.89.1.9`  `AxisOutOfRange`  该字样把某个轴设为字体所允许范围之外的值。  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  把值保持在该轴的最小值与最大值之间。
++ row  `↯/s.89.1.10`  `MissingFeature`  该字样启用了字体的 `GSUB` 和 `GPOS` 表未实现的排版特性。  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  使用实现了该特性的字体，或去掉该设置；`Sfnt.features` 会列出文件实现了哪些特性。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0e86a3df8efdcb251ec31daa5feda606
++ - 源代码：`lib/phoenicia/src/core/phoenicia.Font.scala`

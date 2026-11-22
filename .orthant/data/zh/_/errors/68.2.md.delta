@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 1e1eab56106b190e0b3cdc0fe5d93097
+
+@ 0 1 0 135dae8370e2525f0a045e719ab6a696
++ 当代号（一种稳定的、在编译时检查的标识符）无效时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 044ad23c9dc850250241f73f80af4b86
++ 代号为某样东西命名，使它在多次编辑之后仍能被引用：一个测试、一个基准测试单元、一个 schema 字段。
++ 它的语法受到限制，因此可以不加引号地出现在命令行和报告中。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 12f047b86c05c8240e5cbb1b1a3f8fb8
+
+% 0 1 0 0ceaf58017e725101f73447ee39cbe06
+
+% 0 1 0 09b2b98943ccdac21a8aa9bcc5e74c47
+
+% 0 1 0 106eb31a0c68d44c11f4cc1247d1a3d0
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 09b60a025e94f6ce09add9654ce3934b
++ 使用由字母、数字和允许的分隔符组成、以字母开头的标识符。
++ 原因会指出被违反的具体规则。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0b6963db5919423211a267dc50206911
++ - 源码：`lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`

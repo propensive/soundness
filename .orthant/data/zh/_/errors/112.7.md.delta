@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 03b632ddc1ba56f7094d5672b9f0af40
+
+@ 0 1 0 1e2d6389d26b7b84114e3f81c6e5f7ea
++ 当 JSON-RPC 操作失败时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 05dbd7211b1fc1a509c9812aaeb2df58
++ 当请求无法处理时，Obligatory 的 JSON-RPC 分发器抛出此错误。
++ 构造器接受一个 `reason: Reason`；渲染出的消息是 `the JSON-RPC operation failed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 10d385792366bd2405f1052ce7c33d38
+
+@ 0 3 0 16abf98775676a350bec2b100b07e8c1
++ 传入的 JSON-RPC 请求的 `method` 字段与分发器接口上声明的任何方法都不匹配，即落入生成的分发器中的通配回退分支。
+
+@ 0 1 0 047256202a3543b00d232e69bd3cee5e
++ **示例。** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
+
+@ 0 2 0 0a63d0bb9fe9cdde10002a6fe219d3fd
++ **解决方法。** 确认方法名与 RPC 接口上的某个方法相符；检查是否有拼写错误。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 3 0 1473b6334e16fd3a19a0036de94f5eed
++ - 源代码：`lib/obligatory/src/json/obligatory.JsonRpc.scala`
++ - `↯/s.112.8`——通用的 RPC 失败
++ - `SN-728`——编译时缺少 `Tactic[JsonRpcError]`

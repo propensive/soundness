@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 6 0 028183159a36bc8510d256d502a7fd76
++ 在内部，置换以阶乘进制形式的[逆序表](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))存储，这是唯一标识它的单个整数。
++ 这使置换的存储和枚举都很紧凑：`Permutation.bySize(n)` 以惰性[链](collections.md#lazy-chains)的形式给出全部 `n!` 个置换。
++ *n* 个元素的置换占用 O(*n* log *n*) 空间，这是可能的最小值，因为需要区分 *n*! 个置换。
+
+% 0 2 0 1509aa9fc2d59aab049a65e78d949d44
+
+@ 0 4 0 0f8b86e915c7fa4d015a05b8e723c808
++ 置换不会改动它所移动的最后一个位置之后的任何位置，因此第六个索引保持不动的 `shuffle` 是一个五元素置换。
++ 因此把它应用于更长的序列不是错误：它重排它所覆盖的开头位置，其余位置保持原样。
++ 单个索引也以同样方式映射，用 `shuffle(3)`。

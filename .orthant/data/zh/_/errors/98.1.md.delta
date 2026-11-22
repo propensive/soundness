@@ -1,0 +1,67 @@
+orthant 2 language
+
+% 0 1 0 186cff16263a518e01138ac682ce1a1f
+
+@ 0 2 0 1766c53c45f026411129851c6e9759a1
++ 当 Surveillance 无法向操作系统的文件系统监视器注册某个路径时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 140b249d6546b538075ae49b78fa219b
++ Surveillance 包装了 JDK 的 `WatchService` API。
++ 有几种不同的情况会导致注册失败；构造器接收一个 `reason: Reason`。
++ 渲染出的消息为 `the path could not be watched because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0e5c125ebe6b2f4906e059e60668b48a
+
+@ 0 2 0 00fee907e2b5296d1c5f466b08ba9b13
++ 超出了操作系统对每个进程或每个用户的 inotify（或同类机制）监视数量的限制。
+
+@ 0 1 0 080d05d54dbe25b51a6408fb5c28bdd6
++ **示例。** `[↯/s.98.1.1] the path could not be watched because the operating system's limit on watched paths has been exceeded`
+
+@ 0 2 0 0a99e6a81654852a0d90cbc3130155d1
++ **解决方法。** 减少被监视的路径数量，或提高操作系统的限制（例如 Linux 上的 `fs.inotify.max_user_watches`）。
+
+% 0 1 0 1201c3c42f89d0860d6a773d8ccc0026
+
+@ 0 1 0 1c7f0581728b971f13ef812fd1a2f4b0
++ 传给 `watch` 的路径不存在。
+
+@ 0 1 0 1b0272c36394525b08ecc7de5401bbd9
++ **示例。** `[↯/s.98.1.2] the path could not be watched because the path does not exist`
+
+@ 0 2 0 011c45aef422c10203c919467df06560
++ **解决方法。** 在监视之前确认该路径，或先创建它。
+
+% 0 1 0 131d41785ac560d6166bbadacf076f32
+
+@ 0 2 0 136f086894ae32680f226a570bf2428c
++ JDK 的 `WatchService` 只能注册目录；所提供的路径是一个普通文件或其他条目。
+
+@ 0 1 0 19ca71dd59d80e1d0ae71ca1a7e2def5
++ **示例。** `[↯/s.98.1.3] the path could not be watched because the path is not a directory`
+
+@ 0 3 0 1134e5bf46d9f3f806777debfab027c0
++ **解决方法。** 监视其父目录，并按文件名过滤事件（Surveillance 的 `watch` 扩展方法在收到文件路径时就是这样做的）。
+
+% 0 1 0 125406178472b99005cd216c4c0a5cd9
+
+@ 0 1 0 1acf71bda4da1ec8074d77615ddd6d45
++ 当前用户没有读取该路径的权限。
+
+@ 0 1 0 0baf9cbf4c37c11d1f1da4348e3ec9bd
++ **示例。** `[↯/s.98.1.4] the path could not be watched because the user does not have permission to watch the path`
+
+@ 0 2 0 17134ae6df1d1f301f5daad3744a7a3e
++ **解决方法。** 调整文件系统权限，或以能够读取该目录的用户身份运行。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 14074eee90b6d17217292cd2a26cb1be
++ - 源代码：`lib/surveillance/src/core/surveillance.Watch.scala`

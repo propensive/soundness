@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 03901b8097c1a14f12dbe529d68ceb0b
++ # `↯/s.23.1` — `probe` 宏报告一个类型
+
+@ 0 3 0 1c1ff9fe1b3fa0e21dfbfb319a2e2494
++ 由 Rudiments 的 `probe` 宏在编译时抛出；该宏有意中止编译，以报告某个表达式经过去别名和拓宽后的类型。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 0dbab916a7ba51061c613d42ab837f6d
++ `probe[target]` 用于调试类型推断；它永远不会成功——它的用途就是在编译时打印类型。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0cbfabb9e59fe3b90b582b1796152409
+
+% 1 1 0 10b59eba2720e0970d9ed1503ce6e92d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 0aec1c4964420c33094d79e526096b3d
++ 读到类型后就删除 `probe` 调用；不要发布包含它的代码。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 03b29039a8e6cbba0835a3fb441232ed
++ - 源代码：`lib/rudiments/src/core/rudiments.internal.scala`

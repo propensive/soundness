@@ -1,0 +1,123 @@
+orthant 2 language
+
+@ 0 1 0 00ad22d7271203d206f2ed84ead7da78
++ # 示例数据
+
+@ 0 4 0 0dfb2caf35152be70cba6baa32843441
++ Soundness 的示例取材于莎士比亚。
++ 每个需要名字、地点、记录或任意字符串的教程、API 覆盖层、测试、基准测试和源代码注释，都从剧作中取材，并优先选用知名剧作。
++ 这样，示例读起来就是一个整体：在一个教程中见过 `Person(t"Hamlet", 30)` 的读者，会在下一个教程中遇到同一班角色。
+
+@ 0 2 0 16e7fda2ca3598810b79d58e66e50a48
++ 由 `make build` 运行的 `etc/check-example-data.py` 守住这条底线：任何文件中来自已弃用词汇的示例，都不得超过 `etc/example-data-baseline.tsv` 记录的数量。
+
+@ 0 1 0 00fc3e5b335d65ac1d02aa34fde5cdf1
++ ## 已弃用的内容
+
+@ 0 6 0 197a9c8fa2e8b8cb1bbb4edf84b59082
++ - **人物，无论真实还是虚构。** 不用 Alice 和 Bob，不用 Ada Lovelace，不用 Jon。这也包括宠物（Rex）、其他虚构作品（Gondor、*Dune*）和品牌（Acme、the Beatles）。
++ - **公司结构。** 不用 `Company(ceo, cto)`、`Org`、`Firm`、`Employee`、`Department`、`salary` 或 `boss`，也不用 `Role`、`Worker`、`Team` 或 `Crew` 来代替它们。
++ - **元语法占位名。** 不用 `foo`、`bar`、`baz`、`qux`、`quux` 或 `bippy`，无论作为值还是类型，也不用“lorem ipsum”。
+
+@ 0 1 0 0bbd24c296df1f73154999451a5b135f
++ ## 原则
+
+@ 0 17 0 1fbf36b3f4fd355d0694cdc43d0871e7
++ - **体现特性，而不是模仿旧示例。** 替换物不必与被替换的东西相似。`Employee` 不会变成朝臣：旧示例被丢弃，新示例根据示例或测试必须展示的内容来选择——嵌套记录、同一类型的两个字段、需要更新的列表、期望 `Text` 的地方出现了 `Int`。这种结构性质是示例唯一必须保留的东西。
++ - **每个示例只用一部剧。** Hamlet 与 Laertes 决斗，而不是与 Tybalt。取自同一部剧的数据读起来像一场戏，而不是一份名单。
++ - **优先选用知名剧作：** *Hamlet*、*Romeo and Juliet*、*Macbeth*、*Othello*、*King Lear*、*A Midsummer Night's Dream*、*The Tempest*、*Twelfth Night*、*Much Ado About Nothing*、*The Merchant of Venice*、*Julius Caesar*，以及 *Henry IV* 和 *Henry V* 诸剧。
++ - **重用调色板。** 下面的形状随处可见。在发明新形状之前先从中选取，而当没有一个能展示该特性时，就发明一个新的。
++ - **避开与已弃用名字同名的角色。** Peter Quince、John of Gaunt 和 Paulina 读起来就像它们所取代的任意人物，检查也会把它们计算在内。
++ - **注意导出。** 导入 `soundness.*` 的示例共享其命名空间：`History`、`Hero` 和 `Setting` 在那里已经是类型，因此只能把它们用作字段名。
++ - **莎士比亚是唯一的真实人物。** 示例中的书可以把他列为作者。
+
+@ 0 1 0 1b6bb2c7d460631708ec9493d135b961
++ ## 调色板
+
+% 2 1 0 19400e55f541b63d1c784f9270a7bcb4
+
+@ 0 22 0 1cdd7adae55599570fa20beed70483a0
++ column  要展示的内容
++ column  形状
++ column  数据
++ row  由 `Text` 和 `Int` 组成的扁平记录  `Person(name: Text, age: Int)`  Hamlet 30、Juliet 13、Lear 80；原文未给出年龄时取一个合理的年龄
++ row  记录中的记录；同一类型的两个字段；字段路径  `Play(title: Text, hero: Person, villain: Person)`, `Duel(challenger: Person, opponent: Person)`  Othello 和 Iago；Hamlet 和 Laertes；`hero.name`、`villain.age`
++ row  列表字段；深层光学组件；集合内部的更新  `Play(title: Text, acts: List[Act])`, `Act(number: Int, scenes: List[Scene])`, `Scene(number: Int, place: Text)`  *Macbeth*："A heath"、"Dunsinane"
++ row  记录的列表  `Troupe(name: Text, players: List[Person])`  Quince、Bottom、Flute、Snug、Snout、Starveling
++ row  和类型  `enum Genre { case Comedy, Tragedy, Romance }`；带有 `Sonnet(number: Int)` 和 `Song(title: Text)` 的 `Verse`
++ row  多种标量类型  `Speech(speaker: Text, act: Int, scene: Int, aside: Boolean)`, `Sonnet(number: Int, firstLine: Text)`  Sonnet 18，"Shall I compare thee to a summer's day?"
++ row  可选或带默认值的字段  `Person(name: Text, age: Optional[Int])`, `aside: Boolean = false`  the Fool、the Porter
++ row  映射字段  `Play(title: Text, cast: Map[Text, Person])`
++ row  递归类型  `Lineage(name: Text, heirs: List[Lineage])`  Lear；Goneril、Regan、Cordelia
++ row  元素旁的属性；带键的记录  `Play(title: Text, @attribute year: Int)`  *Hamlet* 1603、*Macbeth* 1606
++ row  分为几部分的名字  `FullName(first: Text, last: Text)`  Nick Bottom、Francis Flute、Toby Belch；Caius Martius Coriolanus
++ row  刻意使用非 ASCII 的文本    Cæsar、Æmilia（对开本的拼法）
++ row  两方当事人和一个窃听者    Romeo、Juliet 和 Tybalt
++ row  主机、用户、路径、地址    `elsinore.local`、用户 `hamlet`、`/home/hamlet`、`juliet@example.com`、"Hamlet's Printer"
++ row  地点和机构    Elsinore、Verona、Venice、Dunsinane、the Globe
++ row  动物    Crab、Tray、Blanch、Sweetheart、Graymalkin
++ row  任意字符串、键、路径段、标识符    取自同一部剧的名字或地点：`/verona/capulet/juliet`
++ row  关于类型的规则中的任意类型名  `Play`, `Act`, `Scene`, `Sonnet`  用 `Play.Scene`，而不是 `PlayScene`；`read[Play in Json]`
++ row  填充用的散文    一段独白
+
+% 1 1 0 0d60d75bdac0c7a70a9416ff94da4605
+
+@ 0 2 0 16ed00497350bcc51236ed4da459fce9
++ 地址沿用保留的示例域名，如 `juliet@example.com` 和 `elsinore.local`：只有本地部分和主机标签取自莎士比亚。
+
+@ 0 1 0 1ec809304fa7b2230fd50dd47c32fdd5
++ ## 当字符串长度很重要时
+
+@ 0 5 0 18b1d5b5fd12bc160598ac14849bbb97
++ 有些结果取决于示例字符串的长度：渲染出的表格的列宽、填充或对齐的文本、字节偏移量、编码后的长度、基准测试的载荷大小。
++ 这类结果出错时，测试会指出；而 `doc/api/*.tel` 中的 `// result` 注释则不会，因为没有任何东西检查它。
++ 因此，当长度举足轻重时，要选择所需长度的名字；当显示的结果确实发生变化时，要重新对示例求值，而不是手动编辑结果。
+
+% 2 1 0 0d5b0364aff67ccd047b6a53b6f6af30
+
+@ 0 2 0 0450793c3d276d650b87381f98d0f7db
++ column  长度
++ column  名字
+
+% 0 1 0 05838b547c185a0b1d71533d94b5b7cc
+
+% 0 1 0 106f9094cb45f4b5054a72b41969bacf
+
+% 0 1 0 146bc6a46d115e0f0a559e6c01800de5
+
+% 0 1 0 044c8bab42fcffce0d75b6c9be50c5f9
+
+% 0 1 0 13ebe2d7f8a079e61e16184884e482ad
+
+% 0 1 0 18518201f294800c082b74f848c2de74
+
+% 0 1 0 1e64ea931e2adf070f1d86705728f8c0
+
+% 1 1 0 145ed1411e44af450f292420d0cd7e53
+
+@ 0 2 0 075e53839c4735311ebc169d51603f52
++ 为展示缺陷而存在的示例要保留该缺陷：`verona..capulet` 仍然是一个带有空路径段的路径，而虚构的 Unicode 名字仍然必须是不存在的。
+
+@ 0 1 0 09a4c025eb1262a2140c07e1c4a75d40
++ ## 什么不算示例
+
+@ 0 1 0 10f221a6a9657ba610b506bf1728a0b9
++ 检查计算的是示例，而不是词汇。
++ 以下内容保持原样：
+
+@ 0 9 0 14f3412636e7f3a00c7e9435d140dcf6
++ - 本身就是 API 或协议的名字：`Newton` 和 `Henry` 这样的单位；harlequin、sibylline、synesthesia 和 bitumen 中的 `Role`；`Bar` 和图表的条形；parasite 的 `Worker`；X.509 的 `Organization`；reactor 的 boss 线程；
++ - 引入和采集的数据：IANA 注册表、CommonMark 规范、第三方 OpenAPI 文档和 schema、W3C 示例、Unicode 数据、*War and Peace*；
++ - 由标准发布、字节固定的测试向量（其变量名则不固定）；
++ - 已发布的迁移说明，它们是对当时所写内容的记录；
++ - 不暗示任何人物或公司的通用中性数据：形状、颜色、水果、“Hello world”、全字母句，以及以地理或时间为主题时的真实城市。
+
+@ 0 2 0 17ef14cf36f08a6519bcc4709273fc00
++ 当检查把其中之一计算在内时，在脚本的 `GENUINE` 表中列出该文件，而不是改写它。
+
+@ 0 1 0 016d3e30a66cc40012b74d6986c89b92
++ ## 处理剩余项
+
+@ 0 3 0 098dfa450c90f2f50f88eb639191aaec
++ `python3 etc/check-example-data.py --list '<glob>'` 把某个路径下每个被计数的行打印成一个队列；`--totals` 打印仪表。
++ 一旦某次修改移除了某个文件的示例，就用 `--update` 降低该文件所在的行。

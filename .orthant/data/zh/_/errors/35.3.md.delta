@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 13c889da5b9b66d817daf5b3e3d725f5
++ # `↯/s.35.3` — Unicode 字符不存在
+
+@ 0 2 0 12d22514ae43a6d60128322929a24cd1
++ 当所指名的 Unicode 字符无法解析时，由 Hieroglyph 的 `char"…"` 宏在编译时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 0900045be913d522194383997c785b8a
++ 该宏按 Unicode 名称查找字符。
++ 如果不存在该名称的字符，就会触发这次中止。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12cf138035daa50314d88ba94e62d0b8
+
+% 1 1 0 1d8faa6ce47c317318ff34e82e97b70a
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 031891d54f275198030141b254d9f400
++ 使用确实存在的 Unicode 名称；Unicode 字符数据库中提供了完整列表。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 19b276d29d4564ff05bbb270c1b7f11a
++ - 源码：`lib/hieroglyph/src/core/hieroglyph.internal.scala`

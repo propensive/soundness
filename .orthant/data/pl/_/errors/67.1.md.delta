@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 006f41d6da55aec4163f35aeb35a3144
++ # `↯/s.67.1` – `Classpath.Error`
+
+@ 0 1 0 141589cadb84a0891050f70817a0c9a1
++ Zgłaszany, gdy Hellenism nie może znaleźć zasobu w ścieżce klas.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 04b07f98ffc6fad50209fbd648b01ddf
++ Hellenism rozwiązuje zasoby po nazwie; ten błąd jest rzucany, gdy żaden wpis ścieżki klas nie
++ zawiera żądanego zasobu.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1ea4d62b2e47805d0e04bd31844862bd
+
+% 1 1 0 1d933ccc1022e8f913c9d782dd527429
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 08ef24e345b008710e8b7e6fc812aee3
++ Należy potwierdzić ścieżkę zasobu (względem korzenia ścieżki klas) oraz to, że zasób jest
++ dołączony do artefaktu kompilacji.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0c9ca67fa18d73091e3903a69f85d78c
++ - Źródło: `lib/hellenism/src/core/hellenism.Classpath.scala`

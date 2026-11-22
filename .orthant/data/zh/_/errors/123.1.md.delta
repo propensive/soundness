@@ -1,0 +1,72 @@
+orthant 2 language
+
+% 0 1 0 1740bdee53bc767b1b72a01d43746997
+
+@ 0 4 0 08e1548e577fab161ef30d02115ec2ce
++ 当通过 Octogenarian 调用的 Git 操作失败时抛出。
++ 每个变体指明 git 报告的、或 Octogenarian 自己检测到的具体情况；当命令行后端有 git 自己的消息时，错误的 `detail` 字段会携带它。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 16bd1eb5847f97d1093065df89a33f37
++ 某个后端（命令行后端或原生后端）无法完成该操作。
++ 消息由固定前缀加上 `Reason` 变体组成：`the Git operation could not be completed because $reason`。
+
+@ 0 4 0 1d35d8b9e68ebcc7053bc9f3a77623bd
++ 有几个变体是比较并交换的类型化结果：每个移动引用的操作都接受它所依赖的 `Stale` 值，如果引用不再持有该值，就以 `Moved` 失败，这是防范另一个进程写入同一仓库的唯一手段。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 39 0 04863e79a5db1afe19516e31dfa08b15
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.123.1.1`  `CannotExecuteGit`  无法执行 `git` 命令本身：在搜索路径上找不到 `git` 二进制文件，或者无法启动它。  `` [↯/s.123.1.1] the Git operation could not be completed because the `git` command could not be executed ``  安装 Git，或者向 `Commandline.Command` 提供二进制文件的路径。
++ row  `↯/s.123.1.2`  `NoRepository`  作为仓库打开的路径不是仓库：既不是裸仓库、`.git/` 目录、包含 `.git/` 的工作树，也不是链接工作树的 `<worktree>/.git` 文件。  `[↯/s.123.1.2] the Git operation could not be completed because /tmp/x is not a Git repository`  打开一个 `git rev-parse --git-dir` 会接受的路径，或者用 `Git.init` 初始化一个仓库。
++ row  `↯/s.123.1.3`  `NoWorktree`  一个裸仓库被作为 `Git.Worktree` 打开，而后者需要索引和工作文件。  `[↯/s.123.1.3] the Git operation could not be completed because the repository has no working tree`  改为把它作为 `Git.Repo` 打开，或者打开它的一个链接工作树。
++ row  `↯/s.123.1.4`  `Moved`  比较并交换失败：引用持有的值与操作所依赖的 `Stale` 值不同。另一个进程在读取和写入之间移动了它。  `[↯/s.123.1.4] the Git operation could not be completed because refs/heads/main was 3f2a… when read but is now 9c1d…`  重新读取引用，判断操作是否仍然适用，并用新的值重试。
++ row  `↯/s.123.1.5`  `NoSuchRef`  操作中指定的修订版本或引用不存在。  `[↯/s.123.1.5] the Git operation could not be completed because the reference refs/heads/feature does not exist`  检查名称；用于探测时，`resolve` 返回 `Unset` 而不是抛出错误。
++ row  `↯/s.123.1.6`  `NoSuchObject`  对象数据库中没有具有给定哈希的对象，或者该对象不是所请求的种类。  `[↯/s.123.1.6] the Git operation could not be completed because the object 5c1d… does not exist`  获取该对象，或者检查哈希。
++ row  `↯/s.123.1.7`  `RefExists`  要创建一个引用，但同名的引用已经存在。  `[↯/s.123.1.7] the Git operation could not be completed because the reference refs/tags/v1 already exists`  选择另一个名称，或者先删除现有的引用。
++ row  `↯/s.123.1.8`  `Unmerged`  要在没有 `force` 的情况下删除一个分支，但它的末端无法从 HEAD 到达，因此删除会丢失提交。  `[↯/s.123.1.8] the Git operation could not be completed because the branch feature at 3f2a… is not fully merged`  先合并该分支，或者用 `force = true` 删除它。
++ row  `↯/s.123.1.9`  `Conflict`  一个无法因冲突而停下的操作（只允许快进的拉取、必须干净地应用的 stash pop）遇到了冲突的更改。  `[↯/s.123.1.9] the Git operation could not be completed because there are conflicts in a, b`  通过一个可以停下的操作来解决冲突，例如 `merge`，它把冲突报告为 `Stopped` 结果。
++ row  `↯/s.123.1.10`  `NothingToCommit`  请求的提交的树与其父提交的树相同，而且不允许空提交。  `[↯/s.123.1.10] the Git operation could not be completed because there is nothing to commit`  暂存一项更改，或者传入 `allowEmpty = true`。
++ row  `↯/s.123.1.11`  `Detached`  该操作需要 HEAD 位于某个分支上，而 HEAD 处于分离状态。  `[↯/s.123.1.11] the Git operation could not be completed because HEAD is detached`  先切换到一个分支。
++ row  `↯/s.123.1.12`  `Dirty`  对所列文件的本地更改会被该操作覆盖。  `[↯/s.123.1.12] the Git operation could not be completed because local changes would be overwritten in a, b`  先提交、stash 或恢复这些文件。
++ row  `↯/s.123.1.13`  `NotFastForward`  要求快进（由 `FastForward.Only` 要求，或由拒绝非快进推送的远程仓库要求），而历史已经分叉。  `[↯/s.123.1.13] the Git operation could not be completed because the update is not a fast-forward`  先合并或变基，或者在确实有此意图时强制更新。
++ row  `↯/s.123.1.14`  `OutsideWorktree`  传给工作树操作的路径位于工作树之外。  `[↯/s.123.1.14] the Git operation could not be completed because /etc/passwd is outside the working tree`  使用由工作树句柄构成的路径。
++ row  `↯/s.123.1.15`  `Untracked`  传给针对已跟踪文件的操作的路径未被跟踪。  `[↯/s.123.1.15] the Git operation could not be completed because loose is not tracked`  先添加该文件，或者使用针对未跟踪文件的操作，例如 `clean`。
++ row  `↯/s.123.1.16`  `NoOperationInProgress`  调用了 `continue`、`skip`、`abandon` 或 `quit`，但没有正在进行的合并、变基、拣选或还原。  `[↯/s.123.1.16] the Git operation could not be completed because no merge, rebase, cherry-pick or revert is in progress`  继续之前先检查 `operation()`。
++ row  `↯/s.123.1.17`  `OperationInProgress`  在某个合并、变基、拣选或还原仍处于停止状态时启动了新操作。  `[↯/s.123.1.17] the Git operation could not be completed because an operation is already in progress`  先继续或放弃正在进行的操作。
++ row  `↯/s.123.1.18`  `NoSuchRemote`  所指定的远程仓库未配置。  `[↯/s.123.1.18] the Git operation could not be completed because the remote origin does not exist`  用 `addRemote` 添加它。
++ row  `↯/s.123.1.19`  `RemoteExists`  要以一个已被使用的名称添加远程仓库。  `[↯/s.123.1.19] the Git operation could not be completed because the remote origin already exists`  选择另一个名称，或者使用 `setRemoteUrl`。
++ row  `↯/s.123.1.20`  `Unauthorized`  远程仓库拒绝了所提供的凭据，或者要求提供凭据而没有可用的凭据。  `[↯/s.123.1.20] the Git operation could not be completed because authentication with origin failed`  为该远程仓库配置凭据。
++ row  `↯/s.123.1.21`  `Unreachable`  无法到达远程仓库：其主机无法解析，或者拒绝了连接，或者连接超时。  `[↯/s.123.1.21] the Git operation could not be completed because the remote origin could not be reached`  检查 URL 和网络。
++ row  `↯/s.123.1.22`  `RemoteRejected`  远程仓库接受了连接，但出于它给出的原因拒绝更新引用。  `[↯/s.123.1.22] the Git operation could not be completed because the remote rejected refs/heads/main: pre-receive hook declined`  阅读该原因；它是远程仓库的方针。
++ row  `↯/s.123.1.23`  `LeaseFailed`  使用 `Push.Force.Lease` 的推送发现远程仓库的引用的值与预期的不同。  `[↯/s.123.1.23] the Git operation could not be completed because the remote's refs/heads/main was expected to be 3f2a… but is 9c1d…`  获取，重新考虑，然后以新的预期值推送。
++ row  `↯/s.123.1.24`  `NoteNotFound`  在一个注记引用上调用了 `content`，而该命名空间中没有附加到该提交的注记。  `[↯/s.123.1.24] the Git operation could not be completed because no note was attached to the given object`  使用 `note`，它返回 `Unset` 而不是抛出错误。
++ row  `↯/s.123.1.25`  `NoSuchConfig`  操作所需的某个配置键在 git 会查找的任何地方都没有设置；对于提交，通常是 `user.name` 或 `user.email`。  `[↯/s.123.1.25] the Git operation could not be completed because the configuration key user.email is not set`  用 `configure` 设置它，或者在全局配置中设置。
++ row  `↯/s.123.1.26`  `InvalidConfig`  配置键或值格式错误：例如没有节的键。  `[↯/s.123.1.26] the Git operation could not be completed because nosection is not a valid value for `  使用 `section.name` 或 `section.subsection.name` 形式的键。
++ row  `↯/s.123.1.27`  `BadSignature`  提交或标签上的签名未通过验证。  `[↯/s.123.1.27] the Git operation could not be completed because the signature could not be verified: …`  检查签名者的密钥是否受信任，以及对象是否未被篡改。
++ row  `↯/s.123.1.28`  `SigningFailed`  签名者无法生成签名。  `[↯/s.123.1.28] the Git operation could not be completed because the object could not be signed: …`  检查签名密钥和签名程序。
++ row  `↯/s.123.1.29`  `Unsupported`  正在使用的后端没有实现该操作。  `[↯/s.123.1.29] the Git operation could not be completed because skipping is not supported by this backend`  使用另一个后端，或者另一个操作。
++ row  `↯/s.123.1.30`  `Unexpected`  git 以原因表无法识别的方式失败；错误的 `detail` 携带 git 自己的消息。  `[↯/s.123.1.30] the Git operation could not be completed because git reported an unexpected failure`  阅读 `detail`。
++ row  `↯/s.123.1.31`  `NoteExists`  要在没有 `force` 的情况下向一个提交添加注记，而该提交在该命名空间中已经有一个注记。  `[↯/s.123.1.31] the Git operation could not be completed because a note is already attached to 5c1d…`  传入 `force = true` 以替换它，或者使用 `appendNote`。
++ row  `↯/s.123.1.32`  `NoSuchWorktree`  给出的路径不是该仓库的链接工作树。  `[↯/s.123.1.32] the Git operation could not be completed because /tmp/x is not a linked working tree`  用 `worktrees()` 列出工作树。
++ row  `↯/s.123.1.33`  `NoSuchStash`  该 stash 条目已不存在：自列出以来它已被弹出或丢弃。  `[↯/s.123.1.33] the Git operation could not be completed because the stash entry does not exist`  重新列出 stash。
++ row  `↯/s.123.1.34`  `Locked`  存在一个锁文件（`<ref>.lock`、`index.lock` 或 `config.lock`）：另一个进程正在写入同一个引用、索引或配置文件，或者它崩溃后留下了锁。  `[↯/s.123.1.34] the Git operation could not be completed because the lock file for refs/heads/main is held by another process`  等另一个进程结束后重试；如果没有进程持有它，就手动删除这个过期的锁文件。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 1943f04f5338005103db4f4e5fc7e818
++ - 源代码：`lib/octogenarian/src/core/octogenarian.Git.scala`
++ - `↯/s.123.2` — 格式错误的引用名称和哈希

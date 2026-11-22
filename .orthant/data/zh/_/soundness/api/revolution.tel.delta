@@ -1,0 +1,463 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 08926ec14e05d6290e7fae9d5c65ea19
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 082da890488dbe48049aba06c6b618ec
++ info   在代码编译时检查的语义化版本，以及作为带类型属性的 JAR 清单
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0e46a0c24cbc38970540b5295c320fc7
++     _Revolution_ 为两类发布元数据赋予恰当的类型。
++     **语义化版本**是一个 `Semver`，用 `v"…"` 插值器书写，在代码编译时按 SemVer 2.0 语法检查，或从文本解析并带有类型化的 `Semver.Error`；版本按规范的优先级规则比较，而不是按字典序比较，一对版本还能说明它们之间相差何种 `Compatibility`。
++     **JAR 清单**是一个 `Manifest`，其标准属性是 `manifestAttributes` 包中的具名值，每个属性读写自己的类型：`Main-Class` 是 `Fqcn`，而不是字符串。
+
+% 2 1 0 04f1c24f2bb420860f8f66bd788660b3
+
+% 3 1 0 17134af42d13dd731e1cfd4762d1af91
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 10663b515a32dfbe0790c682553d03eb
+
+% 0 1 0 13d20654929717351703ea262da09ce2
+
+% 0 1 0 16ee26686adf087003dd8a5e4acd9633
+
+% 0 1 0 119802e22d0df7471930a064333c529d
+
+% 0 1 0 1c83310f85cc4c941e97e63bf82786a1
+
+% 1 1 0 10f0be7f223aab2b15d1be9e0d2cb586
+
+@ 0 1 0 170af30ee833fd7815f6a7596ccb2832
++     该库分为两个源集：
+
+@ 0 3 0 06281c0266b856bf19dba42b9c6c2990
++     - `revolution.core`——`Manifest`、其 `EncodableManifest` 和 `DecodableManifest` 类型类，以及 `manifestAttributes` 包；
++     - `revolution.semver`——`Semver`、`Compatibility` 和 `v"…"` 插值器。
+
+@ 0 3 0 1b0fe10e0c673e2718e20d9b3582d32c
++     两者都导出到 `soundness` 总括包，`manifestAttributes` 也在那里镜像为一个包。
++     它的成员是对象而不是 given，因此 `import manifestAttributes.*` 会把它们全部引入。
+
+% 0 1 0 14316f0b4ccfa28419c07cc5020f6d35
+
+% 0 1 0 07e39725eb5d0cab1d4088e2638a47fd
+
+% 0 1 0 07aab2a83bd234a4167429e96c4bdb17
+
+% 0 1 0 13b90fade746e9e60b4a1bc8fd7826b7
+
+% 0 1 0 1e568f110f3886511bc57c65a819821b
+
+@ 0 1 0 1dad7596b954acb20331b37101a3e97a
++ entry .Semver   语义化版本：主版本号、次版本号和修订号，以及预发布标识符和构建标识符
+
+% 1 1 0 0b2a18d4a06756421c69d841f08a67fd
+
+@ 0 5 0 1911928398d6ef691190e98b44ce09b6
++       `Semver` 是 [SemVer 2.0](https://semver.org/) 意义上的版本：三个数字、可选的预发布部分（`-rc.1`）和可选的构建元数据（`+build.5`），后两者各是一个标识符列表，能解析为数字的标识符为数字，否则为文本。
++       它用 `v"…"` 写作经过检查的字面量，用 `as[Semver]` 从文本解码，并按书写时的原样编码回去。
+
+% 2 1 0 0cf355cf1f4879b615589cf59c764c90
+
+% 3 1 0 17f2ddcf6c58ba5c001449ec06677312
+
+% 4 1 0 0d6ba827a3ee3cb60f01888d83bcd5c4
+
+% 0 1 0 1cbe3dd771c4038408fe499fd76f2a9c
+
+% 0 1 0 082439d3fa4b5b4e1ac374ffd88ff318
+
+% 0 1 0 0b4af58fd5f65821074bac485f759d84
+
+% 0 1 0 0df9fbcd53dba1391bbfde14ee722882
+
+% 1 1 0 129b8be09e27f853082e153c273fb643
+
+@ 0 4 0 145bf4d3461b3ae705a382ba65822944
++       版本按规范的优先级排序（`.comparable`）：依次按主版本号、次版本号和修订号进行数值比较；正式发布排在其所有预发布版本之后；预发布标识符逐个比较，数字按数值比较并排在文本之前。
++       构建元数据不参与排序，也不参与相等比较：`v"1.0.0+a" == v"1.0.0+b"`。
+
+@ 0 2 0 021aa399dfb40f291e7cd3527fc5082e
++       `#compatibility` 对两个版本之间的变化进行分类，`#next` 给出某类变化之后的下一个版本。
+
+% 0 1 0 131345e21704ea151aa0db1fefc9608b
+
+% 0 1 0 090aa9b1821f60d50f81f504412d28c4
+
+% 0 1 0 139e04537d31d8aa1da93d97fe024300
+
+@ 0 9 0 02e68d1890c8fe640597dd56d9ffb348
++   entry .encodable   将版本写为 SemVer 文本：`1.2.3-rc.1+build.5`
++       位于伴生对象中，因此在隐式作用域内：`version.encode`。
++       从文本解码的版本会编码为相同的文本。
++   entry .showable   将版本显示为其 SemVer 文本，与 `.encodable` 写出的相同
++   entry .decodable   从 SemVer 文本读取版本，格式错误时抛出 `Semver.Error`
++       需要 `Tactic[Semver.Error]`。
++       文本按完整的 SemVer 2.0 语法检查：三个没有前导零的数字，预发布和构建标识符非空、取自 `[0-9A-Za-z-]`，并且（对于数字预发布标识符）没有前导零。
++       每种失败都以其自身的 `Semver.Error.Reason` 抛出。
+
+% 2 1 0 00f5d284b5890ed2176b1e300839055c
+
+% 3 1 0 1f5a661348e463441ee90b990d71caec
+
+% 0 1 0 0540ec075cd0a72d0626c069f63372ef
+
+% 0 1 0 0b843dc30d71c81414da56d865c43524
+
+% 1 1 0 03bd206ef20c6ddc0c3f5d3f21efe27b
+
+@ 0 1 0 04a5fc0c69b8592912e0e5af95542d30
++   entry .comparable   按 SemVer 优先级对版本排序，使 `<` 和排序的行为符合规范
+
+% 1 1 0 11f49644a6c52eb109b8735a1348edc0
+
+% 2 1 0 119b663355d72d92181641685030f9a8
+
+% 0 1 0 03ee7a140ff3ced4029754699ab81ae6
+
+% 0 1 0 1ec95724466a0a6802e32e481687c817
+
+% 0 1 0 1f509cebdeb0b40512cb86e218f04bd4
+
+% 0 1 0 0dd49b8bbc2598b513856b0907efaef4
+
+% 1 1 0 0e14aeca3ee0b05c007171467ef21b18
+
+@ 0 1 0 06d26ba4165a424e185bbd3fd57d10e2
++   entry .Error   文本不是有效的语义化版本时抛出
+
+% 1 1 0 06de591042abab9c0f833812c4aedbcb
+
+@ 0 8 0 18d050a497243d08041c16ce2aa1c492
++         错误 `↯/s.97.1`：_`version` is not a valid semantic version because …_，原因为以下四种之一：`BadFormat`（_the string did not match the SemVer 2.0 grammar_，例如 `1.2` 或 `1.2.3.4`）、`EmptyIdentifier`（_a prerelease or build identifier was empty_，如 `1.2.3-`）、`LeadingZero`（_a numeric identifier had a leading zero_，如 `01.1.1` 或 `1.2.3-0123`）和 `InvalidCharacter`（_an identifier contained a character outside `[0-9A-Za-z-]`_）。
++         由 `Semver.decodable` 抛出；`v"…"` 字面量则将同样的问题报告为编译错误。
++     entry .Reason   文本不是语义化版本的原因：格式错误、空标识符、前导零或非法字符
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1c5ba06f9a1ff6d9030eec78505296c4
++           每个分支在错误 `↯/s.97.1` 中的子编号就是其 `#number`：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  备注
+
+% 0 1 0 04fb74599b2a732709d1cd4ac612eb1d
+
+% 0 1 0 0737f3cb9ebd1e381b8ab6c333062789
+
+% 0 1 0 0b39f75b57dcb4051baab677789fed54
+
+% 0 1 0 11dd99274a1a3deb0fd02a1758b29a70
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 20 0 1e224615aa60391b0a019a44f6de4acf
++       entry #number   该原因在错误 `↯/s.97.1` 中的子编号
++     entry .communicable   将每个原因渲染为补全 _… is not a valid semantic version because …_ 的短语
++     entry #version   解析失败的文本
++     entry #reason   它不是有效语义化版本的原因
++   entry #major   主版本号，其变化表示破坏性变更
++   entry #minor   次版本号，其增加表示新增功能
++   entry #patch   修订号，其变化表示内部修复
++   entry #prerelease   预发布标识符，数字为 `Long`，其余为 `Text`；正式发布时为空
++   entry #build   构建元数据标识符，数字为 `Long`，其余为 `Text`；排序时忽略
++   entry #development   该版本是否处于初始开发阶段，即主版本号为零
++       按照 SemVer，`0.x.y` 版本不作任何承诺：任何变化都可能造成破坏。
++       `#compatibility` 将涉及此类版本的每一对都视为 `Breaking`，而 `#next` 对破坏性变更递增次版本号而不是主版本号。
++   entry #release   该版本作为其预发布或构建版本的那个正式发布：数字相同，没有标识符
++       `v"2.0.0-rc.1+build.7".release == v"2.0.0"`。
++   entry #compatibility   从该版本到另一版本的变化类型，作为 `Compatibility`
++       如果任一方是预发布版本、任一方处于初始开发阶段、主版本号不同，或另一方的次版本号更低，`current.compatibility(other)` 为 `Breaking`；如果另一方的次版本号更高，为 `Additions`；如果只有修订号不同，为 `Internal`；否则为 `Unchanged`。
+
+% 2 1 0 01094735156184ac1d375feba79d55dd
+
+% 3 1 0 0297f52fb248d36e1de5c513fb862310
+
+% 0 1 0 1f60c548945e306313d641292448d910
+
+% 0 1 0 1bbbe7ff16b3190e0178a5a4a167044f
+
+% 0 1 0 051d0136904315fa134cc113810c2aa2
+
+% 1 1 0 0f14b8826cbb627f1c28ee4df91efeaf
+
+@ 0 6 0 186d8abef568b78802bb29e2763e91f7
++       修订号*降低*时仍为 `Internal`：该方法只做比较，并不检查另一版本是否更新。
++   entry #next   针对给定类型的变化，该版本之后的下一个版本
++       结果没有预发布或构建标识符。
++       `Breaking` 变更递增主版本号，在初始开发阶段（主版本号为零）则递增次版本号；`Additions` 递增次版本号；`Internal` 和 `Unchanged` 都递增修订号。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1171cd2f0b2a9c0e107147ce6d5f469b
+
+% 1 1 0 048f6b7df73e8d3d1fdde4361668937c
+
+% 0 1 0 1c9ef8f78e0ea8ce1ddf8a1339bb00ec
+
+% 0 1 0 1fb6e8fe3f401b5000abae181d82a97f
+
+% 1 1 0 0de18e41e7809b580f9ed348ee8c546b
+
+% 0 1 0 104eb669bd236a661114eabd2c9fb587
+
+% 0 1 0 0f99c43cca7b82650ee4c59d0a3768f2
+
+% 1 1 0 0074a6dc1049dc2007645e753f4cda2a
+
+% 0 1 0 0e868744b1de14a90cec3cbc4eeb754b
+
+% 0 1 0 19ae88b641742902134b93114ccb0763
+
+% 1 1 0 08b139607ec2e75119b053822f44118c
+
+% 0 1 0 1a90c94c7b912f1800943cdd8c9f99f0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 12598eaa1d9966eb153a3fc09608f99e
++ entry .Compatibility   两个版本之间相差何种变化：破坏性变更、新增功能、内部变更或无变化
++     `Semver#compatibility` 返回、`Semver#next` 接收的分类。
++     `Breaking` 表示针对一个版本编写的代码可能无法与另一个版本一起工作；`Additions` 表示较新的版本只是在较旧版本的基础上有所增加；`Internal` 表示只有实现发生了变化；`Unchanged` 表示两个版本是同一个发布。
+
+% 2 1 0 0ddaa1e3c52593e70ca1062a4ffb70d1
+
+% 3 1 0 16ca15f541d7cf6d1979c1feb24d54f6
+
+% 0 1 0 1099aabcdd40d8331dd05044b484d31f
+
+% 0 1 0 012942c2004002bd18020b72b513d2f5
+
+% 1 1 0 0fede9602fec45f9086a5f2a81a2bc0d
+
+@ 0 5 0 19f47db3cf91460b0d8b3c358952abe6
++ entry .v   `v"…"` 插值器：在代码编译时检查的语义化版本
++     `v"1.4.2"` 是一个 `Semver`。
++     字面量在代码编译时按与 `Semver.decodable` 相同的语法解析，格式错误的字面量是编译错误，报错 _invalid semantic version_。
++     该插值器不接受 `$` 替换；对于在运行时计算的版本，请用 `as[Semver]` 解码文本。
+
+% 2 1 0 10afd7e0811d19c71cce049fa15e9827
+
+% 3 1 0 06d2f5e44cfb2e39188df79e4748249e
+
+% 0 1 0 07281006ba6ef59f1916bf84893e3c33
+
+% 0 1 0 10cd8c3e3900355511256646c5fe79f4
+
+% 1 1 0 1ea16fa93fb43bf41d55dc6f834ac9d0
+
+@ 0 1 0 1617e35fe993b3fc0783acbf4dc5d244
++ entry .internal   `v"…"` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 0414a3c8ccf99d6112934d13900f5288
++       不供直接使用：该对象容纳在编译时验证版本字面量的宏。
++   entry .semver   `v"…"` 背后的宏：验证字面量，然后在运行时解码它
+
+@ 0 1 0 1a3a9168111888f60bc62a302c2d0be0
++ entry .Manifest   JAR 清单的主属性，作为带类型的值读写
+
+% 1 1 0 1c5e6bca5ee8078c0cf52adb6f39c165
+
+@ 0 5 0 1ba259f8eca894300952b21faa4dfbed
++       `Manifest` 是 JAR 的 `META-INF/MANIFEST.MF` 的主节，以从属性名到其文本的映射保存。
++       属性由 `manifestAttributes` 包中的对象命名，读写一个属性都要经过该属性自身的类型：`manifest(MainClass)` 是 `Optional[Fqcn]`，`MainClass(fqcn"…")` 则由 `Fqcn` 构造条目。
+
+% 2 1 0 1f9ca33e6522ff310f251e47bb93ec83
+
+% 3 1 0 0786a30e7f8871660ca73a806a87930b
+
+% 4 1 0 0c24c9c312e8d11f1ce85926ecf9825e
+
+% 5 1 0 1bf20e20a557b0e5159d342cb678be4d
+
+% 7 1 0 083c7d9addfe41b816c0ff0da50f2c2f
+
+% 0 1 0 0187d5edf0d62cf31cc9ea79aad2966d
+
+% 0 1 0 1850e55a38b7f13411c3f87fcb482e84
+
+% 0 1 0 11421236e945d1500c894ec4c6bc8b9b
+
+% 1 1 0 1dd225ce0d61038e1409540e863231db
+
+@ 0 4 0 1c7e002f024f6b4b08cd5d72b2002d1c
++       清单可按 `Data` 进行 `Streamable` 和 `Aggregable`，因此可以用 `#serialize` 序列化，或在需要字节的任何地方以流的形式传输，并用 `read[Manifest]` 从任何字节来源读回。
++       序列化通过 `java.util.jar.Manifest` 进行，因此该格式的 72 字节换行和续行会替调用方处理好。
+
+% 0 1 0 0dd8b53c8a68d3ca1f393ce9031fc576
+
+% 1 1 0 0115925e294dcba60397b8543bf343da
+
+% 1 1 0 0f64fdbe6322ad11195d9306650eb109
+
+@ 0 9 0 0f7c98a0aa393de8101f62990fc2e3e3
++   entry .apply   由给定条目构成的清单
++       `Manifest(entries*)` 接收 `Manifest.Entry` 值，这些值通常通过将属性应用于其值来构造：`Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))`。
++       同一属性的较后条目会替换较前的条目。
++   entry .streamable   将清单作为 `MANIFEST.MF` 的字节以流的形式传输
++   entry .aggregable   从字节流读取清单，`source.read[Manifest]`
++       通过 `java.util.jar.Manifest` 解析主节，保留每个属性的名称和文本；不保留各条目的节。
++   entry .addable   `manifest + entry`：添加或替换一个属性
+
+% 1 1 0 13f5e403476991bd06eaff5a76d3134f
+
+% 2 1 0 1ad8acfde08e86cf08c37ef1fd24fce0
+
+% 1 1 0 12679d811b7ca49300d9751c86c8e3a8
+
+% 0 1 0 19916b9fb1ac3660034a48b336f0c574
+
+% 1 1 0 10e5f346c8f5b9c70af6ef8e9a6b8ff6
+
+@ 0 4 0 00e96d701aa0ca9110fe174f532259be
++   entry .subtractable   `manifest - attribute`：按其对象移除一个属性
++       `manifest - MainClass` 是去掉 `Main-Class` 属性后的清单；移除不存在的属性时，清单保持原样。
++   entry .Attribute   一个清单属性，以其键的字面量类型命名
+
+% 1 1 0 1d3f9747fa2de5ad0e4c4366a258a29a
+
+@ 0 5 0 0e7c740b56b6d9e21a52e439d3fd4263
++         `manifestAttributes` 中的对象扩展 `Manifest.Attribute["Main-Class"]` 之类的类型。
++         属性的键是其字面量类型参数，该字面量类型的 `EncodableManifest` 和 `DecodableManifest` 实例决定其值是什么：`"Main-Class"` 为 `Fqcn`，`"Manifest-Version"` 为 `Unit`，`"Created-By"` 为 `Text`。
+
+@ 0 1 0 1eb588f0a38b5433033dc749ba08f9bd
++         新的属性是形状相同的对象，并为其键提供实例：
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 115b736eec875da30479e7773eda7284
+
+% 0 1 0 0fa2c88b87a00cd1134f48463d4e50c5
+
+% 0 1 0 1cb916c035354c9e19d206771b65b998
+
+% 0 1 0 0ca1d71d6db29b64087110e6794d6863
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 10 0 026bb09db3200e0b035cd6c0a79a8147
++     entry #key   属性的名称，即其在清单中出现的形式
++     entry #parse   通过其 `DecodableManifest`，将文本解码为该属性的值
++         `MainClass.parse(t"com.example.Main")` 是一个 `Fqcn`。
++         需要该键的 `DecodableManifest` 实例，以及该实例所需的一切（对 `Main-Class` 而言是 `Tactic[Fqcn.Error]`）。
++     entry #apply   为该属性类型的值构造清单条目
++         `MainClass(fqcn"com.example.Main")` 是一个 `Manifest.Entry`；值的类型是该键的 `EncodableManifest` 的 `Topic`，因此没有实例的属性根本无法应用。
++   entry .Entry   清单的一个属性，由其键和编码后的文本组成
+
+% 1 1 0 17c9bd4742835b3b02c63b838093290e
+
+@ 0 9 0 1998d6788c72e1ef00baff58c3b8b07a
++         由 `Manifest.Attribute#apply` 构造，如 `MainClass(fqcn"com.example.Main")`，由 `Manifest(entries*)` 收集，或用 `+` 添加。
++     entry #key     属性的名称
++     entry #value   属性的值，编码为文本
++   entry #entries   每个属性的名称和文本，作为映射
++   entry #apply   属性的值，解码为其类型，清单中没有该属性时为 `Unset`
++       `manifest(MainClass)` 是 `Optional[Fqcn]`。
++       需要该键的 `DecodableManifest` 实例。
++   entry #serialize   清单作为 `MANIFEST.MF` 文件的字节，按格式要求换行
+
+@ 0 1 0 1638bc55b9fa1f89074df56dbbc71d99
++ entry .EncodableManifest   将清单属性的值写为文本的类型类，以属性名为键
+
+% 1 1 0 185094c9203c6ff80e6543854ebf1858
+
+@ 0 3 0 02128c9a2a15fedf0bc2ad32124c9525
++       实例写作 `"Main-Class" is EncodableManifest of Fqcn`：`Self` 是作为字面量类型的属性名，`Topic` 是其值的类型。
++       正是它让 `MainClass(fqcn"…")` 只接受 `Fqcn`。
+
+@ 0 4 0 03c4d4cc622a21b31b1d73b96b60eec0
++       伴生对象中只有三个键有实例：`Main-Class`（`Fqcn`）、`Manifest-Version`（`Unit`，始终写为 `1.0`）和 `Created-By`（`Text`）。
++       `manifestAttributes` 中没有实例的属性，例如 `ClassPath`，在提供实例之前无法应用。
+
+% 1 1 0 1e49721e9e7459be06c0ab5f955b17ba
+
+% 1 1 0 1f74f17c13f3ff3b18b2974b61479ae6
+
+@ 0 4 0 03014f6bc088493e0db0cb49dc0e272e
++   entry .mainClass   从 `Fqcn` 写出 `Main-Class`
++   entry .manifestVersion   从 `()` 写出 `Manifest-Version`，始终为 `1.0`
++   entry .createdBy   从文本写出 `Created-By`
++   entry #encode   将值写为属性的文本
+
+@ 0 1 0 082ed426ccc9c0fc15a02f078bb9f275
++ entry .DecodableManifest   将清单属性的文本读取为带类型值的类型类，以属性名为键
+
+% 1 1 0 13db33e95a4f857b00830227c7f43960
+
+@ 0 3 0 1ec56832d9fc3bd2141f71efbbccb6dd
++       实例写作 `"Main-Class" is DecodableManifest of Fqcn`：`Self` 是作为字面量类型的属性名，`Topic` 是其文本解码成的类型。
++       正是它使 `manifest(MainClass)` 成为 `Optional[Fqcn]`。
+
+@ 0 4 0 19d1d79112668e951c3da2135d03bafa
++       伴生对象为 `Main-Class`（`Fqcn`，需要 `Tactic[Fqcn.Error]`）和 `Created-By`（`Text`）提供了实例。
++       其他属性，包括 `Manifest-Version`，都没有实例，因此在提供实例之前，通过 `Manifest#apply` 读取它们无法编译；无论如何，`Manifest#entries` 都保存着它们的文本。
+
+% 1 1 0 1f153163e430578a04bb89871c5606ca
+
+% 1 1 0 06523eebaa3b151c0577e6b972e2df1b
+
+@ 0 3 0 0fc44e939a76e667061fd9ea2dd6e973
++   entry .mainClass   将 `Main-Class` 读取为 `Fqcn`，不是有效类名时抛出 `Fqcn.Error`
++   entry .createdBy   将 `Created-By` 读取为文本
++   entry #decoded   将属性的文本解码为其值
+
+@ 0 1 0 1b88ce97f70362811f1bf6c185c91e65
++ entry .manifestAttributes   标准 JAR 清单属性，作为用来读写 `Manifest` 的对象
+
+% 1 1 0 0d0d2bd303cefb280aaadbef97f10172
+
+@ 0 3 0 07e41d69168da77606d9cbff349b4fec
++       每个对象都是一个 `Manifest.Attribute`，以 JAR 规范定义的某个属性名为键。
++       它们是普通对象，因此 `import manifestAttributes.*` 会把它们全部引入作用域。
+
+% 2 1 0 1afebf64e735ed450a33e57437c0b49c
+
+% 3 1 0 0e17a0cc5f7eb1a406d75cfb0b436468
+
+% 4 1 0 1c14f262d9d4f8361bf3485633b25994
+
+% 5 1 0 0aadd9971fc715ea0058f11b63c6562f
+
+% 7 1 0 10eb8be110ccd8b614a75762d79e72c6
+
+% 0 1 0 1d84d74168f571dd1b69c44690bd7aee
+
+% 1 1 0 06b4bb366101967f067c7c778015e14b
+
+@ 0 18 0 029bf695f49abfd50e6558ddb56baa1c
++       只有 `MainClass`、`ManifestVersion` 和 `CreatedBy` 通过 `EncodableManifest` 和 `DecodableManifest` 实例具有带类型的值；其他对象只是为其属性命名，供 `-` 以及程序自行提供的实例使用。
++   entry .ManifestVersion   `Manifest-Version`：清单格式的版本，从 `()` 写为 `1.0`
++   entry .MainClass   `Main-Class`：`java -jar` 运行其 `main` 方法的类，作为 `Fqcn`
++   entry .CreatedBy   `Created-By`：创建该归档的工具，作为文本
++   entry .ClassPath   `Class-Path`：要放到类路径上的其他 JAR，相对于本 JAR
++   entry .ContentType   `Content-Type`：捆绑资源的 MIME 类型
++   entry .ExtensionList   `Extension-List`：该归档所需的可选包
++   entry .ExtensionName   `Extension-Name`：该归档所提供的可选包的名称
++   entry .ImplementationTitle   `Implementation-Title`：实现的标题
++   entry .ImplementationVendor   `Implementation-Vendor`：制作该实现的组织
++   entry .ImplementationVersion   `Implementation-Version`：实现的版本
++   entry .Sealed   `Sealed`：该归档的包是否已密封，不接受来自别处的类
++   entry .SignatureVersion   `Signature-Version`：签名文件格式的版本
++   entry .SpecificationTitle   `Specification-Title`：所实现规范的标题
++   entry .SpecificationVendor   `Specification-Vendor`：拥有该规范的组织
++   entry .SpecificationVersion   `Specification-Version`：所实现规范的版本

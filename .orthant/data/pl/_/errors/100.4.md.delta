@@ -1,0 +1,50 @@
+orthant 2 language
+
+@ 0 1 0 1dd2bb7feeed61801477839a742c257c
++ # `↯/s.100.4` – `EmailAddress.Error`
+
+@ 0 1 0 02607d2ebeb108410436155d8eca4869
++ Zgłaszany, gdy wartości nie można sparsować jako poprawnego adresu e-mail.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 06ab7e2ae05b68f3049067472b425cd6
++ Urticose sprawdza poprawność adresów e-mail względem reguł składni z RFC 5321 / 5322 (z
++ praktycznymi złagodzeniami). Komunikat to `the
+
+% 0 1 0 133d1d2b0b31f15001dc30a1bf0eddf5
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 17 0 168bdc38eea7e66504b996bfce9ba948
++ column  Kod
++ column  Przyczyna
++ column  Znaczenie
++ column  Komunikat
++ column  Rozwiązanie
++ row  `↯/s.100.4.1`  `Empty`  Wartość jest pusta.  `[↯/s.100.4.1] the email address is not valid because it is empty`  Należy podać niepusty adres.
++ row  `↯/s.100.4.2`  `InvalidDomain`  Część domenowa nie jest ani poprawną nazwą hosta, ani poprawnym literałem IP.  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  Należy poprawić składnię domeny; szczegóły podaje wewnętrzny wariant `HostnameError`/`IpAddress.Error`.
++ row  `↯/s.100.4.3`  `LongLocalPart`  Część lokalna przekracza 64 znaki.  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  Należy skrócić część lokalną do co najwyżej 64 znaków.
++ row  `↯/s.100.4.4`  `TerminalPeriod`  Część lokalna kończy się kropką.  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  Należy usunąć końcową kropkę.
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  Część lokalna zawiera dwie sąsiednie kropki.  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  Należy usunąć jedną z kropek lub ująć część lokalną w cudzysłów, jeśli kolejne kropki są wymagane.
++ row  `↯/s.100.4.6`  `InitialPeriod`  Część lokalna zaczyna się kropką.  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  Należy usunąć początkową kropkę.
++ row  `↯/s.100.4.7`  `UnescapedQuote`  Cudzysłów w części lokalnej nie został poprzedzony znakiem ucieczki.  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  Należy poprzedzić cudzysłów ukośnikiem wstecznym lub użyć poprawnie ujętej w cudzysłów części lokalnej.
++ row  `↯/s.100.4.8`  `UnclosedQuote`  Część lokalna ujęta w cudzysłów nie ma cudzysłowu zamykającego.  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  Należy dodać brakujący `"`.
++ row  `↯/s.100.4.9`  `MissingDomain`  Adres nie ma części domenowej.  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  Należy dopisać `@`, a po nim domenę.
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  Adres nie zawiera `@`.  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  Należy wstawić `@` między część lokalną a domenę.
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  Domena zaczyna się od `[`, ale nie kończy się na `]`.  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  Należy zamknąć literał IP znakiem `]`.
++ row  `↯/s.100.4.12`  `InvalidChar`  Część lokalna zawiera niedozwolony znak.  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  Należy usunąć winny znak lub ująć część lokalną w cudzysłów, aby go dopuścić.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 3 0 080ee2477f0e9ce21a2538138076467e
++ - Źródło: `lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` – sprawdzanie poprawności nazwy hosta
++ - `↯/s.100.2` – sprawdzanie poprawności adresu IP

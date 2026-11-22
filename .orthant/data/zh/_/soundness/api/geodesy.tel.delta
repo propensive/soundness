@@ -1,0 +1,733 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13682742deb4a48416b253e3be12b424
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 083f92d1a261a4760f587b7a57c5070f
++ info   以有类型的值表示角度、地球上的位置、罗盘方位、geohash 和 `geo:` URI
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 0f0dab6d6cbd93f61d5b85c16cd21f44
++     _Geodesy_ 为地理代码中原本以裸 double 保存的东西提供类型。
++     `Angle` 是真正的角度量：以度、弧度或圈构造，按模进行加法和缩放，并可规范化为主值或标准值，因此没有任何 `Double` 会代表一个单位要靠记忆的角度。
++     `Location` 是打包进一个机器字的纬度和经度，由它可以计算到另一个位置的初始方位角、两者之间的大圆距离，以及该位置的 geohash。
++     方位角可以解析为 4 点、8 点或 16 点罗盘方位图上的一个方位，由类型参数选择，也可以保持为从北或从东量起的 `Angle`；而 `Geolocation` 是带有海拔、不确定度和参数的位置，从 RFC 5870 `geo:` URI 读取，也写为这种 URI。
+
+% 2 1 0 07a2f3a97693cb2218b47021b797dc4e
+
+% 3 1 0 1d69b555e63e3b3f1edc150aad3e98ff
+
+% 4 1 0 0b5650d138970e9a10acc960a9a819f7
+
+% 0 1 0 0ec0cbc75df83b33073d505d275d0234
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0de1f5a1ddf7d741136f8635834234dc
+
+% 0 1 0 13a11911d49a7ed51ffeec7a0152d060
+
+% 0 1 0 09441b34ed9451330fc6714567f287ab
+
+% 0 1 0 0db450ec1a2f4eca03479621396433aa
+
+% 0 1 0 1817b20c714129c70e98899035b79c62
+
+% 0 1 0 0a310acf281f74c41e6190ab2e87f2c6
+
+% 0 1 0 0049fa0a5d85a506062f1c9458935e5c
+
+% 0 1 0 1b526a560ec8e9990e86a166662501da
+
+% 1 1 0 0ef1d41668752ec018d5eb89e738f6cf
+
+@ 0 8 0 02b15288b8cf50020c8a5a597fdcdd28
++     有两个 given 需要按名称导入，因为 `import soundness.*` 不会引入任何 given。
++     角度的文本形式（保留一位小数的度数，带 `°`）是 `angleShowable`，它是一个顶层 given，因为 `Angle` 位于文本栈之下的组件中，其伴生对象无法携带它。
++     方位角在哪种罗盘上解析，由 `compassBearings` 选择包中的一个 given 决定：`fourPointCompassBearing`、`eightPointCompassBearing`、`sixteenPointCompassBearing`，或者将方位角作为角度给出的 `fromNorthBearing` 和 `fromEastBearing`。
++     其他一切，即角度的算术、它们的检视、`Location` 和 `Geolocation` 的编解码器，都位于伴生对象中，无需导入。
+
+@ 0 1 0 1a27b2eabeb00d7d136b91b85df2e1f0
++     该库由两个源集组成：
+
+@ 0 6 0 1f9a8f93cc542e041bad768744ce8823
++     - `geodesy.angle`：`Angle`、它的算术、`Degree`、`ArcMinute`、`ArcSecond`，以及 `deg` 和 `rad` 扩展方法。它只依赖 hypotenuse 和 symbolism，因此文本栈之下的库（颜色的色相、旋转）可以使用角度而无需其余部分。
++     - `geodesy.core`：`Location`、`Compass` 和各个方位、`Directional`、`Locatable`、`Geolocation`、`angleShowable` 以及 `compassBearings` 包。
+
+@ 0 2 0 112870a50a8d28720fc11ba8376218a0
++     两者都可以为 JVM、Scala.js 和 Scala Native 编译，所有内容都导出到 `soundness` 总括包，其中 `compassBearings` 包与总括包自身的同名包合并。
+
+% 0 1 0 12485a04c3b429d81f432f10e0012dab
+
+% 0 1 0 1278ebb6db3985e0029a1a82ab68a179
+
+% 0 1 0 1e42c142ba85aeb41c7059085d10131a
+
+% 0 1 0 11217f2b5e7cd8d614801e20b5d6bd2d
+
+% 0 1 0 0fc7cb957f0daaa30ad9e38d436fa050
+
+@ 0 1 0 0f18e5675870b2f1149717be76280673
++ entry .Angle   作为量的角度：以度、弧度或圈构建，算术运算会回绕
+
+% 1 1 0 1461072e35ecbb9a1cedbeba357d6e78
+
+@ 0 5 0 11ff8b8058652544087139bf1b0d53b5
++       `Angle` 是基于以弧度表示的 `Double` 的不透明类型，因此角度不会与裸数字或长度混淆，其单位也从不取决于约定。
++       角度通过其单位构造，如 `Angle.degrees(45)`、`45.deg`、`Angle.turns(0.25)`、`Angle(math.Pi/4)` 或 `0.785.rad`，并可以任意单位读回：`degrees`、`radians`、`turns`。
+
+% 2 1 0 0427135d5d00dba616299d00d8500175
+
+% 3 1 0 14bd69165ff07edc07d17916b63bad45
+
+% 0 1 0 13066e3833ea86f51e3015dee6381087
+
+% 0 1 0 05856861695a6d22063175267d6531e8
+
+% 0 1 0 09dd4ef1122203b60fcbc298b2c3fb19
+
+% 0 1 0 15cb204a5874b0a8068eeea7d30e91cb
+
+% 0 1 0 0f33fe87519cb37310110fc4b8539138
+
+% 0 1 0 1eca6605ab206ee61bd80871393eda73
+
+% 0 1 0 1621b4b1dc6f2b541c9e816b05e1ad05
+
+% 0 1 0 0b27620cf65e1f7d07fdd8ecc75ca2c6
+
+% 0 1 0 143d60889c21e643040e5ac542dcbc9a
+
+% 1 1 0 0d1df770a36a5dfc0c7d60e8d0a1b4ef
+
+@ 0 5 0 1c4dcd3fa87a100c00297055f413c34a
++       算术按角度的方式回绕：角度之间的 `+` 和 `-`，以及与任一侧的 `Double` 进行的 `*` 和 `/`，都对一整圈取模，因此经过任何运算后，370° 和 10° 都是同一个角度。
++       有两种范式可用：位于 `[0°, 360°)` 的 `principal`，以及位于 `[−180°, 180°)` 的 `canonical`。
++       字面量 `45.deg` 对整数字面量也有效，因为它会拓宽为扩展方法所接受的 `Double`。
+
+@ 0 5 0 03c1037bdde2f06219c8675424098f69
++       渲染分在两处。
++       `inspect` 位于伴生对象中，以完整精度输出（`7.25°`），因此调试渲染从不依赖于记得某个导入；`show` 会为显示而舍入到一位小数，它是顶层 given `angleShowable`，必须按名称导入，因为 `geodesy.angle` 组件位于文本栈之下，无法把它放在这里。
+
+@ 0 2 0 1e6c93b15fb800e80f03a201a191ea83
++       `Compass[n](angle)` 把一个角度解析为罗盘方位，`Location#bearing` 则产生一个从北顺时针量起的方位角。
+
+% 0 1 0 02737bb414ca7d2f14498738c280c888
+
+% 0 1 0 02514f35f86603d70c1de3112f486994
+
+% 1 1 0 00f4ef6b447dbff4089c84cddc18c7b0
+
+@ 0 3 0 17e1f300d5e4ab3605e16a463a3e2d7f
++ entry .Degree   一度，作为 `Angle`：π/180 弧度
++     一个用于相乘的常量：`45.0*Degree` 是 45°，`Degree/60.0` 是 `ArcMinute`。
++     `deg` 扩展方法得到的是同一个角度乘以其接收者。
+
+@ 0 1 0 1f02357804745b31179c4a65aff6c459
++ entry .ArcMinute   一角分，即一度的六十分之一，作为 `Angle`
+
+@ 0 1 0 0ed471e0fcabed1e1d3d9b12a5614e75
++ entry .ArcSecond   一角秒，即一角分的六十分之一，作为 `Angle`
+
+@ 0 4 0 0cef1f88fcabdbe113208f0a585ab6c1
++ entry .deg   这么多度的角度，如 `45.0.deg`
++     `Double` 上的扩展方法：`51.5074.deg`。
++     整数字面量会拓宽，因此 `45.deg` 也有效。
++     负值最好加括号写成 `(-0.1278).deg`，或写成 `Angle.degrees(-0.1278)`；`Angle` 自身没有一元取负。
+
+@ 0 2 0 106c73f815fb7e210bd0dbcd269e7e3a
++ entry .rad   这么多弧度的角度，如 `math.Pi.rad`
++     `Double` 上的扩展方法，与 `Angle(value)` 相同。
+
+@ 0 6 0 035dbe758c45dc610cc4495811e3d19a
++ entry .angleShowable   把角度渲染为保留一位小数并带 `°` 的度数：`45.0°`
++     `Angle` 的 `Showable` given。
++     它是顶层 given，因此必须按名称导入（`import soundness.angleShowable`），因为 `Angle` 声明在文本栈之下的 `geodesy.angle` 组件中，其伴生对象无法持有 `Showable`。
++     舍入是为了显示：`Angle.degrees(7.25).show` 是 `7.3°`，而 `inspect` 给出 `7.25°`。
+
+% 2 1 0 18488e9b62ee4c0a058deda3ebf804eb
+
+% 3 1 0 0c3590f3e0e42744163979d2fa2257dc
+
+% 4 1 0 1df13546ebff6dd715336b6519c31f17
+
+% 0 1 0 057894a7d67fce681b07becfa79a7fac
+
+% 0 1 0 0fe4c0739d04c007046a236f54d75674
+
+% 1 1 0 1bbdeb5106d9cdb906ce0f26ddad753c
+
+@ 0 1 0 0bb21496fce29eb719a5fa33ec6f3ae8
++ entry .angleInternal   声明不透明类型 `Angle` 及其扩展方法的对象
+
+% 1 1 0 05bb3bc6dc003d9000a2959d00defc77
+
+% 2 1 0 15fff976769a0fe7025c79f943924085
+
+@ 0 37 0 19b426233c36e31302dd8c3cd689c9cd
++       不供直接使用：`Angle` 从这里导出到 `geodesy` 包，下面的扩展方法通过该不透明类型的隐式作用域找到。
++       它在 `geodesy` 包下的页面有完整说明。
++   entry .Angle   不透明的角度类型；参见 `geodesy.Angle`
++     entry .apply   给定弧度的角度
++         `Angle(math.Pi)` 是半圈；`Double` 上的 `.rad` 与之相同。
++     entry .degrees   给定度数的角度，如 `Angle.degrees(45)`
++         伴生对象的构造方法；角度上的扩展方法 `degrees` 将其读回。
++         `45.deg` 和 `45.0*Degree` 是同一个角度。
++     entry .turns   给定整圈比例的角度，如 `Angle.turns(0.5)`
++     entry .addable   `angle + angle`，对一整圈取模
++         `350.deg + 20.deg` 是 10°。
++         伴生对象中的 `Addable` given。
++     entry .subtractable   `angle - angle`，对一整圈取模得到非负结果
++         `10.deg - 20.deg` 是 350°：结果是主值。
++     entry .multiplicable   `angle * double`，对一整圈取模
++         `Angle.degrees(100)*4.0` 是 40°。
++         `ArcMinute*60.0` 是一度。
++     entry .divisible   `angle / double`，对一整圈取模
++         `Angle.degrees(90)/2.0` 是 45°；`Degree/60.0` 是 `ArcMinute`。
++     entry .multiplicable2   `double * angle`：标量从左侧乘以角度
++         `2.0*Angle.degrees(90)` 是 180°，与 `Angle.degrees(90)*2.0` 一样。
++     entry .inspectable   以完整精度用度数进行的调试渲染：`7.25°`
++         与为显示而舍入到一位小数的 `angleShowable` 不同，检视写出的是度数的 `Double` 自身的渲染，因为舍入的渲染会隐藏它本应展示的状态。
++         它位于伴生对象中，因此无需导入。
++   entry .degrees   以度表示的角度，作为 `Double`
++       `45.deg.degrees` 是 `45.0`。
++       不做约简：以 `Angle.degrees(375)` 构建的角度读回时是 375，直到取 `principal` 或 `canonical`。
++   entry .radians   以弧度表示的角度，作为 `Double`
++       即表示形式本身：`90.deg.radians` 是 π/2。
++       `Location#surfaceDistance` 给出的大圆距离是一个角度，其弧度乘以球体半径即为沿其表面的长度。
++   entry .turns   以整圈比例表示的角度
++       `Angle.degrees(90).turns` 是 `0.25`。
++   entry .principal   位于 `[0, 2π)` 的等价角度：375° 变为 15°，−30° 变为 330°
++       罗盘方位角在到达 `Directional` 之前被规范化成的形式。
++   entry .canonical   位于 `[−π, π)` 的等价角度：355° 变为 −5°，190° 变为 −170°
++       经度存储所用的形式，使西经保持其符号。
+
+@ 0 1 0 0351aa31d826c471050505e4551570b8
++ entry .Location   打包进一个机器字的纬度和经度，带有方位角、距离和 geohash
+
+% 1 1 0 0e6b2ff1a000bb8514700ff0e249de3d
+
+@ 0 4 0 1102c1d5262946e713e62e173f177852
++       `Location` 是基于 `Long` 的不透明类型：纬度和经度各自存储为半圈的 32 位定点小数，因此一个位置只占一个机器字，它们的集合是非装箱的，两个相等的位置就是相等的值。
++       它由两个角度构建，纬度在前，并以角度读回：
+
+% 2 1 0 0d9e8a77d5202fb700481e00aa5e73b4
+
+% 3 1 0 029f6adbe22dc84302069c7c3ebba609
+
+% 0 1 0 12e094f9142410a215282952a9c2cc90
+
+% 0 1 0 01281b6e728d279d1e5dd81c7f858acc
+
+% 0 1 0 17141e7c44aec6cf14761148aa4835b5
+
+% 0 1 0 0223d0f368a3763619022b912d147ebf
+
+% 0 1 0 08b6c9895d9d274d1e3948e9b32bde68
+
+% 0 1 0 151ffbc0724683a205c0bbb7c335c686
+
+% 0 1 0 02e0a8d4b86a8bab0140e08209c47ba3
+
+% 1 1 0 1eb89a9ef80f8ade08e391064930683d
+
+@ 0 4 0 103dc7d46f13308705e69a39e1f6e541
++       定点形式能把坐标保持到地球表面约一厘米的精度，因此读回的坐标与给定值相差约千万分之一度以内，而非完全相同：比较读回的角度时要带容差。
++       经度存储在其标准范围 `[−180°, 180°)` 内，因此西经读回为负数。
+
+@ 0 2 0 1d6aae481159c46715645414e3fd8198
++       地理方面的问题是 `Location` 上的扩展方法，通过该不透明类型的隐式作用域找到：
+
+@ 0 9 0 1d399035f6a6d18f1470439257b65045
++       - `latitude` 和 `longitude`，各为一个 `Angle`，以及 `pair`，即二者组成的元组；
++       - `surfaceDistance(other)`，以 `Angle` 表示的大圆间隔（按半正矢公式计算），其弧度乘以球体半径即为沿其表面的距离，因此同一段代码既适用于地球，也适用于火星；
++       - `bearing[Compass[8]](other)`，朝向另一个位置的初始方位角，按 `compassBearings` 中某个 `Directional` given 所提供的罗盘方位图或角度约定解析；
++       - `geohash(n)`，该位置由 `n` 个字符组成的 base-32 geohash，较短的哈希总是较长哈希的前缀。
+
+@ 0 4 0 1fb88470eec54fc31547d80a557c9cd3
++       `Location` 编码为以度表示、保留六位小数的 `latitude,longitude`（`.encodable`），即 `geo:` URI 所用的形式，并以完整精度检视为 `⌖51.4999999718275°,0.12599995365645733°`。
++       加上海拔、不确定度或坐标参考系，它就成为 `Geolocation`。
+
+% 0 1 0 092f4767693240360b721f197ca1af46
+
+% 0 1 0 1343f0c2e89414671c40009b911b6167
+
+% 1 1 0 19705984c247585312bd8528b4d01705
+
+% 0 1 0 10862db0219cfb7a1296fddf61871ba7
+
+@ 0 1 0 1e179cecab394a1a07b123a233d67ae7
++ entry .Compass   作为类型的 4 点、8 点或 16 点罗盘方位图，以及把角度解析为其中一个方位的操作
+
+% 1 1 0 109167795c7303db0bfcce6a9c7b2786
+
+@ 0 5 0 0692685ef60291ca1d08700e06e8aa5c
++       `Compass[4]`、`Compass[8]` 和 `Compass[16]` 是匹配类型，命名每种方位图上的方位：四点为 `CardinalWind`，八点为 `CardinalWind | IntercardinalWind`，十六点再加上 `HalfWind`。
++       由于点数是类型参数，解析后方位角的类型说明了它来自哪种方位图，而对四点方位角的匹配只需穷尽四个分支，而不是十六个。
+
+@ 0 4 0 02736dd7dd54cdab1f37db82a0ed8681
++       `Compass[n](angle)` 把一个从北顺时针量起的角度解析为方位图上最近的方位；每个方位覆盖以它为中心的扇区，因此在八点方位图上，`Northeast` 覆盖 22.5° 到 67.5°。
++       角度会先被规范化，因此负角按逆时针量取，超过一整圈的角度会回绕。
+
+% 2 1 0 0b1287b1ce0417620cc049caaa8960de
+
+% 3 1 0 0dd648c5bb63ad36065711a74bf8357a
+
+% 0 1 0 080442b0a8f3536a09be2dd0946a08e4
+
+% 0 1 0 005057d857e86fd50815ccb2d2176092
+
+% 0 1 0 17fda4ee9cb9b6c4169f768fa2415baa
+
+% 0 1 0 0d6711fe356bffc6161228b184b3efa5
+
+% 0 1 0 1933dad4c8b3028b0e7999a9ebed06d2
+
+% 1 1 0 13da946545cd88dd16d1e4b79f65c668
+
+@ 0 3 0 026776674c15d8f602fbc2d63dbc590c
++       `Location#bearing` 通过一个从 `compassBearings` 按名称导入的 `Directional` given 在方位图上解析；那里的四点、八点和十六点 given 调用 `Compass[n]`。
+
+@ 0 2 0 0a7fa3d9447712d514f88f9c864d516a
++       `CardinalWind` 和 `IntercardinalWind` 显示为箭头（`↑`、`↗`）；`HalfWind` 没有 `Showable`，因此十六点方位角要通过对其匹配来显示。
+
+% 0 1 0 079219ecd1abb199056f60e033d9ecfa
+
+% 0 1 0 03bf164ac3d2a0f51431a588941e46cf
+
+% 0 1 0 180a7439330635040c871787fbc5c132
+
+% 1 1 0 06b32f7abf86e34315fbe63a4d6e90d6
+
+@ 0 12 0 04c18b14c12465be1dd271aaea1594ca
++   entry .apply   4 点、8 点或 16 点方位图上最接近某个从北顺时针量起的角度的方位
++       `Compass[8](Angle.degrees(315))` 是 `Northwest`。
++       这是一个内联方法：点数是字面量类型参数 `4`、`8` 或 `16`，结果的类型为 `Compass[n]`。
++   entry .points4   四个基本方位，从北开始顺时针排列
++       由 `North`、`East`、`South`、`West` 组成的不可变数组：第 *i* 个方位以 *i* × 90° 为中心。
++   entry .points8   八个方位，从北开始顺时针排列
++       基本方位，每两个之间插入一个中间方位：`North`、`Northeast`、`East`、…… `Northwest`。
++       第 *i* 个方位以 *i* × 45° 为中心。
++   entry .points16   十六个方位，从北开始顺时针排列
++       八个方位，每两个之间插入一个次中间方位：`North`、`NorthNortheast`、`Northeast`、…… `NorthNorthwest`。
++       每第四个方位是一个基本方位，第 *i* 个方位以 *i* × 22.5° 为中心。
+
+@ 0 1 0 14ebefe68ed313ec00435ca37f63853a
++ entry .CardinalWind   四个基本方位：`North`、`East`、`South` 和 `West`
+
+% 1 1 0 0d6b48ce0e114fcb1b2bbc065667a34b
+
+@ 0 3 0 055ee7293df0a623129bdb3926d488b4
++       `Compass[4]` 方位图上的方位，也是每种更大方位图上的基本方位。
++       这些分支被导出到 `geodesy` 包（以及总括包），因此直接书写：写 `North`，而不是 `CardinalWind.North`。
+
+% 2 1 0 18cc731ea34d91f51b0aacccbdd0a935
+
+% 3 1 0 152f449c9882ab510c94018e36504908
+
+% 0 1 0 0c5cae2bbc6c87e000189f877d9eebc4
+
+% 0 1 0 03f47f7ccc777070140615ffb8e03ab7
+
+% 0 1 0 142546fd7ad7a1011aebb32ebe986178
+
+% 0 1 0 091cea1d04d9a5d01dcb6cfcd8fb6f72
+
+% 0 1 0 0b54b17b702062251bce7e795077b8f6
+
+% 1 1 0 060be14724e7395d1bda0d9e1c475dcd
+
+% 1 1 0 04563b95ca529f3c00150d22dafa7e56
+
+@ 0 2 0 0402ba764199db2f1aafdad11f33ba0c
++   entry .showable   把基本方位渲染为箭头：`↑`、`→`、`↓` 或 `←`
++       位于伴生对象中，因此无需导入：`North.show` 是 `t"↑"`。
+
+@ 0 1 0 1a4b24ee998af6af030e992a29a359e0
++ entry .IntercardinalWind   四个中间方位：`Northeast`、`Southeast`、`Southwest` 和 `Northwest`
+
+% 1 1 0 09323da54c8b01f71f8def2001dc7206
+
+@ 0 3 0 1820d278e5f47aec1abea7ae6336c78c
++       基本方位之间的方位，`Compass[8]` 方位图在 `CardinalWind` 之外添加它们。
++       这些分支被导出到 `geodesy` 包和总括包，因此直接书写：`Northeast`。
+
+% 1 1 0 17f6c4cebb7b9c66192475b520e8f6f2
+
+@ 0 2 0 03565992e2c70cf01312882c487827a1
++   entry .showable   把中间方位渲染为斜向箭头：`↗`、`↘`、`↙` 或 `↖`
++       位于伴生对象中，因此无需导入：`Northeast.show` 是 `t"↗"`。
+
+@ 0 6 0 0e431b44259dad5d047a6e3b9d58a8fc
++ entry .HalfWind   16 点方位图的八个次中间方位，从 `NorthNortheast` 到 `NorthNorthwest`
++     每个基本方位与中间方位之间的方位，`Compass[16]` 方位图在八个方位之外添加它们：`NorthNortheast`、`EastNortheast`、`EastSoutheast`、`SouthSoutheast`、`SouthSouthwest`、`WestSouthwest`、`WestNorthwest` 和 `NorthNorthwest`。
++     这些分支被导出到 `geodesy` 包和总括包，因此直接书写。
++     与 `CardinalWind` 和 `IntercardinalWind` 不同，次中间方位没有 `Showable` 箭头。
+
+@ 0 16 0 1f5a2d5cec590a791cef72fa76b66d93
++ entry .North   基本方位北，0°：`CardinalWind.North`，已导出
++ entry .East   基本方位东，90°：`CardinalWind.East`，已导出
++ entry .South   基本方位南，180°：`CardinalWind.South`，已导出
++ entry .West   基本方位西，270°：`CardinalWind.West`，已导出
++ entry .Northeast   中间方位东北，45°：`IntercardinalWind.Northeast`，已导出
++ entry .Southeast   中间方位东南，135°：`IntercardinalWind.Southeast`，已导出
++ entry .Southwest   中间方位西南，225°：`IntercardinalWind.Southwest`，已导出
++ entry .Northwest   中间方位西北，315°：`IntercardinalWind.Northwest`，已导出
++ entry .NorthNortheast   次中间方位北东北，22.5°：`HalfWind.NorthNortheast`，已导出
++ entry .EastNortheast   次中间方位东东北，67.5°：`HalfWind.EastNortheast`，已导出
++ entry .EastSoutheast   次中间方位东东南，112.5°：`HalfWind.EastSoutheast`，已导出
++ entry .SouthSoutheast   次中间方位南东南，157.5°：`HalfWind.SouthSoutheast`，已导出
++ entry .SouthSouthwest   次中间方位南西南，202.5°：`HalfWind.SouthSouthwest`，已导出
++ entry .WestSouthwest   次中间方位西西南，247.5°：`HalfWind.WestSouthwest`，已导出
++ entry .WestNorthwest   次中间方位西西北，292.5°：`HalfWind.WestNorthwest`，已导出
++ entry .NorthNorthwest   次中间方位北西北，337.5°：`HalfWind.NorthNorthwest`，已导出
+
+@ 0 1 0 044df08b9d5e95f70fd28069a2843d20
++ entry .Directional   把方位角（从北顺时针量起的角度）转换为方向值的类型类
+
+% 1 1 0 1447eb20af0609f50ef0c27e98796b7c
+
+@ 0 5 0 0a6a64baa3ff97380ade11f7839524ce
++       `Directional` 是 `Location#bearing[T]` 对其结果类型 `T` 的要求：一个方法 `direction`，把方位角的主值角度（位于 `[0°, 360°)`，从北顺时针量起）转换为 `T`。
++       `compassBearings` 包提供标准实例，各自按名称导入：4 点、8 点和 16 点方位图，以及作为从北或从东量起的 `Angle` 的方位角。
+
+@ 0 1 0 1727e9dcac7da0f3007b260d98c5bb8e
++       拥有自己扇区划分的领域可以实现一个：
+
+% 2 1 0 14728406025973571701ae0d148a3083
+
+% 3 1 0 100d19786b7dc0a5151e9cee59de030f
+
+% 0 1 0 11056cb5d7c0a33a016c9940724da134
+
+% 0 1 0 1ea293228a2aa5730fdfdf91285c4d2e
+
+% 0 1 0 01838468c44aa1321285b6c33eb0a176
+
+% 0 1 0 14af5ae2c0fd98e8086519edb55233c1
+
+% 1 1 0 18a5e7d8a259ed3b0d9ecb1939e935bc
+
+% 1 1 0 0cd0f2a637dc6a9411d4285fa39a3b39
+
+% 1 1 0 0fc5f61145c226f21040b3b4bfdabf2c
+
+@ 0 1 0 16c8c17edd4661191bb0f2fea2384c9e
++   entry #direction   给定方位角（以从北顺时针量起、位于 `[0°, 360°)` 的角度给出）对应的方向
+
+@ 0 1 0 011fbfbc04fef1870fe7e46977834c80
++ entry .Locatable   用于在地球上具有位置的值的类型类
+
+% 1 1 0 060e8a0199360748009b958d972ebd82
+
+@ 0 3 0 1d8eb277a897b5180732a466498b7e47
++       `Locatable` 类型可以为它的任何值给出一个 `Location`：一座城市、一个车站、一张照片。
++       它唯一的方法 `location` 提取该位置，因此对有位置的事物通用的代码可以要求 `T is Locatable`，并从每个值读取位置。
+
+% 2 1 0 136f77199cf068ba0ef000fd7a3e672e
+
+% 3 1 0 1f1d1df294440f481ab4b975c5e296f7
+
+% 0 1 0 1c2e7dd40d2d210e0b0b510ef759846e
+
+% 0 1 0 09087ddea37d4f2e0cfc5a4e3e4cfca9
+
+% 0 1 0 1c641e02684d52400f2c0f48a50e6c7a
+
+% 0 1 0 00b4744854e1cf901a0b9a24125a7d8f
+
+% 1 1 0 1b14470dc3827e4218aadbefef8857a9
+
+@ 0 3 0 1c63bf4cb97117a0186089d184f396d9
++       Geodesy 自身既不定义实例，也不定义接受实例的操作，因此 `Location` 扩展方法仍然需要一个 `Location`；`Locatable` 是供构建于其上的库使用的接缝。
+
+% 1 1 0 0c5574e8fb256001063bbed1a016dcf9
+
+@ 0 1 0 015bf80004b3eeef0430f7fd82d786b9
++   entry #location   值的位置，作为 `Location`
+
+@ 0 1 0 1dae529f02d5c8a71fe241384cad3dd6
++ entry .Geolocation   带有可选海拔、不确定度、参考系和参数的位置：RFC 5870 `geo:` URI
+
+% 1 1 0 02f804b761123b0f186572b79b8861dd
+
+@ 0 4 0 0639c702a790a8800fc0e4fb936c3c39
++       `Geolocation` 是以 case class 表示的 RFC 5870 `geo:` URI 的内容：一个 `Location`、以米为单位的可选海拔、可选的坐标参考系（`crs`）、以米为单位的可选不确定度（`u`），以及任何其他参数。
++       它从 `geo:` 文本解码，也编码回这种文本：
+
+% 2 1 0 142a37add1e69850033e357673a0d900
+
+% 3 1 0 15b6f6d39840fc4d0fcd9ef9ccdfa735
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e589a84e1d8e7cd1c0162f025842027
+
+% 0 1 0 0b21de40911578a6191209f637f1b72f
+
+% 0 1 0 11a0b7fd77cc583801e5cb943a8d5405
+
+% 0 1 0 0bfc5330b8f204f70e538a048b25c948
+
+% 0 1 0 08e4032c600a6769009f4c97a4b7c97e
+
+% 0 1 0 0f70e667ce1835e50d31bbb9bbc97b69
+
+% 0 1 0 007b314eb43698e009377a4efa3332ac
+
+% 1 1 0 0c0ae222cefd4b310cf8763eacd54b2f
+
+@ 0 6 0 0954fd126766d8371d19f0da2a27045c
++       解码需要一个 `Tactic[Geolocation.Error]`，并抛出一个其 `Reason` 指明错误的错误；在可恢复的战术下，会返回一个部分的 `Geolocation`，包含已成功解析的部分。
++       坐标和海拔是 `-?[0-9]+(.[0-9]+)?` 形式的数字（没有指数，没有前导 `+`）。
++       按照 RFC 规定的顺序，`crs` 只有作为第一个参数时才被识别，`u` 只有作为其后的第一个参数时才被识别；任何其他参数，包括位置不对的 `crs` 或 `u`，都保留在 `#parameters` 中。
+
+@ 0 2 0 121a369ea88c14090c6cb74fed0af043
++       编码把每个数字写为六位小数，因此解码后再编码的 URI 在值上相等，但文本上未必相同。
+
+% 1 1 0 15051c11848586951c6dbb4aa5d97431
+
+% 0 1 0 1dbaec3479e296710564c3cec93236f2
+
+@ 0 10 0 1290252e185d2c4f0bd7452e2b07a0f7
++   entry .decoder   把 `geo:` URI 读取为 `Geolocation`，格式错误时抛出 `Geolocation.Error`
++       伴生对象中的 `Decodable in Text` given，因此 `text.as[Geolocation]` 只需要作用域中有一个 `Tactic[Geolocation.Error]`。
++       使用其他方案的文本会抛出 `BadScheme`，没有两个坐标的 `geo:` 文本会抛出 `ExpectedCoordinates`；两种情况下恢复的值都是位于 0°、0° 的 `Geolocation`。
++   entry .encodable   把 `Geolocation` 写为 `geo:` URI，数字保留六位小数
++       依次写出 `geo:`、位置的 `latitude,longitude`，然后是 `,altitude`、`;crs=…`、`;u=…` 和其余参数，每一项仅在存在时写出。
++       位于伴生对象中，因此无需导入。
++   entry .Error   当文本不是格式正确的 `geo:` URI 时抛出
+
+% 1 1 0 13b47fb03cff9de0014429237a0235fd
+
+@ 0 3 0 109e6346b986c56314351e64b3af813c
++         错误 `↯/s.46.1`：_the geo URI is not in the correct format because …_，后接 `Reason` 的消息。
++         由 `Geolocation.decoder` 通过作用域中的 `Tactic[Geolocation.Error]` 抛出。
+
+% 2 1 0 1259794ee1a19daf1837d5df396d0624
+
+% 3 1 0 09148195721b613c0aa70b9de0105caa
+
+% 0 1 0 1931ca3a183060d60c58d942d49fbc0e
+
+% 0 1 0 1df9d3f652c477490e9a7fb7793c6420
+
+% 1 1 0 196840b5ede78ea31457d26c8934d965
+
+@ 0 3 0 1165979f66f1bc94047fde52acc38546
++         每个 `Reason` 都编号为 420 的一个子代码；各分支及其消息列在 `Geolocation.Error.Reason` 下的表中。
++     entry .Reason   `geo:` URI 解码失败的原因，编号为错误 `↯/s.46.1` 的子代码
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1d64f31da311da7e0540cb63ee4d1c88
++           一个由 `Clarification` 组成的枚举，编号为错误 `↯/s.46.1` 的子代码：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 08a9034792677fa00fa9a68effdfd579
+
+% 0 1 0 0e0fdd7a4a93756007b841bca5fa9ccc
+
+% 0 1 0 02a7b878e680a6a71b1524366b8be929
+
+% 0 1 0 0980095373267c3700589c6e1b91de3c
+
+@ 0 1 0 18ac533af8d5981b1c75ec9c665ff21d
++           row  `UnexpectedSuffix`  5  _a `,` or `;` was expected_  经度之后有多余内容，或海拔不是数字
+
+% 0 1 0 11a7c0f84bee2742178bb541c9b2f556
+
+% 0 1 0 1760b2decbc04b851b26402063ed52c7
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 19d607e0b0e98feb1abaac2184bc5194
++       entry #number   原因的子代码，1 到 7
++     entry .communicable   把每个 `Geolocation.Error.Reason` 渲染为其消息
++     entry #reason   URI 解码失败的原因，一个 `Geolocation.Error.Reason`
++   entry #location   纬度和经度，作为 `Location`
++   entry #altitude   以米为单位的海拔，或 `Unset`
++   entry #crs   由 `crs` 参数指定的坐标参考系，或 `Unset`（表示 WGS-84）
++   entry #uncertainty   来自 `u` 参数、以米为单位的不确定度，或 `Unset`
++   entry #parameters   `crs` 和 `u` 之后的每个参数，按名称组织为 `Map[Text, Text]`
+
+@ 0 1 0 0cc85fc40bc87cc612f4b8b99ffc7b0f
++ entry .compassBearings   方位角可以采用的解析约定，每个都是按名称导入的 `Directional` given
+
+% 1 1 0 13ae4e8dd13c750217ac0bae6ec0463f
+
+@ 0 5 0 13ad300584b81d890bfff10ddf2f17d3
++       `Location#bearing[T]` 需要一个 `T is Directional`，而用哪一个是一种选择（方位图上的点数，或者一个角度及其零点），因此隐式作用域中没有任何一个，`import soundness.*` 也不会引入：要按名称导入一个，因为通配符导入不会导入 given。
++       该包与总括包自身的 `compassBearings` 合并。
+
+@ 0 1 0 1f5b81396a2670b91f45166d4fc40aa9
++       同一个从伦敦到巴黎的方位角，在每种约定下：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 07ed05f754f4f3f30b6948203e2fb068
+
+% 1 1 0 10b68e92662b345400c3f6065c335605
+
+% 2 1 0 0b3024186dfee8cc03b2285676eb61d8
+
+% 0 1 0 128cd2382e1dd91e1fdffd39725218ec
+
+% 2 1 0 1b7f9cdc72a177f40a2ef287b6e71a0d
+
+% 3 1 0 0150909cda548287059c71aeb7edc6c4
+
+% 0 1 0 17afe9c7ab3e56ef187f15fd8007f6a7
+
+% 0 1 0 0857b52f3f2fc0cf04f14f587482671f
+
+% 1 1 0 17954f05d953c5c505960d02f075e4d0
+
+% 2 1 0 15337c31e63e43761c222c0115e2e3db
+
+% 0 1 0 0ff5b778b8302a040d6275b8a2cf0c7f
+
+% 2 1 0 05d5ac6473f7d721064173a66ab79fce
+
+% 3 1 0 0a09e161a388a0ea15364486ac7b6aeb
+
+% 0 1 0 0175adad82ad62bb195a849cd0302fa7
+
+% 0 1 0 1798df88921672e00cbc96626b53143f
+
+% 1 1 0 138128e815158d811a9f26a845108f99
+
+% 2 1 0 0123ed2ca65ddd54134ddb4fc3af7f69
+
+% 0 1 0 120021db0fec257f02c18ec8ff178b75
+
+% 2 1 0 10509dc09c30c5171dc982efdca49754
+
+% 3 1 0 0364873b26b5dd480f64fc875116ef42
+
+% 0 1 0 0289e6b538b7d7e51e9f8e114396fa51
+
+% 0 1 0 1dccb270d38b864801b8ffaeeb517069
+
+% 1 1 0 16f2f9990c3d100f0f2feee8b2198c8f
+
+% 2 1 0 1349d0b685eff4f2170f8c6e32c7e80f
+
+% 3 1 0 14fda9975ad9ffb21ff517e1755622c1
+
+% 0 1 0 0ff801a7e673185a106f20254b8d5612
+
+% 2 1 0 08058eb2eb7b3af41fb9e67899377aaa
+
+% 3 1 0 071e13384636289617b4b74751495596
+
+% 0 1 0 0a600f2e392e2dca0853f09e4a098da4
+
+% 0 1 0 111a39a3a038f3860b91f90d97b4b445
+
+% 1 1 0 04a88cecd0e4a5b41e8732169f9ec2ce
+
+% 2 1 0 1f06edc7e352297d055f1e96372c52cc
+
+% 3 1 0 0fdabcdbbfa8cede03bcf8c2257ec531
+
+% 0 1 0 1ba0ed0ce37ed6d600d7d0a0b31c1f7f
+
+% 2 1 0 1f2f6702a1c1ad2d04189d1ffc18bc7d
+
+% 3 1 0 027d1eeeb00d1eca0e7b1e9b28112393
+
+% 0 1 0 1e6bcdbd9f9632a40db753409584d74b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 1ff178f7eb83fda51f9ec83c94ab0750
++       每种方位图给出粗细不同、类型也不同的答案；角度 given 则保持方位角精确。
++       作用域中同一时间只应有一个 `Angle is Directional`，因为 `fromNorthBearing` 和 `fromEastBearing` 给出相同的类型。
+
+% 0 1 0 1e4eac66239a8ab60c33a936798e45b7
+
+% 1 1 0 0d568bac681ee86e1c74c69a1741e5f2
+
+@ 0 15 0 0d75f6d50ad5ce9a0bb83ffda0cf1c6c
++   entry .fourPointCompassBearing   把方位角解析为最近的基本方位，作为 `Compass[4]`
++       `Compass[4] is Directional`，通过 `Compass[4](angle)`：`North`、`East`、`South` 或 `West`。
++   entry .eightPointCompassBearing   把方位角解析为八个方位中最近的一个，作为 `Compass[8]`
++       `Compass[8] is Directional`，通过 `Compass[8](angle)`：一个 `CardinalWind` 或一个 `IntercardinalWind`。
++   entry .sixteenPointCompassBearing   把方位角解析为十六个方位中最近的一个，作为 `Compass[16]`
++       `Compass[16] is Directional`，通过 `Compass[16](angle)`：一个 `CardinalWind`、一个 `IntercardinalWind` 或一个 `HalfWind`。
++   entry .fromNorthBearing   把方位角给出为从北顺时针量起、位于 `[0°, 360°)` 的 `Angle`
++       `Angle is Directional`，即恒等映射：航海者的约定，其中 90° 为东。
++   entry .fromEastBearing   把方位角给出为从东量起的 `Angle`：罗盘方位角减去 90°
++       `Angle is Directional`，从方位角中减去四分之一圈，因此正东为 0°，正北为 270°。
++       由于角度减法会回绕到非负结果，该角度位于 `[0°, 360°)` 且仍按顺时针增大；它不是数学约定中的逆时针角度。
+
+@ 0 1 0 0cf146d3c7aa92100141eb3afe88ecba
++ entry .internal   声明不透明类型 `Location` 及其扩展方法的对象
+
+% 1 1 0 1000b434f071f54d060497e447f29931
+
+% 2 1 0 0a60319565fe31a019829a9c4f2e5b3e
+
+@ 0 4 0 0ec54826b3bd7bcb106e208c067b91d4
++       不供直接使用：`Location` 从这里导出到 `geodesy` 包，下面的扩展方法通过该不透明类型的隐式作用域找到。
++       它在 `geodesy` 包下的页面有完整说明。
++   entry .Location   不透明的位置类型；参见 `geodesy.Location`
+
+% 1 1 0 10757121382a052715d98a6bf5d8d019
+
+@ 0 6 0 100a6760281724430df6f98e6acc27d1
++         不透明类型 `Location = Long`，及其构造方法和编解码器。
++         它在 `geodesy` 包下的页面有完整说明。
++     entry .apply   由纬度和经度构成的位置，以两个角度或两个微度整数给出
++         `Location(51.5.deg, Angle.degrees(-0.13))` 先接受纬度。
++         任何角度都被接受：经度被约简到 `[−180°, 180°)`，而纬度不做范围检查，因此超出 ±90° 的纬度给出的是一个无意义的位置，而不是错误。
+
+@ 0 2 0 0d0a2afabb2fd7c204bb94e443b04082
++         使用两个 `Int` 的 `Location(north, east)` 接受百万分之一度，这是坐标表的一种紧凑形式：`Location(51500000, -130000)` 是北纬 51.5°、西经 0.13°。
+
+% 2 1 0 18023eebbf200361054701c01fdf36ca
+
+% 3 1 0 18f012f5da220afd018aded88a2d2aca
+
+% 0 1 0 0af49f4aa37c49171f16f90f7aa1722f
+
+% 0 1 0 07235120a241ad290b315560710970d7
+
+% 1 1 0 147e3bb38853c99d014cf0c5b46653a5
+
+@ 0 30 0 024e10d87555848e1452ab2fc685e238
++     entry .encodable   把位置写为以度表示、保留六位小数的 `latitude,longitude`
++         `Location(51.5.deg, 0.25.deg).encode` 是 `t"51.500000,0.250000"`：即 `geo:` URI 的坐标对，`Geolocation` 的编码器会复用它。
++         位于伴生对象中，因此无需导入。
++     entry .inspectable   以完整精度进行的调试渲染，标记为一个位置：`⌖51.5°,0.126°`
++         每个坐标都以存储值的完整精度，通过 `Angle` 自身的检视来渲染，前面加一个 `⌖`，标明这一对坐标是一个位置，而不是两个零散的角度。
++         位于伴生对象中，因此无需导入。
++   entry .latitude   纬度，作为位于 `[−90°, 90°]` 的 `Angle`
++       从定点形式读回，因此与构建该位置时所用的角度相差约千万分之一度以内。
++   entry .longitude   经度，作为位于 `[−180°, 180°)` 的 `Angle`
++       西经为负：`Location(0.deg, Angle.degrees(-74.006)).longitude.degrees` 约为 `-74.006`。
++   entry .pair   纬度和经度，作为由角度组成的元组
++   entry .geohash   该位置的 base-32 geohash，由给定数量的字符组成
++       `Location(57.64911.deg, 10.40744.deg).geohash(11)` 是 `t"u4pruydqqvj"`，即那个经典示例。
++       较短的哈希是较长哈希的前缀，邻近的位置通常共享一个前缀，但分处单元边界两侧的两个位置可能毫无共同前缀，因此前缀匹配只是对邻近性的初步筛选，而不是答案。
++   entry .surfaceDistance   两个位置之间的大圆间隔，作为 `Angle`
++       按半正矢公式计算。
++       该角度的弧度乘以球体半径即为沿其表面的距离：在地球上，`london.surfaceDistance(paris).radians*6371` 约为 344 km。
++       它是对称的，从一个位置到其自身为零；两极相隔半圈。
++   entry .bearing   朝向另一个位置的初始方位角，由一个 `Directional` given 解析
++       `here.bearing[Compass[8]](there)` 取 `here` 处的大圆方位角，从北顺时针量起并规范化到 `[0°, 360°)`，然后把它传给作用域中的 `T is Directional`：即从 `compassBearings` 按名称导入的罗盘方位图或角度约定。
++       沿大圆行进时方位角会变化，因此这是出发时的方位角。

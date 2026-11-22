@@ -1,0 +1,226 @@
+orthant 2 language
+
+% 0 1 0 121adec7a26d9f3d10815d07b23a4dd6
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 6 0 0960451d2f76a9bd1e0adf405cc809cf
++ [Markdown](https://commonmark.org/) to format zwykłego tekstu dla prozy w plikach readme,
++ komentarzach i dokumentacji. Parsuje się go, zgodnie ze specyfikacją CommonMark, do typowanego
++ drzewa. Drzewo oddziela treść na poziomie bloków, takich jak nagłówki, akapity i listy, od
++ treści w wierszu zawartej w nich, takiej jak wyróżnienia, odnośniki i fragmenty kodu. Z tego
++ drzewa tworzy się HTML, zapisuje się z powrotem Markdown albo tworzy stylizowane wyjście dla
++ terminala.
+
+@ 0 4 0 045052ea0634f6bf0e553c4076fcca31
++ Treść blokowa i treść w wierszu to różne typy. `Markdown of Layout`, czyli cały dokument, i
++ `Markdown of Prose`, czyli ciąg treści w wierszu, nie mogą zostać pomylone. Każdy z nich staje
++ się takim rodzajem [HTML](html.md#precise-types), który jest poprawny w jego miejscu: treścią
++ przepływową w pierwszym przypadku i treścią frazową w drugim.
+
+@ 0 1 0 13d1699102fd2c7306462b4e03ea938d
++ ### O Markdownie
+
+@ 0 4 0 053f7b5f4b64578308941c5342c8f097
++ Markdown ma dwa poziomy, które pojedyncze nietypowane drzewo zwykle zaciera. Akapit i
++ wyróżnienie w nim nie są wymienne. Nagłówek może zawierać odnośnik, ale odnośnik nie może
++ zawierać nagłówka. Reprezentacja, która traktuje każdy węzeł jednakowo, pozwala zbudować taki
++ nonsens i zostawia sprawdzenie temu, co konsumuje drzewo.
+
+@ 0 6 0 128a8e5d5f4886551efb4ec37bb87726
++ Tutaj poziomy są rozdzielone w typach. Strukturą bloków jest wyliczenie `Layout`, strukturą
++ treści w wierszu jest wyliczenie `Prose`, a typ dokumentu zapisuje, które z nich zawiera.
++ Parsowanie daje kompletne drzewo CommonMark, a konwersja do HTML daje dokładnie tę treść, którą
++ może być każdy węzeł. To, że dokument parsuje się do typowanego drzewa, a nie konwertuje wprost
++ do HTML, czyni go [składalnym](../../philosophy/composability.md) z resztą programu.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Wszystko pochodzi z pakietu `soundness`. Ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Parsowanie
+
+@ 0 1 0 19879ba9c10873e91f498fd5c198e2f0
++ `Parser.parse` odczytuje tekst Markdown do dokumentu, który jest `Markdown of Layout`:
+
+% 2 1 0 131eac3ae1c1a63b0937c380254d4f97
+
+% 0 1 0 07bf5768721fa0c1000c40e87e7cbeb1
+
+% 1 1 0 052e9db5a24f0c8608f145e8d59bb230
+
+@ 0 4 0 120ab08a55d4f2d01029402888b0b2c2
++ Markdown parsuje się też przyrostowo, ze [strumienia](streams.md), odczytując wiersze w miarę
++ ich nadchodzenia, bez przechowywania źródła. Zachowywane jest tylko drzewo oraz surowy tekst
++ każdego akapitu, parsowany później. Długi dokument parsuje się więc, nigdy nie przechowując go w
++ całości:
+
+% 2 1 0 073c08102dbe95401504a8660e829b7f
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 126a721a4597547b0489551d32bbd3c6
+
+% 1 1 0 1fb9dfad5653f9c5059747488a9ce605
+
+% 3 1 0 1a463f1444e48ac519e1719b4c0c470d
+
+% 4 1 0 1d60d27680d7668b1e8e97334e7eaab4
+
+% 5 1 0 17bcc6e276ba870611c052f3120b8822
+
+% 0 1 0 0feac51c8c25f55f02db7c0d27452235
+
+% 0 1 0 0fa1a30ef9d87e201733a7b4a399c5d3
+
+% 1 1 0 020199d086c5586f110ac215bd7df73c
+
+@ 0 2 0 156f6836137174640acb8d2d4b419a3f
++ Cały zestaw testów zgodności CommonMark przechodzi przez wejście strumieniowe, znak po znaku,
++ więc dokument podzielony w dowolnym miejscu parsuje się do tego samego drzewa co cały tekst.
+
+@ 0 1 0 177ca136a9954dab03a7ff23ee26afb8
++ ### Przedstawianie w HTML
+
+@ 0 3 0 03493252d9d8f3e10dc91ff0e8e7808b
++ `html` konwertuje sparsowany dokument do HTML, a `show` zapisuje wynik jako tekst. Dokument
++ złożony z bloków staje się treścią przepływową, a treść w wierszu w nim – treścią frazową, więc
++ wynik jest poprawny z konstrukcji:
+
+% 2 1 0 0f36e330bd43acdb1c3e63c6f1583fef
+
+% 3 1 0 02bdd7e53cde8b131d842fb974f95e5b
+
+% 4 1 0 0b9bde4fcb563e800fea0228a7555f9c
+
+% 0 1 0 0383308cd0976089062c22d03e77a39b
+
+% 1 1 0 1cf156ca4925e96011081e9ae96f5a7f
+
+@ 0 1 0 010d0274d9018d681573e1ed4586a65c
++ ### Drzewo składni
+
+@ 0 2 0 01e85471250a775a1958033941841f21
++ `children` dokumentu to węzły `Layout`, a każdy z nich ma swoją treść w wierszu jako `Prose`.
++ Dokument można więc inspekcjonować lub przekształcać, dopasowując drzewo:
+
+% 2 1 0 17c5225d771dd8e9022023cedeb55d71
+
+% 0 1 0 1ec99e4b8eb0766a0a399d55715af9d1
+
+% 0 1 0 197a4abc5b21014e04147d340fc2d578
+
+% 0 1 0 00a9b69795495f8c0fa17e2908945246
+
+% 1 1 0 1842809274dbb321137f694997aced7a
+
+% 3 1 0 0765a3cb13b8dc1c0d74a77bf3cf129e
+
+% 4 1 0 1d7f6d569b4615f00780ec174718e5fd
+
+% 5 1 0 194de6747f002e32009515db9bbcee5c
+
+% 0 1 0 1e923147c02ee26b01950df9e2c4f162
+
+% 1 1 0 0fa4253a8869c55b05fade47ccdc5077
+
+@ 0 1 0 19229a6546c8178c1577dad09bef9ea8
++ Węzły blokowe to przypadki `Layout`, a każdy z nich zna wiersz, w którym się zaczyna:
+
+% 2 1 0 07b009aeb41a055e13fb7ac7108bfe4f
+
+% 0 1 0 08ceaa0479829f7014f6b98ae0f48681
+
+@ 0 9 0 1b275a7b79a34cca05480391a526b880
++ column  Jest
++ row  `Heading`  nagłówkiem, z poziomem od 1 do 6
++ row  `Paragraph`  akapitem
++ row  `BlockQuote`  cytatem blokowym
++ row  `OrderedList`  listą uporządkowaną
++ row  `BulletList`  listą punktowaną
++ row  `CodeBlock`  blokiem kodu, z jego napisem informacyjnym
++ row  `ThematicBreak`  podziałem tematycznym
++ row  `HtmlBlock`  blokiem surowego HTML
+
+% 1 1 0 08e84ca56cd4354b17584df5ee32dd96
+
+@ 0 1 0 1185f84b31e13331027513b93b8a64dd
++ Węzły w wierszu to przypadki `Prose`:
+
+% 2 1 0 0eebceb8cde8399f0859fcdf2d8e1d80
+
+% 0 1 0 011588892de68b051fea6548dc0c53c9
+
+@ 0 10 0 177b3b757a4f30a215b1113bfe1f4a52
++ column  Jest
++ row  `Textual`  zwykłym tekstem
++ row  `Emphasis`  wyróżnieniem
++ row  `Strong`  silnym wyróżnieniem
++ row  `Code`  fragmentem kodu
++ row  `Link`  odnośnikiem, z jego celem i opcjonalnym tytułem
++ row  `Image`  obrazem, z jego celem i opcjonalnym tytułem
++ row  `Softbreak`  miękkim podziałem wiersza
++ row  `Linebreak`  twardym podziałem wiersza
++ row  `HtmlInline`  surowym HTML w wierszu
+
+% 1 1 0 021be9cf3777151907fe39933defc871
+
+@ 0 1 0 011b2f9bf2397efd1325437ee408ef94
++ ### Zapisywanie Markdownu z powrotem
+
+@ 0 2 0 10d034adeee2a01404959aad4291639f
++ `show` zapisuje dokument z powrotem jako tekst CommonMark. Wybór formatowania w zasięgu może
++ zawijać wynik do szerokości w kolumnach, aby generować czytelny Markdown:
+
+% 2 1 0 001b0a4a036b7cf20de076acade732aa
+
+% 3 1 0 0e3e3b851464a7ce18e49dc429a19ca8
+
+% 4 1 0 16e8d4e8548f0d3a1423107067452167
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 05302161360d736a192f24c0aca7d78f
+
+% 0 1 0 1c993aa8b97831d21798685fe5eafa84
+
+% 1 1 0 14c9495ae3e825c80b23163480949f4d
+
+@ 0 1 0 18e986a95104097718f6f7c9455827b3
++ ### Wyjście terminala
+
+@ 0 2 0 012dcf8a9ce3c5a9069573122049c4e0
++ `terminal` konwertuje dokument na [stylizowany tekst terminala](terminal.md#styled-text).
++ Nagłówki, wyróżnienia i kod stają się stylizacją ANSI, do wyświetlenia w konsoli przy danej
++ szerokości:
+
+% 2 1 0 17215905a3e3255403da61edfadf5f64
+
+% 3 1 0 1ebf2afcdaf8f05c11a1430b3e1ee9d1
+
+% 4 1 0 0e56faf57128e94f149f9b64fa555792
+
+% 0 1 0 0b609662b73531fa0d60a657b52d115d
+
+% 1 1 0 0bd90217454f9e651bf1689fe690f4e4
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 06f3495389f09318135b8ba3dfabc88a
++ - [HTML](html.md) opisuje HTML, do którego konwertuje się dokument.
++ - [Terminal](terminal.md) opisuje stylizowany tekst postaci terminalowej.
++ - [Podświetlanie składni](syntax-highlighting.md) koloruje kod w bloku kodu.
++ - [Błędy](errors.md#defining-an-error) opisuje komunikaty, które można pisać w Markdownie.
++ - [Strony WWW](pages.md) zawierają przedstawiony Markdown jako swoją treść.

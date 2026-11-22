@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 14931b02eca34bd916f67997ce15cdca
++ Czasem pytanie nie dotyczy tego, co kompilator *otypował*, lecz tego, co *wyemitował*: czy
++ kombinator rozwija się bez śladu albo do czego kompiluje się gorąca ścieżka. Plik klasy
++ parsuje się do typowanych metod i instrukcji, a każda instrukcja niesie odtworzony stan stosu
++ operandów. Bajty, które nie są plikiem klasy, zgłaszają `Classfile.Error`:
+
+% 0 1 0 02841fa017604ac603dfae8ad7043c4f

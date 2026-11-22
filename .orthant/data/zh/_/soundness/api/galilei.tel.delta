@@ -1,0 +1,3204 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1895e7063e1c10471bdab7b34bcabffd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 08298710bff8ab3716f1426c3bc393a1
++ info   磁盘上的文件、目录和链接，通过有类型的路径和显式的方针来操作
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 09037eb5265f0a1d0d6d8679df082c20
++     _Galilei_ 是文件系统库：`Path on Linux`、`Path on MacOs`、`Path on Windows` 或 `Path on Local`（serpentine 的抽象路径，绑定到 galilei 的某个平台类型）获得所有触及磁盘的操作——读取和写入、在一个作用域内打开、创建、列出、复制、移动、链接、删除、计算校验和——而每个操作都在其类型中说明它可能抛出什么，以及它参考哪个方针。
++     棘手的情况（覆盖还是拒绝？递归进入目录还是拒绝？跟随符号链接与否？）从来没有默认值：它们是来自 `filesystemOptions` 包的上下文值，按名称导入，缺少方针的操作无法通过编译。
+
+% 2 1 0 09f1ac8720cf0922159d2777ce6527ec
+
+% 3 1 0 1e110f24cf968d5815d223a80081f5d3
+
+% 4 1 0 001d684971b671c60a483f02226ce2d1
+
+% 5 1 0 19afc33468f556b503cafa25c905d6a5
+
+% 6 1 0 1ac985a689ddaa76081f033326ae7460
+
+% 7 1 0 12ffb7f51da12cc002189e1f9a33bb76
+
+% 8 1 0 1ab63160e59fdb60114c68b6dd5bf6eb
+
+% 9 1 0 0ae0f9d86fbcc4ab01be155f76345818
+
+% 10 1 0 0de017c01e291e8511de2d156a61f76b
+
+% 11 1 0 166b81b52c26d13e17326458d6f69b3f
+
+% 12 1 0 12d8e6c9288aa88003769c8cbcb1f33c
+
+% 0 1 0 19cb2771e4e82d7e17bb586e8e6bd4fd
+
+% 0 1 0 05ab092ebcc097c4116efcf00fa9846f
+
+% 0 1 0 0fc1ed4f4c9daf131c306fee7a9d2bef
+
+% 0 1 0 1addd7c40d4ebf85199a4f49fa8da1a9
+
+% 0 1 0 1c7bf77bca472f31177b80f371b9fad5
+
+% 0 1 0 04b3c57953be90d7014e12eb2e4e04e1
+
+% 0 1 0 0126fdbd958600551031a927076c3f35
+
+% 0 1 0 0d12e1f23b04a88d1806831c9d07eb6d
+
+% 1 1 0 15c9a2a13ad50c680348a59a2c99b1ef
+
+@ 0 9 0 1e997b4d1db5a85f0df2e80e9fbc5f51
++     **平台。**
++     路径的平台是一个扩展 `Platform` 的幻影类型：`Posix`、它的细化 `Linux` 和 `MacOs`、`Windows`，以及 `Local`，后者是运行中的机器所用的那个平台（它的 `Filesystem` 实例从作用域中的 `System` 读取分隔符）。
++     每个平台的伴生对象都容纳它的命名 `Rules`（一个路径段可以是什么）、它的 `Filesystem` 实例（名称、分隔符、`.` 和 `..`），以及从文本读取其根并写回文本的 `Radical`/`Eradicable` 对——POSIX 的根是 `%`，Windows 的根是 `Drive`。
++     路径用 `on[Linux]` 绑定到平台，用 `t"/tmp/x".as[Path on Linux]` 从文本解码，或用 `p"/tmp/x"` 写成字面量，编译器会检查它并将其类型定为 `Path on Posix`（或者根据其形状定为 `Path on Windows`）。
+
+@ 0 8 0 1aa587bf2a5cc99a0b22c003cf5130bc
++     **后端。**
++     公共 API 中没有任何东西提及平台 API。
++     基本操作——`stat`、`open`、`children`、`createFile`、`copy`、`move`、`delete`、`realPath` 等——汇集在一个 `FilesystemBackend on <platform>` 中，通过按名称从 `filesystemBackends` 包导入一个 given 来选定：`javaBaseFilesystem`（`java.nio`，位于 `galilei.jvm`）、`scalaNativeFilesystem`（`galilei.native`）或 `wasiFilesystem`（`wasi:filesystem`，位于 `galilei.wasi`，它还需要 `wasiApis.wasiFilesystemApi`）。
++     后端无法支持的操作会抛出带有 `Reason.Unsupported` 的 `Io.Error`，而不是近似地实现它。
+
+@ 0 9 0 19c62b261076343c00e0a0284af386e2
++     **错误。**
++     每个磁盘操作都抛出 `Io.Error`，它指明路径、`Io.Error.Operation`（`Read`、`Write`、`Create`、`Copy`、`Move`、`Delete`、`Metadata`、`Open`、`Access`）和取自 POSIX errno 词汇的 `Io.Error.Reason`（`Nonexistent`、`AlreadyExists`、`PermissionDenied`、`DirectoryNotEmpty`、`Busy`、`Unsupported`……），因此失败是按出了什么问题来匹配，而不是按异常类。
++     把文本解码为路径会抛出 serpentine 的 `Path.Error`（错误的根，或违反平台规则的名称）；那是另一种错误，在触及任何磁盘之前就会抛出。
++     作用域中需要一个 `Tactic[Io.Error]`——`strategies.throwUnsafely`、`safely`、`unsafely`，或者自己编写的 `mitigate`。
+
+@ 0 9 0 1869755cd8d24227023c8d605cddb72c
++     **作用域。**
++     `path.open[File](Read & Write)` 用一个只在代码块内存在的 `Handle` 运行代码块，而 `path.open[Directory](…)` 提供一个 `Directory.Handle`，其路径位于一个新的平面上，因此 `..` 无法通过编译，从句柄派生的任何东西都不会逃逸。
++     `Mode` 以 `Grant` 的形式携带在句柄的类型中，因此通过只读句柄写入是编译错误；`Exclusive` 和 `Shared` 还会获取操作系统的建议锁，并登记到进程内的 `AccessRegister` 中。
++     `create[File]()` 和 `create[Directory]()` 是针对尚不存在之物的对应操作。
++     `Scratch` 和 `Scratch.File` 是这样的形式：其条目被新建，并在作用域结束时被删除，无论作用域以何种方式结束。
++     `Ram`（JVM）对文件做内存映射，`Slice` 则是它的一个字节范围的窗口。
+
+@ 0 8 0 0cacbb00f8bf6e01094040b925ae2d11
++     **列出和检视。**
++     `children` 列出目录的直接条目，`descendants` 按从 `filesystemTraversal` 选定的 `TraversalOrder` 列出它的整个子树，`glob` 展开其下的一个 `Glob` 模式。
++     `entry()` 说明路径是 `File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice` 还是 `CharDevice`；`filesize()`、`modified()`、`accessed()`、`hidden()`、`volume()`、`entryIdentity`、`hardLinks()` 读取它的元数据。
++     `canonical()` 是文件系统自身所知的路径，其中每个符号链接都已解析。
++     `checksum[Sha2[256]]` 计算文件字节的摘要，或者目录中各文件连同其相对名称的摘要。
+
+@ 0 4 0 19b8851c398653951315906abb0fab27
++     **存储文件系统轴。**
++     条目存储在哪个文件系统上——`Btrfs`、`Ext4`、`Apfs`、`Ntfs`——通过匹配（`case Apfs(path) => …`）确定，并以 `Path on Linux over Apfs` 的形式记录在路径的类型中，这会解锁扩展属性（`attribute`、`attributes`）、全函数的 `creation()` 时间，以及 btrfs 的 `subvolume()`。
+
+@ 0 5 0 114894f24125fcc10fda36a37cb02c1b
++     除单个路径之外：`Cas` 是位于某个目录下的内容寻址数据块存储；`Searchpaths.Stems` 用 `search`、`locations`、`listing` 和 `destination` 把 XDG 搜索路径平面（`Xdg.Data`、`Xdg.Config`）解析到真实目录上；`Umask` 和 `Fdtable` 是守护进程代表客户端提供的上下文值（它创建内容时遵循的掩码，以及它的 `/dev/fd/N` 路径据以打开的描述符表）。
+
+@ 0 1 0 18b5259a85e28e15163e759bc4f3e220
++     这个库按各平台的能力划分：
+
+@ 0 12 0 11f21f8a8f0754c10e19c8575f0d8976
++     - `galilei.core`——平台、`FilesystemBackend`、每个路径操作、`Io`、各种方针、`Handle`、`Directory.Handle`、`Scratch`、`Slice`、`Cas`、`Searchpaths`、`Umask`、`Fdtable`。与平台无关。
++     - `galilei.jvm`——`filesystemBackends.javaBaseFilesystem`、内存映射的 `Ram` 文件、Unix 域 `Sock` 的创建（`socketCreatable`）、设备节点（`Device`），以及 `javaPath`/`javaFile` 逃生舱口（不导出到总括包）。
++     - `galilei.native`——`filesystemBackends.scalaNativeFilesystem`，即为 Scala Native 编译的同一个 `java.nio` 实现。
++     - `galilei.wasi`——基于 `wasi:filesystem` 组件接口的 `filesystemBackends.wasiFilesystem`，以及它的 WIT 定义 `wasiApis.wasiFilesystemApi`。WASI 没有文件锁、没有 `realpath`、没有扩展属性、没有卷，也没有 FIFO，因此这些操作抛出 `Unsupported`。
+
+@ 0 8 0 1073ca4dbeafbd431e90c09c370e92e0
++     一切都导出到 `soundness` 总括包，而 `filesystemOptions`、`filesystemTraversal`、`filesystemBackends` 和 `wasiApis` 这些选择包与总括包自己的同名包合并，因此用户写下 `import soundness.*`，然后按名称导入每个方针和后端——`import pkg.*` 不会导入 given。
++     `pathInterfaces` 的 given（`pathOnLinux`、`pathOnWindows`、`pathOnMacOs`、`pathOnLocal`、`pathOnPosix`）让任何期望路径类型的地方都可以请求 `Path on Linux`（`temporaryDirectory[Path on Linux]`、`Home[Path on Linux]()`），它们声明在 `anticipation` 包中，并在那里有文档说明。
+
+% 0 1 0 1fde5e150c1e4e071a678f41d4766274
+
+% 0 1 0 15198dbb2ee7af7702ac40a54ad0ebae
+
+% 0 1 0 1209dd7ee558311d057dfc21b3bdaf25
+
+% 0 1 0 062b0627a57e97341fd840bf912a81b6
+
+% 0 1 0 0bf765632ba2533e05c780925fcfd24c
+
+% 0 1 0 07458429275b114004eb77e7a58d66be
+
+% 0 1 0 019573978201dc300c7a3313ca3d9035
+
+% 0 1 0 01c1a10808ceb2751002a47ed164258f
+
+@ 0 1 0 1f9b4c9c9ece1d420115bad49c4334bb
++ entry .Platform   操作系统平台类型的共同基类型，也是每个路径的磁盘 given 的所在之处
+
+% 1 1 0 0109a446c8e72f990ca9d96aa876fdd7
+
+@ 0 5 0 04810f3ccdd53fa0099c8fe17498ba1d
++       `Platform` 是每个操作系统平面都扩展的幻影类型：`Posix`（及其细化 `Linux` 和 `MacOs`）、`Windows` 和 `Local`。
++       `Path on <platform>` 是名称遵守该平台规则的 serpentine 路径；`Platform` 本身不携带任何成员，而且是纯的（它从不捕获），因此路径的平面能通过 `soundness` 导出别名精确地统一。
+
+@ 0 7 0 115517eb0f27e7e906e1e2b58fb19a06
++       伴生对象是让路径能*做*事的 given 所在之处，因此它们无需导入就位于每个 `Path on <platform>` 的隐式作用域中：`.pathReadable`（`path.read[Text]`）、`.pathWritable`（`path.write` 的类型类形式）、`.pathChecksummable`（`path.checksum[Sha2[256]]`）、`.openable` 和 `.directoryOpenable`（`path.open[File]`、`path.open[Directory]`）、`.fileCreatable`、`.directoryCreatable` 和 `.fifoCreatable`（`path.create[File]()` 等），以及 `.eof`（`Eof(path).open(Write)` 追加写入）。
++       它们都需要一个 `FilesystemBackend on <platform>` 和一个 `Tactic[Io.Error]`。
+
+% 2 1 0 003cdf304e9d784b0d9b43e07eb55b7a
+
+% 3 1 0 0d9b519baef7784815953d7b943d1ad0
+
+% 4 1 0 0827c2fcd5d2b23c1221158b3bbe9499
+
+% 5 1 0 0be5d391cee63c1b08b810188eab1ff2
+
+% 6 1 0 086a28e57672d7670debd6ad778dc036
+
+% 7 1 0 0b460a03b2f1f57b14126b68bed6fda1
+
+% 0 1 0 1c76bc217e4841c80518badb7168087b
+
+% 0 1 0 1a0489832c0a5cfd08be846c0300a012
+
+% 0 1 0 105ca851654b82b51bf67eda432df35c
+
+% 0 1 0 0b67abe8685cad650ce5d4f951592af6
+
+% 0 1 0 1d496ef548ca7aff144004cd9b6b348e
+
+% 1 1 0 0d7fb7581396cad412b2e851b1d492c3
+
+% 2 1 0 01781b5cb83326ba12d69479e11d980d
+
+% 1 1 0 0ee1e89f47037c1c04f5c488fcbf18d8
+
+% 2 1 0 15bc03b4dfc586a61cbb7a3d9ecb73cf
+
+% 1 1 0 00e2f4d253ad5fd108b150f9bcaddfde
+
+% 1 1 0 1bc9e1afc61bcf4411480fde6a0afe49
+
+% 1 1 0 1f63cfee1b6103d207ab7eed8c912808
+
+@ 0 15 0 1f5542face134cf202a363a393b11927
++   entry .uuid   让 `Uuid` 在任何平台的路径上充当名称
++       接纳 `Uuid` 作为路径段（`directory / Uuid()`）的 `Admissible` given，不做检查，因为 UUID 的文本——十六进制数字和连字符——不违反任何平台的规则。
++       `.uuidNavigable` 呈现它。
++   entry .uuidNavigable   把 `Uuid` 路径段呈现为其文本
++   entry .pathChecksummable   `path.checksum[Algorithm]`：文件的字节，或目录中的文件连同其名称
++       适用于任何 `Path on <platform>` 的 `Checksummable` given。
++       文件贡献它的字节，因此它的校验和就是其内容的摘要。
++       目录按相对于它的路径顺序贡献其中的常规文件，每个文件以其相对路径和内容的形式出现，每个部分前面都加上它的长度——因此重命名、移动或内容的改变都会改变摘要，容纳相同文件的两个目录无论位于何处都得到相同的摘要，而空目录的摘要是空内容的摘要。
++       符号链接是否被跟随，由作用域中的 `DereferenceSymlinks` 决定。
++       它需要一个 `FilesystemBackend`、一个 `DereferenceSymlinks`、一个 `Tactic[Io.Error]` 和一个 `Every[Fdtable]`（由默认值满足），以及该算法通常所需的 gastronomy `Hash`。
+
+% 2 1 0 05b33cb251c38c5f1effad9df84a4152
+
+% 3 1 0 10c5a4edb9a2f5d60ede1da893f4f05a
+
+% 4 1 0 08ca320a30b1675d0aeb5686abd104cb
+
+% 5 1 0 0f6b7b34e3e1c0c61bf37b3183b2f2ee
+
+% 6 1 0 1ba0a450a0d9fb051c4701b6cc9f31d1
+
+% 0 1 0 159d376a444fae2a12c7db6b8d893f68
+
+% 1 1 0 195b6bdc2c8b11360ee994c55c07e95f
+
+% 2 1 0 19c9a5104ff916711c50d422393cacbb
+
+% 0 1 0 0a2f6a9849bac1950304d65c4c2ed7f6
+
+% 0 1 0 02eb0f061d3a94c30d2b1902d922ba7a
+
+% 1 1 0 1e05caac592b6d961e7d87de959db06e
+
+@ 0 36 0 0f385556a52079e80db31daaecf694a1
++   entry .pathReadable   `path.read[Text]`、`path.read[Data]`：一次读取整个文件
++       让 `path.read[result]` 对任何 `Path on <platform>` 无需导入即可解析的 `Readable` given。
++       整个文件一次性读入内存，不持有句柄，也不需要作用域——不同于打开路径，后者在作用域内以流的形式读取——然后交给一个 `Data is Readable to result`（`Text`、`Data`，或任何可从字节解码的类型）。
++       它抛出 `Io.Error`（`Nonexistent`、`PermissionDenied`、`IsDirectory`……），被文件提前截断的读取报告为 `Reason.Physical`。
++       由作用域中的 `Fdtable` 管辖的路径通过其描述符读取，而不是从本进程的文件系统读取。
++       主体的上界为 `path <: Path on plane`，因此 `p"…"` 字面量或 `on[Linux]` 路径（其类型比 `Path on Linux` 更丰富）也能匹配。
++   entry .pathWritable   `path.write` 的 `Writable` 形式：用一个流替换文件的全部内容
++       即时 `write` 扩展的类型类对应物，使得通用的写入器（例如 `open[Tel]` 的写回）对任何 `Path on <platform>` 无需导入即可解析。
++       它聚合流并整体写入；受管辖的 `Fdtable` 路径通过其描述符写入。
++   entry .openable   `path.open[File](mode, flags*)`：适用于每个平台路径的 `FileOpenable` 实例
++       它锚定在这里，即路径类型上，而不是 `File` 的伴生对象中，这样 `path.open[File](…)` 无需导入即可解析。
++       它需要一个后端、一个 `Tactic[Io.Error]`、一个 `Umask`（默认值是进程自己的）和一个 `Every[Fdtable]`。
++       模式和各个 `OpenFlag` 的作用见 `FileOpenable`。
++   entry .directoryOpenable   `path.open[Directory](mode)`：适用于每个平台路径的 `Directory.Openable` 实例
++       当它和 `.openable` 同时在作用域中时，单纯的 `path.open(…)` 是有歧义的，因此总是要写明形式：`open[File]` 或 `open[Directory]`。
++   entry .directoryCreatable   `path.create[Directory](flags*)`：创建目录，或在作用域内编写一个目录
++       需要一个后端、一个 `Tactic[Io.Error]`、一个 `Io.Event is Loggable` 和一个 `Umask`。
++       见 `Creation.DirectoryCreatable`。
++   entry .fileCreatable   `path.create[File](flags*)`：创建空文件，或在作用域内编写一个文件
++       见 `Creation.FileCreatable`：有作用域的形式写入一个临时的同级文件，并在代码块完成时把它移动到位。
++   entry .fifoCreatable   `path.create[Fifo](flags*)`：创建命名管道
++       见 `Creation.FifoCreatable`。
++       只支持实例化形式；在作用域内编写 FIFO 会一直阻塞，直到有对端打开另一端。
++   entry .eof   `Eof(path).open(Write)`：打开文件以追加写入
++       针对 `Eof[path]` 的 `Openable` 实例，适用于任何本身可作为 `File` 打开的路径：它在前面加上 `OpenFlag.Append` 并进行委托，因此句柄的写入位于现有内容之后。
+
+% 2 1 0 0808e52cc040962b1be07d114abde35c
+
+% 3 1 0 0a91ec1f44f04c870dbd1a498722f9b4
+
+% 4 1 0 1a2668db72f8c9c012668032217e3daa
+
+% 5 1 0 0f17ec65d9d42a5c0f89f942330b0c2d
+
+% 6 1 0 1db9dba3d794380a02d610c95e7ffd13
+
+% 7 1 0 0707f9496caf60d5077b35533e079a05
+
+% 0 1 0 0e0693ca472aedc01d943f55114031f7
+
+% 0 1 0 1be8f6f21cad718001e88b84b46392af
+
+% 0 1 0 1f253794fcf00d5e0dcf2521ed721dae
+
+% 1 1 0 17196d21c199c0d00d1c2373fc348fea
+
+@ 0 1 0 0ad2d607b35ec7c911e4bd1900618bc5
++ entry .Posix   POSIX 平台：以 `/` 为根、名称不得包含 `/` 或 `:` 的路径
+
+% 1 1 0 17e7dda5c1139bb608a54372b6f040ea
+
+@ 0 6 0 1e9fe4740d0b882b1f9d6f6f6c7037ec
++       任何 POSIX 系统上路径的平面，也是 `Linux` 和 `MacOs` 的超类型。
++       它的根是 `%`，编码为 `/`；它的 `.Rules` 禁止名称中出现 `/` 和 `:`，并禁止名称 `.`、`..`、空名称和 `Icon\r`（macOS 的文件夹图标文件），因此在 `Posix` 上有效的路径在两个细化上都有效。
++       `p"/home/user"` 是一个 `Path on Posix`。
++       仅限 POSIX 的操作——`executable`、`hardLinks()`——在任何 `Path on <plane <: Posix>` 上都可用。
+
+% 2 1 0 18240df4a968956b0cba247b27ef2d29
+
+% 3 1 0 12513084ae8e2ff40c1a948918ae1aca
+
+% 4 1 0 0c874550052b18450e6eed93f8538dff
+
+% 0 1 0 0db2846be9fbad861fdd742bb98a0e17
+
+% 0 1 0 1ae00d191f3cd9e31ee3495b28b8a6b7
+
+% 1 1 0 07682eeb9ecfdcb61bf10401dd621e7e
+
+% 1 1 0 01306aff3d36014511d4cecec42f0f65
+
+% 2 1 0 050fd64e494c0c71076c22d3e998f87c
+
+@ 0 8 0 03761a0f847170a7182bc227592fd281
++   entry .Rules   POSIX 名称可以是什么：没有 `/`，没有 `:`，不是 `.`、`..`、空名称或 `Icon\r`
++   entry .filesystem   `Filesystem` 实例：名为 `POSIX`，以 `/` 分隔，`.` 和 `..`，单一的根
++   entry .radical   把根 `%` 编码为 `/`
++   entry .eradicable   从以 `/` 开头的文本解码根，否则抛出 `Path.Error(InvalidRoot)`
++       需要一个 `Tactic[Path.Error]` 并保留它，因此把文本解码为 `Path on Posix` 只会在其根上或在违反 `.Rules` 的名称上失败。
++   entry .submissible   让 `%` 成为用 `/` 构建的 `Path on Posix` 的根
++   entry #UniqueRoot   `true`：每个 POSIX 路径都只有一个根 `%`
+
+@ 0 1 0 0bd8267b492bf097138a8493685828b8
++ entry .Linux   Linux 平台：采用普通 POSIX 命名规则的 POSIX 路径
+
+% 1 1 0 18f2b1e489859bec157009009a28572b
+
+@ 0 6 0 169b38bbf333016615aacb524719d3d7
++       `Posix` 的一个细化，其 `.Rules` 是最小的 POSIX 规则（没有 `/`；不是 `.`、`..` 或空名称），放宽了 `MacOs` 的 `:` 和 `Icon\r` 限制。
++       `Path on Linux` 是大多数代码所用的类型：它是 `Xdg`、`Home` 和 `temporaryDirectory[Path on Linux]` 产生的类型，也是 XDG 搜索路径的目标平台（`Searchpaths.Stems on Xdg.Data onto Linux`）。
++       `Linux` 风格的相对路径也可以通过 `searchpathCompliant` 在搜索路径平面上重新解释。
+
+% 2 1 0 004811fdf3abc0470746dfd2558e7f11
+
+% 3 1 0 100992dc952a65c415f2c3b112bbb626
+
+% 4 1 0 163c4949e92b3b810e90591a7124282d
+
+% 0 1 0 048bf4e47002d44604e1ca24e6122d8d
+
+% 0 1 0 0c18c639d35e734b06740b6eedc3c467
+
+% 1 1 0 01e71363fccd5bd91eed523a618d4fae
+
+% 2 1 0 067fb1b165b7bb7e15337c5143e051a0
+
+@ 0 11 0 07f948387431d5ba0b21c39c7e2518d7
++   entry .Rules   没有 `/`；不是 `.`、`..` 或空名称
++   entry .nominative   让 Linux 路径遵守 `.Rules` 的 given
++   entry .pathOnLinux   把 `Path on Linux` 标记为 `Paths` 域的代表
++       `Representative of Paths` given，使得可以按域请求 `Path on Linux`（从 URL 或类路径条目执行 `as[Path on Linux]`）。
++       同一个 given 也以 `pathOnLinux` 的名称从 `anticipation.pathInterfaces` 导出，在那里按名称导入。
++   entry .filesystem   `Filesystem` 实例：名为 `Linux`，以 `/` 分隔，单一的根
++   entry .radical   把根 `%` 编码为 `/`
++   entry .eradicable   从以 `/` 开头的文本解码根，否则抛出 `Path.Error(InvalidRoot)`
++   entry .submissible   让 `%` 成为用 `/` 构建的 `Path on Linux` 的根
+
+@ 0 1 0 1aca2a3a647467670f35e74e25c63c7c
++ entry .MacOs   macOS 平台：名称还排除了 `:` 和 `Icon\r` 的 POSIX 路径
+
+% 1 1 0 082db4cd1a9f8987121b7a1ffd58a85e
+
+@ 0 5 0 095282e5171ebba70bb7b606aca592d1
++       `Posix` 的一个细化，其 `.Rules` 加上了 macOS 自己的限制：名称不得包含 `:`（经典 Mac OS 的分隔符，Finder 至今仍拒绝它），也不得是 `Icon\r`，即承载文件夹自定义图标的隐藏文件。
++       在 `MacOs` 上有效的路径在 `Linux` 上也有效；反之则不然。
++       `Local` 的规则是 `MacOs.Rules & Windows.Rules`，因此 `Path on Local` 也满足 macOS 的规则。
+
+% 1 1 0 01e40af82f42739a11280db692c41c67
+
+% 1 1 0 13bb5335fcc5552118d45027b98ebed3
+
+@ 0 6 0 08aa7002b72cd85b1a16c618e9798e4f
++   entry .Rules   没有 `/` 或 `:`；不是 `.`、`..`、空名称或 `Icon\r`
++   entry .pathOnMacOs   把 `Path on MacOs` 标记为 `Paths` 域的代表
++   entry .filesystem   `Filesystem` 实例：名为 `Mac OS`，以 `/` 分隔，单一的根
++   entry .radical   把根 `%` 编码为 `/`
++   entry .eradicable   从以 `/` 开头的文本解码根，否则抛出 `Path.Error(InvalidRoot)`
++   entry .submissible   让 `%` 成为用 `/` 构建的 `Path on MacOs` 的根
+
+@ 0 1 0 07d3117fb9993979050079cb21238db1
++ entry .Windows   Windows 平台：以驱动器为根、以 `\` 分隔、采用 Windows 命名规则的路径
+
+% 1 1 0 1776267abb96547708bed7b11c77551f
+
+@ 0 5 0 15302c135667f5400c3b2eb1c150aa37
++       Windows 路径的平面。
++       它的根是 `Drive`，编码为 `C:\`；它的 `.Rules` 是 Windows 的规则：名称中不能有 `\`、`/`、`:`、`*`、`?`、`"`、`<`、`>` 或 `|`，不能以 `.` 或空格结尾，也不能是任何保留的设备名（`CON`、`PRN`、`AUX`、`NUL`、`COM0`–`COM9`、`LPT0`–`LPT9`，无论有无扩展名，无论大小写）。
++       `Path on Windows` 有一个自己的操作 `created()`，因为 NTFS 记录创建时间。
+
+% 2 1 0 00027b6ddf4034d3198f0fe67cb0eedb
+
+% 3 1 0 1b05157bca3213eb15ab316e4f22a0b6
+
+% 4 1 0 1cd651f762795a3a1ddfc84ff97c2281
+
+% 0 1 0 0b52f386c292fb5e0a9d2d6542a83d0e
+
+% 0 1 0 0bd240d05e92fe35148fe5dd3013ceb8
+
+% 0 1 0 145c37ae3067f2cd06d63fe7672628c7
+
+% 0 1 0 0630ff9483f12f5811b00a64abff1f00
+
+% 1 1 0 1a815979f918f23307ebd06738c891ac
+
+% 0 1 0 131c36d9beb91a5d05a469d3465fbb24
+
+% 0 1 0 1add31b8713624be14fcf1039f9f96e0
+
+@ 0 7 0 001c7772982a2e8c0cb272cb206d59a2
++   entry .Rules   没有 `\ / : * ? " < > |`，不以 `.` 或空格结尾，不是保留的设备名
++   entry .pathOnWindows   把 `Path on Windows` 标记为 `Paths` 域的代表
++   entry .filesystem   `Filesystem` 实例：名为 `Windows`，以 `\` 分隔，多个根
++   entry .radical   把 `Drive` 根编码为 `C:\`
++   entry .eradicable   从 `C:\…` 形式的文本解码 `Drive`，否则抛出 `Path.Error(InvalidRoot)`
++       根有三个字符长：一个字母、`:` 和 `\`。
++       没有它们的文本会通过作用域中的 `Tactic[Path.Error]` 以 `Path.Error(InvalidRoot)` 失败。
+
+@ 0 1 0 0c16bcd86a84655f176b59d929404faf
++ entry .Local   运行中的机器的平台，无论它是哪一个
+
+% 1 1 0 171eb8f9d8475b380516a2e96960614c
+
+@ 0 6 0 041791fbec35b19e07aa3b3fa3929d71
++       `Local` 用于必须在任何操作系统上运行而又不指明操作系统的代码：它的根可以是 `%` 或 `Drive`，因此 `Path on Local` 的形状可以是 POSIX 的，也可以是 Windows 的；它的 `.Rules` 是 `Windows.Rules` 和 `MacOs.Rules` 的交集，因此在 `Local` 上有效的名称在任何地方都有效。
++       `.filesystem` 实例需要作用域中有一个 `System`（`systems.javaBaseSystem`），它从中读取 `os.name` 和 `file.separator` 属性，因此 `Local` 是唯一一个直到运行时才知道分隔符的平台。
+
+% 2 1 0 118fc15b7a105ca818e6907e407b7c05
+
+% 3 1 0 199e78629ab933c017fb28d087662c93
+
+% 4 1 0 0d5e9ac628dc171d0bd24540e2d4d129
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 17f89baf73da5d651707b5070da5db1a
+
+% 0 1 0 0ea066eb844889e3058d39af4a4e1a68
+
+% 1 1 0 093ff47e5e6de22215e8f670621d62b0
+
+@ 0 9 0 147d0effc4e6e2bb1dace4418809b159
++   entry .Rules   `Windows.Rules & MacOs.Rules`：在每个平台上都有效的名称
++   entry .nominative   让本地路径遵守 `.Rules` 的 given
++   entry .pathOnLocal   把 `Path on Local` 标记为 `Paths` 域的代表
++   entry .filesystem   `Filesystem` 实例，从作用域中的 `System` 读取
++       以 `os.name` 属性命名，以 `file.separator` 分隔，以 `.` 和 `..` 作为自身和父级的名称，有多个根。
++       需要一个 `System`。
++   entry .radical   把根编码为 `/`（对 `%` 而言）或 `C:\`（对 `Drive` 而言）
++   entry .eradicable   从开头的 `/` 解码出根 `%`，或从 `C:\` 解码出 `Drive`
++       相应地，根的长度为 1 或 3；任何其他文本都抛出 `Path.Error(InvalidRoot)`。
+
+@ 0 1 0 0f89430a061342830c4cc9a8f8e40018
++ entry .Dos   DOS 8.3 命名规则，作为一个命名平面
+
+% 1 1 0 1aa14d04bc71cf920d20a081e7457694
+
+@ 0 6 0 0553728b55d64d921dd19b4906a84c33
++       一个标记，其 `.Rules` 是 MS-DOS 的规则：名称由一到八个可打印、非空格的 ASCII 字符组成，后面可选地跟着 `.` 和一到三个字符。
++       它没有 `Filesystem` 实例，也没有根——它的存在是为了让名称可以对照 8.3 形式检查（用于 FAT 卷、启动介质，或必须保持 DOS 可读的归档），而不是为了通过它操作文件。
++   entry .Rules   `[^.]{1,8}(\.[^.]{1,3})?`，没有空格，只有可打印的 ASCII
+
+@ 0 1 0 01b2f37b26f22133187373cc4a902035
++ entry .Drive   Windows 驱动器盘符，`Path on Windows` 的根
+
+% 1 1 0 1c8eb9328c758e7b09870867488c559d
+
+@ 0 4 0 076ee1b76294c82b0f3503f4d79788bf
++       `Drive('C')` 是根 `C:\`。
++       它是一个平面为 `Windows` 的 serpentine `Root`，因此 `Drive('C') / "Windows"` 是一个 Windows 路径，它也是 `Windows.eradicable` 从 `C:\…` 开头解码出的东西。
++       两个驱动器在盘符相同时相等。
++       这个包把 `C` 和 `D` 定义为两个最常见的驱动器。
+
+% 2 1 0 11f7482811a4939206b72da967855ab1
+
+% 3 1 0 1fdb933bcde7aece19a21a8c9a532060
+
+% 0 1 0 10ab979578bdb70302a7e147a7d5b5d3
+
+% 0 1 0 0dde39f73905e6ed1614848ebadb974f
+
+% 1 1 0 0fda4ee10e390e4a1b74db8bc3e1679a
+
+% 1 1 0 1377359b71f307a50e32d053f1274798
+
+% 0 1 0 0aa62458a394e1dc030eb101b357fb2d
+
+@ 0 5 0 067918c0b4870a501012798e8d008d4c
++   entry .apply   `Drive(letter)`：具有该盘符的驱动器
++   entry .unapply   匹配驱动器，提取其盘符
++   entry .submissible   让 `Drive` 成为用 `/` 构建的 `Path on Windows` 的根
++   entry #letter   驱动器的盘符
++   entry #Plane   驱动器作为根的平面：`Windows`
+
+@ 0 3 0 0d15f32eff9243c6044b6b4a24521fb6
++ entry .C   驱动器 `C:\`，即 `Drive('C')`
++     常用系统驱动器的顶层值，这样 `C / "Windows"` 读起来就是一个 Windows 路径。
+
+@ 0 1 0 05be485f0e9747860d4ad5d279f05427
++ entry .D   驱动器 `D:\`，即 `Drive('D')`
+
+@ 0 7 0 00dccf0c678a22f718a2ac7f9134af54
++ entry .p   `p"…"` 插值器：路径字面量，在代码编译时检查并确定类型
++     `p"/home/user/data.csv"` 把它的字面量解码为 POSIX 路径，若不成功则解码为 Windows 路径，并相应地拼接出一个平台为 `Posix` 或 `Windows` 的 `Path`，其 `Topic` 是由其各名称的字面量类型组成的元组，叶在前：`p"/verona/capulet/juliet"` 是一个 `Path of ("juliet", "capulet", "verona") on Posix`。
++     既不是有效 POSIX 路径也不是有效 Windows 路径的文本是编译错误，_The path `…` is not a valid Windows or POSIX path_。
++     这个插值器不接受 `$` 替换。
+
+% 2 1 0 06ba4049d010fc3c08f5cea0b6b7c041
+
+% 3 1 0 031a265ba176473b0cc63d112c57581c
+
+% 0 1 0 16be09fa3b04d37f014e50b9523745db
+
+% 0 1 0 130f2f632bbc560d005e1ef8629a7bba
+
+% 0 1 0 0aaca8dcf40ec1b71260c158dbead66c
+
+% 1 1 0 083ec98bb2750af010c28a9ccc5c269b
+
+@ 0 2 0 078555903fe6f9ed0553095c887d4b4a
++     `Path on Posix` 的读写与任何平台路径相同（`Posix` 有 `Filesystem`），因此 `p"/tmp/x".write(t"…")` 不需要 `on[Linux]`。
+
+@ 0 1 0 02bceca4f4b7003f1503cda2f86a040d
++ entry .internal   `p"…"` 背后的宏
+
+% 1 1 0 0b74de7f2792194916b8a45a2e1ea16d
+
+% 2 1 0 0934429ca7cb378a0478c02eb973065e
+
+@ 0 3 0 0c9af911ea496a250a368572ce116a12
++       不供直接使用：这个对象的存在，是为了让路径字面量宏在平台类型旁边有一个家，它在展开时需要这些平台类型的 `Radical` given。
++   entry .path   把插值器的字面量先解码为 POSIX 路径、再解码为 Windows 路径，并拼接它
+
+@ 0 1 0 139181206e2e07310ed639d44cbb66c1
++ entry .FilesystemBackend   一个平面的基本文件系统操作，其他一切都建立在它之上
+
+% 1 1 0 0d015b8975e157d51fa82127a77a31ff
+
+@ 0 8 0 1df6c111102d167d0f0ee37e07b8dc3f
++       `FilesystemBackend on <plane>` 是完整的基本操作集——stat、打开、列出、创建、链接、复制、移动、删除、属性、按位置访问——它的表述不涉及任何平台 API，而 `Path on <plane>` 上每个面向用户的操作都以它们来定义。
++       通过按名称从 `filesystemBackends` 包导入一个 given 来选定其中之一：JVM 上是 `javaBaseFilesystem`，Scala Native 上是 `scalaNativeFilesystem`，Wasm 组件中是 `wasiFilesystem`。
++       组合多个基本操作的操作（递归删除、复制到目录中、创建缺失的父目录）位于路径 API 中，而不在这里。
+
+% 2 1 0 0ddfb66e577ca7040ee8670a9cf2f191
+
+% 3 1 0 0a1701226e1a8b5615cecad9658eab99
+
+% 4 1 0 1b8a2d3e82f957241391479fc1af1280
+
+% 2 1 0 035a3c5d969940501136fd94e4fc2ad7
+
+% 1 1 0 045805ec3ef11eb216f82218ad68897b
+
+@ 0 8 0 0757cdbb3403d7161dd614542be79ff7
++       每个后端都尽可能有信息量地把自己的原生失败（异常、WASI 错误码）映射到共同的 `Io.Error.Reason` 词汇上，后端无法支持的操作会抛出带有 `Reason.Unsupported` 的 `Io.Error`，而不是近似地实现它：WASI 没有锁、没有 `realpath`、没有扩展属性、没有卷，也没有 FIFO。
++       若干基本操作所接受的 `dereference` 参数说明是否跟随作为最后一个组成部分的符号链接。
++       实现自己后端的程序——基于远程文件系统、归档或测试替身——实现这个特质；`realPath` 是最近才加入的。
+
+% 0 1 0 1eef00db99cdb9920cd218fa2def1153
+
+% 0 1 0 11e743ef9bf5bd1a06308736b1b0707f
+
+% 0 1 0 001c498ad5f293171408518f3d17b633
+
+@ 0 79 0 00bf1217538c868a10492767cf25dfe4
++   entry .Attribute   后端读取和设置的粗粒度权限标志：`Readable`、`Writable`、`Executable`
++       从当前用户的角度来看，与 `Files.isReadable` 和 `File#setReadable` 所见的相同。
++       `FilesystemAttribute` 是路径层面的有类型视图。
++   entry #stat   条目的类型、大小、时间戳和 inode 字段，一次读取
++       返回一个 `Stat`。
++       在不记录创建时间的文件系统上 `created` 为 `Unset`，在平台没有 Unix inode 的地方 inode 字段（`mode`、`user`、`group`、`device`）为 `Unset`。
++       抛出带有 `Operation.Metadata` 的 `Io.Error`：条目缺失时为 `Nonexistent`。
++   entry #linkTarget   符号链接所指向的文本，与存储时完全相同
++       相对链接保持为相对的。
++       若条目不是链接，则抛出 `Io.Error`。
++   entry #realPath   文件系统所知的路径：绝对的、规范化的，每个符号链接都已解析
++       即 `realpath(3)`。
++       条目必须存在（否则为 `Nonexistent`）。
++       `Path#canonical()` 建立在它之上；WASI 抛出 `Unsupported`。
++   entry #exists   条目是否存在，若 `dereference` 为 true 则跟随最后的符号链接
++       全函数：不可读或不存在的条目就是 `false`。
++   entry #children   目录直接子项的名称（而不是路径）
++       严格求值——列表在返回前即已物化，因此目录的描述符会被释放——并通过调用者的 `Tactic[Io.Error]` 抛出错误。
++       在 JVM 上，非目录列出为空。
++   entry #createDirectory   创建一个目录，若给出权限位则使用它
++       `mode` 是新条目应具有的确切权限位——一次调用的 `Umask` 已经应用到 `Umask.directoryBits` 上——平台具有权限位的后端在创建时设置它们；`Unset` 则让进程自己的掩码生效，而没有 POSIX 权限的平台会忽略这一请求。
++       抛出 `AlreadyExists` 或 `Nonexistent`（没有父目录）。
++   entry #createFile   创建一个空文件，若给出权限位则使用它
++   entry #createFifo   创建一个命名管道，若给出权限位则使用它
++       在 JVM 上通过 `mkfifo` 命令实现，其失败报告为 `Unsupported`；WASI 直接抛出 `Unsupported`。
++   entry #delete   删除一个条目，不存在时抛出 `Nonexistent`，为非空目录时抛出 `DirectoryNotEmpty`
++   entry #deleteIfExists   若条目存在则删除它，否则什么也不做
++   entry #symlink   在 `link` 处创建一个指向 `target` 的符号链接
++   entry #hardLink   在 `link` 处创建一个指向 `target` 处条目的硬链接
++   entry #copy   把一个条目复制到目标位置，若 `dereference` 则跟随最后的符号链接
++       若目标位置已存在则抛出 `AlreadyExists`：路径 API 中的 `OverwritePreexisting` 方针在被要求时会先清除它。
++   entry #move   移动一个条目，若有要求则以原子方式进行，若 `dereference` 则跟随最后的符号链接
++       平台无法完成的原子移动（例如跨卷）为 `Unsupported`；跨卷的普通移动失败时，原因为 `NotSameVolume`。
++   entry #touch   把条目的修改时间设为当前时刻
++   entry #hidden   条目按平台的惯例是否隐藏
++       在 POSIX 上是开头的 `.`；在 Windows 上是隐藏属性。
++   entry #volume   条目所在的 `Volume`：它的名称和文件系统类型
++       `Btrfs`、`Ext4`、`Apfs` 和 `Ntfs` 所探查的就是它。
++       WASI 抛出 `Unsupported`。
++   entry #hardLinkCount   有多少个硬链接指向该条目
++   entry #attribute   读取粗粒度权限标志，或者读取或写入扩展属性
++       三个重载。
++       `attribute(path, Attribute.Readable)` 是当前用户的权限，是全函数。
++       `attribute(path, name)` 是该名称的扩展属性，作为 `Data`，或为 `Unset`；`attribute(path, name, value)` 设置它。
++       扩展属性取决于存储文件系统，因此有类型的路径访问器以 `Attributed` 轴为门控；在这个接缝处，没有扩展属性的文件系统会抛出 `Unsupported`。
++   entry #update   打开或关闭一个粗粒度权限标志
++       若平台拒绝这一更改，则抛出 `PermissionDenied`。
++   entry #attributes   条目扩展属性的名称
++   entry #identity   条目的设备号和 inode 号，在平台没有它们的地方为 `Unset`
++       全函数，并与 `stat` 分开，因为无法回答它的两个平台（WASI，以及非 POSIX 上的 JVM）恰恰是其他每个 `Stat` 字段都代价低廉的平台。
++       `Path#entryIdentity` 是路径层面的访问器。
++   entry #expanse   打开条目以进行有作用域的按位置读取，并对视图应用一个 lambda
++       一个 `zephyrine.Expanse`——`size` 加上 `pread` 风格的 `read(offset, length)`，每次读取都与任何顺序位置无关——在调用的作用域内有效，之后被关闭。
++       它不对整个文件做映射，因此超过 2 GiB 的文件也可寻址，这与 `Ram` 以单个 `Int` 寻址的映射不同。
++       与文件末尾重叠的读取返回实际存在的字节。
++   entry #slice   把条目的一个字节范围作为窗口视图打开，若标志要求则加锁
++       与 `#expanse` 类似，但视图是一个限定在 `[offset, offset + extent)` 内的 `Slice.Window`：它的 `size` 是窗口的大小，读取相对于窗口的起点并被截断在窗口内，写入则存储尽可能多的内容并返回数量。
++       `OpenFlag.Lock` 或 `OpenFlag.LockShared` 在作用域内对恰好这一范围获取操作系统建议锁；写入只在有 `OpenFlag.Write` 时才有意义。
++       WASI 提供窗口，但以 `Unsupported` 拒绝加锁的打开。
++   entry #open   打开条目的内容以进行流式处理，对 `Handle` 应用一个 lambda，然后关闭它
++       `flags` 是各个 `OpenFlag`（`Read`、`Write`、`Append`、`Create`、`Truncate`……），`mode` 是打开操作所创建文件（`Create` 或 `Exclusive`）的权限位，与 `#createFile` 相同。
++       无论结果如何，句柄都会被关闭。
++       在 JVM 上，`Lock` 和 `LockShared` 在打开后获取建议锁；只读通道无法获取排他锁，因此改为获取共享锁（进程内的排他性已由 `AccessRegister` 仲裁），而 `Await` 会阻塞等待锁，而不是以 `Busy` 失败。
+
+@ 0 1 0 1c427cb0574f3d38013800e6d3abcb3d
++ entry .filesystemBackends   文件系统后端，每个都是一个按名称导入的 given
+
+% 1 1 0 053ebec3a6c06cb91dab6a2dd1cc6d8f
+
+@ 0 4 0 0865e52fd0acb49b1a7bf96b8ce6c180
++       `Path on <platform>` 上的每个操作都需要作用域中有一个 `FilesystemBackend on <platform>`，而这一选择有意从不隐式进行：`import soundness.*` 不会引入其中任何一个，必须按名称导入一个。
++       每个后端对平面都是泛型的，因此一条导入就能同时服务于 `Path on Linux`、`Path on Windows` 和 `Path on Local`。
+
+% 2 1 0 029755fb4ca2bac3143c95c7afe3c727
+
+% 3 1 0 004d158f8b6030b8008987cb1724be83
+
+% 4 1 0 017c55da9ce7a7d50ac00515dc297e1e
+
+% 1 1 0 08a576db11af276c01abf1976300cdce
+
+@ 0 3 0 09a39d1a379164b513329a349fe934fe
++   entry .javaBaseFilesystem   `java.nio.file` 后端，位于 `galilei.jvm`
++       普通 JVM 程序的后端。
++       `java.nio` 的异常按类型映射到 `Io.Error.Reason` 上：
+
+% 2 1 0 1c5541f2d6b91e2c1784ce76088f2342
+
+@ 0 2 0 1afde471d49abe6e0ee9e60f89bdfd65
++       column  异常
++       column  原因
+
+% 0 1 0 0628ab96a64aa8f60b5d6c036f7df447
+
+% 0 1 0 18c0eddd5e089d110c6c0c2f66c04352
+
+% 0 1 0 119f4ebad13de1630b9fab3182aaf743
+
+% 0 1 0 1998e7ed0bc61b1d0e505de6a8406ac1
+
+% 0 1 0 018835ef7e9efad604fd1c4ae359aef8
+
+% 0 1 0 0291e9a9379f7c381d88581759511ade
+
+% 0 1 0 1844f3de23b9066e153625dbae0f7f3c
+
+@ 0 4 0 161f6c2e6305853d0540d820aede20c0
++       row  一个 `InterruptedIOException`  `Interrupted`
++       row  单纯的 `FileSystemException`  按其原因文本映射，见下文
++       row  任何其他 `IOException`  `Physical`
++       row  其他任何东西  `Unsupported`
+
+% 2 1 0 0f8fcfeebd99390411cc5863239624c7
+
+@ 0 2 0 0c0c619482dafd700e74d78380caa91a
++       单纯的 `FileSystemException` 按其转为小写的原因文本映射，第一个匹配者胜出：
+
+% 2 1 0 10b30afeb4fa84da02be3ed57d78fb9d
+
+@ 0 2 0 0f17efe86eafe81d173794ef079c5062
++       column  原因文本包含
++       column  原因
+
+% 0 1 0 034ec54a0fc8d8ef1160d15d6765df41
+
+% 0 1 0 0b7ac90ead2715a807ccd0b401f0bbde
+
+@ 0 1 0 0944b64cbe36104f1931cd90d6ded4bc
++       row  `cross-device` 或 `different disk`  `NotSameVolume`
+
+% 0 1 0 05e862716abe3b18034babb897e610fc
+
+% 0 1 0 11a2a46a82e1866005f5e20388b5be8b
+
+% 0 1 0 060e8b9d76b6c344158f56c6fada8bf6
+
+% 0 1 0 05ed45a273e177120170ff6b11d65a87
+
+% 0 1 0 17fd2bf4a7a7d1130d00ea1187089b9b
+
+% 0 1 0 10a77c49b70d1b061338509d62cd7866
+
+% 0 1 0 0758cf07cae2c99615e8f9fdfbb7187e
+
+@ 1 1 0 07df8aa0b16c3dc40350cbe55981dfc5
++       row  其他任何内容  `Unsupported`
+
+% 2 1 0 184a74949c008eed1b5afce522a7bc32
+
+@ 0 17 0 18aaf84531ceeb6f0fd7e0cadb40bfd3
++       权限位在创建时请求，然后被精确设置，因此条目从不会以比所请求的更宽松的权限存在；在没有 POSIX 视图的文件系统（Windows）上，所请求的模式会被忽略。
++       FIFO 通过 `mkfifo` 创建，锁通过 `FileChannel.lock` 获取，扩展属性通过 `UserDefinedFileAttributeView` 访问，在卷没有该视图的地方为 `Unsupported`。
++   entry .wasiFilesystem   面向 Wasm 组件的 `wasi:filesystem` 后端，位于 `galilei.wasi`
++       基于 WASI preview-2 文件系统接口的 `inline` given：它进行的 `call` 在召唤它的位置展开，因此组件的导入只会在为 Wasm 目标编译的代码中物化，并且 `wasiApis.wasiFilesystemApi` 必须在那里可见。
++       WASI 文件系统基于能力：宿主以预打开的目录描述符授予访问权限（`wasmtime run --dir …`），每个操作都相对于具有最长匹配前缀的预打开目录解析其路径，而位于所有预打开目录之外的路径会抛出 `PermissionDenied`。
++       WASI 错误码映射到 `Io.Error.Reason` 上（`no-entry` 映射为 `Nonexistent`，`quota` 映射为 `QuotaExceeded`，`insufficient-space` 映射为 `StorageFull`……）。
++       这里不支持：`realPath`（因此也不支持 `canonical()`）、FIFO、卷（因此存储轴提取器从不匹配）、扩展属性、权限更新、条目标识，以及任何加锁的打开（`Exclusive`、`Shared`、`OpenFlag.Lock`）。
+
+@ 0 1 0 069d5990b9452b311780f49a6398ab22
++ entry .wasiApis   WASI 后端据以进行类型检查的 WIT 接口，作为一个按名称导入的 given
+
+% 1 1 0 002494f3120bd1910b0d54d8bee603a2
+
+@ 0 4 0 15440495497193bc1cc95611741705a1
++       `wasiFilesystem` 通过 xenophile 的 `Interface in Wit` 遍历 `wasi:filesystem` 世界，而 WIT 定义是一个上下文值，以便 `call` 物化器可以在下游的展开位置查阅它。
++       位于 `galilei.wasi`；这个包与总括包自己的 `wasiApis` 合并。
+
+% 2 1 0 1699a71fd990f02c142ef172fe9c31b6
+
+% 3 1 0 0e85ce9370bdc8ca05ea47e61544641e
+
+% 0 1 0 1e0d1fe56ae9c73e192581b54ceb0bfe
+
+% 0 1 0 01dd4be42700774f029cfab10b7e9d72
+
+% 1 1 0 1a97329ef576244b0536c5494d390b06
+
+@ 0 1 0 1be973017e4dcc48129ce4c14be8ba47
++   entry .wasiFilesystemApi   与 `galilei.wasi` 捆绑在一起的 `filesystem.wit` 资源，作为一个 `WasiFilesystemApi`
+
+@ 0 3 0 1571898b48d40a481dd3a313b41eca2c
++ entry .WasiFilesystemApi   WASI 文件系统 WIT 接口的类型：`Interface in Wit at "/galilei/filesystem.wit"`
++     `wasiFilesystem` 据以进行类型检查的 WIT 定义，位于类路径上的该资源路径处；`wasiApis.wasiFilesystemApi` 是它唯一的值。
++     位于 `galilei.wasi`。
+
+@ 0 1 0 0ac4ad39c5a4c5701bcfe5022bd6405d
++ entry .Io   galilei 的 I/O 词汇：每个磁盘操作抛出的 `Io.Error`，以及它记录的 `Io.Event`
+
+% 1 1 0 074349ec3b0f684004efd58b92fa7767
+
+@ 0 4 0 1d83383fb519bd6d07ee57148d63b151
++       `Io` 把两样东西归在一起。
++       `Io.Error` 是文件系统唯一的错误类型：它指明路径、正在尝试的 `Operation` 和失败的 `Reason`，因此程序按出了什么问题来匹配。
++       `Io.Event` 是改变状态的操作所记录的内容——创建、删除、移动、复制、链接和 touch——每个都带有 `Log.Filesystem` 标签。
+
+% 2 1 0 02c9606f9f4359e1070b93174b08457a
+
+% 3 1 0 14b82db5f6c2b71d0f3ad2dad50f5ac7
+
+% 4 1 0 08ad5cc67ebd535a1d990a2a9c360c8e
+
+% 5 1 0 1fb6adfaa798cc2807a40bf170ac15da
+
+% 6 1 0 0bebaa1070a65a3c0502d7925748c100
+
+% 0 1 0 0b9de35a077968f1054349f310e38d12
+
+% 0 1 0 026d44ea02c10e6711d9ff15f78ffac2
+
+% 0 1 0 0c91e2ca20ad77ec16fc83330feb4271
+
+% 1 1 0 0801af191b6af62e0a49f6594d5f19c5
+
+@ 0 2 0 13eea6cf025130c10692099310ca82bd
++       `safely` 把任何 `Io.Error` 变为 `Unset`；`capture` 保留错误，以便检视它的 `reason`。
+
+% 1 1 0 1b590c30ea51c22a0cbdba984e3c17bd
+
+@ 0 1 0 1b48b1c1997f3cf41281339727cff94b
++   entry .Error   文件系统操作失败时抛出：哪个路径、哪个操作，以及原因
+
+% 1 1 0 1ce09f396378146f0b8b34fd0e74db6d
+
+@ 0 7 0 1299808d64ea159f16da2c6b0073d348
++         消息为 _the `operation` operation at `path` on `filesystem` failed because `reason`_——例如 _the read operation at /tmp/x on Linux failed because the entry does not exist_。
++         它的原因是以可读名称表示的 POSIX errno 表（`Nonexistent` 即 `ENOENT`，`NotSameVolume` 即 `EXDEV`，`Physical` 即 `EIO`），因此文件系统可能报告的失败只命名一次，每个后端都映射到它们上。
++         构造器 `Io.Error(path, operation, reason)` 需要路径的平面有一个 `Filesystem`（用于呈现路径），并需要作用域中有一个 `Diagnostics`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0239237dea428b3e0219c106c0a5bd9f
+
+% 0 1 0 19b42f1b979ba1df0dc7d24f97a826d7
+
+% 0 1 0 170f6114495007a61e39c3825fab5f20
+
+% 0 1 0 14c3edc41fb5b533127c4eb1db47a9c5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 21 0 03bfd2a61d4206cd1589cdb4f31feb37
++         `Operation` 和 `Reason` 都通过匿名 given 成为 `Communicable`，因此每个都能在消息中呈现。
++     entry .Operation   正在尝试的操作：`Read`、`Write`、`Create`、`Copy`、`Move`、`Delete`、`Metadata`、`Open` 或 `Access`
++         `Metadata` 涵盖 `stat`、`realPath`、`touch`、`volume`、属性和权限；`Open` 涵盖 `open` 调用，包括它获取的锁；`Access` 涵盖存在性或权限检查。
++     entry .Reason   失败的原因，采用 POSIX errno 词汇
++         `PermissionDenied`（用户没有足够的权限）、`Nonexistent`（条目不存在）、`AlreadyExists`、`IsNotDirectory`、`IsDirectory`、`DirectoryNotEmpty`、`NotSameVolume`（源和目标位于不同的卷上）、`Unsupported`（文件系统或后端不支持）、`Cycle`（符号链接循环）、`Busy`（条目正在使用中——包括被 `AccessRegister` 拒绝的打开）、`ReadOnly`、`TooManyLinks`、`NameTooLong`、`QuotaExceeded`、`StorageFull`、`InvalidData`、`Interrupted` 和 `Physical`（输入/输出错误，包括被文件提前截断的读取或写入）。
++     entry .apply   `Io.Error(path, operation, reason)`：针对任何具有 `Filesystem` 的平面上的路径的错误
++     entry #path   尝试操作的路径
++     entry #operation   失败的 `Io.Error.Operation`
++     entry #reason   失败的 `Io.Error.Reason`
++     entry #filesystem   路径平面的 `Filesystem` 实例，用于呈现消息
++   entry .Event   改变状态的路径操作所记录的内容
+
+% 1 1 0 1251796b3d9e7a2913f2e4cfa8f123a2
+
+@ 0 23 0 1b4c3c43e2da09dd014579af258e0389
++         每个 `Event` 都带有 `Log.Filesystem` 标签，因此日志配置可以按标签选择它们或使它们静默。
++         `create`、`delete`、`wipe`、`copyTo`、`moveTo`、`hardLinkTo` 和 `symlinkTo` 以 `info` 级别记录；`touch` 以 `fine` 级别记录。
++         这些操作中的每一个都需要作用域中有一个 `Io.Event is Loggable`。
++     entry .communicable   把每个事件呈现为一条消息：_created `path`_、_moved `from` to `to`_……
++     entry .Create   一个条目被创建：_created `path`_
++       entry #path   被创建的路径，作为文本
++     entry .Delete   一个条目被删除：_deleted `path`_
++       entry #path   被删除的路径，作为文本
++     entry .Move   一个条目被移动：_moved `from` to `to`_
++       entry #from   源路径，作为文本
++       entry #to   目标路径，作为文本
++     entry .Copy   一个条目被复制：_copied `from` to `to`_
++       entry #from   源路径，作为文本
++       entry #to   目标路径，作为文本
++     entry .HardLink   创建了一个硬链接：_hard-linked `from` to `to`_
++       entry #from   已有的条目，作为文本
++       entry #to   新的链接，作为文本
++     entry .Symlink   创建了一个符号链接：_symlinked `link` to `target`_
++       entry #link   新的链接，作为文本
++       entry #target   它所指向的东西，作为文本
++     entry .Touch   设置了一个条目的修改时间：_touched `path`_
++       entry #path   被 touch 的路径，作为文本
+
+@ 0 1 0 1c8da259e422f1b709b3e5f37c7338a2
++ entry .filesystemOptions   针对棘手情况的方针，每个都是一个按名称导入的 given
+
+% 1 1 0 08796719a59cedb50b9c9e899c70755d
+
+@ 0 10 0 0d9c2a38b737810309e45b8cef1fef84
++       把文件移动到一个已有东西存在的路径上，要么销毁那个东西，要么拒绝；删除目录，要么清空它，要么拒绝；复制符号链接，要么跟随它，要么复制链接本身。
++       一般而言，两种答案都不是正确的，因此 galilei 从不默默地做出选择：每个问题都是一个方针特质——`OverwritePreexisting`、`DeleteRecursively`、`CreateNonexistentParents`、`DereferenceSymlinks`、`MoveAtomically`、`CopyAttributes`——而必须回答它的操作以上下文参数的形式接受该方针。
++       在作用域中既没有 `overwritePreexisting` 也没有 `failOnPreexisting` 的情况下调用 `moveTo`，是一个指明所缺方针的编译错误。
++       方针成对出现，一个宽容，一个严格，并按名称导入（`import soundness.*` 不导入 given），作用于整个文件，或限定在一个代码块内。
+
+@ 0 1 0 0b0009c1426c20df1d8418e2258f3ed1
++       一个操作需要哪些方针：
+
+@ 0 9 0 02379d0dfaba051a1d81d686fa4a1dbe
++       - `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`：`OverwritePreexisting` 和 `CreateNonexistentParents`（复制和移动还需要 `DereferenceSymlinks`，移动还需要 `MoveAtomically`）。
++       - `copyInto`、`moveInto`、`symlinkInto`：`OverwritePreexisting` 和 `DereferenceSymlinks`（以及 `MoveAtomically`）；父目录会被创建，因为目标目录已被指明。
++       - `delete`、`wipe`：`DeleteRecursively`。
++       - `entry()`、`descendants`、`glob`、`hardLinks()`、`checksum`：`DereferenceSymlinks`。
++       - `create[…]`：不需要——改由 `CreateFlag.Parents` 和 `CreateFlag.Replace` 在调用处说明意图。
+
+@ 0 1 0 07789554d9be9cd81c8a4ffa05ab9336
++       同一个文件随着导入的累积而被写入、读取、移动和删除：
+
+% 2 1 0 090969ea73e1f8021f38410f62892033
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0c39d7eaefc54e141e2e81e4b72d0803
++         label 读取和写入只需要一个后端和一个战术
+
+% 1 1 0 008052bfdab2892812b56c244161bef6
+
+% 2 1 0 1b8179f54acff293160ff62544f5a0c7
+
+% 3 1 0 03ba2fa433d051951ba76c7e26b399c6
+
+% 4 1 0 1b7e8d0e107ee22a0d64b3305c0b866c
+
+% 2 1 0 04eb18108a5c45291fbd9bfa3f7b3f03
+
+% 3 1 0 19c8dc890b11456617c34130dd3c88c2
+
+% 0 1 0 1fc48c5f3395b5211e9ceeab3e22858b
+
+% 0 1 0 1e372205cedd9cb104944ce33094e759
+
+% 0 1 0 00ce93ecf438042610cee1a75d4a02a0
+
+% 1 1 0 00e33afbdc98fc1416f08e448a4ca631
+
+@ 0 1 0 0668c410dc6ea3ef1ed69bacbe4a6c39
++         label 移动需要对冲突、缺失的父目录、符号链接和原子性给出回答
+
+% 1 1 0 09850f620388658f183c17d244e742fd
+
+% 2 1 0 0a176311085117fb02b46a16fa0260ae
+
+% 3 1 0 0285b838908eb89e08a894f83899ab8c
+
+% 4 1 0 07ffc3822787bd450876b923eb65bd21
+
+% 0 1 0 05b229e73b543df315bb461a8bb9dedd
+
+% 0 1 0 1ddb31a451cfcaeb0138ada5b1dcd0f6
+
+% 0 1 0 0e837cd47d9de812195e19e1405d30ef
+
+% 1 1 0 14ffe09fc561d4361b408633e864dc11
+
+% 3 1 0 1365b973f1db9381173500cdac732041
+
+% 3 1 0 0c965951a04e797517698e4682beaf2a
+
+% 0 1 0 10e9ebd3ee6777270a82d2a4eb1edeb3
+
+% 1 1 0 15fb667e72d9ae680503e66952bec45c
+
+@ 0 1 0 0d8f7aa52ccba38a11149b3c2ae80434
++         label 宽容的方针使冲突和缺失的父目录不可能发生
+
+% 1 1 0 16865acef5feb03d00a165d36a9ef3e4
+
+% 2 1 0 13e1f323e8073557143dc51991b466da
+
+% 3 1 0 044fab8ff9a5382008506ef1517ca177
+
+% 4 1 0 0b7536a88c6cc1f209233c6adc2b80c9
+
+% 0 1 0 150c8c42ea9e06c00ab62e5ca8df3452
+
+% 0 1 0 0d4691dbaae0d8f80a9909bcc7770e33
+
+% 1 1 0 1914f034f1e778091e359c2385d23997
+
+% 1 1 0 0c78017972c52f011681291eb4dec629
+
+% 1 1 0 0be55f4637825ee60f04840ad8342b9f
+
+% 3 1 0 0d009cc943bb55221efa97c137156bd6
+
+% 0 1 0 0b61ea10c4972f941e173018657d6a18
+
+% 0 1 0 0aacb7af93ead0660035d7ba082bc202
+
+% 1 1 0 0d9919339cdabf170e5f014b5834d724
+
+@ 0 1 0 05f47f1191ab83921148a331fbf698d6
++         label 删除目录需要对递归表明态度
+
+% 1 1 0 17fd24cca704952a1c6c42996ff37bcf
+
+% 2 1 0 045b092cf8ea27d41c72b85cae7f024b
+
+% 3 1 0 12de5b206ac575b80cc469541831f5b9
+
+% 4 1 0 1bc2645be85b4a39170f9f683273afd2
+
+% 1 1 0 19cfe7b0f59fe4080ebe7134ef7846f4
+
+% 2 1 0 1a23425db64f73cb12828587768631db
+
+% 0 1 0 0b35794d2f3581380d615ae693c15d5c
+
+% 1 1 0 161dd6b3751619e61780f6e798be8769
+
+% 2 1 0 042a26903bd8875f149d824401bb43d9
+
+@ 0 3 0 02ecf796bcf878a302a4342d74a8d626
++       若用 `deleteOnlyEmpty` 代替 `deleteRecursively`，最后一步会抛出带有 `DirectoryNotEmpty` 的 `Io.Error`。
++       注意，`overwritePreexisting` 本身需要作用域中有一个 `DeleteRecursively`，因为替换目录意味着清空它。
+
+% 0 1 0 12dabe1177df3a9205dcc575a11b78d4
+
+% 0 1 0 1f3fd56ce16820e9154cc0338e925bb8
+
+% 0 1 0 0d89ee07b80f00390695714cccab6c0a
+
+% 0 1 0 18f343058f77a5bd1503cc588e2f3b1e
+
+% 0 1 0 1e43949f958bbb1313823885eb0f66ad
+
+% 0 1 0 05f8fc365244f99a17daa11c2d96fe10
+
+@ 0 47 0 05cd27fd0c762f9b1b0d848fac96a8f7
++   entry .dereferenceSymlinks   跟随作为最后一个组成部分的符号链接：对它所指向的东西进行操作
++       宽容的 `DereferenceSymlinks`：`entry()` 报告目标的类型，`copyTo` 复制目标的内容，`descendants` 和 `checksum` 穿过链接的目录进行遍历，`hardLinks()` 统计目标的链接数。
++   entry .preserveSymlinks   不跟随符号链接：对链接本身进行操作
++       严格的 `DereferenceSymlinks`：`entry()` 报告 `Symlink`，`copyTo` 复制链接，遍历不会穿过链接的目录向下进行。
++       `filesize()` 总是使用它，因此链接的大小就是链接本身的大小。
++   entry .moveAtomically   `moveTo` 必须是原子的，在无法做到时为 `Unsupported`
++       要求后端进行原子重命名（JVM 上的 `ATOMIC_MOVE`）的 `MoveAtomically`。
++       读取者永远不会看到移动了一半的条目；跨卷的移动无法是原子的，会抛出带有 `Unsupported` 的 `Io.Error`，而不是回退为复制。
++   entry .moveNonAtomically   `moveTo` 可以是先复制再删除
++       允许非原子移动的 `MoveAtomically`，因此跨卷的移动能够成功，代价是中途失败可能同时留下源和不完整的目标。
++   entry .copyAttributes   复制时带上源的属性（时间戳、权限）
++       宽容的 `CopyAttributes`。
++       目前没有任何操作参考它：这个方针的存在，是为了在后端支持它之后，复制对属性的处理方式能得到明确说明。
++   entry .discardAttributes   复制只取内容；副本的属性是新的
++       严格的 `CopyAttributes`；它目前的状况见 `.copyAttributes`。
++   entry .deleteRecursively   对目录执行 `delete` 和 `wipe` 时，先删除其下的一切
++       宽容的 `DeleteRecursively on <plane>`，适用于任何具有 `Explorable` 和后端的平面。
++       它在所守护的操作之前深度优先地删除子项，因此 `wipe()` 会删除整棵树。
++       它也是 `overwritePreexisting` 所需要的，以便替换目录时可以清空它。
++   entry .deleteOnlyEmpty   `delete` 和 `wipe` 拒绝有子项的目录
++       严格的 `DeleteRecursively`：有任何子项的目录会在触及任何东西之前抛出带有 `Operation.Delete` 和 `Reason.DirectoryNotEmpty` 的 `Io.Error`。
++       绝不能一次删除多于一个条目的程序会导入它。
++   entry .overwritePreexisting   已存在的目标会先被删除
++       宽容的 `OverwritePreexisting on <plane>`，它需要作用域中有一个 `DeleteRecursively on <plane>`（以清空被替换的目录）。
++       这样 `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo` 和 `Device.create` 就不会抛出 `AlreadyExists`。
++   entry .failOnPreexisting   已存在的目标是一个 `Io.Error`
++       严格的 `OverwritePreexisting`：操作照常进行，不做任何处理，当它与已有条目冲突时，后端抛出带有 `Reason.AlreadyExists` 的 `Io.Error`，调用者必须随后处理它。
++   entry .createNonexistentParents   创建目标缺失的祖先目录
++       宽容的 `CreateNonexistentParents on <plane>`，需要一个后端。
++       在操作之前，从最近的祖先开始向上，创建目标的每个不存在的祖先。
++       这些目录以进程自己的掩码创建。
++       `copyInto`、`moveInto` 和 `symlinkInto` 隐式地使用它，因为它们的目标目录已被指明。
++   entry .requireParents   父目录缺失的目标是一个 `Io.Error`
++       严格的 `CreateNonexistentParents`：不创建任何东西，后端针对缺失的父目录抛出带有 `Reason.Nonexistent` 的 `Io.Error`。
+
+@ 0 1 0 10d37892f1d3dbe21b6a4ca440c95125
++ entry .DereferenceSymlinks   对路径最后一个组成部分是符号链接时的方针：跟随它，或作用于链接本身
+
+% 1 1 0 1a9a1305097afa7803876d28b36dfce7
+
+@ 0 7 0 1d23fdb903fa0917170854cdf074927e
++       一个只含一项事实 `#dereference` 的上下文值，读取或复制条目的操作会将它传给后端。
++       `filesystemOptions.dereferenceSymlinks` 跟随链接，`filesystemOptions.preserveSymlinks` 保留链接。
++       它是 `Findable`，而不是函数，因此自定义实例写成 `given DereferenceSymlinks: def dereference = …`。
++       `entry()`、`copyTo`、`copyInto`、`moveTo`、`moveInto`、`symlinkInto`、`descendants`、`glob`、`hardLinks()` 和 `checksum` 需要它。
++   entry #dereference   为 `true` 时跟随最后的符号链接，为 `false` 时作用于链接本身
+
+@ 0 1 0 1c42aec4cd534d7712e886a1568107e4
++ entry .MoveAtomically   `moveTo` 是否必须是单次原子重命名的方针
+
+% 1 1 0 0ee843c97ba5a77d0b5d4df0b5114134
+
+@ 0 4 0 13d322ca982a19661ebbee86f290cdb8
++       `filesystemOptions.moveAtomically` 要求原子性（跨卷时以 `Unsupported` 失败）；`filesystemOptions.moveNonAtomically` 允许先复制再删除。
++       `moveTo`、`moveInto` 和 `symlinkInto` 需要它。
++   entry #atomic   为 `true` 时要求原子移动
+
+@ 0 1 0 0d689155a4c291cf17994443286571ea
++ entry .CopyAttributes   复制时是否携带源的属性的方针
+
+% 1 1 0 01777b5ea1e16124002f75307b9b46f2
+
+@ 0 4 0 0e6bf43c671c6ce114e5c1fc290246f0
++       `filesystemOptions.copyAttributes` 和 `filesystemOptions.discardAttributes` 是它的两个实例。
++       目前没有任何操作查询它；它是为区分这两者的后端保留的。
++   entry #attributes   为 `true` 时随内容一起复制属性
+
+@ 0 1 0 0126fd2e62b1f83a0b5da25b4166b8bf
++ entry .DeleteRecursively   删除含有子项的目录时的方针：先清空它，或拒绝
+
+% 1 1 0 0d472eab1a444f24056ff8cb4a7bbf64
+
+@ 0 5 0 081d16030d0785360333b7616dd1459c
++       一个平面方针（`DeleteRecursively on Linux`），其 `#conditionally` 包装一次删除：`filesystemOptions.deleteRecursively` 先删除每个后代；`filesystemOptions.deleteOnlyEmpty` 则改为抛出 `Io.Error(DirectoryNotEmpty)`。
++       `delete()` 和 `wipe()` 需要它，`overwritePreexisting` 也需要它。
++   entry #conditionally   在 `Tactic[Io.Error]` 下，先清空 `path` 或拒绝，然后执行对它的删除
+
+@ 0 1 0 0dbb52defd668d2f19b5962311ffb154
++ entry .OverwritePreexisting   目标已存在时的方针：先移除它，或失败
+
+% 1 1 0 0a6f28d24f9a0d661c8e74ab9e3a8cdf
+
+@ 0 7 0 149feee61a6152470fc25aad7dc0d37a
++       一个平面方针（`OverwritePreexisting on Linux`），其 `#apply` 包装会发生冲突的操作。
++       `filesystemOptions.overwritePreexisting` 在操作之前删除已存在的条目（通过作用域中的 `DeleteRecursively` 递归删除）；`filesystemOptions.failOnPreexisting` 原样执行操作，由后端抛出 `AlreadyExists`。
++       `copyTo`、`copyInto`、`moveTo`、`moveInto`、`hardLinkTo`、`symlinkTo`、`symlinkInto` 和 `Device.create` 需要它。
++   entry #apply   在 `path` 处执行操作，之前移除或不移除那里已存在的条目
+
+@ 0 1 0 1bdc2bfe6fc05d090cb30cad36eacfe5
++ entry .CreateNonexistentParents   目标的父目录缺失时的方针：创建它，或失败
+
+% 1 1 0 005e7771fc2324b0168330307ee8a6a0
+
+@ 0 6 0 0cdc2e180a770bd615b17baeca9c2ba1
++       一个平面方针（`CreateNonexistentParents on Linux`），其 `#apply` 包装该操作。
++       `filesystemOptions.createNonexistentParents` 创建每个缺失的祖先目录；`filesystemOptions.requireParents` 则交由后端抛出 `Nonexistent`。
++       `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo` 和 `Device.create` 需要它。
++       `create[…]` 系列操作不查询它：它们改为在调用处接收 `CreateFlag.Parents`。
++   entry #apply   在 `path` 处执行操作，之前创建或不创建其缺失的祖先目录
+
+@ 0 1 0 01728ebf1541ae8210c5be394e2cce59
++ entry .filesystemTraversal   遍历目录树的顺序，每种都是需按名称导入的 given
+
+% 1 1 0 06898f6506128d84011a3eaf0112591c
+
+@ 0 5 0 183c1712bdabe22c1ef981c399f9d6f1
++       `descendants` 产出目录的整个子树，作用域中的 `TraversalOrder` 说明每个目录出现在其所含内容之前还是之后。
++       两者都不是默认值：遍历目录树的程序需按名称导入其中一个。
++       先序将每个目录放在其内容之前，这是打印或复制目录树所需的顺序；后序将它放在内容之后，这是删除目录树或对其求和所需的顺序。
++       同一棵树，以两种方式遍历：
+
+% 2 1 0 058cbff1a7e197890786fb73ead22ec0
+
+% 0 1 0 186c81a8d53a044b1c225db852b32ee6
+
+% 1 1 0 19addeccc4657ff516b11ef8756a39db
+
+% 2 1 0 09e81e9222dbd2f60f0b3b38cb403c9b
+
+% 3 1 0 10924276f9422aa81dc9645d17f6b06e
+
+% 4 1 0 1152d6778f27c19f037ca2239dd7da20
+
+% 0 1 0 111c8ae308e9c4cd1f82fb1c8c32c841
+
+% 1 1 0 1844d92389e8d75c01e148e238da9616
+
+% 3 1 0 155675aebbd5032b023a88db2bbffd3b
+
+% 0 1 0 05acf7d3ea26ae04081b8b9bf21f3d9e
+
+% 0 1 0 0611781664ff14ac1171ca3adee7b6c2
+
+% 1 1 0 05cda53d19530c121baa1571e4a54d1f
+
+% 2 1 0 12c9d7cd84150d041f2e19b63ff4a4ff
+
+% 3 1 0 1cca393d3cf4a15507474d6d5f8743a4
+
+% 4 1 0 044c0a5c4ec14a9c06ace2dcc0bc187d
+
+% 0 1 0 12ee47242eb45ca81d0b806db392376a
+
+% 1 1 0 0c4802407b4de5c50b296414ee9ce4b3
+
+% 3 1 0 119a5b59658b4e6613e13bb30d9ac9eb
+
+% 0 1 0 02db0ba2f6a947431182b705270de28c
+
+% 1 1 0 0fe792dd2616dc820081f155f6ed841b
+
+% 2 1 0 13b478099600d67f1d0473f2a73d6132
+
+@ 0 1 0 028b46612d73ca850134f81f5bdf2ed9
++       同级条目按后端列出它们的顺序出现，该顺序未经排序。
+
+% 0 1 0 145c1c1c5e949b4e0fc69972d5538282
+
+% 0 1 0 0a2e015dad1d34f90ccf431c18ea72c6
+
+@ 0 2 0 18d219968351219c1f5aa6e36235d7b2
++   entry .preOrderTraversal   `TraversalOrder.PreOrder`：先是目录，然后是其后代
++   entry .postOrderTraversal   `TraversalOrder.PostOrder`：先是目录的后代，然后是目录本身
+
+@ 0 1 0 044fae6ba87b2ddc180fa98d40264dea
++ entry .TraversalOrder   `descendants` 在目录内容之前还是之后产出该目录
+
+% 1 1 0 010c0b06aa1a117c1638da92e431a5dc
+
+@ 0 5 0 1027fc51feb4cc9403399ca68cfe3cd5
++       `PreOrder` 将每个目录放在其后代之前，这是复制或打印目录树的顺序；`PostOrder` 将它放在之后，这是删除目录树的顺序，因为目录只有在为空时才能删除。
++       该值是 `descendants` 的上下文参数，从 `filesystemTraversal` 导入；`filesize()` 和 `checksum` 自行固定使用 `PreOrder`。
+
+% 0 1 0 078a1ea46d66e0ae10c6d1f5fd208f1e
+
+@ 0 1 0 0da2586349570e830d04aed16a033af8
++ entry .CreateFlag   `create[…]` 在创建条目之外还可以做什么：`Parents` 或 `Replace`
+
+% 1 1 0 19b30c9618a085b81d4b50edb19754a6
+
+@ 0 8 0 09b3684e4252cf711a9879cac37d6d45
++       不给出标志意味着严格：创建父目录缺失的条目会抛出带有 `Nonexistent` 的 `Io.Error`，创建已存在的条目会抛出 `AlreadyExists`，除非调用者在调用处另有说明。
++       `Parents` 创建每个缺失的祖先目录（在作用域中的 `Umask` 下）；`Replace` 先删除路径上已存在的条目——如果它是目录，则递归删除。
++       标志是形式之后的参数：`path.create[Directory](CreateFlag.Parents)`、`path.create[File](CreateFlag.Replace)`。
++       它们有意不作为 `filesystemOptions` 中的方针：创建时的破坏性意图要在其发生之处声明。
+
+% 2 1 0 0d78e5d852e70cbb0dfe8917800694b5
+
+% 3 1 0 1a8add386e27c3ef12b2c00e075d63c4
+
+% 4 1 0 10f2edbf06e9da57024752ecb3690c00
+
+% 5 1 0 0889190c970b02c40b5d691872cd4ef4
+
+% 6 1 0 1e8b1ac6988fa4a317788775796a0f54
+
+% 7 1 0 1c405582748daaef138088535a2300d0
+
+% 0 1 0 0a7b5aa07b46feb80a6a0276bbc265be
+
+% 0 1 0 0a5a8aff5a3c97c3119a5e5b3e0caabe
+
+% 0 1 0 0a12390cdd31de271ff1686c50d98639
+
+% 0 1 0 07b21108e7d5aea8084034bd9d5cd5b8
+
+% 1 1 0 1d336c37b0aa6fde19464bff87377a64
+
+% 1 1 0 07330d6048a8a8720d4ffe380d8e5d79
+
+@ 0 1 0 075c69560d36a2ff0efe5dc4655127b8
++ entry .Explorable   列出平面中目录内容的类型类：`path.children`
+
+% 1 1 0 1a040be226adf91809e63f1a842851a3
+
+@ 0 10 0 0b8c88685c2d41270be94cd68718d7ef
++       `plane is Explorable` 表示 `Path on plane` 可以被列出。
++       每个具有 `FilesystemBackend` 的平面都以相同方式探查——`.explorable` 向后端询问子项名称，并将每个名称附加到父路径上——因此该类型类是一个接缝，而不是由用户实现的东西：它约束了 `children`、`descendants`、`glob`、`filesize()` 和 `deleteRecursively` 方针。
++   entry .explorable   用于任何具有 `FilesystemBackend` 的平面的 `Explorable`
++       位于隐式作用域中：它只需要后端。
++   entry #children   目录的直接子项，作为路径，通过调用者的战术抛出 `Io.Error`
++       严格的：列出失败（`Nonexistent`、`PermissionDenied`）在此处抛出，而不是推迟到链中。
+
+@ 0 1 0 06b9e3cb7f69d3c6011e3a0088f38cde
++ entry .Substantiable   `existent()` 背后的类型类：一个值是否指明了存在的事物
+
+% 1 1 0 0906a9afef4f774c1183cdce2b213896
+
+@ 0 5 0 1a83428a146bc80f170f22e5825e1043
++       `path.existent()` 对任何 `Substantiable` 的值都有定义。
++       Galilei 的实例 `.substantiable` 服务于每个 `Path on <platform>`：它是全函数（从不抛出错误），并会跟随最后的符号链接，因此悬空链接被视为不存在。
++       由作用域中的 `Fdtable` 管控的路径，就本进程而言是存在的，无需询问文件系统。
++       Hellenism 为 `Path on Classpath` 提供了另一个实例。
+
+% 2 1 0 1eb61cc4da5f76311d4d6aff2ba3852e
+
+% 3 1 0 16c7a0007d80aa9c1baf7c87f9374da5
+
+% 4 1 0 14303e34987702c601ab2e9e9d582e5f
+
+% 5 1 0 11fd3b4ed7d699201ed204a517a54e6d
+
+% 6 1 0 0957ce48934542e103c4054eefd316bf
+
+% 0 1 0 0963b48edaed15a010ed8d45c453a7a2
+
+% 0 1 0 1124dfa8d20129fc016b9f16eaaf3830
+
+% 1 1 0 19c125936de2815d09c1df0b08bed2e6
+
+% 0 1 0 0687814ef7ba7a310fea411b445e7ce2
+
+@ 0 2 0 0607b8b9204b22010c5f75444d7f6d46
++   entry .substantiable   用于任何平台路径的 `Substantiable`，通过后端的 `exists` 实现
++   entry #existence   该值是否存在
+
+@ 0 6 0 0bf2ec2b781a4c6a195008c85650b610
++ entry .existent   `value.existent()`：路径（或任何 `Substantiable`）是否指明一个存在的条目
++     作用于任何 `Substantiable` 值的扩展方法。
++     对于 `Path on <platform>`，它只需要一个 `FilesystemBackend`，且从不抛出错误：缺失、不可读或悬空的条目为 `false`。
++     在 `open[Directory]` 块中，句柄路径上的对应操作是 `extant()`，之所以换个名字，是因为词法导入的扩展方法会遮蔽它。
+
+@ 0 7 0 1d0ae573d6807d42085822dde7fceadd
++ entry .children   `path.children`：目录的直接条目，作为路径
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要该平面的 `Explorable` 和一个 `Tactic[Io.Error]`。
++     结果是由各条目完整路径组成的 `Chain[Path on plane]`，按后端列出的顺序（未排序）排列；每个名称在构造上就是合式的，因为它来自真实的目录条目。
++     缺失或不可读的目录会抛出 `Io.Error`（`Nonexistent`、`PermissionDenied`），在 JVM 上，非目录被列为空。
+
+% 2 1 0 0f31cba710478cc90bbb3c63229f392d
+
+% 3 1 0 02a60a2d86c5220c04928a667159b751
+
+% 4 1 0 188c1f44851b84be1bef90a4ab194828
+
+% 5 1 0 1e165f89b269824e15c3ae92434124ed
+
+% 6 1 0 0bb77294ef20460f1f4299292d7efdba
+
+% 7 1 0 0f8a220188fe28510efb579120f4d1ba
+
+% 0 1 0 1b28f018832f288c0c5a7ab1978ed34f
+
+% 0 1 0 05aa4c1ffdf2ade81062b09c66ebe48c
+
+% 1 1 0 02d343c2b80f6f8f151e99bcdb33dc1b
+
+@ 0 6 0 0cc188e9920f6fdd1fc98858677c8cb5
++ entry .descendants   `path.descendants`：目录之下的每个条目，按作用域中的 `TraversalOrder` 排列
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `DereferenceSymlinks`、一个 `TraversalOrder`（来自 `filesystemTraversal`）和该平面的 `Explorable`，并会抛出 `Io.Error`。
++     结果是惰性的 `Chain[Path on plane]`：使用 `preOrderTraversal` 时每个目录位于其内容之前，使用 `postOrderTraversal` 时位于其后。
++     使用 `preserveSymlinks` 时，不会进入被链接的目录。
+
+% 2 1 0 13ed81320c7cc02a080314e1cb9b9a82
+
+% 3 1 0 01f02e520cfd30ee01f448d7c2dc4dee
+
+% 4 1 0 06714bf976056747136ad924356a487f
+
+% 5 1 0 05f6e7b0c4157e60139394764e4138b5
+
+% 6 1 0 17e09a2401f1b38916de130ab9c33cbc
+
+% 7 1 0 0c46078df385e7570e5e0e0df5a2556a
+
+% 0 1 0 10ad931588c9903503db50a754b3c0b0
+
+% 1 1 0 00e30ff6298dabee059d494a011ec60c
+
+% 3 1 0 09b9c45005deff570ffbaef6a0bfa83b
+
+% 0 1 0 08828d229e2f6b4808b2450fd94bbad0
+
+% 1 1 0 1d7ed74ea04a3bc011592e2ab325b679
+
+@ 0 9 0 056254b7a00d6e711bc102ee4c9e20a3
++ entry .glob   `path.glob(pattern)`：目录之下与某个 `Glob` 匹配的条目
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要该平面的 `Explorable`、一个 `DereferenceSymlinks` 和一个后端，并会抛出 `Io.Error`。
++     模式相对于该路径，该路径应指明一个目录，模式逐段展开：每个普通段按匹配过滤当前目录的子项（名称中的 `*` 和 `?`，以及字符类 `[bd]`），而恰好为 `**` 的段匹配任意数量的中间目录。
++     只列出模式主干上的目录，因此 `sub1/*.jar` 从不遍历 `sub2`。
++     混在某段之中的 `**`（`a**b`）与 `*` 一样在单个名称内匹配。
++     结果是一个元素互不相同的 `List[Path on plane]`。
+
+% 2 1 0 1ecd8c385d1f72e304a10a8738649b8e
+
+% 3 1 0 107fd498eaa1c06e0077d79585f56b67
+
+% 4 1 0 16142fe539e1942206c542d40fcdf7a5
+
+% 5 1 0 0876db7d4da4b5d30e47e7746e348186
+
+% 6 1 0 0414729bc3eab5420d065a5ba0769add
+
+% 7 1 0 0fbba9665c27e7bc0b2bbb589327d3d4
+
+% 1 1 0 19219577798c00fb17bf8db3786ef3eb
+
+% 3 1 0 1d8bdcc604c76d6410b750f1a632e570
+
+% 0 1 0 03c542731517754905ef30372d641ee3
+
+% 0 1 0 088ffc939708ec221e0e781d314d2404
+
+% 0 1 0 0658618ae3b0e62907040b30f82964bf
+
+% 1 1 0 0c7eee34e6dd3b021d5234efc18319ca
+
+@ 0 7 0 13c1ef2d1a4fbc0c0fd3319aa4cec074
++ entry .write   `path.write(content)`：以一次直接操作替换文件的全部内容
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，接收任何 `Streamable by Data` 的内容（`Text`、`Data`、`Chain[Data]`、流），并需要一个 `Tactic[Io.Error]`。
++     内容被聚合后一次性写入，不持有句柄，也不需要作用域；已存在的文件被替换，不存在的文件被创建，但缺失的父目录会抛出带有 `Nonexistent` 的 `Io.Error`。
++     由作用域中的 `Fdtable` 管控的路径则改为通过其描述符写入。
++     `read[Text]` 是对应的读取操作，通过 `Platform.pathReadable` 实现。
+
+% 2 1 0 0b1af4478e55a1370445eb7097e49953
+
+% 3 1 0 026d0ed018d86b401cdb81209f8d4747
+
+% 4 1 0 0de0bb165c58c06510015d011708860e
+
+% 5 1 0 162a968dd2ee3cbb11f0c554c1540cb8
+
+% 6 1 0 0aaf3d98ea078426038f32f7b6196012
+
+% 7 1 0 145bab2508be7fd714278a4f3fd4b4aa
+
+% 3 1 0 15ade5724a5332bc18cf31398d7b7049
+
+% 0 1 0 0fa60b46d892408818a9f1fd9888f11f
+
+% 0 1 0 05e092a7136a84aa164c399133a82af3
+
+% 1 1 0 0880c1ab7c12013418c390c9130c371d
+
+@ 0 8 0 1efd8d25fe014cef1f806f4a9bbac4a9
++ entry .expanse   `path.expanse(lambda)`：在一个作用域内按位置读取文件，而不映射它
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端和一个 `Tactic[Io.Error]`。
++     lambda 接收一个 `zephyrine.Expanse`——`size`，以及 `read(offset, length)`，每次读取都与任何顺序位置无关——它在调用的作用域内有效，之后文件被关闭。
++     每个后端都实现了它，因此面向定位的格式读取器既不需要 `java.nio`，也不需要映射整个文件，而且超过 2 GiB 的文件也可以寻址。
++     与文件末尾重叠的读取返回实际存在的字节。
+
+% 2 1 0 013b7d767da87bf0013f89c11234d70b
+
+% 3 1 0 0bb527cbbad8abf30cb6b71bbf0a111f
+
+% 4 1 0 1c1f49857287a08b0a85b63606678d01
+
+% 5 1 0 1231de80bfca7b2716abd8e6512f0e88
+
+% 6 1 0 11634384b06a30701d49b9510e14134f
+
+% 7 1 0 123621854d51ad7309697247953655f7
+
+% 0 1 0 19984a552dfb484a07a36680b9439bf0
+
+% 0 1 0 11752f6fd8deacf51b315ed65156c0aa
+
+% 0 1 0 10b078b29068ba581c3a2ef275da9d96
+
+% 1 1 0 069781b768598a4d19ff0770698cf67a
+
+@ 0 6 0 17a366e9fd573a3f1ddec4e99e280d9c
++ entry .filesize   `path.filesize()`：文件的大小，或目录之下所有内容的大小，以 `Bytes` 表示
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要该平面的 `Explorable` 和一个后端，并会抛出 `Io.Error`。
++     文件的大小就是它自己的大小；目录的大小是它自己的大小加上其所有后代的大小，遍历时不跟随符号链接。
++     之所以命名为 `filesize` 而不是 `size`，是为了不在 `soundness` 总括包中与集合的 `size` 冲突。
+
+@ 0 6 0 1d07104e646f50ce1ea068acc3c84aa6
++ entry .delete   `path.delete()`：删除一个条目，在 `DeleteRecursively` 方针允许时递归进入目录
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `DeleteRecursively on plane`（`filesystemOptions.deleteRecursively` 或 `deleteOnlyEmpty`）、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     缺失的条目会抛出带有 `Nonexistent` 的 `Io.Error`；在 `deleteOnlyEmpty` 下，非空目录会抛出 `DirectoryNotEmpty`。
++     记录 `Io.Event.Delete` 并返回该路径。
+
+@ 0 4 0 17ad3c754bce5e081363893ed7acc87d
++ entry .wipe   `path.wipe()`：若条目存在则删除它，在 `DeleteRecursively` 方针允许时递归
++     与 `delete()` 相同，但缺失的条目不算错误，因此 `wipe()` 是幂等的形式：执行之后该路径不存在。
++     使用 `deleteRecursively` 时，它会移除整棵目录树。
+
+% 2 1 0 0f90f185a24448d4004b8d61f09da6f1
+
+% 3 1 0 05f4f0a772a32a65181090e51a24905c
+
+% 4 1 0 04212b56c4a0385700aca37d9225026c
+
+% 5 1 0 02b872a377a352330a17bacc796b417a
+
+% 6 1 0 0967bbda0d0e9f13084d8c8196d23ffb
+
+% 1 1 0 1acd973708b0277a11cb56489f28c4ad
+
+% 1 1 0 122c676701082bc813428043c5358f5b
+
+% 0 1 0 1bae8b589f39e2a20b0a5628373afe88
+
+% 0 1 0 07e4608cbb114ea40ea9acf62e4b3b58
+
+% 0 1 0 10e82323f54988cf00743cec94803d1d
+
+% 1 1 0 1242d3ff73a37b591cb4585b31b04993
+
+@ 0 4 0 02332befee2cbfc712242659d4f48b7b
++ entry .volume   `path.volume()`：条目所在的存储卷，按名称和文件系统类型给出
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端，并会抛出 `Io.Error`。
++     `Volume` 的 `volumeType`（`ext4`、`apfs`、`btrfs`、`ntfs`……）正是存储维度的提取器 `Ext4`、`Apfs`、`Btrfs` 和 `Ntfs` 所检测的内容。
++     WASI 会抛出 `Unsupported`。
+
+@ 0 6 0 0ce33e8049ccb24919ab43a84a0abb09
++ entry .entryIdentity   `path.entryIdentity`：条目的设备号和 inode 号，或 `Unset`
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端。
++     `Stat.Identity` 在其设备上唯一地指明一个文件：标识相等的两个路径是指向同一文件的硬链接。
++     这是全函数——在平台不记录它时（WASI，以及非 POSIX 平台上的 JVM）为 `Unset`，而不是抛出错误。
++     它以 `entry()` 命名，而不是直接叫 `identity`，因为后者会在导入总括包的任何地方与 proscenium 的函数冲突。
+
+% 2 1 0 084658adfac14b031dbdd420384693f9
+
+% 3 1 0 02229abae201cee70ad89c3f145d938f
+
+% 4 1 0 14564c3d7652218c015dc7b102b8fc38
+
+% 5 1 0 087a127698f288e514415b6c7196c3c7
+
+% 6 1 0 104070e715e4693d1d619b7d1c31b988
+
+% 0 1 0 07b46ffdb1eacfb817ae8bedbb4b6306
+
+% 0 1 0 0cda49e73f967315078ebab5109b9b6f
+
+% 0 1 0 1f28c63a05dd5272005c744a545e6aa0
+
+% 1 1 0 059e2565817142511ca7acd4025309c1
+
+@ 0 6 0 017bd50721cf0c7d17c069568ec68354
++ entry .entry   `path.entry()`：路径所指明的条目是哪种类型
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `DereferenceSymlinks` 和一个后端，并会抛出 `Io.Error`（路径不存在时为 `Nonexistent`）。
++     结果是 `Entry` 对象之一——`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice`——且只有在 `preserveSymlinks` 下才会是 `Symlink`；在 `dereferenceSymlinks` 下，链接报告的是其目标的类型。
+
+% 2 1 0 0e89106a0ecf422a0118bc1c3c192475
+
+% 3 1 0 1f9e148839da73ff07bfe90e16aa5ef9
+
+% 4 1 0 1507edc02b4749ff033e48bfbbf56a35
+
+% 5 1 0 196ae7ae72f755821c540a29ec681d06
+
+% 6 1 0 15660db7dd7ac1cc1ce481ee85abd8ab
+
+% 0 1 0 04164f01682606db1cb435c1e15b1246
+
+% 1 1 0 16b4f7b2cc8438b5026bd2bc35b8e3cd
+
+% 3 1 0 1d605e1bc2b2ca6513813b91140b71a3
+
+% 0 1 0 0569ca8d725cf9b7173a0bf6f0fd4679
+
+% 0 1 0 0d2e4293168ba8071b5df318e964472f
+
+% 0 1 0 138b4c9a56a944e8146f7456ecb906f2
+
+% 0 1 0 118c711cd618e8c30bf7d3a0baeec593
+
+% 0 1 0 1eb28004e3cf2d3a0be2f3530af23fb5
+
+% 1 1 0 179467ac2eb689c91cc6d0d0fc51fb59
+
+@ 0 8 0 18eb92c81b9a5cbc1c6ab72fcc0a6126
++ entry .copyTo   `path.copyTo(destination)`：将条目复制到某个路径，并查询作用域中的方针
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `DereferenceSymlinks`、一个 `CreateNonexistentParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     在 `failOnPreexisting` 下，已存在的目标会抛出 `AlreadyExists`；在 `overwritePreexisting` 下，它会先被移除。
++     在 `requireParents` 下，缺失的父目录会抛出 `Nonexistent`。
++     目录被复制为一个空目录（JVM 的 `Files.copy`），而不是递归复制。
++     记录 `Io.Event.Copy` 并返回目标。
+
+% 2 1 0 04e8ad39345490ac09dbd37a0bd829ba
+
+% 3 1 0 1a37d542d95e11af015088d521dddb03
+
+% 4 1 0 1bc88026edc0e9a607dec26a0684ca99
+
+% 5 1 0 1dac8afddfde9ecd1491af0128a31042
+
+% 6 1 0 10af32c96c07fcec03dc416753e6c5e3
+
+% 7 1 0 1b2be1454b0cacff13afff6db95c069a
+
+% 8 1 0 1e2638cfc4b8c59501288548bfd64aab
+
+% 9 1 0 0bc17c1f184ea0c1029d409fd15f816b
+
+% 2 1 0 18897d3006dc6ca1021e352b89fafab3
+
+% 3 1 0 0f8851e0cceb36310640cb26d72de13b
+
+% 3 1 0 19be0b2a3868a5ba1718063a49504dda
+
+% 0 1 0 0b8915f6db4637e10ed3c79a28aa5ca6
+
+% 1 1 0 1c248ff0e1a901f313ea4393033920bf
+
+@ 0 5 0 101738394c261de708dc8c1c0776119c
++ entry .copyInto   `path.copyInto(directory)`：将条目复制到某个目录中，保留其名称
++     等同于 `copyTo(directory / path.name)`：目标指明目录，条目自己的名称在其下使用。
++     需要一个 `OverwritePreexisting on plane`、一个 `DereferenceSymlinks`、一个后端和一个 `Tactic[Io.Error]`；由于目标目录是显式指明的，父目录会被创建。
+
+@ 0 8 0 004bfca49603dff30dbce52bc28d14c6
++ entry .moveTo   `path.moveTo(destination)`：将条目移动到某个路径，并查询作用域中的方针
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `MoveAtomically`、一个 `DereferenceSymlinks`、一个 `CreateNonexistentParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     使用 `moveAtomically` 时，移动是一次单独的重命名，跨卷移动为 `Unsupported`；使用 `moveNonAtomically` 时，它可能是一次复制加一次删除。
++     在严格的方针下，`AlreadyExists` 和 `Nonexistent` 的出现情形与 `copyTo` 相同。
++     记录 `Io.Event.Move` 并返回目标。
+
+% 2 1 0 1f81faf2083afb5c0d00f45b795ee793
+
+% 3 1 0 1dde5e0e36479cbe12e85ad03314ff69
+
+% 4 1 0 08e34cd31e54dafe1e2f227768367ef4
+
+% 5 1 0 0180df65777fd80719f1201e3d2e1447
+
+% 6 1 0 046650d580c2414504317d36fd2dd91a
+
+% 7 1 0 0ecc3537cae7ed9716caa1153aaf7ce0
+
+% 8 1 0 0f9bace75dfb25270f4bd783e2316553
+
+% 9 1 0 1aa14496af0b6af917d322e522c388be
+
+% 10 1 0 1c45e057855be3761ca61007e21ed343
+
+% 11 1 0 1c3070837d2b73920690fd94b02b94fc
+
+% 12 1 0 1d7cb250e45bcccc1940f7db76ff2573
+
+% 0 1 0 058b94bb1c0d8eb10fc1cd853f316027
+
+% 0 1 0 129462d9447645f20134d700c9cb2e45
+
+% 1 1 0 01746c89397fb64d017227d4853f98b1
+
+@ 0 4 0 034098b5a87e9bc70b82c18508831171
++ entry .moveInto   `path.moveInto(directory)`：将条目移动到某个目录中，保留其名称
++     等同于 `moveTo(directory / path.name)`。
++     需要一个 `OverwritePreexisting on plane`、一个 `MoveAtomically`、一个 `DereferenceSymlinks`、一个后端和一个 `Tactic[Io.Error]`；父目录会被创建。
+
+@ 0 6 0 0108ba8dbe0f043d171e5b134c2f4569
++ entry .hardLinkTo   `path.hardLinkTo(link)`：在 `link` 处创建指向此条目的硬链接
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `CreateNonexistentParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     接收者是已存在的条目，参数是新名称；之后两者具有相同的 `entryIdentity`。
++     记录 `Io.Event.HardLink` 并返回链接的路径。
+
+@ 0 6 0 01b889997b9fb60b185a1a94ee8a8dc8
++ entry .symlinkTo   `path.symlinkTo(link)`：在 `link` 处创建指向此路径的符号链接
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `CreateNonexistentParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     接收者是目标，参数是要创建的链接；链接存储接收者的完整文本。
++     记录 `Io.Event.Symlink` 并返回链接的路径。
+
+% 2 1 0 1c868c03d29cf0100a613aed48efa1a2
+
+% 3 1 0 1d4c9d5f0aa6561f0ea1a26d5d59686d
+
+% 4 1 0 0744be79b580c22d18330230ded238b4
+
+% 5 1 0 06f5b8fe65adc3480b13c3b9a3b07103
+
+% 6 1 0 0ca75024f74c40981a8b81bf074ef7e9
+
+% 7 1 0 15f426c4b034858c1453d321709c22f0
+
+% 1 1 0 035bc91b151b184e00cdee7d8fb3a4f1
+
+% 2 1 0 166eb961f2f9bb1a10e6469d4691c3e7
+
+% 3 1 0 072d10c7749fc2a906548a98cd01712b
+
+% 0 1 0 1f1014a3c56bab9414a0e4186fe5155b
+
+% 0 1 0 02fa03ec3c4e23d702e70405d3d869f3
+
+% 1 1 0 1ea034c2467972bf1f6e06cb26db1d4a
+
+@ 0 4 0 054e380fa99797471ac1b48fb5cae232
++ entry .symlinkInto   `path.symlinkInto(directory)`：在某个目录中创建指向此路径的符号链接
++     等同于 `symlinkTo(directory / path.name)`。
++     需要一个 `OverwritePreexisting on plane`、一个 `MoveAtomically`、一个 `DereferenceSymlinks`、一个后端和一个 `Tactic[Io.Error]`；父目录会被创建。
+
+@ 0 7 0 143cfcbe7fd29179062e0833a486258a
++ entry .canonical   `path.canonical()`：文件系统所知的路径，每个符号链接都已解析
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端，并会抛出 `Io.Error`。
++     后端的 `realPath`——`realpath(3)`——被重建为同一平面上的路径，因此到达同一条目的两条途径（经由符号链接，或在 macOS 上经由 `/tmp` 和 `/private/tmp`）会规范化为同一路径，这正是以路径为键的注册表应当存储的内容。
++     条目必须存在（否则为 `Nonexistent`）；位于另一个根之下的真实路径（指向另一个驱动器的 Windows 联接点）为 `Unsupported`，WASI 也是如此。
+
+% 2 1 0 1fc7b4f8f210a46018d7a0d6e88ccb91
+
+% 3 1 0 0165681335df9eff1039612c32164faf
+
+% 4 1 0 0cf0af800ef9c7ee0967984abdd6cae1
+
+% 5 1 0 16e6d56f46cf63260ec955c84ea80c6b
+
+% 6 1 0 1f6ac4413dad259914d3e2c013d1370a
+
+% 7 1 0 1c69c9dd9c4ef8d80394856d000143b3
+
+% 0 1 0 088d42a8ada860a11f42d9a5223c2ac8
+
+% 0 1 0 1510e35d91c978cd0c5e75653a166a44
+
+% 1 1 0 0bf4752dda2610090b994d6f0087d922
+
+@ 0 5 0 012747f982a30c3817725ad38e9de910
++ entry .modified   `path.modified[Instant]()`：条目最后一次修改的时间
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端，并会抛出 `Io.Error`。
++     结果类型由调用者选择：任何 `Instantiable across Instants from Long` 的类型——aviation 的 `Instant`，或通过 `instantiables.epochMillisecondsInstantiable` 得到的以纪元毫秒表示的普通 `Long`。
++     会跟随最后的符号链接。
+
+@ 0 2 0 0e3eab9d2d025f0301fbb82428f12eb3
++ entry .accessed   `path.accessed[Instant]()`：条目最后一次访问的时间
++     与 `modified()` 相同，但针对访问时间；以 `noatime` 挂载的文件系统不会更新它。
+
+@ 0 5 0 081e4c57c08094fc0b914cf48ce38c9c
++ entry .created   `path.created[Instant]()`：Windows 条目的创建时间
++     仅作用于 `Path on Windows` 的扩展方法，因为 NTFS 记录创建时间，而大多数 POSIX 文件系统不记录。
++     在不记录创建时间的文件系统上，它会抛出带有 `Unsupported` 的 `Io.Error`。
++     在其他平台上，`creation()` 是同样的访问器，以存储文件系统为 `CreationTimed` 为门控条件。
+
+@ 0 6 0 1d0cf0b500d35db61b2c69612f17ef3d
++ entry .creation   `path.creation[Instant]()`：`CreationTimed` 文件系统上条目的创建时间
++     作用于 `Path on plane over <transport <: CreationTimed>` 的扩展方法——这是这样一种路径：通过匹配 `Btrfs(path)`、`Apfs(path)` 或 `Ntfs(path)`，已确定其存储文件系统会记录创建时间。
++     因此，在 `Stat.created` 为可选的情况下，它是全函数：此处缺失的值是后端的失败，以带有 `Unsupported` 的 `Io.Error` 报告。
+
+% 2 1 0 03bef631c9471b2c065c8b0d43eecd5a
+
+% 3 1 0 0366e6ea2ad6a067054b4a8ea32c0e52
+
+% 4 1 0 0a324b4933c6703912445354960789e6
+
+% 5 1 0 0222b60bbad3591f10c4e2a284344b2b
+
+% 6 1 0 134789fe41cfa3011f467b09c1d1ae94
+
+% 0 1 0 191f14928d005ae617a4f7f5f0245f57
+
+% 1 1 0 1a1eda4401ad10b9053aea5321203f44
+
+% 3 1 0 1cc243259caf2fd01780547a6e635748
+
+% 0 1 0 18b05cc5e92d484c160b9975b14490db
+
+% 0 1 0 0e05f24aa62f601103bd5e91a51a0a02
+
+% 0 1 0 0b3de82be92b142712f25a6dd161396c
+
+% 0 1 0 09ca18fcb2d751ee03525d1d5f64b9dc
+
+% 1 1 0 0fe730918d4c7936019af1e5c969b4db
+
+@ 0 4 0 034e20127f2b9c070666935a04515cce
++ entry .readable   `path.readable()` 和 `path.readable = false`：当前用户对该条目的读权限
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端。
++     它返回一个 `FilesystemAttribute.Readable`，其 `apply()` 是当前的标志（全函数），其 `update` 设置该标志，在平台拒绝时抛出带有 `PermissionDenied` 的 `Io.Error`。
+
+@ 0 2 0 1e45b227c87f9be018d5c05430467d52
++ entry .writable   `path.writable()` 和 `path.writable = false`：当前用户对该条目的写权限
++     与 `readable` 相同，返回一个 `FilesystemAttribute.Writable`。
+
+@ 0 3 0 00d89acdb44800d91f56e9cdaf4f70ea
++ entry .executable   `path.executable()` 和 `path.executable = true`：POSIX 条目的执行权限
++     仅作用于 `Path on <plane <: Posix>` 的扩展方法，返回一个 `FilesystemAttribute.Executable`；Windows 没有执行位。
+
+% 2 1 0 00f0021b0175ade7026a793122a6aaf8
+
+% 3 1 0 18e249c725d3eb7b166fcc82d7f2e6cf
+
+% 4 1 0 1c4b549dbbf13c4d170330e0e95e1a98
+
+% 5 1 0 07e2b8aad658978d13dc44432fdc2be9
+
+% 6 1 0 13f691514b9ba73b1141f1d005d8d17f
+
+% 7 1 0 1abd27d9254826bc1c464d42106727b2
+
+% 0 1 0 0a5a6c4a53bc19f519bdac724dbd8d4f
+
+% 0 1 0 19bb4f4c3f5fa1051dc79140310b8acf
+
+% 0 1 0 0838eb153d43fc3b0dea19aca47e1d9f
+
+% 1 1 0 03c3d4ad5897765411f4e76b92d2026e
+
+@ 0 3 0 03731c3a180e14ad1cf657afdd5451f6
++ entry .hidden   `path.hidden()`：按平台约定，该条目是否隐藏
++     在 POSIX 上为名称以 `.` 开头，在 Windows 上为隐藏属性。
++     需要一个后端，并会抛出 `Io.Error`。
+
+@ 0 4 0 14fe7fe38cbba5970860ba7e75906a52
++ entry .touch   `path.touch()`：将条目的修改时间设为当前时间
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     与 shell 的 `touch` 不同，它不会创建缺失的文件：那会抛出 `Nonexistent`。
++     以 `fine` 级别记录 `Io.Event.Touch`。
+
+@ 0 3 0 05d0a1905d429e011ddc4532f1ffb3a0
++ entry .hardLinks   `path.hardLinks()`：有多少个硬链接指向一个 POSIX 条目
++     作用于 `Path on <plane <: Posix>` 的扩展方法，需要一个 `DereferenceSymlinks` 和一个后端，并会抛出 `Io.Error`。
++     新创建的文件有一个。
+
+@ 0 6 0 05feb91120e5f2ed0c0eb8b406d2b6f8
++ entry .attributes   `path.attributes()`：条目的扩展属性的名称
++     作用于 `Path on plane over <transport <: Attributed>` 的扩展方法——这是这样一种路径：通过匹配 `Ext4(path)`、`Btrfs(path)`、`Apfs(path)` 或 `Ntfs(path)`，已确定其存储文件系统支持用户定义的属性。
++     需要一个后端，并会抛出 `Io.Error`。
++     没有这次匹配，该扩展方法就不可用：类型表明文件系统是未知的。
+
+@ 0 6 0 0d8a07972057519101130d8dc6bbb46d
++ entry .attribute   `path.attribute[Data](name)` 读取一个扩展属性；`path.attribute(name, data)` 设置一个扩展属性
++     两个重载，都作用于 `Path on plane over <transport <: Attributed>`，需要一个后端，并会抛出 `Io.Error`。
++     读取方法在结果类型上是泛型的，通过 `Aggregable by Data`（`Data`、`Text`）解码，属性不存在时给出 `Unset`；设置方法以 `Data` 接收值。
++     在 Linux 上，名称就是 `java.nio` 的 `UserDefinedFileAttributeView` 所呈现的 `user.` 命名空间中的名称，不带前缀。
+
+% 2 1 0 0fb5f72a870a40521ee107d2a8791ca2
+
+% 3 1 0 000cfc1e417d2c590e69fa3b4099efdc
+
+% 4 1 0 01fe8d6bb3e075570e2629e82214e641
+
+% 5 1 0 044b30e36263132a0ca411f627db302f
+
+% 6 1 0 11e78355df6b82df046f6e850e7f01c0
+
+% 7 1 0 1b815652ceb02d83118eeda70b8d1c06
+
+% 0 1 0 15c07107ecc102db14fce71c817e4d80
+
+% 0 1 0 030447e8c2bd0f4f16e7efd5d81af261
+
+% 0 1 0 00cbe7ee029f58ba10345e3a28e05fc8
+
+% 1 1 0 1c0e67a80144dde5146659dd491d7940
+
+% 0 1 0 0b56416edf80703005a33e19fdb6a333
+
+% 0 1 0 1619a2a445d8a2b1090721eea7d2703a
+
+% 1 1 0 0213a16a271738d814364f50329be42d
+
+% 0 1 0 058516a99e13f27906df66ac58e42dd1
+
+% 0 1 0 116639bba0d13b561940d61d7a33b05b
+
+% 1 1 0 0796a103ca28020f000ce6c577b987ef
+
+@ 0 6 0 0e09edd2b368d9400cc9ef4a21b2a331
++ entry .subvolume   `path.subvolume()`：条目所存储于的 btrfs 子卷
++     作用于 `Path on plane over Btrfs` 的扩展方法，需要一个后端，并会抛出 `Io.Error`。
++     Btrfs 给每个子卷分配其自己的匿名设备号，因此仅凭 `stat`，沿着设备号保持不变的路径向上查找，就能找到子卷的根。
++     结果是一个指明该根的 `Btrfs.Subvolume`；无法报告条目标识的平台会抛出 `Unsupported`。
+
+@ 0 4 0 12e41d71598130b302992165252212e8
++ entry .subvolumeRoot   `path.subvolumeRoot`：一个 btrfs 条目本身是否为子卷的根
++     作用于 `Path on plane over Btrfs` 的扩展方法，需要一个后端。
++     每个 btrfs 子卷的根都是 inode 256，因此它与 `existent()` 一样是全函数：对于以此为门控条件的任何东西而言，无法读取其 inode 的条目都不是子卷的根。
+
+@ 0 5 0 12a9a91f9d81c17614958aa2fce589b0
++ entry .file   `open[File]` 块中的上下文 `Handle`，作为一个值
++     在 `path.open[File](mode): handle ?=> …` 中，句柄是一个上下文参数；`file` 无需声明绑定名就能指称它，因此 `path.open[File]()(file.stream.read[Data])` 读取已打开的文件。
++     它是透明内联的，因此句柄精确的、经授权细化的类型得以保留：只有当模式授予了 `Write` 时，`file.write(…)` 才能编译。
+
+% 2 1 0 17d4e313d31698c21c4bb126611a41aa
+
+% 3 1 0 115afa5d9164576116436556fbd67e26
+
+% 4 1 0 1fba18c24302458d1ff5af157238ab7d
+
+% 5 1 0 0fb6c2741244cbb213c09473ad59e7c5
+
+% 6 1 0 1fc3dcd9d62ba8350458c438d9aa4436
+
+% 7 1 0 1e9ca9fe1d20b740136e533eb42cadc2
+
+% 0 1 0 0976fcd7c81a6091146925894e2d1048
+
+% 0 1 0 0216b81b3d0cb8160283b57a003abd6c
+
+% 1 1 0 1097639b5bcd0c6917008003cf70632d
+
+@ 0 3 0 032e1b2d4683d2a417b92de43895a4ba
++ entry .dir   `open[Directory]` 块中的上下文 `Directory.Handle`，作为一个值
++     与 `file` 相同，但用于目录作用域：`path.open[Directory]()(dir.base.entries)` 无需命名绑定名就能列出已打开的目录。
+
+@ 0 1 0 06cf8571f9550d581c8fcc64908b7f43
++ entry .Entry   文件系统条目可以是什么：`File`、`Directory`、`Symlink` 等的共同类型
+
+% 1 1 0 0271936e602c1a3e1ea0f9092bf923ab
+
+@ 0 7 0 074652a33667d0ef0917a18e4fb2461f
++       `path.entry()` 和 `Stat#entry` 以条目对象之一作答：`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice`。
++       `UnixEntry` 和 `WindowsEntry` 是两个子集——`File`、`Directory` 和 `Symlink` 在两者上都存在，其余的只存在于 Unix 上——因此对 Windows 路径的条目进行匹配时无需处理 FIFO。
++       每个对象也是传给 `open` 和 `create` 的同名*形式*（`open[File]`、`create[Directory]`）：事物的类型与打开它的方式共用一个名称。
+
+% 0 1 0 1aca02636b6b524e1a78ad913fb32631
+
+% 1 1 0 04d9eaf551585e160caa16301e3296d5
+
+% 2 1 0 1167a54a4a2d1566037806974f3cbb1e
+
+@ 0 1 0 04932879856f56691c0fd7567a2a441e
++ entry .UnixEntry   存在于 Unix 上的条目类型：`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice`
+
+@ 0 1 0 1890e296d035a55111dc98177be96fd6
++ entry .WindowsEntry   存在于 Windows 上的条目类型：`File`、`Directory` 或 `Symlink`
+
+@ 0 1 0 0ca63a7078847c531bf0c5d8db90743b
++ entry .File   普通文件，既是条目类型，也是为其内容而打开或创建时所用的形式
+
+% 1 1 0 1e1c1a609bc8d52e0feded68fb5d0d3b
+
+@ 0 5 0 14fb549d03a47fb41051c43cacb0cfc2
++       作为对象 `File`，它是 `entry()` 对普通文件返回的值。
++       作为特质 `File`，它是 `path.open[File](mode, flags*)` 的形式，后者为代码块产出一个作用于文件内容的 `Handle`（参见 `FileOpenable`）；也是 `path.create[File](flags*)` 的形式，后者创建一个空文件，或在一个作用域内编写一个文件（参见 `Creation.FileCreatable`）；还是 `Slice(path, offset, extent).open[File](…)` 的形式。
+
+% 2 1 0 0a4d8adc9a87ab9b16481992bfe48a42
+
+% 3 1 0 0397bd3c9cf173f0067d31707a3a9a0c
+
+% 4 1 0 16ceb20dadfa14780781b1014020b15b
+
+% 5 1 0 0e0c1c53b68382f1077bea3edc2414cb
+
+% 6 1 0 1a270edc03fe8a8111754badf698c4ac
+
+% 7 1 0 1f748f52da20ccca00448c589f29968d
+
+% 9 1 0 021664f40996542e1e5a991b72b1a0ec
+
+% 0 1 0 185e699e9fa4be020e0477511a7b098c
+
+% 1 1 0 1c88175f98d5af0a054cda04f2f3c459
+
+% 0 1 0 0c070c2141b282c80f023d31274d01c8
+
+% 0 1 0 118f38cfae6267d917d7b96429ceaf97
+
+% 2 1 0 15db19be5d1c88c808d1dbb97726ed2a
+
+% 0 1 0 00d9f1481f1ad5b809eba240dba2b231
+
+% 0 1 0 14f5a5d08f1772511e5c55c3fab9d6ff
+
+% 1 1 0 158728f2fdff110815266d4d0d8ace26
+
+% 1 1 0 094cba00d55dc3ee1f665b3194fb51ff
+
+% 1 1 0 13f13c13438cc0280dd730d3c97c6d3b
+
+% 1 1 0 0ea037a6d404dcf410647199721378c9
+
+@ 0 1 0 1445df68533f0d9915a2ca91c3af15db
++ entry .Directory   目录，既是条目类型，也是为受限的作用域访问而打开时所用的形式
+
+% 1 1 0 175911f55eef994615ace3548672d366
+
+@ 0 9 0 10a3e65c6e4b5f811ab4c4fde15780e6
++       作为对象 `Directory`，它是 `entry()` 对目录返回的值。
++       作为特质 `Directory`，它是 `path.open[Directory](mode)` 的形式，后者以一个 `Directory.Handle` 运行代码块：由句柄派生的路径（`dir / "src" / "main.scala"`）位于该句柄自己的一个全新平面上，因此 `..` 无法编译，一个已打开目录中的路径不能在另一个目录下使用，而由句柄派生的任何东西都不能在代码块之外存活。
++       在该作用域内，子树操作有 `contents`、`overwrite`、`extant`、`entries` 和 `remove`（参见 `Subtree`），每个都以模式所选的授权为门控条件。
++       `path.create[Directory](flags*)` 创建一个目录，或在同类作用域内编写一个目录。
+
+% 2 1 0 1d585103e660d9a7081fca854a7c11c7
+
+% 3 1 0 0f91b9be282f7c1215d29d32e6b4b976
+
+% 4 1 0 01bc492fa7f6fa291b140cbc407d0a6c
+
+% 5 1 0 128e07e648358e890aaff26763988ca0
+
+% 6 1 0 0043d95ac3def69d103c44dc200b8fa8
+
+% 7 1 0 183c1673e17914d513806401c38b7ccf
+
+% 9 1 0 1a14517d204c769917f5b2af31506d57
+
+% 11 1 0 16a9d7dc85ab275e1ec432abcc5d11b7
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 0 1 0 07dab1d5e7d49e890adaa4fc49fa0e4c
+
+% 0 1 0 1e9ab1201adce0f5174c9cfeb1660aa0
+
+% 1 1 0 1bfcfc3593fd02530ddd4e5a1c41c8d2
+
+@ 0 5 0 1133c1eee4dcb7b307bc35e147675c3f
++       打开时会验证条目存在且为目录（否则抛出带有 `IsNotDirectory` 的 `Io.Error`），并将该作用域登记到 `AccessRegister` 中：任意数量相互重叠的 `Read` 和 `Write` 作用域可以共存，但 `Exclusive` 作用域与对重叠子树的任何其他打开操作都相冲突，无论方向如何，第二次打开会抛出带有 `Busy` 的 `Io.Error`。
+
+% 0 1 0 0b512145c5c33079162c46c3754c56f5
+
+% 1 1 0 1e9c7bf7cbe9ce491e7958695cd84ef8
+
+% 0 1 0 0d82f3fd1690b96e143ef6d1b9f65282
+
+@ 0 1 0 0198748d2068120f1cb1e2741238c027
++   entry .Handle   `open[Directory]` 块所持有的能力：一个以该目录为根的全新平面
+
+% 1 1 0 173bb575a288fbbd17520b79bc3bc301
+
+@ 0 19 0 05f8e230e0787f0608d88cd5fb069ca0
++         每个句柄的 `#Plane` 都是 `Subtree` 的一个全新的抽象子类型，因此在该作用域内构成的路径只以该句柄为类型；`#Under` 是其下的真实平台，`#stem` 是真实的目录。
++         `dir / "name"` 在全新平面上构建路径，`#base` 是该平面的根（即目录本身）。
++         句柄是一种独占的能力，因此不能被存储或返回。
++     entry #Plane   句柄自己的全新平面，是 `Subtree` 的子类型
++     entry #Under   目录所在的真实平台
++     entry #stem   已打开目录的真实路径
++     entry #atoms   打开句柄时所用的 `Mode` 原子，用于运行时的权限削减和登记检查
++     entry #base   句柄平面的根：已打开的目录，作为 `Path on Plane`
++         `dir.base.entries` 列出目录本身。
++     entry #/   `dir / "name"`：目录之下、位于句柄平面上的路径
++         它是方法而不是扩展方法，这样词法作用域中的泛型 `/` 扩展方法就不会遮蔽它。
++         名称在代码编译时依据 `Subtree.Rules` 检查：`dir / ".."` 无法编译。
++     entry #resolve   句柄平面上的路径所表示的、位于 `#stem` 之下的真实路径
++         子树操作调用它来访问磁盘；由于那些操作是透明内联的，它是公开的。
++   entry .Openable   `path.open[Directory](mode)` 背后的 `Openable` 实例
+
+% 1 1 0 119db955b83aa26902e62f42621de0ae
+
+@ 0 4 0 0542f3b0464937ce06fa674d63cc290f
++         一个具名类，由 `Platform.directoryOpenable` 为任何平台路径实例化。
++         它需要一个后端和一个 `Tactic[Io.Error]`，不接收标志，其结果是一个以模式的授权细化过的 `Directory.Handle { type Under = filesystem }`。
++     entry #open   检查条目是目录，获取登记，并以一个句柄运行代码块
+
+@ 0 6 0 1185404abfd288281e332f090b78f8ca
++ entry .Fifo   命名管道，既是条目类型，也是 `create[Fifo]()` 所创建的形式
++     作为对象 `Fifo`，它是 `entry()` 对 FIFO 返回的值。
++     作为特质 `Fifo`，它是 `path.create[Fifo](flags*)` 的形式，后者创建该管道（在 JVM 上通过 `mkfifo`；在 WASI 上为 `Unsupported`）。
++     只有实例化形式存在：在创建作用域内编写 FIFO 会以 `Unsupported` 被拒绝，因为打开任何一端都会阻塞，直到对端出现。
+
+@ 0 3 0 0138c8894dcedd730af454e391de8b18
++ entry .BlockDevice   块设备节点，作为条目类型
++     `entry()` 对块设备返回的值。
++     对象是条目类型，特质则是一个标记；`Device.create`（JVM）可以创建一个块设备节点。
+
+@ 0 2 0 192e8a1c4bf9f9270ceba7bbfd53c140
++ entry .CharDevice   字符设备节点，作为条目类型
++     `entry()` 对字符设备（例如终端）返回的值。
+
+@ 0 1 0 12d6fbbe0cd4cd280fdfab5820ac867f
++ entry .Symlink   符号链接，作为条目类型，以及按路径指明一个符号链接的值
+
+% 1 1 0 074732a6cc4c71791bb8a1bb7ea292ea
+
+@ 0 5 0 007648e71f3d604008eed8eb93db3dc4
++       在 `preserveSymlinks` 下，对象 `Symlink` 是 `entry()` 对链接返回的值；在 `dereferenceSymlinks` 下，链接改为报告其目标的类型。
++       case class `Symlink[plane](path)` 将链接的路径作为值携带，检视时显示为 `symlink:<path>`。
++       链接用 `symlinkTo` 和 `symlinkInto` 创建，其存储的文本用 `FilesystemBackend#linkTarget` 读取。
+
+% 0 1 0 0d395ddd1c4c0a881fcbe6ff4a2c67a2
+
+@ 0 1 0 0ce66c934ee429801c2266409bec62e9
++   entry #path   链接的路径
+
+@ 0 1 0 13a3b76f3d7efb030d1435ae53fbeec9
++ entry .Sock   Unix 域套接字，作为条目类型，以及已绑定套接字的通道
+
+% 1 1 0 0ad3e9818a50606d14571601f91963df
+
+@ 0 4 0 07314b8b41c716cf06ba3b430a1cd19c
++       对象 `Sock` 是 `entry()` 对套接字文件返回的值。
++       case class `Sock(channel)` 是 JVM 上 `create[Sock]` 作用域所持有的值：活动的、已绑定的 `ServerSocketChannel`，在作用域结束时关闭（参见 `socketCreatable`）。
++   entry #channel   已绑定的 `java.nio.channels.ServerSocketChannel`
+
+@ 0 1 0 195ceb84d3f37ded08fc293b3f751e8a
++ entry .Stat   以一个值表示的条目元数据：其类型、大小、时间戳和 inode 字段
+
+% 1 1 0 0dd6d7e46f9f4bca0074258f799e90fd
+
+@ 0 6 0 07dfd5fa169318d804dc0c6c0e6c4e89
++       `FilesystemBackend#stat` 返回的值，`entry()`、`filesize()`、`modified()` 和 `accessed()` 各自读取其中的一个字段。
++       时间戳为纪元毫秒。
++       在不记录创建时间的文件系统上（大多数 POSIX 文件系统，以及 WASI），`created` 为 `Unset`。
++       `mode` 是完整的 `st_mode`——既包括类型位，也包括权限，与 `ar` 存储它的方式相同——`device` 是 `st_rdev`，仅对设备节点有意义；在平台没有 Unix inode 的情况下（Windows、WASI），四个 inode 字段都为 `Unset`。
+
+% 2 1 0 1faa42b3fc4b9bd40ee0f50b546a66b3
+
+% 3 1 0 1cd08e379257d9cf1fb4c15a39c7e939
+
+% 4 1 0 040c05ce2752d79c1084d1ffe2390c7d
+
+% 5 1 0 1742a2e92bf83d3b10f729d797b98130
+
+% 6 1 0 04df0f42229beecc01db644b50cee533
+
+% 7 1 0 16283f6750daf140009141fce3c81e6a
+
+% 2 1 0 1e22956a6c8810d91edfc0817f08a010
+
+% 0 1 0 039c5683266b9fb419317fd694636965
+
+% 0 1 0 119f118a2f143d2b0683f6a1e0f6ff36
+
+% 0 1 0 1b602f81bea864b81b9c982671576e57
+
+% 1 1 0 1ed198f9996b060d1c5ebd432f4b93e5
+
+@ 0 1 0 0d5d48eac88c78870ee80fa7321a06f6
++   entry .Identity   条目在其设备上的标识：设备号和 inode 号
+
+% 1 1 0 00db4c3e87b1527512ecaf4e5ad5ffdc
+
+@ 0 14 0 1bf0b80eef7c11d80b57edde62a7cfdd
++         标识相等的两个路径是指向同一文件的硬链接。
++         Btrfs 的子卷边界从设备号读取（每个子卷都有自己的设备号），每个 btrfs 子卷的根都是 inode 256。
++         `Path#entryIdentity` 读取它。
++     entry #device   设备号（`st_dev`）
++     entry #inode   inode 号（`st_ino`）
++   entry #entry   条目的类型：`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice` 或 `CharDevice`
++   entry #size   以字节为单位的大小
++   entry #modified   最后修改时间，以纪元毫秒表示
++   entry #accessed   最后访问时间，以纪元毫秒表示
++   entry #created   创建时间，以纪元毫秒表示，未记录时为 `Unset`
++   entry #mode   完整的 `st_mode`，包括类型位，没有 Unix inode 时为 `Unset`
++   entry #user   所有者的数字用户 ID，或 `Unset`
++   entry #group   所属组的数字 ID，或 `Unset`
++   entry #device   `st_rdev`，即设备节点所指的设备，或 `Unset`
+
+@ 0 1 0 1e6df376f4e189a80142a2c1de8c7a67
++ entry .Volume   存储卷：其名称和文件系统类型
+
+% 1 1 0 0d404628b43ad4b9086e9ff035a24afd
+
+@ 0 5 0 1cb2940ad71097830a0390cfc228308a
++       `path.volume()` 返回的值：在 JVM 上，是 `FileStore` 的名称（例如 `/dev/sda1`）和类型（`ext4`、`apfs`、`btrfs`、`ntfs`）。
++       检视时显示为 `volume[name:type]`。
++       存储维度的提取器将小写后的类型与其文件系统的名称比较。
++   entry #name   卷的名称，按平台报告的形式
++   entry #volumeType   文件系统类型，按平台报告的形式
+
+@ 0 4 0 17a1f8cca7693e00096d2590e4486270
++ entry .CreationTimed   记录创建时间的存储文件系统：`Btrfs`、`Apfs`、`Ntfs`
++     路径类型的存储文件系统维度中的一个密封标记。
++     匹配为 `Path on plane over <transport <: CreationTimed>` 的路径获得全函数访问器 `creation()`，而 `Stat#created` 是可选的，因为大多数 POSIX 文件系统不记录创建时间。
+
+@ 0 3 0 1971ea8338a772330bd5e877d258e521
++ entry .Attributed   支持扩展属性的存储文件系统：`Btrfs`、`Ext4`、`Apfs`、`Ntfs`
++     存储文件系统维度中的一个密封标记。
++     匹配为 `Path on plane over <transport <: Attributed>` 的路径获得 `attributes()` 和两个 `attribute` 访问器。
+
+@ 0 1 0 0c38a9f292fbfdc9030a22a62fbc038b
++ entry .Btrfs   btrfs 存储文件系统：一个将路径类型化为存储在 btrfs 上的提取器
+
+% 1 1 0 11c35f27b905a3351da20458b3515828
+
+@ 0 8 0 174bc50fcf23791710faedae0d4bac3c
++       条目存储在哪个文件系统上，决定了它可以携带哪些元数据，这与其平台无关，而路径无法从其语法得知这一点。
++       因此，这个维度通过运行时探测，借助每个文件系统的提取器来确定：`case Btrfs(path) =>` 将 `path` 绑定为 `Path on plane over Btrfs`，这一细化解锁了受门控的扩展方法 `subvolume()`、`subvolumeRoot`、`attributes()`、`attribute` 和 `creation()`。
++       探测的是小写后的 `path.volume().volumeType`；失败的探测（无法读取的卷，或 WASI）只是不匹配。
++       `Btrfs` 既是 `CreationTimed`，也是 `Attributed`。
+
+% 2 1 0 0e050e6fb70ca059026c9d5a8d20c70c
+
+% 3 1 0 0329e2d02ed62cb70c0d68353985f9ee
+
+% 4 1 0 1380ef01f20036550581a11c2766a0f8
+
+% 5 1 0 1bb6ca59a631629c175e55e7b4bcceb3
+
+% 6 1 0 11f7aed04e941b5b1825ccde9e32f1cb
+
+% 7 1 0 1e6f3471d6bdeef90b726b7a78162b3f
+
+% 0 1 0 0dd43eb501ae29a51137f6f590cdea19
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 062325ba0c97fa2f058eac07f67719bc
+
+% 0 1 0 0e5f47e238cd79d81c285c5c8bd5a545
+
+% 0 1 0 16249109449a58ec05e8033ed91b0d84
+
+% 1 1 0 19649243316daddb1322bf5ec181329a
+
+% 0 1 0 0611151568774f16195c76f840634105
+
+% 0 1 0 0899c1b5dc38a2b0175c09ad4c2dcd3a
+
+% 0 1 0 1fbd652a8f4ca1e913c401979f72b4e2
+
+% 0 1 0 1fb055cd2aef62e81f62a68ec31df1b6
+
+@ 0 3 0 01bf7b9eb808adb1144686603fb93071
++   entry .unapply   匹配存储在 btrfs 上的路径，将其类型化为 `Path on plane over Btrfs`
++       需要一个 `FilesystemBackend on plane`。
++       返回一个 `Option`，这是 Scala 提取器的要求。
++   entry .Subvolume   btrfs 子卷，以其根目录指明
+
+% 1 1 0 0a5649114fb839f5112113348e77a782
+
+@ 0 6 0 048237337b85c35101a25b02d88d1926
++         `subvolume()` 返回的值。
++         Btrfs 将一个文件系统划分为可独立快照的子树，因此条目的子卷是其存储位置的一部分。
++         不携带子卷的数字 ID、UUID 和代数：btrfs 只通过任何后端都无法发出的 `ioctl` 公开它们，而根仅凭 `stat` 就可以恢复。
++     entry #root   子卷的根目录，作为 `Path on plane over Btrfs`
+
+@ 0 1 0 137c3f7a43d9cf940ad3bb1659890f7d
++ entry .Ext4   ext4 存储文件系统：一个将路径类型化为存储在 ext4 上的提取器
+
+% 1 1 0 134e0607bdb17c25146cee11a88463c9
+
+@ 0 5 0 1a785a6230a61f8317209698f6777b8d
++       `case Ext4(path) =>` 将 `path` 绑定为 `Path on plane over Ext4`，它是 `Attributed`（因此 `attribute` 和 `attributes()` 适用），但不是 `CreationTimed`。
++       探测的是 `path.volume().volumeType`；它需要一个 `FilesystemBackend on plane`。
++       关于这个维度，参见 `Btrfs`。
++   entry .unapply   匹配存储在 ext4 上的路径，将其类型化为 `Path on plane over Ext4`
+
+@ 0 1 0 180ae5e5ae84217406e069ed27775ba8
++ entry .Apfs   APFS 存储文件系统：一个将路径类型化为存储在 APFS 上的提取器
+
+% 1 1 0 13d7584978256a301eda21427b8b6480
+
+@ 0 4 0 0da60e4aa48caaa61beb3f12f3593c2a
++       `case Apfs(path) =>` 将 `path` 绑定为 `Path on plane over Apfs`，它既是 `CreationTimed`，也是 `Attributed`：macOS 记录创建时间，并支持扩展属性。
++       需要一个 `FilesystemBackend on plane`。
++       关于这个维度，参见 `Btrfs`。
++   entry .unapply   匹配存储在 APFS 上的路径，将其类型化为 `Path on plane over Apfs`
+
+@ 0 1 0 007312b2689ac8ac022268fb8f473608
++ entry .Ntfs   NTFS 存储文件系统：一个将路径类型化为存储在 NTFS 上的提取器
+
+% 1 1 0 1f98d20c2394246e0591e4e7f0e81c8a
+
+@ 0 4 0 117ce2a58ef0651d0993613cab07db12
++       `case Ntfs(path) =>` 将 `path` 绑定为 `Path on plane over Ntfs`，它既是 `CreationTimed`，也是 `Attributed`。
++       在 `Windows` 下有意义，在 `Linux` 下对已挂载的 NTFS 卷也有意义。
++       需要一个 `FilesystemBackend on plane`。
++       关于这个维度，参见 `Btrfs`。
++   entry .unapply   匹配存储在 NTFS 上的路径，将其类型化为 `Path on plane over Ntfs`
+
+@ 0 1 0 0b492fbdb3ebfb5f169fe12a67873ba5
++ entry .FilesystemAttribute   条目粗粒度权限标志的带类型视图，用 `()` 读取，用 `=` 设置
+
+% 1 1 0 1bbc23d2e170cbce13fdfbf9befe9ca3
+
+@ 0 5 0 12a84cad3b3708c519a5be2f9c68797a
++       `path.readable`、`path.writable` 和 `path.executable` 各自返回其中之一：一个作用于该路径的小对象，其 `apply()` 读取标志（全函数，从当前用户的角度），其 `update` 设置标志，因此语法是 `path.readable()` 和 `path.readable = false`。
++       若平台拒绝，设置会抛出带有 `PermissionDenied` 的 `Io.Error`（在 WASI 上为 `Unsupported`）。
+
+% 0 1 0 1dbca219a062250d144a59315bb25e99
+
+% 0 1 0 07255d82193924800ab330ff672a3a07
+
+% 0 1 0 18e5f1cbe12106d1018aaf3733d5baa7
+
+@ 0 9 0 0c1bcc821540908a1dc191584533d6c8
++   entry .Readable   任意平台上路径的读标志
++     entry #apply   当前用户是否可以读取该条目
++     entry #update   设置读标志，被拒绝时抛出 `Io.Error`
++   entry .Writable   任意平台上路径的写标志
++     entry #apply   当前用户是否可以写入该条目
++     entry #update   设置写标志，被拒绝时抛出 `Io.Error`
++   entry .Executable   POSIX 平台上路径的执行标志
++     entry #apply   当前用户是否可以执行该条目
++     entry #update   设置执行标志，被拒绝时抛出 `Io.Error`
+
+@ 0 1 0 159c064bb61409c20b559355f90bf27d
++ entry .Handle   已打开文件的端点，在 `open[File]` 或 `create[File]` 块的作用域内持有
+
+% 1 1 0 15e74c2d2c5a05891d19bf3e009cf920
+
+@ 0 7 0 145f62830a2ea7251d22de97be2d269c
++       `Handle` 是 `open[File]` 块所持有的能力：作为链的完整内容（`#reader`、`#writer`），以及后端从其自身缓冲区提供的流式形式（`#source`、`#intake`）。
++       它是一种独占的能力，因此不能被存储、返回或捕获，文件在代码块结束时关闭。
++       可以用它做什么由其类型决定：模式的 `Grant` 对它进行细化，因此在只以 `Read` 打开的句柄上调用 `handle.write(…)` 无法编译，而伴生对象中的 `Streamable`、`Writable` 和 `Sink` given 都各自受其所需授权的约束。
+
+% 2 1 0 1e3978037becc2d60c017d85d1e0f311
+
+% 3 1 0 0d044541abe10d151c4c098e0d14cb20
+
+% 4 1 0 0c5e8b5598d70dc90f6a1c8886df8ebd
+
+% 5 1 0 02367bf4592c5b6207d0e6d400246595
+
+% 6 1 0 1ff4ec29844803d50f979d1b1d39922e
+
+% 7 1 0 0bbe8ad0589d1f301ee6fec41f762dbd
+
+% 9 1 0 17749f07b94e29040da0ed2a2b75d3ad
+
+% 0 1 0 1edce88f0f3dbd0012e0a79640790477
+
+% 0 1 0 0753a465d7b48c5f0858390920db01c9
+
+% 0 1 0 1d31938daa9d208d00483716221d1a4f
+
+% 0 1 0 0c819834acfc3a3c0b18952c37b8373a
+
+% 1 1 0 0be97d2b71e17bc21950f4a88c9f203b
+
+@ 0 6 0 1181a76db7143243022c8f4749184e86
++       文件中途截断的读取或写入会抛出 `Truncation.Error`，它作为战术在调用处接收，而不是在创建句柄时接收；`path.read` 和 `path.write` 将它映射为带有 `Reason.Physical` 的 `Io.Error`。
++       `#read` 和 `#write` 既是扩展方法，也是类型类 given，因为在捕获检查下，在作用域受限的能力的细化类型上召唤类型类可能失败；扩展方法则改为在来源类型或结果类型上解析类型类。
+
+% 1 1 0 0710ed12144e7bf4003d57992644aa71
+
+% 1 1 0 0231a8a987a8b4af0ec98fed26a8fb21
+
+% 0 1 0 0dc17d52738f073e05f959b167f7c46b
+
+@ 0 20 0 14d7edb8c7e204550f0b47379a5c856d
++   entry .whole   只作用于整块端点的句柄，用于并非本进程文件的来源
++       `Handle.whole(reader, writer)` 由一个产出完整内容的函数和一个接收完整内容的函数构建句柄，流式形式由它们派生。
++       `Fdtable.Descriptor` 为传递给守护进程的客户端描述符提供的就是它。
++   entry .streamable   授予 `Read` 的句柄是 `Streamable by Data`，因此 `read[T]` 和 `stream` 可以作用于它
++       保留召唤它时所在的 `Tactic[Truncation.Error]`。
++   entry .writable   授予 `Write` 的句柄是 `Writable by Data`，因此可以向其写入流
++       保留召唤它时所在的 `Emit[Truncation.Error]`。
++   entry .sink   授予 `Write` 的句柄是一个 `Sink by Data over Credit`
++   entry .stream   `handle.stream`：在授予 `Read` 的句柄上，以 `Chain[Data]` 表示的完整内容
++   entry .read   `handle.read[T]`：在授予 `Read` 的句柄上，解码为 `T` 的内容
++       通过任何 `Chain[Data] is Readable to T`——`Data`、`Text` 或某种格式的读取器——在 `Tactic[Truncation.Error]` 下进行。
++   entry .write   `handle.write(source)`：在授予 `Write` 的句柄上，写入任何 `Streamable by Data` 的内容
++       `Chain[Data]`、`Text`、`Data` 或流；在 `Emit[Truncation.Error]` 下泵入句柄的入口。
++   entry #reader   以 `Chain[Data]` 表示的完整内容
++   entry #writer   将一个 `Chain[Data]` 作为内容写入
++   entry #source   以 `Stream[Data] over Credit` 表示的内容，由后端的缓冲区提供
++   entry #intake   写入文件的 `Intake[Data] over Credit`
+
+@ 0 1 0 182f9d88853f325203728681ed571937
++ entry .FileOpenable   `path.open[File](mode, flags*)` 背后的 `Openable` 实例
+
+% 1 1 0 1bb57a992f733a060ba06e81bd25c2e9
+
+@ 0 9 0 068ee15e4623bf2b12f94fbdd11b8cf9
++       一个具名类，由 `Platform.openable` 为任何平台路径实例化；它需要一个后端、一个 `Tactic[Io.Error]`、一个 `Umask` 和一个 `Every[Fdtable]`。
++       模式的原子成为 `OpenFlag`——`Read`、`Write`——代码块接收一个用模式的授权细化过的 `Handle`。
++       `Exclusive` 不会被转换为 `OpenFlag.Exclusive`（POSIX 的 `O_EXCL` 管辖的是独占*创建*）：它把这次打开登记到 `AccessRegister` 中，使文件的打开与目录作用域参与同样的进程内仲裁，并添加 `OpenFlag.Lock`，让后端为跨进程的情形获取一个操作系统建议锁。
++       `Shared` 用 `OpenFlag.LockShared` 做同样的事。
++       冲突的打开会抛出带有 `Busy` 的 `Io.Error`，除非 `OpenFlag.Await` 要求它等待。
+
+% 2 1 0 0bde7bd27a07b207179378c306d8a386
+
+% 3 1 0 0b62f24ed214003512424c87be9c2e69
+
+% 4 1 0 1292348fc56ee6ee0817434fd8a1f965
+
+% 5 1 0 169a4f5255220b4f08d8ce8b77ace859
+
+% 6 1 0 1c440c43242e47d616e8d299d93b02fe
+
+% 7 1 0 1ebacc127efb49d91e21da417616fb66
+
+% 9 1 0 11a9c6009532c372193baa2bb2c2877a
+
+% 0 1 0 0c19d5f0844195ee15d7f2cd0bfba716
+
+% 1 1 0 1a9d710990b2e80108d3f5836102c996
+
+% 2 1 0 01b6d1de4ba810c20703deabd4df2b68
+
+@ 0 2 0 08cda79599e272631c817b7d7ec42ef9
++       作用域内的 `Fdtable` 所管辖的路径（比如 `/dev/fd/3`）会通过该表打开，在查询文件系统、登记表或后端之前进行。
+
+% 1 1 0 017c16ed0b0b7027053054ba9db62487
+
+% 0 1 0 0a4bdff3d3ea0f4219cb9498ec60b34b
+
+% 0 1 0 0387525ffb7246e30f9d95d203c60a72
+
+@ 0 1 0 0e9e5f2865ba0c941c8450f037e82f57
++   entry #open   以模式的标志打开文件，并处于模式所要求的登记和锁之下
+
+@ 0 1 0 028295d36b169e51006208fd1be8b9ae
++ entry .OpenFlag   打开文件内容时与平台无关的选项
+
+% 1 1 0 01710ec154ccb4be0d1487f2942d34b1
+
+@ 0 3 0 1552e4e97001c3d81e8b273ac74e1095
++       `Read` 和 `Write` 由 `open` 调用的 `Mode` 提供，`Append` 由打开 `Eof(path)` 提供，其余的可以在模式之后传入：`path.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)`。
++       它们全部由 `FilesystemBackend` 解释。
+
+% 2 1 0 1c1111712cbf52dc1b9217a5d4fe0c93
+
+@ 0 9 0 0b05e6ec838b88e109cab073cf4927aa
++       column  标志
++       column  效果
++       row  `Create`  如果文件不存在，就在作用域内的 `Umask` 下创建它；没有这个标志时，打开不存在的文件会抛出 `Nonexistent`
++       row  `Exclusive`  与 `Create` 一起使用，如果文件已存在则以 `AlreadyExists` 失败（`O_EXCL`）
++       row  `Truncate`  打开时清空文件
++       row  `Sync`, `Dsync`  同步写入，包括数据和元数据，或者仅数据
++       row  `NoFollow`  拒绝通过符号链接打开
++       row  `Lock`, `LockShared`  在打开期间持有一个独占或共享的操作系统建议锁
++       row  `Await`  阻塞直到能够获得锁和进程内登记，而不是立即以 `Busy` 失败
+
+% 1 1 0 18a8caaa5ba4e0f41b514fe33f4bd2ea
+
+@ 0 3 0 0abf1b708544b58a1c2a1a94423b21c5
++       当模式授予 `Exclusive` 或 `Shared` 时，`FileOpenable` 会添加 `Lock` 或 `LockShared`；无法加锁的后端（WASI）会以 `Unsupported` 拒绝这次打开，而不是默默地不加锁。
+
+@ 0 1 0 101f12d4468bed3b075481e7683e8827
++       在 JVM 的 `FileChannel` 上，`Read` 和 `Append` 不能组合使用。
+
+% 1 1 0 0bbad929aa5291350621c8bb76b2945a
+
+@ 0 1 0 10b5247e249292761f9cfc1015ac1125
++ entry .Shared   共享锁模式：`path.open[File](Read & Shared)`
+
+% 1 1 0 1687a2ee6c46934616f9875af43d39bd
+
+@ 0 7 0 1c36fe133fa72b2205c1cb27fa476cc9
++       与 aperture 的 `Read`、`Write` 和 `Exclusive` 并列的第三种 `Mode`，它关乎文件系统，因此定义在这里。
++       同一个文件可以同时存在任意数量的 `Shared` 打开，跨进程时通过一个共享的操作系统建议锁实现，但 `Shared` 打开与 `Exclusive` 打开在两个方向上都会冲突：独占打开会等待共享持有者（使用 `OpenFlag.Await` 时），或者立即以 `Busy` 失败。
++       `Read` 有意不隐含它：哪怕只获取一个共享锁，也会让每一次普通读取都与独占加锁者发生竞争。
+
+% 2 1 0 183637bb156f49fb009b7d5728052a56
+
+% 3 1 0 0a2155f201d659971ec9d9f19928bfa0
+
+% 4 1 0 0afcee213f34230e1460fcd8addf4c3f
+
+% 5 1 0 16354a1e8a2eb035187ae1d3474c3577
+
+% 6 1 0 014e5a63c5fb39770f581b4ae83871c0
+
+% 7 1 0 0192ab4c59c0c0ab1dae94be0074bd0d
+
+% 9 1 0 06a6d72fe5da29911f2234cb7b59f784
+
+% 0 1 0 1529a953ca6eae98072df4a6846df980
+
+% 1 1 0 06560e6ffdde8bc4079734b6c6ad78c6
+
+% 2 1 0 1edbbf3dca40be38064896da0716a57b
+
+@ 0 1 0 00248271986c800d1e892856313953da
++   entry .Grant   `Shared` 模式为句柄类型所赋予的授权
+
+@ 0 1 0 1a39aaedeff3a5240d55ee1995ddd75e
++ entry .Creation   `path.create[Directory]`、`create[File]` 和 `create[Fifo]` 背后的 `Creatable` 实例
+
+% 1 1 0 173dfadb951c048710d4c580580227d5
+
+@ 0 7 0 0f6be9a35c3049cb174a8545df576076
++       `path.create[Directory]()` 和 `path.create[File]()` 实例化一个空条目；代码块形式——`path.create[Directory](): dir ?=> …`、`path.create[File](): handle ?=> …`——编写新生成的条目，对目录是一个全新平面上的 `Directory.Handle`，对文件是一个写入用的 `Handle`，并保证逃逸出作用域的异常不会留下任何东西。
++       两者都会查询作用域内的 `Umask` 以及所给的 `CreateFlag`：没有 `Parents` 时，缺失的父目录是 `Nonexistent`；没有 `Replace` 时，已存在的条目是 `AlreadyExists`。
++       每一个都会记录 `Io.Event.Create`。
+
+% 2 1 0 133692678ed0e6df1a4f12906c027a9a
+
+% 3 1 0 09015c039e058fbb168dcc8da23e10d5
+
+% 4 1 0 025b8ae652f18b870de2f0d96296dba0
+
+% 5 1 0 1ad3aa882ec4b352098ddb1bb35f8d8e
+
+% 6 1 0 1c9f0af233c38e8703306c1c4d4bba52
+
+% 7 1 0 053167e31dc1f5c116f6a4e056479b66
+
+% 0 1 0 14052444c88833000f4e2eea4087423b
+
+% 0 1 0 1fbdf93b4a250a1406daabca75a3dbd7
+
+% 1 1 0 19845151e4a2cc640854ad322f22bf30
+
+% 0 1 0 0aea98f9edd41a630ed80c17fe6f1319
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 3 0 0a52b8ee30150a1d10cd9b4208fe0501
++       这些实例由 `Platform.fileCreatable`、`directoryCreatable` 和 `fifoCreatable` 实例化，因此无需导入；只有为了 `.wipe` 才需要直接访问这个对象。
+
+% 0 1 0 1801bbb8ab726c9d13e303ff7bf7468d
+
+% 1 1 0 0098d2dcec48932d0b22dd1011988376
+
+% 1 1 0 04fdef44567522ff1fadc54fc3a4d6ad
+
+% 2 1 0 117eb7bcd5cf6a0512578238ed0b41c8
+
+@ 0 6 0 1d281b82ec4216041045f60aef4ac4d6
++   entry .wipe   `Creation.wipe(path)`：删除一个条目，并递归地删除其下的一切
++       失败的创建作用域和 `CreateFlag.Replace` 所执行的递归删除，公开出来以便其他有作用域的清理可以共用它。
++       它不接受 `DeleteRecursively` 方针——递归正是它的目的——并抛出 `Io.Error`。
++       受方针管辖的路径操作是 `wipe()`。
++   entry .DirectoryCreatable   创建一个目录，或者在一个作用域内通过全新平面上的句柄编写一个目录
+
+% 1 1 0 12630d0c67d29a6f0a6f5cf3cb8849d2
+
+@ 0 8 0 1a76cf487a9221ff0c0f246f6da8f93f
++         `create[Directory]` 的实例。
++         它的授权是 `Read & Write`，结果是一个 `Directory.Handle { type Under = filesystem }`。
++         新生成的目录有一个由调用者选择的可见名称，因此它与 `Scratch` 作用域不同，会像任何打开的目录一样参与 `AccessRegister`，冲突的打开会抛出 `Busy`。
++         逃逸出代码块的 throwable 会在传播之前清除该目录。
++     entry #make   创建目录，遵从 `Parents`、`Replace` 和 `Umask`
++     entry #create   创建目录并以其上的句柄运行代码块，失败时清除它
++   entry .FileCreatable   创建一个空文件，或者把文件编写到一个临时的同级文件中，成功时再移动到位
+
+% 1 1 0 01ffda05a5244ce7125f8fbd82eaf4c5
+
+@ 0 10 0 178eea849952b85f08a26599fef4cd63
++         `create[File]` 的实例。
++         作用域形式把内容写入一个临时的同级文件（目标的名称，前面加 `.`，后面加 `part` 后缀），并在代码块完成时以原子方式把它移动到目标上：创建是原子替换不需要任何代价的唯一时刻，因为此时还没有任何东西能持有该路径。
++         逃逸出代码块的 throwable 会删除这个同级文件，因此目标永远不会以写了一半的状态存在。
++         没有 `Replace` 时，已存在的目标会在任何写入之前就成为 `AlreadyExists`。
++     entry #make   创建一个空文件，遵从 `Parents`、`Replace` 和 `Umask`
++     entry #create   把代码块的写入暂存在一个同级文件中，成功时把它移动到目标上
++   entry .FifoCreatable   创建一个命名管道；作用域形式被拒绝
+
+% 1 1 0 0ccfca7bc56fd47017f09a3512f49ce4
+
+@ 0 5 0 115987bb9b24fcb41f3d39eb18906055
++         `create[Fifo]` 的实例。
++         只有 `#make` 会做事：`#create` 抛出带有 `Unsupported` 的 `Io.Error`，因为打开 FIFO 的任何一端都会阻塞，直到出现对端，所以永远无法安全地提供一个有作用域的句柄。
++     entry #make   创建 FIFO，遵从 `Parents`、`Replace` 和 `Umask`
++     entry #create   抛出带有 `Unsupported` 的 `Io.Error`
+
+@ 0 1 0 123a1a2440aea5511261114f81669731
++ entry .Scratch   临时工作目录和文件的形式，全新创建，并在作用域结束时删除
+
+% 1 1 0 07fe71959313d5e51bef54d141079872
+
+@ 0 6 0 14bcd28627440be512f9e60634ecf2e7
++       `parent.open[Scratch](Read & Write)` 在 `parent` 之下创建一个全新的、名称唯一的目录，为代码块提供其上的一个 `Directory.Handle`，并在代码块结束时删除它以及其中创建的一切，无论代码块以何种方式结束。
++       目录的生命周期*就是*这个作用域，而全新平面机制保证没有任何指向其中的路径能存活到作用域之外，因此删除总是可靠的。
++       句柄的 `stem` 是目录的真实路径，供少数必须被告知该路径的工具使用。
+
+@ 0 6 0 0380c6b480ffabfd043f9b854134c009
++       `parent.open[Scratch.File](Read & Write)` 是文件形式：`parent` 之下一个全新的、名称唯一的文件，其句柄是一个还知道自己 `path` 的 `Handle`（`Scratch.Located`），供必须被告知文件位置的工具使用——一个用后即弃的索引、一个测试夹具。
++       两者都需要一个后端和一个 `Tactic[Io.Error]`；文件形式还接受作用域内的 `Umask` 以及任何 `OpenFlag`。
++       父路径必须是一个目录（否则为 `IsNotDirectory`）。
+
+% 2 1 0 0f391cdd38db358601d31491741d1dad
+
+% 3 1 0 14d3c95d2e55f98d0f0cc4c6da7acac7
+
+% 4 1 0 0ab3beaa2582b3c6050a7e9d108495bf
+
+% 5 1 0 0718cad37018097d07b51ba6ce6cd8a0
+
+% 6 1 0 051c69bc084e031714b666023e590258
+
+% 7 1 0 16941d35f3d6e6701925eaec8f85f826
+
+% 0 1 0 0cbcef15874d7ac1103b3bdb1de26794
+
+% 0 1 0 17ff28022ca9782f16f7102f2c9cb5d3
+
+% 0 1 0 0181b2909c67b4680951f732d6bdbe64
+
+% 0 1 0 008288aea101b5e805af53c4992df28a
+
+% 0 1 0 19b39529e32c3bba11f4f4fd6773c5b1
+
+% 0 1 0 1cf58ea4d1d5060102c7b51c42312f44
+
+% 0 1 0 09adef45986c308c1af4080027c10ab6
+
+% 1 1 0 110691fd24ac007f1028e4f6bf965cab
+
+@ 0 2 0 0488faf225c76f350997958fb80b9a81
++       临时目录不需要 `AccessRegister` 仲裁：没有其他作用域能够指称它全新的名称。
+
+% 1 1 0 07db5d5c83758c6c0b99ad0689575622
+
+% 1 1 0 1f2fb196bd2a11ce0db0d5cbd1c765e4
+
+@ 0 1 0 013e862af9fe666b19871fcb44fb884a
++   entry .ScratchOpenable   `path.open[Scratch](mode)` 背后的 `Openable` 实例
+
+% 1 1 0 000870c042611afd17415c401854c7f2
+
+@ 0 9 0 0ecad14c99bafa940c1fcb7184622ef1
++         一个具名类，由 `.openable` 为任何平台路径实例化。
++         它的结果是新目录上的一个 `Directory.Handle { type Under = filesystem }`，该目录以进程自身的掩码创建。
++     entry #open   在路径之下创建一个名称唯一的目录，运行代码块，然后清除它
++   entry .openable   用于任何平台路径的 `path.open[Scratch](mode)`，需要一个后端和一个 `Tactic[Io.Error]`
++   entry .File   临时文件的形式：`parent.open[Scratch.File](mode, flags*)`
++       句柄是一个 `Handle & Scratch.Located[filesystem]`，因此在代码块执行期间 `file.path` 是该文件的真实路径，之后文件会被删除。
++   entry .Located   知道其所指文件路径的句柄
+
+% 1 1 0 18e11714933ddde21db4d5a946fc3499
+
+@ 0 4 0 1c31b12d745c659d07239a4574523e41
++         混入临时文件的句柄中，使 `file.path` 与通常的 `Handle` 端点一同可用。
++     entry #path   临时文件的真实路径
++   entry .ScratchFileOpenable   `path.open[Scratch.File](mode, flags*)` 背后的 `Openable` 实例
+
+% 1 1 0 02d2a33094686e7e0c6e04949f7d501f
+
+@ 0 5 0 03f8267876012f4f07b76dbc5d15d089
++         一个具名类，由 `.fileOpenable` 实例化。
++         它在作用域内的 `Umask` 下，以 `OpenFlag.Create` 和模式的标志创建文件，并在代码块结束时删除它。
++     entry #open   在路径之下创建一个名称唯一的文件，以其句柄运行代码块，然后删除它
++   entry .fileOpenable   用于任何平台路径的 `path.open[Scratch.File](…)`，需要一个后端、一个战术和一个 `Umask`
+
+@ 0 1 0 0a0d05b5743b3a3c014300c66746dd90
++ entry .Slice   文件的一个字节范围，作为窗口视图打开，并可选择对该范围加锁
+
+% 1 1 0 135f5c3a47c0d793109758a32eac84a8
+
+@ 0 10 0 03def996e47155ba07233283ed14dac2
++       `Slice(path, offset, extent)` 是 `open` 的一个主体：`Slice(path, 0L, 1024L).open[File](Read & Write & Exclusive): window ?=> …` 打开文件，并交给代码块一个限定在 `[offset, offset + extent)` 内的 `Slice.Window`。
++       窗口的 `size` 是窗口自身的大小，读取相对于其起点并被限制在其中，写入则按 `pwrite` 的方式存储尽可能多的放得下的内容并返回字节数，因此写入不会偏离其范围。
++       `Exclusive` 或 `Shared` 模式会在恰好这个范围上获取一个操作系统建议锁，并把该范围登记到 `AccessRegister` 中，在那里它只与重叠的范围冲突——对整个文件的打开与每个范围都重叠。
++       不以加锁模式打开时，切片只是一个窗口视图，即使是不支持锁的后端（WASI）也支持它。
+
+% 2 1 0 19d7ba48d6d5a9a605e48f252f884cbf
+
+% 3 1 0 0f1ad45c5dc5d5a81fc97945701a0f99
+
+% 4 1 0 1dda45b65647d802187697983d32ea5d
+
+% 5 1 0 1d43fc97492cc6c90050d796bbd860af
+
+% 6 1 0 0bc508f5dba03f3508d62da27086e208
+
+% 7 1 0 11c98456bdf0beec0db61c19b5b98d95
+
+% 0 1 0 1a573db94cbe239d10ea6d8f4189858c
+
+% 0 1 0 0e4f6101bdd82ee01323c41bdb08e121
+
+% 0 1 0 0a4b82314722f12a0cd2bc2fb59f96b6
+
+% 0 1 0 138d38a845fb063e1bfbbcb167289cd1
+
+% 1 1 0 0dcbd440ff23396d1542b929f6645eaf
+
+@ 0 1 0 1ee9d30350c95c8a17a717b881d9cfcd
++       `read` 和 `write` 扩展方法由模式的授权把关，与 `Ram` 的相同。
+
+% 1 1 0 1941ded0111a902a0f04625b5fd7e027
+
+% 1 1 0 048896f7ada500fd01deccace37feb9a
+
+% 1 1 0 1adcdf43eabfb41705b20e7b8b35980a
+
+@ 0 1 0 1ec9114a53f177b11dfc4e3b40293ecc
++   entry .Window   打开的切片的句柄：一个以其范围为窗口的按位置访问视图
+
+% 1 1 0 085ab5a5d7ce5fbb0f1a4879c87d5c53
+
+@ 0 12 0 03e3853ecf2bce780c3d7044cd46c103
++         `#size` 是窗口的范围，限制在文件之内；`#readFrom` 和 `#writeTo` 是已经加了窗口的操作方法，由授权把关的 `.read` 和 `.write` 扩展方法调用。
++     entry #size   窗口中可用的字节数，`min(extent, fileSize - offset)`
++     entry #readFrom   在窗口内的某个偏移处读取至多 `length` 个字节，限制在窗口之内
++     entry #writeTo   在窗口内的某个偏移处存储 `data` 中放得下的部分；返回写入的字节数
++   entry .read   `window.read(offset, length)`：按位置读取，用于授予 `Read` 的窗口
++   entry .write   `window.write(offset, data)`：按位置写入，返回存储的字节数，用于授予 `Write` 的窗口
++       限制在窗口的范围之内，因此在边界附近存储的调用者能观察到截断，而不是默默地丢失数据；在末尾或越过末尾的写入什么也不存储，并返回 `0`。
++   entry .SliceOpenable   `slice.open[File](mode, flags*)` 背后的 `Openable` 实例
+
+% 1 1 0 0e681909ead9a23a0478a5730fa3816f
+
+@ 0 9 0 1938f811d237f3201ce8daf9b5f751d7
++         一个由 `.openable` 实例化的具名类。
++         它把模式转换为 `OpenFlag`，在登记表中获取该范围（或者在使用 `OpenFlag.Await` 时等待），向后端请求窗口视图，并把授权混入它交给代码块的窗口中。
++         冲突会抛出带有 `Busy` 的 `Io.Error`。
++     entry #open   在模式所要求的登记和锁之下打开切片，并运行代码块
++   entry .openable   用于任何平面上切片的 `slice.open[File](…)`，需要一个后端和一个 `Tactic[Io.Error]`
++   entry #path   切片所属的文件
++   entry #offset   窗口的起点，以从文件开头算起的字节数表示
++   entry #extent   窗口的长度，以字节为单位
+
+@ 0 1 0 1d858edef0bbd11208c7af1dd201348e
++ entry .Subtree   每个 `Directory.Handle` 的全新平面的公共上界，以及对其路径的操作
+
+% 1 1 0 1f5230697ead15631053bb6b8aa03feb
+
+@ 0 9 0 05f248a9c1d6d3ad1b27de78ba15210c
++       每个已打开目录的句柄都有一个 `Plane`，它是 `Subtree` 的一个全新子类型。
++       在 `plane <: Subtree` 上泛型定义的 Serpentine given 为任何句柄平面上的路径提供命名规则，因此 `dir / "name"` 在代码编译时就验证其名称：`.` 和 `..` 是不可接受的，这使得从已打开目录中逃逸成为无法表达的，而不是被检查的。
++       子树平面有意没有 `Filesystem` 实例，因此 galilei 的绝对路径操作（`read`、`write`、`delete`、`children`）不能应用于子树路径，否则会把它相对于工作目录而不是句柄来解析；这里的子树操作就是替代品，每一个都按平面选择句柄，并由它所需要的授权把关。
+
+% 2 1 0 1e6b12ce114f929317c05b36698f356a
+
+% 3 1 0 1fee9cd520cde32c15db4ded198487b2
+
+% 4 1 0 0353aefff078582d136f7fd1e98f04e2
+
+% 5 1 0 1c1e1e0b4d8bd74a1127592252487bb7
+
+% 6 1 0 11c9b565ee22cda61e33c93a43f21eec
+
+% 7 1 0 12646f4672dbe741112d4880de5bf9fe
+
+% 9 1 0 093c86c6366f82ce18948868693a8d63
+
+% 11 1 0 034a16906c537b1402f987b9b78d4b40
+
+% 0 1 0 0e8722b0a2484f64173781752c9330c3
+
+% 0 1 0 0e374f4c0e6813f41851f5dd2a8bb63f
+
+% 0 1 0 1db8679ae45fb6b01ff9c4fe4b02105b
+
+% 0 1 0 1cfe31829800411618a9f861a0c55401
+
+% 0 1 0 05e1f362f185a90c0c02f7852512d007
+
+% 0 1 0 0cfe29bcc0a0c2a01511fe6a65897cd8
+
+% 1 1 0 0ce807e3142c5175128e04f73e87bf41
+
+@ 0 5 0 13038d6ff736afa303698f9372f1de43
++       这些名称与绝对路径操作的名称不同（是 `contents` 而不是 `read`，是 `extant` 而不是 `existent`，是 `remove` 而不是 `delete`），因为以词法方式导入的同名扩展方法会被首先尝试，并且失败时不会继续回退。
++       `…Resolved` 辅助方法之所以公开，只是因为这些操作是 transparent inline 的；请调用这些操作。
+
+% 1 1 0 1f0754fa9ec60fbd16c60fff9aeccbcd
+
+@ 0 21 0 00ab98b987bb85af016520ffc2a769d1
++   entry .Rules   句柄平面上的名称可以是什么：不含 `/`；不是 `.`、`..` 或空
++   entry .nominative   使每个子树平面的路径遵守 `.Rules` 的 given
++   entry .contents   `path.contents[T]`：读取打开目录之下的一个文件，作为 `T`
++       通过任何 `Data is Readable to T` 进行，需要句柄授予 `Read`，并抛出 `Io.Error`。
++   entry .overwrite   `path.overwrite(content)`：写入打开目录之下的一个文件，替换它
++       接受任何 `Streamable by Data` 的东西，需要句柄授予 `Write`，并抛出 `Io.Error`。
++   entry .extant   `path.extant()`：打开目录之下的某个条目是否存在
++       需要句柄授予 `Read`；是全函数。
++   entry .entries   `path.entries`：打开目录之下某个目录的子项，位于句柄的平面上
++       `dir.base.entries` 列出已打开的目录本身。
++       需要 `Read`，并抛出 `Io.Error`。
++   entry .remove   `path.remove()`：删除打开目录之下的一个条目，如果它是文件或空目录
++       需要 `Write`，并抛出 `Io.Error`：非空目录为 `DirectoryNotEmpty`，因为这里固定使用 `deleteOnlyEmpty` 方针。
++   entry .readResolved   `.contents` 背后的真实路径读取
++   entry .writeResolved   `.overwrite` 背后的真实路径写入
++   entry .existsResolved   `.extant` 背后的真实路径存在性检查
++   entry .entriesResolved   `.entries` 背后的真实路径列举
++   entry .removeResolved   `.remove` 背后的真实路径删除
+
+@ 0 1 0 1e89d4bbc3d90ff41177597762dcfe82
++ entry .AccessRegister   进程范围内打开作用域的登记表，它拒绝冲突的 `Exclusive` 打开
+
+% 1 1 0 13d7a435b075ab801cd14b9c6c2b290d
+
+@ 0 9 0 17f8d63c8ae7ccd1004b30d24ca475e3
++       每个 `open[Directory]`、`create[Directory]` 作用域，以及每个加锁的 `open[File]` 或 `Slice` 打开，都会在其持续期间在这里登记其真实（已解析符号链接的）路径和模式原子。
++       冲突按子树重叠来检测——目录与其下的任何东西重叠，两个同级项则不重叠——对于切片则按字节范围检测：任意数量重叠的 `Read`、`Write` 和 `Shared` 打开可以共存，但 `Exclusive` 打开与重叠子树或范围上的任何其他打开在两个方向上都冲突。
++       没有任何类型系统能看出两个独立打开的句柄指称重叠的树，因此这在运行时、在 `open` 调用处检查，冲突在那里成为带有 `Busy` 的 `Io.Error`——或者在使用 `OpenFlag.Await` 时成为等待。
+
+@ 0 4 0 15eabe748e604d2e0f125f9351db75ab
++       登记表只在同一个进程内的作用域之间进行仲裁；为 `Exclusive` 和 `Shared` 文件打开获取的操作系统建议锁则覆盖其他进程。
++       它没有导出到 `soundness` 总括包：`open` 的各种形式使用它，程序没有理由直接调用它。
+
+% 1 1 0 0808c0f194dbabd9169cafdf7b82db9b
+
+% 1 1 0 0ca8c9efaf7f64da1385d232aedf90e8
+
+@ 0 4 0 1554e04cca0b40c614429b02f0cf1917
++   entry .acquire   登记一个真实路径和模式原子（以及一个字节范围），冲突时返回 `false`
++   entry .acquireAwait   像 `.acquire` 那样登记，一直等到不再有冲突的登记
++       等待者由 `.release` 唤醒；公平性取决于监视器。
++   entry .release   移除由 `.acquire` 进行的一次登记，唤醒所有等待者
+
+@ 0 1 0 1a343a339f8dd63414ffb54e95e5ce48
++ entry .Umask   一个文件创建掩码，按 POSIX `umask(2)` 的定义，应用于它在作用域内时创建的每个条目
+
+% 1 1 0 146bd12e452fb4e014c4e7bc4b453d35
+
+@ 0 10 0 15291b4520a1bdd90a0b320f89131d89
++       在掩码生效期间创建的每个文件和目录中被扣除的权限位：`Umask(0x3f)`（八进制 `077`）产生只有其所有者可读写的条目。
++       对于普通进程，操作系统会免费应用进程自身的掩码，而 `Umask.process`——默认的 given——所请求的正是这一点。
++       服务于多次调用、每次调用都有自己掩码的守护进程不能依赖进程的掩码，因此掩码作为上下文值到达 galilei：作用域内的 `Umask` 应用于每个 `create[…]`、带 `Create` 的 `open[File]`、`Scratch.File` 以及 `CreateFlag.Parents` 目录，并在创建时就请求，因此条目永远不会以比所要求的更宽松的权限存在。
++       `Umask.Provider`（守护进程的服务句柄）使调用的掩码无需声明即可召唤。
+
+% 2 1 0 1b8274b17c566e771163466a3ae7498b
+
+% 3 1 0 16b7699042c79fd70c4d951f4b6a24c9
+
+% 4 1 0 079eda7c723893e90f59ee6c95d6a300
+
+% 5 1 0 02605914a7b9a4d4058018a6355afe2a
+
+% 6 1 0 1ccd28cdec8232c00e1300fa48fd8360
+
+% 7 1 0 01b4181198dd4fa603e437dae133719d
+
+% 0 1 0 1274e6020264fd350e553d3726db9596
+
+% 2 1 0 0fac70b5cae8c6280b47ce7e50803e4f
+
+% 0 1 0 0b3fddc1e4689ae21a1d925b8cb35111
+
+% 0 1 0 0b12c6608451c325112e7228ff34e215
+
+% 0 1 0 0c23e24b416564eb0f010da7b4f5c29e
+
+% 0 1 0 17026f7769a131121e48f7abde8d05c5
+
+% 1 1 0 0b36797b71af824012652d94e4405554
+
+@ 0 3 0 052e93234e50fc88177faacbc45e3a87
++       `Umask` 是一个不透明的 `Int`；它以 `umask` 所打印的八进制形式（`022`、`077`）显示、编码和解码，`Umask.process` 呈现为空文本。
++       在没有 POSIX 权限位的文件系统（Windows）上，这一请求会被忽略。
+
+% 1 1 0 10f8e51a698db89415538c1c4d6857d9
+
+@ 0 1 0 1433332cf013a9ec0c2597e7be225296
++   entry .Provider   知道某次调用的掩码、使其可作为 `Umask` 召唤的东西
+
+% 1 1 0 1c17dc4a2e658eda07eaa112de17d967
+
+@ 0 22 0 061b7cf675137cda0f0980caa1570934
++         守护进程的服务句柄实现了它；`.provided` 把作用域内的任何 `Provider` 变成 `Umask` given，当提供者没有掩码时回退到 `.process`。
++     entry #umask   调用的掩码，或者用 `Unset` 表示使用进程的掩码
++   entry .process   进程自身的掩码，无论它是什么，由操作系统应用
++       没有声明任何 `Umask` 时的默认值。
++       它的 `mode(bits)` 是 `Unset`，因此后端不请求任何权限位，操作系统像以往一样应用进程掩码。
++   entry .fileBits   `0o666`：在应用任何掩码之前，文件或 FIFO 创建时所用的惯例权限位
++   entry .directoryBits   `0o777`：在应用任何掩码之前，目录创建时所用的惯例权限位
++   entry .apply   `Umask(bits)`：扣除这些位的掩码（截取到低九位）
++       Scala 没有八进制字面量，因此 `Umask(0x3f)` 是 `077`，`Umask(0x12)` 是 `022`；`.parse` 读取八进制形式。
++   entry .parse   `Umask.parse(text)`：根据 `umask` 所打印的八进制形式得到的掩码，无法解析时为 `Unset`
++   entry .provided   作用域内任何 `Umask.Provider` 的 `Umask`，如果它没有掩码则为 `.process`
++       优先级高于继承的默认值，因此有提供者时它胜出，没有提供者时一切不变。
++   entry .showable   以八进制呈现掩码：`022`
++   entry .encodable   把掩码编码为其八进制文本
++   entry .decodable   从八进制文本解码掩码，回退到 `.process`
++   entry .octal   `umask.octal`：三位八进制呈现，对 `.process` 则为空文本
++   entry .bits   `umask.bits`：被扣除的位，作为一个 `Int`
++   entry .mode   `umask.mode(bits)`：创建时应当请求的权限位，对进程掩码则为 `Unset`
++       `bits & ~umask`：应用了掩码的 `Umask.fileBits` 或 `Umask.directoryBits`，由后端在创建时设置。
+
+@ 0 1 0 11641cbd7dd481ca000be78e6b5d0ecc
++ entry .Fdtable   以路径命名的进程文件描述符表，在查询文件系统之前被查询
+
+% 1 1 0 17ffb05d5407a80111e73426886f1b91
+
+@ 0 8 0 1508e2e6c3611241070d74ffbd6f505e
++       `/dev/fd/63`、`/dev/stdin`、`/proc/self/fd/3` 是某个进程描述符表中的槽位，从任何其他进程打开它们，到达的是那个进程中同一编号的槽位，或者什么都没有。
++       由守护进程代表客户端运行的应用程序会收到这样的路径作为参数，并且必须打开*客户端的*描述符，而只有启动器才能访问它们。
++       `Fdtable` 就是 galilei 所看到的客户端的表：在每次 `open`、`read`、`write` 和 `existent()` 之前都会查询它，它用一个能打开正确对象的 `Descriptor` 回应它所管辖的路径，并拒绝其他所有路径，这些路径随后像以往一样交给文件系统。
+
+@ 0 5 0 0f2c2051f88322ae145156f551546880
++       它像 `Umask` 一样作为上下文值到达 galilei：`Fdtable.Provider`（守护进程的服务句柄）使调用的表可以被召唤，作用域内没有提供者时，适用空的 `.none`。
++       查询处接受 `Every[Fdtable]`，因此表可以分层，第一个回应某个路径的表胜出。
++       自行编写表的程序——比如一个测试替身——给出一个从编码后的路径到 `Optional[Descriptor]` 的函数：
+
+% 2 1 0 0ae8720e7f1fb24e19f372956b0a4f5c
+
+% 3 1 0 03540b53427de3db17d89004d587d8da
+
+% 4 1 0 1bb185c242e8a8f21553b5938ee5716f
+
+% 5 1 0 12f2908c6bcd18201b85d5f0efed3931
+
+% 6 1 0 1d930968e1c14e25012021d721141059
+
+% 7 1 0 1f035cfec7a8f5e306c3bd8fab92ba2b
+
+% 0 1 0 14788f875f401f641db67234e26a634b
+
+% 0 1 0 1fe483f8e06675a810eeb0466faec146
+
+% 0 1 0 02c7db68ea2a70e511eeb70c12d9b532
+
+% 0 1 0 02c65ca9e39475ec1c0c8d14b9a245ac
+
+% 0 1 0 194e398d0b62ca491c77ab44af3ff928
+
+% 0 1 0 04f46b82ab1d56621ba8734fcd70b3b1
+
+% 0 1 0 16ffb210366aa2b212db33efe3adbf5d
+
+% 1 1 0 1aab07ed9cacd3880e98453d997b7a6a
+
+% 1 1 0 03bf378d0e4e8d650e929e3b4511f984
+
+% 1 1 0 16bd82ae12592e781ebb6636667848c7
+
+@ 0 3 0 18067638819a5d6b1d898057345c3b3d
++   entry .Provider   知道某次调用的描述符表、使其可作为 `Fdtable` 召唤的东西
++     entry #fdtable   调用的表，没有时为 `Unset`
++   entry .Descriptor   受管辖的路径所指称的东西：可以在一个作用域内按所要求的标志打开的东西
+
+% 1 1 0 0c7bd1ffbaf797bd0babc75aba6e8307
+
+@ 0 8 0 0e565ec48cff931d190430d405201f79
++         `open(flags)(lambda)` 为其 `OpenFlag` 所要求的操作打开描述符——这些操作必须是描述符所允许的——并以一个 `Handle` 运行 lambda，在 lambda 返回时关闭它。
++         无法这样打开的描述符（客户端并不持有的描述符，或者以写方式打开一个只允许读取的描述符）会抛出 `Fdtable.Refusal`，查询处会将其作为它正在打开的路径的 `Io.Error` 抛出。
++     entry #open   按标志打开描述符，并以其 `Handle` 运行 lambda
++   entry .Refusal   由无法按要求打开的 `Descriptor` 抛出；成为该路径的 `Io.Error`
+
+% 1 1 0 0731d3774ecf850205b811ec9b4ac429
+
+@ 0 10 0 0504b246db2393e80c5f118ae125d25c
++         一个只携带 `Io.Error.Reason`（`Nonexistent`、`PermissionDenied`、…）的异常：表没有自己的路径可以指出，因此由查询它的地方提供路径和操作。
++     entry #reason   描述符拒绝的原因
++   entry .none   空表，不回应任何路径
++   entry .provided   作用域内任何 `Fdtable.Provider` 的 `Fdtable`，如果它没有表则为 `.none`
++       优先级高于继承的默认值，因此有提供者时它胜出，没有提供者时一切不变。
++   entry .resolve   `Fdtable.resolve(tables, path)`：作用域内所有表中第一个回应的描述符（如果有的话）
++   entry #descriptor   某个路径在这个表中所指称的 `Descriptor`，对于它不管辖的路径则为 `Unset`
++       路径采用其编码形式，即平台对它的命名方式。
+
+@ 0 1 0 18168a39ad65c7030620cbd08605d76c
++ entry .Cas   内容寻址存储：在一个根之下，每个字节摘要对应一个 blob
+
+% 1 1 0 1ff61ede9e79ed48168a7cdf8f402333
+
+@ 0 7 0 0f356ef8ffb2eafc1739e5ff748c50d0
++       一个由 blob 组成的目录，每个 blob 都以其自身字节的摘要命名，这就是一个存储：blob 只写入一次，在写入时得到验证，并且任何知道其摘要的东西都能找到它。
++       `Cas` 就是这种存储，哈希算法既在它的类型中，也在它所接受的每个摘要的类型中——不能向 `Cas in Sha2[256]` 请求一个 BLAKE3 摘要——而存储介质在其根的类型中：`Cas in Sha2[256] on (Path on Linux)`。
++       存储用 `Cas[Sha2[256]](root, suffix)` 创建，适用于任何具有 `Cas.Storage` 实例的根；任何平台上有后端的目录都是这样的根。
+
+% 2 1 0 0ef6c28d0c287ba10d00c2dcbbf020ca
+
+% 3 1 0 17308611b4499fc501933686a9ee02cc
+
+% 4 1 0 02bb702e466d970b093bafacc9b204c3
+
+% 5 1 0 01fe524dbf0890471d69938e6299702a
+
+% 6 1 0 0807c28fe59523eb10d83e0ca2636099
+
+% 1 1 0 07b1e46236bb5a5e1e17875d51793924
+
+% 2 1 0 1a977957cbd7a27e0346859a83f62fec
+
+% 0 1 0 1f1e94abd07591921b205eb03ed46627
+
+% 0 1 0 0376688093ec482a06eef258ddb4ce23
+
+% 0 1 0 050a7c33d6c4310f0318319357849cb4
+
+% 0 1 0 0d3e3cacfdc0ef9210ae992d4cee8e1b
+
+% 0 1 0 1913a47a6504238819b1b622e8f9c121
+
+% 0 1 0 055ef86113580df807b609ef87a568fd
+
+% 0 1 0 198724dcc92700df10ee7d0e8c54de20
+
+% 1 1 0 1bc5c72a2eade0060a6579c9be2fc7aa
+
+@ 0 7 0 0ae52ce52582468c0f1b28da13ab8715
++       `store() = data` 把数据存储在其自身的摘要之下并返回该摘要，如果 blob 已经存在则什么也不做；`store(digest) = data` 做同样的事，但先检查数据确实具有该摘要，否则抛出 `Cas.Error`。
++       blob 被写入一个名称唯一的同级文件，再以原子方式移动到位，因此读取者永远不会看到不完整的 blob。
++       作为集合，存储就是它的摘要：`size`、`has`、`at` 和遍历都可以作用于它，通过把不可读的存储视为空的纯视图进行；抛出 `Io.Error` 的是各个方法。
+
+% 0 1 0 0ea4e38e126607e01eb7d8d57f6d1932
+
+@ 0 1 0 0e4e26e74980dbb511ab4d068a090979
++   entry .Storage   在给定类型的根上保存 blob 的方式：检测、读取、原子替换、列举、删除
+
+% 1 1 0 1a6bd70291918f9c0e062afb5904d1ec
+
+@ 0 14 0 126303c2c916e20d14548cef59c81d7b
++         `Cas` 进行存储所经由的类型类。
++         `Cas.Storage.path` 是用于任何平台上目录的实例；其他存储介质（数据库、对象存储）提供另一个实例，就能得到接口相同的存储。
++         从读取者的角度看，`replace` 必须是原子的。
++     entry .path   用于 `Path on <platform>` 目录的 `Storage`，需要一个后端
++         blob 名称是十六进制加上后缀，因此在每个平面上都是格式良好的。
++         blob 被写入一个以 `.` 开头、带有 UUID 和 `part` 后缀的同级文件，然后以原子方式移动到位；失败不会留下任何东西。
++     entry #has   根之下是否存在该名称的 blob
++     entry #read   blob 的字节，抛出 `Io.Error`
++     entry #replace   以原子方式写入 blob，抛出 `Io.Error`
++     entry #names   根之下的每个名称，抛出 `Io.Error`
++     entry #delete   如果 blob 存在则删除它，抛出 `Io.Error`
++   entry .Error   当数据的摘要不是所给的摘要时，由 `store(digest) = data` 抛出
+
+% 1 1 0 00156812b6684ab81f80bd4d195ef37c
+
+@ 0 29 0 066f52a909925a781461e7776c8c0305
++         消息为 _the data's digest, `actual`, is not `expected`_，两者都是小写十六进制。
++         抛出它时不会写入任何内容。
++     entry #expected   调用者声称的摘要，十六进制
++     entry #actual   数据实际具有的摘要，十六进制
++   entry .apply   `Cas[Algorithm](root, suffix)`：位于 `root` 的存储，其 blob 命名为 `<digest><suffix>`
++       算法的 `Hash` 及其弱点许可在这里检查一次，因此基于弱算法的存储需要与该算法的任何其他用法相同的 `Permit`。
++       根可以是任何具有 `Cas.Storage` 的值；后缀默认为空。
++   entry .countable   存储的 `size` 是它所保存的摘要数量
++   entry .traversable   存储作为其摘要进行遍历
++   entry .inclusive   通过集合词汇进行的 `store.has(digest)`
++   entry .applicable   `store.at(digest)`：在 `defines(digest)` 表明 blob 存在之后，blob 的字节
++       `at` 只在 `contains` 之后读取，因此在那里失败意味着 blob 在两者之间消失了，这会引发 panic，而不是返回 `Unset`。
++   entry #Form   哈希算法，作为一个类型
++   entry #Plane   根的类型
++   entry #root   保存 blob 的根
++   entry #suffix   附加到每个 blob 十六进制名称之后的后缀
++   entry #name   `store.name(digest)`：blob 的名称，小写十六进制后接后缀
++   entry #digest   `store.digest(data)`：数据在该存储算法下的摘要
++   entry #has   `store.has(digest)`：blob 是否已存储
++   entry #missing   `store.missing(digests)`：这些摘要中哪些未被存储
++   entry #apply   `store(digest)`：blob 的字节，未存储时为 `Unset`；抛出 `Io.Error`
++   entry #update   `store() = data` 以数据自身的摘要存储；`store(digest) = data` 先检查摘要
++       前者返回摘要，需要一个 `Tactic[Io.Error]`；后者还需要一个 `Tactic[Cas.Error]`。
++       两者都不会重写已经存在的 blob。
++   entry #digests   每个已存储的摘要：带有后缀且其余部分为十六进制的名称
++       根之下的其他文件会被忽略。
++       抛出 `Io.Error`。
++   entry #prune   `store.prune(keep)`：删除摘要不在集合中的每个 blob；返回删除的数量
+
+@ 0 1 0 19bbe140887fcf4d13200248f506d2b0
++ entry .Searchpaths   把搜索路径平面解析为一个有序的真实目录列表的机制
+
+% 1 1 0 0062d2f80e9a32141ca0a6bafe28c5fa
+
+@ 0 8 0 1f341a6db99e63b70d77f98af3e811ca
++       许多文件不是在一个位置查找，而是沿着一系列位置查找——位于哪个 XDG 数据目录中的图标、几个地方中第一个所在的配置文件。
++       ambience 的 `Searchpath` 平面（`Xdg.Data`、`Xdg.Config`）就是作为一棵可导航的树呈现的这样一个列表，到真实平台的解析通过一个上下文中的 `Searchpaths.Stems` 进行：要尝试的有序目录，排在最前面的基目录是可写的那一个。
++       平面上的相对路径随后可以用 `search()` 解析到第一个包含它的基目录，用 `locations()` 解析到每个包含它的基目录，用 `listing()` 解析为合并后的目录列表，用 `destination()` 解析为它在首个基目录之下的位置。
+
+% 2 1 0 05bb1e1cae0a7ffe1ceadbf513d9c4c7
+
+% 3 1 0 1677f5a893020af11f4d69a494bf2629
+
+% 4 1 0 11e66db7a1a04eea1a0e0487e5e79f4c
+
+% 5 1 0 111452515f10ed501c324226d67a2be1
+
+% 6 1 0 17789f14cfd21aef087f074e770335a4
+
+% 7 1 0 1f78c1e3d000c4a40cb575f4580ed73a
+
+% 0 1 0 12554ec23b43b85205279b5c170ba687
+
+% 0 1 0 0de70e7ada2f85171b902d76485683c4
+
+% 0 1 0 03b213d2f2ceeac303d09c0275c81042
+
+% 0 1 0 142e1ae4fd58ec120e6712a599773c7d
+
+% 0 1 0 1e3fd558a15b71931b6055760b49af6a
+
+% 0 1 0 12933b051cb72df60cc39300a48fac6c
+
+% 0 1 0 14ff65f2c9146c90189fe0cb1c603126
+
+% 0 1 0 05dff1dbde904d3703d5b09e24373d1f
+
+% 0 1 0 0bb68620defba08017d040c9d1e83f00
+
+% 0 1 0 12235134683afd96061210590bf4d24a
+
+% 1 1 0 0f7c91805d6641b4131c022b05140433
+
+@ 0 3 0 18159c9b9dcb7048159bb99b739f5a39
++       `dataSearch()` 和 `configSearch()` 根据环境为 XDG 数据搜索路径和配置搜索路径构建 `Stems`。
++       对象中的辅助方法之所以公开，只是因为这些操作是 transparent inline 的；请调用这些操作。
+
+% 0 1 0 0b3404a5cfadb2a50a0bd05c8d620a4c
+
+% 0 1 0 17cfb7247bdd77100dbc2bf0c9019796
+
+@ 0 1 0 00d7d355eff5e5ea006a8fb3b87f2b72
++   entry .Stems   搜索路径平面所解析到的有序真实目录
+
+% 1 1 0 199c87ccedfcb6c50bc0cae9dcfe537f
+
+@ 0 11 0 118df5e0350e82d90400056baadc1566
++         `Searchpaths.Stems on Xdg.Data onto Linux`：`#Plane` 是虚拟平面，`#Target` 是其下的平台，`#stems` 是按优先顺序排列的目录，至少有一个——排在最前面的是写入所去之处，因为 XDG 基础目录规范指示应用程序只写入用户专属的基础目录。
++     entry #Plane   搜索路径平面，例如 `Xdg.Data`
++     entry #Target   各个基目录所在的平台，例如 `Linux`
++     entry #stems   要尝试的目录，按优先顺序排列；非空
++   entry .resolve   `Searchpaths.resolve(stem, path)`：把路径的各个名称附加到某个基目录之下
++   entry .locateResolved   第一个路径存在于其下的基目录，或 `Unset`
++   entry .locationsResolved   每个路径存在于其下的基目录，按优先顺序排列
++   entry .entryNames   所有基目录中合并后的子项名称，已去重，较早的基目录优先
+
+@ 0 5 0 0a5263e90104d11d089de05d371b1e77
++ entry .search   `path.search()`：搜索路径中第一个存在该路径的真实目录，或 `Unset`
++     `Path on <plane <: Searchpath>` 上的一个扩展方法，需要该平面的 `Searchpaths.Stems` 以及其目标的 `FilesystemBackend`。
++     按照 XDG 规范，第一个匹配者胜出；结果是一个 `Path on stems.Target`。
++     它命名为 `search` 而不是 `locate`，因为 zephyrine 在总括包中导出了 `locate`。
+
+@ 0 3 0 02bb07ddac4d4ab5113f327c4e4078b9
++ entry .locations   `path.locations()`：搜索路径中存在该路径的每个真实路径，按优先顺序排列
++     `Path on <plane <: Searchpath>` 上的一个扩展方法，用于读取配置文件每一份副本并进行级联合并的使用者。
+
+@ 0 4 0 17aa1e83022da5e30a5b866db58667db
++ entry .listing   `path.listing()`：搜索路径目录在所有基目录上合并后的列表
++     `Path on <plane <: Searchpath>` 上的一个扩展方法，需要目标的 `Explorable` 和一个 `Tactic[Io.Error]`。
++     子项按名称去重，较早的基目录遮蔽较晚的基目录，并在搜索路径平面上返回，因此虚拟树是可导航的。
+
+@ 0 4 0 0f89585387175a8c1bbb9b7753f6ab54
++ entry .destination   `path.destination()`：路径在首个基目录之下的位置，即 XDG 规范指示写入的地方
++     `Path on <plane <: Searchpath>` 上的一个扩展方法。
++     全函数：不在磁盘上检查任何东西。
++     创建任何缺失的中间目录是调用者的事，通过在写入本身上使用 `filesystemOptions.createNonexistentParents` 完成。
+
+@ 0 5 0 17e5a499e5bcc370164c1e8ce1865945
++ entry .searchpathCompliant   允许把 `Linux` 风格的相对路径或字面路径在搜索路径平面上重新解释
++     使 `(% / "icons" / "app.png").on[Xdg.Data]` 能够通过类型检查的 `Compliant` given：在 `Linux` 规则下有效的名称在任何 `Searchpath` 平面上都有效。
++     它是一个顶层 given，以库限定的名称命名，因为两个主体的伴生对象都无法承载它；它是 inline 的，当总括包的导出在作用域内时，除 `soundness.*` 外无需任何导入。
+
+@ 0 5 0 03d6cb4f353e036d08c581bdc35640f2
++ entry .dataSearch   `Xdg.dataSearch()`：XDG 数据搜索路径，作为 `Searchpaths.Stems on Xdg.Data onto Linux`
++     `Xdg` 对象上的一个扩展方法，需要一个 `Environment` 和一个 `System`。
++     各个基目录是 `XDG_DATA_HOME`（或其默认值），后接 `XDG_DATA_DIRS` 的每一项，按规范的优先顺序排列，在构造时读取一次；无法解析的目录集合会回退到规范的默认值。
+
+% 2 1 0 16b68530a916763617edfb9a2e976082
+
+% 3 1 0 0441c64e668de17e0459768644c2589f
+
+% 4 1 0 1819b46f34aadfa9113392fe66774df8
+
+% 5 1 0 016fca507717066d125a616e8e5e4e95
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 127a57eab7ef682d0fe56853b185edb6
+
+% 1 1 0 072c2b805d867ca41807649f1501b0a1
+
+@ 0 2 0 1dc01522fc26c1b61d04b83817b02611
++ entry .configSearch   `Xdg.configSearch()`：XDG 配置搜索路径，作为 `Searchpaths.Stems on Xdg.Config onto Linux`
++     与 `dataSearch()` 相同，但用于 `XDG_CONFIG_HOME` 后接 `XDG_CONFIG_DIRS`。
+
+@ 0 1 0 19d625158e16330d1c78a6b26b97ee7a
++ entry .Ram   通过内存映射随机访问文件字节的形式：`path.open[Ram](mode)`
+
+% 1 1 0 0177d40bdd7e62881fd8acad3cde1c2d
+
+@ 0 8 0 0ada8248b50d87a6111f6eb5b28ffc63
++       位于 `galilei.jvm` 中。
++       句柄用 `ram(offset, length)` 提供按位置读取，并在选择了 `Write` 授权时，用 `ram(offset) = data` 提供按位置写入，用 `ram.grow(size)` 提供增长；两者都经由 `MappedByteBuffer`，因此操作系统按需换入和换出数据。
++       `Exclusive` 模式还会在作用域内获取一个操作系统文件锁，因此独占性对其他进程同样成立。
++       映射用 `Int` 寻址，因此超过 2 GiB 的文件会抛出带有 `Unsupported` 的 `Io.Error`；`path.expanse` 是用于读取的、与平台无关且没有上限的替代方案。
++       写入在作用域结束时刷新。
+
+% 2 1 0 17550b1b155003510f796b20f0b800f4
+
+% 3 1 0 028a652642d0283e005648a5a174906a
+
+% 4 1 0 116a929682a0f4bd1d283d48afff88f4
+
+% 5 1 0 16af59620f7d864d0f937d329b8a4f2c
+
+% 6 1 0 06e52e47d69841b613fd7d6cc0859deb
+
+% 7 1 0 01914ab6229a1d0e0d2bce8632c15f44
+
+% 0 1 0 0008f1ce75f9399a0ed90c0baa3a039b
+
+% 0 1 0 12d14e9868583f4c1a2959370273385e
+
+% 0 1 0 1ac0d88ebedb38bb00a794e0df566f2e
+
+% 0 1 0 055d4b63ba3bb6fa14d1a13132ee8d4f
+
+% 0 1 0 00cc012415489fcb0c045c5233762561
+
+% 0 1 0 1bfedab170b1e51a06a1e54d56b4d8f8
+
+% 0 1 0 09249efcdf863e5213e277feee8ae6fd
+
+% 0 1 0 11860e5a2070c733053ee0681f5ce8cc
+
+% 0 1 0 1ec1216c1278b07901daa9ffef95dcbf
+
+% 1 1 0 144ccafa1e29407910c0e271754035d8
+
+@ 0 3 0 11fdfe4e6bbfb56b0dc522a3db8795bf
++       `path.create[Ram](RamFlag.Size(n))` 创建一个大小恰好为该值的新文件，在作用域内以读写方式映射，作用域失败时将其删除；大小是必需的，因为空的映射没有用处。
+
+% 1 1 0 174f21c89d0f748500aa3c8be36995a4
+
+% 0 1 0 1075b64e06e600a80ecfe0dfa36f9169
+
+@ 0 1 0 03acbc20fee2b5ad1b622249f5cba33f
++   entry .RamHandle   映射文件上的句柄：按位置读取、写入、增长，以及一个 `Expanse` 视图
+
+% 1 1 0 05c76ad81f8a37381e7f9a59b988209c
+
+@ 0 14 0 027a7a261cdb2d831f8a03e4799853ff
++         一种独占的能力。
++         由授权把关的操作是扩展方法 `.apply`、`.update` 和 `.grow`；`#readFrom`、`#writeTo` 和 `#growTo` 是它们不加把关的操作形式。
++     entry #size   映射的大小，以字节为单位
++     entry #readFrom   在某个偏移处读取 `length` 个字节
++     entry #writeTo   在某个偏移处写入数据，在当前大小之内
++     entry #growTo   扩展文件并将其重新映射为更大的大小；更小的大小不起作用
++         新的大小必须能放进一个 `Int`。
++     entry #flush   强制把映射的更改写入文件
++     entry #expanse   一个共享的按位置访问视图，供针对 zephyrine 的 `Expanse` 编写的使用者使用
++   entry .apply   `ram(offset, length)`：按位置读取，用于授予 `Read` 的句柄
++   entry .update   `ram(offset) = data`：按位置写入，用于授予 `Write` 的句柄
++   entry .grow   `ram.grow(size)`：扩展映射，使越过旧末尾的写入可以寻址，用于授予 `Write` 的句柄
++   entry .RamOpenable   `path.open[Ram](mode)` 背后的 `Openable` 实例
+
+% 1 1 0 0fe4451ba2c8f7b5069004aa1fe60170
+
+@ 0 6 0 0608a039af664f1708eec052b9e83d01
++         一个由 `.openable` 实例化的具名类。
++         `Exclusive` 模式隐含一个可写的通道（操作系统独占锁需要它），以及在作用域内持有的一个锁；冲突会抛出带有 `Busy` 的 `Io.Error`。
++     entry #open   在作用域内映射文件，并以一个 `RamHandle` 运行代码块
++   entry .openable   用于任何平台路径的 `path.open[Ram](…)`，需要一个 `Tactic[Io.Error]`
++   entry .RamCreatable   `path.create[Ram](RamFlag.Size(n), flags*)` 背后的 `Creatable` 实例
+
+% 1 1 0 0aa25b74ffe268200600d97b4c13e26e
+
+@ 0 6 0 057369680ebed7321c0f913399c64bcd
++         创建指定名称的文件，将其扩展到该大小，在作用域内以读写方式映射，如果作用域失败则删除它。
++         遵从 `CreateFlag.Parents` 和 `CreateFlag.Replace`；缺少 `Size`、`Size` 非正或超过 `Int.MaxValue` 都是 `Unsupported`，没有 `Replace` 时已存在的文件是 `AlreadyExists`。
++     entry #create   创建文件、设定其大小并映射它，然后以一个 `RamHandle` 运行代码块
++   entry .creatable   用于任何平台路径的 `path.create[Ram](…)`，需要一个后端和一个 `Tactic[Io.Error]`
+
+@ 0 1 0 12adcbffbcf0b4d516bd8d4b7c2f4959
++ entry .RamFlag   `create[Ram]` 的标志：`Size(bytes)`，即映射文件的大小，它是必需的
+
+% 1 1 0 19203f4f5cbb77c21125c7b2e2d4c3a7
+
+@ 0 4 0 16cc65721595515d03f443959066b290
++       创建映射文件需要预先知道其大小，因此 `RamFlag.Size(n)` 必须与任何 `CreateFlag` 一起出现在标志中。
++       位于 `galilei.jvm` 中。
++   entry .Size   `RamFlag.Size(bytes)`：要创建并映射的文件的大小
++     entry #bytes   以字节为单位的大小
+
+@ 0 1 0 12ae2280490539c1016b3b8c0dd08d1f
++ entry .Device   通过 `mknod` 在 POSIX 文件系统上创建块设备或字符设备节点
+
+% 1 1 0 0e54beda72d3e8211798071fa72801f3
+
+@ 0 4 0 135a8d0b60548ab10e509e8f2a4c8b59
++       位于 `galilei.jvm` 中。
++       `Device.create(path, Device.Kind.Block, major, minor)` 运行 `mknod` 命令，查询作用域内的 `CreateNonexistentParents` 和 `OverwritePreexisting` 方针，如果命令失败则抛出带有 `PermissionDenied` 的 `Io.Error`——创建设备节点通常需要 root 权限。
+
+% 2 1 0 0b7b9b168185dc4415e5c696a4f2c90c
+
+% 3 1 0 0693b6a9e8c88916072ec0391b8e6b57
+
+% 4 1 0 00364daca4b3b98d1c6d15cfbfe308d8
+
+% 5 1 0 03eae9326f92218a0751a424a1134717
+
+% 6 1 0 0b18e38bba1a120209927f8244cf8d1c
+
+% 0 1 0 045e18a59784ef971d75c27066a4a63f
+
+% 0 1 0 13aeba78036930c805185a12877d23d6
+
+% 0 1 0 1d48f299bf65425f02655e6afc60eb71
+
+% 1 1 0 087fe192f3143da40fd1e7785c552ab3
+
+% 0 1 0 14be69f83b1231551e7f4b283971243a
+
+% 0 1 0 18d58a7e9d368da407a4063be0c2783a
+
+% 1 1 0 0f17eb24b4e2b8c704ec680d756cc53b
+
+@ 0 3 0 1a8e8f0737374e2d1004fee25d9db1c9
++   entry .Kind   `Block` 或 `Char`：要创建哪种设备节点
++     entry #flag   `mknod` 的类型标志：`b` 或 `c`
++   entry .create   在某个路径上以给定的种类以及主设备号和次设备号创建设备节点
+
+@ 0 1 0 0cf17da69e839f311e1d4fcff42e3de8
++ entry .SocketCreation   JVM 上 `path.create[Sock]()` 背后的 `Creatable` 实例
+
+% 1 1 0 09e3cbd8a321ff1c16c7d8445c3b25d9
+
+% 2 1 0 01bc1e4a848c2f52100aa62591e142fe
+
+@ 0 8 0 1b1048e17e23f9b80074e094d475a7e0
++       `socketCreatable` 的所在，它从这里导出；通过这个名称访问该实例。
++       绑定 Unix 域套接字本质上是有作用域的：代码块形式提供活动的、已绑定的 `Sock`，并在作用域结束时关闭其通道（套接字文件保留；逃逸出作用域的异常会删除它），而无代码块形式绑定后立即关闭，只留下套接字文件。
++   entry .SocketCreatable   在一个代码块的作用域内，于 POSIX 路径上绑定一个 Unix 域套接字
++     entry #create   把一个 `ServerSocketChannel` 绑定到该路径，并以 `Sock` 运行代码块
++   entry .socket   这个 given，用于任何具有后端和 `Tactic[Io.Error]` 的 POSIX 平台路径
+
+@ 0 6 0 1c4af14df13a9d340d93625efa0950ba
++ entry .socketCreatable   `path.create[Sock]()`：在一个代码块的作用域内，于 POSIX 路径上绑定一个 Unix 域套接字
++     用于 `Sock` 形式的 `Creatable` given，位于 `galilei.jvm` 中，需要一个后端和一个 `Tactic[Io.Error]`。
++     代码块接收一个持有已绑定 `ServerSocketChannel` 的 `Sock`，在代码块结束时关闭；遵从 `CreateFlag.Parents` 和 `CreateFlag.Replace`。
++     之后套接字文件会保留，除非有异常逃逸出作用域。
+
+% 2 1 0 10b31e893d4584820edfd5994bc260e7
+
+% 3 1 0 11e242e9b01545ea161d510996c0dec6
+
+% 4 1 0 0108f8d063244dff0c7b51876e0ce1ca
+
+% 5 1 0 0b1bfe103e4feb650291364d73207026
+
+% 6 1 0 1c9a04c6a2c4e2f41d0d2acd570ccb0c
+
+% 7 1 0 009d7c2bfaf82bd807074f6dc1885291
+
+% 0 1 0 16af877f790c5edf1779f0e78b069018
+
+% 0 1 0 169e030b215da973105baa59d436e0e7
+
+% 0 1 0 0041f765f0e276ae1d60a52e77926b99
+
+% 1 1 0 183c7b0df92c930f0a7a23d55a52c9e4
+
+@ 0 5 0 04a06f921a7ec17e016913eceb8605fb
++ entry .javaPath   `path.javaPath`：平台路径对应的 `java.nio.file.Path`，供接受它的 Java API 使用
++     这是 `galilei.jvm` 中针对任何 `Path on <plane: Filesystem>` 的扩展方法，有意*不*导出到 `soundness` 总括包：它是有类型 API 的逃生舱口，以 `galilei.javaPath`（或通过 `import galilei.javaPath`）访问它，能让这种使用保持为有意之举。
+
+% 2 1 0 0c976b96b236e78e0dbd0ec4ae5fccf5
+
+% 3 1 0 14321b2504879cec0f7b447615eaf1c3
+
+% 0 1 0 05adf28557c472101625b9f684beff7c
+
+% 0 1 0 1e3e5983ea73ff180f1763ca2f81f50f
+
+% 0 1 0 00e70c1e3d9f79210cea0cc7742a7074
+
+% 1 1 0 05d9d3b1e2900adf0e552895fff93206
+
+@ 0 2 0 01b8163724b009240a787270cb339100
++ entry .javaFile   `path.javaFile`：平台路径对应的 `java.io.File`
++     与 `javaPath` 相同，用于较旧的 API；位于 `galilei.jvm` 中，不导出到总括包。

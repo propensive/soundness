@@ -1,0 +1,183 @@
+orthant 2 language
+
+% 7 1 0 1a1956cb84a7ec440c0f256248e53526
+
+@ 0 5 0 1c0025c9eaaf9fe40e98071d332871be
++     除单个路径之外：`Cas` 是位于某个目录下的内容寻址数据块存储；`Searchpaths.Stems` 用 `discover`、`locations`、`listing` 和 `destination` 把 XDG 搜索路径平面（`Xdg.Data`、`Xdg.Config`）解析到真实目录上；`Umask` 和 `Fdtable` 是守护进程代表客户端提供的上下文值（它创建内容时遵循的掩码，以及它的 `/dev/fd/N` 路径据以打开的描述符表）。
+
+@ 0 10 0 014f9df73eaa0e1e1ec1313fd4d24eae
++       把文件移动到一个已有东西存在的路径上，要么销毁那个东西，要么拒绝；删除目录，要么清空它，要么拒绝；复制符号链接，要么跟随它，要么复制链接本身。
++       一般而言，两种答案都不是正确的，因此 galilei 从不默默地做出选择：每个问题都是一个方针特质——`OverwritePreexisting`、`DeleteRecursively`、`CreateParents`、`DereferenceSymlinks`、`MoveAtomically`、`CopyAttributes`——而必须回答它的操作以上下文参数的形式接受该方针。
++       在作用域中既没有 `overwritePreexisting` 也没有 `failOnPreexisting` 的情况下调用 `moveTo`，是一个指明所缺方针的编译错误。
++       方针成对出现，一个宽容，一个严格，并按名称导入（`import soundness.*` 不导入 given），作用于整个文件，或限定在一个代码块内。
+
+@ 0 10 0 1a97b87d7a53afb71278e8a75042c446
++       - `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`：`OverwritePreexisting` 和 `CreateParents`（复制和移动还需要 `DereferenceSymlinks`，移动还需要 `MoveAtomically`）。
++       - `copyInto`、`moveInto`、`symlinkInto`：`OverwritePreexisting` 和 `DereferenceSymlinks`（以及 `MoveAtomically`）；父目录会被创建，因为目标目录已被指明。
++       - `delete`、`wipe`：`DeleteRecursively`。
++       - `entry()`、`descendants`、`glob`、`hardLinks()`、`checksum`：`DereferenceSymlinks`。
++       - `create[…]`：不需要。`CreateFlag.Parents` 和 `CreateFlag.Replace` 在调用处说明意图；如果调用 `create` 处的作用域中有 `CreateParents` 方针，它也会被遵循。
+
+% 0 1 0 1abd1fb2681a63ba0899f5a16108fec1
+
+% 0 1 0 0757fee2b534bf971c9e195a7d37d8a0
+
+@ 0 48 0 01453ece02b6183508e6ad33388a35cd
++   entry .dereferenceSymlinks   跟随作为最后一个组成部分的符号链接：对它所指向的东西进行操作
++       宽容的 `DereferenceSymlinks`：`entry()` 报告目标的类型，`copyTo` 复制目标的内容，`descendants` 和 `checksum` 穿过链接的目录进行遍历，`hardLinks()` 统计目标的链接数。
++   entry .preserveSymlinks   不跟随符号链接：对链接本身进行操作
++       严格的 `DereferenceSymlinks`：`entry()` 报告 `Symlink`，`copyTo` 复制链接，遍历不会穿过链接的目录向下进行。
++       `filesize()` 总是使用它，因此链接的大小就是链接本身的大小。
++   entry .moveAtomically   `moveTo` 必须是原子的，在无法做到时为 `Unsupported`
++       要求后端进行原子重命名（JVM 上的 `ATOMIC_MOVE`）的 `MoveAtomically`。
++       读取者永远不会看到移动了一半的条目；跨卷的移动无法是原子的，会抛出带有 `Unsupported` 的 `Io.Error`，而不是回退为复制。
++   entry .moveNonAtomically   `moveTo` 可以是先复制再删除
++       允许非原子移动的 `MoveAtomically`，因此跨卷的移动能够成功，代价是中途失败可能同时留下源和不完整的目标。
++   entry .copyAttributes   复制时带上源的属性（时间戳、权限）
++       宽容的 `CopyAttributes`。
++       目前没有任何操作参考它：这个方针的存在，是为了在后端支持它之后，复制对属性的处理方式能得到明确说明。
++   entry .discardAttributes   复制只取内容；副本的属性是新的
++       严格的 `CopyAttributes`；它目前的状况见 `.copyAttributes`。
++   entry .deleteRecursively   对目录执行 `delete` 和 `wipe` 时，先删除其下的一切
++       宽容的 `DeleteRecursively on <plane>`，适用于任何具有 `Explorable` 和后端的平面。
++       它在所守护的操作之前深度优先地删除子项，因此 `wipe()` 会删除整棵树。
++       它也是 `overwritePreexisting` 所需要的，以便替换目录时可以清空它。
++   entry .deleteOnlyEmpty   `delete` 和 `wipe` 拒绝有子项的目录
++       严格的 `DeleteRecursively`：有任何子项的目录会在触及任何东西之前抛出带有 `Operation.Delete` 和 `Reason.DirectoryNotEmpty` 的 `Io.Error`。
++       绝不能一次删除多于一个条目的程序会导入它。
++   entry .overwritePreexisting   已存在的目标会先被删除
++       宽容的 `OverwritePreexisting on <plane>`，它需要作用域中有一个 `DeleteRecursively on <plane>`（以清空被替换的目录）。
++       这样 `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo` 和 `Device.create` 就不会抛出 `AlreadyExists`。
++   entry .failOnPreexisting   已存在的目标是一个 `Io.Error`
++       严格的 `OverwritePreexisting`：操作照常进行，不做任何处理，当它与已有条目冲突时，后端抛出带有 `Reason.AlreadyExists` 的 `Io.Error`，调用者必须随后处理它。
++   entry .createParents   创建目标缺失的祖先目录
++       宽容的 `CreateParents on <plane>`，需要一个后端。
++       在操作之前，从最近的祖先开始向上，创建目标的每个不存在的祖先。
++       这些目录以进程自己的掩码创建。
++       `copyInto`、`moveInto` 和 `symlinkInto` 隐式地使用它，因为它们的目标目录已被指明。
++       作用域中有它时，`create[…]` 也会创建缺失的祖先，如同给出了 `CreateFlag.Parents`。
++   entry .requireParents   父目录缺失的目标是一个 `Io.Error`
++       严格的 `CreateParents`：不创建任何东西，后端针对缺失的父目录抛出带有 `Reason.Nonexistent` 的 `Io.Error`。
+
+@ 0 1 0 1296882510845f1b1289f7a791a2f225
++ entry .CreateParents   目标的父目录缺失时的方针：创建它，或失败
+
+@ 0 8 0 1d4190ed60324ddb174e9b361d6bd755
++       一个平面方针（`CreateParents on Linux`），其 `#apply` 包装该操作。
++       `filesystemOptions.createParents` 创建每个缺失的祖先目录；`filesystemOptions.requireParents` 则交由后端抛出 `Nonexistent`。
++       `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo` 和 `Device.create` 需要它。
++       `create[…]` 系列操作不需要它，但会遵从调用处作用域中的它：在 `createParents` 之下，它们无需 `CreateFlag.Parents` 就会创建缺失的祖先目录。
++   entry #apply   在 `path` 处执行操作，之前创建或不创建其缺失的祖先目录
+
+@ 0 9 0 0a2294adcdf9815c0b76589ef0ac24d3
++       不给出标志意味着严格：创建父目录缺失的条目会抛出带有 `Nonexistent` 的 `Io.Error`（除非作用域中有 `filesystemOptions.createParents`），创建已存在的条目会抛出 `AlreadyExists`，除非调用者在调用处另有说明。
++       `Parents` 创建每个缺失的祖先目录（在作用域中的 `Umask` 下）；`Replace` 先删除路径上已存在的条目——如果它是目录，则递归删除。
++       标志是形式之后的参数：`path.create[Directory](CreateFlag.Parents)`、`path.create[File](CreateFlag.Replace)`。
++       `Replace` 有意不作为 `filesystemOptions` 中的方针：创建时的破坏性意图要在其发生之处声明。
+
+@ 0 8 0 17a4139b13863d8611fb563a80109d2e
++ entry .copyTo   `path.copyTo(destination)`：将条目复制到某个路径，并查询作用域中的方针
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `DereferenceSymlinks`、一个 `CreateParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     在 `failOnPreexisting` 下，已存在的目标会抛出 `AlreadyExists`；在 `overwritePreexisting` 下，它会先被移除。
++     在 `requireParents` 下，缺失的父目录会抛出 `Nonexistent`。
++     目录被复制为一个空目录（JVM 的 `Files.copy`），而不是递归复制。
++     记录 `Io.Event.Copy` 并返回目标。
+
+% 7 1 0 0245801bb2136c841da686b0680d804a
+
+@ 0 8 0 1ab020043205a63e14aceafbbfc0774c
++ entry .moveTo   `path.moveTo(destination)`：将条目移动到某个路径，并查询作用域中的方针
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `MoveAtomically`、一个 `DereferenceSymlinks`、一个 `CreateParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     使用 `moveAtomically` 时，移动是一次单独的重命名，跨卷移动为 `Unsupported`；使用 `moveNonAtomically` 时，它可能是一次复制加一次删除。
++     在严格的方针下，`AlreadyExists` 和 `Nonexistent` 的出现情形与 `copyTo` 相同。
++     记录 `Io.Event.Move` 并返回目标。
+
+% 7 1 0 15e5d40e31eead1b00c12857e960f691
+
+@ 0 6 0 1bbf9af2231e9434158c38a7e76496d9
++ entry .hardLinkTo   `path.hardLinkTo(link)`：在 `link` 处创建指向此条目的硬链接
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `CreateParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     接收者是已存在的条目，参数是新名称；之后两者具有相同的 `entryIdentity`。
++     记录 `Io.Event.HardLink` 并返回链接的路径。
+
+@ 0 6 0 1c6f69fde0af460216c7f82989bfdf38
++ entry .symlinkTo   `path.symlinkTo(link)`：在 `link` 处创建指向此路径的符号链接
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要一个 `OverwritePreexisting on plane`、一个 `CreateParents on plane`、一个后端、一个 `Tactic[Io.Error]` 和一个 `Io.Event is Loggable`。
++     接收者是目标，参数是要创建的链接；链接存储接收者的完整文本。
++     记录 `Io.Event.Symlink` 并返回链接的路径。
+
+% 7 1 0 1d0dc59b173b45101e4a5a641f4d9ca0
+
+@ 0 8 0 14255f9cbc7e5a441a48337417dc0a10
++       许多文件不是在一个位置查找，而是沿着一系列位置查找——位于哪个 XDG 数据目录中的图标、几个地方中第一个所在的配置文件。
++       ambience 的 `Searchpath` 平面（`Xdg.Data`、`Xdg.Config`）就是作为一棵可导航的树呈现的这样一个列表，到真实平台的解析通过一个上下文中的 `Searchpaths.Stems` 进行：要尝试的有序目录，排在最前面的基目录是可写的那一个。
++       平面上的相对路径随后可以用 `discover()` 解析到第一个包含它的基目录，用 `locations()` 解析到每个包含它的基目录，用 `listing()` 解析为合并后的目录列表，用 `destination()` 解析为它在首个基目录之下的位置。
+
+% 0 1 0 1ef3712c378c838d0276d43da971c5a5
+
+% 0 1 0 18568f6ddf325ebe0118d8fa232ea4d0
+
+@ 0 5 0 1b3a0d5251df1ee909b8890539b540b6
++ entry .discover   `path.discover()`：搜索路径中第一个存在该路径的真实目录，或 `Unset`
++     `Path on <plane <: Searchpath>` 上的一个扩展方法，需要该平面的 `Searchpaths.Stems` 以及其目标的 `FilesystemBackend`。
++     按照 XDG 规范，第一个匹配者胜出；结果是一个 `Path on stems.Target`。
++     它命名为 `discover` 而不是 `locate` 或 `search`，因为 zephyrine 和 gossamer 在总括包中导出了这两个名称。
+
+@ 0 4 0 0b310b54a9ef907a1147f3cf8ca85ee0
++ entry .destination   `path.destination()`：路径在首个基目录之下的位置，即 XDG 规范指示写入的地方
++     `Path on <plane <: Searchpath>` 上的一个扩展方法。
++     全函数：不在磁盘上检查任何东西。
++     创建任何缺失的中间目录是调用者的事，通过在写入本身上使用 `filesystemOptions.createParents` 完成。
+
+@ 0 4 0 08affb08ea0beeb1106b596931ca7264
++       位于 `galilei.jvm` 中。
++       `Device.create(path, Device.Kind.Block, major, minor)` 运行 `mknod` 命令，查询作用域内的 `CreateParents` 和 `OverwritePreexisting` 方针，如果命令失败则抛出带有 `PermissionDenied` 的 `Io.Error`——创建设备节点通常需要 root 权限。
+
+% 0 1 0 1bfc186d2c6371b41faa2d6a22a08838
+
+@ 0 5 0 0eb553b78dd028881026bb9c909cfbaa
++ entry .mapped   `path.mapped { view => … }`：整个文件以只读方式映射到内存中，在代码块执行期间作为 `Terrain` 使用
++     不复制任何内容：整数直接从页缓存中就地加载，映射同一文件的各个进程共享它的一份副本。
++     代码块结束时文件被取消映射，该视图是受限于代码块的能力。
++     JVM 和 Scala Native 后端会映射文件；WASI 抛出原因为 `Unsupported` 的 `Io.Error`。
+
+@ 0 6 0 0319e67535d2aa521b0832ad7f582d74
++ entry .hold   `path.hold(reserve) { holding => … }`：在排他锁下，整个文件被映射以供就地修改，作为 `Holding` 使用
++     文件不存在时会被创建，短于 `reserve` 字节时会被扩展到该长度；holding 的 `expand` 可以进一步扩展它。
++     锁加在文件本身上，并在代码块执行期间一直持有：在本进程或其他进程中对该文件再次 `hold`，会抛出原因为 `Busy` 的 `Io.Error`。
++     代码块结束时，已存储的内容是持久的。
++     只有 JVM 和 Scala Native 后端会为修改而映射文件；WASI 后端抛出 `Unsupported`。
+
+@ 0 5 0 15a3d430ea8c7ec50db26d8e610c81a5
++ entry .claim   `path.claim[record] { owner => … }`：在代码块执行期间对一个名称的所有权，用于在该名称下发布 `record` 的版本
++     在整个过程中，对同级文件 `<name>.lock` 持有排他的操作系统锁，因此同一时刻只有一个进程、以及其中的一个作用域在该名称下发布；第二个会抛出原因为 `Busy` 的 `Io.Error`。
++     该锁是建议锁，在本地文件系统上相互协作的进程之间是可靠的。
+
+@ 0 4 0 00e9fb594f49f696182f1a9cda4f790c
++ entry .observe   `path.observe[record] { observer => … }`：一个名称当前已发布的版本，已映射，并附有转到更新版本的手段
++     不加任何锁，因此观察者从不拖延所有者，所有者也从不拖延观察者。
++     代码块结束时，映射的一切都会被取消映射。
++     在其下尚未发布任何内容的名称会抛出 `Io.Error`。
+
+@ 0 2 0 16b4996b5b09ee631003a445d8029a27
++ entry .Edition   一个已发布版本的标识：该名称指向哪个文件，以及该文件何时写入
++     两个版次恰好在相等时是同一版本；它们没有顺序。
+
+@ 0 4 0 16c024220c7964ec153f02eb5e566de4
++ entry .Owner   对一个名称的所有权，用于 `claim` 的代码块：在该名称下发布 `record` 版本的能力
++   entry #publish   以原子方式把已发布的文件替换为某个值的编码，并返回新的 `Edition`
++       该值被同步写入临时同级文件 `.<name>.part`，再移动覆盖该名称，因此已映射较早版本的观察者不受干扰。
+
+@ 0 1 0 17f48f2f57de485414f06b97d1cabc9a
++ entry .Observer   读取者对已发布名称的持有，用于 `observe` 的代码块：当前版本（已映射）以及转到新版本的手段
+
+% 1 1 0 004ef53efa407ece0a665176c19bce70
+
+@ 0 8 0 1be53bb2b72a06bb1b4200b6b7c0448e
++       一种共享的能力：它不加锁，可以在多个线程中使用。
++       它使其已映射的版本保持存在，直到它转到新版本或其代码块结束。
++   entry #edition   已映射版本的版次
++   entry #map   在代码块执行期间借出已映射版本的 `Terrain` 视图，期间的 `refresh` 不会干扰它
++   entry #refresh   如果名称现在指向的版本不是已映射的版本，就映射它，并返回是否这样做了
++   entry #open   在代码块执行期间，通过 `record` 的 `zephyrine.Surveyable` 实例，把已映射的版本作为 `record` 打开
++       给予观察者的类型就是读取其版本所用的形式：`Ratel of Playbill` 的观察者打开 `Playbill` 的镜像，并拒绝任何其他镜像。

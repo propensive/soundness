@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 39 0 136f115cd774eb38038f6c08e069f0ca
++       Każda waluta tutaj ma moduł 100, w tym te, które, jak jen i won, w praktyce nie mają
++       jednostki pomocniczej. Walutę, której tu nie ma, deklaruje się przez `Currency()`.
++   entry .Usd   dolar amerykański, `USD`, wyświetlany z symbolem `$`
++   entry .Eur   euro, `EUR`, wyświetlane z symbolem `€`
++   entry .Jpy   jen japoński, `JPY`, wyświetlany z symbolem `¥`
++   entry .Gbp   funt szterling, `GBP`, wyświetlany z symbolem `£`
++   entry .Cny   renminbi, `CNY`, wyświetlany z symbolem `¥`
++   entry .Aud   dolar australijski, `AUD`, wyświetlany z symbolem `A$`
++   entry .Cad   dolar kanadyjski, `CAD`, wyświetlany z symbolem `C$`
++   entry .Chf   frank szwajcarski, `CHF`, wyświetlany z symbolem `CHF`
++   entry .Hkd   dolar hongkoński, `HKD`, wyświetlany z symbolem `HK$`
++   entry .Sgd   dolar singapurski, `SGD`, wyświetlany z symbolem `S$`
++   entry .Sek   korona szwedzka, `SEK`, wyświetlana z symbolem `kr`
++   entry .Krw   won południowokoreański, `KRW`, wyświetlany z symbolem `₩`
++   entry .Nok   korona norweska, `NOK`, wyświetlana z symbolem `kr`
++   entry .Nzd   dolar nowozelandzki, `NZD`, wyświetlany z symbolem `NZ$`
++   entry .Inr   rupia indyjska, `INR`, wyświetlana z symbolem `₹`
++   entry .Mxn   peso meksykańskie, `MXN`, wyświetlane z symbolem `$`
++   entry .Twd   nowy dolar tajwański, `TWD`, wyświetlany z symbolem `NT$`
++   entry .Zar   rand południowoafrykański, `ZAR`, wyświetlany z symbolem `R`
++   entry .Brl   real brazylijski, `BRL`, wyświetlany z symbolem `R$`
++   entry .Dkk   korona duńska, `DKK`, wyświetlana z symbolem `kr`
++   entry .Pln   złoty polski, `PLN`, wyświetlany z symbolem `zł`
++   entry .Thb   bat tajlandzki, `THB`, wyświetlany z symbolem `฿`
++   entry .Ils   nowy szekel izraelski, `ILS`, wyświetlany z symbolem `₪`
++   entry .Idr   rupia indonezyjska, `IDR`, wyświetlana z symbolem `Rp`
++   entry .Czk   korona czeska, `CZK`, wyświetlana z symbolem `Kč`
++   entry .Aed   dirham Zjednoczonych Emiratów Arabskich, `AED`, wyświetlany z symbolem `AED`
++   entry .Try   lira turecka, `TRY`, wyświetlana z symbolem `₺`
++   entry .Huf   forint węgierski, `HUF`, wyświetlany z symbolem `Ft`
++   entry .Clp   peso chilijskie, `CLP`, wyświetlane z symbolem `$`
++   entry .Sar   rial saudyjski, `SAR`, wyświetlany z symbolem `SR`
++   entry .Php   peso filipińskie, `PHP`, wyświetlane z symbolem `₱`
++   entry .Myr   ringgit malezyjski, `MYR`, wyświetlany z symbolem `RM`
++   entry .Cop   peso kolumbijskie, `COP`, wyświetlane z symbolem `$`
++   entry .Rub   rubel rosyjski, `RUB`, wyświetlany z symbolem `₽`
++   entry .Ron   lej rumuński, `RON`, wyświetlany z symbolem `lei`
++   entry .Pen   sol peruwiański, `PEN`, wyświetlany z symbolem `S/`

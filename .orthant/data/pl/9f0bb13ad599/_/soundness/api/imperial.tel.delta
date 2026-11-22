@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     Układ mówi też, czy jest przeznaczony do zapisu: `readOnly` ma wartość `true` dla
++     `/boot`, `/efi`, `/sys`, `/usr` i wszystkiego pod nim oraz dla katalogów poszczególnych
++     procesów pod `/proc`. Pięć układów `Home`, które specyfikacja XDG Base Directory pozwala
++     użytkownikowi przenieść, stosuje się do jej zmiennych: `Home.Config` to `$HOME/.config`,
++     chyba że `XDG_CONFIG_HOME` ma wartość będącą ścieżką bezwzględną – wtedy jest to ta
++     ścieżka.
+
+@ 0 24 0 14cf3883801275e111a4d6e9e704a313
++         `BaseLayout.Dir` układu jest przekazywany zagnieżdżonym w nim układom jako wartość
++         kontekstowa – w ten sposób zagnieżdżony obiekt zna katalog, w którym się znajduje.
++         Segmenty są przechowywane od najbardziej wewnętrznego.
++     entry #home   czy ścieżka jest względna wobec katalogu domowego użytkownika
++     entry #path   segmenty ścieżki, od najbardziej wewnętrznego
++     entry #/   katalog potomka, według jego nazwy
++     entry #render   ścieżka bezwzględna jako tekst, przy danej ścieżce katalogu domowego
++         `Dir`, który nie jest względny wobec katalogu domowego i nie ma segmentów, daje `/`.
++   entry #readOnly   czy katalog jest zwyczajowo wyłączony z zapisu przez programy
++       `true` dla `/boot`, `/efi`, `/sys`, `/usr` i wszystkiego pod nim oraz dla katalogów
++       `/proc`; `false` dla każdego układu pod `Home`.
++   entry #Topic   nazwy katalogów od tego węzła aż do korzenia, jako typ krotki
++   entry #absolutePath   ścieżka bezwzględna układu, jako tekst
++       Wymaga `Environment` i `System`. Układ, który wskazuje `#variable`, jest wartością tej
++       zmiennej, jeśli jest ona ścieżką bezwzględną. W przeciwnym razie układ pod `Home`
++       odczytuje zmienną środowiskową `HOME`, bez końcowego `/`, i zgłasza
++       `Environment.Error`, jeśli nie jest ustawiona.
++   entry #variable   zmienna środowiskowa, która przenosi układ, jeśli taka istnieje
++   entry #relocation   miejsce, w które `#variable` przenosi układ: jej wartość, jeśli jest ścieżką bezwzględną
++   entry #dir   `BaseLayout.Dir` tego układu, przekazywany zagnieżdżonym w nim układom
++   entry #apply   ścieżka bezwzględna układu, jako typ ścieżki wybrany przez wywołującego
++       `layout[Path on Linux]()` tworzy z `#absolutePath` wartość dowolnego typu, który jest
++       `Instantiable across Paths from Text`. Wymaga `Environment` i `System` oraz zgłasza
++       `Environment.Error` (dla układu `Home`, którego `HOME` nie jest ustawiona) i
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` i `Local.State` to katalogi, które
++       specyfikacja XDG Base Directory pozwala użytkownikowi przenieść, i każdy z nich jest tam,
++       gdzie wskazuje jego zmienna, gdy ma ona wartość będącą ścieżką bezwzględną: `Home.Config`
++       to `$XDG_CONFIG_HOME`, a w przeciwnym razie `$HOME/.config`. Wartość względna lub pusta
++       jest ignorowana, jak wymaga specyfikacja. Pozostałe układy są stałe.
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   katalog pamięci podręcznej użytkownika, `$XDG_CACHE_HOME` lub `~/.cache`
++   entry .Config   katalog konfiguracji użytkownika, `$XDG_CONFIG_HOME` lub `~/.config`
++   entry .Local   lokalny prefiks instalacji użytkownika, `~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         Odpowiednik `/usr` dla pojedynczego użytkownika, przechowujący jego własne programy,
++         biblioteki, dane i stan.
++     entry .Bin   własne pliki wykonywalne użytkownika, `$XDG_BIN_HOME` lub `~/.local/bin`
++     entry .Lib   własne biblioteki użytkownika, `~/.local/lib`
++     entry .Share   własne dane aplikacji użytkownika, `$XDG_DATA_HOME` lub `~/.local/share`
++     entry .State   stan aplikacji użytkownika, `$XDG_STATE_HOME` lub `~/.local/state`

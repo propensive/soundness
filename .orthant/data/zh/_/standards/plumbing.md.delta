@@ -1,0 +1,241 @@
+orthant 2 language
+
+@ 0 1 0 08ce036e0b6bdbaf0d7a0bb393a97a6d
++ # 强制转换辅助函数
+
+@ 0 8 0 115ab87544bc155f082b776ee699ca2f
++ Soundness 通过抽象进行转换，而不是手工转换。
++ 值通过类型类（`Showable`、`Encodable`、`Decodable`、`Convertible`）、通过一个指明其所跨越边界的桥接（`.tt`、`.s`、`List.stdlib`、`Array.unsafeFrozen`），或者通过类型自身的方法来改变类型或形状。
++ *强制转换辅助函数*是一个小小的 `def`——私有的，或者局限于某个方法内部——它的全部工作就是把一个值变成下一行所需要的类型。
++ 它不是解决方案；它是一个证据，表明某个抽象缺失、不够用，或者存在却没有被使用，而且它正是过于简单或错误的转换（本应使用 `show` 却用了 `toString`，或者经由 `String` 的一次往返丢掉了编码）在无人审查的情况下混入的地方。
++ 为掩盖类型不匹配而写的 `given Conversion` 也是如此。
+
+@ 0 8 0 0458be4a46395a3e1a4afd399d7e25de
++ `flare assess plumbing` 负责找出它们。
++ `.pyrocosm/flare/config.tel` 中的规则 `plumbing` 指定了模型、下面列出的各项标准及其权重，并以本文件作为评分细则；flare 从语法树中收集候选定义，让模型分批回答这些标准，并把每个判定以 BinTEL 形式记录在 `refs/notes/flare-assess/plumbing` 下的 git notes 中。
++ 定义由其*位点*标识——路径、外围定义和签名，从不使用行号——它的判定以其规范化文本的摘要为键，因此只要定义的文本、本细则、各项标准和模型保持不变，一个定义就只被评判一次。
++ `make plumbing` 运行它；`flare assess plumbing --show HEAD` 打印为某个提交记录的排名。
+
+@ 0 1 0 144361c702019e661cb8fffac7cade8d
++ ## 用什么替换什么
+
+% 2 1 0 07781d3a6a565c640701402a0a79c361
+
+@ 0 9 0 0c3b3c764691220b0b06491e4665a25c
++ column  手写的
++ column  改用
++ row  `x.toString.tt`，一个 `render(x): Text` 或 `name(x): Text` 辅助函数  `x.show`（`Showable`），或 `x.in[Text]`
++ row  `private inline def kebab(s: String): Text = Text(s)`  在调用处使用 `.tt`
++ row  `text.s.replace(…).nn.tt`，任何 `.s … .tt` 往返  gossamer 中的某个 `Text` 操作，或者新增一个
++ row  `Integer.parseInt(hex.s, 16)`  `hex.deserialize[Hex]`，或 `text.as[Int]`（`Decodable`）
++ row  `Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  在作用域中有 `CharEncoder` 时使用 `text.in[Data]`
++ row  容器上手写的 `toList`/`toMap`  一个 `Convertible` 实例，然后使用 `.to[List]`/`.to[Map]`
++ row  把一个枚举的每个构造器映射到另一个枚举的某个构造器的 `match`  `Enumerable`/`Extractable`，或源类型上的一个方法
+
+% 0 1 0 083fb7c2b8bb492706d54f549de3a982
+
+@ 0 6 0 1f030cfc1bc849810f18e4b77c1a4d2f
++ row  手工把 `Option` 转为 `Optional`  `.optional`
++ row  把 `try … catch` 转为 `Optional`  `safely`
++ row  用 `asInstanceOf` 得到 stdlib 集合  集合上的 `stdlib`，如 `List.stdlib`
++ row  在从 0 开始和从 1 开始的索引之间来回转换  `.z`、`.u`、`.n0`、`.n1`
++ row  同一个 `tag(out, char) = out.append(char.toByte)` 被复制到六个原子化器中  `Scribe[Byte]` 上的一个扩展方法
++ row  `given Conversion[Int, Expression] = int => Number(int.toDouble)`  一个 `Expression.apply(Int)` 或一个 `Decodable`
+
+% 1 1 0 0dc2eef590fc25c9087e7f5ce6e69dd0
+
+@ 0 3 0 1b79b445c8bb88b21f7a24589a71e0a3
++ 修复的办法从来不是保留辅助函数并给它改个名。
++ 要么抽象已经存在，调用处去使用它；要么抽象不存在，由拥有目标类型的库来增加它——放在伴生对象中，这样无需导入就能解析到（参见 `.claude/CLAUDE.md` 中关于 given 放置的规则）。
+
+@ 0 1 0 1291dd24bf9b520315f13d5e2d6421b8
++ ## 什么可以保留
+
+@ 0 2 0 039c4cca884be7b016581a797a5f48b3
++ 一个小函数并不仅仅因为其结果类型与参数类型不同就成为强制转换辅助函数。
++ 有四种形状是正当的。
+
+@ 0 10 0 1fc701b7097dc81c03b2d97d55214297
++ 1. **可能失败的解析和解码。** 一个会抛出错误、进行缓解、返回 `Optional`，或者本身是 `Decodable`/`Parsable` 实例的函数体，做的正是抽象所要做的工作。
++ 2. **计算。** `toJulianDay`、`convertBitDepthsToSymbols`、CRC、位字段提取：这是对值的算术运算，而不是对它的重新包装。
++ 3. **只跨越一次的边界。** 在 Soundness 与 JDK、WASI 或 Scala.js 交汇之处，在需要它的调用中内联地使用单个 `.tt`、`.s`、`.nn`、`List.stdlib` 或 `Array.unsafeJvm`。仅仅为了给这次跨越*命名*而存在的辅助函数才是坏味道；跨越本身不是。
++ 4. **带有证明的提取。** 为了规避编译器崩溃（`wildApprox`、`FunProto` 缓存）而从 lambda 中提取出来的局部 `def`，要在上一行带一条注释指明该崩溃，就像 `stratiform.internal.scala` 中的 `liftText` 那样。正是这条注释使它得到豁免。
+
+% 0 1 0 08a45d97b92961c310443f284f6ec89a
+
+@ 0 1 0 0a100cbaa8664b4b1484226b39753f0e
++ ## 评分细则
+
+@ 0 6 0 0abfd4652d11e64c14933fc2c5d8f635
++ 你要为 Soundness 代码库中的 Scala 3 方法定义打分。
++ 每个候选者都是一个小方法（或一个 `given Conversion`），它可能是一个*强制转换辅助函数*：一个其全部工作就是改变某个值的类型或形状的函数，顶替了本应使用的某个抽象。
++ 你会看到定义及其上方两行上下文，以及一个标题行，给出驱动程序计算出的事实（种类、调用处数量、重复情况）。
++ 只根据所显示的文本进行判断。
++ 不要追踪引用，不要猜测你看不到的代码，也不要杜撰 API。
+
+@ 0 4 0 0f7a7982b74296201b5afe436ac4d3cf
++ 对每个候选者，用 `true` 或 `false` 回答下面的每一项标准。
++ 只根据代码作答；分值仅供参考，由驱动程序求和，因此不要计算总分。
++ S2 和 S3 所提到的**适配器列表**恰好是以下这些，以及任何裸构造器调用 `Name(…)` / `new Name(…)`：
+
+% 2 1 0 1e23bd8637f098d905186c48eff87b4c
+
+% 0 1 0 069071ae9eb66d8705c4fc2b57073247
+
+% 0 1 0 10abbb31fac470a40f5272f950efa316
+
+% 0 1 0 04214ae8929ab5470786a3eccae258b2
+
+% 1 1 0 033f1c32d80e569b17c30235b8a99879
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 0 1 0 1903fd676b8450580bf447e6c5c885a9
+
+@ 0 17 0 0e05fb0bfd343dd401071a56232def83
++ column  标准
++ column  以下情况回答 `true`
++ column  分值
++ row  S1  单一表达式  函数体是一个表达式：没有 `val`、`if`、`match`、`{…}` 代码块、循环或第二条语句  +2
++ row  S2  仅有适配器  函数体中的每个调用都在适配器列表上或是字段访问，没有算术运算，除字符集或算法名称（`"UTF-8"`、`"SHA-256"`）外没有字面量  +3
++ row  S3  往返  一条调用链既离开又重新进入某种表示：`.s … .tt`、`.toString … .tt`、`.stdlib … .to[…]`、`Array.unsafeJvm … Array.unsafeFrozen`，或围绕一次 Java 调用的 `.s … .nn.tt`  +3
++ row  S4  转换动词  名称以 `to`、`from`、`as`、`make`、`mk`、`convert`、`lift`、`wrap` 或 `unwrap` 开头并后跟一个大写字母，或者恰好是 `text`、`string`、`bytes`、`number`、`decimal`、`hex`、`key` 或 `node`  +1
++ row  S5  现有操作的同义词  名称是 `toList`、`toMap`、`toSeq`、`toArray`、`text`、`show`、`render`、`str`、`string`、`bytes`、`optional`、`orNull`，或返回类型名称的小写形式  +2
++ row  S6  纯转发  函数体是对某一个方法或构造器的单次调用，按顺序原样传递参数，其中可能有一个参数被施加了一个适配器  +3
++ row  S7  一对一阶梯  函数体是一个 `match`，其中每个分支都是 `pattern => Constant` 或 `pattern => Wrap(binding)`，没有守卫，也没有其他逻辑  +2
++ row  S8  仅有形状的返回类型  声明的返回类型是 `Text`、`String`、`Data`、`Array[Byte]`、`List[…]`、`Map[…]`、`Seq[…]` 或 `Unit`  +1
++ row  S9  单个参数  方法恰好接受一个值参数  +1
++ row  S10  转换 given  声明是一个 `given … Conversion[A, B]`（当此项为 `true` 时，S4、S5 和 S6 回答 `false`）  +3
++ row  X1  处理失败  函数体包含 `raise`、`abort`、`mitigate`、`safely`、`lest`、`Optional`、`Unset`、`.or(`、`try`、`panic`，或一个带守卫的分支  −3
++ row  X2  进行计算  函数体对值进行算术运算、使用 `0`、`1` 或基数以外的数字字面量、拼接三个或更多部分、循环或递归  −3
++ row  X3  有注释说明理由  定义上或其上一行的注释提到 `compiler`、`crash`、`macro`、`boundary`、`workaround`、`JVM` 或 `Java`  −2
++ row  X4  编解码器族名称  名称以 `read`、`write`、`parse`、`decode`、`encode`、`serialize` 或 `deserialize` 开头  −2
+
+% 1 1 0 0688c462558e17231c1640ef5af93097
+
+@ 0 3 0 0085533bd01fa70d1cb393ea58d6f6d3
++ 然后只从以下词汇中选择一个 `replacement`——即调用处应当改用的抽象——如果无法判断则选 `none`。
++ 各条目以空格分隔，但 `inline at call site` 是单个条目：
+
+% 2 1 0 05ed5d9ac9283fd60fb817a0b5db77e4
+
+% 0 1 0 02959b3bf631169e1ab4b50ef030415b
+
+% 0 1 0 1802b44b90f7d04a1e448e7a498bb2e4
+
+% 0 1 0 0f3c3112183c0a771a01186b4f0cc4a8
+
+% 0 1 0 01420cc4e4f017e2187098d048c947f0
+
+% 1 1 0 03fddfc979282cbc05e034c916f3e252
+
+@ 0 1 0 0d2c4b10ee77f65e19eff6a317fccdfd
++ 最后给出一句话的 `reason`，引用函数体中起决定作用的片段。
+
+@ 0 1 0 10bc71774229126d01269e0b4f876055
++ ### 输出
+
+@ 0 1 0 08152ab1013a22aa07df4134192ec7e7
++ 返回一个 JSON 数组，每个候选者一个对象，按给定顺序排列，除此之外不返回任何内容：
+
+% 0 1 0 169dd671eb57630c0371b3518946361b
+
+% 0 1 0 07cc27e2d218795d08cccc85a87f9f76
+
+% 0 1 0 1311a3b6e7e1f68f038c056ba24c8f2c
+
+% 0 1 0 121be430bc8ba18d15e748661d1d066c
+
+% 0 1 0 05671ff61c5741180a2a54dc75048785
+
+% 0 1 0 1c94d4a8994875f10ffcd259c20bcde2
+
+% 0 1 0 17caab2e3d549d9c1773010d5d06dcbd
+
+% 1 1 0 14e2c39b3d50aa541fde636e687d2145
+
+% 0 1 0 04bce149f69e92cb19b2d1170c717336
+
+@ 0 3 0 09c0fda9877124eb16bc1367c1102955
++ flare 根据这些布尔值重新计算分数（小模型的算术不可信），加上它自己的信号，并对照词汇表校验 `replacement`，因此杜撰出来的 API 无法进入普查。
++ 它会加上规则的 `signal` 行：
+
+% 2 1 0 09d78df2d57aa5b5170752fec1106faa
+
+@ 0 10 0 0a4c3f45f35134ba1af4a3d9ab07e970
++ column  信号
++ column  条件
++ column  分值
++ row  `local`  局部 `def`  +2
++ row  `private`  `private` 定义  +1
++ row  `calls 1`  作用域中有一个调用处  +2
++ row  `calls 2`  作用域中有两个调用处  +1
++ row  `calls 4+`  作用域中有四个或更多调用处  −1
++ row  `duplicate`  函数体（参数改名后）逐字重复出现在另一个定义中  +3
++ row  `one-liner`  整个定义在一行内  +1
+
+% 1 1 0 0f2d255e1200720118f88e484804fbdd
+
+@ 0 1 0 07c68ab8a7761a9a13572b6f277fe514
++ 普查从总分最高处开始，按区段处理：
+
+% 2 1 0 113ac38ff5fd24b5045d4220ee58f271
+
+@ 0 6 0 0f58fea31582dfc61b286e3ea4f45bc1
++ column  区段
++ column  总分
++ row  **确定**  10 或以上
++ row  **可能**  5 到 9
++ row  **较弱**  0 到 4
++ row  **正当**  低于 0
+
+% 1 1 0 0388a6626839f4b41dfd4643f44c2474
+
+@ 0 1 0 0deb34ee4e7a892a05669a9350343b70
++ ## 实例分析
+
+% 2 1 0 008b11b121951aaf08f8790be0bb5fc2
+
+@ 0 10 0 0f0c18a52ae3e2600b6226bab9e113d8
++ column  候选者
++ column  特征
++ column  模型
++ column  驱动程序
++ column  总分
++ row  局部的 `def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  S1 S2 S3 S5 S8 S9  12  局部，一个调用处，一行  17
++ row  `private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)`，出现在六个文件中  S1 S2 S6 S8  9  私有，重复，一行  14
++ row  `private inline def kebab(s: String): Text = Text(s)`  S1 S2 S6 S8 S9  10  私有，两个调用处，一行  13
++ row  `private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt`  S1 S3 S8 S9  7  私有，一个调用处，一行  11
++ row  `def monthName(month: Mensual): Text = month.toString.tt`  S1 S2 S3 S8 S9  10  公开，一个调用处  12
+
+% 0 1 0 1e2f8e0769b00a9e052361f4af6a6dc1
+
+@ 0 3 0 02f203b99ca8a34f1c050c4dc0af6e7b
++ row  `private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match …`  S4 S7 S9  4  私有，一个调用处  7
++ row  `def toJulianDay(date: Date): Int = … arithmetic …`  S4 S9 X2  −1  三个调用处  −1
++ row  `def parseHeader(text: Text): Header raises ParseError = …`  打分前即按名称排除  —  —  —
+
+% 1 1 0 1fa8cbfc7c33bd220f2fd53bed3dafca
+
+@ 0 3 0 00ce6f23f0023c3f1b998086ffbe0aac
++ 前五个属于普查的确定区段：纯粹的重新包装，每一个都有已经存在的替代。
++ 阶梯属于可能区段，由人来决定是为枚举增加一个方法还是一个 `Extractable`。
++ 最后两个正是排除规则和 X 标准要拦在外面的东西。
+
+@ 0 1 0 160e0bac3849e02e11ce3cc3ed77dc58
++ ## 陷阱
+
+@ 0 2 0 0537697278df75fa0bd68ab547a71a1e
++ 在没有 `Convertible` 实例的类型上手写的 `toList` 会得到高分，也应当如此：修复办法是增加这个实例，而不是因为没有别的东西可用就保留辅助函数。
+
+@ 0 3 0 140b790b80d018251dd14081cb2e8efb
++ 为了给一个公开函数起一个内部名称而存在的私有转发函数（`private def number = Css.number`）会被评为纯转发。
++ 它通常确实是；例外情况值得写一条注释，而这条注释随后会触发 X3。
+
+@ 0 3 0 09f7d16f7f9ea7d7044f3ce6b26b824b
++ 提取器只在以下情况接纳公开定义：`given Conversion`、往返，或者不含逻辑的单行适配器链；私有或局部定义则还可以凭借转换动词，或短函数体中的适配器调用而被接纳。
++ 用规则的 `gate` 行来放宽或收紧范围。
+
+@ 0 4 0 08073831ad758c7d0052682ceb59fff6
++ 模型是不确定的。
++ 普查是一个供工作参考的排名，而不是一个需要辩护的计数；布尔值被记录下来，以便对照代码审查令人意外的分数，而判断按定义的摘要保存，因此重新运行时只会就发生变化的定义询问模型——或者在细则变化之后，把每个定义都询问一次。

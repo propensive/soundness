@@ -1,0 +1,4201 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 02b05110f9dc2e960375fafccfa2a68a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f749811918fd3351e3dd3bb1ce7742c
++ info   日期、一天中的时刻、瞬时、时间跨度、时区、历法和重复，在代码编译时得到检查
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 0a1cd9ff1c28500b12d8fd570d9a3cc4
++     _Aviation_ 用五种不同的值来表示时间，每种都是独立的类型，因此混淆它们而产生的错误根本写不出来：日历上的**日期**（`Date`，一个精确到日的 `Timestamp`）、时钟上的**一天中的时刻**（`Clockface`）、物理时间线上的**瞬时**（`Instant over Unix`、`Instant over Tai`、`Instant over Monotonic`）、两种**经过的时间**——以国际单位制秒计的 `Duration`，以及由年、月、周、日、小时和分钟组成的日历 `Timespan`——以及**时刻**，即在某个命名 `Timezone` 中的挂钟时间读数（`Moment`），它是民用时间与物理时间之间唯一的桥梁。
++     只要一个值在编写代码时已知，就会在那时得到检查：`2012-Feb-30` 无法编译，`13.00.am`、`tz"Mars/Olympus"` 或 `ts"2024-13-01"` 也一样。
+
+% 2 1 0 1ba7bf71ad5212d718f34b2fc049bd1f
+
+% 3 1 0 0f4790216de4f2681ffb85ce2d0d5ce9
+
+% 4 1 0 1440aa795ae2191603c2695be2353d11
+
+% 5 1 0 042564cfe191dced02675bd5af3b1db9
+
+% 2 1 0 08df9c8ce46c01f810a55951a01a4286
+
+% 0 1 0 02f855c5ad667c9b0eae63bd49c48c86
+
+% 0 1 0 07bfd23c0be02632180f4ab02c5d621c
+
+% 1 1 0 169d3cf562b95b790e88c199eb968a41
+
+% 0 1 0 0870f2cc53410d190dad687bef41e810
+
+% 0 1 0 040650a31109142e115946c6bf9f328c
+
+% 0 1 0 0417db9cfe75cf0110ee5381766b9bd9
+
+% 1 1 0 065d337ad427696019759c31ce68166a
+
+@ 0 7 0 142d4cd7cc4416441807339cccd32052
++     日期写作 `year-Mon-day`：`2024 - Jan` 是一个 `Monthstamp`（通过 `Month.monthOfYear`），而 `Monthstamp - 15` 是 `Date`，由 `monthstampSubtraction` 运算符在编译时根据作用域中的 `RomanCalendar` 进行验证——作用域中没有时则使用格里高利历。
++     由运行时计算的值构建的日期要在 `Tactic[Moment.Error]` 下经由历法的 `jdn`（或 `Date(year, month, day)`）构建，而 `ts"…"` 插值器检查 ISO 8601 或 RFC 1123 字面量，根据其精度给出 `Year`、`Monthstamp`、`Date`、`Timestamp` 或 `Moment`。
+
+@ 0 7 0 0af49429e0b6c6ff0dbd183377663328
++     每个历法中的每个日期，底层都是同一样东西：一个儒略日数。
++     `Calendar` 只是用年、月、日来标记它的一种方式，因此 `calendars` 包在同一个 `Date` 之上提供了格里高利历、儒略历、科普特历、埃塞俄比亚历、伊斯兰历、波斯历、印度国定历、希伯来历和法国共和历，佛历和民国纪年的年份偏移，序数（年内第几日）历，以及教皇和英国的儒略历到格里高利历的切换。
++     每个历法的月份类型都是一个不同的 `MonthRadix`，因此 `3*IslamicMonth` 只能加到以伊斯兰历读取的日期上。
+
+@ 0 9 0 1e4bf6e3ddb559ea0e7c4fccda12ef12
++     民用时间中没有唯一正确答案的规则都是**方针**，通过按名称导入 given 来选择，而不是静默地取默认值：`2024-Jan-31 + 1*Month` 是什么意思（`monthEnds`，完全没有默认值），平年中的 2 月 29 日是什么（`nonexistentLeapDays`），挂钟读数落在夏令时开始的跳跃间隙中时该怎么办（`gapPolicies`，默认为 `GapPolicy.pushForward`），不足一天的算术是否计入闰秒（`leapModes`，默认为 `LeapMode.lenient`），以及裸 `Instant(…)` 在哪条时间线上计数（`chronometries`）。
++     一周从哪天开始、哪几天是周末，由 `Hebdomad`（`hebdomads`）决定，而节假日是一个 `Holidays` 值，两者一起使 `date + WorkingDays(5)` 有意义。
+
+@ 0 9 0 1e2536c656f48c9e0fbf2cfd11da7922
++     渲染也以同样的方式组合。
++     `Date` 通过 `dateFormats`（或其各自独立的部分 `dateEndianness`、`dateNumerics`、`dateSeparators` 和 `yearFormats`）显示，`Clockface` 通过 `timeFormats`（或 `hourFormats`、`timeMeridiems`、`timeNumerics`、`timeSeparators` 和 `timeSpecificities`）显示，`Month` 通过 `monthFormats`，`Weekday` 通过 `weekdays`，`Timespan` 通过 `timespanFormats` 以相对形式（"in 18 minutes"）显示，`Duration` 通过 `durationFormats` 以紧凑形式（`1h 0m 5s`）显示；`instantDecodables` 和 `durationDecodables` 从文本中读回瞬时和时长。
++     仅有 `import soundness.*` 时，这些都不在作用域中，因为通配符导入不导入 given：每一个都要按名称导入，例如 `import dateFormats.iso8601DateFormat`。
+
+@ 0 6 0 049de351b924002d04ebba549e2889d4
++     当前时间通过 `Clock`（`now()`、`today()`）读取，其伴生对象的默认值读取系统挂钟时间；经过的时间通过 `MonotonicClock`（`monotonic()`）读取；测试绑定 `given Clock = Clock.fixed(Instant(0L))`，时间便静止不动。
++     重复发生的事件是 `Recurrence`（ISO 8601 重复区间，`rec"R5/2024-01-01/P1D"`）和 `Rrule`（RFC 5545 日历规则），两者都是 `Recurrent`，因此 `occurrences`、`until`、`within` 和 `following` 对两者都适用。
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     该库有两个组件：
+
+@ 0 7 0 122741830f12ebfe05c15407a28c9387
++     - `aviation.core`——以上所有内容，面向 JVM、Scala.js 和 Scala Native。`Clock.current` 和 `MonotonicClock.current` 这两个 given 读取 `System.currentTimeMillis` 和 `System.nanoTime`；时区规则来自 `java.time`（而 `Tzdb` 可解析 IANA 数据库自身的源文件，以获得比平台更新的规则）。
++     - `aviation.wasi`——`clocks.wasiClock` 和 `clocks.wasiMonotonicClock`，它们通过 `wasiApis.wasiClockApi` 读取 WebAssembly 组件的 `wasi:clocks` 接口，用于编译到 Wasm 目标的代码。
+
+@ 0 3 0 0fe77205fe0720d61ac06c87ddef7f20
++     所有内容都导出到 `soundness` 总括包，这里的每个选择包都与总括包自身的同名包合并，因此通常的开头是 `import soundness.*` 后接 `import calendars.gregorianCalendar`。
+
+% 0 1 0 176567218226d6c61062e3d4a710393a
+
+% 0 1 0 15ee4e291138df42009991fb56b8d321
+
+% 0 1 0 171f98797a4589741deb5e9b2454f7f8
+
+% 0 1 0 1331e2e90b1565e611c4cda835c6fe01
+
+% 0 1 0 12809efbf92db3f410af792fd824fd01
+
+% 0 1 0 084cbf8d741371a9191eefce896868ca
+
+% 0 1 0 0a9c299427e59fb8098a74426cba84e0
+
+% 0 1 0 00417fe65833833c1146e4133dab86ca
+
+% 0 1 0 1a9d7a86a6272f56060ef17a39ad8a9f
+
+@ 0 6 0 1ae082f1831e349d1be1c31e69994ea2
++ entry .Date   日历上的一天：一个 `Timestamp in Day`，以儒略日数保存
++     `Date` 是类型别名 `Timestamp in Day`——一个 `Form` 为日精度、一天中的时刻被钳制为午夜的 `Timestamp`——因此日期可用于任何使用时间戳的地方，每个 `Timestamp` 扩展方法（`jdn`、`year`、`month`、`day`、`weekday`、`yearDay`、`anniversary`、`monthstamp`、`in`、`addDays` 以及比较操作）都适用于它。
++     对象 `Date` 声明在隐藏的 `timestampInternal` 中，那里列出了它的成员。
+
+@ 0 9 0 18e98b7ce68e84b01307673b5f74b12a
++     字面量日期写作 `2024-Jan-15`，并在代码编译时得到检查：该月份必须有这一天，依据作用域中的 `RomanCalendar`，没有时则依据格里高利历，因此 `2012-Feb-30` 和 `2011-Feb-29` 是编译错误，而 `2012-Feb-29` 不是。
++     操作数必须是字面量（或者对于历法，是 `calendars.gregorianCalendar`、`julianCalendar`、`papalCutover` 或 `britishCutover` 之一，可以通过局部别名）：运行时计算的年或日会以指明它的消息中止展开，这样的日期改用 `Date(year, month, day)` 构建，当该日期在作用域中的 `Calendar` 里不存在时，它会在 `Tactic[Moment.Error]` 下抛出 `Moment.Error`。
++     `Date.julianDay(n)` 直接由儒略日数构造日期，不作检查。
+
+% 2 1 0 1a3c0eb86490646403d5b6a18a30db0e
+
+% 3 1 0 051e1b48a2f875c7034861c71234a813
+
+% 4 1 0 0271712ca9cd2e3606b7e728757f46a1
+
+% 5 1 0 0689988fe32c89860ee522d76d66c339
+
+% 0 1 0 0e22e87235b9730e0d0037c30083418d
+
+% 0 1 0 001c6fc9468de5841fe0d3ff3279d660
+
+% 0 1 0 06edffd58377460b0796319c57660ccd
+
+% 0 1 0 1cd330ef8e133aab0bfc70a912665d5f
+
+% 0 1 0 0b9143074885a0530629f6dd48dfe641
+
+% 0 1 0 14b7cf6d9d7ca2fc044efe9db7a5605d
+
+% 0 1 0 045c524fb824671e06020a64720497ab
+
+% 0 1 0 1cc26bd0460f1a2e093f0dc24d61dcf1
+
+% 0 1 0 0e4ba21bfca44fe81156998d38203a97
+
+% 0 1 0 1bc2174639bdb5eb0c8bba51b42945b2
+
+% 0 1 0 183f1c91cf01c71b16426d5b09c87534
+
+% 1 1 0 0b7621f167081d97159e7f9502e7be64
+
+@ 0 5 0 044d06fde1fa5d930ff85ecc9e064efd
++     日期可以按 `Timespan` 移动（`date + 3*Day`、`date + 2*Week` 无需任何东西；`date + 1*Month` 或 `date + 1*Year` 需要一个来自 `monthEnds` 的 `Disambiguation`，因为结果可能不存在），按 `WorkingDays` 移动（需要一个 `Hebdomad` 和一个 `Holidays`），也可以按整日作为 `Quanta[Days[1]]` 移动；两个日期相减得到 `Quanta[Days[1]]`。
++     `Timestamp` 伴生对象持有这些 given。
+
+@ 0 6 0 09a871906b2335451e26f8d05be90610
++     文本：`t"2011-12-13".as[Date]` 解码由数字组成的 `year-month-day`（月和日为一位或两位数字），其他任何内容都会抛出 `Moment.Error`；`date.encode` 是 ISO 形式的 `2024-01-15`，需要一个 `RomanCalendar`；`date.show` 需要一个 `Endianness`、一个 `Date.Numerics`、一个 `Date.Separation` 和一个 `Years`，或者一个把这四者捆绑在一起的 `dateFormats` given；而日期在检视时显示为其 ISO 格里高利形式 `2024-01-15T00:00:00`，完全不需要上下文。
+
+@ 0 9 0 0c30f7ec03fd23e712362c722da6f362
++ entry .Timestamp   一个日期和一天中的时刻，不带时区，精度体现在其类型中
++     `Timestamp` 是不透明类型 `timestampInternal.Timestamp`，在此导出：毫秒网格上一个不带时区的点，打包进一个 `Long`，其值为儒略日数乘以一天的毫秒数，再加上当天的毫秒数。
++     它的精度是幻影类型成员 `Form`，用 `in` 设置：`Date` 是 `Timestamp in Day`，`Monthstamp` 是 `Timestamp in Month`，因此日期或月份都是时间戳，每个时间戳扩展方法都适用于它们。
++     `Timestamp` 不带时区，也不表示任何瞬时；要把它落实为 `Instant`，需经过 `Moment`（`timestamp.in(timezone).instant`，或在作用域中有 `Timezone`、`RomanCalendar` 和 `GapPolicy` 时用 `timestamp.instant`）。
+
+% 2 1 0 01cf57366425979c17b5e3f041626ea9
+
+% 3 1 0 10c22f8671bf0b750abf96a10fc3f747
+
+% 4 1 0 1bd6c17d7effe2ff1dab176121767552
+
+% 5 1 0 0c20d245656e23840f372e88341df9dc
+
+% 0 1 0 02398bebf91427e807ade8d85cf2151e
+
+% 0 1 0 19345ce1e366a69c09d107e3bbdddab1
+
+% 0 1 0 18a81fa35d138fe80a24ca67eca124b1
+
+% 0 1 0 1bb1b31b68d908041d70d4ccf9e43a08
+
+% 0 1 0 19e864ef6f4c66b708149aa4419a2b28
+
+% 0 1 0 0c078fc5f7ef155108c1953784988393
+
+% 0 1 0 050409f8e58a9b4602f039ec547c058b
+
+% 0 1 0 019a2188e0de039f09b94fbba03a4bcf
+
+% 1 1 0 12f3969d2f34b77a0fad489e44bfa392
+
+@ 0 7 0 0098136f2ca05e941ff991abec28b585
++     两个时间戳相减得到由日、小时、分钟和秒组成的 `Timespan`（`Timestamp.timestampSubtractable`，即 `Difference` 类型），并可用 `<`、`<=`、`>` 和 `>=` 或通过 `Timestamp.timestampOrderable` 比较。
++     `t"…".as[Timestamp]` 读取 `yyyy-MM-dd HH:mm:ss`（中间为空格或 `T`），抛出 `Timestamp.Error`；`show` 根据作用域中的 `Clockface is Showable` 和 `Date is Showable` 渲染出"时间, 日期"。
++     时间戳在检视时显示为其 ISO 格里高利形式 `2023-05-28T14:30:59`，仅当毫秒不为零时才带毫秒。
+
+@ 0 3 0 038f43dc33c04dd5015b41e7f371a196
++     伴生对象的 given——解码器、各个 showable、日期和月份算术、工作日算术、`Orderable` 和 `Comparable` 实例以及 `Timestamp.Error`——都列在隐藏的 `timestampInternal` 下，扩展方法也是如此。
+
+@ 0 8 0 12c565dcee4701a80d0188e6dada9cc3
++ entry .Instant   物理时间中的一个点，位于由其类型指明的时间线上：`Instant over Unix`
++     `Instant` 是不透明类型 `protointernal.Instant`，在此导出：一个 `Long`，其含义——它在哪条时间线上计数、以何种分辨率——是幻影类型成员 `Transport`，用 `over` 设置。
++     `Instant over Unix` 计数自 1970 年起的 POSIX 时间毫秒数，忽略闰秒；`Instant over Tai` 计数国际原子时的毫秒数；`Instant over Monotonic` 计数系统单调时钟自任意原点起的纳秒数。
++     未细化的 `Instant` 在其时间线上是抽象的，很少直接使用。
+
+% 2 1 0 1499489654af73581d878ff3e4a97703
+
+% 3 1 0 0a811b3a310a033d02253836f88bf3f1
+
+% 4 1 0 14dd330757fb164110ce8672b35af711
+
+% 1 1 0 1e84099b4c06e79e0fc1a7cf472ba092
+
+% 1 1 0 097fa73babafcfba0802189c25d9a9ea
+
+% 0 1 0 0123e1832d002dff1ec19571a8168c01
+
+% 0 1 0 1d81951e09da58f00c8afe57a9539ab5
+
+% 0 1 0 05803e62a402b3b013736da8ab693403
+
+% 0 1 0 045a7d654faea2100893911d5d13df47
+
+% 0 1 0 0503558b4b4e8f2e0ec2974315dfb7f9
+
+% 0 1 0 1f653256112b7b21148d5e0bf72cc07b
+
+% 1 1 0 0e183291d96c4b421d66ff0e4a685561
+
+@ 0 10 0 11e281f875d0914f0cd42e4da2d34362
++     `Instant(millis)` 从作用域中的 `Chronometry.Ambient` 获取其时间线，这就是为什么大多数程序以 `import chronometries.unixChronometry` 开头；`Instant.of[Unix](millis)` 则直接指明时间线。
++     瞬时可以按任意时间 `Quantity` 移动（`+ 1*Hour`、`- 30*Second`），同一时间线上的两个瞬时相减得到 `Duration`；跨时间线相减是编译错误，而 `over[Tai]` 或 `over[Unix]` 通过各自的 `Chronometry` 进行转换。
++     `in(timezone)` 把瞬时置于一个时区中，成为 `Moment`，而 `timestamp` 用作用域中的 `Timezone` 做同样的事。
++     `Instant.Min` 和 `Instant.Max` 是时间线的两端，瞬时在检视时显示为 `⧗0`，带一个沙漏，使它不会被误认为它擦除后的 `Long`。
++     伴生对象的 given 和扩展方法列在隐藏的 `protointernal` 下。
+
+@ 0 7 0 1fcecef976fe3bd01b03bf29231247b3
++ entry .Duration   经过时间的物理量：`Quantity[Seconds[1]]`
++     `Duration` 是类型别名 `protointernal.Duration`，一个定量的 `Quantity[Seconds[1]]`，在此导出。
++     它是两个瞬时之间经过的时间，在任何地方、任何时候都相同，并且有意不作为 `Timespan`，后者计数的日历单位的长度取决于其锚定的位置。
++     `Duration(millis)` 由毫秒构造一个时长，`duration.value` 是它的秒数；`duration.from(instant)` 是从该瞬时开始、持续该时长的 `Period`。
+
+% 2 1 0 041f28dc2016832e00ece0e9c2a4f198
+
+% 3 1 0 13ba6d9ec910eb160f8e5d6a40b1e2f4
+
+% 4 1 0 147602b3d921882905ced679bc41fd55
+
+% 0 1 0 16758eeae1e9cb3d1e8a178ad390e307
+
+% 0 1 0 189b4d1aa94e0ac514e08c1770770a19
+
+% 0 1 0 1f5f3c72e1b04da31833fa4429023311
+
+% 1 1 0 18bc5aea3fe0e161130dcb07e7bdb1ff
+
+@ 0 4 0 1576603bb742101a0edfea80fff6034d
++     `durationDecodables.compactDurationDecodable` 从文本中读取 `30m`、`1.5h`、`250ms` 或裸的 `90`，其他任何内容都会抛出 `Duration.Error`（错误 `↯/s.73.5`，_`text` is not a recognized duration_），而 `durationFormats.compactDurationFormat` 把时长显示为 `1h 0m 5s`。
++     该别名、伴生对象及其 `Error` 都在隐藏的 `protointernal` 下。
+
+@ 0 9 0 0b3a93fa0dd72f3d11631868b408451e
++ entry .Year   一个日历年，作为不透明的 `Int`
++     `Year` 是不透明类型 `internal.Year`，在此导出。
++     `Year(2024)` 构造一个年份，`year()` 读回其数值。
++     年份可以加减整数（`Year(2024) + 5`），可以排序（`Year(1999) < Year(2000)`），可以从文本解码（`t"2024".as[Year]`），显示为裸数字，检视时显示为 `2024ʸ`，带一个后缀，使该数字不会被误认为 `Int`。
++     `Year` 也是 `Timespan` 的不规则 `Radix`：`2*Year` 是两年的时间跨度，而 `date + 1*Year` 需要一个来自 `monthEnds` 的 `Disambiguation`，因为给 2 月 29 日加一年的结果是一个方针问题。
++     伴生对象的 given 列在隐藏的 `internal` 下。
+
+@ 0 7 0 1966e29f5c3ca6a608b19f3aa9fce916
++ entry .Day   月份中的一天，作为不透明的 `Int`
++     `Day` 是不透明类型 `internal.Day`，在此导出。
++     `Day(15)` 构造一个日，`day()` 读回其数值；它可以从文本解码，显示为数字，检视时显示为 `15ᵈ`。
++     `Day` 也是 `Timespan` 的规则 `Radix`：`3*Day` 是三天的时间跨度，它可以不借助任何方针加到任何日期上，因为一天总是一天。
++     它不同于 `WorkingDays`，后者是工作日的计数。
++     伴生对象的 given 列在隐藏的 `internal` 下。
+
+@ 0 8 0 002339b54c26ee1816f18a3f76316f34
++ entry .Anniversary   不带年份的月和日：生日、节日
++     `Anniversary` 是不透明类型 `internal.Anniversary`，在此导出，写作 `Mar - 14`（通过 `Month.subtractable`）或 `Anniversary(Mar, Day(14))`。
++     把它应用于某一年就得到那一年的日期 `(Mar - 14)(Year(2024))`，这需要作用域中有一个 `RomanCalendar` 和一个 `Anniversary.NonexistentLeapDay` 方针，以处理唯一一个并非每年都存在的周年日——2 月 29 日：`nonexistentLeapDays.roundDownLeapDay` 落在 28 日，`roundUpLeapDay` 落在 3 月 1 日，而 `raiseErrorsLeapDay` 抛出 `Moment.Error`。
++     该方针没有默认值。
+
+% 2 1 0 11a9f143e3e0e9e81af8176d86fa8cf1
+
+% 3 1 0 0940b81bdc240e4a14e30e992f2418f2
+
+% 4 1 0 1b453327a5dcdbd90d8adf88ca348bfc
+
+% 0 1 0 0fa5b1a2656aa1d00d89554ba8272646
+
+% 0 1 0 05992a2a92fc575d19fc67b4e7b56085
+
+% 0 1 0 0332d6a101ba51771a050c3606bd2cc4
+
+% 0 1 0 04ce125f1945e1ef10c3596d6fdf85d2
+
+% 0 1 0 10e97d0a44fae7bc1e769ba83b2f6abb
+
+% 1 1 0 1b077ad9829fe0bc1b66846fdf34ca22
+
+@ 0 3 0 07ca90266958aa5a05f68021b41b2558
++     周年日依据作用域中的 `Endianness`、`Months` 和 `Date.Separation` 显示（`14 March` 或 `March 14`），检视时显示为 ISO 8601 不带年份的形式 `--03-14`。
++     `date.anniversary` 是任意日期的周年日。
++     伴生对象列在隐藏的 `internal` 下。
+
+@ 0 6 0 1bb3ab5de5a6949d15ac8109165394b8
++ entry .WorkingDays   工作日的计数，用于加到日期上或从日期中减去
++     `WorkingDays` 是不透明类型 `internal.WorkingDays`，在此导出。
++     `WorkingDays(5)` 是五个工作日，`date + WorkingDays(5)` 或 `date - WorkingDays(1)` 把日期移过相应数量的、既不是周末（按作用域中的 `Hebdomad` 定义）也不是作用域中 `Holidays` 所列节假日的日子，落在一个工作日上；两个 given 都是必需的。
++     它检视时显示为 `5ʷᵈ`。
+
+% 2 1 0 13548320b90675a20710183d74667610
+
+% 3 1 0 175af1dcb45318140c827f0beb4bbb6e
+
+% 4 1 0 194cab2a07f3c1e71a117381efb1066a
+
+% 0 1 0 0b722a08c9e21e0a089447fdadb923d5
+
+% 0 1 0 0798aab0cee0594a186ddf9a296ed7fa
+
+% 0 1 0 0b435109454d640d002ea6465da6a757
+
+% 0 1 0 12334672fd674179103552c4d544af3b
+
+% 0 1 0 071fc4d9b0eb3a6a05520630a395fd94
+
+% 0 1 0 0e04a75484feae2d012e377964a3c854
+
+% 1 1 0 0e150d6a37d97efd03d6f3047ed6aa73
+
+@ 0 1 0 11d4406951b02c680ccc6bd727447b48
++ entry .Base60   整数 0 到 59，作为字面量类型的联合：分钟或秒
+
+% 1 1 0 1eb2b109014006620b03a22b68741750
+
+@ 0 9 0 10f0adbe3bb8673c0c949cdcceeb2b33
++       `Base60` 是类型 `0 | 1 | … | 59`，即 `Clockface` 的 `minute` 和 `second` 的类型，因此 `Clockface(14, 30, 59)` 用字面量可以通过类型检查，而 `Clockface(14, 60, 0)` 不行。
++       `Base60(int)` 把整数按模 60 包装（因此 `Base60(61)` 是 `1`，`Base60(-1)` 是 `59`），而 `Base60.unapply` 匹配范围内的 `Int`，解析出的字段就是这样变成 `Base60` 的：`(hour, minute, second).absolve match case (Base24(h), Base60(m), Base60(s)) => Clockface(h, m, s)`。
++       `base60Extractable` given 以同样的方式从文本中提取它。
++   entry .apply   把整数按模 60 归约为 `Base60`
++   entry .unapply   把 0 到 59 之间的 `Int` 匹配为 `Base60`
+
+@ 0 1 0 04a838c18bb3a5e207c1073f41702197
++ entry .Base24   整数 0 到 23，作为字面量类型的联合：小时
+
+% 1 1 0 003578318dda25da1e8e9269a2fb0c19
+
+@ 0 5 0 10269a9e244968a1167a0215f83e566f
++       `Base24` 是类型 `0 | 1 | … | 23`，即 `Clockface` 的 `hour` 的类型。
++       `Base24(int)` 把整数按模 24 包装（因此 `Base24(25)` 是 `1`），而 `Base24.unapply` 匹配范围内的 `Int`；`base24Extractable` 从文本中提取它。
++   entry .apply   把整数按模 24 归约为 `Base24`
++   entry .unapply   把 0 到 23 之间的 `Int` 匹配为 `Base24`
+
+@ 0 4 0 1f58345446fd68490d53e95361b5e19a
++ entry .base60Extractable   从读作范围内整数的文本中提取 `Base60`
++     一个顶层 given：在作用域中有从文本提取 `Int` 的提取器时，`text match case As[Base60](m) => …` 匹配含有 0 到 59 之间整数的文本，否则为 `Unset`。
++     与任何顶层 given 一样，它按名称导入：`import soundness.base60Extractable`。
+
+@ 0 3 0 032fa0f59051c8c31b9439fa4cdf023c
++ entry .base24Extractable   从读作范围内整数的文本中提取 `Base24`
++     一个顶层 given，是 `base60Extractable` 针对小时的对应物：`As[Base24](h)` 匹配含有 0 到 23 之间整数的文本。
+
+@ 0 8 0 0522de79005c904c056de6192558aeb3
++ entry .MonthRadix   某个历法的月份基数，每个历法各不相同
++     `MonthRadix` 是一个不规则的 `Radix`——与其下一级单位之比不恒定——代表某一历法的月份：`Month`（格里高利历）、`IslamicMonth`、`CopticMonth`、`EthiopianMonth`、`HebrewMonth`、`IndianMonth`、`PersianMonth` 和 `FrenchRepublicanMonth` 都扩展它。
++     `Timespan of IslamicMonth.type` 是以伊斯兰历月份计数的跨度，它只能加到在 `IslamicCalendar` 下读取的日期上：在格里高利历下相加是编译错误，因此不同历法的月份绝不会混用。
+
+@ 0 1 0 19c7b5f4339fcffa0a35460a61e6edbf
++ entry .Week   周的基数：`2*Week` 是 `Timespan of Week.type`
+
+% 1 1 0 0431dea961f6ca7916cc38fc25d81091
+
+@ 0 3 0 14ad878d17c8892c15546fa433d270f4
++       一个规则的 `Radix`（始终为七天），因此 `date + 2*Week` 不需要方针。
++       `Int is Multiplicable by Week.type` 是使 `n*Week` 成为时间跨度的 given。
++   entry .multiplicable   `n*Week`，作为 `Timespan of Week.type`
+
+@ 0 1 0 01d28a08fcd6c8280087f59b77aabdc8
++ entry .Hour   小时的基数，以及 `Timestamp in Hour` 的精度标记
+
+% 1 1 0 1ae86a97852f1ac715f34e91790df198
+
+@ 0 5 0 01646b97156b8f6f02d8ca3bf52a87e0
++       `Hour` 既是一个规则的 `Radix` 对象，使 `2*Hour` 成为可加到 `Instant`、`Timestamp` 或 `Moment` 上的 `Timespan of Hour.type`，又是一个擦除的标记特质，使 `Timestamp in Hour` 指明一个精确到小时的时间戳。
++       `Multiplicable` given 在其伴生对象中。
++   entry .multiplicable   `n*Hour`，作为 `Timespan of Hour.type`
+
+@ 0 1 0 0442c871e40348651f3d6bc2a59a0987
++ entry .Minute   分钟的基数，以及 `Timestamp in Minute` 的精度标记
+
+% 1 1 0 08a504fffad2635f036a9bef39dac48d
+
+@ 0 2 0 0ce3a250bc1154a71d4d69d239e3218b
++       与 `Hour` 相同：一个规则的 `Radix` 对象（`15*Minute`）和一个擦除的标记特质。
++   entry .multiplicable   `n*Minute`，作为 `Timespan of Minute.type`
+
+@ 0 4 0 0cdb24e9e730ee931eab00b05c363215
++ entry .Second   `Timestamp in Second` 的精度标记
++     一个没有成员的擦除标记特质，使精确到秒的时间戳有一个可以指明的类型。
++     时间跨度中秒的基数是 quantitative 的 `Second` 单位，因此 `30*Second` 是秒的 `Quantity`，它作为 `Duration` 加到瞬时或时刻上。
+
+@ 0 6 0 1897f33638835180046ae467d16a125e
++ entry .Tai   国际原子时的标记：`Instant over Tai`
++     一个指明 TAI 时间线的擦除标记特质，该时间线不间断地计数每一个国际单位制秒。
++     `Chronometry.tai` 是它的（恒等）计时体系，`Resolution.tai` 是它的毫秒分辨率；`chronometries.taiChronometry` 使它成为裸 `Instant(…)` 值的时间线。
++     `instant.over[Tai]` 通过加上截至该瞬时累积的闰秒，把 Unix 瞬时转换到它上面。
+
+@ 0 6 0 0553bcb587dc39cb1ddcc17932998f2c
++ entry .Unix   POSIX 时间的标记：`Instant over Unix`
++     一个指明 Unix 时间线的擦除标记特质——自 1970-01-01T00:00:00Z 起的毫秒数，忽略闰秒，这正是每个系统挂钟所读取的。
++     `Chronometry.unix` 通过 `LeapSeconds` 在它与 TAI 之间转换，`Resolution.unix` 是它的毫秒分辨率，`Clock` 在其上产生瞬时，而 `chronometries.unixChronometry` 使它成为裸 `Instant(…)` 值的时间线。
+
+@ 0 6 0 1318c86386a303c410a362834839f5bd
++ entry .Monotonic   单调系统时钟的标记：`Instant over Monotonic`
++     一个指明 `System.nanoTime` 读数时间线的擦除标记特质：纳秒分辨率（`Resolution.monotonic`），任意原点，没有 `Chronometry`，因为它与挂钟时间没有固定关系。
++     `Monotonic` 瞬时可以与另一个比较、相减，也可以按 `Duration` 移动，但绝不能置于时区中，也不能转换到另一条时间线；`monotonic()` 读取一个这样的瞬时。
+
+@ 0 7 0 0c5f65fc5ee727b2196fde8496b79a0f
++ entry .Occurrence   在时钟回拨的重叠时段中，`Moment` 指的是重复的挂钟时间中的哪一次
++     时钟回拨时，有一小时的挂钟时间会出现两次，其中的 `Moment` 指明相隔一小时的两个瞬时。
++     `First` 是较早的那个，采用转换之前的偏移；`Second` 是较晚的那个，在转换之后。
++     除非另行给定，`Moment` 都以 `Occurrence.First` 构建；对于只出现一次的时间，落实时会忽略出现次序；而 `instant.in(timezone)` 会为落在重叠时段较晚一侧的瞬时记录 `Second`，使该时刻能落实回其来源的瞬时。
+
+% 2 1 0 0970ac7627ff27490afebe55428d009b
+
+% 3 1 0 0a7f6e59956801620ac1341fccb31576
+
+% 4 1 0 1650c4b10e32c1ad0e251124c0eb0984
+
+% 0 1 0 078fa25f723e0f38107d3ce1981b5cb0
+
+% 0 1 0 081ba7c1f30d807c19ebb17f13768c8d
+
+% 0 1 0 19e4e8d309d6509b13990e6b32912ae7
+
+% 0 1 0 0f1d6946e201543d0e58dc9b3f4ead47
+
+% 1 1 0 1b202ea256a75afc0b4f017e502466fe
+
+@ 0 5 0 0a2e910717c78db512c36c83fedb6f70
++ entry .Leap   `Moment` 是否为插入的闰秒，即 UTC 一天中的第 61 秒
++     `Clockface` 的秒是 `Base60`，因此闰秒 `23:59:60` 被存储为 `23:59:59`，同时把时刻的 `leap` 设为 `Inserted`；其他所有时刻都是 `None`。
++     只有 `Moment` 会把它落实或显示为第 61 秒：`ts"2016-12-31T23:59:60Z"` 就是这样的时刻，而 `moment.tai` 落在该闰秒所占据的 TAI 秒上。
+
+@ 0 6 0 00f7aa8160d81d0c183b2bac309cdd64
++ entry .am   由 `7.25.am` 这样的字面量得到的一天中的时刻，在代码编译时得到检查
++     `Double` 字面量上的内联扩展方法：`7.25.am` 是 `Clockface(7, 25, 0)`，`12.00.am` 是午夜，`0.00.am` 也是。
++     字面量小数点后必须恰好有两位数字（分钟），小时最多为 12，分钟小于 60：`7.8.am`、`7.585.am`、`7.88.am` 和 `13.00.am` 都是编译错误，各有各的消息。
++     该时间总是精确到分钟；秒要用 `Clockface(h, m, s)`。
+
+@ 0 3 0 0077b03ef7a0ed59040f14da992bbed5
++ entry .pm   由 `7.25.pm` 这样的字面量得到的一天中的时刻：下午
++     与 `am` 相同，但晚十二小时：`7.25.pm` 是 `Clockface(19, 25, 0)`，`12.00.pm` 是正午。
++     `15.30.pm` 是编译错误，因为十二小时制时钟的小时最多为 12。
+
+@ 0 4 0 013718835c8b105f0d3ca4855be3d4da
++ entry .now   当前瞬时，从作用域中的 `Clock` 读取
++     `now()` 是 `Instant over Unix`，即作用域中 `Clock` given 的读数。
++     伴生对象中的 `Clock.current` 读取 `System.currentTimeMillis`，无需导入；测试绑定 `given Clock = Clock.fixed(Instant(99999L))`，使 `now()` 每次都相同。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0123448804e888ea1986af40f304f9c6
+
+% 1 1 0 153c00015a0334290655c59224ef9d88
+
+% 2 1 0 148024589e7946b104b12b61a42946b5
+
+% 3 1 0 1fa4e85e489946e019b59a40bb21fb0d
+
+% 0 1 0 02d02d3025613ec21e461d5f668ca84f
+
+% 0 1 0 0bc7e1ac7bcdc7db07582b19e96d4e13
+
+% 0 1 0 0ce47e750d98b82b027b7216e55f5736
+
+% 1 1 0 0f6f1517824ae9181541a892519368b7
+
+% 2 1 0 0b070b24a0b518800bd5bd1e655bce66
+
+% 3 1 0 016ab9f9637d6d0a1d85b84a7901b973
+
+% 0 1 0 01cd5d92e3eb5cec16655fcfeb04b503
+
+% 0 1 0 0d89d928b8984e191ee2d334eef132c8
+
+% 0 1 0 11aecb423b4b055f14db85ff461af7ef
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 097566ca9261157816f6b54ab65b3b6f
++ entry .monotonic   单调时钟的读数，用于测量经过的时间
++     `monotonic()` 是 `Instant over Monotonic`，即作用域中 `MonotonicClock` given 的读数：伴生对象中的 `MonotonicClock.current` 读取 `System.nanoTime`，而 `clocks.wasiMonotonicClock` 读取 Wasm 组件的单调时钟。
++     该读数具有纳秒分辨率和任意原点，因此只能与另一个读数比较或相减，得到 `Duration`；它不能置于时区中。
+
+% 2 1 0 17a6ecbad9328f1109056e0538f6d850
+
+% 3 1 0 13467f69a952946d02bdb7e53fc841a0
+
+% 0 1 0 1dd28a4288828e130a7308473393edbf
+
+% 0 1 0 077c77b6100909ae168d6ceb59bb0dbe
+
+% 0 1 0 1600f8ba6f07a9191a66cf76d5696440
+
+% 1 1 0 06d64845729754e710e1f628cb475414
+
+@ 0 3 0 18149bad880eecc909653f0b07d36893
++ entry .today   当前日期，依据作用域中的 `Timezone` 和 `RomanCalendar`
++     `today()` 从作用域中的 `Clock` 读取 `now()`，将其置于作用域中的 `Timezone` 中，并取其日期，以作用域中的 `RomanCalendar` 读取：三者都是必需的。
+
+% 2 1 0 113b878131ee72460a051a9ac9100d52
+
+% 3 1 0 05c0ea8edaa9ca74022220f5b36830c7
+
+% 4 1 0 013ae54dcfb9c4e01558326c92358324
+
+% 2 1 0 1e5ca16d5f7124a81247c4a35a91e06b
+
+% 0 1 0 13d4ed966ae2b71f0ab124ceb1399891
+
+% 0 1 0 0cc1feba85867e490c56a0b4572f9ab0
+
+% 0 1 0 1aa3a39d7aa36e390b6999a6d937a6c3
+
+% 1 1 0 1a1b97c74ffbbb520defd693b0c29235
+
+@ 0 5 0 0a48a0747fba67140b32d0dad6bdc398
++ entry .tz   `tz"…"` 插值器：一个 `Timezone`，在代码编译时对照数据库检查
++     `tz"Europe/London"` 是一个 `Timezone`，编译器已确认其名称是 `java.time` 数据库所知的时区，因此拼错的时区是编译错误：_`Europe/Lundon` is not a valid timezone identifier_。
++     该插值器不接受 `$` 替换；只在运行时才知道的名称用 `Timezone(name)` 或 `text.as[Timezone]`，会抛出 `Timezone.Error`。
+
+@ 0 7 0 1c7fdd612a3fb8840c105f38a9bb0c0f
++ entry .dur   `dur"…"` 插值器：作为 `Timespan` 的 ISO 8601 时长，在代码编译时得到检查
++     `dur"P1Y2M3DT4H5M6S"` 是一年两个月三天四小时五分钟六秒的 `Timespan`，在代码编译时解析：`P` 后接 `nY`、`nM`、`nW`、`nD` 中的任意项，`T` 之后接 `nH`、`nM`、`nS` 中的任意项（秒可以带小数），至少要有一个分量。
++     `T` 之前的 `M` 是月，之后的是分钟。
++     不是时长的文本是编译错误，而 `t"P1Y".as[Timespan]` 在运行时进行同样的解析，抛出 `Timespan.Error`。
+
+@ 0 3 0 0ed2f8013d97c5c20ee0b3f996fed099
++ entry .ts   `ts"…"` 插值器：年、月、日期、时间戳或时刻字面量，取决于其精度
++     `ts"…"` 在代码编译时解析 ISO 8601 或 RFC 1123 字面量，其结果类型通过透明的 `tsInterpolator` 跟随字面量的精度：
+
+% 2 1 0 1da4106aca6611f511b8e8bae6cbb4db
+
+% 3 1 0 14eedaeeb9acca6613208ff9fe293e25
+
+% 0 1 0 14c34638e1a143ea1c309e2cd5c86a30
+
+% 0 1 0 000c238e9e7f8ac905e88d27d155f3e1
+
+% 0 1 0 1f5236f3b27b638d0832dea28f19867e
+
+% 0 1 0 1865ed58939fa0b61ff09b5c2fb85beb
+
+% 0 1 0 156c1acbc366d15b150eb1354b37cc66
+
+% 0 1 0 05e08c0785e75f2a18c8fc399c5e7ddb
+
+% 0 1 0 139d182481ed9f2a144b8862fac06189
+
+% 1 1 0 1245e7362108b9301d3a02d484c43a86
+
+@ 0 7 0 17c0b6695bfc4e071ec2793087ef98e5
++     日期对照格里高利历验证（`ts"2024-02-30"` 是编译错误：_2024-2-30 is not a valid date in the Gregorian calendar_），时间对照时钟验证（`25:00` 会失败），时区对照 `java.time` 验证。
++     小数秒保留到纳秒，可以用空格代替 `T`，而闰秒 `23:59:60` 只在带时区时才被接受（它只相对于 UTC 存在），得到一个 `leap` 为 `Leap.Inserted` 的 `Moment`。
++     RFC 1123 字面量总是得到 GMT 中的 `Moment`。
++     该字面量不接受 `$` 替换。
+
+@ 0 8 0 0d9a942b29483392032b8b5ee5a3549a
++ entry .rec   `rec"…"` 插值器：作为 `Recurrence` 的 ISO 8601 重复区间，在代码编译时得到检查
++     `rec"R5/2024-01-01/P1D"` 是 `Recurrence(2024-Jan-1, 1*Day, 5)`：一个重复计数（单独的 `R` 表示无界，`Rn` 表示 `n` 次出现）、一个起点和一个周期，以 `/` 分隔。
++     起点按 `ts"…"` 的方式解析，必须是日期或日期时间（裸年份或月份是编译错误），因此结果按字面量的精度为 `Recurrence of Date`、`of Timestamp` 或 `of Moment`；周期按 `dur"…"` 的方式解析。
++     出错的段会单独加下划线标出。
++     周期带有格里高利历月份基数的标签，因此迭代按月的重复需要一个来自 `monthEnds` 的 `Disambiguation`。
+
+% 2 1 0 057cfc0d831921710d66831e1a1c9343
+
+% 3 1 0 0f692fc0fb6b55b2047ce470903c32de
+
+% 4 1 0 1f22ecf664c60f74160d384c17145270
+
+% 0 1 0 01d50867a33bd4eb15711f28eca174a5
+
+% 0 1 0 1d1b0c22708dea2915152653befa63ca
+
+% 1 1 0 1c19da370768d6730488bf48bd217ed9
+
+@ 0 4 0 025e4c958d70d5ec1702907c13a9559c
++ entry .tsInterpolator   `ts"…"` 背后的 `Interpolable`，其结果类型由字面量选择
++     一个内联 given，其透明的 `interpolate` 通过宏 `internal.tsInterpolator` 把 `ts"…"` 字面量展开为 `Year`、`Monthstamp`、`Date`、`Timestamp` 或 `Moment`。
++     它位于该联合类型的隐式作用域中，因此 `ts"…"` 除了总括包之外不需要任何导入。
+
+@ 0 3 0 031eefe2fc6f9dc61cadede430990677
++ entry .recInterpolator   `rec"…"` 背后的 `Interpolable`，其结果类型由字面量选择
++     一个内联 given，其透明的 `interpolate` 通过 `internal.recInterpolator` 把 `rec"…"` 字面量展开为具有起点精度的 `Recurrence.Literal`。
+
+@ 0 5 0 12d9aec8ff5bf31b09c596e2d77cce37
++ entry .occurrences   任何 `Recurrent` 值的各次出现，作为惰性的 `Chain`
++     任何具有 `Recurrent` 实例的值——`Recurrence`、`Rrule`、`RecurrenceSet`——上的扩展方法，给出其有序的出现时间点流。
++     该链是惰性的，可能是无限的（没有计数的重复、没有 `until` 的规则），因此在遍历之前要用 `until`、`within`、`following` 或 `keep(n)` 加以限定。
+
+% 2 1 0 1c95cecbf0544dfc15df86712809d1ad
+
+% 3 1 0 0b16439228c91ea30bd2eda9490c89c5
+
+% 4 1 0 0a140e9c98924c0b1097ebccf83f792a
+
+% 0 1 0 1542d07961e7abdd02060b0f7a795178
+
+% 0 1 0 04e04942f3603a8e0f3424757922ba35
+
+% 1 1 0 1f371f323ded96d30249cd6722015a16
+
+@ 0 4 0 07d114eb507865d40399d4071f59a02a
++ entry .until   `Recurrent` 值严格早于某个界限的各次出现
++     `sequence.until(limit)` 保留比较结果小于 `limit` 的出现，需要出现类型的 `Comparable`（`Date`、`Timestamp`、`Instant` 和 `Moment` 各有一个；`Moment` 的那个需要 `RomanCalendar` 和 `GapPolicy`）。
+
+% 2 1 0 18207eca59a19954182dd742e40651a8
+
+% 3 1 0 0f9d0b61a4ed2f8a15a0c7ff448ff1b2
+
+% 4 1 0 0dc2ec90b037456e1288d1c2960d807c
+
+% 0 1 0 10a06434735161951c6ef206d4617d10
+
+% 1 1 0 153c6fdf35249c0b1e2c7aff2a4b03c7
+
+@ 0 3 0 07539926418602f80f3d306010fb9e94
++ entry .within   `Recurrent` 值落在半开 `Period` 内的各次出现
++     `sequence.within(period)` 跳过时段开始之前的出现，保留时段结束之前的出现，因此与 `Period` 一样，包含开始，不包含结束。
+
+% 2 1 0 12b0ae77beda0b321cd5391850132eb8
+
+% 3 1 0 025205649272827110b2838587257437
+
+% 4 1 0 1ecdd400e0e9d19c174b814dc625e4a0
+
+% 0 1 0 122558d84e53849510974c68f86c267c
+
+% 0 1 0 0781d35fec34c6dc0e9b95c3cb9190fb
+
+% 1 1 0 0bbe1e84b3ee93750547a4c7bb9b8cdc
+
+@ 0 4 0 02cca8edd87a3c8b1f12de808eecca81
++ entry .following   `Recurrent` 值严格晚于某个时间点的第一次出现，如果有的话
++     `sequence.following(point)` 是大于 `point` 的第一次出现，若序列先结束则为 `Unset`。
++     之前的出现被惰性地跳过，因此无界的重复也没有问题。
+
+@ 0 15 0 083f35c432d3377c0fa18bf2b7f2885b
++ entry .Jan   一月，从 `Month` 导出
++     `Month` 枚举的第一个分支，导出到包中，使日期可以写作 `2024-Jan-15` 而无需限定。
++     `Jan` 到 `Dec` 全部导出；`Month(1)` 和 `Month(t"Jan")` 从数字或名称得到同一个分支。
++ entry .Feb   二月，从 `Month` 导出
++ entry .Mar   三月，从 `Month` 导出
++ entry .Apr   四月，从 `Month` 导出
++ entry .May   五月，从 `Month` 导出
++ entry .Jun   六月，从 `Month` 导出
++ entry .Jul   七月，从 `Month` 导出
++ entry .Aug   八月，从 `Month` 导出
++ entry .Sep   九月，从 `Month` 导出
++ entry .Oct   十月，从 `Month` 导出
++ entry .Nov   十一月，从 `Month` 导出
++ entry .Dec   十二月，从 `Month` 导出
+
+@ 0 10 0 0853200ac53168491b0f3b4ba93e8edb
++ entry .Mon   星期一，从 `Weekday` 导出
++     `Weekday` 枚举的第一个分支，导出到包中，使 `Weekday.count(start, end, Sat)` 或 `WeekdayOrdinal(Mon, 3)` 无需限定。
++     `Mon` 到 `Sun` 全部导出。
++     哪一天开始一周、哪几天是周末，由作用域中的 `Hebdomad` 决定。
++ entry .Tue   星期二，从 `Weekday` 导出
++ entry .Wed   星期三，从 `Weekday` 导出
++ entry .Thu   星期四，从 `Weekday` 导出
++ entry .Fri   星期五，从 `Weekday` 导出
++ entry .Sat   星期六，从 `Weekday` 导出
++ entry .Sun   星期日，从 `Weekday` 导出
+
+@ 0 1 0 1de21d27ea687b5c0d9090ef1f12f111
++ entry .calendars   各种历法，每一种都是需要按名称导入的 given
+
+% 1 1 0 03e5f7498510ae950d4dd09aaa6ba637
+
+@ 0 5 0 0d24545ffbb35eb903a32f978f28b20d
++       每个日期都是一个儒略日数，而历法是把它读作年、月、日的一种方式，因此日期字面量、`date.year`、`date.month`、`date.day` 以及月份算术都会取用作用域中的 `Calendar`（或 `RomanCalendar`）given。
++       这一选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，要按名称导入一个，最常见的是 `import calendars.gregorianCalendar`。
+
+% 2 1 0 18c4d93fc0a32a2304b8f5d9a1609131
+
+% 0 1 0 1a980625daed4e501a022bebc6d5df99
+
+% 1 1 0 0969b0f3da21b8de0df817deb262b674
+
+% 2 1 0 1be6f71226500dcd104d2bf607190eca
+
+% 3 1 0 11aef15b839465fe120116f79e8369ac
+
+% 2 1 0 0be6e7f1246b5a561af265f1c61e4f68
+
+% 0 1 0 141c433dceca541b107e439f0b32a259
+
+% 0 1 0 0e95265aebec64c00cecd8bbf52472e1
+
+% 1 1 0 1222165f32fbb4d40ea82b5f378a0e88
+
+% 2 1 0 1cdad98be67c59c311cf8658343dd226
+
+% 3 1 0 09da5efc70dcb2f119f32a45b07e3c0c
+
+% 0 1 0 027cdc202351fcf507d0100c906a3505
+
+% 0 1 0 16bed220c41865240743ce91b8ececb9
+
+% 0 1 0 0241a37ddf59df101fe56b91e1bf8099
+
+% 1 1 0 167aee1afa84593d0a4ddb6941016219
+
+% 2 1 0 07450d085e87845f18ee1b4bf1820830
+
+% 3 1 0 0d18370368db8c8909ca340c6f0f3895
+
+% 0 1 0 020de4199e0cc5a412a326875de3c581
+
+% 0 1 0 1c36b0879da9c8240ffe1bdb8fff8269
+
+% 0 1 0 0c6c2f12a532ce8c1de7cdba516d22a2
+
+% 1 1 0 1ab19ea903e62b4d0eb4362a418db28d
+
+% 2 1 0 1b41a1995cd54efb0526b6e3432672d9
+
+% 3 1 0 1e3172a601a7ea0c142f3c9e00da4f03
+
+% 0 1 0 071fecf0438b5a9115c39b821aad0e5c
+
+% 0 1 0 0d2b48de745d966e06eacf0ae7753514
+
+% 1 1 0 14fa95f3f0b89771142562949ebd3d7b
+
+% 2 1 0 01c40b1af79371af09b09f8244fa2b57
+
+@ 0 7 0 06899818a61419ef0a37ff63a4dd0b91
++       历法也是一个值：`calendars.islamicCalendar.format(date)` 用该历法自己的月份名称渲染日期（`24 Ramadan 1420`），而 `calendar.jdn(year, month, day)` 由各部分构建日期，对历法中不存在的日期抛出 `Moment.Error`。
++       两种罗马历法和各切换历制都是 `RomanCalendar`，这正是 `today()`、`Moment` 和日期字面量所要求的；其他的都是普通的 `Calendar`，用 `calendar.annual(date)`、`mensual` 和 `diurnal` 读取，或者在绑定为作用域中的 `Calendar` 时通过 `date.year` 等读取。
+
+% 1 1 0 1c30775ad541fe1a009ab0bf3e28843b
+
+% 1 1 0 0a01b2176201c5c20fbe29ddc678cf3f
+
+% 1 1 0 1120029a9cfdef7014903916ddc0ec6f
+
+@ 0 45 0 001204115b4a37050f7863204eb3bb89
++   entry .gregorianCalendar   格里高利历，外推式：民用默认值
++       一个名为 `Gregorian` 的 `RomanCalendar`，其闰年是能被 4 整除但不能被 100 整除的年份，除非能被 400 整除。
++       它是外推式的，在 1582 年之前同样应用该规则；在实际使用的历法中，改历之前的日期归 `papalCutover` 或 `britishCutover` 处理。
++       作用域中没有其他 `RomanCalendar` 时，日期字面量和 `ts"…"` 依据它验证。
++   entry .julianCalendar   儒略历，每四年一个闰年
++       一个名为 `Julian` 的 `RomanCalendar`：每个能被 4 整除的年份都是闰年，因此它每四个世纪与格里高利历偏离三天，在它之下的 `1900-Mar-10` 与格里高利历下的同一字面量是不同的儒略日数。
++   entry .copticCalendar   科普特历，始于儒略历 284 年 8 月 29 日
++       一个 `CopticCalendar`：十三个 `CopticMonth`，其中十二个各三十天，另有较短的 `Nasie`。
++   entry .ethiopianCalendar   埃塞俄比亚历，始于儒略历 8 年 8 月 29 日
++       一个 `EthiopianCalendar`：采用科普特历的结构，有自己的纪元和 `EthiopianMonth`。
++   entry .islamicCalendar   表格式伊斯兰（希吉来）历，始于儒略历 622 年 7 月 16 日
++       一个 `IslamicCalendar`：十二个 `IslamicMonth`，交替为 30 天和 29 天，每三十年的周期中有十一个闰年。
++       它是算术历法，而不是观测历法。
++   entry .persianCalendar   波斯（太阳希吉来）历
++       一个 `PersianCalendar`，带有 `PersianMonth`。
++   entry .indianCalendar   印度国定（塞种）历，始于 1957 年 3 月 22 日
++       一个 `IndianCalendar`：塞种纪年等于格里高利年减 78，从 3 月 22 日开始（格里高利闰年时为 3 月 21 日），带有 `IndianMonth`。
++   entry .hebrewCalendar   希伯来历，阴阳历，闰年有十三个月
++       一个 `HebrewCalendar`：从 Tishrei 开始的 `HebrewMonth`，其中 `AdarSheni` 只出现在每十九年中的七个闰年里，年份长 353 到 385 天。
++   entry .frenchRepublicanCalendar   1793 年至 1805 年的法国共和历
++       一个 `FrenchRepublicanCalendar`：十二个各三十天的 `FrenchRepublicanMonth` 和 `Sansculottides`，始于 1792 年 9 月 22 日，采用算术闰年规则。
++   entry .buddhistCalendar   年份从公元前 543 年起算的格里高利历
++       `gregorianCalendar` 之上一个名为 `Buddhist` 的 `OffsetCalendar`，年份加 543，与泰国的纪年方式相同。
++   entry .minguoCalendar   年份从 1912 年起算的格里高利历
++       `gregorianCalendar` 之上一个名为 `Minguo` 的 `OffsetCalendar`，年份减 1911，与台湾的纪年方式相同。
++   entry .ordinalCalendar   年与年内第几日的历法，没有月份
++       `OrdinalCalendar` 对象：日期是一个年份和该年中的一天（1 到 366），用 `OrdinalCalendar(year, dayOfYear)` 构建。
++   entry .papalCutover   1582 年 10 月 4 日之前为儒略历，从 10 月 15 日起为格里高利历
++       一个名为 `Papal` 的 `Regime`，由两段组成：从时间开端起为儒略历，从儒略日 2299161 起为格里高利历。
++       其间的十天从来不是日期，因此在它之下 `1582-Oct-10` 是编译错误，`papalCutover.jdn(Year(1582), Oct, Day(10))` 抛出 `Moment.Error`，且 `(1582-Oct-4).jdn + 1 == (1582-Oct-15).jdn`。
++   entry .britishCutover   1752 年 9 月 2 日之前为儒略历，从 9 月 14 日起为格里高利历
++       一个名为 `British` 的 `Regime`：儒略日 2361222 之前为儒略历，从该日起为格里高利历，与英国及其殖民地采纳改历时一样，删去了十一天。
+
+@ 0 1 0 019f2eb2d79117000d554acb3ca7f031
++ entry .nonexistentLeapDays   平年中的 2 月 29 日是什么，一个需要按名称导入的 given
+
+% 1 1 0 09c8a647ea40b74301a214ea9b1e3a6a
+
+@ 0 9 0 1556c61e0bd07cf609e28242642422b5
++       把 `Anniversary` 应用于 `Year`，即 `(Feb - 29)(Year(2023))`，需要作用域中有一个 `Anniversary.NonexistentLeapDay`，以处理平年所缺少的那一个周年日。
++       没有默认值；要按名称导入这三者之一，并且只在日期不存在时才会查询它，因此闰年不受这一选择影响。
++   entry .roundUpLeapDay   2 月 29 日变为 3 月 1 日
++   entry .roundDownLeapDay   2 月 29 日变为 28 日
++   entry .raiseErrorsLeapDay   在平年中，2 月 29 日抛出 `Moment.Error`
++       在导入它的地方需要一个 `Tactic[Moment.Error]`，该 given 捕获它，并通过它抛出 `Moment.Error(_.Invalid(year, 2, 29, gregorianCalendar))`。
+
+@ 0 1 0 10cec447d0e30f9a1bb2d0b577925b8d
++ entry .monthEnds   日期加上月或年后日溢出时意味着什么，一个需要按名称导入的 given
+
+% 1 1 0 1221b4f16c3ab2d61817ad8ee9dabfa5
+
+@ 0 5 0 0390d4726e5680a21f4e5983e646a397
++       `2024-Jan-31 + 1*Month` 要求的是 2 月 31 日，`2024-Feb-29 + 1*Year` 要求的是 2025 年 2 月 29 日，两者都不存在。
++       由作用域中的 `Disambiguation` 决定，而且有意不提供默认值，因此在按名称导入其中之一之前，对日期进行月或年算术都是编译错误。
++       日和周的算术不需要它，因为它们从不溢出。
+
+% 2 1 0 126957b70c33b5bb01bdfaefbc583f43
+
+% 0 1 0 12b3d899cecbed930395dd8319dccd7c
+
+% 1 1 0 162402ce33cb46651b0e962e9e4aef7d
+
+% 2 1 0 15d9510b0869c8020ae9387a58af72aa
+
+% 3 1 0 0efce8979835bb3112a964677427f4f4
+
+% 0 1 0 0a4dc9de610d8cd40b1fc13ac478d77b
+
+% 0 1 0 1e9364252e5b95c319e0bb0b0081d32d
+
+% 0 1 0 11601beb499c5a501daecf5399a8971e
+
+% 0 1 0 01b0ccf23c5fd7bf0e49547c681f7877
+
+% 1 1 0 0d2da8b051ef1a3005caf31bab7c192e
+
+% 2 1 0 18ccfe64ab6568041193c6e3d5411ce1
+
+% 3 1 0 17cb702c6d375b84014b8c588d6b7f39
+
+% 0 1 0 064b581b97e47c971701ec1313b422f5
+
+% 0 1 0 05899a6291c0849e1e0ba0b140d98658
+
+% 0 1 0 1003837c355e29311b27cca1771a48e7
+
+% 1 1 0 0b2b5df5e3e80eac0087582b1163d491
+
+% 2 1 0 1310942988a38fe416a5e9146c990d24
+
+% 1 1 0 012bfda82b9d84e118c62812105d732c
+
+@ 0 5 0 00f926e21e0a1506195b8768d81f9726
++   entry .clampMonthEnd   超过月末的日变为该月最后一天
++   entry .overflowMonthEnd   超过月末的日按超出量溢出到下个月
++   entry .raiseMonthEnd   超过月末的日抛出 `Moment.Error`
++       在导入它的地方需要一个 `Tactic[Moment.Error]`，该 given 通过它抛出 `Moment.Error(_.Invalid(year, month, day, calendar))`。
+
+@ 0 1 0 1c234da6b5eb5f0218a221e78111a900
++ entry .gapPolicies   落在夏令时开始的跳跃间隙中的挂钟时间意味着什么，一个需要按名称导入的 given
+
+% 1 1 0 024a31659c0c46eb1f851c1f8f753c2d
+
+@ 0 5 0 1e3c440018b21a6a1fbb8d2a904be062
++       时钟拨快时，有一小时的挂钟时间从未出现，其中的 `Moment`——`Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London")`——必须以某种方式落实。
++       由作用域中的 `GapPolicy` 决定；伴生对象的默认值 `GapPolicy.pushForward` 保留旧的偏移，因此落在间隙之后不远处，与 `java.time` 的做法相同，而以下两个会覆盖它。
+
+% 1 1 0 03bc1d4a75d9cc1909376d4f08a69556
+
+@ 0 6 0 06aeacce260bbd101215fb2e1d8501bc
++   entry .pushBackwardGapPolicy   间隙中的时间被落实到间隙之前不远处
++       取 `backward` 候选：采用转换之后偏移的瞬时，它落在间隙开始之前不远处。
++   entry .rejectGapPolicy   间隙中的时间抛出 `Moment.Error`
++       在导入它的地方需要一个 `Tactic[Moment.Error]`，该 given 通过它抛出 `Moment.Error(_.Gap)`：_the wall-clock time does not exist in its timezone_。
+
+@ 0 1 0 1e3776698a27b3a005b2637ef84b8820
++ entry .leapModes   `Moment` 上不足一天的算术是否计入闰秒，一个需要按名称导入的 given
+
+% 1 1 0 07cf00bcc62ceee2181dc846eca95d53
+
+@ 0 5 0 13b4e474721cba6802716eea89770d99
++       在默认的 `LeapMode.lenient` 下，`moment + 2*Hour` 在没有闰秒的 POSIX 时间线上加两小时挂钟时间，因此其间的闰秒是不可见的。
++       导入 `exactLeapMode` 则通过 TAI 时间线加上两小时真实的国际单位制秒，使得跨越插入的闰秒时，结果会早一秒挂钟时间。
++       两者只在跨越某个历史闰秒瞬时时才会不同。
+
+% 0 1 0 1e3da17669b9edbc1fc72dd510361ca9
+
+@ 0 1 0 16058a17134291191133d3d0910e7f45
++   entry .exactLeapMode   不足一天的算术通过 TAI 计入真实的国际单位制秒
+
+% 1 1 0 01c75a2b16baf76808cdc7ba334a734c
+
+% 2 1 0 0358f35aca25794d09221da169e9b6f2
+
+% 3 1 0 17d06c2f61618ad70f3897227086e76b
+
+% 0 1 0 15a5fc2c0b42d7a108517646ca2bd1b0
+
+% 0 1 0 021c594b37a4b41b01f18fa2a8e9b89a
+
+% 0 1 0 13bbba35849540c008e4e151ecb26e36
+
+% 1 1 0 1401c804364dd8b7011401357701279c
+
+@ 0 1 0 18072fd6b82c531216b6dafee7a79235
++ entry .chronometries   裸 `Instant(…)` 计数所在的时间线，一个需要按名称导入的 given
+
+% 1 1 0 0bfa2d8c0bde43590c2e141743ca78ff
+
+@ 0 4 0 12c3ed1c0fa8d3600100aa6cf81d5d02
++       `Instant(millis)` 以及每个由 `Long` 构造瞬时的解码器，都从作用域中的 `Chronometry.Ambient` 获取其时间线，它指明结果的 `Transport`。
++       没有默认值：程序导入其中一个，几乎总是 `unixChronometry`，因为那是每个挂钟所读取的；之后再用 `instant.over[Tai]` 转换。
+
+% 1 1 0 1e2f6077fa79da461ef1d347fbfdca10
+
+@ 0 2 0 10888ed25ec360e30d0b346f93a5fed9
++   entry .unixChronometry   裸瞬时是 `Instant over Unix`：POSIX 毫秒
++   entry .taiChronometry   裸瞬时是 `Instant over Tai`：原子时毫秒
+
+@ 0 1 0 06feb45d6b0d040415a79ee6a947959f
++ entry .hebdomads   一周从哪天开始、哪些天是周末，按名称导入的 given
+
+% 1 1 0 1eab31902199ac930be7606b9e098d35
+
+@ 0 3 0 102ac17a0ea89a450017462c417e220a
++       `date.weekend`、`weekday.weekend`、`weekday.number`、`Weekday(ordinal)` 以及工作日运算 `date + WorkingDays(n)` 都会查询 `Hebdomad`。
++       没有默认值；按名称导入下列之一，或在局部定义一个 `Hebdomad`。
+
+% 1 1 0 1c4102d2bb2004591f359ec7836a853d
+
+@ 0 3 0 0c09505d10f8ba64146d80dad8d802f2
++   entry .europeanHebdomad   一周从星期一开始；星期六和星期日是周末
++   entry .northAmericanHebdomad   一周从星期日开始；星期六和星期日是周末
++   entry .jewishHebdomad   一周从星期日开始；星期五和星期六是周末
+
+@ 0 1 0 109afbc0b9ef5c3010d1fe4a1be5f152
++ entry .instantDecodables   如何从文本读取 `Instant over Unix`，按名称导入的 given
+
+% 1 1 0 1dbb16a198f9e581184a08f5a2692cc6
+
+@ 0 4 0 18914c5cd88d50f61f336b8b2e5fbc78
++       `t"…".as[Instant over Unix]` 需要该瞬时的 `Decodable`，这里提供两种标准格式。
++       每种都需要一个 `Tactic[Moment.Error]`，对不符合格式的文本抛出该错误，并附带格式、出错位置的偏移量，以及说明该处期望什么的 `Issue`。
+
+% 1 1 0 04e8c1b0582068c80647a15872142280
+
+% 1 1 0 118440ef762bf0720d5fae5ab6a00852
+
+@ 0 7 0 1e0d256ef6ded3c515e049e7933efaf9
++   entry .iso8601InstantDecodable   读取 ISO 8601 日期时间、日期、月份和周日期，带 `Z` 或偏移量
++       `Iso8601.parse`：`1994-11-06T08:49:37Z`、`2023-05-28T14:30:59.123+02:00`、基本格式 `20230528T143059Z`、`2023-W21-7T14:30:59Z`、日期 `2020-12-31` 或月份 `2012-11`（UTC 午夜）、只有小时或只有小时和分钟、最后一个字段带小数，以及闰秒 `23:59:60`，它会落到下一秒。
++   entry .rfc1123InstantDecodable   读取 RFC 1123 日期时间，`Tue, 17 Jun 2024 14:30:45 GMT`
++       `Rfc1123.parse`：HTTP 头部使用的格式，日为两位数字，带 `GMT`。
+
+@ 0 1 0 0fb66e87d081c11a0939438b55a0da21
++ entry .dateFormats   `Date` 如何显示，作为一整套惯例，按名称导入的 given
+
+% 1 1 0 0ae6ae605c4068810d728df8806857fc
+
+@ 0 6 0 1b23c0aef75fc34f1d110ea7450760e6
++       `date.show` 需要一个 `Date is Showable`，这里的每个 given 都是一个，它把一个 `Endianness`、一个 `Date.Numerics`、一个 `Date.Separation` 和一个 `Years` 打包成一套惯例。
++       对于未列出的惯例，改为从 `dateEndianness`、`dateNumerics`、`dateSeparators` 和 `yearFormats` 中各导入一个 given，`Timestamp.dateShowable` 会用它们组装出格式。
++       无论作用域内是哪种日历，年、月、日都按公历读取。
+
+% 2 1 0 092b3848f5be70100e1447075c3b78a9
+
+% 1 1 0 0e592c474ee3e93d165d17395395ab01
+
+% 2 1 0 166ca1644c4703220f8c246e4e71dc3e
+
+% 2 1 0 148de52e8adbd7a20eb3ace62c21a859
+
+% 3 1 0 16e7d3ee3c22e9cc12eab7403b57ef4f
+
+% 0 1 0 158cb7641088b6cc1cf2778e1cc027c5
+
+% 0 1 0 1b95faa1860be159143977d9daf8967f
+
+% 0 1 0 14e8a921c4048d95118c764b862b166d
+
+% 1 1 0 048dc40f6879d89415fae158ffa34c98
+
+% 2 1 0 0a7188fcaf2ca78f1e58d6655b570cc6
+
+% 3 1 0 1556e01ab8afafe10771841ca55f0621
+
+% 0 1 0 0f64e4b327538f66043c23e4395d6299
+
+% 0 1 0 09f2bf683ce074490b94532c0e1a6c4e
+
+% 0 1 0 012f862624441b4708bba5b99d9ae6bf
+
+% 1 1 0 17c611cdf37838730fb28c99fd09ca3c
+
+% 2 1 0 14b254a34c8bee4012b40b24fce3b60e
+
+% 3 1 0 1c49654584aa2798129d039808332a60
+
+% 0 1 0 0261766d746e2640062b8a237ba8f416
+
+% 0 1 0 1ada7a1dfcf8a22b02c84651e4b5c2b3
+
+% 0 1 0 0f4b37279e3a1dc803a9bb1c4d1fb718
+
+% 1 1 0 07236556d625511c09063dbab06659b8
+
+% 2 1 0 141007a82769d34d162f05becda77c9d
+
+% 3 1 0 1bb40bf46a9ba45203338045c5475551
+
+% 0 1 0 07c0e7a36ad1aeec191c25022a62728d
+
+% 0 1 0 143109eaaff8583d1f4e2460afb74a79
+
+% 0 1 0 18735bedf218559609bb53dd7b7d152d
+
+% 1 1 0 10860bcc538196491d205d54458a0291
+
+% 2 1 0 0347787e009cfdbb17f94018208d95ca
+
+% 3 1 0 07c78bb83974509f046dde6407874cb8
+
+% 0 1 0 1cece5a4a432d1af1cb0002acfd4d466
+
+% 0 1 0 1acad376465fae71037ca3abace34321
+
+% 0 1 0 0ccf6090b7b20f700bdd26d5e73a2fd1
+
+% 0 1 0 136a6ad27a3f930200cf3bf0306b11c1
+
+% 0 1 0 1e7aaf1fda6a9f9c1f94dd5e314a249d
+
+% 1 1 0 0890d9c6c89d202f0be9b888167df006
+
+% 2 1 0 02bf20c79fee03770c3e366823fcd5f0
+
+@ 0 5 0 1c0cbc52fe7e75a619d318dd3f6de702
++   entry .europeanDateFormat   日、月、年，各两位数字，以点分隔：`07.04.2025`
++   entry .americanDateFormat   月、日、年，以斜杠分隔：`04/07/2025`
++   entry .unitedKingdomDateFormat   日、月、年，以斜杠分隔：`07/04/2025`
++   entry .southEastAsiaDateFormat   日、月、年，以连字符分隔：`07-04-2025`
++   entry .iso8601DateFormat   年、月、日，以连字符分隔：`2025-04-07`
+
+@ 0 1 0 0d3f85ad8dd679c71d256505f3047b2a
++ entry .dateEndianness   所显示日期各字段的顺序，按名称导入的 given
+
+% 1 1 0 12e6ab9452206f650c84aef6e14db759
+
+@ 0 6 0 01f5a378ab30c4491f4da311a9e73df0
++       一个 `Endianness`，是 `Timestamp.dateShowable`、`Anniversary.showable` 和 `Timestamp.monthShowable` 组合渲染结果所用的四个部分之一。
++       按名称导入，或由 `dateFormats` 的 given 打包提供。
++   entry .bigEndian   年、月、日
++   entry .littleEndian   日、月、年
++   entry .middleEndian   月、日、年
+
+@ 0 1 0 029d3b69ff20103505d94ced93bb1472
++ entry .dateNumerics   所显示日期的月和日是否补齐到两位数字，按名称导入的 given
+
+% 1 1 0 12373d32cef6cea90e72e78f7309a54a
+
+@ 0 4 0 1c097e3c23489fa303e8244cd8082a79
++       一个 `Date.Numerics`：组合日期渲染的四个部分之一。
++       按名称导入，或由 `dateFormats` 的 given 打包提供。
++   entry .fixedWidthDateNumerics   月和日为两位数字：`04`、`07`
++   entry .variableWidthDateNumerics   月和日按需要的位数书写：`4`、`7`
+
+@ 0 1 0 1b4ec8ce4d0f79430ce29da3c75ea784
++ entry .dateSeparators   所显示日期各字段之间的字符，按名称导入的 given
+
+% 1 1 0 05b463ebd471c94615620da178b2d889
+
+@ 0 3 0 08faa0187040612814654bd13cb94583
++       一个 `Date.Separation`：组合日期渲染的四个部分之一，也用于 `Anniversary` 或 `Monthstamp` 的各字段之间。
++       按名称导入，或由 `dateFormats` 的 given 打包提供。
+
+% 0 1 0 0093f54bfecc21da09472f7e1cc99902
+
+% 0 1 0 1faa7b40d519c4cc15ee8c3a7e973a6e
+
+% 0 1 0 154ac0489e5889dc1b4c6c5719ddacd6
+
+@ 0 1 0 03d493e86c5ffa6f061dc0bcf4dc05e4
++   entry .spaceDateSeparator   一个空格
+
+@ 0 1 0 14e0e441c9f6ca690d95b5d743f7a1d9
++ entry .yearFormats   所显示日期的年份是四位还是两位数字，按名称导入的 given
+
+% 1 1 0 1166ec9f0e8885c51cbc2894802bc1e4
+
+@ 0 4 0 04616f686625591e1ea2c7b8962d9995
++       一个 `Years`：组合日期渲染的四个部分之一，`Timestamp.monthShowable` 也使用它。
++       按名称导入，或由 `dateFormats` 的 given 打包提供。
++   entry .fullYears   完整的年份：`2025`
++   entry .twoDigitsYears   年份对 100 取模，补齐：`25`
+
+@ 0 1 0 02e3c7de9dc9031b02e6f38b98e9bd60
++ entry .weekdays   星期几的名称，以某种语言和长度表示，按名称导入的 given
+
+% 1 1 0 1ff4c095975301e71ca823c65e04fd20
+
+@ 0 11 0 13e94c6c4939b09a0587c681d8f11a0e
++       `Weekdays` 把每个 `Weekday` 映射为其名称，`weekday.show` 和 `Rrule` 的本地化描述需要它。
++       按名称导入一个；`weekdays.englishWeekdays.name(Mon)` 可直接读取名称。
++   entry .englishWeekdays   `Monday` 到 `Sunday`
++   entry .englishShortWeekdays   `Mon` 到 `Sun`
++   entry .oneLetterAmbiguousWeekdays   `M`、`T`、`W`、`T`、`F`、`S`、`S`：日历的列标题
++   entry .shortestUnambiguousWeekdays   `M`、`Tu`、`W`、`Th`、`F`、`Sa`、`Su`
++   entry .twoLetterWeekdays   `Mo` 到 `Su`
++   entry .frenchWeekdays   `lundi` 到 `dimanche`
++   entry .germanWeekdays   `Montag` 到 `Sonntag`
++   entry .spanishWeekdays   `lunes` 到 `domingo`
+
+@ 0 1 0 073f0832e56a35591f6088ee56ccef18
++ entry .monthFormats   月份的名称，以某种语言和长度表示，按名称导入的 given
+
+% 1 1 0 185b5a84bf466b6703ad7325fbed72cc
+
+@ 0 11 0 1fc430bb6c30d4f5031ac2a0401b9006
++       `Months` 把每个 `Month` 映射为其名称，`month.show`、`Anniversary.showable`、`Timestamp.monthShowable` 和 `Rrule` 的本地化描述需要它。
++       按名称导入一个；`monthFormats.englishMonths.name(Jan)` 可直接读取名称。
++   entry .englishMonths   `January` 到 `December`
++   entry .englishShortMonths   `Jan` 到 `Dec`
++   entry .numericMonths   月份的编号，`1` 到 `12`
++   entry .twoDigitMonths   补齐到两位数字的月份编号，`01` 到 `12`
++   entry .oneLetterAmbiguousMonths   `J`、`F`、`M`、`A`、`M`、`J`、`J`、`A`、`S`、`O`、`N`、`D`
++   entry .frenchMonths   `janvier` 到 `décembre`
++   entry .germanMonths   `Januar` 到 `Dezember`
++   entry .spanishMonths   `enero` 到 `diciembre`
+
+@ 0 1 0 1d24d9bc90f3fcee11e135d54956b9b4
++ entry .timeFormats   `Clockface` 如何显示，作为一整套惯例，按名称导入的 given
+
+% 1 1 0 1820b2c7047b84191fb154f283a13fdb
+
+@ 0 5 0 0e518b8e46cdad57039ce0a8891e8100
++       `time.show` 需要一个 `Clockface is Showable`，这里的每个 given 都是一个，它把一个 `Clockface.Format`（来自 `hourFormats`）、一个 `Clockface.Numerics`、一个 `Clockface.Separation` 和一个 `Clockface.Specificity` 打包在一起，十二小时制的形式还带有一个 `Meridiem is Showable`。
++       对于未列出的惯例，改为从这些包中各导入一个 given，`Clockface.showable` 会组装出格式。
+
+% 2 1 0 1af6c1d1f0eebee1073a582ad2f339d7
+
+% 0 1 0 18784bd06aa6ec4218e312cc6d3ccd13
+
+% 1 1 0 195d45d322dc487c143cbb3fbb17da4a
+
+% 2 1 0 0abdfaae600ae01a00f25c62eaa78071
+
+% 3 1 0 0ab5431aa00df1ab056fe9e41192c3ef
+
+% 0 1 0 18c54bb9b9e461350c96130952a2a777
+
+% 0 1 0 0831d3c27bd6cda8174603106a928841
+
+% 0 1 0 02377232d299821e105ad09aceb139ff
+
+% 1 1 0 05b738163047e8fa1dd5f294e5eb039a
+
+% 2 1 0 0d57af20aff8dc451943aa33f58a6756
+
+% 3 1 0 0b8a5f896d01ee5c1913fe13991d4cef
+
+% 0 1 0 0f30feabd6fd84790e60a6e302b3b6b6
+
+% 0 1 0 19300bc1ed8fa88119ee7a5f7e1d51be
+
+% 0 1 0 138b4b03a119da6f0de5ec1f17bd1f50
+
+% 1 1 0 028014f6ac5db38b0b7721eb36b8f717
+
+% 2 1 0 080479f7f8ecb63a011cdc989aa2ff23
+
+% 3 1 0 06295beea55414d203f0906c98c2c9f9
+
+% 0 1 0 000ed54342a3c89f0a61c2bf0f8dac23
+
+% 0 1 0 08aaebd212572d8e0476f79bf0e645ae
+
+% 1 1 0 0636282c9e7f81621f29f867cc6eb045
+
+% 2 1 0 1b95213aba4624050c38d05cd1ef91bd
+
+% 2 1 0 07aa5e35fa41362a19e7d203ed3d92b0
+
+% 3 1 0 16f628fbad5db7f2107d49cfac18676a
+
+% 0 1 0 1f813dc19c33c8ad07a290354e76fb20
+
+% 0 1 0 049bb6647374e5510544ad9fef14e3a7
+
+% 1 1 0 0c9f1c342d4e1db41ddd28573764ddcb
+
+% 2 1 0 0544a38eb6e45cb6116e1d205e44d787
+
+@ 0 7 0 1e24ad5135717a3904ff58fa942c9ba7
++   entry .militaryTimeFormat   `1430`：二十四小时制，两位数字，无分隔符
++   entry .civilianTimeFormat   `02:30 PM`：十二小时制，两位数字，冒号，大写的上下午标记
++   entry .associatedPressTimeFormat   `2:30 p.m.`：十二小时制，不补齐，冒号，带标点的上下午标记
++   entry .frenchTimeFormat   `14h30`：二十四小时制，中间为 `h`
++   entry .iso8601TimeFormat   `14:30:59`：二十四小时制，冒号，带秒
++   entry .ledgerTimeFormat   `14.30`：二十四小时制，中间为点
++   entry .railwayTimeFormat   `14:30`：二十四小时制，中间为冒号
+
+@ 0 1 0 01e1805b2a4db3900b18a4fd9c328264
++ entry .hourFormats   所显示的时间是十二小时制还是二十四小时制，以及是否带秒，按名称导入的 given
+
+% 1 1 0 1e7c7789e249eb0f0e4b9f4f81db2eed
+
+@ 0 10 0 18630e4add2a3f9a04151821a82eae03
++       一个 `Clockface.Format`：小时是否采用十二小时制，是否显示秒，以及时间后面跟着什么（对于十二小时制是上下午标记，这需要作用域内有一个来自 `timeMeridiems` 的 `Meridiem is Showable`）。
++       组合时间渲染的四个部分之一；按名称导入，或由 `timeFormats` 的 given 打包提供。
++   entry .twelveHourClock   小时 1 到 12，一个空格和上下午标记，不带秒
++   entry .twelveHourSecondsClock   小时 1 到 12 和上下午标记；声明为显示秒
++       注意，按其声明，它同样不显示秒：它的 `seconds` 是 `false`，与 `twelveHourClock` 相同。
++   entry .twentyFourHourClock   小时 0 到 23，无上下午标记，不带秒
++   entry .twentyFourHourSecondsClock   小时 0 到 23，无上下午标记，带秒
+
+@ 0 1 0 1ab2943555e6a6df11c640194fd4a1d2
++ entry .timeMeridiems   `AM` 和 `PM` 如何书写，按名称导入的 given
+
+% 1 1 0 1f17cf6b962c56b31d1acb3c1ed90e68
+
+@ 0 6 0 144b52e7ec4c371a1775add84fa660a3
++       一个 `Meridiem is Showable`，十二小时制的 `hourFormats` 需要它。
++       伴生对象中的 `Meridiem.showable` 是 `AM`/`PM`，无需导入；下面这些是替代选项。
++   entry .upperMeridiem   `AM`、`PM`
++   entry .lowerMeridiem   `am`、`pm`
++   entry .upperPunctuatedMeridiem   `A.M.`、`P.M.`
++   entry .lowerPunctuatedMeridiem   `a.m.`、`p.m.`
+
+@ 0 1 0 09abf494e533b97304e03285f189aef8
++ entry .timeSpecificities   所显示的时间精确到分钟还是秒，按名称导入的 given
+
+% 1 1 0 07d0dc4f4b882353064e0054ca62ca02
+
+@ 0 4 0 1096acac0a1e721d05590d3bdf4652ea
++       一个 `Clockface.Specificity`，`Clockface.showable` 把它作为四个部分之一来要求。
++       是否真正写出秒，由 `Clockface.Format` 的 `seconds` 决定。
++   entry .minutesSpecificity   精确到分钟
++   entry .secondsSpecificity   精确到秒
+
+@ 0 1 0 0b2bbc1d3b267995021e881a62c2c7b4
++ entry .timeNumerics   所显示时间的小时是否补齐到两位数字，按名称导入的 given
+
+% 1 1 0 05ecb219bea5096511815fc643ac8a46
+
+@ 0 4 0 0a951d78fb0c69210d415872c548c09f
++       一个 `Clockface.Numerics`：组合时间渲染的四个部分之一。
++       分钟和秒总是两位数字；只有小时会变化。
++   entry .fixedWidthTimeNumerics   小时为两位数字：`02:30`
++   entry .variableWidthTimeNumerics   小时按需要的位数书写：`2:30`
+
+@ 0 1 0 0683209cf88aae210db23934909719ac
++ entry .timeSeparators   所显示时间的小时与分钟之间的字符，按名称导入的 given
+
+% 1 1 0 12f9aa5b0f5770cc161eaade422b597b
+
+@ 0 2 0 0e98e872550329600742764333b3292e
++       一个 `Clockface.Separation`，用于小时与分钟之间，并且除非被覆盖，也用于分钟与秒之间。
++       组合时间渲染的四个部分之一。
+
+% 0 1 0 0ad47f1b045df15e013a4901c8f8dd98
+
+% 0 1 0 0c540d256de61918057204fa0b0e92ff
+
+@ 0 2 0 1c5848d712f1585814ac7f25e5f5a8b5
++   entry .noneTimeSeparator   无：`1430`
++   entry .frenchTimeSeparator   `h`：`14h30`
+
+@ 0 1 0 07a47fa87d47ba33147628ca19959246
++ entry .durationDecodables   如何从文本读取 `Duration`，按名称导入的 given
+
+% 1 1 0 1237da1c40852dfb0e2c365f81c347e1
+
+@ 0 7 0 1084612a2bc37d410dd843a94a5ad831
++       `t"…".as[Duration]` 需要一个 `Decodable`，这里提供的那个读取命令行使用的紧凑形式。
++   entry .compactDurationDecodable   读取 `30m`、`1.5h`、`250ms`、`2d` 或单纯的秒数
++       一个十进制数，后跟 `ms`、`s`、`m`、`h` 或 `d`，没有单位时表示秒，忽略首尾空白：`t"1.5h".as[Duration].value` 是 `5400.0`，`t"90".as[Duration]` 是九十秒。
++       负数、单词或空文本会通过该 given 所需的 `Tactic[Duration.Error]` 抛出 `Duration.Error`。
+
+@ 0 1 0 0b6fe8d826ad5b1d129ba455c80358d3
++ entry .durationFormats   `Duration` 如何显示，按名称导入的 given
+
+% 1 1 0 18c2013e51f1b94303a6d62b23303337
+
+@ 0 6 0 1f6792511f26d977075bc201deee0143
++       `duration.show` 需要一个 `Duration is Showable`；没有它时，`Duration` 作为一个 `Quantity`，按 quantitative 的渲染方式显示（`1.5 s`）。
++   entry .compactDurationFormat   `5s`、`2m 5s`、`1h 0m 5s`、`2d 1h 0m 5s`，不足一秒时为 `420ms`
++       最粗的单位在前，其后每个单位一直到秒都会出现，这样一列时长能够对齐；不足一秒时只有毫秒。
++       负的时长带有前导 `-`。
+
+% 2 1 0 13964b9a4e58bb901d917a4bce2ddb98
+
+% 3 1 0 093303b36180c37f06307e064ac3feaa
+
+% 0 1 0 1391d3531924eeab12b083079dcf8e84
+
+% 0 1 0 119582efd66f933118401d219ecffa50
+
+% 0 1 0 1fb16f7e9eb222390dc811518790eef4
+
+% 1 1 0 1cd97c4641c603740ac8ca7ac0a6d9b2
+
+@ 0 1 0 0e01139c8b62664d033bd8d7459b6c1a
++ entry .timespanFormats   `Timespan` 如何相对于现在显示，以某种语言表示，按名称导入的 given
+
+% 1 1 0 1b80c260cb3dd9931eb849bcd085e981
+
+@ 0 5 0 1ac9785c0fd1d94817a451f0f545ed16
++       没有这些 given 时，`span.show` 是 ISO 8601 时长（`PT18M`）；有了其中一个，它就是一个相对短语（`in 18 minutes`、`8 minutes ago`、`12 hours and 38 minutes ago`、`just now`），只包含非零的分量，最粗的在前，并按符号采用将来或过去的形式。
++       每个 given 都需要作用域内有其语言的 `Locale`（`given Locale[en] = Locale(en)`），因此可以同时导入多个，由区域设置在它们之间选择。
+
+% 2 1 0 0c7eea6324bc61141b136606ca8575f7
+
+% 3 1 0 1bdb79addd39344408f76d219bf4ee5f
+
+% 0 1 0 0283863502ed02940996678bd01382a4
+
+% 2 1 0 19d851110d2884dd11488a9dae557cd7
+
+% 0 1 0 0fd50ba8bcea981d13acf1c1f731e350
+
+% 0 1 0 1356deebbef3c6fb13c2e14bb10b4bc1
+
+% 0 1 0 1d37a09f9ed6fb0f164a85490e37d331
+
+% 1 1 0 015761b082c35df90230596268cd991f
+
+% 0 1 0 07c6472c01f20bdf175d7c74cdf53b72
+
+@ 0 4 0 0a23c6212a26109e00fcfcccaa921d4f
++   entry .englishRelativeTimespan   `in 18 minutes`、`8 minutes ago`、`just now`；需要 `Locale[en]`
++   entry .frenchRelativeTimespan   `dans 18 minutes`、`il y a 8 minutes`；需要 `Locale[fr]`
++   entry .germanRelativeTimespan   `in 18 Minuten`、`vor 8 Minuten`；需要 `Locale[de]`
++   entry .spanishRelativeTimespan   `en 18 minutos`、`hace 8 minutos`；需要 `Locale[es]`
+
+@ 0 1 0 061c85bf8292309f0f252cf086add1ce
++ entry .Calendar   如何把儒略日编号读作年、月和日
+
+% 1 1 0 1c725537a617c8fb1961b8a854fb2c67
+
+@ 0 7 0 19404a8cc4611b1b037abce2b0d69c95
++       `Calendar` 为日期加上标注。
++       每个 `Date` 都是一个儒略日编号，在每种日历中都相同，而日历提供该编号与年（`#Annual`，总是 `Year`）、月（`#Mensual`，日历自己的月份类型）和月中日（`#Diurnal`，总是 `Day`）之间的运算：`#annual`、`#mensual` 和 `#diurnal` 读取日期的各部分，`#computeJdn` 从它信任的各部分构建日期，`#jdn` 从它会检查的各部分构建日期，对该月没有的日子抛出 `Moment.Error`。
++       `Date` 的扩展方法 `year`、`month` 和 `day` 接受作用域内的 `Calendar` 并委托给它。
+
+% 2 1 0 1cdf95bbe670c3930cc2e70f1c164675
+
+% 3 1 0 12618be23b904825029f0a94512845b2
+
+% 4 1 0 034b5220f2391d4b164de599b620264e
+
+% 5 1 0 16ad122711ac2d7e1076b974b165efaf
+
+% 0 1 0 08b496939ef9abf008c29c73e590c307
+
+% 0 1 0 1655322f7fddf15c105537f83cb80a6c
+
+% 0 1 0 18bb97052cc06779016b9044e805bd2a
+
+% 0 1 0 0c63be084bee67761ee0ced0d307aff3
+
+% 0 1 0 118f578af573451d0e395665a5686d48
+
+% 0 1 0 123fddda2cf023cb11ea55d8517901fe
+
+% 1 1 0 115c075070a314171a797ec167d2e8fc
+
+@ 0 9 0 0d71a9649e1d74be082501c5127408d7
++       类型成员 `#MonthUnit` 是该日历的 `MonthRadix`，它把 `Timespan of IslamicMonth.type` 与 `IslamicCalendar` 联系起来，使月份运算分派到正确的日历，并且一种日历的月份跨度不能在另一种日历下相加。
++       标准日历是 `calendars` 包中的 given，按名称导入；自定义日历扩展 `Calendar`（月份是枚举时扩展 `Enumerated`，对于两种常见结构则扩展 `AlexandrianCalendar` 或 `RomanCalendar`），并为其月份类型提供一个 `Showable`。
++       月份由 `#monthOrdinal` 和 `#monthOfOrdinal` 逐年从零开始编号，因为阴阳历的编号在闰年会发生偏移。
+
+% 0 1 0 06fc49d6b71a73fc15739ecd28b4a19a
+
+% 1 1 0 121c69e4170db744098bb4abea279cfb
+
+% 0 1 0 0a0ae32e5bf81cc60da3af8cb5969f23
+
+% 0 1 0 0c74da31bcd4876a128b17b55c50da9e
+
+@ 0 32 0 19220813418dedfd17a3c8baa68aca78
++   entry #Annual   日历的年份类型：`Year`
++   entry #Diurnal   日历的月中日类型：`Day`
++   entry #Mensual   日历的月份类型，必须是 `Showable`
++       罗马式日历为 `Month`，其他日历为 `IslamicMonth`、`CopticMonth`、`HebrewMonth` 等。
++       枚举月份通过 spectacular 的枚举实例而是 `Showable` 的，渲染其分支名称，除非其伴生对象像 `HebrewMonth` 和 `IslamicMonth` 那样对它加以细化。
++   entry #MonthUnit   日历的 `MonthRadix`，即其月份时间跨度的基数
++   entry #name   日历的名称，与 `Moment.Error` 报告的一致：`Gregorian`、`Islamic`
++   entry #monthsInYear   一年有多少个月：十二个，亚历山大式日历或希伯来历闰年为十三个
++   entry #daysInYear   一年有多少天
++   entry #daysInMonth   某年中某月有多少天
++   entry #monthOrdinal   月份在一年中的位置，从零开始
++       对希伯来历而言取决于年份，在那里 `Nisan` 在闰年是第七个月，在平年是第六个月；对其他每种日历都是固定的。
++   entry #monthOfOrdinal   一年中某个位置（从零开始）上的月份：`#monthOrdinal` 的逆运算
++   entry #annual   日期所在的年
++   entry #mensual   日期所在的月
++   entry #diurnal   日期所在的月中日
++   entry #zerothDayOfYear   一年第一天的前一天，因此 `date.jdn - zerothDayOfYear(year).jdn` 就是年中的第几天
++   entry #computeJdn   已知有效的年、月和日所对应的日期
++       只有日历的运算，不做范围检查：`computeJdn(Year(2024), Feb, Day(31))` 是 3 月 2 日。
++       `#jdn` 是带检查的形式。
++   entry #validDate   某个年、月和日是否指称一个真实的日期
++       默认实现根据 `#daysInMonth` 检查日；`Regime` 覆盖它，以拒绝其切换间隙中的日期。
++   entry #jdn   某个年、月和日所对应的日期，经过检查，否则抛出 `Moment.Error`
++       它是内联的，因此所需的 `Tactic[Moment.Error]` 在调用处解析。
++       抛出 `Moment.Error(_.Invalid(year, month, day, calendar))`（错误 `↯/s.73.3`，_`2024-2-30` does not exist in the calendar Gregorian_），并返回 `#computeJdn` 的日期。
++   entry #monthName   月份的显示名称：其 `Showable` 渲染结果
++   entry #format   以本日历中 `day month-name year` 的形式表示的日期：`15 Ramadan 1445`
+
+@ 0 1 0 0fb667802d0aa07306639faea0cc3a23
++ entry .Enumerated   月份是某个枚举的各分支、且每年编号相同的日历
+
+% 1 1 0 0bc60798bc932ce8112f0735c95d4f78
+
+@ 0 7 0 1206aba4e0f3d737066ec82ca1c64cd6
++       `Enumerated[month](fromOrdinal)` 把 `Mensual` 固定为该枚举类型，把 `monthOrdinal` 定义为分支的序数，并通过枚举的 `fromOrdinal` 定义 `monthOfOrdinal`，`Calendar` 的其余部分留给子类。
++       `RomanCalendar`、`IslamicCalendar`、`IndianCalendar`、`PersianCalendar` 和各亚历山大式日历都扩展它；`HebrewCalendar` 不扩展它，因为它的编号在闰年会发生偏移。
++   entry #monthOrdinal   枚举分支的序数，与年份无关
++   entry #monthOfOrdinal   某个序数上的枚举分支，与年份无关
+
+@ 0 1 0 197b9b450c51574a1a1f4957724ba87a
++ entry .AlexandrianCalendar   科普特历、埃塞俄比亚历和法国共和历共有的形式
+
+% 1 1 0 141f8e1f61ac52a204d9b5d9fd4038fb
+
+@ 0 5 0 1db565691d8bb1de0722c7b3c1557b46
++       十二个三十天的月，加上一个五天（闰年六天）的短小第十三月，每四年一闰，即年份对 4 取模为 3 的那些年。
++       这种形式的日历只需提供 `#epoch`（其第一天的儒略日编号）以及名称和月份类型：`CopticCalendar`、`EthiopianCalendar` 和 `FrenchRepublicanCalendar` 就是这三种，它们只在纪元和月份名称上不同。
+
+% 0 1 0 107dc7d744cd1fb702f7fc160f58bdc8
+
+% 0 1 0 1986d9410b0867a9149890c214139061
+
+% 0 1 0 13db2f17358217ca00a4078b89f8720a
+
+@ 0 10 0 050c1cf55b0246a91cb03a4a2ca76cff
++   entry #epoch   日历的 1 年 1 月 1 日的儒略日编号
++   entry #monthsInYear   十三
++   entry #leapYear   某年是否为闰年：年份对 4 取模为 3 的那些年
++   entry #daysInYear   闰年 366 天，否则 365 天
++   entry #daysInMonth   前十二个月为三十天；第十三月为五天或六天
++   entry #zerothDayOfYear   一年第一天的前一天，从纪元算起
++   entry #annual   日期所在的年，从纪元算起
++   entry #mensual   日期所在的月：一个三十天的区段，或第 360 天之后的第十三月
++   entry #diurnal   日期所在的月中日
++   entry #computeJdn   某个年、月和日所对应的日期，按三十天运算得出
+
+@ 0 1 0 1c944490a1dc57350967d7dd8142e66e
++ entry .CopticCalendar   科普特历，始于殉道纪元 1 年 Thout 月 1 日，即儒略日 1825030
+
+% 1 1 0 018e163799ffd1ee0451b03f7929186d
+
+@ 0 2 0 1faae63ce38a955f118bbc093ac84d56
++       基于 `CopticMonth`、名为 `Coptic` 的 `AlexandrianCalendar`，其纪元是儒略历公元 284 年 8 月 29 日。
++       `calendars.copticCalendar` 是它的 given。
+
+% 2 1 0 136edce89bff618c15fd8829258d8ec9
+
+% 3 1 0 11532d8b4e1ba8f40288453b6b24802a
+
+% 0 1 0 1bbcfe7c1257af3f1cd74f6467bb195a
+
+% 0 1 0 147cd9b4d25f5b9d084d1bad16e019bf
+
+% 0 1 0 0881490378aad44c1c89363557210ae7
+
+% 0 1 0 0b7204e92f1db5280d10bf518a065a5e
+
+% 1 1 0 1e843ee97987780b15d551a0910bc64c
+
+% 0 1 0 1d65d50402bc882d00c780841f647a28
+
+% 0 1 0 022931ef8412a7e214aa2e4425079037
+
+% 0 1 0 0c76f1a466094c2b1e79246cbfe5669b
+
+@ 0 1 0 1066f6f98c0fa9d41dfa6e2883570343
++ entry .CopticMonth   科普特历的十三个月，以及其月份跨度的基数
+
+% 1 1 0 048263b6814b34bc0a92e9d789b3ca8e
+
+@ 0 6 0 0c07b548455ccb800af72b24791d62e1
++       `Thout`、`Paopi`、`Hathor`、`Koiak`、`Tobi`、`Meshir`、`Paremhat`、`Parmouti`、`Pashons`、`Paoni`、`Epip`、`Mesori` 和短小的 `Nasie`。
++       伴生对象是一个 `MonthRadix`，因此 `3*CopticMonth` 是一个 `Timespan of CopticMonth.type`，它只能在 `CopticCalendar` 下（且作用域内有来自 `monthEnds` 的 `Disambiguation`）与日期相加。
++       月份显示为其分支名称。
++   entry .multiplicable   作为 `Timespan of CopticMonth.type` 的 `n*CopticMonth`
+
+@ 0 1 0 09d367298df9a073026c75c8ebbeb6ca
++ entry .EthiopianCalendar   埃塞俄比亚历，始于 1 年 Mäskäräm 月 1 日，即儒略日 1724221
+
+% 1 1 0 01fe95ffc8143c37100a90068e80ae17
+
+@ 0 3 0 0a4464ff4902beea1c6fb6cf145af970
++       基于 `EthiopianMonth`、名为 `Ethiopian` 的 `AlexandrianCalendar`，其纪元是儒略历公元 8 年 8 月 29 日：结构与科普特历相同，纪年比科普特历晚七到八年。
++       `calendars.ethiopianCalendar` 是它的 given。
+
+% 0 1 0 1b13a8a009da0ef604a1360618850935
+
+% 0 1 0 05484286b86fc493067c97ad1af089d5
+
+% 0 1 0 0340d7cbebbd0a2405c212f304f00ed2
+
+@ 0 1 0 0194c1f869969f7c1ce4c97f5c9bd556
++ entry .EthiopianMonth   埃塞俄比亚历的十三个月，以及其月份跨度的基数
+
+% 1 1 0 160b23ed134dc4ea066e5c1f1be1d94f
+
+@ 0 5 0 0fd516325bef2a691bdf9b29b6dc4e42
++       `Meskerem`、`Tekemt`、`Hedar`、`Tahsas`、`Ter`、`Yekatit`、`Megabit`、`Miyazya`、`Genbot`、`Sene`、`Hamle`、`Nehase` 和短小的 `Pagume`。
++       伴生对象是一个 `MonthRadix`，因此 `n*EthiopianMonth` 是埃塞俄比亚历月份的跨度，它只能在 `EthiopianCalendar` 下与日期相加。
++   entry .multiply   作为 `Timespan of EthiopianMonth.type` 的 `n*EthiopianMonth`
+
+@ 0 1 0 044620294e18d0e71320f4e38a78a6fb
++ entry .FrenchRepublicanCalendar   法国共和历，始于共和一年 Vendémiaire 月 1 日，即儒略日 2375840
+
+% 1 1 0 0b59b8c25c1b3ba812bbb3779fef5c27
+
+@ 0 4 0 0d1095c0d9abd3f3129552f7f25df59c
++       基于 `FrenchRepublicanMonth`、名为 `French Republican` 的 `AlexandrianCalendar`，其纪元是 1792 年 9 月 22 日。
++       它的闰年规则是算术规则（年份对 4 取模为 3 的年），与该日历在 1793 年至 1805 年使用期间所遵行的闰年（第三、第七和第十一年）相符。
++       `calendars.frenchRepublicanCalendar` 是它的 given。
+
+% 0 1 0 16032b387bc1e04d1d970cffcbb79cfa
+
+% 0 1 0 19fe90686e7c2b4101204d796c19024b
+
+% 0 1 0 16d69e62ab6b6d34185afdd9b9eec9d9
+
+@ 0 1 0 0c6717d33009d6e80785fa055b417e54
++ entry .FrenchRepublicanMonth   法国共和历的十二个月和补充日
+
+% 1 1 0 139fe05138be17af084f78d2566da1ce
+
+@ 0 5 0 15db866edbbca8b308c83ba25fce600b
++       `Vendemiaire`、`Brumaire`、`Frimaire`、`Nivose`、`Pluviose`、`Ventose`、`Germinal`、`Floreal`、`Prairial`、`Messidor`、`Thermidor`、`Fructidor`，每月三十天，以及 `Sansculottides`，即补足一年的五或六个补充日，作为第十三月。
++       伴生对象是一个 `MonthRadix`。
++   entry .multiply   作为 `Timespan of FrenchRepublicanMonth.type` 的 `n*FrenchRepublicanMonth`
+
+@ 0 1 0 06cc8b95b99bf1190d1dbb221e0a34b4
++ entry .IslamicCalendar   表格式伊斯兰（希吉来）历，始于希吉来 1 年 Muharram 月 1 日，即儒略日 1948440
+
+% 1 1 0 0938465482e43ffe164683e46ae4c8bc
+
+@ 0 6 0 19d601bca777781108e885a05b247a2b
++       基于 `IslamicMonth`、名为 `Islamic` 的 `Enumerated` 日历：十二个月交替为三十天和二十九天，在每个三十年周期的十一个闰年中，最后一个月加上第三十天（“科威特”规则：满足 `(11*year + 14) % 30 < 11` 的年）。
++       它的民用纪元是儒略历公元 622 年 7 月 16 日。
++       这是算术日历；取决于观测月亮的实际日历可能相差一天。
++       `calendars.islamicCalendar` 是它的 given。
+
+% 2 1 0 1c991021b88e317917277b227f81dfe0
+
+% 3 1 0 1a66b63d1f2be0e80611efa271206645
+
+% 4 1 0 1173515ca50d98e315a199fdd573bfb0
+
+% 5 1 0 0a21b7d38016e060049bd376df65081a
+
+% 0 1 0 1cfb27490f8446780f2932d7f2348e91
+
+% 1 1 0 0d7051fddb0d075a14c22b6d70becc1b
+
+% 0 1 0 103437dca777de1e1fdd54619c69d2b0
+
+% 0 1 0 17cbc6cbb899f816176a0c67bfe5cd2b
+
+@ 0 9 0 14585baa6c61e4fb186ff2b357dde252
++   entry #monthsInYear   十二
++   entry #leapYear   某年是否有 355 天：每三十年中有十一年
++   entry #daysInYear   闰年 355 天，否则 354 天
++   entry #daysInMonth   奇数月为三十天，偶数月为二十九天，闰年的第十二个月为三十天
++   entry #zerothDayOfYear   一年第一天的前一天
++   entry #annual   日期所在的年
++   entry #mensual   日期所在的月
++   entry #diurnal   日期所在的月中日
++   entry #computeJdn   某个年、月和日所对应的日期，按表格式运算得出
+
+@ 0 1 0 1595842e557a5d541bd2dece90ec13d8
++ entry .IslamicMonth   伊斯兰历的十二个月，以及其月份跨度的基数
+
+% 1 1 0 12fe9001e02e5e091ef71c083136a6a1
+
+@ 0 7 0 1f6fd723f11dd4d603e1f86dc2c2d50f
++       `Muharram`、`Safar`、`RabiAlAwwal`、`RabiAlThani`、`JumadaAlAwwal`、`JumadaAlThani`、`Rajab`、`Shaban`、`Ramadan`、`Shawwal`、`DhuAlQadah` 和 `DhuAlHijjah`。
++       伴生对象是一个 `MonthRadix`（`n*IslamicMonth` 只能在 `IslamicCalendar` 下与日期相加），并提供一个 `Showable`，以惯用的空格和数字渲染名称：`Rabi I`、`Jumada II`、`Dhu al-Hijjah`。
++   entry .showable   月份的惯用名称：`Rabi I`、`Dhu al-Qadah`
++   entry .multiply   作为 `Timespan of IslamicMonth.type` 的 `n*IslamicMonth`
+
+@ 0 1 0 061d5a93feb42e2801f63c9f29189156
++ entry .IndianCalendar   印度国定（塞种）历，与公历年份挂钩
+
+% 1 1 0 178137604cf23a5e184e20ae82318c71
+
+@ 0 5 0 106dff14c495e69d1a24b10ff838bfc4
++       基于 `IndianMonth`、名为 `Indian National` 的 `Enumerated` 日历。
++       塞种纪年等于公历年份减 78，始于 Chaitra 月 1 日，即 3 月 22 日，公历年为闰年时则为 3 月 21 日；Chaitra 月随后有三十天（闰年三十一天），接下来五个月各三十一天，最后六个月各三十天。
++       印度于 1957 年采用它，当时 Chaitra 月 1 日（1879 年）正是 3 月 22 日。
++       `calendars.indianCalendar` 是它的 given。
+
+% 0 1 0 0f97d569e14c71c80f3fd46e67b13537
+
+% 0 1 0 14d997a3dca942e114a86f2112612c5c
+
+@ 0 9 0 04368e9130ea983312de1fc09face593
++   entry #monthsInYear   十二
++   entry #leapYear   塞种年开始时所在的公历年是否为闰年
++   entry #daysInYear   闰年 366 天，否则 365 天
++   entry #daysInMonth   Chaitra 月为三十或三十一天，接下来五个月为三十一天，其余为三十天
++   entry #zerothDayOfYear   Chaitra 月 1 日的前一天
++   entry #annual   日期所在的塞种年
++   entry #mensual   日期所在的月
++   entry #diurnal   日期所在的月中日
++   entry #computeJdn   某个年、月和日所对应的日期，从该年的 Chaitra 月 1 日算起
+
+@ 0 1 0 19b8650dc0c444c60eb619be45b021e3
++ entry .IndianMonth   印度国定历的十二个月，以及其月份跨度的基数
+
+% 1 1 0 054bbc5ad38bd3600bdb3a7a482202c0
+
+@ 0 3 0 02ed48fe263b81e908d73d41094c22a3
++       `Chaitra`、`Vaishakha`、`Jyeshtha`、`Ashadha`、`Shravana`、`Bhadra`、`Ashwin`、`Kartika`、`Agrahayana`、`Pausha`、`Magha` 和 `Phalguna`。
++       伴生对象是一个 `MonthRadix`。
++   entry .multiply   作为 `Timespan of IndianMonth.type` 的 `n*IndianMonth`
+
+@ 0 1 0 0f94cada4a7c35250b471f7551a88f05
++ entry .HebrewCalendar   希伯来历：阴阳历，每十九年中有七年带第十三个月
+
+% 1 1 0 0904ed2f81e2156b01fe63fba4c06554
+
+@ 0 8 0 1620d30fe34a89e614bf5a6dcd1b7d68
++       基于 `HebrewMonth`、名为 `Hebrew` 的 `Calendar`，始于创世纪元 1 年 Tishrei 月 1 日，即儒略日 347998。
++       一年始于 Rosh Hashanah，它由平均月相合（*molad*）确定，并按四条推迟规则调整，因此一年有 353、354 或 355 天（闰年为 383、384 或 385 天），变化由 Cheshvan 和 Kislev 两个月吸收。
++       闰年在 Adar II 之前插入 Adar I，遵循十九年的默冬周期。
++       它不是 `Enumerated`：月份在一年中的位置取决于该年是否为闰年，因此 `#monthOrdinal` 和 `#monthOfOrdinal` 会认真考虑年份。
++       `calendars.hebrewCalendar` 是它的 given。
+
+% 2 1 0 0827efffad798fb909d5a9641b5e9f9f
+
+% 3 1 0 1ff7638bdf38a83d1bb5b99283010e97
+
+% 4 1 0 0cd5495f42c870cc11233cb65fae0285
+
+% 0 1 0 17290ddb535e477808592fa0047a907a
+
+% 0 1 0 00953bee09981a221f5668269e179b53
+
+% 0 1 0 00e91d031ef01a760e31273ad24a84b4
+
+% 0 1 0 08a0044a3bad58a509f1e58f811b43a9
+
+% 1 1 0 13f01e142d25cbe71008f3c55e8940bb
+
+% 0 1 0 05437194a05afa4e01a587edc0fa7974
+
+% 0 1 0 197091649c9ce19f03766f7d79a9adad
+
+% 0 1 0 1c6cbd780e114b9b009c32f5d20c89c4
+
+@ 0 11 0 11b6a898dc92a32c1e0da0b408f4170b
++   entry #leapYear   某年是否有十三个月：每十九年中有七年
++   entry #monthsInYear   闰年十三个，否则十二个
++   entry #monthOrdinal   月份在一年中的位置，在平年中 `Nisan` 及之后的月份要少一位
++   entry #monthOfOrdinal   某个位置上的月份，在平年中跳过 `AdarSheni`
++   entry #daysInYear   从一个 Rosh Hashanah 到下一个的天数：353 到 385
++   entry #daysInMonth   三十或二十九天；`Cheshvan` 和 `Kislev` 随该年长度变化，`Adar` 随闰年变化
++   entry #zerothDayOfYear   Rosh Hashanah 的前一天
++   entry #annual   日期所在的年
++   entry #mensual   日期所在的月
++   entry #diurnal   日期所在的月中日
++   entry #computeJdn   某个年、月和日所对应的日期，从 Rosh Hashanah 起算
+
+@ 0 1 0 0939fbf81db563ba06a9cd203eb730de
++ entry .HebrewMonth   希伯来历的十三个月，以及其月份跨度的基数
+
+% 1 1 0 0c367d10b5cc6c8d0e3d10194a5fb589
+
+@ 0 7 0 19633b8a83ba277a12c4f9d6c0b62256
++       按民用年的顺序从 `Tishrei` 开始：`Tishrei`、`Cheshvan`、`Kislev`、`Tevet`、`Shevat`、`Adar`、`AdarSheni`、`Nisan`、`Iyar`、`Sivan`、`Tammuz`、`Av` 和 `Elul`。
++       在平年中，`AdarSheni` 不出现，`Adar` 是唯一的 Adar；在闰年中，`Adar` 是 Adar I，`AdarSheni` 是 Adar II。
++       伴生对象是一个 `MonthRadix`，其 `Showable` 把 `AdarSheni` 渲染为 `Adar II`。
++   entry .showable   月份的名称，`AdarSheni` 为 `Adar II`
++   entry .multiply   作为 `Timespan of HebrewMonth.type` 的 `n*HebrewMonth`
+
+@ 0 1 0 1961a1208e08c6fe09581fbb5dbce43b
++ entry .Clock   当前 `Instant over Unix` 的来源
+
+% 1 1 0 095c35469c5c84f1142e40bdea5c69c0
+
+@ 0 5 0 07513a51aaa2efc5088662cf9049142b
++       `now()` 和 `today()` 读取作用域内的 `Clock` given。
++       伴生对象中的 `Clock.current` 读取 `System.currentTimeMillis`，因此无需导入即可找到；`Clock.fixed` 和 `Clock.offset` 创建用于测试和模拟其他时间的时钟，绑定为局部 given；`clocks.wasiClock` 读取 Wasm 组件的挂钟时间。
++       时钟是一个 `Findable` 值：它是程序接受的参数，而不是程序去取用的全局量。
+
+% 2 1 0 00dc2eef44568771016c26ad67581a5b
+
+% 3 1 0 1c840d345bdafe4d001692680c6f9e7f
+
+% 4 1 0 1b52027e79a2aba00184a5bbba7e14de
+
+% 0 1 0 06fb1f3d4e3c38ef0dec90c1309b8b6d
+
+% 0 1 0 108e09281f1ca8f50b15f4b26bdfbcb0
+
+% 0 1 0 0a461cc0da1aa42e1ea8b38be54b62ff
+
+% 0 1 0 0408aef6a42823171751cfd310fa1ea6
+
+% 1 1 0 017beeb461ef27fc0b77cfce3be870fd
+
+% 0 1 0 0097b54b53a31251081e780174226de2
+
+% 0 1 0 06806133fbd54e2a176fea599ff58df9
+
+% 1 1 0 0ccd6969183c141918af79e4b0fbbb6d
+
+@ 0 6 0 02211ae1f8b60abd1e50d4217953f328
++   entry .current   系统挂钟，`System.currentTimeMillis`；默认值
++   entry .fixed   始终读出同一瞬时的时钟
++   entry .offset   偏移了一个 `Duration` 的系统时钟
++       `Clock.offset(60*Second)` 读出的时间比系统时钟快一分钟，用于在非当前的时间下检验代码。
++   entry #apply   时钟的读数，以 `Instant over Unix` 表示
+
+@ 0 1 0 1526d0fd357385951bab654b77e59089
++ entry .Clockface   一天中的时间：时、分、秒和纳秒
+
+% 1 1 0 0d3d2e803b1c4e69193af00ba298900b
+
+@ 0 6 0 1f14dfdc6f18d316088bf5b8e4b34452
++       `Clockface(hour, minute, second, nanos)` 是二十四小时制的时间，其小时是 `Base24`，分和秒是 `Base60`，因此 `Clockface(14, 30, 59)` 可以从字面量通过类型检查，而 `Clockface(14, 60, 0)` 不能；秒默认为 0，纳秒也是。
++       `7.25.pm` 是精确到分钟的字面量形式。
++       钟面时间没有日期，也没有时区：`time on date` 把它与日期结合为一个 `Timestamp`（需要一个 `Calendar`），`timestamp.time` 则把它读回。
+
+% 2 1 0 021dbc54e5717098005bee2d1ce09a35
+
+% 3 1 0 1dded029fe04e47319a28b749b7e3358
+
+% 4 1 0 1aa2683680ec10341a8841db6e70200a
+
+% 0 1 0 00ded27c7d83251c01a14ca9c73a57ea
+
+% 0 1 0 14f0177084c9f6931e8225bd5fd1b6f3
+
+% 0 1 0 1a4b3653f605483802daaf449e53e362
+
+% 1 1 0 0cfaeb8e7f396bb304dbb1e51c776f9c
+
+@ 0 5 0 08cda5ce7c17fec113e56bcbeeec558a
++       `time.show` 用作用域内的 `Clockface.Format`、`Numerics`、`Separation` 和 `Specificity` 渲染它，这四个 given 由每个 `timeFormats` given 打包提供（`militaryTimeFormat` 得到 `1430`，`civilianTimeFormat` 得到 `02:30 PM`），或从 `hourFormats`、`timeNumerics`、`timeSeparators` 和 `timeSpecificities` 中逐一导入。
++       `Horology` 可以为钟面时间加上时、分或秒，并在午夜处回绕。
+
+% 0 1 0 0a99bce807079ca50793d2e5c3975e1e
+
+% 1 1 0 1461bf24d0a1120c11497d70cf8c85f1
+
+% 0 1 0 1524d8bd6a814d1f1de16797c0933218
+
+@ 0 7 0 1c7fa263007045560a5d067b6b16def6
++   entry .showable   用作用域内的 `Format`、`Numerics`、`Separation` 和 `Specificity` 渲染钟面时间
++       `Format` 为 `halfDay` 时，小时被化为 1 到 12，在 `Numerics.FixedWidth` 下补齐到两位数字，后跟 `Separation` 的分隔符和两位数字的分钟，然后在 `Format` 指明 `seconds` 时跟上第二个分隔符和两位数字的秒，最后是 `Format` 为上下午标记给出的后缀（` PM`，或者没有）。
++       `Specificity` 是必需的，但不改变渲染结果。
++   entry .Format   时钟是否为十二小时制、是否显示秒，以及时间后面跟着什么
+
+% 1 1 0 08c07e997f001d63170dc6f7beeac134
+
+@ 0 13 0 13132f1b7cf69cd91b9f52cfb0e4c232
++         `Format` 回答 `#halfDay`（十二小时制，1 到 12，还是二十四小时制，0 到 23）、`#seconds`（是否显示秒）和 `#postfix(meridiem)`（时间后面跟着什么：十二小时制为一个空格和上下午标记，二十四小时制什么也没有）。
++         `hourFormats` 包中有四种标准格式。
++     entry #halfDay   小时是否以 1 到 12 加上下午标记表示，而不是 0 到 23
++     entry #seconds   是否显示秒
++     entry #postfix   给定上下午标记时，时间之后的文本：` PM`，或者没有
++   entry .Numerics   小时是否补齐到两位数字：`FixedWidth` 或 `VariableWidth`
++       `timeNumerics.fixedWidthTimeNumerics` 得到 `02:30`，`variableWidthTimeNumerics` 得到 `2:30`；分钟和秒总是两位数字。
++   entry .Specificity   时间精确到分钟还是秒：`Minutes` 或 `Seconds`
++       `Clockface.showable` 所需的四个 given 之一，来自 `timeSpecificities`。
++   entry .Separation   小时与分钟之间、分钟与秒之间的文本
+
+% 1 1 0 03cdc803e1dcc7170d6377d7038e64fe
+
+@ 0 12 0 1d22868ee3a0d20d1dfd60ba08a4cf69
++         `#separatorChar()` 是分隔符（`:`、`.`、`h` 或无；`timeSeparators` 包中各有一个），`#separator` 是作为值的同一分隔符，而 `#secondSeparator`（除非被覆盖，否则与之相同）是秒之前的内容。
++     entry #separatorChar   分隔符，以文本表示
++     entry #separator   分隔符，以文本表示：`#separatorChar()`
++     entry #secondSeparator   秒之前的内容；除非被覆盖，否则就是分隔符
++   entry #hour   小时，0 到 23
++   entry #minute   分钟，0 到 59
++   entry #second   秒，0 到 59
++   entry #nanos   该秒内的纳秒数
++   entry #on   该时间在某个日期上，以 `Timestamp` 表示：`5.25.pm on 2018-Aug-11`
++       需要作用域内有一个 `Calendar`。
++       结果是 `Timestamp(date, this)`。
+
+@ 0 1 0 02abf2c5647c8f5c093a481c104c410e
++ entry .Chronometry   `Instant over X` 的 `Long` 与原子时的关系：时间线的含义
+
+% 1 1 0 1abec102e5a38de20af8c2a345037eec
+
+@ 0 7 0 0a33753f4ac8426e08b82c49d2c0b9f7
++       `Chronometry` 是基于时间线标记（`Tai`、`Unix`）的类型类，它在该时间线的刻度与 TAI（国际原子时，唯一严格线性的时标）之间进行转换：`#toTai` 和 `#fromTai`。
++       任意两条时间线都通过 TAI 互相转换，`instant.over[Tai]` 就是这样工作的。
++       `Chronometry.tai` 是恒等转换；`Chronometry.unix` 加上或去掉 `LeapSeconds` 表中的闰秒。
++       `Monotonic` 没有计时法，因为单调时钟与挂钟时间没有固定关系，所以 `Monotonic` 瞬时无法转换，也无法置于某个时区中。
+
+% 2 1 0 151e10ce51d17e9917656973da5b2c64
+
+% 3 1 0 1454fa9516f5252609d0f91ea563e1f8
+
+% 4 1 0 121f2d431f7120dd1f658a42c8f527c4
+
+% 1 1 0 0e42e7c07e3e10b21e425b5a2f8bd971
+
+% 2 1 0 141836e6211556af00e0cea862db146a
+
+% 0 1 0 1771d26ba1a5af1e0bedb809097587f4
+
+% 0 1 0 194c5cf653e5b575144fd916a7113aa0
+
+% 0 1 0 096630bfbab880b51b1b94b80be5fac0
+
+% 0 1 0 129b1a97b0c948a201b19c7a8bfe79da
+
+% 1 1 0 1070c0bb43223f430cf99f21c7472ef8
+
+% 0 1 0 1bdd5d4ba152ca421c0df4342847047c
+
+% 0 1 0 037d977b1426c8cd12f23454d145c951
+
+% 1 1 0 1298d02cf7c4989b19dc7f79d8c97c68
+
+@ 0 1 0 1d57901704ac96c9183194665ced4cf3
++   entry .Ambient   单纯的 `Instant(…)` 所采用的时间线，从 `chronometries` 中选定
+
+% 1 1 0 0b276c917bc8a6bf1a9fd46352e691c8
+
+@ 0 12 0 0a290937255600aa135582d6c729c42d
++         `Instant(millis)` 和各瞬时解码器需要作用域内有一个 `Chronometry.Ambient`，其 `#Transport` 是该瞬时所 `over` 的标记类型，其 `#chronometry` 是该时间线的 `Chronometry`。
++         没有默认值；按名称导入 `chronometries.unixChronometry` 或 `chronometries.taiChronometry`。
++     entry #Transport   所选时间线的标记类型：`Unix` 或 `Tai`
++     entry #chronometry   所选时间线的 `Chronometry`
++   entry .tai   TAI 的计时法：恒等转换
++   entry .unix   POSIX 时间的计时法：加上闰秒得到 TAI，去掉闰秒返回
++       `toTai` 是 `LeapSeconds.tai`，`fromTai` 是 `LeapSeconds.untai`；位于插入的闰秒之内的 TAI 值没有 Unix 原像，会映射到下一秒。
++   entry #toTai   时间线的刻度计数，以 TAI 毫秒表示
++   entry #fromTai   TAI 毫秒，以时间线的刻度计数表示
+
+@ 0 1 0 0ba2ac88f55f7e890e7b7c3213a8bcca
++ entry .LeapSeconds   1972 年以来的闰秒表，以及 POSIX 时间与 TAI 之间的运算
+
+% 1 1 0 0f9b7c34d7c1f0641384479bfcea1e1f
+
+@ 0 8 0 09c97b8bbcd97b620bccbad812123a33
++       自 1972 年以来，闰秒在 6 月或 12 月底被插入 UTC，使民用时间与地球自转的偏差保持在一秒之内；`Unix` 瞬时忽略闰秒，因此两个瞬时之间经过的 POSIX 时间会少掉其间的闰秒。
++       这个对象保存该表（从 1972 年到闰秒预定废止的 2035 年，每半年一位），并在 Unix 与 TAI 两条毫秒时间线之间转换：`Chronometry.unix` 就建立在它之上。
++       1972 年之前，TAI−UTC 偏移量取为恒定的十秒（这是近似值；当时真实的偏移量是带小数且不断漂移的），2035 年之后则保持其最终值三十七秒。
+
+% 2 1 0 0175694cb4717dfc09ec5e6e69cfd6e0
+
+% 3 1 0 04a5c7b6e04ca52b1e9351cda806418b
+
+% 0 1 0 17e71149a241e6ec0cbbec128cb039e2
+
+% 0 1 0 0f755d97711e1eff1ed2f98133e44f0b
+
+% 0 1 0 0a67037cdd924315042d8f9beb5be800
+
+% 0 1 0 1f5d02bac6a131e61bc29c3af5b6172d
+
+% 0 1 0 0b31c747e1960a810c05c8bab156c7bf
+
+% 1 1 0 0cac1e07976bc44206f33cd87784a7ef
+
+% 1 1 0 012b1562cdce364d09c8faa7d4558f4e
+
+% 0 1 0 16b706fbc4502e800c0f9f55728affca
+
+@ 0 16 0 13c180fffa0e244b07d298c1461341be
++   entry .addLeapSecond   记录一个新宣布的闰秒，位于某年 6 月或 12 月底
++       设置该年的位（`midYear` 表示 6 月，否则为 12 月）。
++       只能记录插入：负闰秒从未出现过，也没有编码。
++   entry .during   某年上半年或下半年生效的 TAI−UTC 偏移量，以秒计
++       `during(year, false)` 是该年年初的偏移量，`during(year, true)` 是 6 月可能的闰秒之后的偏移量。
++   entry .tai   以 TAI 毫秒表示的 POSIX 毫秒：加上截至当时的闰秒
++   entry .untai   以 POSIX 毫秒表示的 TAI 毫秒：`.tai` 的逆运算
++       位于插入的闰秒之内的 TAI 值没有对应的 POSIX 值，按惯例映射到下一秒；否则 `untai(tai(t)) == t`。
++   entry .smearTai   以涂抹式 TAI 表示的 POSIX 毫秒：每个闰秒分摊到其前后的一天中
++       Google 的“涂抹”：偏移量不是一次跳变，而是在以闰秒时刻为中心的二十四小时内线性增长，因此没有 `23:59:60`，时钟最多慢 1/86400。
++       在涂抹窗口之外，它与 `.tai` 一致。
++   entry .unsmearTai   以 POSIX 毫秒表示的涂抹式 TAI 毫秒：`.smearTai` 的逆运算
++       精确：`unsmearTai(smearTai(t)) == t`。
+
+@ 0 1 0 006a4e0eb169da0603634775957d2be3
++ entry .LeapMode   `Moment` 上不足一天的运算是否计入闰秒：`Lenient` 或 `Exact`
+
+% 1 1 0 0c44fc32f89dfdde1dd9f8a1ecad0d0a
+
+@ 0 5 0 17222ed6ad0147db11ea12305e7009fd
++       `Lenient` 在无闰秒的 POSIX 时间线上加上不足一天的 `Timespan`，因此两小时之后就是两小时的挂钟时间，无论其间发生了什么；`Exact` 通过 TAI 以真实的国际单位制秒相加，因此其间跨越的插入闰秒会使结果后退一秒。
++       伴生对象中的 `LeapMode.lenient` 是默认值；要切换，按名称导入 `leapModes.exactLeapMode`。
+
+% 0 1 0 0207c881e82e2e1213c57514d83737b5
+
+@ 0 1 0 0c2daf2de9563a721a741eaa7f4c42a6
++   entry .lenient   `LeapMode.Lenient`，默认值：跨过闰秒
+
+@ 0 1 0 07053c6d2340a82f18717b86d911da9a
++ entry .GapPolicy   位于春季拨快间隙中的 `Moment` 落定为什么
+
+% 1 1 0 1e91768f38371f6f1d25afba80269e65
+
+@ 0 8 0 0d444f570dc5bab313627e108a438fc8
++       时钟拨快时，有一段挂钟时间从未发生，把其中的 `Moment` 落定为 `Instant` 有两个候选：`forward`，即保持转换之前生效的偏移量所得到的瞬时，它落在间隙之后；`backward`，即采用新偏移量所得到的瞬时，它落在间隙之前。
++       `#resolve` 选择其中之一，或抛出错误。
++       伴生对象的默认值 `GapPolicy.pushForward` 选择 `forward`，与 `java.time` 相同，因此无需导入，落定就是全函数；`gapPolicies` 中有其他选择。
++       `Moment#instant`、`Timestamp#instant` 以及 `Moment` 的各种排序都接受一个 `GapPolicy`。
+
+% 2 1 0 161fd506ad0fd46d12f602cdbdd80f05
+
+% 3 1 0 1793223ed0884af70942d43af21f8ae9
+
+% 4 1 0 0f3a17eb09819f15197ba2e661a9313c
+
+% 0 1 0 12869435e9dc696a0e78719564b41d56
+
+% 0 1 0 00ef471dc90fefff0531b15108a366d8
+
+% 1 1 0 148ffd9c1373995a017732c75d6d6993
+
+% 0 1 0 1c62edc685a02c8a02e0ec1435e97210
+
+% 1 1 0 1d789b8aaacacb1a11e28b27ff53863e
+
+@ 0 2 0 1e5ff2d5a6b62f5c1a4244e6955c68e0
++   entry .pushForward   默认值：间隙中的时间落在间隙之后
++   entry #resolve   两个候选瞬时之一，或通过捕获的战术中止
+
+@ 0 1 0 1e0b889d4f827729172d0aac713304bf
++ entry .Disambiguation   给日期加上月或年时，超出月末的日子变成什么
+
+% 1 1 0 08fc36146a9fae5306c8436e46e88e14
+
+@ 0 7 0 07fe7d0e7fb90b380ae15f9593d41361
++       `2024-Jan-31 + 1*Month` 要求的是 2 月 31 日。
++       `#resolve(year, month, day)` 得到这样一个日子，它可能超过传给它的 `Calendar` 中该月的长度，并返回一个真实的 `Date`：该月的最后一天（`monthEnds.clampMonthEnd`），超出部分所到达的下个月中的那一天（`overflowMonthEnd`），或者通过抛出式方针在导入时捕获的 `Tactic[Moment.Error]` 中止（`raiseMonthEnd`）。
++       有意不提供默认值：在按名称导入其中之一之前，日期上的月或年运算无法编译。
+
+% 0 1 0 00cc012dbe1e5d3c0496839dc6234ce3
+
+@ 0 1 0 14b69c9c5d6e0b240fa934e05704aeb0
++   entry #resolve   在某种日历中，为年、月和可能溢出的日给出一个真实的日期
+
+@ 0 6 0 16d34f48c41292be0165780f2bac9cd2
++ entry .Endianness   日期各字段的顺序：`BigEndian`、`LittleEndian` 或 `MiddleEndian`
++     `BigEndian` 是年、月、日（ISO 8601）；`LittleEndian` 是日、月、年（欧洲）；`MiddleEndian` 是月、日、年（美国）。
++     组合日期渲染所需的四个 given 之一，从 `dateEndianness` 导入，或由 `dateFormats` 打包提供；`Anniversary` 和 `Monthstamp` 也读取它，除 `LittleEndian` 之外都视为月在前。
+
+@ 0 6 0 0d8de3ba41521e071d0379dae83c91f0
++ entry .Frequency   `Rrule` 的节奏：`Secondly` 到 `Yearly`
++     RFC 5545 的 `FREQ`：`Secondly`、`Minutely`、`Hourly`、`Daily`、`Weekly`、`Monthly` 或 `Yearly`，规则的 `interval` 与之相乘，因此 `interval = 2` 的 `Frequency.Weekly` 就是每隔一周。
++     基于 `Date` 的规则使用 `Daily` 及以上的频率；不足一天的频率适用于基于 `Timestamp` 的规则，在那里 `byHour` 和 `byMinute` 在一天之内展开。
+
+@ 0 1 0 0c0c0bb6aec1dbfd009eddca0ead4c5b
++ entry .Hebdomad   一周从星期几开始，以及哪些天是周末
+
+% 1 1 0 1d2a8a903db3b5251cc1a6611e79fb21
+
+@ 0 6 0 1dcdff4853463271083aeb9ba728757a
++       `Hebdomad`（七天的一周）回答 `#start` 和 `#weekend(day)`，并据此为各天编号：`#weekday(ordinal)` 是从一周开始算起某个位置上的那一天，`#ordinal(day)` 是某一天的位置。
++       `weekday.weekend`、`weekday.number`、`Weekday(ordinal)`、`date.weekend` 以及工作日运算 `date + WorkingDays(n)` 都会查询它，它没有默认值：按名称导入 `hebdomads.europeanHebdomad`、`northAmericanHebdomad` 或 `jewishHebdomad`，或者自己定义一个。
+
+% 2 1 0 1ae7d4d5861a38511450ef18af5cfa43
+
+% 3 1 0 111e8e329c64402a1e39f6ca526dc4b3
+
+% 0 1 0 01dc2fa16dee061015a2985da23d275d
+
+% 0 1 0 0e8807b41acafb6a04c7ba943381f488
+
+% 0 1 0 124ad2526d4b4b8c17125626702a4f8a
+
+% 0 1 0 00bc80586a055c5c03013c6abf11b6ef
+
+% 0 1 0 0b0b41532ceba78c195c9a2f1d8b48dd
+
+% 1 1 0 16e75891a5eab0761c111043bae484b1
+
+% 0 1 0 07ede165404eb279024297e234f3e065
+
+% 1 1 0 04aace5ef8cd61a80cef333505831e75
+
+% 1 1 0 1904a0d2cbe80ee205004a8063385363
+
+@ 0 4 0 0e6c81f4bf71055002f360751f580d26
++   entry #start   一周开始的那一天
++   entry #weekend   某个星期几是否属于周末
++   entry #weekday   从一周开始算起某个 `Ordinal` 位置上的星期几
++   entry #ordinal   某个星期几从一周开始算起的 `Ordinal` 位置
+
+@ 0 1 0 02ecc9fc25843a720b014fb85fa010a7
++ entry .Holiday   一个作为节假日的日期，带有可选的名称
+
+% 1 1 0 14caed1d19a7d79808e44070cf90a5b0
+
+@ 0 5 0 0f46250c242ea2590f33fedc3fc9b582
++       `Holiday(2025-Dec-25, t"Christmas Day")`：一个 `Date` 和一个 `Optional[Text]` 名称。
++       一组节假日构成 `Holidays`，节假日按日期比较。
++   entry .comparable   按日期为节假日排序
++   entry #date   日期
++   entry #name   节假日的名称，或 `Unset`
+
+@ 0 1 0 0f096e24bf70205f10f8cc834e6ee0b7
++ entry .Holidays   工作日计算所跳过的节假日集合
+
+% 1 1 0 13d6e8335fa7383d0358dbcc22e1c103
+
+@ 0 5 0 04a603e8a20040b415a6f3ca75b2caa2
++       `Holidays(List(Holiday(…), …))` 接受任何 `Traversable by Holiday` 集合，并按日期建立索引，于是 `#holiday(date)` 查找某个日期上的节假日，`#workDay(date)` 判断某个日期是否没有节假日，`#between(start, end)` 按日期顺序列出从 `start` 起、到 `end` 为止（不含 `end`）的节假日。
++       把它与一个 `Hebdomad` 一起绑定为 given，`date + WorkingDays(n)` 和 `date - WorkingDays(n)` 就会参考它们。
+
+% 2 1 0 127858ce3ef47f4b18a7a386d736bf03
+
+% 3 1 0 1f1fe826cf2fb9541a1842017d4880fc
+
+% 4 1 0 1ef60cbf813cd5741524098bec1906ff
+
+% 5 1 0 1e0a0496d0fb674c13641616c43e0809
+
+% 0 1 0 08659ced6b3c6cbf0608fb87e7ad0a37
+
+% 0 1 0 0b905c92824c80c50021e14153d8596a
+
+% 0 1 0 0abf23e3b237336b11857e9959861d72
+
+% 0 1 0 00d31492c08b75fe177f383ae9dd7893
+
+% 0 1 0 0f7dbb2e317e4b3903fa36b584c49cb6
+
+% 0 1 0 19078f5e45a1f54f0676164ad2e67f1f
+
+% 0 1 0 01267c7449c8a3471a3ee6b86932f7a1
+
+% 1 1 0 1b46f0188e41325f04b69f986cbdb296
+
+@ 0 2 0 19c30fed33b63db50da95328ef0709ed
++       落在周末的节假日不会被计算两次；工作日算术只跳过这一天一次。
+
+% 0 1 0 126da464b3fc1bae13c3ba48d4d4a0d0
+
+% 1 1 0 1bc3bee84be2fa130e9f7273652c9e30
+
+@ 0 4 0 0bef7b57b9da7b051ae27e8c5469b68e
++   entry .apply   由任何可遍历的 `Holiday` 集合构造 `Holidays`
++   entry #holiday   某个日期上的节假日，或 `Unset`
++   entry #workDay   某个日期是否没有节假日（周末由 `Hebdomad` 负责）
++   entry #between   从起始日期到结束日期（不含）的节假日，按顺序排列
+
+@ 0 1 0 0bd8da5149fc7ff100577b7db8eae6ab
++ entry .Horology   如何把时、分、秒加到 `Clockface` 上
+
+% 1 1 0 01357f0e21111a571e57fe8092a90298
+
+@ 0 14 0 007949778627e90606d5e2f466f96d76
++       `Horology` 指定时钟三个字段的类型（`#Primary`、`#Secondary`、`#Tertiary`），并带进位地把各字段的计数加到 `Clockface` 上：`#addTertiary(time, 30)` 加上三十秒，进位到分钟和小时，小时在午夜回绕。
++       伴生对象中的 `Horology.sexagesimal` 是普通的时钟：二十四小时、六十分钟、六十秒（`Base24`、`Base60`、`Base60`）。
++       库中没有别的东西使用 `Horology`；它是为另一种划分方式的时钟预留的挂钩。
++   entry .sexagesimal   二十四小时、六十分钟、六十秒的时钟
++   entry #Primary   第一个字段的类型：六十进制时钟上的 `Base24` 小时
++   entry #Secondary   第二个字段的类型：`Base60` 分钟
++   entry #Tertiary   第三个字段的类型：`Base60` 秒
++   entry #TimeRepr   时间的表示；六十进制时钟上为 `Time`
++   entry #addPrimary   若干小时之后的时钟读数，在午夜回绕
++   entry #addSecondary   若干分钟之后的时钟读数，进位到小时
++   entry #addTertiary   若干秒之后的时钟读数，进位到分钟和小时
+
+@ 0 1 0 093b519da633d0591031a65d2c469971
++ entry .Iso8601   ISO 8601 日期时间格式：一个解析为 `Instant over Unix` 的解析器，以及它可能提出的异议
+
+% 1 1 0 198128cfdbfcb8fd11463588acd5276e
+
+@ 0 8 0 1a3d3634dabf7292144d6b98abfb317e
++       一个名为 `ISO 8601` 的 `Date.Format`。
++       `.parse(text)` 把日期时间读取为 `Instant over Unix`，在 `Tactic[Moment.Error]` 下抛出 `Moment.Error`；它是 `instantDecodables.iso8601InstantDecodable` 背后的函数。
++       它接受日历日期 `2023-05-28`、月份 `2012-11`、周日期 `2023-W21-7`，每种都可以是扩展形式或基本形式（`20230528`、`2023W217`），后面可以跟 `T` 和精确到时、分或秒的时间，最后一个字段可带小数部分（`.` 或 `,`），再接 `Z`、偏移量 `+02:00` 或 `+0200`，或者什么都不接（视为 UTC）。
++       闰秒 `23:59:60` 也被接受，并落到下一秒上，因为 Unix 时间线没有容纳它的位置。
+
+% 2 1 0 03fb26848575170a093c6c97fc8b4a9c
+
+% 3 1 0 06706e5e9f8c8aa50441449fbcb9149f
+
+% 4 1 0 0b0de735d187493f1c4f4f32658d0eae
+
+% 0 1 0 150194ddaad0dc2a0d19cdbd2a0a4bd9
+
+% 0 1 0 105ba4b91053acc202324fa2e7d991ca
+
+% 0 1 0 010e899af46e7e8b0a9701d918a0ab2b
+
+% 0 1 0 03c5c68cdb32d9e108434713c5a86831
+
+% 1 1 0 0e39c6b8141011431db552191a2d9d36
+
+@ 0 5 0 1d9805526cce9d6d02f094a38a6bf658
++       出错时抛出 `Moment.Error(_.Format(text, Iso8601, offset)(issue))`（错误 `↯/s.73.3`），即 _`text` does not conform to format ISO 8601 (a digit was expected at 7)_，其中 `.Issue` 说明解析器在该偏移处期望的内容。
++       日期中的错误会累积，出现一个错误之后不再解析时间，因为各字段宽度可变，游标会错位。
+
+% 0 1 0 1bd5d4d724f87d1711badb7ec345616f
+
+% 1 1 0 0c6b5dfe7965f53a1bde4a66931adfaa
+
+% 1 1 0 187c1943c18209f008fc79a768550d09
+
+@ 0 6 0 11046bb287c591e51352ced6e2d1ae32
++   entry .Issue   解析器期望却没有找到的内容
++       `Expect(char)`（某个特定字符，例如周序号之后的 `-`）、`Digit`、`DigitOrDash`、`DigitOrDashOrW`（年份之后）、`DigitOrColon` 和 `Timezone`（末尾的 `Z` 或偏移量）。
++       每一个都通过对象中的匿名 given 实现 `Communicable`，呈现为 _a digit or `-` was expected_，`Moment.Error` 就是这样报告它的。
++   entry .parse   把 ISO 8601 日期时间、日期、月份或周日期解析为 `Instant over Unix`
+
+@ 0 1 0 1e94b01a78aac9fc0e76cb9b390db589
++ entry .internal   `Year`、`Day`、`Anniversary` 和 `WorkingDays` 以及字面量宏的所在之处
+
+% 1 1 0 18f64d0491b60f4114c17e166f609bc3
+
+% 2 1 0 096343e6f369cf240f2d592ad916048f
+
+@ 0 6 0 0773fe5b5efa5d3d0ae767b677f8475b
++       不供直接使用：这个对象的存在，是为了让其中的不透明类型有一个稳定的归属，并让 `tz"…"`、`ts"…"`、`dur"…"`、`rec"…"`、`7.25.am` 和 `2024-Jan-15` 背后的宏有处安放。
++       `Year`、`Day`、`Anniversary` 和 `WorkingDays` 从这里导出到 `aviation` 包，它们在那里的页面有完整的说明；这里列出的是伴生对象的成员。
++   entry .Year   日历年份，表示为不透明的 `Int`；参见 `aviation.Year`
+
+% 1 1 0 1d5e70de53db9d870ee29f114bb2294d
+
+@ 0 9 0 077f980d48843c820a867e2dd471498a
++         不透明类型 `Year = Int`，用 `Year(2024)` 构造，用 `year()` 读取。
++         伴生对象是一个不规则的 `Radix`，因此 `2*Year` 是一个 `Timespan of Year.type`。
++     entry .apply   `Year(2024)`：由数字构造年份
++     entry .multiplicable   `n*Year`，作为 `Timespan of Year.type`
++     entry .inspectable   `2024ʸ`：带后缀的数字，这样它不会被读成 `Int`
++     entry .showable   裸数字
++     entry .addable   `Year(2024) + 5` 是 `Year(2029)`
++     entry .subtractable   `Year(2024) - 5` 是 `Year(2019)`
++     entry .decodable   `t"2024".as[Year]`，通过作用域中的 `Int` 解码器
+
+% 0 1 0 0e98793b0995f5650979bc8066646781
+
+@ 0 1 0 0e570423309974ec028cc92f248edc51
++   entry .Day   月份中的某一天，表示为不透明的 `Int`；参见 `aviation.Day`
+
+% 1 1 0 05e8073e456610fd08337e11d7ca3aaf
+
+@ 0 8 0 13590244eaa1e58c0d5f728db77fc411
++         不透明类型 `Day = Int`，用 `Day(15)` 构造，用 `day()` 读取。
++         伴生对象是一个规则的 `Radix`，因此 `3*Day` 是一个 `Timespan of Day.type`。
++     entry .apply   `Day(15)`：由数字构造日
++     entry .multiplicable   `n*Day`，作为 `Timespan of Day.type`
++     entry .decodable   `t"15".as[Day]`，通过作用域中的 `Int` 解码器
++     entry .inspectable   `15ᵈ`：带后缀的数字
++     entry .showable   裸数字
++   entry .WorkingDays   工作日的计数，表示为不透明的 `Int`；参见 `aviation.WorkingDays`
+
+% 1 1 0 0fc4cb49989411520f2b74b12d56c8e0
+
+@ 0 5 0 0f6ec3836d1ebbc70d8e9835b49effd0
++         不透明类型 `WorkingDays = Int`，用 `WorkingDays(5)` 构造，用 `days()` 读取。
++     entry .apply   `WorkingDays(5)`：由数字构造计数
++     entry .inspectable   `5ʷᵈ`：带后缀的数字
++   entry .Anniversary   没有年份的月和日，表示为不透明的 `Short`；参见 `aviation.Anniversary`
+
+% 1 1 0 0b2bfac952bcde7601c4676938e3b52c
+
+@ 0 5 0 16e9bcf7b6bcb1d50ad6eb16cbf33097
++         不透明类型 `Anniversary = Short`，把月份的序数打包在日之上。
++         `Anniversary(Mar, Day(14))` 构造一个，`Mar - 14` 也一样；`anniversary.month` 和 `anniversary.day` 读取它，`anniversary(year)` 是该年的对应日期，需要一个 `RomanCalendar` 和一个 `.NonexistentLeapDay` 方针。
++     entry .NonexistentLeapDay   平年中的 2 月 29 日算作哪一天
+
+% 1 1 0 1731c2a6f89c4dcd1dfb22bb8291ef79
+
+@ 0 40 0 072af775e65dd9061dfe18e3dbb0e4da
++           一个只有一个方法 `#round(year)` 的方针，给出 `(Feb - 29)(year)` 不存在时使用的日期。
++           三个标准方针位于 `nonexistentLeapDays` 中，没有默认值。
++       entry #round   在没有 2 月 29 日的年份中代替它的日期
++     entry .apply   `Anniversary(month, day)`：由各部分构造纪念日
++     entry .inspectable   ISO 8601 的无年份日期 `--03-14`，不需要上下文
++     entry .showable   `14 March` 或 `March 14`，取决于作用域中的 `Endianness`、`Months` 和 `Date.Separation`
++   entry .day   `Anniversary` 的日
++   entry .month   `Anniversary` 的月
++   entry .apply   `year()`、`day()` 和 `days()` 读取数字；`anniversary(year)` 是该年的对应日期
++       四个同名的扩展方法：在 `Year` 和 `Day` 上（目标名称为 `yearValue` 和 `dayValue`），给出底层的 `Int`；在 `WorkingDays` 上，给出计数；在 `Anniversary` 上，通过作用域中的 `RomanCalendar` 和 `Anniversary.NonexistentLeapDay`，给出给定年份中的日期。
++   entry .tzInterpolator   `tz"…"` 背后的宏：一个名称为 `java.time` 所知的 `Timezone`
++       拒绝带替换的字面量，也拒绝 `ZoneId.of` 不接受的名称，报告 _`name` is not a valid timezone identifier_。
++   entry .tsInterpolator   `ts"…"` 背后的宏：按字面量的精度给出年份、月份、日期、时间戳或时刻
++       解析规范的 ISO 8601（四位年份，然后是可选的月、日、时间、小数部分和时区）或 RFC 1123，按公历校验日期、按时钟校验时间，并拼接出类型与精度相符的值；闰秒 `:60` 被拼接为 `:59` 处的 `Moment`，带 `leap = Leap.Inserted`。
++   entry .durInterpolator   `dur"…"` 背后的宏：把 ISO 8601 时长表示为 `Timespan`
++   entry .recInterpolator   `rec"…"` 背后的宏：把 ISO 8601 重复区间表示为 `Recurrence`
++       在 `/` 处把字面量拆分为重复次数、起点（按 `ts"…"` 解析）和周期（按 `dur"…"` 解析），在出错的片段下划线，并拼接出一个 `Recurrence`，其起点类型取决于字面量的精度。
++   entry .parseDuration   `dur"…"` 和 `Timespan` 的解码器共用的 ISO 8601 时长解析器
++       `P[nY][nM][nW][nD][T[nH][nM][nS]]`，至少有一个分量，结果为由年、月、周、日、时、分和（带小数的）秒组成的元组，或一条消息。
++   entry .monthstampMinus   `2024-Jan-15` 背后的宏：在代码编译时校验的日期
++       沿内联的操作数追溯到它们的字面量，把作用域中的 `RomanCalendar` 识别为标准日历之一（必要时经由局部别名），校验日期并拼接 `Date.julianDay(n)`。
++       非字面量的年、月或日，或者无法识别的日历，会以一条说明原因并指向该日历 `jdn` 的消息中止。
++   entry .validTime   `7.25.am` 和 `7.25.pm` 背后的宏：由字面量构造 `Clockface`
++       要求分钟恰好两位、分钟小于 60、小时至多为 12，每一项都有各自的错误；对 `pm` 加十二小时（对 `12.xx.am` 也加，对 `12.xx.pm` 不加，使正午和午夜的结果正确）。
++   entry .englishOrdinal   `1st`、`2nd`、`3rd`、`4th`、`11th`、`21st`：英语 `Vernacular` 使用的后缀
+
+@ 0 1 0 13bc03ee7727c77b050ebeb874e7f8a4
++ entry .protointernal   `Instant` 和 `Duration` 的所在之处
+
+% 1 1 0 1c894e955e7a04cf004ac3ebd25545a4
+
+% 2 1 0 080ae573b3bac8851bb44f63963a4b09
+
+@ 0 4 0 0f1569b3db85d3130a32c2119978a591
++       不供直接使用：这个对象容纳不透明类型 `Instant`、别名 `Duration` 以及它们的伴生对象和扩展方法，它们从这里导出到 `aviation` 包，那里的 `Instant` 和 `Duration` 页面有完整的说明。
++   entry .Instant   物理时间中的一个点，表示为不透明的 `Long`；参见 `aviation.Instant`
+
+% 1 1 0 0fba8045d1ed33d90fad6ba48b6b2104
+
+@ 0 23 0 1d6c54a7b6f7d7801f349d1ca311c0d6
++         不透明类型 `Instant = Long`，其时间线是用 `over` 设置的幻影 `Transport`。
++         伴生对象容纳构造器和算术 given，每一个都对传输泛型，并接受时间线的 `Resolution`，因此无论刻度长度是多少都能工作——`Unix` 和 `Tai` 为毫秒，`Monotonic` 为纳秒。
++     entry .inspectable   `⧗784111777000`：沙漏后面的刻度计数
++         检视必须在没有上下文时可用，而刻度的含义在类型中，所以只能显示原始计数；沙漏使它不会被读成 `Long`。
++     entry .Min   时间线上最早的瞬时，`Long.MinValue`
++     entry .Max   时间线上最晚的瞬时，`Long.MaxValue`
++     entry .of   `Instant.of[Unix](millis)`：由刻度构造指定时间线上的瞬时
++     entry .apply   `Instant(millis)`：作用域中 `Chronometry.Ambient` 时间线上的瞬时
++         需要一个来自 `chronometries` 的环境计时体系；结果是 `Instant over ambient.Transport`。
++     entry .underlying   声明擦除后的表示，`Long`
++     entry .generic   任意时间线上的瞬时，表示为纪元 `Long`，跨越 `Instants` 领域
++         让瞬时与其他库的瞬时类型相互转换的 `Abstractable` 和 `Instantiable`；`Long` 带有传输的标记，而不经转换。
++     entry .orderable   同一时间线上瞬时之间的 `<`、`<=`、`>`、`>=`
++     entry .comparable   按刻度为同一时间线上的瞬时排序
++     entry .plus   `instant + duration`：任何时间 `Quantity`，换算为时间线的刻度
++     entry .minus   同一时间线上的 `instant - instant`，结果为以秒计的 `Duration`
++         不同时间线上的两个瞬时不能相减；先用 `over` 转换其中一个。
+
+% 0 1 0 0b3b683f48211e95138fbd669625b857
+
+@ 0 1 0 067e9301ec1c513206a85a77c80ee126
++   entry .Duration   以秒计的量；参见 `aviation.Duration`
+
+% 1 1 0 1dcc6a2d914ac464172884f72fd6ace1
+
+@ 0 7 0 0661c7097310edbe18943c9cd5dc991e
++         别名 `Duration = Quantity[Seconds[1]]`，用 `Duration(millis)` 由毫秒构造，`Duration.Error` 用于无法读作时长的文本。
++     entry .apply   `Duration(1000L)`：由毫秒构造时长
++     entry .generic   任何时间量，表示为纳秒，跨越 `Durations` 领域
++         针对每个可归一化为秒的 `Quantity[units]` 的 `Abstractable` 和 `Instantiable`，让时长与其他库的时长类型相互转换。
++     entry .Error   当文本不是时长时由 `durationDecodables.compactDurationDecodable` 抛出
+
+% 1 1 0 1f6e85f3834ee5081349cdfcace21f47
+
+@ 0 13 0 09dfcec84e84d654089f15314b462060
++           错误 `↯/s.73.5`：_`text` is not a recognized duration_。
++           负数、单词、未知单位或空文本。
++       entry #text   不是时长的文本
++   entry .long   瞬时的刻度计数
++   entry .over   `instant.over[Tai]`：经由 TAI，另一条时间线上的同一瞬时
++       两条时间线都需要 `Chronometry`，因此 `Monotonic` 瞬时无法转换。
++   entry .~   `start ~ finish`：瞬时构成的半开 `Period`
++   entry .in   `instant.in(timezone)`：把瞬时表示为某个时区中的 `Moment`
++       需要一个 `RomanCalendar` 和时间线的 `Chronometry`。
++       日期按 `java.time` 所用的外推公历取得，处于回拨重叠较晚一侧的时刻被标记为 `Occurrence.Second`，使它落回到这个瞬时。
++   entry .timestamp   `instant.timestamp`：把瞬时表示为作用域中 `Timezone` 里的无时区 `Timestamp`
++   entry .from   `duration.from(instant)`：从某个瞬时开始、持续该时长的 `Period`
+
+@ 0 1 0 17496c59b67b21bf032dd057d3ea7f92
++ entry .timestampInternal   `Timestamp`、`Date` 和 `Monthstamp` 的所在之处
+
+% 1 1 0 19d2eb27c264157e140d411e2c5a6af9
+
+% 2 1 0 064a975355238e2807c58762195aa91f
+
+@ 0 8 0 10a62ec19b61becc13d42958aa996aae
++       不供直接使用：这个对象容纳不透明类型 `Timestamp`、别名 `Date = Timestamp in Day` 和 `Monthstamp = Timestamp in Month`、它们的伴生对象、三者的 given（位于 `Timestamp` 的伴生对象中，因而处于唯一底层类型的隐式作用域中）以及扩展方法。
++       它与 `internal` 分开，是为了让它的访问器在擦除后不与 `Year` 和 `Day` 的访问器冲突。
++       `aviation` 中 `Timestamp`、`Date` 和 `Monthstamp` 的页面有完整的说明。
++   entry .Timestamp   日期加一天中的时间，表示为不透明的 `Long`；参见 `aviation.Timestamp`
+
+% 1 1 0 1ec504a753d572020acbf7d4fcecf03d
+
+@ 0 49 0 0e128ad84329ab431852b99636c094a5
++         不透明类型 `Timestamp = Long`，打包为儒略日数乘以一天的毫秒数，再加上当天的毫秒数；`Form` 是幻影精度。
++         `Timestamp(date, time)` 构造一个。
++     entry .apply   `Timestamp(date, time)`：由日期和时钟读数构造时间戳
++     entry .inspectable   `2023-05-28T14:30:59`：公历下的 ISO 8601，不需要上下文
++         也涵盖 `Date` 和 `Monthstamp`，它们显示归零的时刻；毫秒只在非零时出现。
++     entry .timestampShowable   `time, date`，取决于作用域中的 `Clockface is Showable` 和 `Date is Showable`
++     entry .timestampSubtractable   `timestamp - timestamp`：由日、时、分、秒组成的 `Timespan`
++         民用意义上的差值，用截断除法计算，不依赖日历；其类型为 `.Difference`。
++     entry .timestampDecodable   `t"2024-01-15T14:30:59".as[Timestamp]`，抛出 `Timestamp.Error`
++         按公历读取 `yyyy-MM-dd`，然后是空格或 `T`，然后是 `HH:mm:ss`；其他形状的原因为 `BadFormat`，字段不是整数的原因为 `BadNumber`，日期或时间超出范围的原因为 `BadTime`。
++     entry .dateUnderlying   声明 `Date` 擦除后的表示，`Long`
++     entry .dateSubtractable   `date - date`：之间的整天数，作为 `Quanta[Days[1]]`
++     entry .dateSubtractable2   `date - days`：早若干 `Quanta[Days[1]]` 的日期
++     entry .dateAddable   `date + days`：晚若干 `Quanta[Days[1]]` 的日期
++     entry .dateAddable2   `days + date`：同上，操作数顺序相反
++     entry .dateShowable   `date.show`，取决于作用域中的 `Endianness`、`Date.Numerics`、`Date.Separation` 和 `Years`
++         无论作用域中是哪种日历，都按公历读取各字段，按字节序排列它们，在 `FixedWidth` 下填充月和日，在 `TwoDigitYear` 下把年份截为两位，再用分隔符连接。
++         `dateFormats` 中的 given 把这四者打包在一起。
++     entry .dateDecoder   `t"2011-12-13".as[Date]`：由数字组成的 `year-month-day`，抛出 `Moment.Error`
++         在 `-` 处切分为三个整数，按公历构造；月和日可以是一位或两位数字。
++         其他形状的文本抛出 `Moment.Error(_.Format(…))`，月或日超出范围则抛出 `Moment.Error(_.Unknown(…))` 或 `_.Invalid(…)`。
++     entry .dateEncodable   `date.encode`：`2024-01-15`，按作用域中的 `RomanCalendar`
++     entry .dateOrderable   日期之间的 `<`、`<=`、`>`、`>=`
++     entry .dateComparable   按儒略日数为日期排序
++     entry .timestampOrderable   时间戳之间的 `<`、`<=`、`>`、`>=`
++         `Orderable` 的 `Self` 是不变的，因此尽管比较方式相同，`Date` 和 `Timestamp` 仍各需一个实例。
++     entry .timestampComparable   在毫秒网格上为时间戳排序
++     entry .dateWorkingDays   `date + WorkingDays(n)`：往后第 `n` 个工作日
++         需要一个 `Holidays` 和一个 `Hebdomad`。
++         向前越过周末和节假日，即使是 `WorkingDays(0)` 也会落在一个工作日上。
++     entry .dateWorkingDaysSubtractable   `date - WorkingDays(n)`：往前第 `n` 个工作日
++     entry .monthShowable   `monthstamp.show`：月份和年份，取决于作用域中的 `Months`、`Date.Separation`、`Endianness` 和 `Years`
++         在 `LittleEndian` 下为 `2024/Jan`，否则为 `Jan/2024`，中间是分隔符。
++     entry .monthstampSubtractable   `monthstamp - day` 的结果类型见证：一个 `Date`
++         该运算符的展开总是走 `.monthstampSubtraction` 的内联路径，在代码编译时检查日期；只有直接调用才会到达这里的 `subtract`，而在那里，月份中不存在的日是一个缺陷。
++     entry .monthstampSubtraction   `2024-Jan-15` 背后的内联运算符：`Monthstamp.MonthstampSubtraction`
++     entry .monthstampAddable   `monthstamp + span`：加上 `Timespan` 中的整月和整年，保持月精度
++     entry .monthstampTimespanSubtractable   `monthstamp - span`：减去 `Timespan` 中的整月和整年
++     entry .Error   当文本不是时间戳时由 `t"…".as[Timestamp]` 抛出
+
+% 1 1 0 0b4c5fb9a03f43291fcc76fa832c4a00
+
+@ 0 10 0 14d3dd43d7d174591a9759442aff3431
++           错误 `↯/s.73.9`：_the time `value` could not be parsed because `reason`_，原因的编号作为错误代码的第二部分：`BadFormat`（1），_the input did not match the expected timestamp format_；`BadNumber`（2），_a numeric component could not be parsed as an integer_；`BadTime`（3），_a date or time component was outside the valid range_。
++       entry .Reason   `BadFormat`、`BadNumber` 或 `BadTime`
++       entry .communicable   把每个原因呈现为对应的消息
++       entry #value   无法解析的文本
++       entry #reason   原因
++   entry .Date   `Date` 伴生对象：`julianDay`、带检查的构造器，以及呈现所需的各个部分
+
+% 1 1 0 1eb0b8e6707307c4168dd2ba7e164564
+
+@ 0 8 0 1412fd750f5e1dd50a292bddc2f31730
++         `Date` 本身是别名 `Timestamp in Day`；这个对象构造日期，并声明组成日期呈现的各个类型。
++     entry .julianDay   `Date.julianDay(2460325)`：由儒略日数构造日期，不做检查
++     entry .apply   作用域中 `Calendar` 下的 `Date(year, month, day)`，日期不存在时抛出 `Moment.Error`
++         它是内联的，因此 `Tactic[Moment.Error]` 在调用处解析；参数类型是该日历自己的 `Annual`、`Mensual` 和 `Diurnal`，所以月份必须是该日历的月份类型。
++     entry .Format   可以从中解析日期时间的文本格式，带有用于错误消息的名称
+
+% 1 1 0 1e2c25487c2948f6180995d6555d524c
+
+@ 0 7 0 0d4d9344f97f791f0531be85819ac13d
++           `Iso8601` 和 `Rfc1123` 扩展它，各自有自己的 `#Issue` 类型，说明解析器所期望的内容；`Moment.Error(_.Format(text, format, offset)(issue))` 针对它报告错误。
++       entry #name   格式的名称：`ISO 8601`、`RFC 1123`
++       entry #Issue   格式的异议类型，必须是 `Communicable`
++     entry .Numerics   显示的日期中月和日是否填充：`FixedWidth` 或 `VariableWidth`
++     entry .Separation   显示的日期中各字段之间的文本
+
+% 1 1 0 1ffb95676094783b10d96ff393c0cfde
+
+@ 0 36 0 1ce824ee6bdf46081e168df9df156415
++           `#separatorChar()` 是分隔符，`#separator` 是作为值的同一分隔符；`dateSeparators` 包提供 `/`、`-`、`.` 和空格。
++       entry #separatorChar   分隔符，作为文本
++       entry #separator   分隔符，作为文本：`#separatorChar()`
++   entry .Difference   `timestamp - timestamp` 的类型：由日、时、分、秒组成的 `Timespan`
++   entry .Monthstamp   别名 `Timestamp in Month`：月精度的时间戳；参见 `aviation.Monthstamp`
++       只有这个类型位于这里，与 `Date` 并列，使它的 given（`Timestamp.monthShowable`、`monthstampSubtractable`、`monthstampSubtraction`、`monthstampAddable` 和 `monthstampTimespanSubtractable`）处于底层 `Timestamp` 的隐式作用域中；`aviation` 包中的 `Monthstamp` 对象容纳工厂方法和编译时的 `-` 运算符。
++   entry .date   时间戳的日期，去掉一天中的时间
++   entry .time   时间戳在一天中的时间，作为 `Clockface`
++   entry .jdn   时间戳日期的儒略日数
++   entry .year   作用域中 `Calendar` 下时间戳的年份；对 `Monthstamp` 则不需要日历，按公历
++       该名称的两个扩展方法：在 `Timestamp`（因而也在 `Date`）上，为作用域中的 `Calendar` 给出 `calendar.annual(date)`；在 `Monthstamp` 上，给出公历年份，不需要日历，因为月戳带有公历 `Month` 的标记。
++   entry .month   作用域中 `Calendar` 下时间戳的月份；对 `Monthstamp` 则为公历 `Month`
++       同 `.year`：在 `Timestamp` 上为 `calendar.mensual(date)`，在 `Monthstamp` 上为公历月份，不需要日历。
++   entry .day   作用域中 `Calendar` 下时间戳在月份中的日
++   entry .weekday   时间戳日期的星期几，由其儒略日数得出
++   entry .weekend   按作用域中的 `Hebdomad`，时间戳的日期是否为周末
++   entry .anniversary   时间戳的公历月和日，作为 `Anniversary`
++   entry .monthstamp   时间戳的月份，作为 `Monthstamp`，按作用域中的 `RomanCalendar`
++   entry .yearDay   作用域中 `Calendar` 下一年中的第几天，从 1 开始
++   entry .hour   时间戳时间的小时
++   entry .minute   时间戳时间的分钟
++   entry .second   时间戳时间的秒
++   entry .in   `timestamp.in(timezone)`：把时间戳表示为某个时区中的 `Moment`
++   entry .stdlib   把时间戳表示为 `java.time.LocalDateTime`，按作用域中的 `RomanCalendar`
++   entry .instant   `timestamp.instant`：经由 `Moment`，落到作用域中的 `Timezone` 上
++       需要一个 `Timezone`、一个 `RomanCalendar` 和一个 `GapPolicy`，使裸时间戳遵循与时刻相同的间隙方针；没有重叠选择器时，它落在较早的偏移量上，即 `Occurrence.First`。
+
+% 0 1 0 045eb91b2132719a1dab5eaf823f2536
+
+% 0 1 0 1cb93f4555f5011519fc7dcee58d2a97
+
+% 0 1 0 05c6dc5d6f624fa10a993d743e3a843d
+
+% 0 1 0 068bc30a4e1c81861d351a794391c71a
+
+@ 0 1 0 0c414c7a600964bd06311590569ce9a3
++   entry .addDays   `date.addDays(31)`：晚若干整天的日期，计数为负时则更早
+
+@ 0 1 0 15d4269bff917b5f0417d04ed442f695
++ entry .Meridiem   十二小时制时钟读数所属的半天：`Am` 或 `Pm`
+
+% 1 1 0 15632aa52ec4921d09ceab70a421bb54
+
+@ 0 5 0 18195b223f5f3e3e0d17e2448546e1e6
++       一个有两个分支的枚举，`Am`（正午之前）和 `Pm`（正午及之后），十二小时制的 `Clockface.Format` 把它写在时间之后。
++       伴生对象的 `.showable` 呈现为 `AM` 和 `PM`；`timeMeridiems` 包提供 `upperMeridiem`、`lowerMeridiem`、`upperPunctuatedMeridiem` 和 `lowerPunctuatedMeridiem`（`a.m.`/`p.m.`），可按名称导入以替代它，`hourFormats.twelveHourClock` 会从作用域中取用。
+
+% 2 1 0 0251ae561a6cc98d1586617f21d53e5b
+
+% 3 1 0 131ccb65f95c30d0035c28789543da73
+
+% 0 1 0 1838fa58d90c5c1001f2bd1f4df04a5c
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0be69f86fb80352e0453b0fc5aefcaf8
+
+% 0 1 0 014d5df5242fcabf17656f0199a193d5
+
+% 1 1 0 139c634f37d53748159c22eb29b6d7db
+
+@ 0 1 0 07362e64003f76ed128b858ea4674677
++   entry .showable   把上下午标记呈现为 `AM` 或 `PM`，位于隐式作用域中
+
+@ 0 1 0 18c4ce0fc9b21c3a0a54de85a626d348
++ entry .Moment   某个时区中的挂钟时间读数：日期、时间、时区，以及夏令时重叠或闰秒如何解决
+
+% 1 1 0 04d9594c7d7a9ff60740aeaa4d2068d2
+
+@ 0 5 0 1e926530e15b191e03bfb699a3f36bcc
++       `Moment` 是锚定到某个 `Timezone` 的 `Timestamp`——某个特定地点的一次特定时钟读数。
++       `Timestamp` 没有时区，`Instant` 是物理时间线上的一个点，而 `Moment` 是两者之间的桥梁：`#instant` 通过时区的规则把它落到 `Unix` 时间线上，`Instant#in(timezone)` 和 `Timestamp#in(timezone)` 构造一个时刻。
+
+% 2 1 0 0f11b0cabb21a78b00a46fb6bcd3e854
+
+% 3 1 0 13e29d379f58220002de28f8a76ec395
+
+% 4 1 0 017dc4a2b0cdc1be1bf55bd3e00e08d3
+
+% 0 1 0 11f39d46a500298519de27fa5c82246b
+
+% 0 1 0 0f34a591e8569fb016e9f3c7b4d48035
+
+% 0 1 0 1d1d43083535d92a1804d3e1133a5a97
+
+% 1 1 0 132b063b9e67708c157b840034de2509
+
+@ 0 10 0 0f523548fae5e30211b87cfef4f10eee
++       有两种情况会使挂钟时间读数产生歧义，`Moment` 为每一种都带有一个字段。
++       时钟回拨时，有一个小时会重复，`#occurrence` 说明该读数是这个小时的 `Occurrence.First`（较早的偏移量，默认值）还是 `Occurrence.Second`；对于处于重叠中的瞬时，`Instant#in` 会正确设置它。
++       插入的闰秒使某一分钟长达六十一秒时，读数 `23:59:60` 的 `#leap` 为 `Leap.Inserted`，它被存储为 `:59`，并落到下一秒上。
++       从未发生过的读数——处于春季时钟跳过的那一小时中的读数——不是时刻的字段，而是一个上下文 `GapPolicy`：`GapPolicy.pushForward` 是默认值，`gapPolicies.pushBackwardGapPolicy` 保持旧的偏移量，`gapPolicies.rejectGapPolicy` 以原因 `Gap` 抛出 `Moment.Error`。
+
+% 2 1 0 05cde3de68f770361c17d8af2a33f4b4
+
+% 3 1 0 05c5002c1638446801d242d9cdc0ff38
+
+% 4 1 0 006a3dd3b30ddb071785c1780a0df354
+
+% 0 1 0 1711c88aed6e5cb013f0fd64f321a00b
+
+% 0 1 0 178471129d67342a1c42fce7b9c5b0b9
+
+% 0 1 0 0c98f0254f9135750479c6de6192cf33
+
+% 0 1 0 0fa6914bfbb811720ef3b6dcb33270a5
+
+% 1 1 0 14093e88b6e9c3aa0841c38544f7632d
+
+@ 0 8 0 02d509b27e3ab4700cb47d979cd13d06
++       时刻按其落定的瞬时排序、比较和相减（`.orderable`、`.comparable`、`.subtractable`），因此 `Second` 出现排在 `First` 之后，两个时区按绝对时间比较；这些操作以及 `#instant` 本身都需要作用域中有一个 `RomanCalendar` 和一个 `GapPolicy`。
++       加到时刻上的 `Timespan`（`Timespan.momentAdd`）把其中的日和月应用于挂钟时间，把时、分、秒按物理时间应用，因此 `+ 1*Day` 在夏令时变更前后保持相同的本地时间，而 `+ 24*Hour` 则不然。
++       `Rrule[Moment]` 在起点的时区中展开重复规则，`ts"…"` 插值器由带时区的 ISO 8601 字面量构造时刻。
+
+% 1 1 0 0f2f6c8164115bdf01475c7ef0364219
+
+% 1 1 0 0155dfc64b7a54f20a5529217f6c0337
+
+% 1 1 0 02d058974f5e3c4e00b7cadebe11a643
+
+% 1 1 0 15e325c23dbbbef219adb88b85f0fe00
+
+% 0 1 0 1b2b4f854906b9570465e16bdf60f287
+
+% 0 1 0 07e1549c90fbaa360925d9839ad764ca
+
+@ 0 20 0 02ec7fccf423fe781c9e26cbf7f9cdff
++   entry .generic   把时刻表示为其瞬时的纪元毫秒数，跨越 `Instants`
++       `Abstractable across Instants to Long` given，使时刻可以交给任何接受通用瞬时的 API。
++       它用 `#instant` 落定时刻，因此需要作用域中有一个 `RomanCalendar`（并使用默认的 `GapPolicy`）。
++   entry .orderable   时刻按其落定的瞬时排序
++       需要作用域中有一个 `RomanCalendar` 和一个 `GapPolicy`，因为比较时要落定两侧。
++       重复小时的 `Second` 出现晚于 `First`，不同时区中的两个时刻按绝对时间比较，而不是按它们的挂钟字段。
++   entry .comparable   时刻的运行时 `Comparable`，按落定的瞬时比较
++       `.orderable` 的运行时对应物，供排序和 `Period[Moment]` 使用；需要作用域中有一个 `RomanCalendar` 和一个 `GapPolicy`。
++   entry .subtractable   `later - earlier`：两个时刻之间的物理 `Duration`
++       两个落定瞬时之差，以秒计，因此它遵循夏令时（时钟跳过的小时不计入），并在 `Unix` 时间线的计数解释下遵循闰秒。
++       需要一个 `RomanCalendar` 和一个 `GapPolicy`。
++   entry .showable   把时刻呈现为带时区的 ISO 8601 日期时间，`2024-01-01T01:00:00Z`
++       形式为 `yyyy-MM-ddTHH:mm:ss`，后跟时区在该瞬时的偏移量（`Z`、`+01:00`、…）；插入的闰秒呈现为第六十一秒，`:60`。
++       需要作用域中有一个 `RomanCalendar` 和一个 `GapPolicy` 来求出偏移量。
++   entry .Error   日期、时间或时刻无效时抛出
+
+% 1 1 0 09d4c4db06e628b90ce733f0c13e2c32
+
+@ 0 6 0 17213f00582a33810d9748b03deff4d6
++         错误 `↯/s.73.3`：_the date was not valid because `reason`_，原因的编号作为子代码。
++         它是整个日期时间词汇的错误，而不只是 `Moment` 的：`Date(year, month, day)`、`Month(index)`、`Calendar#jdn`、`WeekDate(…)`、`OrdinalCalendar(year, dayOfYear)`、`Rfc1123.parse` 和 ISO 8601 瞬时解码器都会抛出它，运行时计算的 `Monthstamp - day` 经过 `Calendar#jdn`，也会抛出它。
++         用 `Moment.Error(_.Gap)` 构造，同时还会捕获 `Diagnostics`。
+
+@ 0 8 0 1bfeabc435c5062a11771c6b884f9840
++         `.Reason` 枚举有四个分支。
++         `Format(text, format, offset)(issue)`，编号 1：_`text` does not conform to format `name` (`issue` at `offset`)_，来自 `Rfc1123` 或 `Iso8601` 之类的解析器，其中 `issue` 是该格式自己的 `Issue` 类型。
++         `Invalid(year, month, day, calendar)`，编号 2：_`year`-`month`-`day` does not exist in the calendar `name`_。
++         `Unknown(text, kind)`，编号 3：_`text` is not a recognized `kind`_，用于不成立的月份名称或索引。
++         `Gap`，编号 4：_the wall-clock time does not exist in its timezone (a spring-forward DST gap)_，仅在 `gapPolicies.rejectGapPolicy` 下抛出。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 018f95b2667dbd2707e2f9e303c01e4d
+
+% 0 1 0 1ca071059939cd91110c43756903ec4c
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 103a409c8107249e18e42061240a7a37
+
+% 0 1 0 1b9fb9bc92877ac5042f88407a8f9e24
+
+% 0 1 0 06828d4e4fa9f4e9199c47e33f3e3657
+
+% 1 1 0 1abf86f8533e693b09af8d303ba18ccb
+
+@ 0 24 0 10185a091457f0170361220000bdcc3a
++     entry .apply   `Moment.Error(_.Unknown(text, kind))`：由在 `Reason` 上选定的原因构造错误
++     entry .Reason   日期或时间被拒绝的原因：`Format`、`Invalid`、`Unknown` 或 `Gap`
++         每个分支带有一个 `number`（1 到 4），它成为错误的子代码；该枚举是 `Communicable`，因此原因呈现为 `Moment.Error` 页面上引用的消息。
++         `Format` 原因的 `issue` 是一个依赖字段，其类型由产生它的 `Date.Format` 决定，例如 `Rfc1123.Issue`。
++     entry #reason   这个错误携带的 `Moment.Error.Reason`
++   entry #date   读数的日历日期
++   entry #time   读数在一天中的时间，作为 `Clockface`
++   entry #timezone   以其规则落定读数的时区
++   entry #occurrence   这是重复小时的第几次出现：`Occurrence.First`（默认）或 `Second`
++       仅在回拨重叠中、同一挂钟小时出现两次时才有意义。
++       对于处于较晚的、转换之后的偏移量中的瞬时，`Instant#in` 把它设为 `Second`。
++   entry #leap   读数是否为插入的闰秒：`Leap.None`（默认）或 `Leap.Inserted`
++       读数 `23:59:60` 存储为带 `Leap.Inserted` 的 `:59`，`#instant` 把它落到无闰秒的 `Unix` 时间线上晚一秒的位置，`#tai` 则落到下一秒之前一个国际单位制秒的位置。
++       `ts"…"` 插值器为 `:60` 字面量设置它。
++   entry #instant   通过时区的规则把读数落到 `Unix` 时间线上
++       需要作用域中有一个 `RomanCalendar` 和一个 `GapPolicy`。
++       回拨重叠中的读数由 `#occurrence` 解决；拨快间隙中的读数由 `GapPolicy` 解决——默认向前（在同一挂钟时间上保持旧的偏移量，因而恰好落在间隙之后），使用 `gapPolicies.pushBackwardGapPolicy` 时向后，在 `gapPolicies.rejectGapPolicy` 下以原因 `Gap` 抛出 `Moment.Error`。
++       插入的闰秒落到紧随其后的那一秒。
+
+% 2 1 0 14076497eb2227df195545e46a3c4b65
+
+% 3 1 0 012e1fb0716895bb0a2a915d017c05fd
+
+% 4 1 0 0cfc8267425583f81f027af714ced74f
+
+% 5 1 0 0b7fa39dc40be18a0a638580b8525762
+
+% 6 1 0 0d7f49c190e3b56d1b21a141e88a53fe
+
+% 2 1 0 03065990d0a37a6c19b12fe22a5541b3
+
+% 0 1 0 08f3ef620ea39f78102521b4f3897461
+
+% 1 1 0 0f7ca0d1cc8e1e200fe8803e4f76430c
+
+% 2 1 0 10fa93d68870535f0d55a196d24232e5
+
+% 3 1 0 05a8eca1dd35d18f14de5a52909429cf
+
+% 4 1 0 1f1b318cfa5b9a461cca196518f51e50
+
+% 5 1 0 0d182e4be51d3525159ca24fbe3c3c4f
+
+% 2 1 0 06b0515a49edcc371f8a947ce0a4ff5d
+
+% 0 1 0 1f3cc3aad4ab3c6b10e743436caf216b
+
+% 1 1 0 0e0a887a19d77bf715520831738619be
+
+% 2 1 0 1c2c94dc11d5eb250fed2e6dd96bd777
+
+% 3 1 0 1dfe5df65bfde97f19d7fede49fc772d
+
+% 4 1 0 01529b5687f377d112f23243205145fc
+
+% 5 1 0 095d7a7c1188bb650ade611ca8da9f50
+
+% 6 1 0 17aba018460ae0f4025378486137a128
+
+% 2 1 0 08297deaaf11da401966104b7a1624e9
+
+% 0 1 0 155543c38d3bad590ee272dc09a22617
+
+% 1 1 0 032f5a29e857d8661ca1c2e7997fb41e
+
+% 2 1 0 1c19c95b7ffdab361c1e066e5eb76552
+
+@ 0 5 0 150a55a78b953b3e057f7a5f163f16d6
++   entry #tai   把读数落到原子 `Tai` 时间线上，计入闰秒
++       同 `#instant`，再转换为 TAI，不同之处在于插入的闰秒恰好位于下一秒之前一个国际单位制秒，而不是与它共享同一瞬时。
++       需要一个 `RomanCalendar` 和一个 `GapPolicy`。
++   entry #timestamp   去掉时区的读数，作为 `Timestamp`
+
+@ 0 1 0 1c7a648006125bd4168401df15939226
++ entry .MonotonicClock   `monotonic()` 读数的来源：从任意原点开始经过的时间
+
+% 1 1 0 0b23e0d936a527cd0154537348f3b1ea
+
+@ 0 7 0 1abf46fff6cea44f15e81aeb4d8ceb94
++       `MonotonicClock` 读取系统的单调时钟，其读数是 `Instant over Monotonic`：它们以纳秒为刻度（`Resolution.monotonic`），从不倒退，并从一个没有意义的原点开始计量——因此可以相减得到 `Duration` 或进行排序，但永远不能转换为日期或放入时区。
++       `monotonic()` 读取作用域中作为 given 的 `MonotonicClock`；`.current`（JVM 的 `System.nanoTime`）位于隐式作用域中，Wasm 程序则导入 `clocks.wasiMonotonicClock` 来改为读取 `wasi:clocks/monotonic-clock`。
+
+% 2 1 0 13123cc29be74ce31cb9b775f840cf9f
+
+% 3 1 0 1817793c72c75ac21cc3dac469e165f5
+
+% 5 1 0 119adf0013ecfa9d0e1e07cfd3500e0d
+
+% 0 1 0 0e96dda6cb20728d118ae7a318809bc2
+
+% 1 1 0 0ce749cc017b980c1f7cbab76da1ebdb
+
+% 2 1 0 00da698d4efbfe6a082b194111211c1a
+
+@ 0 2 0 020fca127c8b6780064e165231ba20bf
++       它是 `Findable`，因此可以把自己的 `MonotonicClock` 绑定为局部 given，使计时具有确定性。
+
+% 0 1 0 04a589f9e810d3631981ae0e834608d3
+
+% 1 1 0 1a2944be809c72770de0dce9dde236f6
+
+% 0 1 0 040b2106c07d06151f29e5b14ac07e65
+
+@ 0 2 0 110b16847efbc8f60b56fc1a2976d0ae
++   entry .current   JVM 的单调时钟 `System.nanoTime`，位于隐式作用域中
++   entry #apply   读取时钟，作为 `Instant over Monotonic`
+
+@ 0 1 0 0f2e5c08977fe7e50e2d5cd13c9e3fc4
++ entry .Month   罗马系日历的十二个月份，`Jan` 到 `Dec`，同时也是时间跨度的基数
+
+% 1 1 0 02f6fe9b7eb63d330b3f5f83c0486cb5
+
+@ 0 4 0 0063465391a621070afdd60403cfd9a4
++       `Month` 是由 `Jan`、`Feb`、`Mar`、`Apr`、`May`、`Jun`、`Jul`、`Aug`、`Sep`、`Oct`、`Nov` 和 `Dec` 组成的枚举，导出到包中，因此各分支可以直接使用。
++       它是每个 `RomanCalendar`（儒略历、公历、各种改历历制）以及 `OffsetCalendar` 的月份类型；其他日历有自己的月份枚举。
+
+@ 0 4 0 04f3d38889da4b9313b4982d2fb041ed
++       伴生对象是一个 `MonthRadix`，因此 `n*Month` 是一个 `Timespan of Month.type`——日历月的计数，只有在作用域中有处理月内日溢出的 `Disambiguation` 时才能加到 `Date` 上。
++       月份也用来构造日期：`2024 - Jan` 是一个 `Monthstamp`，`Jan - 15` 是一个 `Anniversary`，因此 `2024-Jan-15` 从左到右读作一个 `Date`。
+
+% 2 1 0 0451b1f23b9151681df0b71c8b0308d2
+
+% 3 1 0 0a9d93180a0d68b419c0017ff51d5520
+
+% 4 1 0 08a2454651bfba8e159e20e16f852221
+
+% 5 1 0 04b81136cffe06cc05b00a67bc87034b
+
+% 6 1 0 1ad8562b9b6f03c11f68c9f10537f665
+
+% 0 1 0 0a2934e22c204efd1a74fed3d85afd0e
+
+% 0 1 0 1ddcd2f9f80b81ef06072f596c584c9c
+
+% 0 1 0 163399107dc4720f17638d9ac608526d
+
+% 1 1 0 061c9d3a7174dd0e038e7fc504c49a0f
+
+@ 0 3 0 13c9b9ea5c9f83ca10f0acd744bb6898
++       月份如何*显示*是一种选择：`.showable` 需要作用域中有一个 `Months`，从 `monthFormats` 包导入（`englishMonths`、`englishShortMonths`、`frenchMonths`、`numericMonths`、…）。
+
+% 0 1 0 177f2fdf8b9ef1b8143c4351fb18ce8c
+
+% 0 1 0 141339c48d3715e71af3a4380ecca783
+
+% 0 1 0 060f3242f70b63ec05504c5a6226a0e7
+
+% 1 1 0 10dcdb0cabe50f3407144f03028eb172
+
+@ 0 31 0 023b1f44b1173876178198571375d4b5
++   entry .all   按顺序排列的十二个月份，作为 `Array`
++   entry .apply   从 1 开始的索引处的月份，或按三字母名称取得的月份
++       `Month(3)` 是 `Mar`；`Month(t"Mar")` 按枚举的分支名称得到同一结果。
++       超出 1 到 12 的索引，或不是分支名称的名称，以原因 `Unknown` 抛出 `Moment.Error`。
++   entry .unapply   针对从 1 开始的索引和不区分大小写的名称的提取器
++       `case Month(month)` 匹配 1 到 12 的 `Int`，或 `t"mar"`、`t"MAR"` 之类的 `Text`（查找前名称会先转为小写再首字母大写）。
++   entry .multiplicable   `n*Month`：`n` 个日历月的时间跨度
++       位于隐式作用域中的 `Int is Multiplicable by Month.type` given，使 `3*Month` 成为 `Timespan of Month.type`。
++   entry .monthOfYear   `year - month`：一个 `Monthstamp`，如 `2024 - Jan`
++       为年份和月份之间的 `-` 确定类型的 `Int is Subtractable by Month to Monthstamp` given。
++       运算符本身经由 `.monthOfYearOp` 展开，因此 `2024 - Jan - 15` 仍能看到字面量年份和月份。
++   entry .MonthOfYear   `year - month` 的内联形式，让 `Monthstamp - day` 能看到字面量
++       通常不必指名：`.monthOfYearOp` 提供它。
++       内联之后，`2024 - Jan` 是字面量构造 `Monthstamp(Year(2024), Jan)`，正是这一点让 `Monthstamp - day` 运算符能在代码编译时检查 `2024-Feb-30`。
++   entry .monthOfYearOp   `.MonthOfYear` 的内联 given
++   entry .showable   按作用域中的 `Months` 呈现月份
++       需要一个 `Months`，从 `monthFormats` 按名称导入；没有默认值，因此不选定一个就无法显示 `Month`。
++   entry .subtractable   `month - day`：一个 `Anniversary`，如 `Mar - 14`
++       `Operand = Int`、`Result = Anniversary` 的 `Month is Subtractable` given，`2024-Mar-14` 的日就是这样附着到月份上的。
++       这里不检查日：要先把 `Anniversary` 应用于某个年份，日期才存在。
++   entry #numerical   月份从 1 开始的编号，`Jan` 为 1
++   entry #offset   在平年或闰年中，这个月开始之前一年中已过的天数
++       `Feb.offset(false)` 为 31；`Mar.offset(true)` 为 60。
++       各日历用它由年、月、日计算儒略日数。
+
+@ 0 1 0 0535dd7f9a9f97651bb524913a38d7f8
++ entry .Months   月份名称的一种选择：`Month` 如何显示
+
+% 1 1 0 141a5a7e60fb039d14b3039e94e04c10
+
+@ 0 6 0 12904c0f73daf2ac010e8ca596fc1d7f
++       `Months` 把每个 `Month` 映射到它的名称，是 `Month.showable` 和日期格式所需的上下文。
++       隐式作用域中没有：从 `monthFormats` 包按名称导入一个——`englishMonths`（`January`）、`englishShortMonths`（`Jan`）、`frenchMonths`、`germanMonths`、`spanishMonths`、`oneLetterAmbiguousMonths`、`numericMonths`（`1`）或 `twoDigitMonths`（`01`）——或者写成 lambda，因为这个特质只有一个方法 `#name`。
+
+% 2 1 0 1baa1da37d46a4b702e2f620f3165df1
+
+% 3 1 0 06b6fa6da23b6a4a1e84c7a746616d46
+
+% 0 1 0 06a11e509a3fc4aa1c3076a42d2fdc85
+
+% 0 1 0 1c518996ada748c305c41b1886e54d12
+
+% 1 1 0 12ae30d14b10c2c51825f7f3ddea3fd2
+
+@ 0 1 0 0c2934dfb575a440133ee942b5fcc577
++   entry #name   在这种选择下某个月份的名称
+
+@ 0 1 0 0ed5625622d6ad750baa4e30252463ab
++ entry .Monthstamp   年份和月份，`2024 - Jan`：月精度的时间戳
+
+% 1 1 0 171dea1878bc06f80bc98acd7acc28ad
+
+@ 0 5 0 1db3b1cd104a976e1d4818c607c92d70
++       `Monthstamp` 是 `Timestamp in Month`——公历某月的第一个瞬时，带有月精度的标记，因此同一个月的两个月戳相等。
++       它写成年份减去月份，`2024 - Jan`，是日期字面量的中间部分：`2024-Jan-15` 就是 `(2024 - Jan) - 15`。
++       它的 `year` 和 `month` 不需要作用域中有日历就能读回，`Date#monthstamp` 可以从日期中取回一个月戳。
+
+% 2 1 0 11809fd9b4bb3347036549afe691ecd4
+
+% 3 1 0 00ed95398c687d661d59be3ef6ebaaf5
+
+% 4 1 0 0865dcc07d1fe24d1de82cb4507e8786
+
+% 0 1 0 032cbcc7b7d7896f120f254a5e4a1e2e
+
+% 0 1 0 1c7eeecf175281a219666a712865727b
+
+% 0 1 0 056825051ca705a70111371913a2906e
+
+% 0 1 0 03f0b3261a7a86f91a225eac8b07cd3b
+
+% 1 1 0 11f3c7b68f3874ce083b3ed166dd3005
+
+@ 0 7 0 0c4d2bb78d367e1a0af5c1b425b3f26d
++       减去月份中的某一天得到那一天的 `Date`，运算符会在代码编译时检查它：`2024-Feb-30` 是编译错误，而不是运行时错误。
++       为此，年、月、日都必须是字面量（或字面量的局部 `val` 或 `given` 别名），并且作用域中的 `RomanCalendar` 必须是 `calendars.gregorianCalendar`、`julianCalendar`、`papalCutover` 或 `britishCutover` 之一——其他任何情况本身就是一个指出该操作数的编译错误。
++       运行时计算的日期则改用日历的 `jdn(year, month, day)` 在 `Tactic[Moment.Error]` 下构造。
+
+@ 0 6 0 0c86db486b86647816301c3176020c4d
++       以整月和整年进行的算术保持结果为月精度：`(2024 - Nov) + 3*Month` 是 `2025 - Feb`，`(2024 - Jun) + 1*Year` 是 `2025 - Jun`，减去 `Timespan` 也以同样的方式回退；跨度中的日、时及更细的分量被忽略。
++       月戳（在作用域中有 `Months`、`Date.Separation`、`Endianness` 和 `Years` 时）按字节序显示为 `Mar.2024` 或 `2024.Mar`。
++       这些 given 与 `Timestamp` 的 given 放在一起，位于底层类型的隐式作用域中。
+
+% 1 1 0 196a4b73e8c34130104e42c5b0199308
+
+% 1 1 0 1577f8d453d52ea302ef5fc38dbe5709
+
+% 0 1 0 1ca8d94d4d92ff600e3a9603f9af0a4a
+
+% 0 1 0 0cff37454a1833cc17209a749e49d7bc
+
+@ 0 11 0 15cbce261a25439113b006d9562c901b
++   entry .apply   `Monthstamp(year, month)`：月份的第一天，作为月精度的戳
++       计算该月第一天的公历儒略日数；`2024 - Jan` 运算符经由 `Month.monthOfYear` 到达这里。
++   entry .MonthstampSubtraction   把 `monthstamp - day` 变成 `Date` 的内联 `-`，在编译时检查
++       通常不必指名：`monthstampSubtraction` given 提供它。
++       它的 `op` 是一个宏：当年、月、日都是字面量且作用域中的 `RomanCalendar` 是已知日历时，它在代码编译时校验日期，并在遇到 `2012-Feb-30` 这样的无效日期时中止；非字面量的操作数或无法识别的日历是一个指出它的编译错误。
++       普通的 `Subtractable` 见证 `Monthstamp.monthstampSubtractable` 在其 `subtract` 被直接调用、而日在该月中不存在时，会 panic 而不是抛出错误。
+
+@ 0 1 0 08370489c6799ed30a5fb49e9cb6e49e
++ entry .OffsetCalendar   与某个罗马系日历共享月和日、但以偏移量为年份编号的日历
+
+% 1 1 0 1dae3bd772aa65350236c66a75b06da6
+
+@ 0 5 0 04fe07d0e485e73b01b3f269cd6f3530
++       `OffsetCalendar(base, offset, name)` 是在另一种纪年下的 `RomanCalendar` 的月和日：泰国佛历是公历加 543（`calendars.buddhistCalendar`），中华民国的民国纪年是公历减 1911（`calendars.minguoCalendar`）。
++       两者都是 `calendars` 包中的 given，按名称导入；新的偏移日历可以由任何 `RomanCalendar` 和一个 `Int` 构造。
+
+% 2 1 0 1aa1d06e2958259c12076f3cdaec2e6f
+
+% 3 1 0 0511972a82966d111b6d4cd89b754164
+
+% 0 1 0 15ce5fb08c3b7a680bdfb067d0bde234
+
+% 1 1 0 12d65891ab686efc1d50498229ac035e
+
+% 0 1 0 19081d86059192f413bf6958014c115c
+
+% 1 1 0 1cbac61805f70a831667d2123e616710
+
+@ 0 5 0 062f9417e03240d518144795ee58171b
++       它是 `Enumerated[Month]`，因此它的 `Mensual` 是 `Month`，`MonthUnit` 是 `Month.type`：在它之下，`Timespan of Month.type` 可以加到日期上。
++       每个日历操作（`daysInYear`、`daysInMonth`、`annual`、`mensual`、`diurnal`、`zerothDayOfYear`、`computeJdn`）都按偏移量换算年份，再委托给基础日历。
+
+% 1 1 0 05921618316957f4086f1f4b14e4a20c
+
+% 2 1 0 04fde06de523b2e6197afa144b6edce3
+
+@ 0 2 0 0f240c0204b11c8008cfe31c97a45929
++   entry #name   日历的名称，例如 `Buddhist`
++   entry #MonthUnit   这个日历接受的月份时间跨度的基数：`Month.type`
+
+@ 0 1 0 11ced957d2bd86171a4aec8c36bb19d2
++ entry .OrdinalCalendar   ISO 8601 序数日期日历：一个年份和年内第几天，没有月份
+
+% 1 1 0 12ec66fa7e0732db18ef4b855210f57e
+
+@ 0 5 0 07d33581b8173ed40a7efeb765c5c7a7
++       `OrdinalCalendar` 是一个 `Calendar` 对象，只有一个残留的月份 `.Annus`，它跨越整年，因此其中的日期是一个年份加上一个从 1 到 365 或 366 的日序号，例如 2024 年的第 247 天。
++       年份的边界与公历相同。
++       它就是 given `calendars.ordinalCalendar`，按名称导入；在它之下，`Date#day` 是年内第几天，`format` 呈现为 `2024-247`。
+
+% 2 1 0 0e66e8a7d3680d4b06bd505dae6454d8
+
+% 3 1 0 074ca5cd88ec51e11784104fc661a34a
+
+% 4 1 0 0c48738de2caa78601e39e3a0c64f5eb
+
+% 0 1 0 05308bf77570d749114a396d2217cdea
+
+% 1 1 0 03b052b877907b890569d03eb82eb95a
+
+% 0 1 0 1ddc60b1391a3fdd03949cdc38179fff
+
+% 0 1 0 1349058238c0df5c151bf57242c07350
+
+% 1 1 0 0ba24166ff67be311f54af18a5a46df7
+
+@ 0 3 0 084fe65f7c2156d7189a987943ac2955
++       它的 `Mensual` 和 `MonthUnit` 都是 `Annus.type`，因此在它之下没有任何月份时间跨度可以应用于日期；`Date#yearDay` 在任何日历下都给出同样的日序号，无需切换到这个日历。
+
+% 1 1 0 11db1fe708dab9570d8a6c847c74fa4c
+
+% 0 1 0 1ffc87d9e547bf991d61063ffba0cb74
+
+@ 0 5 0 169cb60702aedcbe1743647e475349ac
++   entry .Annus   序数日历唯一的月份，跨越整年
++       一个 `MonthRadix` 对象；它的 `.annusShowable` 把它呈现为 `Annus`。
++   entry .annusShowable   把 `Annus` 显示为文本 `Annus`
++   entry .Mensual   月份类型：`Annus.type`
++   entry .MonthUnit   月份时间跨度的基数：`Annus.type`，因此没有任何月份时间跨度适用
+
+% 0 1 0 05ad913df2d6c5ad00d8d6fc34b506d8
+
+@ 0 4 0 039c2cd54ab6cce80b4a83958ceffa66
++   entry .apply   `OrdinalCalendar(year, dayOfYear)`：一年中第 `n` 天的日期
++       当日序号超出 1 到该年长度的范围时，以原因 `Invalid` 抛出 `Moment.Error`。
++       需要一个 `Tactic[Moment.Error]`。
++   entry .format   把日期呈现为 `year-dayOfYear`，例如 `2024-247`
+
+@ 0 1 0 176050324b31ff67171f89f0c735dff4
++ entry .Period   同一种点之间的半开区间：瞬时、日期、时间戳或时刻
+
+% 1 1 0 1e5da7790edd326c1aa27fb3728b4268
+
+@ 0 4 0 18e0478822eafab31ea842154b7743a1
++       `Period(start, finish)` 是从 `start`（含）到 `finish`（不含）的区间，可以基于任何点类型：`Instant over X`、`Date`、`Timestamp` 或 `Moment`。
++       由于是半开的，相邻的时段可以铺满一条时间线而不共享边界，这就是 `has(finish)` 为假的原因。
++       两个瞬时用 `start ~ finish` 界定一个时段。
+
+% 2 1 0 1ade0d2bfb4505a21f5343ab31a64001
+
+% 3 1 0 08dc4251fde3511d1777fa4c613856aa
+
+% 4 1 0 14de9a82e4fe279b01baac43804f5f5a
+
+% 0 1 0 1abe82516c5b74cc1459702b1c0d4853
+
+% 0 1 0 19bd9df91311fed9173e2c83756deac1
+
+% 0 1 0 15be0df31d17e70216191542c9d89d27
+
+% 0 1 0 1c361947e1e5445d1ea270646957fd5d
+
+% 0 1 0 17faf75ccc15307f11817cfff8a51081
+
+% 0 1 0 145689655d9edbdb0124cdbc1b3621eb
+
+% 1 1 0 1927a653de0082010a7df7384a1b6e90
+
+@ 0 7 0 0135472d0f924b3111ada943bbfed4a2
++       时段的长度是什么、可以按什么步进，取决于点的类型：瞬时之差是一个 `Duration`，可以按 `Duration` 或规则的 `Timespan` 步进；日期、时间戳和时刻之差以 `Timespan` 表示，也按 `Timespan` 步进（不规则的跨度会引入 `Date + Timespan` 所需的 `Calendar` 和 `Disambiguation`）。
++       排序相关的操作（`#intersect`、`#union`、`has`、`by`、`segments`）接受点的运行时 `Comparable`，每个 aviation 点类型的伴生对象中都有它。
++       `Recurrent` 的 `within(period)` 选出一个时段所包含的各次出现。
+
+% 1 1 0 1eff69b52a1fa34e0c1912c9c496c794
+
+% 1 1 0 10c6f42e9b0b6fda053a08e0f02c5def
+
+% 1 1 0 1b66783b9c99800502a725d1aa1643a3
+
+@ 0 9 0 0aea1a6c3f80efba12d69ff2b2717142
++   entry .inclusive   `period.has(point)`：成员关系，包含起点，不包含终点
++       `Inclusive` given：按点的 `Comparable`，当 `start <= point < finish` 时，点在时段之内。
++   entry .segments   把一个时段切分成给定长度的连续子时段
++       `Period` 上的扩展。
++       `period.segments(length)` 是从 `start` 开始、按 `length` 步进直到 `finish` 的 `Period` 列表；当长度不能整除时段时，`partial`（默认为真）保留较短的最后一段，`partial = false` 则丢弃它。
++       步长可以是点能够相加的任何东西（`point is Addable by step to point`）：对于瞬时是 `Duration` 或 `Timespan`，对于日期和时间戳是 `Timespan`。
+
+% 2 1 0 10ef5eb80f97248d17b7818edb624f24
+
+% 3 1 0 0779ead5359cf57b07d948c3171570ef
+
+% 0 1 0 10f3d6464bacac020551154d9bcb236d
+
+% 0 1 0 0fe5e5e8e84bd2401c760bc22bf425f2
+
+% 1 1 0 131d49257633bee8056aa18304b8382e
+
+@ 0 5 0 191ddd76f1b6725f109f37f74dbe5664
++   entry .by   按步长取时段中的各点，作为一个惰性的 `Chain`
++       `Period` 上的扩展。
++       `period.by(step)` 是 `start`、`start + step`、`start + 2·step`……，只要仍在 `finish` 之前，`finish` 本身不包含在内。
++       这个链是惰性的，因此一个跨越多年、按天采样的时段在其值被需要之前不产生任何开销，而 `keep(n)` 的代价很低。
+
+% 2 1 0 185acdb5ea4212930ffe60a79719a00c
+
+% 3 1 0 1c9d5e21448b1a23140c478d1209f8bd
+
+% 4 1 0 121b7816fe30749115af46c0f29165af
+
+% 0 1 0 0d26c7c16d819dfd1d030fcc59e3245d
+
+% 1 1 0 08e24d5eff6ffcb605c20543411f5932
+
+@ 0 11 0 170316bd660183221ec6242ecf98a1e0
++   entry #start   时段的第一个点，包含在内
++   entry #finish   时段在其之前结束的点，不包含在内
++   entry #duration   `finish - start`，类型取决于点：对于瞬时是 `Duration`，其余是 `Timespan`
++       需要点对自身的 `Subtractable by`；对于 `Moment`，这意味着作用域中要有一个 `RomanCalendar` 和一个 `GapPolicy`。
++   entry #intersect   两个时段的重叠部分；如果它们只是相接或不相交，则为 `Unset`
++       如果两个时段唯一的公共点是其中一个的终点和另一个的起点，它们并不相交，因为终点不包含在内。
++       需要点的 `Comparable`。
++   entry #union   覆盖两者的一个时段；如果它们不重叠，则以 `Set` 原样返回两者
++       需要点的 `Comparable`。
++       重叠的时段合并为 `Period(min(starts), max(finishes))`；不相交的时段作为包含两个元素的集合返回。
+
+@ 0 1 0 1b101eb5cf077d1e109199b87bb3f1b1
++ entry .PersianCalendar   波斯历（太阳回历），采用 Birashk 的 2820 年算术周期
+
+% 1 1 0 154975538b814c301f08674841f3c114
+
+@ 0 6 0 06e7d4b7cc9f2d6a14847b6126551709
++       一个 `Calendar`，其月份是 `PersianMonth`：前六个月各 31 天，接下来五个月各 30 天，Esfand 为 29 天，闰年为 30 天。
++       它的纪元 1 Farvardin 1 是儒略日 1948321（儒略历 622 年 3 月 22 日）。
++       闰年遵循 2820 年算术周期，这是对官方观测历法（以东经 52.5° 处的真实春分为准）的一种确定性近似，在某些春分前后可能与之相差一天。
++       given 是 `calendars.persianCalendar`，按名称导入。
+
+% 2 1 0 12911f0c3ba0a83f0badefd76ecc4d1e
+
+% 3 1 0 179449b088d79e6708106c34f08d012d
+
+% 4 1 0 1c3f0d38ec2956ba0742df0abda2d2fd
+
+% 1 1 0 1f4436a387b61e6c09df70a6a86f1fd0
+
+% 0 1 0 16973af9c0520bfe1fdba5b0876ad037
+
+% 0 1 0 135538da0abd198b1a66bcd7a33b5ff1
+
+% 1 1 0 176f25195f7db4da18a711072238020c
+
+@ 0 2 0 1f8eb4a0b56cf7050c1a021775452e99
++       它的 `MonthUnit` 是 `PersianMonth.type`，因此在它之下 `n*PersianMonth` 可以加到日期上，而 `Timespan of Month.type` 不行。
+
+% 0 1 0 08a1738acf79f4161a183227ad92b6a5
+
+% 1 1 0 1dce8d04af785ff1045df97a500ca1ed
+
+% 0 1 0 0557974c8133deae1c9f14e5907013f4
+
+@ 0 3 0 082a174e534fd6f008183a670ced5e92
++   entry #MonthUnit   这个日历接受的月份时间跨度的基数：`PersianMonth.type`
++   entry #leapYear   按 2820 年周期判断一年是否有 366 天
++   entry #daysInMonth   前六个月为 31，接下来五个月为 30，Esfand 为 29 或 30
+
+@ 0 1 0 056808b07ab8f25a112aef53c2a39cf0
++ entry .PersianMonth   波斯历的十二个月，从 `Farvardin` 到 `Esfand`
+
+% 1 1 0 14480cce4e0faf3304ebb21d4028e805
+
+@ 0 5 0 0babb5b2914ec5e7091a401c08131a98
++       一个枚举：`Farvardin`、`Ordibehesht`、`Khordad`、`Tir`、`Mordad`、`Shahrivar`、`Mehr`、`Aban`、`Azar`、`Dey`、`Bahman` 和 `Esfand`，即 `PersianCalendar` 的各月。
++       其伴生对象是一个有别于 `Month` 的 `MonthRadix`，因此 `3*PersianMonth` 是一个 `Timespan of PersianMonth.type`，它只有在 `MonthUnit` 为该基数的日历下才能加到日期上；把公历的月份跨度与波斯历日期混用是编译错误。
+
+% 2 1 0 019ad87f6a956dc715e05cfbe360aedc
+
+% 3 1 0 0465b1267811a28401f9ada78e2243f5
+
+% 4 1 0 0df5198e6ac4f340191d33a2b6176d67
+
+% 1 1 0 001c5923e65e3cd91ea450efc7b41699
+
+% 2 1 0 1167b1564aed9f7305a83980dc381683
+
+% 0 1 0 1c4db2b8d30273820f08bb0db39ff359
+
+% 1 1 0 1bcbec95561b6b32139f868f5148321e
+
+@ 0 1 0 1cc153431ae0297c11ca4c45d9706364
++   entry .multiply   `n*PersianMonth`：`n` 个波斯历月份的时间跨度
+
+@ 0 1 0 015eac831cd02bb21017e08dd17b5301
++ entry .Recurrence   ISO 8601 重复区间 `R5/2024-01-01/P1D`：一个起点、一个周期和一个可选的次数
+
+% 1 1 0 1d076607df8f34f60385069a98e1ff67
+
+@ 0 6 0 18105f509e8396961b27e419c1cffff8
++       `Recurrence` 是从一个起点开始、以固定节奏重复的事件：`start`、`start + period`、`start + 2·period`……，共 `repetitions` 次；当 `repetitions` 为 `Unset` 时则无限重复（ISO 的裸 `R/`）。
++       周期保留其类型，因此各次出现能够正确相加：`1*Month` 遵循日历月（因此生成时需要作用域中有 `Calendar` 和 `Disambiguation`），`8*Hour` 是一个固定的物理跨度；这就是重复以两者为类型的原因：`Recurrence of Date by (Timespan of Month.type)`。
+
+% 2 1 0 058e7ae60c138438112a0241575ea239
+
+% 3 1 0 002b131def3fa60a1026affb6d14311d
+
+% 4 1 0 034573db3dd36e6e1accfbdb0dfee69d
+
+% 0 1 0 15e9da5b99dea4ab0fd23b77349f18fb
+
+% 0 1 0 1f3e88119974aa8d16052c1885984611
+
+% 0 1 0 070534f1ccd5846f1b2c583cdd658bb2
+
+% 1 1 0 159a80875a797d7e071185787c773576
+
+@ 0 7 0 1f1d6d3058522f56051fddad24bfd9ca
++       它是 `Recurrent`（`.recurrent`），因此 `occurrences`、`until`、`within` 和 `following` 都适用于它。
++       注意月末的行为：从 31 日开始的按月重复在 `monthEnds.clampMonthEnd` 之下会漂移（1 月 31 日、2 月 29 日、3 月 29 日……），因为每次出现都是加在前一次之上的，而 `Rrule` 则会重新锚定到起点的日期，并跳过没有该日期的月份。
++       文本形式：`#encode` 和 `.decodable` 是 ISO 的传输形式，`rec"…"` 插值器在代码编译时检查字面量，`show` 则用作用域中的 `Locale` 所选定的语言描述该重复。
+
+% 1 1 0 02146e00f7bc74eb1c856275a4f898d9
+
+% 2 1 0 1102202ea8e7aed015a1fd43465e3cdb
+
+% 2 1 0 1b440992f2a783420226839597fceeea
+
+% 1 1 0 059f7d6eb89d45b40207989b051bbc00
+
+@ 0 13 0 1e28fd2be32ac37f00fc3eba31fdc39d
++   entry .apply   `Recurrence(start, period, repetitions = Unset)`：以其起点和周期为类型的重复
++   entry .encodable   ISO 8601 重复区间文本 `R3/2024-01-01/P1M`
++       `R`、重复次数（如果有）、起点自身的编码，以及作为 ISO 8601 时长的周期，以 `/` 分隔。
++       需要起点类型是 `Encodable in Text`。
++   entry .inspectable   同样的重复区间形式，由各部分的检视结果构成
++       对于任何 `Inspectable` 的起点类型都可用，并且不需要 `Showable` 所需的 `Locale` 上下文；测试报告打印的就是这种形式。
++   entry .decodable   把 `R[n]/<start>/<period>` 解析为某个具名周期类型的重复
++       解析会抹去周期所在的基数，因此由调用者在类型中指明：`text.as[Recurrence of Date by (Timespan of Month.type)]`。
++       基数类型不匹配会误读时长，因此要指明数据所用的那一个。
++       需要用于 `Recurrence.Error`（格式错误的文本）、`Moment.Error`（起点）和 `Timespan.Error`（周期）的战术。
+
+% 2 1 0 034e645fab2f075c0e991153a20cb689
+
+% 3 1 0 1720e97900b7e0471c46e2dc6478f2b8
+
+% 4 1 0 13269381c987b14e1ff38dcab7091fff
+
+% 5 1 0 14ebc61c9cccf8ae012d446e59127d97
+
+% 6 1 0 166557f2700e7a4f10fb6d14ce18246f
+
+% 0 1 0 135f8b49a37bf85f0fad71f9124d190a
+
+% 0 1 0 07ba085ab6cefe051b91d54c2fbe90fd
+
+% 1 1 0 04b7656b8560661b085368343dd47f0c
+
+@ 0 11 0 0a977af6bc07b5bd14ccf9cd7bcdc999
++   entry .englishShowable   用英语描述重复：_every 2 weeks, 5 times from 2024-01-01_
++       需要作用域中有一个 `Locale[en]`，并且起点类型是 `Showable`（`Date` 需要一种日期格式）。
++       法语、德语和西班牙语的 given 由各自的区域设置选定。
++   entry .frenchShowable   在 `Locale[fr]` 之下用法语描述重复
++   entry .germanShowable   在 `Locale[de]` 之下用德语描述重复
++   entry .spanishShowable   在 `Locale[es]` 之下用西班牙语描述重复
++   entry .recurrent   `Recurrent` 实例：各次出现是 `start`、`start + period`……
++       需要起点对周期类型是 `Addable by`（`point is Addable by span to point`），对于日期和月份跨度，这意味着作用域中要有 `Calendar` 和 `Disambiguation`。
++       当 `repetitions` 为 `Unset` 时，流是无限的。
++   entry .Error   当文本不是有效的 ISO 8601 重复区间时抛出
+
+% 1 1 0 0c498028ff4c139d18d5f7c64fac3d1d
+
+@ 0 8 0 15b48f5a63650ab1010e6d4097382b19
++         _the value `value` is not a valid ISO 8601 repeating interval_，当文本没有三个以 `/` 分隔的部分，或第一部分不是 `R` 后跟数字时，由 `.decodable` 抛出。
++         错误的起点或周期则抛出 `Moment.Error` 或 `Timespan.Error`。
++     entry #value   未能解析的文本
++   entry #start   第一次出现
++   entry #period   各次出现之间的步长，类型保持构建时的样子（`Timespan of Month.type` 等）
++   entry #repetitions   出现的次数；对于无界的重复则为 `Unset`
+
+@ 0 5 0 0e91bbb834d3f44c12c7667059a46977
++   entry .Literal   `rec"…"` 的结果类型：日期、时间戳或时刻的重复
++       联合类型 `(Recurrence of Date by (Timespan of Month.type)) | (Recurrence of Timestamp by …) | (Recurrence of Moment by …)`。
++       周期是 `Timespan of Month.type`，以便其日历分量能正确地加到每种起点上；透明插值器把联合类型收窄为字面量所对应的那一个成员。
+
+@ 0 1 0 160fb43da4fe25631be4d5b33a715f26
++ entry .RecurrenceSet   iCalendar 重复集：合并的出现流，加上额外日期，减去排除项
+
+% 1 1 0 0e914bc221a868270d66b65cc0ddb133
+
+@ 0 5 0 1e25ce5eb0fe7a5d1ad6dbda78b810fc
++       `RecurrenceSet(include, rdates, exdates)` 是 RFC 5545 的重复集：一个或多个升序出现流（`include`，通常各是某条规则的 `occurrences`）的并集，加上显式的额外点（`rdates`，`RDATE`），再去掉排除的点（`exdates`，`EXDATE`）。
++       它本身也是 `Recurrent`，因此它的 `occurrences` 是一个升序且去重的 `Chain`，并且可以与任何其他 `Recurrent` 组合。
+
+% 2 1 0 1fab61cba5a07f0317dd2cb9f8214208
+
+% 3 1 0 0a0e6c8b0d6425bb156f5e860ba2b434
+
+% 4 1 0 13f58260953a8dc408dac859cf57530d
+
+% 0 1 0 06988d74f6b58c541502b177b0cd6491
+
+% 0 1 0 084ed47ab6d64d3a072dfc3dc42090ac
+
+% 0 1 0 0b8f885b187e24620e53c268148f4a4a
+
+% 0 1 0 0786b7cf5ee9fe3b11170c03c5601669
+
+% 1 1 0 067d6280f7fb634114803d04e0a0dd1b
+
+@ 0 3 0 1434113d3e2317ac1a6ecdeb54ba37c1
++       合并是惰性的（它只强制求值所比较的各流的头部），因此可以包含无限的规则，之后再用 `until` 或 `within` 加以限定。
++       每个被包含的流都必须已经是升序的。
+
+% 1 1 0 162373c4a86803f5188064b759530a85
+
+% 2 1 0 191c4feb4525916a0ac88ee59ce8e049
+
+@ 0 5 0 042a0cb78cc444b61909f412745c190d
++   entry .recurrent   合并被包含的流和 `rdates`，去掉重复项和 `exdates`
++       需要点的 `Comparable`，每个 aviation 点类型的伴生对象中都有它。
++   entry #include   要合并的出现流，每个都是升序的
++   entry #rdates   加入集合的点，顺序任意
++   entry #exdates   从集合中去掉的点
+
+@ 0 1 0 1abb2950f2bdfdbf179ed51a5e40730f
++ entry .Recurrent   任何能产出有序、惰性的出现流的事物的类型类
+
+% 1 1 0 105bc465835cbdad194b4d36c08f17af
+
+@ 0 7 0 02b9f5192b4edf9912015c9f2c72bceb
++       `Recurrent` 是各种重复模型的公共接口：`Recurrence`（ISO 8601 固定区间）、`Rrule`（RFC 5545 规则）和 `RecurrenceSet`（它们的并集）。
++       它们各自以不同的方式生成出现，所需的上下文也不同（`Recurrence` 需要 `Addable`，`Rrule` 需要 `RomanCalendar`），这就是它是一个由 given 携带的类型类、而不是一个基特质的原因：实例捕获它所需要的东西，而组合子 `occurrences`、`until`、`within` 和 `following` 只需针对任意 `Recurrent` 写一次。
+
+% 2 1 0 06e02a1ca891be0703da3e36a95c4838
+
+% 3 1 0 10e8d9c7c37cfc4101372ea7b3ed5923
+
+% 4 1 0 08030b3fddb1158e1b270cfaf5f8a392
+
+% 0 1 0 035a0ef9e1056afe04a5999ca70719f0
+
+% 0 1 0 1734fadf96cfed880f69c6ebe9e437fc
+
+% 0 1 0 0d93f9fe45332cf2066ccee975c0eaa1
+
+% 1 1 0 1213858b8bccc64a1645eb3a088e5e89
+
+@ 0 1 0 019131a615dd7f111dcd910f11f530b6
++       它的 `Topic` 是流的点类型：`Date`、`Timestamp` 或 `Moment`。
+
+% 1 1 0 1dfc8dfc2d1070b71497b5ea5175e15d
+
+% 1 1 0 10c59f4002201558068c811d2cb68680
+
+% 2 1 0 18c711bc10e3f6dc1d2e69771effc7fc
+
+% 0 1 0 0472b6dbafe8402b0dd3d7c9d4181c0c
+
+@ 0 3 0 0710fb159e58d219168aa79e41077eab
++   entry #occurrences   一个值的各次出现组成的升序惰性 `Chain`
++       对于无界的重复，它是无限的，因此要用 `keep`、`until` 或 `within` 来消费，而不是直接转换为 `List`。
+
+@ 0 1 0 1ca4de783c1b718f07e6b5bfdf8ad270
++ entry .Regime   随历史变化而生效的日历：在儒略日编号处交接的各个分段
+
+% 1 1 0 0a5ea74e24b025e214dc8ce587c7283c
+
+@ 0 7 0 1427d355f0a372511a04f6b56a30a82e
++       `Regime` 是由有序的 `.Segment` 组成的 `RomanCalendar`，每个分段是一个日历及其开始生效的第一个日期。
++       一个日期位于其儒略日编号所属的那个分段之中，因此使用一个历制与使用单个日历完全一样，切换点两侧的日期会自动换算。
++       两个分段的情形就是儒略历到公历的混合历：`calendars.papalCutover` 在 1582 年 10 月 15 日（儒略历 10 月 4 日的次日）切换，`calendars.britishCutover` 在 1752 年 9 月 14 日切换；两者都按名称导入。
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 1b7a77e0318ea815016c0bbf2a94091b
+
+% 0 1 0 03598e235865e3221f5b1b9ed0108f74
+
+% 0 1 0 1c75f29086c3e87014e7bc52b665ada6
+
+% 0 1 0 029c50baaf3335370c385ebe68d2c2fe
+
+% 1 1 0 004ef960b1e385941deeeccf51009b23
+
+@ 0 4 0 05238c427083be900eededde09b8075b
++       缺口中的日期在相邻的两个日历中都不存在：缺口中的字面量是编译错误，而运行时计算出的日期会被历制的 `jdn` 以 `Moment.Error`（原因 `Invalid`）拒绝，因为在这里 `validDate` 不只是检查日期是否在月份的天数范围之内。
++       一年是否为闰年，取决于管辖其年中的日历。
+
+% 1 1 0 1d3e9c7a4b3721540e78b24efb2998a2
+
+% 2 1 0 1cb1f4bcf298f39914582f80fddc8d7f
+
+@ 0 1 0 00f2a2b220f39af11d55ee031d7c2ff7
++   entry .Segment   一个日历及其开始管辖的第一个日期
+
+% 1 1 0 19beac39b9ad282f0ab9a4a0128f3cf2
+
+@ 0 10 0 0e67d4c35e00bd8f13372d8e3e9975de
++         `Regime.Segment(from, calendar)`：历制从 `from`（一个 `Date`，按儒略日编号比较）开始应用 `calendar`，直到下一个分段的 `from`。
++         前一个日历的最后一天与下一个日历的第一天共享同一个儒略日，因此交接日在两者之下都有效。
++     entry #from   分段管辖的第一个日期
++     entry #calendar   从该日期起生效的 `RomanCalendar`
++   entry .apply   `Regime(name, segments*)`：由各分段构成的历制，按其起点排序
++   entry #leapYear   按管辖其年中的日历判断一年是否为闰年
++   entry #leapYearsSinceEpoch   管辖日历的闰年计数，用于计算儒略日编号
++   entry #validDate   日期是否存在：它必须能被某个分段定位，因此切换缺口中的日期无效
+
+@ 0 1 0 16dc879aee660b590281890119784e10
++ entry .Resolution   `Instant over X` 的一个刻度是多少纳秒
+
+% 1 1 0 08fe4e114ad9355b073823b0a9061ca0
+
+@ 0 6 0 10954509a54b96400b190b3931492cc6
++       每条时间线把它的瞬时保存为以刻度计数的 `Long`，而 `Resolution` 说明一个刻度是什么：`Unix` 和 `Tai` 时间线每毫秒一个刻度（`nanos` = 1 000 000），而作为 `System.nanoTime` 读数的 `Monotonic` 每纳秒一个刻度。
++       瞬时的算术（`instant + 1*Second`、`instant - duration`）使用时间线的 `Resolution` 把秒换算成刻度，因此在任何时间线上，一秒都会前进正确的计数。
++       这三个 given 位于隐式作用域中；新的时间线提供它自己的 given。
+
+% 2 1 0 06030408b27189dd1bfb37f00f96aa01
+
+% 3 1 0 16d90f0b5c2447a80b6406116384f94f
+
+% 5 1 0 0fb80e69d478adbf08609c17391e53b1
+
+% 0 1 0 18552ec2658851dc026d6be28d647c1f
+
+% 1 1 0 02958b4e68935ca008d86fc89c88ac1c
+
+% 2 1 0 0789ba3c12c5be971bc09327daf3b0cd
+
+% 1 1 0 145035639a8826bb1fd78d97c3900ff0
+
+% 0 1 0 0806cecd5208817d092e2c17c145c192
+
+@ 0 4 0 1946279066f191f6027c846e057422e2
++   entry .unix   `Unix` 时间线以毫秒为刻度
++   entry .tai   `Tai` 时间线以毫秒为刻度
++   entry .monotonic   `Monotonic` 时间线以纳秒为刻度
++   entry #nanos   一个刻度所含的纳秒数
+
+@ 0 1 0 058ea6ae39d8357d04488ca7d3505ff5
++ entry .Rfc1123   HTTP 头部的 RFC 1123 日期格式：`Sun, 06 Nov 1994 08:49:37 GMT`
+
+% 1 1 0 1d32243fc604be6e19c1dd880e137128
+
+@ 0 7 0 1d8a5516f719cfd608af17b234e3b156
++       `Rfc1123` 是一个名为 `RFC 1123` 的 `Date.Format`，即 HTTP 用于 `Date`、`Expires` 和 `Last-Modified` 头部的定宽形式：三个字母的星期名、一个逗号、两位数的日、三个字母的月份、四位数的年、`HH:mm:ss`，以及字面量 `GMT`。
++       `.parse` 把它读取为一个 `Instant over Unix`，而按名称导入的 `instantDecodables.rfc1123InstantDecodable` 使它成为 `text.as[Instant over Unix]` 背后的解码器（另一个选择是 ISO 8601 解码器）。
+
+% 2 1 0 1cf3dfa9af614b0a083c25887484c36b
+
+% 3 1 0 11a80885d5dcc45c0e099035d70f8399
+
+% 0 1 0 00674e06fad2c0f50a939cb3046c91c0
+
+% 1 1 0 07e39e347f45b73617d2474afcfea618
+
+% 0 1 0 1dafe75f296372de02f2965c9bbbe6d8
+
+% 1 1 0 19f670415bcbaa9d066cfc72d206f8ba
+
+@ 0 2 0 01fd29850de9a261014d3e154a3bfe8a
++       一位数的日（`Wed, 3 Jul 2002 …`）不符合 RFC 1123，会被拒绝：这种格式是定宽的。
++       星期名会检查拼写，但不检查是否与日期一致。
+
+% 1 1 0 1492adb995854a320e2bf06b1bebb556
+
+% 1 1 0 1f3c463331a3236c0905054b78c96283
+
+@ 0 11 0 13777dc7ed3cb9d819faff7cfdb0d6cb
++   entry .Issue   文本中某个位置出了什么问题
++       一个枚举：`DayName(days*)`，_expected a day name (…)_，列出文本原本仍可能是的那些名称；`MonthName(months*)`，_expected a month name (…)_；`Expect(char)`，_expected `char`_，用于缺少的逗号、空格、冒号或 `GMT` 的字母；以及 `Digit`，_expected a digit_。
++       `Issue` 连同它出现的偏移量一起放在 `Moment.Error.Reason.Format` 中传递，并且是 `Communicable` 的。
++   entry .parse   把 RFC 1123 文本读取为 `Instant over Unix`，或抛出 `Moment.Error`
++       需要一个 `Tactic[Moment.Error]`。
++       每个字段都作为独立的尝试来解析，因此对一个错误的时间戳只需一遍扫描，就能以 `Moment.Error(_.Format(text, Rfc1123, offset)(issue))` 的形式报告每一个数字问题；只有在解析无误时才构建瞬时，作为 `tz"GMT"` 中的 `Timestamp`。
+
+@ 0 1 0 1907abef5f80673109aa138c1314b5b5
++ entry .RomanCalendar   具有罗马十二个月的日历家族：儒略历、公历，以及它们的切换历制
+
+% 1 1 0 0904eb92751fb7af06607782bfb375bd
+
+@ 0 9 0 0ed41709d0ab89930f5d60dd2b699922
++       `RomanCalendar` 是一个 `Enumerated[Month]` 日历，月份长度是人人都知道的 31、28 或 29、31、30……，它与同族的其他日历只在 `#leapYear` 和 `#leapYearsSinceEpoch` 上有所不同；`Calendar` 接口的其余部分（`annual`、`mensual`、`diurnal`、`computeJdn`、`zerothDayOfYear`、`daysInMonth`、`daysInYear`）都由这两者推导而来。
++       `calendars.julianCalendar`（每四年一闰）、`calendars.gregorianCalendar`（不能被 400 整除的世纪年除外）以及 `Regime` `papalCutover` 和 `britishCutover` 是它的实例，每个都是按名称导入的 given，默认都不在作用域中：公历日期字面量需要 `import calendars.gregorianCalendar`。
+
+% 2 1 0 14e063bb025cf2b90bcab61cb1982245
+
+% 3 1 0 066449be3146ccbe1a0203063e32e0f1
+
+% 4 1 0 1fda201649a58d4e0ad3b969935d58bd
+
+% 0 1 0 05de612f99612dab13c477fda713f641
+
+% 0 1 0 06568fe90409989e048e4e1b58c370d7
+
+% 1 1 0 1c664ad55e040ad8041f949055764e77
+
+@ 0 4 0 10bc1f1cff88407a0a54603cfcd3afaa
++       这个库的许多部分专门要求 `RomanCalendar`，而不是任意 `Calendar`：`Moment#instant`、`Date#monthstamp`、`WeekDate`、`Rrule` 的展开以及 `Instant#in` 都要在具有 `Month` 的日历中工作。
++       编写一个新的这类日历，只需扩展这个类，提供一个名称和两个闰年方法。
+
+% 1 1 0 0ec709fa024563350fdca72f316328f5
+
+% 1 1 0 174940a5a0bf2cb01c0150b805e2d53d
+
+% 0 1 0 0e039afa5dee2f670fc5b3d398e35e7d
+
+@ 0 6 0 00dc3fc7d95cb5341f95a0e8d6e10399
++   entry #name   日历的名称，例如 `Gregorian`
++   entry #MonthUnit   这个日历接受的月份时间跨度的基数：`Month.type`
++   entry #leapYear   一年是否有 2 月 29 日；抽象方法
++   entry #leapYearsSinceEpoch   截至某一年的闰年数，`zerothDayOfYear` 据此计算；抽象方法
++   entry #daysInMonth   31、30，或者对于二月，根据 `#leapYear` 为 28 或 29
++   entry #daysInYear   闰年为 366，否则为 365
+
+@ 0 1 0 0a2bc27c7fa1d85c027047a6fe4ba160
++ entry .WeekdayOrdinal   重复规则中的一个 `BYDAY` 项：一个星期几，可带一个序数
+
+% 1 1 0 144a3be569da5c6c1119de06ce4b6a7b
+
+@ 0 6 0 124909b31e5e01e917dcbd05a9887ded
++       `WeekdayOrdinal(weekday, ordinal = Unset)` 是 `Rrule#byDay` 的一个元素。
++       单独的星期几（`WeekdayOrdinal(Tue)`，RFC 5545 的 `TU`）选出周期内的每个星期二；带序数时只选出一个：`WeekdayOrdinal(Mon, 3)` 是第三个星期一（`3MO`），`WeekdayOrdinal(Fri, -1)` 是从末尾倒数的最后一个星期五（`-1FR`）。
++       序数只在 `Frequency.Monthly` 和 `Frequency.Yearly` 之下有意义；在 `Weekly` 和 `Daily` 之下，星期几起筛选作用，序数被忽略。
+
+% 2 1 0 1b05eb005b4b5f7916cc500904c1d5b9
+
+% 3 1 0 1e11cb5b5446780e09234191687b0780
+
+% 4 1 0 1a10f5d9e265a8de154263790463450e
+
+% 0 1 0 1517caebddc2e8a815dee31934a1e594
+
+% 0 1 0 1be22c872079489b1b112d6dc483e5f6
+
+% 1 1 0 0b82bb88cf0c947a02cbb2651a501da8
+
+@ 0 2 0 1e2bf4ea98182d6011252902eb664520
++   entry #weekday   所选的星期几
++   entry #ordinal   周期中的第几个，正数从开头数，负数从末尾数；为 `Unset` 时表示每一个
+
+@ 0 1 0 12be000d70618f5e0c29464d67ee21a9
++ entry .Rrule   带起点的 iCalendar 重复规则（RFC 5545 `RRULE`）：“每月的第三个星期一”
+
+% 1 1 0 1e1eb94035052f0211fc527fac3930e4
+
+@ 0 8 0 016c5ca421449b8110e0bfc6ff2d30c1
++       `Rrule[point]` 把一条重复规则及其 `DTSTART` 作为一个值：一个 `start`、一个 `Frequency`（从 `Secondly` 到 `Yearly`）、一个 `interval`、一个界限（`count` 或 `until`），以及在每个周期内进行选择的 `by*` 字段（`byMonth`、`byWeekNo`、`byYearDay`、`byMonthDay`、`byDay`、`byHour`、`byMinute`、`bySecond` 和 `bySetPos`），再加上 `Weekly` 周期所对齐的 `weekStart`。
++       每个 `frequency`×`interval` 周期都会被展开，`by*` 字段选出其中的候选项，`bySetPos` 再按位置从中挑选。
++       固定区间的 `Recurrence` 无法表达的模式（最后一个星期五、十一月的第四个星期四、每个工作日）都是规则。
+
+% 2 1 0 041103e5b339444214031fe22856a692
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1348efa5156bd9f20fef944adc2c5284
++         label 按月的规则从起点取得日期
+
+% 1 1 0 1f5c591ea3787fe719e58c0da8746fd1
+
+% 2 1 0 1365250cc85544cb156999bfa3911403
+
+% 3 1 0 131f7b777f46503a1f2b72e72b749dbb
+
+% 0 1 0 1b112ec66807a40512854412bc2b30b1
+
+% 0 1 0 01f2ff47357f38be108da71bec9bf09a
+
+% 1 1 0 00fccb4ff7846c981adf5a7ef1ffd3f8
+
+@ 0 1 0 09ee95dc76dddfc41e66a62fe48cae37
++         label 单独的星期几选出每个月中的每一个
+
+% 1 1 0 1363815e7521502c134c623f16c710aa
+
+% 2 1 0 1b068471e3d6d29304044ebfbb87cbc9
+
+% 3 1 0 15ea204fc017bc5f0b86b5a054ef6fee
+
+% 0 1 0 030727729c7ca03500e76421e5e266e1
+
+% 0 1 0 0d96c710cbbb29aa17adea8a00f751e9
+
+% 1 1 0 08fe10785e2be44b1731c67d6e0608f5
+
+@ 0 1 0 190564e4f0592e46063c03881c4ea6bc
++         label 序数 -1 是每个月中的最后一个
+
+% 1 1 0 0d4a9ab1a7d2a7f81db9a9f2bffabdf8
+
+% 2 1 0 1c985283a91ae58410145dc55be045f4
+
+% 3 1 0 004f4b596ef2e9bc14a3cbb36fd0e0f0
+
+% 0 1 0 1d92e41ee0a52a8e09fcddb522ac76d5
+
+% 0 1 0 193cba513fa0009b03f9bab9b59b40f9
+
+% 1 1 0 12550a18bfb4adfe194a12c92c48cb22
+
+@ 0 1 0 05c1cbed45754cae1b19ec594a5ace1c
++         label 间隔把周期放宽为每隔一个月
+
+% 1 1 0 0d8210f9e37e541f1b23faee5f995db7
+
+% 2 1 0 139332c3c1bdb2a405cce19b038facff
+
+% 3 1 0 144e25209fbafa3201ce3c73090d8fcd
+
+% 0 1 0 12db38815dbc51cf15b51fda0158b64e
+
+% 0 1 0 03f60a945fde4cb405550152cfdc0a84
+
+% 0 1 0 07cd2483b0348dde0a31866b777bf180
+
+% 1 1 0 092423b867ebe7f6019f01e1d37018dc
+
+@ 0 1 0 1d2f91c1852e9eef11d55b9c37e72df8
++         label 次数限定规则，整体呈现为 RFC 5545 文本
+
+% 1 1 0 02714d3beb2684be09e38e6773e507f3
+
+% 2 1 0 1fe471a6e23adc720dae0ebc7c00342f
+
+% 3 1 0 163041ff57b5d19d070cf2437d834465
+
+% 0 1 0 0d4072bb6e698a4907be849aa4201294
+
+% 0 1 0 0776e4ade3ea5353067bc6510187e4d2
+
+% 0 1 0 16d5e4f0d76db7280f1b5f1cbd26387e
+
+% 0 1 0 0ad999cd1a3186b115033b6294a55c66
+
+% 1 1 0 0da6a5ae5e323080029fbcc004f02347
+
+% 2 1 0 1d21fb10aae99f890b73c5881f7b9c81
+
+@ 0 6 0 0ff2548380d903d3021e3ad4ec474bdc
++       点类型决定生成什么。
++       `Rrule[Date]` 产出日期；`Rrule[Timestamp]` 产出不带时区的日期时间，由 `byHour`、`byMinute` 和 `bySecond` 展开每一天（默认取起点的时间），而小于一天的频率则步进时钟；`Rrule[Moment]` 在起点的时区中展开，并把每次出现落定在那个时区。
++       三者都通过依赖 `RomanCalendar` 的 given 成为 `Recurrent`，因此 `occurrences`、`until`、`within` 和 `following` 需要作用域中有一个日历。
+
+@ 0 6 0 189450653a0184d61de2eacfe774c1de
++       月份中不存在的日期会被跳过，日期会重新锚定到起点：从 1 月 31 日开始的 `Monthly` 产出 1 月 31 日、3 月 31 日、5 月 31 日……，正如 RFC 5545 所规定的，这与在月末方针之下会漂移的 `Recurrence` 刻意不同。
++       `until` 是包含在内的。
++       负值始终从末尾计数：`byMonthDay = List(-1)` 是月份的最后一天，`byYearDay = List(-1)` 是一年的最后一天，`byWeekNo = List(-1)` 是最后一个 ISO 周，`bySetPos = List(-1)` 是每个周期的最后一个候选项。
+
+@ 0 5 0 19eb999b38d5349d1fc36ad3623821f4
++       `.parse` 读取规则的 RFC 5545 文本并重新附上起点；`encode` 写出它（不含起点，因为 iCalendar 单独保存 `DTSTART`）；`inspect` 包含起点；而 `show` 用作用域中 `Locale` 的语言以文字描述规则（_every month on the 3rd Monday_），这还需要该语言的 `Months` 和 `Weekdays`。
+
+% 1 1 0 08a2dd05c4f45ad500b1483620658559
+
+% 1 1 0 0e00f54598b76c8b1119966838504b3c
+
+% 0 1 0 06185bd15f64a371074e4e2b98f9ea97
+
+% 1 1 0 066471f8651e349e166fb1b1dd890291
+
+% 1 1 0 09518bc84e2c04340deeae7451bfb9aa
+
+@ 0 7 0 1af6ee8660218875068c694b77eb8600
++   entry .dateRecurrent   `Rrule[Date]` 是 `Recurrent`，产出日期
++       需要作用域中有一个 `RomanCalendar`（以及 `Date` 的 `Comparable`，它位于隐式作用域中）。
++       流是升序的，由 `count` 和包含在内的 `until` 限定。
++   entry .timestampRecurrent   `Rrule[Timestamp]` 是 `Recurrent`，产出不带时区的日期时间
++       需要一个 `RomanCalendar`。
++       在 `Hourly`、`Minutely` 和 `Secondly` 之下，时钟按间隔步进，把整天进位到日期中，由 `by*` 字段进行筛选；在以日期为单位的频率之下，每个日期由 `byHour`、`byMinute` 和 `bySecond` 展开。
+
+% 2 1 0 15b61557037262481e34aeacb5263095
+
+% 3 1 0 04769ca4acd376351624fa3f64c75b49
+
+% 4 1 0 163d22720a95a9191f466b5ca409ba1f
+
+% 0 1 0 16afd5b5e01cea671412749a8ab10696
+
+% 0 1 0 104ebad845dc8cb51b0ebc074d7997b8
+
+% 0 1 0 15081fa67ae06c7d0f62a50155b9140e
+
+% 1 1 0 1f75e92de114088205943c17d5dafcae
+
+@ 0 21 0 0149680ed0bae8e1020a5ebaa043e3a7
++   entry .momentRecurrent   `Rrule[Moment]` 是 `Recurrent`，把每次出现落定在起点的时区中
++       需要一个 `RomanCalendar`，并且为了比较时刻，还需要一个 `GapPolicy`（默认的 `GapPolicy.pushForward` 即可）。
++       规则在起点的不带时区的时间戳上展开，每个结果都被放置 `in` 起点的 `Timezone` 中，因此每日规则在夏令时变更前后保持其挂钟时间。
++   entry .encodable   把规则呈现为 RFC 5545 文本 `FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO`
++       只写出与默认值不同的字段（`INTERVAL` 不为 1 时、`WKST` 不为 `MO` 时），按 RFC 的顺序排列；`UNTIL` 界限用点自身的 `encode` 写出，因此点类型必须是 `Encodable in Text`。
++       起点不属于文本，因为 iCalendar 单独携带 `DTSTART`：`.parse` 把它作为参数重新接收。
++   entry .inspectable   带起点的规则，`Rrule(2024-Jan-1 ╱ FREQ=MONTHLY;BYDAY=3MO)`
++       只需要一个 `Inspectable` 的点，不需要 `Showable` 所需的 `Locale`、`Months` 或 `Weekdays`，因此凡是有规则的地方都可用；测试报告打印的就是它。
++   entry .parse   读取 RFC 5545 规则文本并附上起点
++       `Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1)` 是一个 `Rrule[Date]`；起点的类型决定规则的类型，`UNTIL` 值也按该类型解码。
++       键不区分大小写；未知的频率、格式错误的数字或星期代码，或缺少 `FREQ`，都会抛出 `Rrule.Error`，因此需要一个 `Tactic[Rrule.Error]`。
++       未知的键会被忽略。
+
+% 2 1 0 0bae744d084ffcfa0d372be17ea5420a
+
+% 3 1 0 004902a608e00c8e1c4f169b719452b0
+
+% 4 1 0 1075fe7b7860dce20102579a861cbeaf
+
+% 5 1 0 18660a740d06e3ca03019be1a4c59f34
+
+% 0 1 0 1039922941812ebf0b787967ea50ae37
+
+% 0 1 0 0e4b36e78dc19af3014b6440748c65c7
+
+% 1 1 0 183b7a97f718da5e0062197b9fd66f81
+
+@ 0 5 0 1b78fbbf1a5e12160aec4b91faa35512
++   entry .englishShowable   用英语描述规则：_every year on the 4th Thursday of November_
++       需要作用域中有一个 `Locale[en]`、一个 `Months` 和一个 `Weekdays`，它们都按名称导入（`monthFormats.englishMonths`、`weekdays.englishWeekdays`，以及 `given Locale[en] = Locale(en)`），因此无法用名称不可用的语言来描述规则。
++       法语、德语和西班牙语的 given 由各自的区域设置选定。
+
+% 2 1 0 098aa954238184721e29c92ace8aea6d
+
+% 3 1 0 11486dd4d8f632d21f6a7155806a252b
+
+% 4 1 0 1ac09c50902be1ef08b083fbada8f07f
+
+% 5 1 0 17503867fbc0ad34110f1cd7fefbaff8
+
+% 6 1 0 1ce3630aa63f6ca71fb5f5913bb56eba
+
+% 2 1 0 0a6883ae0d59b57b17aabceae8415030
+
+% 0 1 0 0cd8c21642ad865d1c0f678354de1533
+
+% 0 1 0 05db7a5f68583dbf06b27f9ee46e92a8
+
+% 1 1 0 1788f9bf98c2c6d411f443784e90326b
+
+@ 0 7 0 168c8def22b04ec00f162195275c2d31
++   entry .frenchShowable   在 `Locale[fr]` 之下用法语描述规则：_tous les mois le 3e lundi_
++       还需要作用域中有 `monthFormats.frenchMonths` 和 `weekdays.frenchWeekdays`。
++   entry .germanShowable   在 `Locale[de]` 之下用德语描述规则
++       还需要作用域中有 `monthFormats.germanMonths` 和 `weekdays.germanWeekdays`。
++   entry .spanishShowable   在 `Locale[es]` 之下用西班牙语描述规则
++       还需要作用域中有 `monthFormats.spanishMonths` 和 `weekdays.spanishWeekdays`。
++   entry .Error   当文本不是有效的 RFC 5545 重复规则时抛出
+
+% 1 1 0 0a32e16141ba880d024b5f1bf2782b82
+
+@ 0 21 0 181b6c5696ce3d001a683a975690b0d2
++         _the value `value` is not a valid RFC 5545 recurrence rule_，由 `.parse` 针对缺失或未知的 `FREQ`、无法解析的数字或星期代码，或格式错误的 `BYDAY` 项抛出。
++     entry #value   未能解析的规则文本
++   entry #start   第一个候选出现，即 iCalendar 的 `DTSTART`；规则的点类型就是它的类型
++   entry #frequency   规则重复所依据的周期：`Secondly`、`Minutely`、`Hourly`、`Daily`、`Weekly`、`Monthly` 或 `Yearly`
++   entry #interval   相邻两次出现之间相隔多少个周期，默认为 1
++   entry #count   出现的次数；为 `Unset` 时表示无限制
++   entry #until   一次出现可以落在的最后一个点，包含在内，或为 `Unset`
++   entry #byMonth   出现所在的月份，以 `Month` 表示；为空时表示所有月份
++   entry #byMonthDay   月中的日，正数从 1 日数起，负数从月末数起
++   entry #byDay   星期几，每个可带一个序数，以 `WeekdayOrdinal` 表示
++   entry #byYearDay   年中的日，1 到 366，或从年末倒数的负数；用于 `Yearly`
++   entry #byWeekNo   ISO 周编号，或从最后一周倒数的负数；用于 `Yearly`
++   entry #byHour   出现所在的一天中的小时；用于 `Rrule[Timestamp]` 和 `Rrule[Moment]`
++   entry #byMinute   一小时中的分钟，同上
++   entry #bySecond   一分钟中的秒，同上
++   entry #bySetPos   从每个周期的候选项中保留的位置，从 1 开始，或从末尾倒数的负数
++       `bySetPos = List(-1)` 配合列出五个工作日的 `byDay`，就是一个月的最后一个工作日。
++   entry #weekStart   `Weekly` 周期开始的星期几，默认为 `Mon`（RFC 5545 的 `WKST`）
+
+@ 0 1 0 0ac5701ba8a5099d14677dde3c67fff3
++ entry .Timespan   日历意义上的时间量：年、月、周、日、时、分、秒，各自分开保存
+
+% 1 1 0 135de48ba709a5251b9226844996be92
+
+@ 0 6 0 1bf3232ec1df367d1500878f0d2a9092
++       `Timespan` 把经过的时间表示为各个基数上的计数向量（`years`、`months`、`weeks`、`days`、`hours`、`minutes`），再加上一个物理的 `seconds` 分量，它是一个 `Quantity[Seconds[1]]`。
++       它有别于只表示秒的 `Duration`：一个月不是固定的秒数，一天也并不总是二十四小时，因此在把跨度应用于日期、时间戳或时刻之前，各计数之间绝不相互进位，到那时由日历和时区决定它们的含义。
+
+% 2 1 0 142693c6d94f71e9014e01847c35e12f
+
+% 3 1 0 0c04e355fb5f2dc11ef59b82139f1b2e
+
+% 4 1 0 06a7a26a1e956c341d5bafab55ba8038
+
+% 5 1 0 0dede9e8a3dbfaf61f062cbed765e9f1
+
+% 0 1 0 00072bd8342c2cf517d63b1d8f53dd75
+
+% 0 1 0 010f3d4c5181690d090fc6b1f62b5b47
+
+% 0 1 0 1f27695e68468d72002c89f6985d1ee6
+
+% 0 1 0 000775bd089082a41f4cfefb742cf449
+
+% 0 1 0 0decfedfa0bec93c063dbf78800a0623
+
+% 1 1 0 1d5802ff448277f80d38c7fca18ea1a9
+
+@ 0 10 0 10cc4b8b8613f6841b69620c90f19cc9
++       一个跨度携带哪些基数记录在它的类型中：`n*Month` 是 `Timespan of Month.type`，`3*Month + 2*Week` 是 `Timespan of (Month.type & Week.type)`，而 `+`、`-` 和 `*n` 对操作数的基数集合取交集。
++       这个类型决定了跨度可以加到什么上。
++       *规则*的跨度（周、日、时、分、秒，但没有月或年）是一个确定的物理时长，因此可以加到任何时间线上的 `Instant`，并可跨 `Durations` 转换。
++       带月份的跨度需要一个 `MonthUnit` 为该月份基数的 `Calendar`，以及一个 `Disambiguation`（`monthEnds.clampMonthEnd`、`overflowMonthEnd` 或 `raiseMonthEnd`）来处理目标月份中不存在的日期；只有年份时，需要一个 `Calendar` 和一个 `Disambiguation`，但没有月份基数的约束。
++       把波斯历月份加到公历日期上，或把不规则的跨度加到 `Instant` 上，都是编译错误。
+
+% 2 1 0 094f5a644a7797f4190ecc824cfea64e
+
+% 3 1 0 0ebf8aaf5254e74011ee669f1bc532f8
+
+% 4 1 0 06c79b0b26587fe41d5cb182e7da35cc
+
+% 5 1 0 030417b63596e7ff063e55e8baf3cd85
+
+% 0 1 0 0d9ec08e8f4c8b110050b7b683e7e952
+
+% 0 1 0 188c949361bceb0608a5ad63f30cef1c
+
+% 0 1 0 1f9fa668c72bd5a717e026424bad1ffc
+
+% 0 1 0 1f8fd64951b1deed138512a017ca436e
+
+% 1 1 0 0b58225cfbe056640a4d671bdf7e243e
+
+@ 0 5 0 1c766dccb2623d1a0ef57d9bc0cd494c
++       加到 `Moment` 上时，跨度以“天”为界一分为二：年、月、周和日移动挂钟时间，因此无论夜里时钟如何变化，`+ 1*Day` 都是明天同一个本地时间；而时、分、秒则通过时区以物理方式应用，因此跨越夏令时开始时，`+ 24*Hour` 在挂钟上晚了一个小时。
++       作用域中的 `LeapMode` 说明这些物理秒是否计入闰秒。
+
+@ 0 5 0 03ca5d80fed4ab6612b57af3e9669902
++       文本形式：`encode` 和 `inspect` 是 ISO 8601 时长（`P1Y2M3DT4H5M6S`，空跨度为 `PT0S`），`as[Timespan]` 解析它，`dur"…"` 检查字面量，而 `show`（通过导入 `timespanFormats.englishRelativeTimespan` 或其法语、德语、西班牙语的同类，并配合一个 `Locale` 来选择启用）相对于当前时刻来读出跨度：_in 18 minutes_、_8 minutes ago_、_just now_。
+
+% 0 1 0 1e3a54b50a5c5b190aff6fc43ef3c23e
+
+% 1 1 0 12e499e2a3641fb8009f35da0288212a
+
+% 1 1 0 00e727a78436e6141079df2d9ab12235
+
+% 1 1 0 0b322b685a15f5d710432d5736cf141c
+
+% 0 1 0 16ff918dbf25bcb3009dfb06383728bf
+
+@ 0 18 0 0b465de47e9af3c6119f8b45c56563e2
++   entry .apply   按具名计数 `Timespan(years = 1, days = 3)`，或按单一基数 `Timespan(radix, n)`
++       case class 构造器按名称接受 `years`、`months`、`weeks`、`days`、`hours`、`minutes` 和 `seconds` 中的任意几个，默认为零。
++       `Timespan(Month, 3)` 是 `3*Month` 背后的单基数构建器，类型为 `Timespan of Month.type`。
++   entry .inspectable   作为检视形式的 ISO 8601 时长 `P1Y2M3DT4H5M6S`
++       自我标识且完整（未写出的分量为零），不需要相对形式的 `Showable` 所需的 `Locale` 上下文；涵盖细化的 `Timespan of X` 类型。
++   entry .encodable   作为编码形式的 ISO 8601 时长
++       零分量被省略，全零跨度是 `PT0S`，周与其他日期分量一起写作 `W`，小数秒保留小数点。
++   entry .decodable   解析 ISO 8601 时长，遇到其他任何内容则抛出 `Timespan.Error`
++       `t"P1Y2M3DT4H5M6S".as[Timespan]` 需要一个 `Tactic[Timespan.Error]`。
++       同一个解析器在编译时支撑着 `dur"…"` 插值器。
++   entry .interpolable   `dur"P1Y2M3DT4H5M6S"` 字面量，在代码编译时验证
++       通过 `StringContext` 上的 `dur` 扩展使用；格式错误的时长是编译错误。
++   entry .Error   当文本不是 ISO 8601 时长时抛出
+
+% 1 1 0 15f492bc5f6f04a20dba40128960c4b7
+
+@ 0 29 0 0821e8da16f2e5421eecda244f1fd04a
++         错误 `↯/s.73.4`：_`text` is not a recognized duration_，由 `.decodable` 抛出。
++         时长不是时刻，因此它有自己的错误，而不是 `Moment.Error` 的一个原因。
++     entry #text   未能解析的文本
++   entry .addable   `span + span`：逐分量相加，类型中的基数集合取交集
++   entry .subtractable   `span - span`：逐分量相减，类型中的基数集合取交集
++   entry .multiplicable   `span*n`：每个分量都乘以一个 `Int`
++   entry .quantityAddable   `span + quantity`：把一个以秒计的物理量并入跨度
++       接受任何可归一化为秒的 `Quantity`（`3*Second`、`500*Milli(Second)`），并把 `Seconds[1]` 加入跨度的基数集合。
++   entry .quantitySubtractable   `span - quantity`：从跨度中去掉一个以秒计的物理量
++   entry .generic   规则跨度与跨 `Durations` 的纳秒之间的双向转换
++       `Abstractable & Instantiable across Durations` given，用于没有月或年基数的跨度：一周和一天分别算作 7 天和 1 天，每天 86 400 秒。
++       由纳秒构建的跨度转换回来时只有秒。
++   entry .dateRegular   对于没有月或年的跨度的 `date + span`：固定数目的整天
++       一周算作七天；时、分、秒不会移动日期。
++       不需要日历或方针。
++   entry .dateYear   对于有年无月的跨度的 `date + span`，在任何 `Calendar` 和一个 `Disambiguation` 之下
++       前进整年，保留月份，并通过作用域中的 `Disambiguation` 处理目标年份中不存在的日期（2 月 29 日），然后加上日和周。
++   entry .dateMonths   对于带月份的跨度的 `date + span`，在 `MonthUnit` 为该基数的 `Calendar` 之下
++       需要作用域中有一个 `MonthUnit` 为跨度月份基数的 `Calendar`（因此公历月份只能加到公历日期上，波斯历月份只能加到波斯历日期上），以及一个 `Disambiguation`。
++       先加年，再逐月相加，按每一年自己的月份数回绕（因此希伯来历可变的年份也能工作），然后检查月中的日：目标月份中不存在的日期，或位于历制切换缺口中的日期，由方针处理：在 `monthEnds.clampMonthEnd` 之下截到月末，在 `overflowMonthEnd` 之下进位到下个月，在 `raiseMonthEnd` 之下作为 `Moment.Error` 抛出。
++       最后加上日和周。
+
+% 2 1 0 078fb5ef65722c811b93d1bcbd9b2499
+
+% 3 1 0 09ca8c7ff1bcf5371b509d4c671c0658
+
+% 4 1 0 0d1b845b5fff6c831fdda4afd0a8bc07
+
+% 0 1 0 1c31b4a4833266d814529347e7c5d7c9
+
+% 0 1 0 1905c2996472e66a01cb187b6a8d9cf8
+
+% 1 1 0 13f838efb1fb849a1d0fc7b3ab49586a
+
+@ 0 18 0 045b8947b7b69bf20360f9b40123c01b
++   entry .instantPlus   对于规则跨度的 `instant + span`，适用于任何具有 `Resolution` 的时间线
++       跨度取其物理秒数（周和日各按 86 400 秒计），再换算为时间线的刻度。
++       带月或年的跨度不能加到瞬时上：应把它加到日期或时刻上。
++   entry .instantMinus   对于规则跨度的 `instant - span`，适用于任何具有 `Resolution` 的时间线
++   entry .timestampAdd   `timestamp + span`：日期部分通过 `Date` 的加法，时间部分在时钟上滚动
++       需要该跨度所需的 `Date is Addable by`：对于规则跨度不需要任何东西，对于月或年则需要一个 `Calendar` 和一个 `Disambiguation`。
++       时、分、秒加到一天中的时间上，整天进位到日期中，因此 `23:30 + 1*Hour` 是第二天的 `00:30`。
++   entry .momentAdd   `moment + span`：日历日作用于挂钟时间，不足一天的时间通过时区作用
++       需要该跨度的 `Timestamp` 加法、一个 `RomanCalendar` 和一个 `LeapMode`（`LeapMode.lenient` 位于隐式作用域中；`leapModes.exactLeapMode` 计入闰秒）。
++       年、月、周和日应用于挂钟时间戳并重新放入时区；然后时、分、秒加到落定的瞬时上，结果再放回时区。
++       因此跨越夏令时变更的一天保持其本地时间，而二十四小时则不然；落入夏令时开始缺口中的一天由作用域中的 `GapPolicy` 处理。
+
+% 2 1 0 10a0d4ada99f140302a1ded9be1df6f6
+
+% 3 1 0 0cff6aef9c186671081d3d2b5d00a2de
+
+% 4 1 0 14a2549f5e4c4ef51931b2018002f84c
+
+% 0 1 0 1d43d8fefe0310581d80f786506685e8
+
+% 0 1 0 1e41f56742ced1d50f5cdb1846c8ec02
+
+% 0 1 0 07bd9a73986f98880b698477d62c968f
+
+% 1 1 0 03e85901fe7cf6430c3ec96d8d99f81c
+
+@ 0 3 0 0e3b5a528ec3b1cc0cc5ad2da1ffe51f
++       落入缺口的一天默认向前推移，在 `gapPolicies.pushBackwardGapPolicy` 之下以切换前的偏移量向后保持，在 `gapPolicies.rejectGapPolicy` 之下则被拒绝：
+
+% 2 1 0 1cb2b9ada302bbce1d9471be18afc571
+
+% 3 1 0 074b6d7ab7f15f40089cb04d9af64396
+
+% 4 1 0 0b4f6dd72f943dd603c23af55e600448
+
+% 5 1 0 1107e1fd0e8ae1f10f309763f74e7617
+
+% 6 1 0 0d8605e1ef58b0fc0b28fde4c5432c82
+
+% 2 1 0 0bf161089a66e8150fac427f9838d1e9
+
+% 0 1 0 15da06ddcf5831e209feccef20b54db3
+
+% 1 1 0 04051d355a5ea17f066c5d5e9fbe1f0b
+
+% 2 1 0 1e8d28da8383684319f1fe6b0399ed64
+
+% 3 1 0 1ecba4106c000ec7081bd17e38562e6f
+
+% 4 1 0 11596e58b1b4664e0a1ce52213efe765
+
+% 5 1 0 1d2954c5a81f952602183c46312532cc
+
+% 2 1 0 0f9b58d213b139e01585a71a4e888f93
+
+% 0 1 0 14269aee1484a7f81a5a7d559dd7929a
+
+% 1 1 0 0b31f28e4f4bd9c116bfd366077831fa
+
+% 2 1 0 185439fcacf9c810065fe587b2aa8a53
+
+% 3 1 0 1fc6780fea07add8199c93d78b553f5a
+
+% 4 1 0 1a1f8f49a049e69b0e686f8a2d89ab48
+
+% 5 1 0 1168d78db0c5a61509bc6d275c390ce5
+
+% 6 1 0 08cbaea11e09f40b0c6a8d46450a3362
+
+% 2 1 0 1114856278d547e90f6122e8e7f9b51f
+
+% 0 1 0 08097c7460009dee1de23d6aa656b234
+
+% 1 1 0 1663f343616d2c0e11f6fe87ee7ed818
+
+% 2 1 0 05d0a4ce9ec3b28819e8d453a03f5acd
+
+@ 0 11 0 0b3666f7bad9b8fb045b5a1f3025ecc7
++   entry #years   年数
++   entry #months   月数，以类型所记录的月份基数为单位
++   entry #weeks   周数
++   entry #days   天数
++   entry #hours   小时数
++   entry #minutes   分钟数
++   entry #seconds   物理秒数，作为一个 `Quantity[Seconds[1]]`，可以是小数
++   entry #Topic   跨度携带的基数，作为一个类型交集，例如 `Month.type & Week.type`
++       幻影类型：无论类型如何声明，所有计数都会被存储，但类型决定了哪些加法可用。
++       `Radix.Irregular`（月和年）使跨度不能参与瞬时的算术。
+
+@ 0 1 0 12ddc379fbf9fa321a5d87212df33d61
++ entry .Timezone   tz 数据库中的一个具名时区 `Europe/London`，由 `tz"…"` 在代码编译时检查
+
+% 1 1 0 022ff6ac5adbc782012b76491c332b3c
+
+@ 0 6 0 179813a04b68b1cd1239e54c1c1bc292
++       `Timezone` 是某个地方的民用时间规则，按 IANA tz 数据库的命名方式命名：`Europe/London`、`America/New_York`、`UTC`。
++       它是 `Moment` 所携带的、`Instant#in` 和 `Timestamp#in` 所接受的东西，也是 `today()` 和 `Timestamp#instant` 所读取的上下文。
++       创建它的唯一方式都会检查名称：代码编译时的 `tz"…"` 插值器，以及运行时的 `Timezone(name)` 或 `text.as[Timezone]`，对于数据库中没有的名称，它们抛出 `Timezone.Error`。
+
+% 2 1 0 1a1c043c4897c1a0013f31f0bae3dd08
+
+% 3 1 0 08f373933f506c270a7356447be4540b
+
+% 4 1 0 0ceaed510683c61d0ae3233eb8734484
+
+% 1 1 0 0b696d1641d7f9700c7d2f96f377154f
+
+% 2 1 0 1b2e91a016d1feaa188188f8554962f5
+
+% 0 1 0 0b503b6119bb52c51fef8381819bef49
+
+% 0 1 0 1fcf9b755149b24b13c607493c3009de
+
+% 0 1 0 01ae84d11cb4367a09fcd640f8d79b85
+
+% 0 1 0 1bedcc80c063303008c7aef8ea8210e9
+
+% 1 1 0 05321776cb876926076132bc34ef5dcb
+
+@ 0 2 0 04c5e5668bec0a820e1dbdb95271701e
++       时区的规则是平台 `java.time` 时区数据库的规则；`Tzdb` 为需要更新数据库的程序解析数据库自身的源文件。
+
+% 1 1 0 0ace3248666ff2d60bd0b0fe646d8e31
+
+% 0 1 0 05d9c0df559af4d808c6a90201ebc03d
+
+% 0 1 0 00f2f7d6790f94da0fe4483846995094
+
+@ 0 11 0 1194c0aa3c24124d04df25a49b9cdca5
++   entry .apply   `Timezone(name)`：按名称得到的时区，如果没有则抛出 `Timezone.Error`
++       需要一个 `Tactic[Timezone.Error]`；与 `name.as[Timezone]` 相同。
++   entry .unsafeFrom   不经检查地包装一个名称；供 `tz"…"` 和 `ts"…"` 宏使用
++       接受 `Unsafe` 能力。
++       宏在展开时已经验证过名称，因此生成的代码不再重新检查任何东西；普通代码使用 `.apply`。
++   entry .decodable   `text.as[Timezone]`，对于未知名称抛出 `Timezone.Error`
++       用 `ZoneId.of` 检查名称；需要一个 `Tactic[Timezone.Error]`。
++   entry .interpolable   `tz"Europe/London"` 字面量，在代码编译时对照时区数据库检查
++       通过 `StringContext` 上的 `tz` 扩展使用；名称必须是一个没有替换项的字面量，未知名称是编译错误。
++   entry .Error   针对不是数据库中时区的名称抛出
+
+% 1 1 0 14262323d14595d4153a7694e2e813a8
+
+@ 0 5 0 04b036a7f8b9ce401045ac051d716c36
++         错误 `↯/s.73.10`：_the name `name` does not refer to a known timezone_，由 `Timezone(name)` 和 `text.as[Timezone]` 抛出。
++     entry #name   不是时区的名称
++   entry #name   时区的 tz 数据库名称，作为文本
++   entry #stdlib   作为 `java.time.ZoneId` 的时区，用于接受它的 Java API
+
+@ 0 1 0 0cdcb376a4fe93d41cfb651490e542d1
++ entry .Tzdb   tz 数据库自身源文件的解析器：`Rule`、`Zone`、`Link` 和 `Leap` 行
+
+% 1 1 0 14690174bcd8a2b814771771cfec7918
+
+@ 0 8 0 1c8cc02c6a3970871079568524be9159
++       每个 `Timezone` 背后的规则都来自 IANA tz 数据库，而 `Tzdb` 直接读取其源文件（`europe`、`northamerica`……），而不是通过平台 API 读取，因此当某国政府临时更改规则时，可以加载比平台更新的数据库。
++       `.parse` 接收一个文件的各行并返回其 `.Entry`：`Rule`，带有其 `from`/`to` 年份、`MonthDate`（`lastSun`、`Sun>=8`、`15`）、变更时刻、`save` 和 `letters`；`Zone`，带有其 `ZoneInfo` 时段序列；`Link` 别名；以及 `Leap` 闰秒。
++       `.parseFile` 读取类路径上 `aviation/tzdb/` 下打包的文件。
+
+% 2 1 0 030fafefc2a009b31ab0ba0261525f65
+
+% 3 1 0 0c70fa8855c50908008f2577318c11e3
+
+% 4 1 0 0fce3ba90a4ab739081075249e28824b
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 15c32af595fcf9a812606a849e70e119
+
+% 0 1 0 143cb3f41235b6621e26d88d765f4e45
+
+% 0 1 0 1b8bbab6982398b41540c8c2d79b3dd1
+
+% 1 1 0 1e1d25cdac2217ad1ed872d987652086
+
+@ 0 3 0 1110e36852589d7e0fe5dda421beec93
++       格式不允许的行会抛出 `Tzdb.Error`，指明错误及其行号，而不是产生一个规则错误的时区；解析过程会记录 `Tzdb.Event`。
++       这些条目只是数据：这里还没有任何东西把它们转换成 `Timezone` 的规则。
+
+% 1 1 0 188a5c941f2e539f151a2213454627f6
+
+@ 0 1 0 12beeadc4dddf9590209432e29d70e2c
++   entry .Time   tz 行中的一天内时刻：时、分、秒和可选的后缀
+
+% 1 1 0 0c9ac3486eba75021aa05d2c59a98721
+
+@ 0 8 0 0f00239de41b30ef158ac1fab496d3ee
++         `Tzdb.Time(hours, minutes, seconds, suffix)`：`Rule` 的 `AT` 字段或 `Leap` 的时刻。
++         后缀（如有）为 `s` 表示本地标准时间，为 `u` 表示 UT，对应数据库中的 `2:00s` 和 `1:00u` 写法；没有后缀时，该时刻为本地挂钟时间。
++     entry #hours   小时，0 到 23
++     entry #minutes   分钟
++     entry #seconds   秒
++     entry #suffix   `s`（标准时间）、`u`（世界时），或表示挂钟时间的 `Unset`
++   entry .Duration   tz 行中带符号的偏移量：时区的 `STDOFF` 或规则的 `SAVE`
+
+% 1 1 0 1a970ef2348aada31bfab2e8015f1ee1
+
+@ 0 7 0 0d6f902c2786a47c0fc631ab3a4955fd
++         `Tzdb.Duration(hours, minutes, seconds)`。
++         格林尼治以西的偏移量为负，符号作用于每个分量，因此 `-0:30` 是 `Duration(0, -30, 0)`。
++         `SAVE` 可以超过二十四小时。
++     entry #hours   小时，带符号
++     entry #minutes   分钟，符号相同
++     entry #seconds   秒，符号相同
++   entry .ZoneInfo   时区历史中的一个时段：其标准偏移量、规则、格式和结束时间
+
+% 1 1 0 1e8838139706c48605c745e43033462b
+
+@ 0 9 0 0bdf42ffc71c5dd11964192a884e98f4
++         `Zone` 行及其下方的每个续行都是一个 `ZoneInfo`：相对 UT 的标准偏移量、生效的 `Rule` 集合的名称（或 `-`）、缩写格式，以及下一个时段接替时的 `UNTIL` 文本（当前时段为 `Unset`）。
++     entry #stdoff   相对 UT 的标准偏移量，以 `Tzdb.Duration` 表示
++     entry #rules   生效规则的名称，没有时为 `-`
++     entry #format   缩写，是规则字母的函数：`E%sT` 应用于 `S` 得到 `EST`
++     entry #until   该时段的 `UNTIL` 文本，最后一个时段为 `Unset`
++   entry .MonthDate   规则生效的日期：确切的某天、最后一个星期几，或某天当天或之后/之前的星期几
+
+% 1 1 0 008d8f559660ea010a7c4a40dace93bd
+
+@ 0 5 0 1c8c40178bc4f60610f7d4b88fdc15dd
++         数据库 `ON` 字段各种形式的枚举：`Exact(month, day)` 对应 `15`；`Last(month, weekday)` 对应 `lastSun`；`After(month, weekday, date)` 对应 `Sun>=8`，即 8 日当天或之后的第一个星期日；`Before(month, weekday, date)` 对应 `Sun<=25`，即 25 日当天或之前的最后一个星期日。
++   entry .Entry   tz 源文件中的一行：`Rule`、`Zone`、`Link` 或 `Leap`
+
+% 1 1 0 115fc90b3e9b5af7136250ce5ee6612b
+
+@ 0 36 0 0307bee064c79bee0349c072dec0df30
++         `.parse` 返回的 `List` 的元素所属的枚举。
++         `Zone` 将其续行汇集为一个条目；其他每种各占一行。
++     entry .Rule   夏令时规则：时钟何时调整、调整多少，以及在哪些年份适用
++       entry #name   规则集合的名称，供 `ZoneInfo#rules` 引用
++       entry #from   规则适用的第一年
++       entry #end   最后一年，`max` 对应 `Int.MaxValue`，`only` 则与 `from` 相同
++       entry #change   变更的日期，以 `Tzdb.MonthDate` 表示
++       entry #time   变更在一天中的时刻，以 `Tzdb.Time` 表示
++       entry #save   节省的时间量，以 `Tzdb.Duration` 表示
++       entry #letters   代入时区格式的字母，`-` 对应 `Unset`
++     entry .Leap   闰秒：其日期、时刻，以及是增加还是移除
++       entry #year   年
++       entry #month   月
++       entry #day   月中的日
++       entry #time   一天中的时刻
++       entry #addition   插入一秒（`+`）时为 true，移除一秒时为 false
++     entry .Zone   时区及其历史中的时段序列
++       entry #area   名称中 `/` 之前的部分，例如 `America`
++       entry #location   `/` 之后的部分，例如 `New_York`，单段名称为 `Unset`
++       entry #info   按顺序排列的时区时段，以 `Sequence[Tzdb.ZoneInfo]` 表示
++     entry .Link   别名：`from` 是目标时区，`to` 是替代名称
++       entry #from   所链接到的时区
++       entry #to   作为其别名的名称
++   entry .parseFile   解析类路径上 `aviation/tzdb/` 下打包的 tz 源文件
++       `Tzdb.parseFile(t"europe")` 通过该类自身的类加载器读取资源 `/aviation/tzdb/europe`，并用 `.parse` 解析。
++       需要一个 `Tactic[Tzdb.Error]`——资源不存在时以原因 `NoTzdbFile` 抛出——以及一个 `Tzdb.Event is Loggable`。
++   entry .parse   将 tz 源文件的各行解析为条目
++       `Tzdb.parse(name, lines)` 接收文件名（用于日志）和以 `Chain[Text]` 表示的各行，返回 `Tzdb.Entry` 的 `List`。
++       `#` 之后的注释被丢弃；`Rule`、`Link` 或 `Leap` 行各为一个条目，`Zone` 行开启一个条目，由其缩进的续行加以扩展。
++       需要一个 `Tactic[Tzdb.Error]`，任何无法解析的字段都会抛出它，还需要一个 `Tzdb.Event is Loggable`，例如 `logging.silentLogging`。
++   entry .Error   数据库中某一行无法解析时抛出
+
+% 1 1 0 16844a5be8d5370107edcdf84a16ac39
+
+@ 0 2 0 068b0b50687c265f0fec924a144e3348
++         错误 `↯/s.73.6`：_the timezone could not be parsed at line `line`: `reason`_，以原因的编号作为子代码：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 6 0 01eaaee87b5d88401de81cef59454ced
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `CouldNotParseTime(time)`  1  _could not parse time `time`_  格式错误的 `AT`、`STDOFF` 或 `SAVE`
++         row  `UnexpectedRule`  2  _unexpected rule_  字段有误的 `Rule` 或 `Leap` 行
+
+% 0 1 0 0735c2c7e203b54119f07eea1be6418a
+
+@ 0 5 0 0a23c9ac76f13bb2122de3326f5069cd
++         row  `UnexpectedZoneInfo`  4  _unexpected zone info_  上方没有 `Zone` 的续行
++         row  `UnparsableDate`  5  _the date could not be parsed_  不属于任何已知形式的 `ON` 字段
++         row  `BadZoneInfo(line)`  6  _bad zone information: `line`_  该行的字段，置于括号中
++         row  `BadName(name)`  7  _the name `name` is not valid_  含有多个 `/` 的时区名称
++         row  `NoTzdbFile(name)`  8  _the zonefile `name` could not be found on the classpath_  来自 `.parseFile`
+
+% 1 1 0 0fc3a0f21c298f2b12d92a1dfc85a462
+
+@ 0 5 0 07648164599d9baa02b12220db50e5c9
++     entry .communicable   将每个原因呈现为其消息
++     entry .Reason   某行失败的原因，编号为 1 到 8
++     entry #reason   `Tzdb.Error.Reason`
++     entry #line   出错处从一开始计数的行号
++   entry .Event   解析时记录的日志
+
+% 1 1 0 1facb29382211b1408cd471d21883c9e
+
+@ 0 5 0 0a6b20191bfece2e13f952711c4f70bd
++         `ParseTzdb(name)`，_parsing the timezone database file `name`_，在 `.parse` 开始时以 `fine` 级别记录。
++         带有标签 `Log.Time`。
++     entry .communicable   将事件呈现为其消息
++     entry .ParseTzdb   正在解析一个数据库文件
++       entry #name   文件名
+
+@ 0 5 0 0564a5c05af6c8d60e56b3b7d37ab421
++ entry .TimeUnit   计量时长或频率所用的七种单位，从粗到细排列
++     一个枚举：`Years`、`Months`、`Weeks`、`Days`、`Hours`、`Minutes`、`Seconds`。
++     `Vernacular` 用其语言为它们命名——`Vernacular.components(span)` 将时间跨度表示为 `(count, unit)` 对，`Vernacular.unitOf(frequency)` 则是 `Rrule` 的 `Frequency` 重复时所用的单位。
+
+@ 0 1 0 0aa60697d11b5bd617e2187f7ae7f64e
++ entry .Vernacular   用散文描述时间跨度和重复规则时，某一种语言所用的词语和语法
+
+% 1 1 0 19ee6f281d1ad74703f6d572bb3ec00a
+
+@ 0 9 0 11fff5b47bd4b2e610b0f464ba3f9264
++       `Vernacular` 把 `Timespan`、`Recurrence` 或 `Rrule` 转换成一句话：_in 18 minutes_、_every 2 weeks, 5 times from 2024-01-01_、_every month on the 3rd Monday_。
++       结构——哪些从句适用、以什么顺序排列——是共享的，位于 final 方法 `#relativeTimespan`、`#recurrence` 和 `#rrule` 中；每种语言提供词语和语法钩子（`#units`、`#everyUnit`、`#onDays`……）。
++       `.english`、`.french`、`.german` 和 `.spanish` 是所提供的四种，也是 `Rrule`、`Recurrence` 和 `timespanFormats` 的 `Showable` given 按 `Locale` 选取的对象。
++       它们是初版，有待母语使用者完善。
++       新增一种语言需实现该特质的抽象方法。
+
+% 2 1 0 16d340b34c457efc1cc8db26ad77bddf
+
+% 3 1 0 043ab3c3e00697241b9e304e32c9fc27
+
+% 4 1 0 09eefaff788d331e0a526fba323c0d65
+
+% 5 1 0 1a2d8f0f0de195f219bf4e3d29ece949
+
+% 6 1 0 044e4450515663e0133a78eb70cd076d
+
+% 0 1 0 1409525641fa63f903fa13c8a47b7a16
+
+% 0 1 0 0cc8a6ca0aac6e6a0418b76968b7909d
+
+% 0 1 0 1caa92c78339a4a11d6abbd057537acc
+
+% 1 1 0 01b3164652044a251fd1c55614eca752
+
+% 1 1 0 0e1866c67f887449158147ddbd28de70
+
+% 1 1 0 01bda98b222877b507a0a2be907c74e3
+
+% 1 1 0 0621982655124b4a02dbf7751fbdae15
+
+@ 0 29 0 082a8831a366d3cb081b4ef42ccecfb0
++   entry .components   时间跨度中非零的分量，以 `(count, TimeUnit)` 对表示，从粗到细排列
++   entry .unitOf   `Frequency` 重复时所用的 `TimeUnit`：`Monthly` 对应 `Months`
++   entry .english   英语用语：_every year on the 4th Thursday of November_
++   entry .french   法语用语：_tous les mois le 3e lundi_
++   entry .german   德语用语：_jeden Monat am 3. Montag_
++   entry .spanish   西班牙语用语：_cada mes el tercer lunes_
++   entry #units   带有单位单数或复数名称的计数，_1 month_、_3 months_
++   entry #conjunction   连接列表中最后两项的词：_and_
++   entry #position   序数位置，负数表示从末尾计数：_3rd_、_last_、_2nd-to-last_
++   entry #justNow   对空时间跨度的描述：_just now_
++   entry #future   将正的跨度包装为将来的时间：_in 18 minutes_
++   entry #past   将负的跨度包装为过去的时间：_8 minutes ago_
++   entry #everyDuration   `Recurrence` 的节奏：_every 2 weeks_
++   entry #everyUnit   `Rrule` 的节奏：_every month_、_every 3 days_
++   entry #times   重复次数：_, 5 times_
++   entry #from   重复的起点：_from 2024-01-01_
++   entry #onDays   由 `(ordinal, weekday name)` 对构成的 `byDay` 从句：_on the 3rd Monday_
++   entry #onMonthDays   `byMonthDay` 从句：_on the 1st and last day_
++   entry #inMonths   `byMonth` 从句：_in November_，在日期从句之后则为 _of November_
++   entry #takingPositions   `bySetPos` 从句：_taking the last_
++   entry #relativeTimespan   相对于现在的时间跨度，按其符号向前或向后；共享的组装逻辑
++       正跨度为 _in 18 minutes_，负跨度为 _8 minutes ago_，空跨度为 `#justNow`；`timespanFormats.englishRelativeTimespan` 调用的就是它。
++   entry #recurrence   ISO 8601 重复的描述：节奏、次数和起点
++       `recurrence(period, repetitions, start)`，其中起点已呈现为文本：_every 2 weeks, 5 times from 2024-01-01_。
++   entry #rrule   `Rrule` 的描述：节奏、日期从句、月份从句、位置和次数
++       需要作用域中有 `Months` 和 `Weekdays` 来为规则中的月份和星期几命名，这就是 `Rrule` 的 `Showable` 需要它们的原因。
+
+@ 0 1 0 1d79a0113ac8197715e14592c406d2b8
++ entry .WeekDate   ISO 8601 周日期：以周年份、周数和星期几表示的日期
+
+% 1 1 0 0e05f2cb56ff5aa413ee0f8c5d7e0ab8
+
+@ 0 6 0 18005b67903c179a06f54a2622f1b8f3
++       ISO 8601 不按月份标识日期，而是按 `(week-year, week, weekday)` 标识：每周从星期一到星期日，第 1 周是包含 1 月 4 日的那一周（即该年的第一个星期四所在的周），靠近年份边界的日期可能属于前一个或后一个周年份——2000 年 1 月 1 日是星期六，属于 1999 年的第 52 周。
++       它不是 `Calendar`（它没有月份），而是对公历日期的一种标识方式，因此 `RomanCalendar` 是上下文提供的。
+
+% 2 1 0 1f55137dd245218a0f22021257cb47f3
+
+% 3 1 0 09e13b6a41a286ca091e1be039eb1798
+
+% 4 1 0 1fdb39d976e46771024144429e0dcf0a
+
+% 5 1 0 18e72f5204f7b9961494d5decbfeeaf4
+
+% 0 1 0 03e542ccfdbf26ba17ef41b6f49b8a44
+
+% 0 1 0 1fdb1856c6f52665101b3111deffeb8d
+
+% 0 1 0 160b63f4c4ffad4409f9e603d29dbb1e
+
+% 1 1 0 1a21456cfc13504e003e9b9caec65006
+
+@ 0 1 0 1519348bf274ced400011631e205d503
++       `Rrule#byWeekNo` 按这些周数选择日期。
+
+% 1 1 0 0b752e20d3a8567f1619acfc3c64842b
+
+% 1 1 0 0bc9968c9701b79012d7548632605e55
+
+@ 0 7 0 0b1d60b730325d210c44f2b0feb6538e
++   entry .weekYear   日期所属的 ISO 周年份，可能与其日历年份不同
++       需要作用域中有 `RomanCalendar`。
++   entry .weekOfYear   日期的 ISO 周数，1 到 52 或 53
++       需要作用域中有 `RomanCalendar`。
++   entry .apply   `WeekDate(weekYear, week, weekday)`：具有这些 ISO 坐标的日期
++       从第 1 周的星期一开始计数。
++       需要一个 `RomanCalendar` 和一个 `Tactic[Moment.Error]`，后者可能在构造该周年份的 1 月 4 日时被抛出。
+
+@ 0 1 0 0d2bfb7b8f0c0b6f0566ce0144d51a02
++ entry .Weekday   一周的七天，`Mon` 到 `Sun`
+
+% 1 1 0 0e96c73289433be50f89e28c7c05eaa2
+
+@ 0 4 0 09ea79c12f7f7bc802c84ba0987eb25d
++       由 `Mon`、`Tue`、`Wed`、`Thu`、`Fri`、`Sat` 和 `Sun` 组成的枚举，导出到包中，因此可以直接使用各分支。
++       `Date#weekday` 是日期对应的星期几，`WeekdayOrdinal` 为重复规则把星期几与一个序数配对，`Tzdb.MonthDate` 在 tz 数据库的 `lastSun` 形式中使用它们。
+
+% 2 1 0 129acf47c6e1d47e064b96befaab35bc
+
+% 3 1 0 0305ae79ba4bfd690ede757d19f62dd6
+
+% 4 1 0 179bdf7cd6a33f9213402c5f6203a077
+
+% 5 1 0 09523170cc7b50dc0c84b38eef514588
+
+% 1 1 0 0ee2bb23958f1c680c40fd6c28408252
+
+% 0 1 0 093a6405c95f366401f919ba2394cedc
+
+% 0 1 0 1c082f46e68e35201ab668717dfb0184
+
+% 0 1 0 164c88bbf27bd40319753592eaf37499
+
+% 0 1 0 0420955c7b9f7b170c24a7d4f7b22d25
+
+% 1 1 0 01e04398670847eb001b1e92a429ebc3
+
+@ 0 4 0 17700f4bdf826f111694aa21358ed254
++       枚举的 `ordinal` 从 `Mon` = 0 开始，但一周从哪天开始、哪几天是周末，则由 `Hebdomad` 决定——`hebdomads.europeanHebdomad`、`northAmericanHebdomad` 或 `jewishHebdomad`，按名称导入——`#number`、`#weekend` 和 `.apply` 都会参考它。
++       星期几如何显示由 `weekdays` 包中的 `Weekdays` 决定。
+
+% 0 1 0 130d0586491fa0e50436454fedecc451
+
+% 1 1 0 117d38e0045ff6d119b15bec141eb677
+
+% 1 1 0 0bfe81dfe630baa5175d0147371142b9
+
+@ 0 12 0 033e8f086e0fdb5c1d1e77d042ce3d6c
++   entry .apply   在作用域中的 `Hebdomad` 下，一周中某个序数位置上的星期几
++       在 `hebdomads.europeanHebdomad` 下 `Weekday(Prim)` 是 `Mon`，在 `northAmericanHebdomad` 下是 `Sun`。
++   entry .all   按顺序排列的七个星期几，以 `Array` 表示
++   entry .showable   按作用域中的 `Weekdays` 呈现星期几
++       需要一个从 `weekdays` 包中按名称导入的 `Weekdays`；没有默认值。
++   entry .count   某个半开日期区间内有多少个指定的星期几
++       `Weekday.count(start, end, day)` 统计从 `start`（含）到 `end`（不含）之间的 `day` 个数：2025 年 3 月的星期六个数为 `Weekday.count(2025-Mar-1, 2025-Apr-1, Sat)`，即 5。
++   entry #weekend   在作用域中的 `Hebdomad` 下，该天是否属于周末
++   entry #number   在作用域中的 `Hebdomad` 下，该天在一周中从一开始的位置，以 `Ordinal` 表示
+
+@ 0 1 0 10a2d3996a4d0c2b0d0bacab9567f651
++ entry .Weekdays   星期几名称的一种选择：`Weekday` 如何显示
+
+% 1 1 0 0f03c065e0c4fb3c015f3af6bfc09388
+
+@ 0 7 0 081537edb03ee1921b0fba8c8cbdad3e
++       `Weekdays` 将每个 `Weekday` 映射到其名称，它是 `Weekday.showable` 所需的上下文，也供 `Rrule` 的描述使用。
++       隐式作用域中没有它：需要从 `weekdays` 包中按名称导入一个——`englishWeekdays`（`Monday`）、`englishShortWeekdays`（`Mon`）、`twoLetterWeekdays`（`Mo`）、`oneLetterAmbiguousWeekdays`（`M`、`T`、`W`、`T`……）、`shortestUnambiguousWeekdays`（`M`、`Tu`、`W`、`Th`……）、`frenchWeekdays`、`germanWeekdays` 或 `spanishWeekdays`——或者写成一个 lambda，因为该特质只有一个方法 `#name`。
+
+% 2 1 0 10b87497d032b88d17a96fcf31b90e97
+
+% 3 1 0 14dfcabe3202355f112595baa17ca4c9
+
+% 0 1 0 1b72684304b5268c0cde12ec0665eee5
+
+% 0 1 0 127003012ce7d6920a5b92a85308ff56
+
+% 1 1 0 14d4ad6a8316b9490c53953346235e83
+
+@ 0 1 0 16a119270a93e6240d63d876c4455e7b
++   entry #name   在这种选择下星期几的名称
+
+@ 0 5 0 0929511722cc586b18cf78524daf91fe
++ entry .Years   日期中年份的写法：两位或四位
++     由 `TwoDigitYear` 和 `FullYear` 组成的枚举，是 `Date` 和 `Monthstamp` 的 `Showable` 从作用域中获取的选择。
++     `yearFormats.fullYears` 和 `yearFormats.twoDigitsYears` 是相应的 given，按名称导入；在前者下 `2024 - Mar` 显示为 `Mar.2024`，在后者下显示为 `Mar.24`（作用域中还需有 `Months`、`Date.Separation` 和 `Endianness`）。
+
+@ 0 4 0 0bffca244c10e1e902d0dc72d5849de7
++ entry .WasiClockApi   WASI 时钟接口的类型：`Interface in Wit at "/aviation/clocks.wit"`
++     Wasm 时钟 given 据以进行类型检查的 WIT 定义，`call` 物化器也会从中查询每个函数的模块 id。
++     `wasiApis.wasiClockApi` 是它唯一的值。
++     属于 `aviation.wasi`。
+
+@ 0 1 0 1d42f7d27c7246d6048f03ff24549da1
++ entry .wasiApis   编译 Wasm 时钟时所依据的 WASI 接口定义
+
+% 1 1 0 06cc312f9ebc7d2308d3c4fec4a3ec40
+
+@ 0 7 0 02999850e9269359037863c6610e0b06
++       位于 `aviation.wasi`，供编译为 Wasm 组件的程序使用。
++       这里的 given 是 `clocks` 中的 given 展开时所召唤的 `WasiClockApi`，因此 Wasm 程序要将它与所需的时钟一起按名称导入（`import wasiApis.wasiClockApi` 和 `import clocks.wasiClock`），并且随模块打包的 `/aviation/clocks.wit` 资源必须在该处的类路径上。
++       召唤处必须针对 Wasm 目标编译，因为该 inline given 会展开为组件导入。
++   entry .wasiClockApi   `wasi:clocks` WIT 接口，从打包的 `/aviation/clocks.wit` 加载
+
+@ 0 1 0 07b16bffd7ebd45e0dc53786b9c7c9e1
++ entry .clocks   由 `wasi:clocks` 支持的时钟，供编译为 Wasm 组件的程序使用
+
+% 1 1 0 04c3b08681dc77e2111c1a6c41c38e1d
+
+@ 0 8 0 1a56c949b22e04fc0e4858deb3dafa9e
++       位于 `aviation.wasi`。
++       在 JVM 上，默认的 `Clock.current` 和 `MonotonicClock.current` 位于隐式作用域中，无需导入任何东西；Wasm 组件没有 `System.currentTimeMillis`，因此它要连同 `wasiApis.wasiClockApi` 一起按名称导入其中一个 given，之后 `now()`、`today()` 和 `monotonic()` 就会读取 WASI 宿主的时钟。
++       两个 given 都是 `inline` 的，因此 Wasm 组件导入在导入处物化，而该处本身必须针对 Wasm 目标编译；编译器关于匿名类在每个内联处重复的提示是预料之中的，WASI 链接的应用程序对每个 given 只召唤一次。
+
+% 1 1 0 17735f25c0ad5cc710ebc755ffff65dd
+
+% 1 1 0 123f5d372532f11b1deb777f8d1b7146
+
+@ 0 8 0 10db526692ce38c305bfa055e63bab1b
++   entry .wasiClock   读取 `wasi:clocks/wall-clock` `now` 的 `Clock`
++       宿主由秒和纳秒构成的 `datetime` 记录被转换为 `Unix` 时间线的毫秒刻度。
++       召唤处的作用域中需要有 `wasiApis.wasiClockApi`。
++   entry .wasiMonotonicClock   读取 `wasi:clocks/monotonic-clock` `now` 的 `MonotonicClock`
++       宿主的纳秒计数器直接成为 `Instant over Monotonic`，因为该时间线以纳秒为刻度。
++       召唤处的作用域中需要有 `wasiApis.wasiClockApi`。

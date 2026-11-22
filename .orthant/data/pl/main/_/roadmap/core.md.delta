@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 4 0 12b07e19a23cc3a90e9f3a30d1922b9f
++ Ukończone, gdy: żadna kolekcja w `lib/` nie udostępnia częściowego indeksowanego `apply`, a
++ każda pozostała pętla `while` ma jeden z trzech kształtów dopuszczonych przez
++ [`doc/work/standards/loops.md`](../standards/loops.md) i niesie komentarz nazywający jej
++ niezmiennik. Celem nie jest dosłowne zero: arytmetyka indeksów wyprowadzona z danych oraz
++ wnętrze samych kombinatorów pozostają pętlami.

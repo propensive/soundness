@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 158c113733dfac6107769ec27e962a8b
++ # Uwagi o migracji
+
+@ 0 3 0 01ab8e4b37f86270046f01f94a78db8b
++ Soundness szybko się zmienia i między wydaniami zmienia nazwy, przenosi i przekształca swoje
++ API. Oczekuje się, że kod zależny będzie aktualizowany przez agenta LLM, a nie ręcznie, dlatego
++ począwszy od wydania 0.64.0 każde wydanie zawiera przeznaczony dla maszyn zapis tego, co się
++ zmieniło.
+
+@ 0 1 0 132970a8f8d9f90e0c9b41c00293bc66
++ ## Jak to działa
+
+@ 0 10 0 123e54cfefdf9eb70c7d4664c17d0389
++ - Zmiany od ostatniego wydania gromadzą się w `doc/migration/<version>.md`, nazwanym od początku
++   według wydania, którego będą częścią (na przykład `doc/migration/0.71.0.md` po Soundness
++   0.70.0). Każdy PR, który wprowadza istotną zmianę w publicznym API lub obserwowalnym
++   zachowaniu, dodaje do niego wpis; pierwsza taka zmiana po wydaniu tworzy ten plik.
++ - Otagowanie wydania publikuje plik w obecnym stanie, więc żadna zmiana nie musi zostać
++   scalona wcześniej. Wydanie odmawia uruchomienia, gdy brakuje `<version>.md` albo gdy uwagi
++   innej wersji pozostają niewydane, więc uwag nie da się pominąć ani pozostawić pod niewłaściwą
++   wersją. Wydanych plików nie edytuje się później, chyba że w celu poprawienia błędów.
++ - Wynikiem jest jeden plik na wydanie, a każdy opisuje dokładnie zmiany między poprzednim
++   wydaniem a tym.
+
+@ 0 1 0 0edc58d927def64f031fedc5f92c65dc
++ ## Aktualizacja kodu zależnego
+
+@ 0 4 0 04a2df78b26c41021c795f8e36ba71bc
++ Aby zaktualizować projekt z wersji `A` do wersji `B`, należy polecić agentowi LLM przeczytanie
++ każdego pliku `doc/migration/<v>.md` z `A < v <= B`, w rosnącej kolejności wersji, i
++ zastosowanie w kodzie projektu zmian, które każdy z nich opisuje. Na przykład przejście z 0.64.0
++ do 0.67.0 oznacza przeczytanie `0.65.0.md`, `0.66.0.md` i `0.67.0.md`, w tej kolejności.
+
+@ 0 1 0 148a18f02812f00b0b58cee43be10eaa
++ ## Co zawierają pliki
+
+@ 0 7 0 0c99ea1062e66ccd0a5ad4be77437be3
++ Pliki są pisane dla inteligentnego LLM, a nie dla ludzi. Są precyzyjne, zwięzłe i kompletne:
++ każda zmiana nazwy, przeniesienie, zmiana sygnatury, usunięcie, zmieniona wartość domyślna i
++ zmienione zachowanie, które mógłby zaobserwować użytkownik biblioteki Soundness. Mówią, *co* się
++ zmieniło, z w pełni kwalifikowanymi starymi i nowymi nazwami oraz dokładną semantyką, a
++ ustalenie, *jak* dostosować konkretną bazę kodu, pozostawiają czytającemu je agentowi, chyba że
++ dostosowania nie da się wywnioskować z samej zmiany. `AGENTS.md` w katalogu głównym
++ repozytorium określa format i zasady ich utrzymywania.

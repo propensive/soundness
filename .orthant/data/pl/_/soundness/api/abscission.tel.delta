@@ -1,0 +1,244 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16954a4860263f300e6e6559e2691004
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0bafb754252ef4e70ab371bc1f4033d4
++ info   Zmniejszanie ścieżki klas do zamkniętego świata osiąganego z jej punktów wejścia, przez ponowną kompilację z TASTy
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 115492e9a197291b073b277b65d3462b
++     _Abscission_ przyjmuje ścieżkę klas i zbiór punktów wejścia, po czym zapisuje osiągany z nich
++     zamknięty świat: klasy, które mogą się wykonać, i żadne inne. Jest to zadanie zmniejszacza
++     bajtkodu, wykonane wcześniej. Klasy skompilowane przez ten kompilator są kompilowane ponownie
++     z TASTy, które ścieżka klas dla nich zawiera, a składowe, do których nic nie prowadzi, są
++     usuwane po rozwijaniu w miejscu wywołania i przed fazami generującymi metody przekazujące
++     traitu, mostki lub pola stojące za leniwą wartością. Żadna z tych rzeczy nie powstaje więc dla
++     składowej, która nie zostaje zachowana, i żadna nie wymaga reguły, by ją zachować. Jednostki
++     są wczytywane w miarę, jak analiza ich potrzebuje, więc jednostka, do której nic nie prowadzi,
++     nigdy nie jest wczytywana, a jej makra nigdy się nie wykonują.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 07aa8161624367551679f30020d6e318
+
+% 0 1 0 1868d81936ed3e540c9c483296e512f5
+
+% 0 1 0 110355b92c839bd20f4c65138c78d5de
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 0de571fb819b125a0271aadd5cd9b185
++     Zamknięty świat tworzą trzy rodzaje klas. Klasa skompilowana przez ten kompilator, do której
++     coś prowadzi, jest kompilowana ponownie tylko ze składowymi, do których coś prowadzi. Klasa
++     skompilowana przez ten kompilator, nazwana jedynie jako typ – w sygnaturze, rzutowaniu lub
++     teście – jest zapisywana jako powłoka: jej nazwa, flagi i rodzice. Każda inna klasa, z Javy,
++     Kotlina lub biblioteki standardowej, jest kopiowana bez zmian, jeśli odwołuje się do niej
++     zachowany bajtkod.
+
+@ 0 6 0 19799460c4167aba102057a9101f11f1
++     Biblioteka ma trzy zbiory źródeł. `abscission.engine` to `Shaker` i `Shrinker`, napisane
++     wyłącznie względem kompilatora i JDK i przyjmujące zwykłe typy, podobnie jak
++     `probably.Instrumenter`. `abscission.core` to `Shrink`, to samo z typami Soundness.
++     `abscission.linker` czyni zmniejszanie etapem `Toolchain` z Anthology: `shrinkEdges`,
++     `shrinkOptions` oraz węzły `Shrunk` i `Shrunk.Jar`. Wszystkie trzy działają tylko na JVM i
++     wymagają kompilatora na ścieżce klas tego, co je uruchamia.
+
+@ 0 3 0 1d4942fab39ebfb90931ce9bdf440119
++     To, do czego dociera tylko refleksja, trzeba wskazać za pomocą `keep` i `pin`. Zamknięty
++     świat jest sprawdzany przed zapisaniem, na drzewach kompilatora i ponownie na bajtkodzie, a
++     odwołanie z czegokolwiek zachowanego do czegoś usuniętego zgłasza `Shrink.Error`.
+
+% 0 1 0 0bf4eed086bff865137b3e252ba58944
+
+% 0 1 0 045547d95553f1bc11c97d237fd1c6a5
+
+% 0 1 0 1c7418be2e529ea50c66ea378c4fe6f0
+
+% 0 1 0 075df1600ec4126a16ccc6da28352bb4
+
+@ 0 1 0 0fcfda2a88d51cf3108a538b72ab1bf2
++ entry .Shrink   sposób zmniejszania ścieżki klas: opcje oraz wzorce klas do zachowania i przypięcia
+
+% 1 1 0 1c8bfcf315a50492052ca80063d8b3db
+
+@ 0 3 0 079a3074bb324ac804e818fb41b1296d
++       `Shrink` jest konfiguracją, a jej zastosowanie wykonuje pracę:
++       `Shrink(…)(classpath, entryPoints, out)` zapisuje do katalogu `out` zamknięty świat
++       `classpath` osiągany z `entryPoints` i zwraca `Shrink.Report`.
+
+% 2 1 0 1b56bd8e2dde6aec06bb8491582decb9
+
+% 3 1 0 09f738eed1546a531d48d10845d99ee9
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1e3425bf937593811dbeaa98961aed7f
+
+% 0 1 0 15a3af31ebf4db211a505d510f76a415
+
+% 0 1 0 1773fd3274818d2116820a9e7d6f3d89
+
+% 1 1 0 1e08f30d3d22e4501154ff09a6bf268e
+
+@ 0 5 0 166f2315d996afad015a8f6ea8784600
++       We wzorcu `*` oznacza część nazwy, a `**` dowolną liczbę pakietów, więc
++       `com.example.plugins.**` pasuje do każdej klasy pod tym pakietem, a
++       `com.example.*Codec` do każdej klasy z `com.example`, której nazwa kończy się na `Codec`.
++       Wzorzec jest dopasowywany do binarnej nazwy klasy, zapisanej z kropkami: klasa
++       zagnieżdżona to `com.example.Outer$Inner`, a klasa obiektu kończy się na `$`.
+
+@ 0 2 0 0120dc9f5353396104be0f4f7266aa78
++       Punktami wejścia są klasy z metodą `main`. Każda implementacja wymieniona w pliku
++       `META-INF/services` także jest punktem wejścia, chyba że `services` ma wartość `false`.
+
+% 0 1 0 098062f798db4dfb1e8ca9550379cfee
+
+% 0 1 0 059d8591280efa8202edbd6d42d2cb2d
+
+@ 0 27 0 1433c7470786eb42037a527f4d61cfb3
++   entry #options   opcje kompilatora, z którymi skompilowano klasy, poza własnymi opcjami Soundness
++       Ponowna kompilacja przebiega z jednym zestawem opcji dla całej ścieżki klas: opcjami, z
++       którymi kompilowany jest sam Soundness, wbudowanymi, a po nich tymi. To, czy jednostka
++       przeszła sprawdzanie przechwytywania, odczytuje się z jej TASTy i nie trzeba tego podawać.
++   entry #keep   wzorce klas do zachowania w całości, do których dociera refleksja
++       Pasująca klasa jest traktowana jako instancjonowana, a każda jej składowa jest
++       zachowywana wraz ze wszystkim, do czego te składowe prowadzą. Tego potrzebuje klasa
++       odnajdywana po nazwie w czasie wykonania: wczytywana przez `Class.forName` z argumentem,
++       który nie jest literałem, lub odczytywana jako zasób.
++   entry #pin   wzorce klas najwyższego poziomu, których jednostki są kopiowane bez zmian
++       Pasująca jednostka nie jest kompilowana ponownie. Jej klasy są kopiowane w całości, a
++       wszystko, co ich bajtkod nazywa w klasach kompilowanych ponownie, jest zachowywane. W ten
++       sposób omija się jednostkę, którą analiza traktuje błędnie, i tak sam zmniejszacz
++       postępuje z jednostką, której nie da się skompilować ponownie.
++   entry #services   czy każda implementacja wymieniona w pliku `META-INF/services` jest punktem wejścia
++       `true`, o ile tego nie zmieniono. Pliki są scalane w obrębie ścieżki klas i zapisywane z
++       zachowanymi implementacjami; przy `false` implementacja jest zachowywana tylko wtedy, gdy
++       prowadzi do niej coś innego.
++   entry #fine   czy biblioteka bez TASTy jest brana klasa po klasie
++       Biblioteka w Scali jest zawsze brana klasa po klasie. Biblioteka bez TASTy, w Javie lub
++       Kotlinie, jest brana w całości, gdy tylko coś dotrze do jednej z jej klas, ponieważ taka
++       biblioteka może wczytywać własne klasy po nazwie; z `fine` również ona jest brana klasa po
++       klasie.
++   entry #apply   zapisuje zamknięty świat ścieżki klas do katalogu i raportuje, co zostało zrobione
++       Zgłasza `Shrink.Error` z przyczyną `Unsound`, jeśli coś zachowanego odwołuje się do czegoś
++       usuniętego lub jeśli jednostki nie da się ani skompilować ponownie, ani przypiąć, oraz z
++       przyczyną `Failed`, jeśli zawiedzie sam zmniejszacz. Punkt wejścia, który nie jest klasą
++       ze ścieżki klas, jest problemem, a nie pustym wynikiem.
++   entry .Report   co zrobiło zmniejszanie ścieżki klas, w liczbach
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 14 0 09f14e3468cdb68b15d984a021d47bfd
++         `units` to jednostki, które dało się skompilować ponownie z TASTy, a `read` te, które
++         zostały wczytane, ponieważ coś do nich dotarło. `classes` i `size` dotyczą ścieżki klas, a
++         `kept` i `written` zamkniętego świata. Spośród zachowanych klas `recompiled` pochodzą z
++         TASTy, `shells` to tylko nazwa i rodzice, a `copied` są takie, jakie były.
++         `members` i `removed` liczą metody i pola klas kompilowanych ponownie. `pinned` to
++         jednostki, które nie zostały skompilowane ponownie – na żądanie lub dlatego, że się nie
++         dało – a `notes` mówią, dlaczego w tym drugim przypadku. `packages` to pakiety ścieżki
++         klas, w kolejności ich nazw.
++     entry #why   łańcuch klas, który doprowadził do zachowania klasy
++         Każda klasa łańcucha odwołuje się do poprzedniej; ostatnia to klasa skompilowana
++         ponownie lub punkt wejścia. Klasa, która nie została zachowana, jest łańcuchem
++         złożonym z samej siebie.
++   entry .Package   pakiet ścieżki klas wraz z jego klasami w niej i w zamkniętym świecie
++   entry .Error   zgłaszany, gdy ścieżki klas nie da się zmniejszyć: błąd `↯/s.146.1`, _the classpath could not be shrunk because `reason`_
++     entry .Reason   dlaczego: zamknięty świat nie byłby poprawny albo zmniejszacz zawiódł
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 3 0 114c7d9126a3c5191780145607898174
++           column  Przypadek
++           column  Kod
++           column  Komunikat
+
+% 0 1 0 0e3f18fba09a60d813799e9d75708561
+
+% 0 1 0 0ba0d4e3f4952521084c0fa46177e460
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 0a0a0db4eda0689e1ce5b118c20be442
++ entry .Shrunk   zamknięty świat plików klas: węzeł toolchainu osiągany z `Classfile` przez `shrinkEdges`
+
+% 1 1 0 0ca29577c28fcad11a62c942229c69cb
+
+@ 0 7 0 1084a99545384b160f05b7ddf7d8f520
++       `Artifact.Ir` o identyfikatorze `shrunk`: katalog będący osobną ścieżką klas, zawierający
++       klasy osiągane z punktów wejścia, zasoby bibliotek, które je dostarczyły, i żadnego TASTy.
++   entry .Jar   wykonywalny JAR zamkniętego świata: węzeł aplikacji osiągany z `Shrunk`
++       `Artifact.Application` o identyfikatorze `shrunk-jar`. Jest osobnym węzłem, a nie
++       `Artifact.Jar`, aby toolchain mający zarówno `jarEdges`, jak i `shrinkEdges` miał jedną
++       ścieżkę do każdego z nich.
+
+@ 0 1 0 190239d0a9aa43451d96053f60dd26f0
++ entry .shrinkEdges   krawędzie, które czynią zmniejszanie etapem toolchainu
+
+% 1 1 0 1bf500e221ca5f100d3c055f9d0aab5a
+
+@ 0 6 0 0b890cf4a7949a1a0d4a05a4613b1e91
++       `shrinkEdges(scalac)` rejestruje dwie krawędzie: z `Toolchain.Universe.Classfile` do
++       `Shrunk` oraz z `Shrunk` do `Shrunk.Jar`. Pierwsza niesie opcje `Scalac`, który
++       skompilował klasy, ponieważ kompiluje je ponownie, i przyjmuje punkty wejścia toolchainu
++       jako korzenie tego, co zostaje zachowane. Druga pakuje zamknięty świat tak, jak `jarEdges`
++       pakuje ścieżkę klas, z co najwyżej jednym punktem wejścia jako `Main-Class`.
+
+% 2 1 0 182eb3f3f131cd320aa97ff7478d68e8
+
+% 3 1 0 1fb804d44ff3e6b918d936c5b4842222
+
+% 0 1 0 08237b858ecdc9e2021d1c63886da4bb
+
+% 1 1 0 18e5d99a85d96f7a1095701a38765585
+
+@ 0 3 0 176d348327c6eda11bf58e26c5b1d423
++       Tutaj `steps` to `List(t"shrunk", t"shrunk-jar")`. `Shrink.Error` jest przekazywany do
++       toolchainu jako `Link.Error`, z przyczyną `Packaging` dla zamkniętego świata, który nie
++       byłby poprawny, i `Failed` dla zmniejszacza, który zawiódł.
+
+@ 0 7 0 1a4dee26f9667da918d7c56c06a32f3d
++ entry .shrinkOptions   ustawienia krawędzi zmniejszających
++   entry .keep   wzorzec klas do zachowania w całości, dla węzła `Shrunk`
++   entry .pin   wzorzec klas najwyższego poziomu, których jednostki są kopiowane bez zmian, dla węzła `Shrunk`
++   entry .services   czy każda implementacja wymieniona w pliku `META-INF/services` jest punktem wejścia
++   entry .fine   czy biblioteka bez TASTy jest brana klasa po klasie
++   entry .name   nazwa pliku JAR w katalogu wyjściowym, dla węzła `Shrunk.Jar`
++       Domyślnie jest to `main.jar`.
+
+@ 0 1 0 18ee3c7d4271e38f175944f9b7fbf546
++ entry .Shrinker   silnik: zmniejsza ścieżkę klas, przyjmując i zwracając zwykłe typy
+
+% 1 1 0 0610076c249b941a1a58d54526ab79be
+
+@ 0 8 0 06c5816676ec37c61f24a5bdaa78ea0c
++       To, co wywołuje `Shrink`, dla hosta, który ma ścieżki i nazwy, oczekuje w zamian liczb i
++       nie miałby typów Soundness na własnej ścieżce klas. `Shrinker.Request` to wpisy ścieżki
++       klas, katalog wyjściowy, opcje, punkty wejścia i wzorce; `Shrinker.shrink` zwraca
++       `Shrinker.Report`, którego `problems` są puste, jeśli zamknięty świat został zapisany.
++   entry .shrink   zmniejsza ścieżkę klas, informując `progress` o tym, co jest robione, w chwili rozpoczęcia
++   entry .classpath   wpisy, z których wczytuje classloader, jako ścieżki bezwzględne
++       Własne adresy URL `URLClassLoader` lub `java.class.path` JVM dla każdego innego
++       classloadera.
+
+@ 0 1 0 12ce4ed98d2f75bf02464894c238ebb3
++ entry .Shaker   część kompilatora: kompiluje ponownie jednostki z TASTy bez tego, do czego nic nie prowadzi
+
+% 1 1 0 06ff8dd0ecf7e6e51e6d9099d2420093
+
+@ 0 5 0 0ad77c7f6c2911c60b94beb10bd992d5
++       `Shaker.shake` kompiluje ponownie do katalogu to, co osiągają zbiory `Shaker.Root`, spośród
++       jednostek, które wolno mu wczytać; `Shaker.recompile` kompiluje ponownie każdą otrzymaną
++       jednostkę i niczego nie usuwa. Obie pomijają TASTy tego, co zapisują. `Shrinker`
++       decyduje o korzeniach i o tym, co dzieje się z wynikiem.
++   entry .compiler   ten kompilator, tak jak plik TASTy zapisuje ten, który go utworzył

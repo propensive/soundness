@@ -1,0 +1,300 @@
+orthant 2 language
+
+@ 0 1 0 0f9605c40e4378380357a36720b1001e
++ # 自 0.73.0 以来的变更
+
+@ 0 3 0 09549872f327b9bb02346ab9a4497b1d
++ 本文件供 LLM 智能体读取，用于把使用 Soundness 库的代码从 0.73.0 升级到下一个版本。
++ 每个条目准确说明了发生的变化；格式见 `AGENTS.md`。
++ 条目按模块分组，在同一模块内，最近添加的条目排在最后。
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 6 0 0682b0d56e6554d200bea7325b691734
++ - `stenography.Bindings` 的构造器 `Bindings(pureFuns: Boolean = true, infixAliases: scala.collection.immutable.Map[String, Text] = Map())` 现在是 `Bindings()`，其成员 `pureFuns` 和 `infixAliases` 被移除。
++   `Syntax` 树不再依赖其中任何一个：把纯度作为 `stenography.Imports` 新增的最后一个字段 `pureFuns: Boolean = true` 传给 `Syntax#text`，把中缀别名作为 `Imports#aliases` 传入，后者本来就会被查阅。
++   为了呈现 `=>` 箭头而构建 `Bindings(false)` 的代码，现在必须用 `Imports(…, pureFuns = false)` 来呈现。
+
+% 0 1 0 0da0aaa0a452274c0386da2ea07bf7cd
+
+@ 0 21 0 123b1b3e421783d11b2a4805cd7137b4
++ - `stenography.Syntax.apply` 不再把中缀类型别名写进树中：细化 `Foo { type Form = Bar }` 总是构建为 `Syntax.Structural`，当 `Imports#aliases` 把 `Form` 映射到 `in` 时，`Syntax#text` 把它写作 `Foo in Bar`。
++   作为别名的类型成员（`type Form = Bar`）现在以 `Bar` 的裸 `Syntax` 形式存放在 `Structural` 的 `types` 账簿中，而不是作为 `Syntax.Declaration(false, Nil, …)`；带边界的成员仍然是 `Declaration`。
++   对 `Structural` 成员进行模式匹配以查找 `Declaration` 的代码，必须对别名成员接受裸 `Syntax`。
++   (#2320)
++ - `stenography.Syntax.apply` 不再根据调用处来选择函数类型或按名类型的箭头：即使关闭了纯函数，对于裸 `FunctionN` 和方法类型，`Syntax.Function` 的 `impure` 现在也为 `false`，未注解的按名类型总是 `Syntax.Prefix("->", …)`。
++   当 `Imports#pureFuns` 为 `false` 时，`Syntax#text` 把两者都写作 `=>`，因此呈现出的文本没有变化。
++   直接检查 `Function#impure` 或 `Prefix` 运算符的代码必须考虑 `Imports#pureFuns`。
++   (#2320)
++ - `stenography.internal.name` 现在在一次编译运行中的所有调用之间共享同一个 `Bindings`，因此当同一次运行中先前呈现的类型使用了相同的候选名称时，递归类型（`RecursiveThis`）的绑定者可能会被编号（`x2`、…）；以前每次调用都会重新开始编号。
++   (#2320)
++ - `stenography.Designator` 现在自己定义 `equals` 和 `hashCode`（结构相等，哈希被缓存），并且 `Designator.apply(text)`、`Designator#child`、`Designator#companionObject` 和 `Designator#companionType` 返回经过驻留的实例，因此通过它们构造的相等的 designator 是 `eq` 的。
++   相等性没有变化。
++   (#2320)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 8 0 08e0a00fc4ddd7691c263ada1620a541
++ - `frontier.Diagnostic.render(diagnostic: Diagnostic, headline: Text = …): Text` 现在是 `render(diagnostic: Diagnostic, headline: Text = …, limit: Int = 100): Text`。
++   它最多写出树的 `limit` 行，省略了 `n` 行时后接一行 `… n more`；对于与某个已写出的非叶子树完全相同的子树，只写出它的第一行，并带上标注 `as above`（如果它有标注，则为 `<label>, as above`）。
++   (#2320)
++ - 兜底的 `explainMissingContext` 现在把类路径建议的每次展开都计入与其隐式搜索相同的 256 预算，因此在大的作用域中，一条解释列出的建议可能比以前少。
++   (#2320)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 40 0 0a773baa89c40d391b165c49bc8f9c57
++ - `Tels.tels[value](name)` 现在按*类型*而不是按简单名称为派生 schema 中的 record 和 select 定义命名。
++   简单名称不与 schema 中任何其他类型共用的类型保留该名称，因此没有冲突的类型的 schema 没有变化（相同的定义、相同的哈希、相同的 BinTEL 布局）。
++   当两个或更多不同的类型共用一个简单名称时——`Phrase.Code` 和 `Element.Code`——该组的每个成员都以其外层类型作为 TypeName 命名，即 `PhraseCode` 和 `ElementCode`，只在名称仍相同时才继续加深（`PkgPhraseCode`）。
++   以前只保留找到的第一个这样的定义，其余的被悄无声息地丢弃，因此在该 schema 下写入值会以 `SN-605.217`（引用解析到了错误种类的定义）失败，或者被对照错误的定义检查。
++   命名冲突类型的派生定义的手写 schema 或 TEL 文本必须使用限定名称。
++   (#2321)
++ - `Tels.tels` 现在声明 `raises Tel.Error`：限定也无法区分的冲突（两个类型限定为同一个名称，或者某个类型自身的名称恰是冲突组所限定成的名称）会在派生 schema 时报告为 E210（`Tel.Error.Reason.DuplicateDefinition`），并且组装出的 schema 会像手写的一样被检查（`Tels.Validation` 的基础检查：E202、E207、E210、E216、E222）。
++   作用域中没有 `Tactic[Tel.Error]` 的调用者必须提供一个（`import strategies.throwUnsafely`、`safely`/`unsafely` 代码块，或者在外层方法上声明 `raises Tel.Error`）。
++   `Tel.Acceptance.lineage` 和 `Tel.Acceptance.lineages` 接受同样的 `Tactic[Tel.Error]`；`Tel.Acceptance.apply`、`otherwise`、`fulfil`、`Bintel.read`、`value.bintel` 和 `Duplex#framed` 早已如此。
++   (#2321)
++ - `TelSchematic` 的派生协议以 `TelSchematic.Identity` 为键，并贯穿传递一个 `TelSchematic.Naming`：`fieldType`、`selectDefinitions` 和 `rootLayers` 接受一个 `naming` 参数；`definitions` 和 `layers` 接受 `(seen: Set[TelSchematic.Identity], naming)`，取代 `(seen: Set[Text])`；在无参数的 `schema()`（按简单名称为每个类型命名）旁边新增了 `schema(naming)`；`identities(seen)` 是新增的。
++   辅助函数 `TelSchematic.fieldTypeOf`、`definitionsOf` 和 `layersOf` 接受这些额外的参数，并新增了 `TelSchematic.schemaOf` 和 `identitiesOf`。
++   重写了其中任何一个的手写 `TelSchematic` 必须采用新的签名；只实现 `schema()`（标量形式，`() => Tels.Scalar(…)`）的则不受影响。
++   (#2321)
++ - `stratiform.Tel.Provider` 的记录字段现在以新的 `stratiform.Tel.Provider.Error(reason: Tel.Provider.Error.Reason)`（`SN-614`）失败，通过读取该字段的代码的 `Tactic` 抛出。
++   `Tel.Provider.Error.Reason` 有 `Absent(name: Text)`（1）和 `NotSigil(value: Text)`（2）。
++   缺失的必需字段现在抛出 `Tel.Provider.Error(Absent(name))`，以前抛出的是 `Tel.Error(Tel.Error.Reason.Absent)`；针对缺失字段处理 `Tel.Error` 的处理函数和 `capture` 必须改为捕获 `Tel.Provider.Error`。
++   `Tel.Provider#Failure` 是 `Tel.Provider.Error`，`Tel.Provider#access`、`Tel.Provider#required` 和 `Tel.Provider#repeated` 接受 `(using Tactic[Tel.Provider.Error])`。
+
+% 1 1 0 08389b12937a117a012a5636be04d393
+
+@ 0 10 0 0d8f4ebe3f01e58f0c8be399facc6eb6
++ - `Tel.Provider` 的 `"sigil"` 读取器（`Tel.Provider.sigil`）现在是一个 `Intensional.Reading["sigil", Tel.Provider, Tel, Char, Tel.Provider.Error]`，不是单个字符的原子会抛出 `Tel.Provider.Error(NotSigil(atom))`，以前它被读作 `'#'`。
++   (#2325)
++ - 类型为和类型的字段（或 `List`、`Set`、`Optional` 或 `Map` 的元素，或 select 变体）现在在 `Tels.tels` 和 `TelSchematic` 中派生为指向一个名为 `<Sum>Value` 的新 record 定义的 `Tels.Reference`（`Figurine` 对应 `FigurineValue`，与和类型自身的名称一样进行限定），该定义持有一个 `Tels.SelectRef(Implicit, Implicit, <Sum>)`；以前它派生为指向该和类型的 select 的 `Tels.Reference(<Sum>)`，这是无效的（E217），也无法写成 BinTEL。
++   select 保留和类型的名称。
++   每个带有和类型成员的类型的派生 schema 都会新增这些 record，因此其哈希和 BinTEL 签名会改变；唯一的和类型是其根（位于文档根部的 `SelectRef`）的 schema 没有变化。
++   为这样的成员指名该和类型的手写 schema 或 `Tels.Reference` 必须改为指名 `<Sum>Value`。
++   与和类型 `<Sum>` 并存的名为 `<Sum>Value` 的用户类型现在会冲突，报告为 E210。
++   (#2327)
+
+% 0 1 0 1828e4d97834300a121cab8d2d6afc7f
+
+@ 0 7 0 0c5486a2e8a8bf71131441111f5be29b
++ - `polyvinyl.Specification` 新增了一个抽象类型成员 `type Failure <: Hazard`：其记录的每个字段都可能抛出的错误。
++   每个实现都必须声明它。
+
+% 1 1 0 04141510c63de6ad03496e66c9aae0b5
+
+@ 0 12 0 0764bba9c79223011e3036b0ffd89330
++ - 以下 `polyvinyl.Specification` 钩子新增了一个 `(using Tactic[Failure])` 子句，每个重写都必须加上它：`access(name: Text, value: Origin): Origin`、`repeated(name: Text, value: Origin): List[Origin]`、`required(name: Text, value: Origin): Origin`、`entries(name: Text, value: Origin): List[(Text, Origin)]`、`elements(value: Origin): List[Origin]` 和 `pairs(value: Origin): List[(Text, Origin)]`。
++   `absent`、`kind` 和 `build` 没有变化。
+
+% 1 1 0 0914e303f75a981e1da80034b1d7ca37
+
+@ 0 12 0 19e02e8ab30dd50e03692f93c88ff8dd
++ - 新钩子 `polyvinyl.Specification#unoffered(kind: Text, offered: List[Text])(using Tactic[Failure]): Nothing`，应用于联合类型中没有任何备选项提供其种类的值。
++   它的默认实现会 panic，与以前的分派行为一样。
++   (#2325)
++ - `Specification` 构建的记录的每个字段现在的类型是 `polyvinyl.Record.Field[T, Failure]`（新的别名，`Tactic[failure]^ ?-> result`），以前的类型是 `T`（对于由 `Intensional.Fallible` 读取的字段则是 `T raises E`）。
++   选取字段会把它应用于作用域中的 `Tactic[Failure]`，因此读取字段的代码需要一个这样的战术（`strategies.throwUnsafely` 可恢复旧的抛出异常行为）。
++   类型为 `Optional[T]`、`List[T]` 或 `Map[Text, T]` 的字段值在 `Field` 内部保持其形状。
++   (#2325)
++ - `polyvinyl.Record#selectDynamic(name)` 现在返回字段的读取，即上下文函数 `Tactic[Failure] ?-> T`，以前返回的是值；按名称选取字段的代码必须把结果转型为 `Record.Field[T, Failure]`（或 `T raises Failure`），并把它应用于一个 `Tactic`。
++   (#2325)
++ - `Specification#tuple` 现在为每个字段在构建元组处召唤一个 `Tactic[Failure]`，没有它就无法编译；以前只有带可失败字段的元组才需要，而且是针对这些字段自身的错误类型。
++   (#2325)
++ - `Error` 不符合规范的 `Failure` 的 `Intensional.Fallible` 实例，现在会在 `record` 或 `tuple` 调用处产生编译错误（"the instance for <label> raises <error>, not the specification's <failure>"）。
++   (#2325)
++ - 宏入口点把失败类型作为新的最后一个类型参数：`Specification.record` 和 `Specification.tuple` 是 `[self, origin, form, failure <: Hazard]`，`Specification.recordExpansion` 和 `Specification.tupleExpansion` 是 `[origin, form, failure <: Hazard]`，并以 `target: Expr[Specification.Raising[form, origin, failure]]`（新的别名，表示 `(Specification in form from origin) { type Failure = failure }`）取代 `Expr[Specification in form from origin]`。
++   (#2325)
+
+% 2 1 0 0c4beffa1f71f0671037a21131736014
+
+@ 0 20 0 0f16c26fd7bc241c1c1f760db731c179
++ - `jacinta.Json.Provider` 的记录字段现在对每种失败都通过读取该字段的代码的 `Tactic` 抛出 `Json.Provider.Error`，而以前无论作用域中是什么战术，违反 schema 的情况都会被直接抛出，因此 `attempt`、`recover`、`validate` 和 `track` 现在能看到它们。
++   缺失的必需属性抛出 `Json.Provider.Error(MissingValue(name))`，以前抛出的是 `Json.Error(Json.Error.Reason.Absent)`；JSON 类型错误的值抛出 `Json.Provider.Error(JsonType(expected, found))`，以前抛出的是 `Json.Error(Json.Error.Reason.NotType(found, expected))`。
++   围绕记录字段处理 `Json.Error` 的处理函数和 `capture` 必须改为捕获 `Json.Provider.Error`。
++   (#2325)
++ - `Json.Provider.Error.Reason.MissingValue` 现在是 `MissingValue(name: Optional[Text])`，在已知时给出缺失字段的名称。
++   新的原因：`UnexpectedKind(found: Text, offered: List[Text])`（`SN-624.8`），用于种类不在任何备选项提供之列的联合值，以前会 panic；以及 `Unparsable(value: Text, format: Text)`（`SN-624.9`），用于无法解析的 `json-pointer` 或 `regex` 字符串，以前会抛出 `JsonPointer.Error` 或 `Regex.Error`。
++   (#2325)
++ - `Json.Provider.Primitives#Failure` 是 `Json.Provider.Error`。
++   `Json.Provider` 的读取器 `boolean`、`string`、`integer`、`long`、`number` 以及每个格式读取器（`dateTime`、`date`、`time`、`duration`、`uriReference`、`email`、`idnEmail`、`hostname`、`ipv4`、`ipv6`、`uri`、`iri`、`iriReference`、`uuid`、`uriTemplate`、`jsonPointer`、`regex`）现在是新的 `Json.Provider.Reader[label, result]`（`Intensional.Reading[label, Json.Provider, Json, result, Json.Provider.Error]` 的别名）的 given，以前它们是普通的 `Intensional` 实例。
++   (#2325)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 11 0 10c3ec44b6d17554172aa11e391de86e
++ - `xylophone.Xml.Provider` 的记录字段现在对每种失败都通过读取该字段的代码的 `Tactic` 抛出 `Xml.Provider.Error`：缺失的必需元素或属性（`Absent`，以前是直接抛出的），以及其类型无法读取的值，以前抛出 `Xml.Error`，现在抛出新的 `Xml.Provider.Error.Reason.Malformed(value: Optional[Text], expected: Text)`（`SN-993.7`）。
++   围绕记录字段处理 `Xml.Error` 的处理函数必须改为捕获 `Xml.Provider.Error`。
+
+% 1 1 0 15eb0b7907d63e4d1553bf19b6dabbc4
+
+@ 2 0 0 15eb0b7907d63e4d1553bf19b6dabbc4
++ - `Xml.Provider#Failure` 是 `Xml.Provider.Error`。
++   内置类型的读取器（`string`、`boolean`、`int`、`long`、`short`、`byte`、`double`、`float`、`decimal`、`dateTime`、`date`、`time`、`duration`、`anyUri`，以及 `Text` 回退 `dateTimeText`、`dateText`、`timeText`、`durationText`、`anyUriText`）现在是新的 `Xml.Provider.Reader[label, result]`（`Intensional.Reading[label, Xml.Provider, Xml, result, Xml.Provider.Error]` 的别名）的 given。
++   (#2325)
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 5 0 0a8bf40366efd55d0092e39052bbbc15
++ - `apoplexy.Api.Records.list(json, transform)` 现在接受 `(using Tactic[Json.Provider.Error])`，用 `record()` 或 `tuple()` 读取的、schema 为数组的响应在宏展开处需要一个 `Tactic[Json.Provider.Error]`，没有它就无法编译。
++   响应记录以及错误载荷记录的字段，与任何其他 `Json.Provider` 记录的字段一样，都是 `Record.Field`。
++   (#2325)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 6 0 0e12bc9fa1d57df5060ab10fc50e38d2
++ - `List.prepend` 和 `List.append` 现在返回 `List[element] & Populated` 而不是 `List[element]`：添加一个元素会使列表非空，因此结果携带这一证明，`head`、`last` 和 `reduce` 在它上面是全函数，就像它们在 `List(a, b)` 字面量上早已是的那样。
++   中缀的 `head :: tail` 没有变化（右结合的链无法从带品牌的右操作数推断元素类型），因此需要从 cons 获得证明的代码应调用 `List.prepend(tail, head)`。
++   (#2326)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 11 0 1bad148bff66329809465c0ff4ee7bd2
++ - `Text#cut`（以及每个 `Cuttable` 文本类型上的 `cut`）返回 `List[textual] { type Occupied = true }`——一个 `Populated` 列表，写成细化形式，使 `case List(a, b) =>` 仍能绑定元素类型——而不是 `List[textual]`：切分总会产生至少一段（最后一个分隔符之后的文本，或者整段文本），因此 `text.cut(t",").head` 和 `.last` 是全函数；部分函数 `text.cut(t",").stdlib.head` 可以改为 `.head`。
++   零或更小的 `limit` 现在被视为无限制（`Int.MaxValue`）；以前，用 `Regex` 切分 `Text` 时，零限制具有 `String.split` 的语义，会丢弃末尾的空段，并可能什么也不产生。
++   通用的 `textual is Cuttable by Regex` 实例（除 `Text` 本身之外任何带有 `Countable` 的 `Textual`）现在与其他所有实例一样，返回匹配项*之间*的各段，包括最后一个匹配项之后的文本；以前它返回的是匹配到的区域，没有匹配时返回空列表。
++   (#2326)
+
+% 0 1 0 027a003138628fc617497a87b3252999
+
+@ 0 5 0 1d51d8b4aae3de32093a9fa1ab763a6e
++ - `Fqcn#parts` 的类型是 `Array[Text]^{} & Populated` 而不是 `Array[Text]^{}`，`Fqcn` 构造器接受该类型：全限定类名至少有一个部分，正是这一点使 `className` 成为全函数。
++   `Fqcn.apply(name)` 没有变化（它用 `occupied` 证明该类型，并像以前一样以 `Fqcn.Error.Reason.EmptyName` 中止）；直接调用 `new Fqcn(array)` 的代码必须传入一个 `Populated` 数组——`array.occupied.or(…)`。
++   (#2326)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 5 0 136a4f24ade677a8041278ea2ed9871b
++ - `Searchpaths.Stems#stems` 声明为 `List[Path on Target] & Populated` 而不是 `List[Path on Target]`：首个基目录是写入的去处，因此约定本来就是非空。
++   用 `::` 或 `List(…)` 字面量构建列表的实现无需改动即可通过类型检查；返回任意 `List` 的实现必须用 `list.occupied.or(…)` 来证明它。
++   (#2326)
+
+% 0 1 0 1d07d5aa528e552a1b45fc9f19fb6b51
+
+@ 0 4 0 1c0ce100d5ae4e7611f4f43a6cdadabc
++ - `ult` 现在是 `transparent inline` 的，并像 rudiments 的 `last` 一样适应 `Populated` 接收者：在 `xs: List[T] & Populated` 上，它返回 `Ordinal in xs.type` 而不是 `Optional[Ordinal in xs.type]`，因此 `xs(xs.ult)` 无需 `let` 就是全函数。
++   在其他接收者上它没有变化。
++   (#2326)
+
+% 2 1 0 1985c40ecd17315f0f06983213853cbd
+
+@ 0 13 0 0d9b22afdcb1ebc10785f989745dcfd4
++ - `head`、`lead` 和 `tail` 现在会像 `last` 早已做到的那样，*适应*接收者类型所证明的内容：在类型为 `& Populated` 的接收者（`List(a, b)` 字面量、`cut`、`List.prepend`、`occupied` 的结果）上，它们是全函数，返回元素、前导段或尾随段；在任何其他接收者上，它们返回 `Optional[…]`，值为空时为 `Unset`。
++   以前 `head` 和 `lead` 只存在于 `Populated` 接收者上，而 `tail` 处处都是全函数（空值的 tail 为空）。
++   在未经证明的接收者上调用 `xs.tail` 并把结果当作集合使用的代码，现在必须解除 `Optional`（`xs.tail.or(Nil)` 保持旧行为），或者证明接收者非空。
++   (#2326)
++ - `prim`、`sec` 和 `ter`（位于 `rudiments` 和总括包中，作用于 `List`、`Chain` 以及任何按 `Ordinal` 的 `Applicable`）被移除。
++   `xs.prim` 即 `xs.head`，后者现在在未经证明的接收者上恰好具有它的类型（`Optional[element]`），在 `Populated` 接收者上则是全函数；`xs.sec` 和 `xs.ter` 即 `xs.at(Sec)` 和 `xs.at(Ter)`（在 `List` 上，它们会打开 `linearAccess` 门控，而那些有界的特例则不会）。
++   (#2326)
+
+% 0 1 0 0ad41fe5ea8e9b861b437699bae61d12
+
+@ 0 14 0 1543e3e1468cf37b0f3a82afc5c0330b
++ - 新增 `proscenium.Sized[length <: Int]`，一种 `Populated` 风格的幻影长度证明（`Any { type Length = length }`）。
++   带*字面量* `n` 的 `Array.fill(n)(…)`、`Array.tabulate(n)(…)` 和 `Data.fill(n)(…)` 现在返回 `… & Sized[n]`；使用变量或 `val` 时它们没有变化（只有编译时常量才会打上品牌）。
++   冻结数组和 `Data` 的集合实例——`Traversable`（因而有 `to[List]`）、`Encodable in Data`、`Streamable`——新增了 `Sized` 实例（`sizedFrozenArray`、`sizedBytes`），使带品牌的值能够解析（#2330）；`Countable`、`Applicable` 和 `Terminable`（`size`、`at`、`last`；`denominative.Countable .sizedFrozenArray` 及其同类）也是如此，`telekinesis.Postable` 和 `Servable`、`coaxial.Transmissible`、`turbulence.Readable`（到 `Data` 和到 `Text`）以及 `locomotion` 的 `Encodable in Protobuf` 的 `Data` 实例（`sizedData`、`sizedBytes`、`sizedDataData`、`sizedDataText`、`sizedDataEncodable`）亦然，因此经过证明的块在提交、提供、传输、读取和编码时与普通块一样。
+
+% 0 1 0 0cd4c3302839c6cd0922e78c2f6b10cf
+
+@ 1 0 0 0cd4c3302839c6cd0922e78c2f6b10cf
++ - `proscenium.Sized` 现在由 `soundness` 总括包导出，因此 `Sized[512]` 在 `import soundness.*` 下可以解析；以前它没有被导出，这个名称解析到的是 tasseomancy 的节点范围类型类。
++   (#2332)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 17 0 1688826b7c020dd60d626e1fb747bdad
++ - 环形图节点类型类 `tasseomancy.Sized`（`def size(value: Self): Double`）更名为 `tasseomancy.Weighted`，其方法为 `weight`：`given Step is Sized = _.size` 变为 `given Step is Weighted = _.size`，`Doughnut` given 中的 `Sized as sized` 上下文界定变为 `Weighted as weighted`。
++   这个名称现在属于长度证明 `proscenium.Sized`。
++   (#2332)
++   *媒介*类型类没有被拓宽：`Addressable`（位于 `stream`、`Cursor(…)`、`Stream(…)` 背后）指名游标或流所基于的媒介，而媒介上的品牌毫无意义，因此用作媒介的 `Data` 要写明其类型：`val payload: Data = Data.fill(100)(_.toByte)`、`Cursor(Data.fill(10)(_.toByte): Data)`。
++   新增 `Array.concat(left, right)`（结果为冻结数组），它在两个 `Sized` 数组上的重载返回 `Sized[left + right]`。
++   新增 `xs.sized[n]: Optional[xs.type & Sized[n]]`（rudiments），它检查一次 `Countable` 值的长度并把它记录下来，就像 `occupied` 对非空性所做的那样。
++   (#2330)
++ - 在 `Sized[n]` 数组上，带*字面量*序数——`156.z`，或者 `Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` 之一——的 `xs(i)` 是全函数（得到元素，而不是 `Optional`），位于或超出 `n` 的字面量是编译错误（"the ordinal … is beyond the array's proven length"）；`Sized` 数组上的变量序数则像 `at` 一样产生 `Optional`。
++   序数类型和字面量本身没有变化。
++   (#2330)
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 6 0 065693e5f12ce23b000a1a389bec2696
++ - `Bar.Filled` 设计中处于边界的部分单元格（`Bar.Glyphs#partials` 之一，如 `bars.smoothBar` 的 `▏▎▍▌▋▊▉`）现在以 `GaugePalette#fill`（在渐变设计中，则以该单元格位置处的 `GaugePalette#lengthwise`）绘制，而不是以 `GaugePalette#leadingEdge` 绘制，因此它与左侧的完整单元格一致。
++   带有 `Bar.Glyphs#tip` 的设计仍以 `leadingEdge` 绘制其尖端，`Bar.Marker` 的头部和 `Standing.Running` 也是如此。
++   断言了边界单元格前景色的输出会改变。
++   （PR 编号待补）
+
+% 0 1 0 1cf85612c798776b17d0a26d77983a3c
+
+@ 0 12 0 0c597736c8f59bfa0fa6955870bfd3e9
++ - 总括包现在把不透明集合作为*稳定*路径转发——`type List[+element] = proscenium.List[element]` 加上 `val List: proscenium.List.type`（`Sequence`、`Set`、`Map` 和 `Chain` 同理）——而以前是导出它们。
++   经由 `export` 生成的 `def` 转发器，通过 `soundness.List` 选取的伴生对象成员会看到不透明别名的右侧，因此 `List(1, 2).mkString`、`Sequence.empty[Int].toVector`、`xs.iterator`、`xs.take(n)`、`xs.foldLeft`、`xs.length` 以及其余的 stdlib API 以前可以在通过总括包构建的值上编译，现在则不能：请使用原生名称（`join`、`keep`、`fold`、位于 `linearSize` 门控之后的 `size`、`List.iterator(xs)`/`Chain.iterator(xs)`、`all`、`has`、`nil`、`List.concat`），或者在确实需要 stdlib 的地方使用 `xs.stdlib`。
++   stdlib 值用 `List.from(xs)` 转换（而不是 `.to[List]`，它在 stdlib 接收者上是 scala 的 `to[C](factory)`）。
++   原生值上的 `xs.to[List]` 没有变化。
+
+% 0 1 0 11142db8addccfa01c3c71ba32db8413
+
+@ 0 4 0 1b4bbedfd44bd81f1bf9efdcbe5738a9
++ - 伴生对象 `proscenium.List`、`Sequence`、`Set`、`Map` 和 `Chain` 继承 `scala.caps.Pure`。
++   (#2333)
++ - 带 `Populated` 品牌的集合与普通集合之间的相等比较（`xs == List(1, 2)`）现在由各集合伴生对象中的 `CanEqual` given 提供（`List.populatedEquality` 和 `…Reversed`，`Sequence`、`Set` 和 `Chain` 同理），因此它在每个包中都能解析；以前只有在 `rudiments.populatedEquality` 词法可见的地方才行。
++   (#2333)
+
+% 0 1 0 162a56290f24431a07a20450d4c6e0dd
+
+@ 0 5 0 084d0f6d5620dfc60cb027ebbb5dce57
++ - `demilitarize` 和 `procrastinate` 返回 `proscenium.List[CompileError]` 而不是 `scala.List`：`demilitarize(…).nonEmpty` 改为 `!demilitarize(…).nil`，`errors.isEmpty` 改为 `errors.nil`，`.length`/`.size` 需要 `linearSize` 门控，`.headOption.exists(f)` 改为 `.head.lay(false)(f)`，`.exists(f)` 改为 `.seek(f).present`，而 `.map(_.message) == List("…")` 以原生方式比较。
++   (#2333)
+
+% 2 1 0 0c0c1551b9800f4d1925ce72a6621e7f
+
+@ 0 3 0 09fb85e3c2f386a10516bae826815015
++ - `Iterable` 扩展方法的 `Traversable` 接收者孪生版本：`sift`、`bi`、`tri`、`longestTrain`、`mean`、`variance` 和 `std` 现在在原生的 `List`、`Sequence` 或 `Set` 上也能像在 `Iterable` 上一样解析；`sift` 在那里返回 `List`，`bi`/`tri` 保持接收者的形状。
++   (#2333)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 1 0 1adad2a86bc05ac506c648ceedf6378e
++ - `median` 可以在原生集合上解析（一个 `Traversable` 接收者孪生版本）。
++   (#2333)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 2 0 1c70463a546750de1e64175e477d94bb
++ - `race()` 可以在原生的任务集合上解析（`Sequence(a, b).race()`），就像在 `Iterable[Task[result]]` 上一样。
++   (#2333)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 1 0 01e0c4a5425e9c7513b0ddcb5f41525a
++ - `survive` 可以在原生集合上解析，返回 `List[result]`。
++   (#2333)
+
+% 2 1 0 1a2704dda11cfee71872a191d41ba2e1
+
+@ 0 2 0 16a3a3a3631c29f20ca018379b6e8133
++ - `j"…"` 插值中的 `*` 展开除了接受 `Iterable` 之外，也接受带品牌的集合（`List[Json] & Populated`，`List(…)` 字面量就是如此）。
++   (#2333)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 2 0 1f758307ac1388400aa3efcb9277b1c4
++ - `Holidays(holidays)` 接受任何由 `Holiday` 组成的 `Traversable` 集合（`Holidays(List(…))`），以前接受的是 `Iterable[Holiday]`。
++   (#2333)
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 2 0 0e22fad0de357ca40f8921a34c0a68b2
++ - `Watch(paths)` 接受任何由路径组成的 `Traversable` 集合，以前接受的是 `Iterable`；其类型参数现在是 `[paths, path]`。
++   (#2333)
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 2 0 10b9a2aef283c54e001a45b7abdd20c5
++ - `LaneDagDiagram#render` 和 `LayeredDagDiagram#render` 返回 `proscenium.List[line]` 而不是 `scala.List[line]`。
++   (#2333)
+
+% 0 1 0 1fbc3e2eb3ac8c1d08a287e2c3a4960b
+
+@ 0 3 0 05616cd701f54574099d612e0ac01bdd
++ - `escritoire.Layout#row(cells: Cells[text], decorations: List[Optional[text -> text]])(using Text is Measurable, text is Textual { type Result = Char }, Hyphenation): TableRow[text]` 更名为 `tableRow`；`row` 被移除。
++   行为没有变化。
++   (#2334)

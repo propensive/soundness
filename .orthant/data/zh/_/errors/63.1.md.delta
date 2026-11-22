@@ -1,0 +1,66 @@
+orthant 2 language
+
+% 0 1 0 19f55fe914eeadec17525714a9ec3013
+
+@ 0 1 0 0f648eab0bfa928903ae79950408bc6b
++ 当某个值不是有效的全限定类名时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 19a9bacb31c74f360bc1447da615cdfa
++ Digression 将 FQCN 作为一串以点分隔的标识符段来校验，每一段都必须符合 Java 标识符规则。
++ 消息为 `the class name $name is not valid because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 1b4f826320b2699419477392504812d2
+
+@ 0 1 0 0836552c4517cd94104bc461743d080a
++ 名称段中的某个字符在 Java 标识符中不合法。
+
+@ 0 1 0 18b77dd48fe18353179c4a8e3287fd53
++ **示例。** `[↯/s.63.1.1] the class name globe.st-ge.Hamlet is not valid because a package name may not contain the character -`
+
+@ 0 1 0 1cf229672fd1dbf81eaad111162e603e
++ **解决方法。** 删除或替换出错的字符。
+
+% 0 1 0 1a7cf45cbf24b6df02678dbbbc6a870e
+
+@ 0 2 0 02ec7cea91ea030b0a9bdccd1ce32c2f
++ 某个名称段以不能作为标识符首字符的字符开头（通常是数字）。
+
+@ 0 1 0 0cb0fd00f718e7931e0d132b6b8b1afe
++ **示例。** `[↯/s.63.1.2] the class name globe.1stage.Hamlet is not valid because a package name may not start with the character 1`
+
+@ 0 1 0 059a35952578e73c02c03518593ba88f
++ **解决方法。** 让每一段都以字母、`_` 或 `$` 开头。
+
+% 0 1 0 09a4078d14a58bf8073306296d747c9f
+
+@ 0 2 0 0c9a385e0d0ff05f12b9322d4ca8cad9
++ 某个名称段为空，通常是输入中的 `..` 或开头、结尾的点所致。
+
+@ 0 1 0 12b26bd1bacd5dc106c4fc6618ac78da
++ **示例。** `[↯/s.63.1.3] the class name globe..Hamlet is not valid because a package name cannot be empty`
+
+@ 0 1 0 079412db6cf9d5570ab202055173f159
++ **解决方法。** 删除空段。
+
+% 0 1 0 128151f188d690f110d9bc18a436d7a2
+
+@ 0 1 0 0d6d67ec18da442f05715b2394205fcc
++ 某个名称段是 Java 的保留关键字。
+
+@ 0 1 0 1f447d923c325a1e0b3a4f8d68fe8ca7
++ **示例。** `[↯/s.63.1.4] the class name globe.class.Hamlet is not valid because a package name cannot be the Java keyword, class`
+
+@ 0 1 0 046e31ececee127e1c3cffa5ad2a0e74
++ **解决方法。** 选择一个不是关键字的段。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1304901fb1c68a31005e1e744580606e
++ - 源码：`lib/digression/src/core/digression.Fqcn.scala`

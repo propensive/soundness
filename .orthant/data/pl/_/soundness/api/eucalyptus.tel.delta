@@ -1,0 +1,543 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0ccec126e6ef834d0295d5459f8b67cc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e0b52da7b114da211aabf53557e99bb
++ info   loggery, formaty logów i miejsca docelowe logów dla typowanych zdarzeń emitowanych przez `Log`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0bf8906695a569ce188dd5267d985dc6
++     _Eucalyptus_ to część typowanego logowania Soundness działająca w czasie wykonania. Metoda,
++     która loguje, deklaruje to w swoim typie (`Long logs Backup.Event`) i emituje typowane
++     zdarzenie za pomocą `Log.info`, `Log.warn` i pozostałych; te nazwy, wraz z `Log.Level`,
++     `Loggable` i traitem `LogSink`, znajdują się w `anticipation`, poniżej każdej biblioteki,
++     która loguje. Eucalyptus dostarcza to, co dodaje *aplikacja*: `Logger`, czyli `LogSink`
++     umieszczony w zasięgu jako given, format logu (`Inscribable`), który przedstawia każde
++     zdarzenie, oraz miejsca docelowe, do których się je zapisuje.
+
+@ 0 4 0 1c43ee1c5041321c0fac8a5df497f4e8
++     Każdy `Logger` w zasięgu otrzymuje każde zdarzenie, które dopuszcza, więc kierowanie
++     zdarzeń sprowadza się do tego, które loggery są w zasięgu, każdy z własnym progiem,
++     kategoriami, formatem i miejscem docelowym. Gdy żadnego nie ma w zasięgu, logowanie jest
++     ciche i darmowe: argument każdej metody `Log` jest przekazywany przez nazwę i nigdy nie
++     jest obliczany, chyba że jakiś logger akceptuje jego poziom.
+
+% 2 1 0 1f3ac7ed2b2cb9660452ea5d8263cdce
+
+% 3 1 0 07d2d9cfa7fca7070e9d31d29e24ea5d
+
+% 4 1 0 15a80a1b8904630d0dbf3455ea7b68fe
+
+% 5 1 0 09dc85d9de11a52d068864afdcd17f0e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 1619ecc7ffe347c9086fae87aebae597
+
+% 0 1 0 0b178855fe8e97de19453fe2261f42bc
+
+% 0 1 0 11940fc83390cb92044b6066111370d3
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0b10b55d046ad30e04a673b2be4d5060
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 1d70a33a28591f950407d01673683cbe
+
+% 0 1 0 0b03cdf861f7f9ca13a3d49ccd6a5f62
+
+% 0 1 0 1341e110599cae041f2ca3b0349ef68b
+
+% 1 1 0 00c2720300089f161ce7b38ed2b97baf
+
+@ 0 6 0 17322d27e34bffd61ccf6b9033af3c57
++     `Logger` zapisuje w tle przez demona, więc potrzebuje `Monitor`, którego dostarcza
++     `supervise`, `Probate` (z `probates`) określającego, jak ten demon zostaje rozliczony na
++     końcu nadzoru, oraz `Writable` dla swojego miejsca docelowego. Format wybiera się,
++     importując po nazwie jeden given z `logFormats`, a `logging.silentLogging` wycisza cały
++     plik; oba są pakietami wyboru, importowanymi po nazwie, ponieważ `import logFormats.*` nie
++     importuje givenów.
+
+@ 0 5 0 035bcd0c5584de611ad49ac0623fea9f
++     Zapis do terminala wymaga miejsca docelowego, do którego można zapisywać postać formatu.
++     Do `Out` można zapisywać tylko `Teletype`, przez `writables.outTeletypeWritable` z
++     escapade, więc logger terminalowy używa formatu `Teletype` `ansiTimestampedLogFormat` z
++     `LogPalette`; nie ma `Writable` dla `Out` przez `Text`, więc `Logger(Out)` z
++     `timestampedLogFormat` się nie kompiluje.
+
+@ 0 1 0 023bbc681e3a961c01643d67e0d3bd59
++     Biblioteka ma cztery zbiory źródeł:
+
+@ 0 7 0 04b6b34380962c9414ec2331d8a9e70c
++     - `eucalyptus.core` – `Logger`, `Inscribable`, `mute`, `Taggable`, formaty tekstowe
++       `timestampedLogFormat` i `untimestampedLogFormat` oraz `logging.silentLogging`.
++     - `eucalyptus.ansi` – `LogPalette` i format terminalowy `ansiTimestampedLogFormat`.
++     - `eucalyptus.gcp` – `googleCloudPlatformLogFormat`, jeden obiekt JSON na zdarzenie, w
++       kształcie, który czyta agent logowania Google Cloud.
++     - `eucalyptus.syslog` – `Syslog`, miejsce docelowe przekazujące wiersze do dziennika
++       systemowego przez polecenie `logger`.
+
+@ 0 2 0 1a2101a3b7e72fe312918ad7326971a5
++     Wszystko jest eksportowane do modułu zbiorczego `soundness`, a pakiety wyboru `logFormats`
++     i `logging` łączą się z pakietami modułu zbiorczego o tych samych nazwach.
+
+% 0 1 0 12c5b3d8a770eeea1c3861fe65e897f0
+
+% 0 1 0 0710479ed3336c9703adce0c5329d37e
+
+% 0 1 0 12fa5bf8a2f2106a07edb1105ccaa9c1
+
+% 0 1 0 0a73aa28a7e969cf0dc18b840c884f47
+
+% 0 1 0 082f0b3b90faa2840558f5665b7fbb1c
+
+% 0 1 0 17f53a2bc14be2941c6423732c5014dd
+
+% 0 1 0 0af2b1943a09bb1f1b6efba761c48d64
+
+@ 0 1 0 141937c5be689caf1cc03bcd284791d8
++ entry .Logger   ujście logów, które przedstawia każde zdarzenie przez format i zapisuje je do miejsca docelowego
+
+% 1 1 0 11bc2533fc63b09505ef41e256fd12fe
+
+@ 0 5 0 1bd0ee0a8e91765b1a500b6fbb7f524a
++       `Logger[Event, Form]` to `LogSink`: umieszczony w zasięgu jako given otrzymuje każde
++       zdarzenie typu `Event` (lub podtypu) logowane w tym zasięgu, na poziomie progu lub
++       wyższym. Pierwszy parametr typu wybiera, które zdarzenia przyjmuje – `Any` dla
++       wszystkich – a drugi to nośnik, na który są przepisywane przed formatowaniem, zwykle
++       `Message`, którym staje się każde zdarzenie `Communicable`.
+
+% 2 1 0 014307bf02819b671f8945a8e9c131ba
+
+% 3 1 0 13e8b49eeae9462c06cbcf01eb301408
+
+% 4 1 0 038e7eb99f6712c108bcb72c41be48a7
+
+% 5 1 0 02c1e41d838af427088ebe95fe536f43
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 1 1 0 15ef1512078e38f21ea84a9b721a8b69
+
+% 0 1 0 1f6b7d85434f8a0f0596cfc8c38449be
+
+% 1 1 0 0a9da5baa3d8112f0d7acd3e0cbe7b45
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 04056516d35cf1d601f7d1e0db07ca4d
+
+% 1 1 0 030b1f52d68ee63b1a9ec7e8e6008402
+
+% 0 1 0 05da92369f2ca9f70e4665b985045ad5
+
+% 0 1 0 04166a8e0922cdee113a4ee01d545d76
+
+% 2 1 0 00b71327dc7caf4808ff0d2ade4e9fac
+
+% 0 1 0 189d3013649b2fa812c81da8eb9d8e67
+
+% 0 1 0 0febba9b2b1b932906ca717ba2ecb624
+
+% 0 1 0 01cf1b354c3b44751ec38be8ed8ba099
+
+% 1 1 0 171e7bed863cbdc01b8bdbc83bd62e53
+
+@ 0 5 0 1e116f4a6736d28a197a14a5a3b24624
++       W zasięgu może być naraz kilka loggerów, a `Loggable.fanOut` dostarcza każde zdarzenie
++       wszystkim, które je akceptują. Logger akceptuje zdarzenie, gdy jego poziom jest równy
++       progowi loggera lub wyższy (`#accepts`) oraz, jeśli loggerowi podano kategorie, gdy typ
++       zdarzenia w czasie wykonania miesza jedną z nich (`admits`); zdarzenie jest
++       konstruowane i formatowane tylko wtedy, gdy akceptuje je jakiś logger.
+
+@ 0 5 0 10115d3b33ee82a51c7f8869b6285bfa
++       Formatowanie odbywa się w wątku logującym, a zapis w demonie: każde zdarzenie staje się
++       jednym rekordem w kolejce, którą demon strumieniuje do miejsca docelowego. Nieudany zapis
++       (`Truncation.Error`) kończy ten strumień, a demon rozpoczyna nowy z tej samej kolejki,
++       więc przejściowa awaria nie wycisza loggera; demon zatrzymuje się, gdy maszyna wirtualna
++       kończy działanie.
+
+% 1 1 0 04cdee506d3bd5d31f3aba033a6d4bea
+
+% 0 1 0 171744aece8ce670069cf50284aee4e1
+
+% 0 1 0 0f2763c8a52f5010178bc4f95b17241d
+
+@ 0 5 0 0afa8854f2ad843b1b7f10dc813008b9
++   entry .apply   tworzy logger zapisujący do miejsca docelowego, z progiem poziomu i opcjonalnymi kategoriami
++       `Logger(destination, level, name, categories)`. `level` domyślnie wynosi
++       `Log.Level.Info`, a `categories` to domyślnie zbiór pusty, który dopuszcza zdarzenia
++       każdej kategorii; niepusty zbiór wartości `Log.Category` (`Log.Network`,
++       `Log.Filesystem`, …) dopuszcza tylko zdarzenia, których typ w czasie wykonania miesza
++       jeden z ich traitów znacznikowych. `name` jest przyjmowane, ale jeszcze nieużywane.
+
+@ 0 5 0 13a0225eccb9c44a1fd866048d6091df
++       Wymaga w zasięgu formatu, `Form is Inscribable in Format` dla nośnika loggera (jednego z
++       givenów `logFormats`), `Writable` dla miejsca docelowego przez tablice tego formatu
++       (kwalifikuje się każde miejsce docelowe, do którego można zapisywać `Text`, przez
++       `Writable.chunked`), `Buffering`, `Monitor` (z `supervise`), `Probate` oraz
++       `Codepoint`, którego dostarcza kompilator.
+
+@ 0 11 0 08b6410a2702dd6c1ce2d570cc897deb
++       Kolejka i demon zapisujący należą do **miejsca wywołania**: każdy `Logger` zbudowany w
++       tym samym miejscu w źródle współdzieli jeden, więc given obliczany ponownie przy każdym
++       przywołaniu nie uruchamia za każdym razem nowego wątku. W konsekwencji miejsce docelowe
++       ustala pierwsze wywołanie w tym miejscu: funkcja pomocnicza, która buduje `Logger(path)`
++       dla różnych ścieżek w jednym wierszu, zapisuje je wszystkie do pierwszej ścieżki.
++       Loggery dla różnych miejsc docelowych należy budować w różnych miejscach wywołania.
++   entry #accepts   czy logger rejestruje zdarzenia na danym poziomie: na poziomie progu lub wyższym
++   entry #submit   kolejkuje przepisane zdarzenie do formatowania i zapisu, z poziomem i znacznikiem czasu
++       Wywoływane przez `Loggable.fanOut` po pomyślnym sprawdzeniu `#accepts` i `admits`;
++       zdarzenie jest formatowane w wątku wywołującym, a jego rekord kolejkowany dla demona
++       zapisującego. Zwykle nie wywołuje się go bezpośrednio.
+
+@ 0 1 0 01f23714e4f6b8050f5171fcca911262
++ entry .Inscribable   format logu: jak wartość, wraz z poziomem i znacznikiem czasu, przedstawia się jako jeden rekord
+
+% 1 1 0 1ad5c70e545178790d2839c3a78848c8
+
+@ 0 4 0 17c52d5247cd3a6e17f40ebde12bd29a
++       Klasa typów, `Message is Inscribable in Text`, której `#formatter` zamienia wartość, jej
++       `Log.Level` i znacznik czasu (milisekundy od epoki) w jeden rekord typu `Form`. `Logger`
++       używa tej w zasięgu dla swojego typu nośnika; standardowe importuje się po nazwie z
++       `logFormats`. Własny format to lambda:
+
+% 2 1 0 18ffe2a7acfcf7fa0dd556a09ae778c8
+
+% 3 1 0 01cd5b82ed8163ce1656bd2531990aaa
+
+% 0 1 0 06f3c9423dcc0e0c0e2eb8bb09d5818c
+
+% 0 1 0 1bf89d00fe1712970beeeaff66de4823
+
+% 1 1 0 067724501d31efe80b3bd43774441596
+
+@ 0 2 0 068fdf478391e22100b18825bd57ab3f
++       Format tekstowy powinien kończyć każdy rekord znakiem nowego wiersza, ponieważ miejsce
++       docelowe zapisuje rekordy jeden po drugim.
+
+% 1 1 0 1774c6543172df4a01c0f1217070a709
+
+@ 0 6 0 10b982234ed493e0062731a4101ed4d0
++   entry #formatter   przedstawia wartość z jej poziomem i znacznikiem czasu jako jeden rekord
++   entry #contramap   format dla innego typu, który najpierw przekształca go w ten typ
++       `format.contramap[Event](_.message)` formatuje `Event`, odwzorowując go na typ, który
++       obsługuje ten format; poziom i znacznik czasu przechodzą bez zmian.
++   entry #format   przedstawia wartość jako rekord, jako metoda rozszerzająca wartości
++       `message.format(level, timestamp)`, to samo co `#formatter`.
+
+@ 0 1 0 13032050755a496e0343c60b71a62384
++ entry .Taggable   klasa typów dla wartości, do których można dodać tag typu `Operand`
+
+% 1 1 0 13369e02b063625b1c0ffb769af99f30
+
+@ 0 3 0 010f7b80afbe31f01be0933614c70536
++       `value.tag(operand)` zwraca wartość z dodanym tagiem. Nic w Soundness nie dostarcza
++       jeszcze ani nie używa instancji.
++   entry #tag   wartość z dodanym tagiem
+
+@ 0 5 0 17615a27363cfcae0a15e467065aee55
++ entry .mute   wykonuje blok z wyciszonym logowaniem jednego typu zdarzeń, niezależnie od loggerów w zasięgu
++     `mute[Event]:` oblicza swój blok z przekazanym mu cichym givenem `Event is Loggable`, który
++     ma pierwszeństwo przed `Loggable.fanOut` dostarczanym w przeciwnym razie przez loggery w
++     zasięgu, więc zdarzenia dokładnie tego typu są w bloku odrzucane, a każde inne zdarzenie
++     jest logowane jak zwykle. Nie dotyczy to zdarzeń przepisanych na inny typ przed
++     zalogowaniem.
+
+% 2 1 0 0227f722b0a7cf981a7a3f3af083aa3c
+
+% 3 1 0 067c3a1976d8433e10109c410ef7f32b
+
+% 4 1 0 07c79db7c2da4b541c5c0fa5234c1602
+
+% 5 1 0 0007de54ed699eaf1ed42a400b1ee2e6
+
+% 0 1 0 1ada92353fa6ddde1632d32f66e61a60
+
+% 0 1 0 16fb5d50566da01109298db539961a51
+
+% 0 1 0 11d4ff0576bcb9751615aba5345b8ecd
+
+% 0 1 0 1f1a7df1e3ce1ac20304bc881d29aaa9
+
+% 0 1 0 08c6e88c35954d9d170f0860fa9f5983
+
+% 0 1 0 1e44ae0c3334bc1f1ffa25564d7c0da2
+
+% 0 1 0 067500ae5726e0a9145ad21631985588
+
+% 0 1 0 18ab3e12f7fc3a4c0229c588c51c7db4
+
+% 0 1 0 038cb454ebe9ad4a083ac525354e8db2
+
+% 1 1 0 188f77a1884b666e16deba745dc5b23e
+
+@ 0 5 0 178377afbf899c3113d25ede5fa0be84
++ entry .dateFormat   wzorzec daty i godziny formatów ze znacznikiem czasu: `2026-Nov-04 09:30:00.250`
++     `java.text.SimpleDateFormat` dla `yyyy-MMM-dd HH:mm:ss.SSS` w domyślnej strefie czasowej
++     JVM, używany przez `timestampedLogFormat` i `ansiTimestampedLogFormat`.
++     `SimpleDateFormat` nie jest bezpieczny przy współbieżnym użyciu, więc nie należy go
++     wywoływać bezpośrednio z kilku wątków.
+
+@ 0 4 0 06ddaf65c8ade4070b6a153833d6af86
++ entry .LogPalette   kolory, którymi `ansiTimestampedLogFormat` maluje poziomy i daty
++     `Palette` w `Srgb` z czterema dodatkowymi kolorami: `error` dla `Fail`, `warning` dla
++     `Warn`, `informative` dla `Info` oraz `subdued` dla `Fine` i dla daty. Żadna paleta nie
++     jest dostarczana, więc logger terminalowy definiuje ją jako given.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 12cc132884ad92d21728ad250527aa86
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 1391c565c244eb0509de2ecaf3d88970
+
+% 0 1 0 006e2bc7f09e26c30f554b4235b3d8ee
+
+% 0 1 0 16e6a90a8f27bdec134d021182a42479
+
+% 0 1 0 1c191978229114421d99a1839c5328c2
+
+% 0 1 0 150a25c9b8ae2af903953681ebf47a06
+
+% 0 1 0 077a29b127cf27d009a2a48530b272ea
+
+% 1 1 0 1552d453f6a404551645440ad3b5bb5d
+
+@ 0 1 0 0e2b7f6658ec93651db583f5d8213d82
++ entry .Syslog   dziennik systemowy jako miejsce docelowe logów, z opcjonalnym tagiem w każdym wierszu
+
+% 1 1 0 1cf0579c0c6a04d305d2f37e0b0cc92d
+
+@ 0 5 0 1e6cf176540342f01503d53ca6af6ab7
++       `Syslog(tag)` to miejsce docelowe dla `Logger` z formatem `Text`: jego rekordy są
++       przekazywane potokiem na standardowe wejście polecenia `logger`, z `-t tag`, gdy podano
++       tag, więc trafiają do dziennika systemowego tak, jak zapisuje je `logger`. Niepowodzenie
++       uruchomienia `logger` lub zapisu do niego jest ignorowane, a nie zgłaszane, a samo
++       uruchomienie nie jest logowane.
+
+% 2 1 0 1ca7d0300c2c35930c1c50db82b43d54
+
+% 3 1 0 124d1e4358d9326b02f853d880883418
+
+% 4 1 0 1fa6c135f625a4d20d314029ff1d4527
+
+% 5 1 0 0fb75a2c9a6130310fb8f6a36c75f1a1
+
+% 1 1 0 1ade5faef96ded430d0e7bedbbdbc536
+
+% 1 1 0 0b0ea79ca47b401a11e959474b75a85b
+
+% 1 1 0 1d378d75969569d41e4c7e06d8aa594d
+
+% 2 1 0 11cc57f4cc1f838d1d869aed412a7bf0
+
+% 0 1 0 1bb3badd16a9a4cf0b6ca904b78709dc
+
+% 0 1 0 10d9fd00ee4fc0a51db9fc044a867b0f
+
+% 1 1 0 01158e10044404d3060003b27f887709
+
+@ 0 6 0 08a1dab565d9c6fc105d26a10a4f0248
++       Pasuje do niego format bez znacznika czasu, ponieważ dziennik systemowy dodaje własny.
++       Polecenie `logger` musi być na ścieżce: jest to przeznaczone dla systemów uniksopodobnych.
++   entry .writable   do `Syslog` można zapisywać `Text` (`Writable`): każdy strumień trafia potokiem do procesu `logger`
++       Wymaga `Monitor` w zasięgu, którego dostarcza blok `supervise` loggera `Logger`. Tekst
++       jest kodowany w domyślnej stronie kodowej systemu.
++   entry #tag   tag, który `logger -t` umieszcza w każdym wierszu, lub `Unset`, gdy go brak
+
+@ 0 1 0 0cff200417d9c57f1bfeebee5dd93ccc
++ entry .EucalyptusGcp   pusty obiekt znacznikowy zbioru źródeł `eucalyptus.gcp`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 1 0 0e3157755fde47e31533ddaaa6718dd2
++       Nie do bezpośredniego użytku; format Google Cloud to `logFormats.googleCloudPlatformLogFormat`.
+
+@ 0 1 0 1e5cc560acfeddd80f80b58465794cd9
++ entry .logFormats   standardowe formaty logów, każdy jako given do zaimportowania po nazwie
+
+% 1 1 0 181c20a900bd90810978de4425d5b71c
+
+@ 0 3 0 1885f09e030bbcc01c69e6e2054e3739
++       `Logger` przedstawia każde zdarzenie przez given `Inscribable` w zasięgu dla swojego
++       nośnika, a żaden nie jest w zasięgu niejawnym: importuje się go po nazwie, ponieważ
++       `import logFormats.*` nie importuje givenów.
+
+% 2 1 0 1c28ca043dc89693045a459ef4938542
+
+% 0 1 0 0a312f54c8f327751435acd336ef783d
+
+% 1 1 0 1784426b20d96f5f0a049dc2000c28d3
+
+% 2 1 0 038d8551ce1f09300e42f8ec1e3303d3
+
+% 0 1 0 16d245f5c3f18951058f7d3cfb727b7e
+
+% 2 1 0 06c9e6d86c160b5701a1bcec7439f538
+
+% 3 1 0 1413923e701164c80ecbb510c92789a0
+
+% 0 1 0 1736c71cf7c37de608153f969048869d
+
+% 0 1 0 10ca40bf9a63c7b70d32a3c4b6b575f8
+
+% 1 1 0 0c45bb7b1ff1a3dd061852a0bd2b2152
+
+% 2 1 0 056bbd241b4725451e33a4a814742e98
+
+% 0 1 0 1414d599d9bd800d09340c970c877d7a
+
+% 2 1 0 19f2bdf0b30eef8e1b484b31e1495fac
+
+% 3 1 0 1533e3f9bf9015551d285bcdb1c67683
+
+% 0 1 0 11d5491b31fe67cd011d8190dc16ec7e
+
+% 0 1 0 09cb2ba5df3d22e505e062c187400130
+
+% 1 1 0 0c9281cfa6e2fb8c09557be0fbfb698e
+
+% 2 1 0 164c22bd7386834e00a27fcf8b6f605c
+
+% 0 1 0 0beb8705f7c8b44b1e920db1d2648e54
+
+% 2 1 0 0e53bc5e7bc8d44b0be644a062aae158
+
+% 3 1 0 1ff2917c5eedb685195ea4e0fcbb4447
+
+% 0 1 0 080eeea6a4cc35051d24baeb395db192
+
+% 1 1 0 17d079d1b971851912729ae2800b6fd1
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 20 0 0837d9fce7ce78ab11a555eb46de00ce
++       `timestampedLogFormat` i `untimestampedLogFormat` formatują dowolną wartość
++       `Communicable`, a `ansiTimestampedLogFormat` i `googleCloudPlatformLogFormat` tylko
++       `Message`, na który `Logger[…, Message]` przepisuje każde zdarzenie.
++       `textLevelLogFormat` i `teletypeableLogFormat`, które przedstawiają `Log.Level`, są
++       używane przez pozostałe i nie są eksportowane do `logFormats` modułu zbiorczego.
++   entry .timestampedLogFormat   wiersz tekstu: data i godzina, poziom w nawiasach i komunikat
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, zakończony znakiem nowego
++       wiersza, dla dowolnego zdarzenia `Communicable`, ze znacznikiem czasu sformatowanym
++       przez `dateFormat`.
++   entry .untimestampedLogFormat   wiersz tekstu: poziom w nawiasach i komunikat
++       `[INFO] server listening on 8080`, zakończony znakiem nowego wiersza, dla dowolnego
++       zdarzenia `Communicable`. Pasuje do miejsca docelowego, które dodaje własny znacznik
++       czasu, takiego jak `Syslog`.
++   entry .textLevelLogFormat   przedstawia `Log.Level` jako `FINE`, `INFO`, `WARN` lub `FAIL`
++       `Showable` dla `Log.Level`, które interpolują formaty tekstowe. Nie jest eksportowany do
++       pakietu `logFormats` modułu zbiorczego; importuje się go jako
++       `eucalyptus.logFormats.textLevelLogFormat`.
++   entry .ansiTimestampedLogFormat   teletype: przygaszona data i godzina, poziom na kolorowym tle, `>` i komunikat
++       `Message is Inscribable in Teletype`, dla terminali, w `eucalyptus.ansi`. Wymaga
++       `LogPalette` w zasięgu dla swoich kolorów. Komunikaty są dzielone na wiersze o długości
++       co najwyżej 76 znaków, a każdy wiersz kontynuacji jest wcinany tak, by wyrównać go pod
++       komunikatem pierwszego wiersza. Z `Out` jako miejscem docelowym wymaga także
++       `writables.outTeletypeWritable` i `Stdio`.
+
+% 2 1 0 121166e142bfa6631d6c74a0a2a1dec4
+
+% 3 1 0 1dfa9dec4d374c0500be1b42ce3f8ea2
+
+% 4 1 0 051ccd7f33271c9615b538d37ba76087
+
+% 5 1 0 032d5eaa16dccc620bdd4cc1b85c0fd9
+
+% 0 1 0 0db93c1f93e7563403069dce88e9043c
+
+% 1 1 0 0be73e12f3d9cc6914df752efc0e58ea
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 0 1 0 0735120d942630ba078c2e2d1d2d49c2
+
+% 1 1 0 12ebf5ace5b38af30f5a490e48a38fa3
+
+% 0 1 0 1f5b362253dbea8907db7b747d1958c1
+
+% 0 1 0 024e3953ffdde04b1a9c6da8602dede1
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 0360f05ad4ca9ed8023f066cefc0cf0c
+
+% 0 1 0 103d56bd0323da9507b622e4319c1e8a
+
+% 0 1 0 1613bb2420871d4518c43569f57fcbb1
+
+% 0 1 0 081f210512adfd2009f49ff275f843e7
+
+% 0 1 0 15934dced264e82e043010c35fd83d64
+
+% 0 1 0 13ed7dfeccf697c2055659443cb2a25c
+
+% 2 1 0 0ca8f8baeb079cb714ed3efff419ea28
+
+% 0 1 0 00abc36b07433beb075370c3c3a2a2c4
+
+% 0 1 0 0086a82005593420173e05557a6c4248
+
+% 1 1 0 06e97cbfb8c149fc180d1d378dacd50c
+
+@ 0 12 0 052cd92f50fb673602376e017a96b1f2
++       Rekordy nie mają końcowego znaku nowego wiersza, więc kolejne zdarzenia zapisywane do
++       `Out` nie są nim rozdzielone.
++   entry .teletypeableLogFormat   przedstawia `Log.Level` jako pogrubioną etykietę na kolorze `LogPalette` dla jego poziomu
++       `Teletypeable` dla `Log.Level`, którego używa `ansiTimestampedLogFormat`, w
++       `eucalyptus.ansi`. Wymaga `LogPalette` i nie jest eksportowany do pakietu `logFormats`
++       modułu zbiorczego.
++   entry .googleCloudPlatformLogFormat   jeden zwarty obiekt JSON na zdarzenie, z `severity` i `message`
++       `Message is Inscribable in Text`, w `eucalyptus.gcp`, który zapisuje
++       `{"severity":"WARNING","message":"…"}`, ustrukturyzowaną postać, którą agent logowania
++       Google Cloud czyta ze standardowego wyjścia kontenera. Poziomy odwzorowuje się na
++       `DEBUG`, `INFO`, `WARNING` i `ERROR`; komunikat to jego zwykły tekst, bez stylizacji.
++       Znacznik czasu nie jest zapisywany, ponieważ agent rejestruje własny, a rekord nie ma
++       końcowego znaku nowego wiersza.
+
+@ 0 1 0 04ae0a4fe0cfbfda1dd174a1b1b76f88
++ entry .logging   loggery do zaimportowania po nazwie, zastępujące te w zasięgu
+
+% 1 1 0 1236c58cde4a781c0a64b5e15a8e8268
+
+@ 0 7 0 1b3268d2e55da413045a26a123dcdda4
++       Pakiet wyboru, połączony z `logging` modułu zbiorczego. Given zaimportowany po nazwie ma
++       pierwszeństwo przed `Loggable.fanOut` z zasięgu obiektu towarzyszącego, którego
++       dostarczają loggery w zasięgu.
++   entry .silentLogging   odrzuca każde zdarzenie w całym zasięgu, do którego zostanie zaimportowany
++       `import logging.silentLogging` dostarcza cichy `Loggable` dla każdego typu zdarzeń, więc
++       nic, co jest logowane w pliku, nie dociera do żadnego `Logger` i żadne zdarzenie nigdy
++       nie jest konstruowane. Pasuje do testu lub skryptu, który wywołuje logującą bibliotekę,
++       której wyjście jest niepożądane; dla jednego typu zdarzeń w jednym bloku `mute` jest
++       dokładniejsze.
+
+% 2 1 0 0a5244e24b8de8e805a0f411dc48cdb4
+
+% 3 1 0 11d03768b7dae62f18892c35da2b9479
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 0c5bb0523ba9d5151e79e1cc1e0b8d5c
+
+% 1 1 0 047a6a08833bb4ab186c8b2c7144c0b4

@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 06c5ab84a998c54402b0164b14277bdb
+
+@ 0 1 0 0fffb3be147ea5fc0e605f6364134d4d
++ 当 PKCS#12 密钥库无法打开或读取时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 11020d0fc2e3ce0610b4a59d834ad509
++ 密钥库在一个作用域的持续期间内打开，其密码以标志的形式提供。
++ 此错误涵盖无法读取的密钥库以及不受支持的写入。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 07858f2209aa6df911115adbc63be3ca
+
+% 0 1 0 0c6f7dbc235736830974d2ea9d8ec745
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 3 0 07afe0313e6cdb510a75b152cb65ea22
++ 错误的密码和损坏的密钥库被有意设计为无法区分——两者都是 `Unreadable`——因为区分它们会向猜测者透露究竟是哪一个出了问题。
++ 目前尚不支持写入密钥库。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0b88481b72eaa0a815318c4e5538b3d9
++ - 源代码：`lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala`

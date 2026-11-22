@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 5 0 1bf97d2d5e7a1aa81304c4fbe202e179
++       `Classfile` 是一个 `.class` 文件，在创建时通过 JDK 的 `java.lang.classfile` API 解析；JDK 拒绝的字节会抛出 `Classfile.Error`，因此每种创建方式都需要作用域中有一个 `Tactic[Classfile.Error]`。
++       它可以通过作用域中的 `Classloader` given，按名称或类型在类路径上查找；由于它是 `Aggregable by Data`，也可以用 `read[Classfile]` 从任何字节来源——文件、资源、流——读取。
+
+% 5 1 0 184eec9e339a69a009ad9c121ae982a9
+
+@ 0 2 0 025e575fa3e422da0e0082a616e51e3c
++       `Classfile` 不持有任何能力：它在构造时就被解析，因此该值可以自由保留、共享和传递。
+
+@ 0 10 0 0c8f4b52251b603d193208e2f9ff02de
++   entry .Error   无法读取类文件时抛出
++       错误 `↯/s.88.2`：_there was an error reading the classfile_。
++       当头部、常量池、属性或方法表无法解析时，由 `Classfile(data)`、`Classfile(name)`、`Classfile[type]` 和 `read[Classfile]` 抛出。
++       类加载器没有的类仍然是 `Unset`，而不是错误。
++       方法的代码只由 `Method#bytecode` 解码，代码无法解码时它会抛出同一错误。
++   entry .aggregable   从任意字节流读取 `Classfile`，即 `read[Classfile]`
++       即 `Aggregable by Data` given，它让文件、类路径资源或任何其他 `Readable` 来源可以作为类文件读取：整个流被收集到一个 `Data` 中并加以解析，如果它不是类文件，就抛出 `Classfile.Error`。
+
+@ 0 7 0 07bdfe6f7dc0a0a90d9a107495ae4c92
++   entry .apply   由一些字节得到的类文件，或通过作用域中的 `Classloader`，按资源名称或类型得到的类文件
++       `Classfile(data)` 解析类文件的字节。
++       `Classfile(name)` 通过作用域中的 `Classloader` given 读取位于 `name` 的类路径资源——带扩展名的 JVM 内部名称，如 `scala/Option.class`——而 `Classfile[T]` 通过 `T` 的 `ClassTag` 找到其类，并读取其二进制名称所指的资源，因此嵌套类会解析为 `Outer$Nested.class`。
++       当类加载器没有这样的资源时，两者都给出 `Unset`。
++       对于无法解析的字节，三者都会抛出 `Classfile.Error`。
+
+@ 0 13 0 04733c65a7566127086a69d8ca19ffd1
++     entry #name   类文件中所写的方法名称
++         是编译后的名称而不是源代码中的名称：构造器是 `<init>`，诸如 `+` 的运算符是 `$plus`，lambda 体是 `$anonfun$…`。
++         digression 中的 `StackTrace.rewrite` 会将这样的名称转换回接近源代码的写法。
++     entry #bytecode   方法的 `Code` 属性解码得到的 `Bytecode`，抽象方法则为 `Unset`
++         需要一个 `Tactic[Classfile.Error]`，在代码属性格式错误时抛出。
++         将方法的每条指令解码为 `Bytecode.Opcode`，将分支目标解析为字节偏移量，并在其中贯穿一次对操作数栈的模拟：每条指令之后的栈由 `Bytecode.Opcode#transform` 计算，并在每个标签处根据方法的 `StackMapTable` 帧重置，因此分支目标处的栈是校验器所记录的栈，而不是顺序执行路径留下的栈。
++         `LineNumberTable` 中的行号附加在每行的第一条指令上。
++         没有代码的方法——抽象方法或本地方法——给出 `Unset`。

@@ -1,0 +1,722 @@
+orthant 2 language
+
+% 0 1 0 1090d9896caff884006193c60de04c41
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 1f0927db47aa10ad133e613894a5aafc
++ [HTML](https://en.wikipedia.org/wiki/HTML) konstruuje się, parsuje, przekształca i zapisuje
++ przez reprezentację, którą rozumie kompilator. Element buduje się, stosując tag do jego
++ atrybutów i dzieci. Konstrukcja jest sprawdzana względem specyfikacji HTML w
++ [czasie kompilacji][czas kompilacji], więc `<br>`, któremu podano dzieci, albo `<li>` poza listą to
++ błąd kompilacji, a nie niepoprawny wynik.
+
+@ 0 4 0 111cc930d45b52f70c6f716c3671e71a
++ Ta sama reprezentacja odczytuje HTML z tekstu, z plików lub z adresu URL, dopasowuje go do
++ wzorców i zapisuje go, bezpośrednio albo jako strumień. Ponad poziomem pojedynczych tagów
++ całe strony składa się z części wielokrotnego użytku: winiety, banera hero i zestawu paneli,
++ z których każda wnosi własne znaczniki, style i metadane.
+
+@ 0 1 0 0a066e5c2dbe33ad080608f054e53bca
++ ### O HTML
+
+@ 0 6 0 0673c544f247a4740f8f96e940ab6931
++ HTML to drzewo węzłów, którymi są elementy, tekst i komentarze. Rządzi nim specyfikacja,
++ która określa, które elementy mogą zawierać które inne, jakie atrybuty przyjmuje każdy
++ element i jak traktowany jest tekst w każdym z nich. Większość bibliotek przechowuje to drzewo
++ luźno. Każdy element można zagnieździć w dowolnym innym, a atrybuty są dowolnymi napisami.
++ Dokument, który narusza specyfikację, zostaje wykryty dopiero wtedy, gdy przeglądarka
++ wyświetli go błędnie, o ile w ogóle.
+
+@ 0 5 0 0794c67bd0672ad00160c221bb696ba8
++ Tutaj specyfikacja jest zakodowana w typach, więc niepoprawny dokument staje się
++ [stanem niemożliwym](../../philosophy/impossible-states.md), a nie czymś, co trzeba
++ walidować później. Każdy tag jest wartością, której typ zna jego nazwę, to, co może on
++ zawierać, i atrybuty, jakie dopuszcza, a reguły specyfikacji są egzekwowane tam, gdzie
++ pisze się znaczniki.
+
+@ 0 4 0 1ba6e849a45a6352107ed22234b0d1ec
++ Słownictwo, reguły zawierania oraz zachowanie parsowania i zapisu pochodzą z kontekstowego
++ opisu specyfikacji. Obecnie jest nim
++ [WHATWG HTML Living Standard](https://html.spec.whatwg.org/), który większość ludzi ma dziś
++ na myśli, mówiąc „HTML”, i który mogłyby zastąpić inne specyfikacje.
+
+@ 0 3 0 1e98c0d4c0ec65151dbbad3e68cba89e
++ Wszystko pochodzi z pakietu `soundness`, wraz z wyborem specyfikacji i zdefiniowanym przez
++ nią słownictwem tagów. Ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1842b9c5dc5960d41f15df4cf22b7ce2
+
+% 0 1 0 063d62ac99dc8a1107f7e9b5f3cf49f6
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1bf4f23a599362431712492df187a0c1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 1ba038534a93af0b148b3885c8b59639
++ Wartość HTML ma ogólny typ `Html`, a jej rodzaje węzłów mają typy w obiekcie towarzyszącym
++ `Html`:
+
+% 2 1 0 19f9929ec15b11ac0f801adedd01695b
+
+@ 0 7 0 0811b3cf2b8677931c13302b1e09cdb6
++ column  Typ
++ column  Węzeł
++ row  `Html.Element`  element, z atrybutami i dziećmi
++ row  `Html.Text`  tekst
++ row  `Html.Comment`  komentarz
++ row  `Html.Doctype`  deklaracja doctype
++ row  `Html.Fragment`  sekwencja kilku węzłów
+
+% 1 1 0 0c4c95b6862fef810c6d5a339678f56a
+
+@ 0 2 0 098446c07179ef6f0b48a8e12a5b6198
++ Każdy węzeł jest [niemutowalny], więc przekształcenie węzła daje nową wartość, a stara
++ pozostaje taka, jaka była.
+
+@ 0 1 0 0a102ef2cb6f358a0f32bf812db79426
++ ### Konstruowanie elementów
+
+@ 0 3 0 0b76943d057854dc0f18849df7123f36
++ Dla każdej z około 110 nazw tagów w specyfikacji istnieje obiekt budujący. Zastosowanie go
++ do argumentów nazwanych ustawia te atrybuty. Zastosowanie go do wartości `Html` lub do
++ wartości, które konwertują się na HTML, takich jak `Text`, dodaje dzieci:
+
+% 2 1 0 190e915252e7c6130020eb126ff3640e
+
+% 3 1 0 1ba85ee9fba67185104f1ccc003dc14e
+
+% 4 1 0 029e066f0aba2626041593b7deaf510d
+
+% 0 1 0 0ba15fa0b6919c9f1d4c0bdb6607548f
+
+% 0 1 0 04a3bf68e5ce6a97116f7347c995934c
+
+% 0 1 0 0237eed4874d661e1281163266bb03d9
+
+% 0 1 0 1654c0d56f991d6b0a9164ad9dc1a48a
+
+% 1 1 0 1044a58fce0415f30538bc08d74c0874
+
+@ 0 2 0 14251e9d878eb08704fdd912ea6ca214
++ Atrybuty i dzieci tworzą osobne grupy argumentów. Każdą z nich można pominąć, żadna nie może
++ wystąpić więcej niż raz, a atrybuty muszą poprzedzać dzieci.
+
+@ 0 1 0 0c537ef3552ebac0082e04d1929dd0d1
++ ### Sprawdzanie w czasie kompilacji
+
+@ 0 2 0 197d1249a04b04e7100c55c9638a7bdd
++ Konstrukcja jest sprawdzana pod względem typów względem specyfikacji, a konstrukcja, która
++ nie jest z nią zgodna, zwykle jest błędem kompilacji. `<br>` nie przyjmuje dzieci:
+
+% 2 1 0 1ea17663a3a292620fe7c599c491b3c7
+
+% 3 1 0 1f74707b2df6442e023e50895237b2e9
+
+% 4 1 0 0d9ab86efdd04e150bff43a00ebae65e
+
+% 5 1 0 12b74e10c6f33c980ff8f044ded8b157
+
+% 0 1 0 18f9f6b03625e6a51165cba4a9b3bacc
+
+% 1 1 0 1893f887c78409be19b1ab4dcb39d265
+
+@ 0 1 0 10e31a38835ac0900bb968ffe3143316
++ `<li>` należy wyłącznie do `<ol>` albo `<ul>`:
+
+% 2 1 0 0b6c70c849da92ab16d59b637e9e4901
+
+% 3 1 0 1914334a87cfe9910c15fd6b152d1df7
+
+% 4 1 0 0ea21c04b6b6ee71152946cd688c61fd
+
+% 5 1 0 1c754b943cda60d10f6ee2947a401b82
+
+% 0 1 0 10c2f95cc675100f04bd4a29d8605571
+
+% 1 1 0 08f6edb233bcf69c046a25aa0aca2428
+
+@ 0 1 0 1ff4e885c951b0a415a976e82079a966
++ A `<ul>` nie może zawierać tekstu bezpośrednio:
+
+% 2 1 0 1b7947f1753aa7a40c83bac102187895
+
+% 3 1 0 1d56b5cf5598c6a20c2a163867f0fbcd
+
+% 4 1 0 04442d38a27a46f008a4ca8c91cea096
+
+% 5 1 0 17e5bbce5e4787ef0b25c27bf05d82db
+
+% 0 1 0 0a7672b88453359115f3e1067cd9f672
+
+% 1 1 0 1ee3a26c0f9098970b27b2321d6bb5d9
+
+@ 0 6 0 1e633aee2d3b2e2b0d26380f1f058318
++ To, co element może zawierać, i to, jakie atrybuty przyjmuje, wynika ze statycznego typu
++ jego tagu. Nie każdą regułę specyfikacji da się w ten sposób uchwycić, bo niektóre są
++ sformułowane w kategoriach czegoś więcej niż prosta relacja zagnieżdżenia. Tam, gdzie reguły
++ nie da się zakodować, sprawdzanie jest *bardziej liberalne*, a nie bardziej restrykcyjne.
++ Konstrukcja, która się kompiluje, może więc w rzadkich przypadkach wciąż nie być zgodna. Ale
++ konstrukcja, na którą specyfikacja pozwala, nigdy nie jest odrzucana.
+
+@ 0 1 0 1afc3325e9e167241e91c1bdddc6c7ea
++ ### Pisanie HTML dosłownie
+
+@ 0 4 0 083b1f6cb50efab5024367152df737e5
++ Znaczniki znane w chwili pisania kodu lepiej zapisać wprost. [Interpolator][interpolator]
++ `h"…"` parsuje HTML w czasie kompilacji i zgłasza każdy błąd tam, gdzie został popełniony.
++ Buduje węzły bezpośrednio w [czasie wykonania][czas wykonania], więc nie ma kosztu
++ parsowania ani utraty sprawdzania:
+
+% 2 1 0 1a461a78e9d0106407e3096b9cbc07f6
+
+% 0 1 0 0aebd471acfea9cb14100ddb79090655
+
+% 1 1 0 15c61f7cefa189881049253dcfcf50b8
+
+@ 0 2 0 111658a9cb8ae07a11bc20357446c8e8
++ Wewnątrz literału obowiązują standardowe reguły parsowania, więc tagi zamykające, które
++ specyfikacja czyni opcjonalnymi, można pominąć, a wynik jest tą samą wartością:
+
+% 2 1 0 1f7dffb59616c40f16ef4fe9be67641e
+
+% 3 1 0 1234f42f0038976612df7e84eaf17065
+
+% 4 1 0 0c6cdcb9d4c008310dbf5290c469f7b8
+
+% 0 1 0 0811c8aa12e8b5160bcaa8aedea335f5
+
+% 1 1 0 0c89f526ad239c081d3b514bfa51cd6e
+
+@ 0 1 0 00ae003df5e379770d1e6e0bd7ee1671
++ Znaczniki, na które specyfikacja nie pozwala, są odrzucane także w literale:
+
+% 2 1 0 0955c9d89419654c1d576f18a29af116
+
+% 3 1 0 038b9df8b31b52ed02d6e7737cc703da
+
+% 4 1 0 12c4eee54340c4e805805604907af956
+
+% 5 1 0 0b040918cdf160430f82f752a3ee9037
+
+% 0 1 0 087d077a045ec9fd0734aba859d86037
+
+% 1 1 0 19f382703aa29c0b0156065a02117620
+
+@ 0 2 0 0faf7286f137d5501be8e3d72aa76b28
++ Podstawienia są dozwolone wszędzie tam, gdzie pasują do otaczających znaczników, a każde
++ z nich jest sprawdzane w swoim położeniu:
+
+% 2 1 0 0c936d330c7eb10108043a0431d68521
+
+% 0 1 0 087a5cf548bf08af0e2c7bfd437614f0
+
+% 0 1 0 174821f2240245e60ffe3ecf0149126d
+
+% 1 1 0 0496eace2fff60f00852d4bb3a6d95b1
+
+% 3 1 0 08309a677c700f34087d0837b1510572
+
+% 4 1 0 1af9bfeb4623467700d17129a4c6023a
+
+% 5 1 0 149e8a559a3a3dcd0460d3dc9a6bbcfd
+
+% 0 1 0 17e817229e5f596c16ecf7fbaad0f163
+
+% 0 1 0 16a9a10e3504f61b1dcde665f5c596d5
+
+% 0 1 0 1060769682cf32f913ea7f8a362884d0
+
+% 1 1 0 01b48b9548c051c81c03f80d3ba36f56
+
+@ 0 1 0 0b4c505382572b8904527f71d3bde0f1
++ Każde położenie wymaga czegoś innego od wartości, którą się w nie podstawia:
+
+% 2 1 0 1fc246d84a6e2f421b236cb74b499585
+
+@ 0 5 0 1001a197dbdc9eab05fe54899fa69f04
++ column  Podstawienie
++ column  Musi być
++ row  treść elementu  HTML dopuszczalnym jako dziecko otaczającego elementu
++ row  wartość atrybutu  wartością, którą przyjmuje atrybut
++ row  komentarz  wartością typu showable
+
+% 1 1 0 0718a99df00e99d41859cc6b9c2ae86c
+
+@ 0 2 0 1a6a0af4c6f3d47015eef5efda414357
++ `src` przyjmuje na przykład [URL](network-addresses.md#urls). Bez atrybutywu dla `Text`
++ w zasięgu `Text` w tym miejscu zostałby odrzucony.
+
+@ 0 1 0 1b52f694c3f73f3410bad80d439c03ee
++ ### Atrybuty
+
+@ 0 4 0 0ffe04d540302f780b7a07a10257cf43
++ Wartości atrybutów są przechowywane jako tekst, ale podaje się je z typowanych wartości, bo
++ specyfikacja nadaje różnym atrybutom różne typy wartości. Niektóre przyjmują liczbę całkowitą,
++ inne element ustalonego zbioru. Każda nazwa atrybutu ma typ, który opisuje, co przyjmuje.
++ `width` przyjmuje dodatnią liczbę całkowitą, więc dopuszcza `Int`:
+
+% 2 1 0 0fb092a13e767c601af190b4cb1bc2f1
+
+% 0 1 0 0396a688cd73001004f1b5ea449b1928
+
+% 1 1 0 0129d42b4ab395ff1f48762e9a8c952e
+
+% 3 1 0 1963fe434c6f79310eb1892783397a89
+
+% 4 1 0 13d9d9a65da26db91ffa16c91054b1f2
+
+% 5 1 0 197cd39e2d78b5601414f41ceb1fff43
+
+% 0 1 0 1877beb8e5cac3a806e3d8698b298df9
+
+% 1 1 0 18df3de2b7128e4210f44b2e1c5d0604
+
+@ 0 1 0 02bb3a180b3b836a07f5c037f5cd3e9b
++ Odrzuca `Double`:
+
+% 2 1 0 06d032ae132e71e40f557ed45211e047
+
+% 3 1 0 1f997525d83251c416ce6e3411320df5
+
+% 4 1 0 0e13d053d85635ed0eb227863023ed51
+
+% 5 1 0 17f801b24b0d895710451a78ce4e8e30
+
+% 0 1 0 1ab0c2f4fda8e2950f1b7986516cfe43
+
+% 1 1 0 1f084d21a46e4bf61f5523d1c2e9afea
+
+@ 0 4 0 146123e274ccfc2112cc3475e573f3a1
++ Zbiór typów przyjmowanych bez importu jest wciąż niekompletny. Dopóki nie zostanie
++ uzupełniony, najprostszym wyjściem jest uczynienie `Text` dopuszczalnym dla każdego atrybutu
++ jednym importem. Jest to `attributives.textAttributive`, który jest już w zasięgu powyżej
++ i który pozwala, by `src = t"image.jpg"` stało tam, gdzie oczekiwany jest URL.
+
+@ 0 2 0 0c456d76701efc131c46e5e7f4e009b6
++ Atrybut `class` jest niewygodny, bo `class` jest w Scali słowem kluczowym. Zamiast zapisywać
++ go w odwrotnych apostrofach, nazwę klasy podaje się jako metodę tagu:
+
+% 2 1 0 11b5ed333d0403b604eb53a4de2fe09c
+
+% 0 1 0 1771d73c069b67780b55ce6549339670
+
+% 1 1 0 1e3146c33a68a3a40c5a8ab76cd5f5ae
+
+% 3 1 0 06a3b66541dee4c1165b6083d25b568f
+
+% 4 1 0 154a96d17ff6c46f1fced1486e6badca
+
+% 5 1 0 0655728ea4c248810981c07ce452474d
+
+% 0 1 0 072a44f1c40b99fe15839e36039c8406
+
+% 1 1 0 00de37496808909c19dc49a395e733cc
+
+@ 0 4 0 13d5f93451a3ecad133e2200597cf2f4
++ `uncheckedClasses` pozwala na dowolną nazwę klasy. Powiązanie zamiast tego
++ [arkusza stylów](css.md) czyni zdefiniowane w nim nazwy jedynymi prawidłowymi. Błędnie
++ wpisana klasa zostaje wtedy wychwycona podczas kompilacji kodu, a nazwa, którą arkusz stylów
++ deklaruje jako identyfikator, jest zapisywana jako identyfikator.
++ [Nazwy](names.md#built-in-planes) opisują reguły dla nazwy klasy i identyfikatora.
+
+@ 0 1 0 14b3a784002d1cb404237517e0e5f0e9
++ ### Fragmenty
+
+@ 0 6 0 18c759bab62a97e30c84be49d5fedb2a
++ Wartość `Html` jest albo `Html.Node`, czyli dokładnie jednym elementem, komentarzem lub
++ tekstem, albo `Html.Fragment`, czyli dowolną sekwencją węzłów. HTML jest formatem tekstowym,
++ więc wymaganie dokładnie jednego węzła jest zwykle sztucznym ograniczeniem, a `Html`
++ dopuszcza sekwencje wszędzie. Typ `Html.Node` oznacza nieliczne miejsca, w których naprawdę
++ wymagany jest pojedynczy węzeł. Fragmenty zachowują się intuicyjnie. Fragment podany jako
++ dzieci zostaje rozpakowany, a fragment z jednym węzłem jest równy temu węzłowi.
+
+@ 0 1 0 0f37dffcfa09e0a81959ae716b35edd6
++ ### Przedstawianie innych typów jako HTML
+
+@ 0 3 0 1e4515c50c7f0ae717d29c0a02aff2a3
++ [Klasa typów][klasa typów] `Renderable` pozwala, by wartość dowolnego typu stała wszędzie
++ tam, gdzie oczekiwany jest HTML. Instancja deklaruje zarówno sposób konwersji wartości, jak
++ i to, jaki HTML powstaje. Lista tekstów przedstawiana jako elementy listy deklaruje, że
++ wytwarza treść `"li"`:
+
+% 2 1 0 0892b6b1bf04e1ca0244acf4f3ddecb1
+
+% 0 1 0 14c851752f66db88181ea4077f10c134
+
+% 0 1 0 0ebffa6b0e038095144738f3b31be066
+
+% 0 1 0 18d7353b0fb1417118a0ee3d496eb20e
+
+% 1 1 0 0bea18fa4069b17f14df42bec49ae3f7
+
+@ 0 1 0 16756c73c5deec71082d799350fcf9af
++ Gdy to jest w zasięgu, `List[Text]` można umieścić wewnątrz `<ul>`:
+
+% 2 1 0 1e37cca32b0d576f1d52841cd08b4745
+
+% 3 1 0 15035fde4337a610100bb8ad4a01b965
+
+% 4 1 0 07c01bbad876c556191fb4827648a7f4
+
+% 0 1 0 069f23d18942a58e1af6d1d879cecf22
+
+% 1 1 0 15e2ecca057e4ed40a6493d3a6f9280e
+
+@ 0 1 0 1880a809e8865a71072046959feddc17
++ Nie można jej umieścić w `<div>`, który nie może zawierać elementów listy.
+
+@ 0 1 0 184e7137d957cc821fa3901d305490bb
++ ### Przekształcanie
+
+@ 0 2 0 0ff04cc0301a1a4204f78b4f2623be42
++ Wartości łączy się i zmienia za pomocą operatorów. Daszek w `^+` i `+^` oznacza koniec,
++ do którego dołącza dziecko:
+
+% 2 1 0 170aec0bb905a31400327d94db3bc042
+
+@ 0 7 0 12b6ea2a5ad8c7b40267464eae2728ac
++ column  Operacja
++ column  Dotyczy
++ column  Daje
++ row  `a + b`  dowolnych dwóch wartości `Html`  fragment z obiema
++ row  `element ^+ child`  `Html.Element` znanego statycznie  element z nowym pierwszym dzieckiem
++ row  `element +^ child`  `Html.Element` znanego statycznie  element z nowym ostatnim dzieckiem
++ row  `element.name = value`  `Html.Element`  element z dodanym lub zastąpionym atrybutem
+
+% 1 1 0 1c8521b9521e1bfd1a6b248348b675e1
+
+@ 0 1 0 06ab43a0821019a30575b17e1efd73a3
++ Tutaj atrybut dodaje się przez przypisanie:
+
+% 2 1 0 19e1c0d77faa9b2413cfb748a885c616
+
+% 0 1 0 12f95737222ed94a1ee0bf54b42bc103
+
+% 0 1 0 0654c5948becf4341f66e7ed4ad290a9
+
+% 1 1 0 0897fdf5a2e46e9603559a4056a11a00
+
+% 3 1 0 1427ee4284a20d970a20f89615d3872f
+
+% 4 1 0 199bb56ceaa949cd04f0d443fe748be4
+
+% 5 1 0 17739530ff21de9b135bdc00dac5dd74
+
+% 0 1 0 02c91c14f718cf94187c6255657c4233
+
+% 0 1 0 1b3bfe017efd3c061f0151dbd24ea451
+
+% 1 1 0 0dbfaa42ebed3b99023057146c64c9f4
+
+@ 0 1 0 0cb2da0df095a44d0545e0e8097ec848
++ Wartości są niemutowalne, więc `image` pozostaje bez zmian, a `described` jest nową wartością.
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Parsowanie
+
+@ 0 4 0 001dc1ac04d4ecf4183215c634329176
++ HTML odczytuje się z dowolnego źródła tekstowego, takiego jak `Text`,
++ [plik](filesystem.md#reading-and-writing), URL albo zasób ze [ścieżki klas](classpath.md),
++ za pomocą `read` lub `load`. `load` odczytuje cały dokument. Daje `Document[Html]`
++ z nagłówkiem `Html.Doctype` i korzeniem `<html>`:
+
+% 2 1 0 0e09226ebff676b602c068a555ac5d2a
+
+% 0 1 0 1a4c915b66b51be51a740e35de69bbd1
+
+% 1 1 0 1c7c47c6d63072361d84beab6127b9e5
+
+@ 0 3 0 10bb5e90bb0f60790694054ceed33929
++ `read` służy do fragmentów. Wywołane jako `read[Html]` przyjmuje wszystko od pojedynczego
++ węzła po kilka węzłów i daje to z `Html.Element`, `Html.Comment`, `Html.Text` lub
++ `Html.Fragment`, co wynika ze źródła:
+
+% 2 1 0 091541f37cf68c4308d085289e020942
+
+% 0 1 0 1b4b55dacbe12e4c1a06fb362a93be1c
+
+% 1 1 0 170c529c7ed32b311bfc5886493f3202
+
+% 3 1 0 0aa8c3e3544f4e0216e6431cfb300afc
+
+% 4 1 0 04fb203f77c965e4084050e021f69907
+
+% 5 1 0 046a37c7423b666114f4d665f66d4675
+
+% 0 1 0 1564a1fb046c84401ba945fb5f89a879
+
+% 1 1 0 0662079afa965a9c064d576303e134ec
+
+@ 0 5 0 07cf0679c6bd4695178db9ab64e7d409
++ Podanie tagów oczekiwanych na najwyższym poziomie czyni wynik precyzyjniejszym i kieruje
++ parserem. Odczyt jako `Html of "ul"` przyjmuje listę nieuporządkowaną i kończy się
++ niepowodzeniem dla czegokolwiek innego. Odczyt jako `Html of "ul" | "ol"` przyjmuje którąkolwiek
++ z nich. Obowiązują reguły specyfikacji dotyczące wnioskowania pominiętych tagów, więc odczyt
++ `<p>Hello world</p>` jako całego dokumentu uzupełnia brakujące `<html>` i `<body>`.
+
+@ 0 1 0 17243aa331a168ab0c1df98883a5670a
++ ### Pozycje w źródle
+
+@ 0 5 0 0d72c60115e6b5a50a665615ce8e5ebf
++ Zwykłe parsowanie nie zapisuje, gdzie w tekście znajdował się każdy element. Program, który
++ tego potrzebuje, na przykład by podkreślić błędny element w linterze, wprowadza do zasięgu
++ `parsing.trackPositions`. `load` zapisuje wtedy pozycje w zwracanym `Document[Html]`,
++ a `locate` rozwiązuje ścieżkę na wiersz i kolumnę elementu, który ona wskazuje:
+
+% 2 1 0 00eb9062c082af82116dafd694f2b5b9
+
+% 0 1 0 0486d8c05db7d50203b07ad1a55e9c35
+
+% 0 1 0 113f075173cbc6ec12e545618ca1f92a
+
+% 0 1 0 0b6b7135db46900a08aae652af43896d
+
+% 1 1 0 07eac300dcc989dd06f30050d52bca96
+
+% 3 1 0 1cde01d9d5c20da30635a0346adeb0e8
+
+% 4 1 0 060d005043e4aea816f6607ca4f2d817
+
+% 5 1 0 1c83b50971cc8aff0167d9baaa04c7f3
+
+% 0 1 0 06e9bbcc4cde3179120ea3567ecfdb7f
+
+% 0 1 0 1e06246bab099dbd1ad815762cd5d280
+
+% 1 1 0 1b269f26e55b16de0ddf3d95069af359
+
+@ 0 3 0 01af4446cc3a2fbe063327c8949d26b5
++ Ścieżka zaczyna się w korzeniu. Każdy krok wskazuje element-dziecko przez jego etykietę oraz,
++ dla drugiego i kolejnych dzieci z tą etykietą, przez jego pozycję, więc `element(t"p", 2)` to
++ drugi akapit. Końcowy krok `attribute` wskazuje jeden z atrybutów ostatniego elementu.
+
+@ 0 6 0 107bc7a3f5c8f5291206328130a9f885
++ Pozycja obejmuje cały element, od jego tagu otwierającego do końca tagu zamykającego.
++ Element, który parser uzupełnił sam, taki jak `<html>` wokół samego akapitu, zaczyna się
++ w tagu, który go wywołał. Ścieżka, której nie da się rozwiązać, daje `Unset`. Tak samo każde
++ wyszukiwanie w dokumencie wczytanym bez `parsing.trackPositions` w zasięgu, który niczego nie
++ zapisuje i nic nie kosztuje. [JSON](json.md#source-positions) śledzi pozycje w ten sam
++ sposób.
+
+@ 0 1 0 119580715a40be4600722be4a7b6c6c8
++ ### Serializacja
+
+@ 0 1 0 0125c5744fdfaa54164536c0dcf04cf8
++ `show` konwertuje wartość `Html` na tekst, co wystarcza w większości przypadków:
+
+% 2 1 0 1f5d6f0a48b200b801c5b862e9a0fd11
+
+% 3 1 0 0614554c59230425144571085ead9e0d
+
+% 4 1 0 1c15ceaa068cac271339030a7face2e6
+
+% 0 1 0 13b13d2f7b8d811e15f651f4f3929e9d
+
+% 1 1 0 0048ae78261c56f013cd9a8980b41f69
+
+@ 0 3 0 1f5417b60aa50ed9159e78404ddecef1
++ Dla dużego dokumentu lub dla wyjścia strumieniowego `Document[Html]` daje zamiast tego
++ [`Stream[Text]`](streams.md) w porcjach. Działa to współbieżnie, więc wymaga w zasięgu
++ kontekstu [współbieżności](concurrency.md):
+
+% 2 1 0 10851a16e443492f1867df3d64927f0f
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 19778cbfe8f8a5451162f62b713ddc60
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 166a8fe5bd16f2aa078072eac4b77133
+
+% 1 1 0 12be247aeb1dd4e90b19704b446e378e
+
+@ 0 1 0 132a513e0cddbc7201ea60d190a45aab
++ ### Dopasowanie do wzorca
+
+@ 0 4 0 112729f95f1c53ae105c91f09cdfb80d
++ Interpolator `h"…"` jest również wzorcem. Wzorzec literałowy dopasowuje równy węzeł,
++ niezależnie od tego, czy wartość jest tym węzłem, czy fragmentem, który zawiera tylko jego.
++ Jest sprawdzany jako prawdziwy HTML, względem struktury węzłów, a nie względem tekstu
++ źródłowego, więc wzorzec zapisany z tagami zamykającymi dopasowuje dane wejściowe zapisane
++ bez nich:
+
+% 2 1 0 19aec678f2eae9f90e0dbc405382070b
+
+% 0 1 0 1cecfa72fa0a5f8608061fb25e946ee5
+
+% 0 1 0 1bb78a31d9daf19817b7a47cd6df01e0
+
+% 0 1 0 0a3eec40b61251651282b925610dc57e
+
+% 0 1 0 1880a32e5f9291b91ba355c9f924d4d9
+
+% 0 1 0 1608317f82b82fd20b320b1c72d1b4ef
+
+% 1 1 0 190ee95bdc68c5520f73bcaac72679db
+
+@ 0 2 0 1a89e6f304db036711f3cbfa3ceb091e
++ Podstawienia wiążą fragmenty przechwytywane przez wzorzec. `<li>` może zawierać tekst lub
++ elementy, więc przechwycona treść sama jest `Html`, który z kolei się dopasowuje:
+
+% 2 1 0 1b13d739797bfa321bb624c3717d3a67
+
+% 0 1 0 1fdcd087544f909e02601e98dd9d0397
+
+% 0 1 0 0593dc869b815be216d9236714353e38
+
+% 0 1 0 172f87cce944777b051d88108ac96fc5
+
+% 0 1 0 1c1e82a1c957d94417ec8f58548464d0
+
+% 0 1 0 1a709fc423769fad1ce92db26e99b903
+
+% 0 1 0 14f4897a0ee51ae119a627398dda8d73
+
+% 1 1 0 0bc456e042e10f6b0959297180efc42e
+
+% 3 1 0 11ee1fbab1762ed5006a0fd80161b30c
+
+% 4 1 0 1145d4faea8c04d21d94cbb2a42c1ea0
+
+% 5 1 0 140a7026b34f9e3e02598f7b178c30ee
+
+% 0 1 0 0d6497e197c7c3810ed564ab6faf9591
+
+% 0 1 0 0c55c5c44d138dc7128a92cba792e9eb
+
+% 1 1 0 09aed6a911b96a631ab4ebbb91867d73
+
+@ 0 1 0 0a46b8f60de068bb01cbe32c33c08e34
++ Przechwytywać można także atrybuty, komentarze i elementy:
+
+% 2 1 0 170a14a179e29086026d9f4abe411e94
+
+@ 0 6 0 08c67dd43b15f4d51af7c96503ccd186
++ column  Wzorzec
++ column  Dopasowuje
++ row  `h"<li>$value</li>"`  `<li>`, wiążąc jego treść jako `Html`
++ row  `h"<img src=$source>"`  `<img>`, wiążąc wartość `src`
++ row  `h"<img $attributes>"`  `<img>`, wiążąc jego mapę atrybutów
++ row  `h"<$element>"`  dowolny element, ale żaden inny rodzaj węzła
+
+% 1 1 0 17124c5587f281a702c1f72f33c71e1b
+
+@ 0 2 0 1e4351c879c4abd4011b7eba38ff590c
++ [Interpolacja](interpolation.md#patterns) wyjaśnia, jak jeden literał służy zarówno jako
++ wyrażenie, jak i jako wzorzec.
+
+@ 0 1 0 15147fa2f6198547123a265fae385ae4
++ ### Precyzyjne typy
+
+@ 0 2 0 09d88c62ce421731183fd34380bb443b
++ Wartość HTML w czasie wykonania jest zgodna z `Html` i z jednym z jego podtypów. Jej typ
++ statyczny może powiedzieć znacznie więcej, dzięki trzem rafinacjom:
+
+% 2 1 0 11b92d6dc885cf531634dda727db2238
+
+@ 0 6 0 06224cf2ed8391bc11290f4b4402013a
++ column  Rafinacja
++ column  Zapisuje
++ column  Przykład
++ row  `of`  nazwę tagu lub unię nazw  `Html of "br"`, `Html of "ul" | "ol"`
++ row  `over`  to, co element może zawierać  `Html.Element of "ul" over "li"`
++ row  `in`  obowiązującą specyfikację  `Html in Whatwg`
+
+% 1 1 0 101095d17c825aed0bedfba1b28b97f0
+
+@ 0 1 0 187495883e2dad450fc85ca43da8967a
++ Modele treści ze specyfikacji to unie nazw tagów, gotowe do użycia:
+
+% 2 1 0 1839eec862a273941182bc1b7f08cff3
+
+@ 0 4 0 052b4f739ee68eb916d1fbc45408acfa
++ column  Model treści
++ column  Obejmuje na przykład
++ row  `Flow`  `div`, `p`, `ul`, `table` oraz całą treść frazową, nagłówkową i sekcyjną
++ row  `Phrasing`  `em`, `span`, `a`, `img`, `br` i tekst
+
+% 0 1 0 0f03454051a73d2f1bcdda96d9857693
+
+% 0 1 0 1247c10b1549941000222a1183b513ce
+
+@ 0 1 0 1ce2329ac2db395c11a47bb63f55377d
++ row  `Heading`  `h1` do `h6`, `hgroup`
+
+% 0 1 0 038b8e688d5373291486d6b37016feb4
+
+% 0 1 0 1402649d4c35b3c40a86afaba53d2c8f
+
+% 0 1 0 0e3002816907fa30024e57c4ee937147
+
+% 1 1 0 15a91300548b51ea0ddbf02e2ce70ddc
+
+@ 0 1 0 1313a39fd146c3df18051a2a0ec339ee
++ `Html of Flow` to dowolna treść przepływowa, czyli poziom precyzji, którego potrzebuje
++ większość kodu:
+
+% 2 1 0 08e4490cca37b4e007b066120d8fd886
+
+% 0 1 0 0801324eb43b4c5615daf393480510a8
+
+% 1 1 0 1caab93cf194383c0ab394a771fa54ff
+
+@ 0 3 0 104515adbe5b3549025b9fcd15024bd9
++ Rafinacje łączą się w typy tak dokładne jak
++ `Container of "em" | "i" | "b" over Phrasing in Whatwg`. Ta precyzja jest używana
++ wewnętrznie. Aplikacje rzadko potrzebują czegoś więcej niż `Html of Flow`.
+
+@ 0 1 0 12d0440e37bc52fe1436b2c62eac7d27
++ ### Całe strony
+
+@ 0 6 0 154ee559415d5e1a13b9e4ed8cc686d2
++ Kompletna strona to coś więcej niż drzewo tagów. Ma winietę, być może baner hero, nawigację,
++ panele boczne i metadane, które należą do `<head>`. Stronę składa się z części wielokrotnego
++ użytku. Jest to typ, który rozszerza `Archetype` i dostarcza swoją centralną treść
++ `content`. Każda funkcja jest traitem, który się domiesza, a każdy trait wnosi własne
++ znaczniki, własne style i własne metadane dla nagłówka, które składają się w kolejności
++ domieszania traitów:
+
+% 2 1 0 1935bb258d2e650e144741cd602f613f
+
+% 0 1 0 0cf45e6365c098ee022739cb1b7d7b52
+
+% 0 1 0 0a31c26fd41ed2e30331eb06d7cab46c
+
+% 0 1 0 02266e49c5a97429193c228809c73722
+
+% 0 1 0 0b637464a21c153e1f6ea0faf648c94c
+
+% 1 1 0 0e410d05131e2ed10c916984679b0981
+
+@ 0 4 0 1174bbe3db271ac0127ff9dd40c1e969
++ Złożona wartość to `Document[Html]`, z początkową deklaracją doctype i wbudowanym arkuszem
++ stylów zebranym ze wszystkich funkcji. Służy bezpośrednio jako odpowiedź `text/html`
++ [serwera HTTP](http-server.md#responses), więc handler może zwrócić stronę bez żadnego kodu
++ sklejającego HTML z serwerem. [Strony](pages.md) opisują te części w całości.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 7 0 1f84281ce2c262ef19bd19956766002f
++ - [CSS](css.md) zapisuje arkusze stylów używane przez strony i sprawdza nazwy klas.
++ - [DOM](dom.md) pracuje z żywym dokumentem w przeglądarce.
++ - [XML](xml.md) i [SVG](svg.md) używają tych samych rodzajów węzłów dla innych słowników.
++ - [Markdown](markdown.md) konwertuje prozę na HTML.
++ - [Formularze](forms.md) generują formularz HTML z klasy case.
++ - [Automatyzacja przeglądarki](web-automation.md) steruje przeglądarką na prawdziwych stronach.
++ - [E-mail](email.md), [znaczniki matematyczne](mathematical-markup.md), [podświetlanie składni](syntax-highlighting.md) i [błędy](errors.md) są przedstawiane jako HTML.

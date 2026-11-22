@@ -1,0 +1,1887 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1208af8d1653fba710318febdee5968f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 16a25bf9650735761297d2899bee08bd
++ info   基于线上协议的 JVM 调试器：启动或附加、断点、单步执行、检视和求值，协议以有类型的值表示
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 03ca70a277fa3e24014a9d3a9aed4621
++     _Vivisection_ 通过 Java 调试线协议（JDWP）从一个 JVM 调试另一个 JVM，该协议直接在套接字上传输，不依赖 `com.sun.jdi`。
++     **被调试程序**要么在 JDWP 代理下启动（`Debuggee`），要么附加到它已在监听的位置（`Debugger`）；二者的 `session` 都会把一个 `Debug` 能力借出给一个代码块，在该代码块中可以挂起和恢复程序、列出线程并获取其名称、按源代码行或按类和方法设置断点、对线程单步执行、读取帧及其变量，以及在已停止的程序中对表达式求值。
++     虚拟机自身的通知以有类型的 `Jdwp.Event` 的形式在流上到达，而不是作为回调。
+
+@ 0 7 0 0d9138b4b2288a2c15590c749b3f1b3f
++     底层的协议被建模为值。
++     虚拟机分发的每个标识符都是一个按其种类打上标签的 `Jdwp.Ref`——`ThreadId`、`FrameId`、`MethodId`、`ObjectId` 等等——因此一种标识符永远不能被传到需要另一种的位置，而它们在运行时都没有任何开销。
++     一次停止是一个 `Halt`：一个借出给断点或单步处理函数的能力，其有效期恰好是线程保持挂起的这段时间，而这也是它分发的标识符唯一有效的时间。
++     会话本身 `Debug` 由捕获检查限制在它的代码块中，因此在被调试程序消失之后无法再使用它。
+
+% 2 1 0 18ee6c832be6fc2505d2be7ad96ab0b7
+
+% 3 1 0 16d3db9ea2b624440a9b60631ae2a3f5
+
+% 4 1 0 1a98fb7677e396cc179e491517115cb5
+
+% 5 1 0 1edc55579330315c0976a5fe8e373720
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 1 1 0 0fbe9253a0d08ac81dab3c45e4a672d4
+
+% 2 1 0 1cafaad9ccdbde2900cda49735274454
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1b4b14ae61aa04f61efe9d9f0741bb63
+
+% 1 1 0 0b46b2f02960fa350b00b6491814ae1e
+
+% 0 1 0 1751ef10c3ab2999059ff82be6377232
+
+% 0 1 0 0a9a4238bc739b73177a5c269f2c9ebf
+
+% 1 1 0 0b5f4bd27d6f886d185f368bf9a6abdf
+
+@ 0 4 0 03cedb5131ec81ef1ef82335e41a2210
++     命令启动时，代理选项会插入到可执行文件之后；会话等待代理开始监听，然后附加，并在代码块结束时——无论是返回还是失败——拆除一切：关闭套接字，杀死进程。
++     `debug` 访问器从上下文中指明借出的会话，就像 `monitor` 对监督作用域所做的那样。
+
+@ 0 7 0 014b765464b550a816125ed99067d1d0
++     断点接受一个*处理函数*，它在会话的分发器任务上运行，并为这次停止借出一个 `Halt`；处理函数返回时线程恢复执行，除非处理函数调用了 `remain()`。
++     变量以程序员编写时的形式恢复——捕获的值从其合成字段中还原展开，`var` 从其引用单元中拆箱，惰性 val 会被读取但绝不会被强制求值——而单步执行是*逻辑*的：对包含内联调用的行进行单步跳过会越过整行，对其单步进入则停在内联主体的第一行，而桥接方法、转发器、访问器和 JDK 自己的帧永远不会显示。
+
+@ 0 1 0 048a70211e65e7bf0f21d31d1ccc758f
++     这个库由三个组件构成，每个都导出到 `soundness` 总括包：
+
+@ 0 11 0 1385fc6c724cbf5f1b8242984a535108
++     - `vivisection.core`——`Debuggee`、`Debugger`、`Debug`、`Halt`、`Variable`、`Breakpoint`、`SourceBreakpoint`、各标识符别名以及 `Jdwp` 协议模型。仅限 JVM：它通过 TCP 调试 JVM，并通过 guillotine 启动它们。
++     - `vivisection.eval`——`Evaluator`、`Purview`、`Namer` 以及 `Halt` 上的 `evaluator` 扩展，它们在当前 JVM 中针对被调试程序的类路径编译表达式，通过线路注入类文件，并在被调试程序中运行它们。之所以不放在 `core` 中，是为了让只检视变量的调用者不依赖 Scala 编译器。
++     - `vivisection.dap`——`Dap`，即调试适配器协议（Debug Adapter Protocol）适配器：`Dap.listen` 在标准流上通过以 `Content-Length` 分帧的 JSON 向编辑器提供会话，`Dap` 对象保存该协议的消息类型。`demo` 组件的 `DapServer` 是一个可运行的主类，可以让编辑器指向它。
+
+@ 0 3 0 11f3996c0124a7eb05744fc05432a4e6
++     有一个名称刻意*没有*导出：`Variable`，因为 ambience 已经向 `soundness` 发布了一个 `Variable`（环境变量）。
++     调试器变量要通过 `vivisection.Variable` 访问，或者用 `import soundness.{Variable as _, *}` 排除另一个。
+
+@ 0 5 0 0c1e603dac731ad90967c5ea6130fcf9
++     会话需要一个 `Monitor`（它以任务形式运行其写入器、读取器和分发器，因此要位于 `supervise` 之内）、一个 `Probate`、一个 `Tactic[Debugger.Error]`、`Diagnostics`，以及示例中所示的套接字和日志 given。
++     启动还额外需要一个 `Online`、一个 `Socket.Backend`、一个 `WorkingDirectory` 和一个用于派生进程的 `Environment`。
++     这些都不是本库的选择包；它们按名称从各自所属的选择包中导入。
+
+@ 0 5 0 19fe3dc775afab781ab1d1f7119a84e1
++     当被调试程序是测试运行器之类的宿主下程序自身的类时，应从其中某个类的类加载器获取类路径（`LocalClasspath.of(Classloader[Main.type])`），而不是使用 `java.class.path` 属性，后者指向的是宿主的 jar：在错误类路径上启动的被调试程序永远不会加载断点所等待的类，会话也就会永远等待下去。
+
+% 0 1 0 0fecfefbc5ff04441648d405f8a7fba3
+
+% 0 1 0 0fecfefbc5ff04511648d405f8a7fbb0
+
+% 0 1 0 0972e146988c84350c64b4112cc76920
+
+% 0 1 0 11dd35f4baab5cdc1a3833b18fbd1989
+
+% 0 1 0 07ba936ed83204700e5670176904a7c5
+
+% 0 1 0 0093caddff0bf2cd19016772ebce406a
+
+% 0 1 0 0f55dbfd70e43ab61f18c9bdd4ed8ca8
+
+% 0 1 0 06c83f4240dc472d0d157943cd60b1be
+
+@ 0 1 0 0e8c5b74e4b436ce03c3fad74776e62a
++ entry .Debuggee   在 JDWP 代理下启动并调试的 JVM：一条命令、一个端口，以及启动时是否挂起
+
+% 1 1 0 162d99b4c22e679712284bc74c015d01
+
+@ 0 6 0 1da5e610836c64d4113ef40525f8571c
++       `Debuggee` 描述一个要在调试代理下运行的程序。
++       `target.session { … }` 会派生 `command` 进程，并把 `-agentlib:jdwp=transport=dt_socket,server=y,…` 插入到可执行文件之后，从派生那一刻起排空子进程的标准输出和标准错误（因此一个输出很多的被调试程序永远不会因管道已满而阻塞），等待代理开始监听，然后附加，协商标识符大小，并为代码块借出一个 `Debug`。
++       代码块结束时，进程被杀死，等待其排空任务和退出监视器完成，并关闭套接字。
+
+% 2 1 0 109fae1f7bfac22303be992918063985
+
+% 3 1 0 05847a7a5c6cc65c1c3cb4c33183deb9
+
+% 4 1 0 02d8aba0a48b03ab1fc8c8643cfeee56
+
+% 5 1 0 1089cb043b46ebf0037bda05b275e3a9
+
+% 6 1 0 069465d499013d9812f5d33e71f57547
+
+% 2 1 0 1067f61db35bb58d023062b12928726b
+
+% 3 1 0 0b305d6df39e3b931ecde271fdfeaf0f
+
+% 4 1 0 053770587ea8af461c84bd18acdc91c0
+
+% 5 1 0 191c6e187af146961558d8d472a9cfba
+
+% 6 1 0 1ca259ec62b40c291b5f0d0b5fd053c4
+
+% 7 1 0 1305abf98ccb585506f91acffe5ced36
+
+% 8 1 0 0ebd6c299db3b3080087f02ec5a836d5
+
+% 9 1 0 06e3b83aac81b3990be06bc3ae715f91
+
+% 10 1 0 0c9cb8c9987e86111d61dacb279c2323
+
+% 0 1 0 1052afb3ae0108f914ef2a28bc4cf3e4
+
+% 0 1 0 10a72703e9b5d9c11b8d78197647afc6
+
+% 0 1 0 041a94a571339c780ccae5702968c599
+
+% 1 1 0 09e3cb4af194aa110c7b5a1be1cc41c0
+
+@ 0 7 0 12815ca43b723c77165d899ffd3399a7
++       `port` 是代理监听的 TCP 端口，默认为 `5005`。
++       `port` 为 `0` 时，代理会自行绑定一个空闲端口，会话在附加之前从被调试程序标准输出上代理打印的 `Listening for transport dt_socket at address: N` 行中读取它，因此其间没有其他进程能占用该端口；DAP 适配器的 `launch` 正是这样做的。
++       `suspended`（默认为 `true`）使虚拟机在运行 `main` 之前等待，这是初始化中的断点——或任何在程序运行之前设置的断点——所需要的：先设置断点，再调用 `debug.resume()`。
+
+@ 0 4 0 1b9125aa5a0e99dc0d054fce503b50e4
++       启动失败时降级为一个原因为 `Disconnected` 的 `Debugger.Error`，其细节为 _could not launch_、_the port was invalid_ 或 _never listened_（在代理大约十秒没有应答之后）。
++       启动的会话在 `debug.console` 处有一个 `Debug.Console`，覆盖子进程的输出和退出状态；附加的会话则没有。
+
+% 1 1 0 1dfaa010a4554a660cff583f08a79534
+
+% 1 1 0 1e049d6610a695ff0801ec46bb9b0987
+
+@ 0 4 0 0a777a827bfbf18c1d4e311a12d9442a
++   entry #command   要启动的命令，不含代理选项，代理选项在启动时插入
++   entry #port   代理监听的 TCP 端口，或为 `0` 以让代理选择一个空闲端口
++   entry #suspended   虚拟机是否在启动时等待，直到会话恢复它；默认为 `true`
++   entry .Sessional   启动被调试程序并借出 `Debug` 的 `aperture.Sessional`
+
+% 1 1 0 00891f2bdbd6c469103f914780bcd89c
+
+@ 0 14 0 1df5e54ec904e5e20044e99e10cadf65
++         `debuggee.session { … }` 背后的实例，以 `Debuggee` 作为 `Self`，以 `Debug^` 作为 `Result`。
++         它在构造时接受其上下文值——`Online`、`Monitor`、`Probate`、`Socket.Backend`、`Every[Socket.Option.Tcp]`、`Tactic[Async.Error]`、`WorkingDirectory`、`Environment`、`Socket.Event` 和 `Exec.Event` 的日志记录器、`Tactic[Debugger.Error]` 以及 `Diagnostics`——而 `.sessional` 从作用域中构建一个这样的实例。
++         进程使用给定的 `Environment` 启动：在工具中是调用自身的环境，或者用 `environments.javaBaseEnvironment` 表示 JVM 的环境。
++     entry #session   派生被调试程序，附加，并在借出 `Debug` 的情况下运行代码块
++         把启动失败（`Exec.Error`）、错误的端口（`Port.Error`）或套接字失败转换为原因为 `Disconnected` 的 `Debugger.Error`。
++         被调试程序在 `finally` 中被杀死，因此它永远不会比代码块存活得更久。
++   entry .sessional   根据作用域中的启动 given，使 `debuggee.session { … }` 得以解析的 given
++       位于伴生对象中，因此无需导入就能找到；它要求调用处的作用域中具有与 `Debuggee.Sessional` 相同的上下文值。
+
+@ 0 1 0 0188aa91cbd7a31300f623067b4e7f4b
++ entry .Debugger   附加目标：一个已在监听 JDWP 连接的 JVM，由其端点指定
+
+% 1 1 0 0576e7f525292e1e1be3d58c17555634
+
+@ 0 6 0 1af09ebce63f9ef505bb5a8b68ee0f87
++       `Debugger(endpoint)` 包装任何 `Connectable` 且 `Showable` 的东西——通常是一个 `Endpoint[Tcp.Port]`——而 `target.session { … }` 会连接它，交换握手，协商标识符大小，为代码块借出一个 `Debug`，之后关闭连接。
++       虚拟机必须已经在监听（以 `-agentlib:jdwp=…,server=y` 启动），而它的标准流归启动它的人所有：附加会话没有 `Debug.Console`。
+
+% 2 1 0 0473a8d3f73b3ccf08c3ac375a649e28
+
+% 3 1 0 0a7b81da9f6b5a92086abb140d4922f9
+
+% 4 1 0 183e46cc3693efca068685ed02a141cc
+
+% 5 1 0 04de5859f3d1a2fb077afc6270fd4456
+
+% 6 1 0 118165b582bfc47d0dcb30fd60b61a8b
+
+% 2 1 0 17c5373d90e1ef6d12426e4b49a02249
+
+% 3 1 0 12917919fb3a49fb126ae866c357789e
+
+% 4 1 0 064a823c199d89e01e0bb3c906608f9d
+
+% 5 1 0 1f4a224b96153021070ffb92059ffaf0
+
+% 5 1 0 05c7f09332902fb316df27541139b7b7
+
+% 1 1 0 1e472e31fe8a76a30e4e5324804b21c8
+
+% 0 1 0 17320cbc9fa058661e62e8e357ec6dc1
+
+% 0 1 0 1e9001ec6793c0811961c235c7046d0e
+
+% 0 1 0 062fb192923ac4eb10e5f58d7ff86f17
+
+% 1 1 0 03411cafa325d8881502a43f2926dd6b
+
+@ 0 2 0 15add8189904861505b5228fb2a428f7
++       伴生对象还保存着 `Debugger.Error`，即每个会话操作都会抛出的唯一错误类型。
+
+% 1 1 0 12fa11f2b9b936871ecb8a1f28824c3c
+
+% 1 1 0 098cc3a9f3910e6e1d9f3282bb9f868e
+
+@ 0 3 0 04cbd9b52cc4936d186e79aec9965d49
++   entry #endpoint   会话所拨号连接的可连接端点
++   entry .apply   `Debugger(endpoint)`：基于任意 `Connectable` 端点的附加目标
++   entry .Sessional   附加到端点并借出 `Debug` 的 `aperture.Sessional`
+
+% 1 1 0 16d837536dcac1cd112b9a17968161fb
+
+@ 0 8 0 078ea1f1c094243504ce00ba751c8c05
++         对端点类型泛型，套接字的 `Connectable` 通过上下文界定在调用处解析。
++         它接受一个 `Monitor`、一个 `Probate`、一个 `Tactic[Async.Error]`、一个 `Tactic[Socket.Error]`（在无法建立连接时抛出）、一个 `Socket.Event is Loggable`、一个 `Tactic[Debugger.Error]` 以及 `Diagnostics`。
++     entry #session   拨号连接端点，完成握手，并在借出 `Debug` 的情况下运行代码块
++   entry .sessional   对任何可连接端点，使 `debugger.session { … }` 得以解析的 given
++       位于伴生对象中；要求调用处具有与 `Debugger.Sessional` 相同的上下文值。
++   entry .Error   在 JDWP 命令失败、连接丢失或启动未能成功时抛出
+
+% 1 1 0 0a8281b42a256c6808a06319de19a276
+
+@ 0 5 0 1928a4d54ac2d59315aea21058e70b08
++         错误 `↯/s.145.1`，以原因自身的 JDWP 错误编号作为子编号：_the JDWP action failed because `reason`: `detail`_。
++         `Debug`、`Halt` 和 `Jdwp.Connection` 上的每个操作都接受一个 `Tactic[Debugger.Error]`；回复中虚拟机的错误码被解码为一个 `Debugger.Error.Reason`，并以命令的命令集和编号作为细节抛出，而连接丢失会使每个进行中的请求以 `Disconnected` 失败。
+
+% 2 1 0 16ee6756ea4a5b560fc92221c0605941
+
+% 3 1 0 1b5e80cdc9538ae118f3f805e739c806
+
+% 0 1 0 1c9ab88d291079d017c7329619ebfa20
+
+% 0 1 0 1a617cecc5b2dd6d050c1e165171b5be
+
+% 0 1 0 0dfebc7fd686f7f316072e5b83f534c1
+
+% 0 1 0 0daa2d6153638715156fbf75db475323
+
+% 1 1 0 030f505915ad8f4a11ef641d18614cd4
+
+@ 0 6 0 1814ce1eb32ceee4144a506230c590cb
++         处理函数在分发器任务上运行，它被借出的 `Halt` 携带着分发器提供的战术，因此处理函数不需要自己的错误能力；处理函数内部的失败会被分发器吞掉，而不会传播到会话的线程。
++     entry #reason   操作失败的原因，以 `Debugger.Error.Reason` 表示
++     entry #detail   哪个命令或步骤失败，以文本表示
++     entry .Reason   JDWP 错误码，使用其公开名称，外加 `Disconnected` 和 `Other`
+
+% 1 1 0 0c2702248205a6ed09856054f72be33e
+
+@ 0 1 0 0da8fb258b1c37501107eb5270884f3f
++           每个分支都以其 JDWP 错误码作为 `number`：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  错误码
++           column  消息
++           column  说明
+
+% 0 1 0 05c659bc8ed76ea11c0a0ccb0b523b54
+
+% 0 1 0 0aa190b130307ab51d086f8046902bd6
+
+% 0 1 0 052399e6a7458a3e0bad64e20b47e3a7
+
+% 0 1 0 045baddb2583f16611d8e92d92a80ccd
+
+% 0 1 0 1910bafdfc06954c0c9cbb1d603b3082
+
+% 0 1 0 0ea24784c681df7b08d8126a783f1b40
+
+% 0 1 0 1d4a4d3f365c5e1f0ad30f80d022e1cc
+
+% 0 1 0 07e4e234f773a5601053f0e2f25bb225
+
+% 0 1 0 0e86ed0c794aa6d80063333c622e7968
+
+% 0 1 0 0d413862c36163cd10c0f7ef68fdf39c
+
+% 0 1 0 15a5f55a73b8780c0578ba2f61f4d883
+
+% 0 1 0 1f103fa36caa6bf111974db7f057c063
+
+% 0 1 0 0688a1f169872bc805c9f8430ca4e10c
+
+% 0 1 0 055772e85c334d901b9c27a3d0325d3b
+
+% 0 1 0 05703c7daa5892700feb87903cea60b6
+
+% 0 1 0 131afb09e5d18f9316155ee04de81b10
+
+% 0 1 0 19ab74c7f433c2871811d84980191c9f
+
+% 0 1 0 131fbf46ab4cde680d58229a53215f66
+
+% 0 1 0 0c3f72f9a43b284d1c8ed8e0694e35e5
+
+% 0 1 0 0b825d9ea2ae01890fa6cb2e935a6563
+
+% 0 1 0 0f5cadd7c4ef51491720a9c4e85c8c1f
+
+% 0 1 0 083b45052b12f7421581cdae82f4c774
+
+% 0 1 0 19211bc5be8c8e1a068cc094181fbb7a
+
+% 0 1 0 0823a874db1d918602b131d240f7c2e6
+
+@ 0 2 0 09be21c6cec3a5ae0f46477711f94443
++           row  `Disconnected`  −1  _the connection to the debuggee was lost_  由本库而非虚拟机抛出：连接丢失，或启动始终未能成功
++           row  `Other(code)`  `code`  _the VM reported error code `code`_  虚拟机发送的、此处未命名的任何编号，因此解码永远不会丢失它
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 3 0 1e8118067dc00f2a13a8fefd44c48eea
++       entry #number   JDWP 错误码，`Disconnected` 则为 −1
++       entry .apply   `Reason(code)`：某个 JDWP 错误码对应的原因，无法识别的错误码则为 `Other(code)`
++     entry .communicable   把每个原因渲染为一条消息，例如 _the thread was not suspended_
+
+@ 0 1 0 0d64ebc27f6dbee01e2e99c16c55493c
++ entry .Debug   一个活动的调试会话：在 `target.session { … }` 内借出的能力
+
+% 1 1 0 1aa142b66b71f9c50a5e3447d123bbca
+
+@ 0 5 0 11a2eba282e749551a52dd63f07615ac
++       `Debug` 是 `Jdwp.Connection` 之上面向程序员的接口：它列出、命名、挂起和恢复线程，读取线程的帧，设置断点和观察点，请求单步执行，并把虚拟机的事件以流的形式公开。
++       它是一个 `ExclusiveCapability`，借出给会话代码块，并由捕获检查限制在那里；它通过 `debug` 访问器从上下文中获得，而不是通过名称引用。
+
+@ 0 5 0 0a51220ade9639780ed767d4383f2e45
++       每个操作都接受一个 `Tactic[Debugger.Error]`。
++       会话以任务形式运行其读取器、写入器和分发器，因此它位于 `supervise` 之内；交给断点、单步执行、异常请求或观察点的处理函数在分发器任务上运行，并为这次停止借出一个 `Halt`，处理函数返回时已停止的线程会恢复执行，除非处理函数调用了 `remain()`。
+
+% 2 1 0 1ed3b7ca5ae1811c1e0d05d62f3298ab
+
+% 3 1 0 1570ddb46eb6c3201af9aee13c668eb9
+
+% 4 1 0 11eb3298e3e96f8009c57eaebad4d0ea
+
+% 5 1 0 1a2b7a32fb75ca7800a0ee0a6b2f42f3
+
+% 1 1 0 0792e2becc00c8d8135b3caf6fa88a66
+
+% 2 1 0 0da9bda61419ff7b06109c5e15352f9e
+
+% 3 1 0 177d77055d27262216e9413ec60a0789
+
+% 4 1 0 1ec64da0371892e0090333c58629741f
+
+% 5 1 0 05e98ebe469159c21ae0863a4fdb93b2
+
+% 6 1 0 04b70009cef4770111fbaca33562dc3b
+
+% 7 1 0 10b5f405c9137235108555cc84b82a53
+
+% 8 1 0 10d518d928b6e3a60fc4c4759f20bc28
+
+% 9 1 0 17590f21e85c5ce01d9f122cf3904495
+
+% 10 1 0 1d6e3534d95507d60ba875d36e4be029
+
+% 0 1 0 03cbaee80e82a6871cc5bdcb88e2cec6
+
+% 1 1 0 1f0993cb302c5deb08fe676804ce11bd
+
+% 1 1 0 183a2dfadc16599716675085861c0eb9
+
+@ 0 1 0 15ada5ee05680e3517b9dbac6079e6a2
++       一个会话，一次观察一个阶段：
+
+% 2 1 0 0e70d792b2de035513d4741a0ae0802c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 179b57f1be0278701f56b59f3e81a96e
++         label 启动被调试程序，在启动时挂起
+
+% 1 1 0 188ac122cec7b0c1180b21f6cdf941ee
+
+% 2 1 0 097cd2e95db0d0b80f1311b45ec2471f
+
+% 3 1 0 19eb5902f625678502bd67f64cc2f903
+
+% 0 1 0 1654ffd881d68ce603c49981747fd781
+
+% 1 1 0 082d8465f876af8e16cb0f141efca915
+
+@ 0 1 0 01f8ef3447ab663209e0667010037786
++         label 在类加载之前就按源代码行设置断点
+
+% 1 1 0 06726c9746f6465e1e3f11f4202a6e65
+
+% 2 1 0 0d467d23e220d9c51aa872cf1236fb91
+
+% 3 1 0 1fb4674edd16ffb0132cb8464a0aaf44
+
+% 4 1 0 1f4e9b5c59e656ae11c234fc0e73d6ca
+
+% 6 1 0 0ffe45416849790f1dd5fb78d18d5379
+
+% 7 1 0 038d9e1fc0441cd0136c5656eaca15f8
+
+% 8 1 0 01ee108800c3de3f095aa734ec12a9af
+
+% 1 1 0 16cd245a9cbe59800ee21a99f531f136
+
+@ 0 1 0 197da4f81a21c7921fc45c7f01aedb6a
++         label 恢复执行，并等待命中
+
+% 1 1 0 12c29026bd799b1a1644c8396331b65e
+
+% 2 1 0 196b6d145f6034cb1ed0f5de51df300b
+
+% 3 1 0 0522d71665f1c8530f9447eb5b3e6ca3
+
+% 4 1 0 0d9b1cc56becaad301bc7af30326c66d
+
+% 6 1 0 11d39740ac5c10141a6e4f3627fb66b5
+
+% 7 1 0 03edb36a7437842d17afef43467f7c09
+
+% 8 1 0 1f8b9a18c46b03bf0c20bca2b25e8d46
+
+% 3 1 0 152740a0d2127287044b1c358d7b73d3
+
+% 4 1 0 14210863a597e5880c3ccb2110e7b44b
+
+% 1 1 0 017db791587655910d8b1e6bc270db57
+
+@ 0 1 0 0afa48da5666c2dd03c02bb097bdf910
++         label 在处理函数内读取已停止帧的变量
+
+% 1 1 0 0080aea2ffb73e640378c5f0bf121808
+
+% 2 1 0 08b75f3c9580fbe81995580e88ce59db
+
+% 3 1 0 01a8a08c2b844e10084dbfae9490e278
+
+% 4 1 0 049458831ff5a7a914491266e6bec333
+
+% 5 1 0 1a19c639fa4318c608e0499995b315d7
+
+% 2 1 0 15ddd27b995bad5702061d85c660dde7
+
+% 3 1 0 135939de9697fb880ca273d815042de6
+
+% 4 1 0 003125564beb1cb809fcdca194b803e6
+
+% 5 1 0 1dd00f18f753449602bb1b6fdb131876
+
+% 7 1 0 06ebdb0e81a361a2182b53b38bb15fd9
+
+% 8 1 0 1860e4a4df4ff57b0c0c0a363f2aabb5
+
+% 0 1 0 15a786f4b6483030194445efe8846c2c
+
+% 1 1 0 0e5675d2d3bec1e90199401cc05e8732
+
+@ 0 1 0 1bfe3449dc8d391d1d3fce8b60667161
++         label 单步跳过该行，查看线程落在哪里
+
+% 1 1 0 0fdfe5a23bcb18dc07b98de45833d526
+
+% 2 1 0 0b55fffd83ae661d1d30e6dfc07ad718
+
+% 3 1 0 1ebea7738ef71c32047988eead43c4cc
+
+% 4 1 0 13a45876d6a326cb0e44fc6b15d7c743
+
+% 5 1 0 00aa4ac28c90d89b1e43e2181ae25ab5
+
+% 0 1 0 1860a3db571e1a101da2ca994ac27cdc
+
+% 2 1 0 0084c46a0acf52b213978bb8ac75de25
+
+% 3 1 0 199a017663f623cd0be833c491642767
+
+% 4 1 0 00bb5837649965511fa1330e07078c3e
+
+% 5 1 0 01124414d7d2ff0e0a470131e80b2b7e
+
+% 7 1 0 0c4cea3c230586121f1ec2d89153b75f
+
+% 8 1 0 16f3eee7eb47c1a0036767450562422d
+
+% 0 1 0 15e2335d4af8c3820f48f593a11af6c6
+
+% 0 1 0 19c69243ae39721507c96759eb3344f0
+
+% 0 1 0 1d2a7a56c459f4bc1cf8f2752234f1dc
+
+% 0 1 0 095beb4f1988653b027b3ae1a4e3c4e6
+
+% 2 1 0 142e1d89c8b594bc1d7d78e11a2ff994
+
+% 0 1 0 0718f214f684e027160041e62d580375
+
+% 1 1 0 133fda4674fee4ef13cf820894ff8f0f
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 001112f5db84dfa2161e13a9d2548320
++       虚拟机对每组*复合*事件挂起一次，分发器在该复合事件的所有处理函数都运行完毕之后，按复合事件的挂起方针恰好恢复一次——除非有处理函数要求 `remain()`，或者没有处理函数认领其中任何事件，这时复合事件会被交给 `#events`，由其消费者负责恢复。
++       被 `remain()` 保持的线程用 `#resume` 释放。
+
+% 1 1 0 035b7c6de75713e405d8729c03a337a5
+
+% 1 1 0 136f8e38fc167ab410f24a0e9926ca1e
+
+% 1 1 0 1b29ce47d25d949215df6dc811d47c4e
+
+% 0 1 0 1a8faabb333bd1a406eb56e00db6d594
+
+@ 0 26 0 1e54ec4eb661ec441c4c34dc155722cf
++   entry #console   启动的被调试程序的输出和退出状态，附加的则为 `Unset`
++       `Debug.Console` 只存在于 `Debuggee` 会话中：附加的虚拟机的流属于启动它的人。
++   entry #capabilities   虚拟机宣告的能力，只获取一次并缓存
++       `VirtualMachine.CapabilitiesNew`，以 `Jdwp.Capabilities` 表示。
++       前端在宣告自己支持什么时会转发其中的若干标志，而会话本身会查看 `canUseSourceNameFilters`、`canPopFrames`、`canWatchFieldAccess`、`canWatchFieldModification`、`canGetBytecodes` 和 `canGetConstantPool`。
++   entry #version   虚拟机的版本，以 `Jdwp.Version` 表示
++   entry #threads   虚拟机中的每个线程，以 `ThreadId` 表示
++   entry #suspend   挂起每个线程，或用 `suspend(thread)` 挂起一个线程
++       JDWP 会对挂起计数：被挂起两次的线程需要恢复两次。
++       会话自身的停止由分发器处理；`suspend` 用于调用者自己的暂停。
++   entry #resume   恢复每个线程，或用 `resume(thread)` 恢复一个线程
++       在处理函数调用了 `remain()` 之后，正是它让程序继续运行；DAP 适配器的 `continue` 就是 `debug.resume()`。
++   entry #name   线程的名称，按虚拟机报告的那样
++   entry #frames   线程的调用栈，最内层在前，以 `(FrameId, Jdwp.Location)` 对表示
++       线程必须处于挂起状态：正在运行的线程的帧会得到 `InvalidThread` 或 `ThreadNotSuspended`。
++       帧标识符只在线程恢复之前有效。
++   entry #events   没有已注册处理函数认领的复合事件流
++       处理函数之下的原语：虚拟机发送的、没有被任何断点、单步、异常、观察或准备处理函数认领的每个 `Jdwp.Event.Composite`。
++       调用者排空它并作出反应，或等待某个特定事件，并负责复合事件的挂起方针所要求的任何恢复。
++       读取会在事件到达时消费它们，连接关闭时流结束。
+
+% 2 1 0 00843b55bfe8a9f60c2a682900d7d0a0
+
+% 3 1 0 1485c42922e810b000dfffcc2d3077ac
+
+% 4 1 0 17d0be26f7e929160c164b756e8e0e35
+
+% 5 1 0 0484d6a8e0dbeea214527277073d514e
+
+% 0 1 0 1ce1f3e2b7b180ad0095781cd45d5a03
+
+% 0 1 0 19adaa86ca8de5541faded89caf24404
+
+% 0 1 0 05a2b92ebf72b5510d08afcff7ef750c
+
+% 0 1 0 1bf186cdbb90ec0f02f9c316a8861718
+
+% 0 1 0 08a86fc7d8f2fc2212482f8d5acd70e6
+
+% 0 1 0 0c9f483dd66bcc0713af0bb2cc58aecc
+
+% 1 1 0 14ea63b5430814c81c562c5d5e239857
+
+@ 0 1 0 1ea3172b6491712f072e2d3e95fc3056
++   entry #breakpoint   设置断点：按已解析的位置、按源文件和行，或按类和方法
+
+% 1 1 0 084e6b8a46eb971d1119d13291583a11
+
+@ 0 1 0 1b775a85cd34f7c813d0236651d07976
++         有四种形式，每种都返回用于撤销断点的东西——一个请求 ID 或一个句柄：
+
+@ 0 20 0 0cc2d0434f0c5fc00878da987d41a7c1
++         - `breakpoint(location, policy)` 以一个 `Jdwp.SuspendPolicy`（默认为 `All`）在某个 `Jdwp.Location` 处设置原始断点，并返回请求 ID，供 `Debug#clear` 使用。每次命中都作为 `Jdwp.Event.Breakpoint` 到达 `Debug#events`，按方针所说的方式挂起，由调用者恢复。
++         - `breakpoint(location)(handler)` 在已解析的位置设置一个断点，其每次命中都在分发器上运行 `handler`，返回一个 `Breakpoint`。
++         - `breakpoint(source, line)(handler)` 和 `breakpoint(source, line, bound)(handler)` 按源文件名和行设置断点：它立即在该位置能够解析到的每个已加载类中绑定，之后在每个匹配的类被准备时绑定，因此可以在类加载之前设置——这正是前端使用的启动顺序。在准备时绑定发生在加载线程保持挂起期间，严格早于执行到达该行，并且该位置的内联副本会通过类的 SMAP 找到，因此内联代码上的断点会在代码编写之处命中。`bound` 在每次成功绑定时被调用，前端正是借此得知一个未验证的断点已经成为真实断点。返回一个 `SourceBreakpoint`。
++         - `breakpoint(className, method)(handler)` 及其 `bound` 形式在指定*运行时*类（`object` 的方法位于其带 `$` 后缀的类上）上该名称的每个方法的入口处设置断点，包括所有重载，并像源代码形式一样立即绑定或在准备时绑定。没有可执行行信息的方法（抽象方法、本地方法）会被跳过。
+
+% 2 1 0 10e5ec3ec38b79680a861657baa5b9e9
+
+% 3 1 0 05287035ed67cacc1b404fbcce72cff3
+
+% 4 1 0 175308d4353c69cd081107e638b1914f
+
+% 0 1 0 0ac37b378433a90203af993d54e568d2
+
+% 0 1 0 0a5c89d53738561617240b02c0afcd56
+
+% 0 1 0 1a81ea39136d39e71aeaee0524e75ea1
+
+% 0 1 0 182dfc8d90e09b050758b5f25a0741d4
+
+% 0 1 0 0efb467349273cc01c16fd8e78fa2d3a
+
+% 0 1 0 1e8bdc927a7960b71c24fe6e9ff4fdc1
+
+% 0 1 0 1bf78b68a2ed52e40da3eb3a71497dd0
+
+% 0 1 0 1e46862a3884efad09e7756788ef2274
+
+% 1 1 0 0d500954607d1c26042e854fc10df368
+
+@ 0 11 0 0b897e04504a5a2d042097f7a6c7d10d
++         条件断点只不过是一个测试其条件、否则什么也不做的处理函数。
++         处理函数在线程以 `All` 方针挂起的情况下运行，之后分发器会恢复执行，除非处理函数调用了 `remain()`。
++   entry #classPrepare   请求在匹配某个模式的类被准备时得到通知
++       为 JDWP 类匹配 `pattern`（一个精确名称，或以单个 `*` 为边界的名称）设置一个 `ClassPrepare` 请求，返回其请求 ID。
++       每次匹配都作为 `Jdwp.Event.ClassPrepared` 到达 `Debug#events`，并挂起加载线程，因此调用者可以在会话开始时尚未加载的类中解析断点——要针对报告的类型使用 `Debug#locateIn`，绝不能用 `Debug#locate`，因为对整个虚拟机的扫描可能会与被挂起线程持有的锁发生死锁。
++   entry #step   请求在挂起的线程上单步执行：带处理函数的逻辑单步，或原始单步
+
+% 1 1 0 1d6c2cbc5b990ad80d1e44fdb71e9e70
+
+@ 0 5 0 032dc7901e7820f314fac2394f2a3d27
++         `step(thread, depth)(handler)` 请求一次*逻辑*单步，其完成时会在分发器上运行 `handler`，与断点命中完全相同，并且只挂起被单步执行的线程。
++         请求单步时线程必须处于挂起状态——通常是刚刚借出给处理函数、并用 `remain()` 保持的线程——而该请求在随后的恢复中被用掉：
+
+% 2 1 0 06e0de3111bee6de1a05718b356c51a7
+
+% 3 1 0 100a0970fc5b84660df48e87af38ef5c
+
+% 4 1 0 1ac8d4ebd6ebb3cc17d215a412574a37
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 0 1 0 13b629b8c93b9b2c1b26e9840188931e
+
+% 0 1 0 1cedb41ab95fb7281b59336dc51e89ce
+
+% 0 1 0 0dfc5bdc882257740be4f8e945e0759e
+
+% 0 1 0 0708182b1b3e6aaf0fe0322342fc5dce
+
+% 1 1 0 1213a187eb8271b61625aff4fd0b9c1e
+
+@ 0 11 0 1d3d206d0787275016dbb2b0b8e7ee6d
++         逻辑单步在*源代码位置*发生变化时完成，源代码位置通过类的 SMAP 读取：对包含内联调用的行单步跳过时，会越过整行，连同内联主体一起，而字节码层面则会下降到内联主体中；单步进入内联调用时会停在内联主体的第一行，就像它是一次调用一样；而落在辅助性代码中——桥接方法、混入或静态转发器、字段或惰性 val 访问器、除 lambda 主体之外的合成方法，或 `java.*`、`javax.*`、`jdk.*`、`sun.*`、`com.sun.*` 或 `scala.runtime.*` 下的任何类——的情形永远不会显示：对于 `Into`，单步执行继续向内，否则向外，直到停在程序员编写的代码中。
++         访问器和转发器不带任何标志，因此要通过其字节码形状识别，这需要虚拟机的 `canGetBytecodes` 和 `canGetConstantPool`。
++         SMAP 无法读取的落点，或者 64 次迭代的安全上限，会按原样报告这次停止。
+
+@ 0 22 0 08300f732d8a410b156a04fd466e15e2
++         `step(thread, depth, size, excluding)` 是原始请求：它以一个 `Jdwp.StepSize`（默认为 `Line`）设置单步请求，并为 `excluding` 中的每个模式添加 `ClassExclude` 修饰符，返回请求 ID。
++         虚拟机把落点作为 `Jdwp.Event.SingleStep` 报告到 `Debug#events` 上，无论它落在哪里——JDK 内部、转发器或内联主体中——并由调用者恢复。
++   entry #pause   主动挂起一个线程，并返回覆盖其顶层帧的 `Halt`
++       没有事件标记这次停止，但这个 halt 提供与断点相同的线程视图——帧、变量、赋值——客户端驱动的暂停正是这样提供的。
++       挂起由调用者负责：丢弃 halt 不会恢复线程；`Debug#resume` 才会。
++   entry #clear   按种类和请求 ID 取消一个事件请求
++       `clear(Jdwp.EventKind.Breakpoint, request)` 删除原始的 `Debug#breakpoint`、`Debug#classPrepare` 或原始的 `Debug#step` 返回的请求。
++       带处理函数的请求则通过其 `Breakpoint` 或 `SourceBreakpoint` 句柄撤销，这样也会注销处理函数。
++   entry #exceptions   在匹配的类中抛出异常时停止——未捕获的、已捕获的，或二者
++       `exceptions(uncaught = true, caught = false, within = Unset)(handler)` 设置一个异常请求，并在每次抛出时以一个 `cause` 为 `Halt.Cause.Thrown` 的 `Halt` 运行 `handler`，因此 `exceptionInfo()` 描述正在抛出的异常。
++       `within` 把请求限制在从匹配某个类模式的类中抛出的异常：没有它的已捕获异常请求会停在平台自身由异常驱动的控制流中，而这种控制流早在任何应用程序类运行之前就开始了。
++       返回一个用于撤销请求的 `Breakpoint`。
+
+% 2 1 0 1bad41d57acf06b110b9226ad4af9a55
+
+% 3 1 0 073ea579368bad3f01f9d0fcf03f06dd
+
+% 4 1 0 165de58720110ff203659c689e9b191a
+
+% 5 1 0 143f9487542ba7741d9f3310f72f2abb
+
+% 0 1 0 06d76bc0f799a08e178b5dcda0927329
+
+% 0 1 0 1411a1dcdc722ea61b46df3a281fb230
+
+% 0 1 0 0956412eac8e7bfe011fda9e660e7bb1
+
+% 0 1 0 00abb2782d2bd35a052a8dfd68e540d1
+
+% 1 1 0 04fabcfb7acdbb2108b2cf2d083f1dc0
+
+@ 0 7 0 045d8886e8b8fe50084e98f470c2311c
++   entry #watch   在已加载类的某个字段被写入时停止，若带 `access` 则在读取时停止
++       `watch(className, field, access = false)(handler)` 在指定的运行时类上查找该字段——这个类必须已经加载，从实时变量视图设置观察时总是如此——并在每次写入时以一个 `cause` 为 `Halt.Cause.Modification` 的 `Halt` 运行 `handler`，它携带在写入生效*之前*观察到的传入值（读取时则为 `Halt.Cause.Access`）。
++       当找不到类或字段，或者虚拟机缺少 `canWatchFieldModification`（或 `canWatchFieldAccess`）时，结果为 `Unset`。
+
+% 2 1 0 1d1580ca94d45fcb19a0df08cda3aed6
+
+% 3 1 0 05afb04d290c6bcc099a6c6ef03a4952
+
+% 4 1 0 064e54c56eabaa3d05b39529dd3ff8a1
+
+% 5 1 0 1813cc3f517f321b05f35bafab1502a0
+
+% 0 1 0 1be5da5a5592016e01bf3aadb29187d8
+
+% 0 1 0 1937719f0404f4eb089273bbdb1cc3ed
+
+% 0 1 0 055e61d85e95d5101ccb6dd9093733f4
+
+% 0 1 0 16ef475daabb66bc0a022d351f7a9848
+
+% 0 1 0 0a04b39ab598cffc13feeb7f76697e81
+
+% 1 1 0 036c446469ce2cab160f1bec00c59b5d
+
+@ 0 25 0 0369c3e2fa43da4d1c8df42c4a2e4a51
++   entry #logpoint   记录一条消息并立即恢复执行的断点
++       `logpoint(location)(message)` 安装一个断点，其处理函数以 `info` 级别记录 `Debug.Event.Logpoint(message)` 然后返回，因此程序除了处理函数本身之外永远不会被暂停。
++       `message` 在作用域中有 `Halt` 的情况下求值，因此它可以读取已停止帧的变量。
++       除了战术之外，还需要作用域中有一个 `Debug.Event is Loggable`。
++   entry #locate   某个源代码行当前在各已加载类中解析到的可执行位置
++       从 `source` 编译而来、其行表覆盖 `line` 的每个已加载类的每个方法，包括通过各类的 SMAP 找到的内联副本。
++       以该文件命名的类会最先尝试，因此常见情况只需几次往返；对其余已加载类的扫描——跳过数组类型和平台自身的类——作为兜底。
++       尚未加载的类不会被找到：`Debug#breakpoint` 的源代码形式会推迟到这些类被准备时处理。
++       在线程挂起于 `ClassPrepare` 事件时调用并不安全：请使用 `Debug#locateIn`。
++   entry #locateIn   某个源代码行在单个引用类型中解析到的可执行位置
++       与 `Debug#locate` 相同，但只针对一个类 `cls`（连同其 `Jdwp.TypeTag`）：从 `source` 编译而来、其行表覆盖 `line` 的每个方法，加上其 SMAP 记录的该位置的所有内联副本，按方法和字节码索引去重。
++       它从不枚举虚拟机的类，因此可以在 `ClassPrepared` 事件的处理函数中安全调用，而在那里对整个虚拟机的扫描可能会与被挂起线程持有的类加载锁发生死锁。
++   entry .Handler   断点或单步处理函数的类型：`(halt: Halt^) ?=> Unit`
++       一个以借出的 `Halt` 为参数的上下文函数，在一次命中被认领时于分发器任务上运行。
++       halt 携带着分发器提供的战术，因此处理函数不需要自己的错误能力；它写作 `stop ?=> …`，因为自然的名称 `halt` 属于 fulminate。
++   entry .Console   启动的被调试程序的标准输出、标准错误和退出状态
+
+% 1 1 0 10b4366ce7245a5f1fe97373f195fd91
+
+@ 0 8 0 06fde22aeb3ce4fd09d61c9a63753231
++         只在 `Debuggee` 会话中出现于 `Debug#console`。
++         子进程的输出和错误管道从派生那一刻起被排空到两个窗口中，读取者以流的形式消费它们，而其退出状态会兑现一个 promise。
++         DAP 适配器把这些流作为 `output` 事件转发，把退出作为 `exited` 和 `terminated` 转发。
++     entry #stdout   被调试程序的标准输出，以数据块流表示
++     entry #stderr   被调试程序的标准错误，以数据块流表示
++     entry #exited   被调试程序退出状态的 promise，在进程结束时兑现
++   entry .Event   会话主动记录的内容：日志点的消息
+
+% 1 1 0 190786d264ee299c15333591c6ab50b9
+
+@ 0 4 0 01176a71f91494bf07d5bd2093874ad7
++         只有一个分支 `Logpoint(message)`，带有 `Log.Runtime` 标签，由 `Debug#logpoint` 以 `info` 级别记录。
++         要安装日志点，作用域中必须有一个 `Debug.Event is Loggable`；`logging.silentLogging` 会丢弃它们。
++     entry .communicable   把日志点事件渲染为其消息
+
+@ 0 7 0 1c5bbf5a099deedd11e2037d2994a203
++ entry .debug   环境中的调试会话，在会话代码块内从上下文中召唤
++     `debug` 指明 `session` 代码块所借出的 `Debug` 能力，而无需指明参数名：`target.session { debug.threads() }`，就像监督作用域中的 `monitor` 一样。
++     它是一个 `transparent inline def`，解析为上下文中的 `Debug^`，因此它带有该能力的确切捕获集。
++     `Halt` 没有相应的访问器——它的自然名称已被 `fulminate.halt` 占用——因此处理函数要为其参数命名，惯例上写作 `stop ?=>`。
+
+@ 0 1 0 15cf6acff42a9dfd19e346721bde650f
++ entry .Breakpoint   已安装的断点、异常请求或观察点的可撤销句柄
+
+% 1 1 0 0380887a68701af90bf67adc010bd5ce
+
+@ 0 4 0 1c5581f52384710d0108bde7d6cc0ebb
++       由 `Debug#breakpoint(location)(handler)`、`Debug#exceptions` 和 `Debug#watch` 返回。
++       它捕获了所属的会话，因此不能比会话代码块存活得更久。
++       `#clear` 从虚拟机中删除请求并注销其处理函数，之后任何已在途中的命中都被视为未认领的，并到达 `Debug#events`。
+
+% 0 1 0 1e481d44619855a208e01b1d1b86f437
+
+@ 0 2 0 034535aa32b153b7073660e4c45e8cdf
++   entry #request   已安装事件请求的 JDWP 请求 ID
++   entry #clear   从虚拟机中删除请求并注销其处理函数
+
+@ 0 1 0 08bd2f6b7880bf3d1ee4577f7ff045d3
++ entry .SourceBreakpoint   按源代码位置或按类和方法设置的断点的可撤销句柄
+
+% 1 1 0 006b6701318105251babb34160a9df52
+
+@ 0 7 0 066599f5aeec85fe02d06929f0e4b19a
++       由 `Debug#breakpoint` 的源代码行形式以及类和方法形式返回。
++       源代码断点会在每个匹配的类加载时绑定到其中的可执行位置，因此它的 `#locations` 会在会话期间增长；前端把空列表视为未验证的断点，把之后的绑定视为对它的验证（`bound` 回调会报告每次绑定）。
++       `#clear` 删除每个已绑定的断点，并撤销会绑定更多位置的类准备请求。
++       该句柄捕获了会话，因此不能逃出会话代码块。
+
+% 0 1 0 0b4b652a94a5c2f91da93cb5b12193bf
+
+@ 0 4 0 01da34f49805984e150019ec7913a06f
++   entry #locations   这个断点到目前为止已绑定的可执行位置
++       当该位置能解析到的每个类都仍未加载时为空。
++   entry #bound   是否至少绑定了一个位置
++   entry #clear   删除每个已绑定的断点，以及会绑定更多位置的准备请求
+
+@ 0 1 0 1f45afdaa50bb41d13e4a2bfe7087549
++ entry .Halt   一个已停止的线程，作为线程保持挂起期间借出给处理函数的能力
+
+% 1 1 0 11d5081ae656c2c80e563080010319d5
+
+@ 0 6 0 007c2d2b53506dc701aa811009f8b552
++       `Halt` 是借出给断点、单步、异常或观察处理函数的视图：停止的线程、它停止的位置、停止的原因（`#cause`）、它的帧及其逻辑变量、如果是因异常停止则还有正在抛出的异常，以及为变量赋值、弹出帧或保持线程挂起的手段。
++       它是一个 `ExclusiveCapability`，因此不能比它所描述的那次停止存活得更久：一旦分发器恢复了线程，halt 分发出的每个标识符——帧、对象、槽位——都可能已经过时。
+
+% 2 1 0 04dc2133260d35050cefb4059bd94658
+
+% 3 1 0 182730a1acdf1f8a1fa9471480160c87
+
+% 4 1 0 09e1169a6f17b7c51f3c9f980df12a8e
+
+% 5 1 0 1836ff21e865a82d084e1c3144d15660
+
+% 0 1 0 08280e358338b4ac0cfd21ce1bb0fcde
+
+% 1 1 0 1abd28b26d435c3803f7144c36286da9
+
+% 0 1 0 1a14e5c8a23d4fff1842ab6d2e8d790b
+
+% 0 1 0 0830cf999706826319a9ad609cd3156b
+
+% 0 1 0 185798feae5bcadc095abda55083813c
+
+% 0 1 0 1cd834e8107698471aab0cfca47ea7d9
+
+% 0 1 0 12b42f8ca24bdf5e071d5685405c32fb
+
+% 0 1 0 1af5e536bfc42d9b10d20d2fd8b38983
+
+% 1 1 0 1e65f2ec38fe0cb507df5dbbda657aa7
+
+@ 0 4 0 1a317eb21d57b6e20ea7ef4a3f589a5e
++       halt 携带着分发器创建它时提供的 `Tactic[Debugger.Error]`，因此它的操作不再接受战术：处理函数在分发器任务上运行，错误通道必须展开的是那个栈，而不是注册处的栈。
++       处理函数写作 `stop ?=> …`：访问器名称 `halt` 属于 fulminate。
+
+% 1 1 0 155fdcb5e315725009473f86aaf9cbcc
+
+% 0 1 0 13df26896cb52fc1198469728beeff41
+
+% 1 1 0 0431e44d6823da121c9c974528870779
+
+@ 0 52 0 0b75b1d02edd2295196af7daed786a50
++   entry #thread   停止的线程
++   entry #location   它停止的位置：类、方法和字节码索引
++   entry #cause   它停止的原因，以 `Halt.Cause` 表示
++   entry #remain   请求分发器在这次停止的处理函数返回时不要恢复线程
++       之后挂起由调用者负责，并通过 `Debug#resume` 恢复——或者不恢复。
++       为同一个复合事件运行的所有处理函数共享这一设置，因为 JDWP 对每个复合事件挂起一次，而分发器也只处理一次该挂起。
++   entry #frames   已停止线程的调用栈，最内层在前，以 `(FrameId, Jdwp.Location)` 对表示
++   entry #positions   一个帧所代表的逻辑源代码位置，最内层在前
++       从类的 SMAP 中恢复出的每个内联来源对应一个 `Halt.Position`——即内联代码编写处的文件和行，标记为 `inlined`——之后是物理帧本身，位于其真实的调用处行。
++       没有 SMAP 的帧、停在真实行上的帧，或者没有 `canGetSourceDebugExtension` 的虚拟机，只产生 `Halt#describe` 所报告的那一个位置。
++       堆栈跟踪正是这样把内联主体显示为一个独立的帧。
++   entry #describe   某个位置的可读名称和行：`pkg.Cls.method` 及其源代码行
++       从类的方法表和行表中解析；没有行信息时行号为 `0`。
++       名称按堆栈跟踪的渲染方式进行名称还原：去掉模块类末尾的 `$`，内部类的 `$` 读作点。
++   entry #exceptionInfo   异常停止时正在抛出的异常，其他停止时为 `Unset`
++       当 `Halt#cause` 为 `Thrown` 时是一个 `Halt.ExceptionInfo`：异常的类名、构造它时使用的细节消息（为 null 时为 `Unset`），以及这次抛出是否会被捕获。
++       消息直接从 `Throwable` 的 `detailMessage` 字段读取，沿继承层次向上走到声明该字段的类，而不是调用 `getMessage`，因此不会运行被调试程序的任何代码。
++   entry #thisObject   帧的 `this`，在静态帧或本地帧中为 `Unset`
++   entry #variables   在顶层帧或指定帧处可见的逻辑变量
++       `variables()` 读取线程停止的那个帧；`variables(frame, location)` 读取其栈中的任意帧。
++       结果是该位置上活跃的局部槽位——一个槽位只在其字节码范围内活跃——之后是 `this` 及其 `$outer` 链上捕获的状态，每一项都以程序员编写时的形式恢复：合成的 `name$3` 捕获字段显示为 `name`，外部访问器的 `pkg$Owner$$seed` 显示为 `seed`，被捕获的 `var` 的引用单元被拆箱为其 `elem`（并将该变量标记为可变），而惰性 val 的后备字段会被读取但绝不会被强制求值，因此尚未求值的惰性 val 被报告为 `Unforced` 且没有值。
++       普通成员字段显示在其所有者之下。
++       没有变量表的已编译方法会降级为只显示捕获的状态和字段状态。
++   entry #children   把快照展开一层：对象的实例字段，或数组的元素
++       对于 `Variable.Snapshot.Obj`，是该对象的非静态字段，作为变量；对于 `Arr`，是它的前 256 个元素，以从零开始的索引命名。
++       其他任何东西都展开为空。
++       这就是前端树视图背后的 `variables` 请求。
++   entry #pop   丢弃一个帧及其之上的所有帧，使恢复执行时重新执行创建该帧的调用
++       前端的帧重启。
++       要求虚拟机具备 `canPopFrames` 能力，并且被弹出的帧中没有本地帧。
++   entry #assign   在已停止的帧处向变量写入一个值，按其来源路由
++       `assign(variable, value)` 在顶层帧写入；`assign(frame, variable, value)` 在指定帧写入。
++       写入会去往变量的 `Variable.Provenance` 所指明的存储位置：帧中的局部槽位、其持有者上的捕获字段或成员字段、数组元素，或者——经由引用单元——该单元的 `elem`，因此为被捕获的 `var` 赋值的行为与源代码所暗示的一致。
++       值必须是变量的擦除类型（对于 `Int` 是 `Jdwp.Value.OfInt`）；来源所携带的标识符只在线程保持挂起时有效，而这也正是赋值有意义的时候。
++       `Evaluator#assign` 按变量的声明类型对表达式求值，并赋予其结果。
++   entry .Cause   线程停止的原因：普通停止、抛出的异常，或字段的访问或修改
+
+% 1 1 0 0fcf65388498bd7207a2d44a9e5545ba
+
+@ 0 11 0 0f8397b12fcac9bf03dcc5407c42440e
++         `Stopped` 涵盖断点、单步、暂停以及方法的进入和退出，这些情况下处理函数已经知道它注册的是哪个请求。
++         `Thrown(exception, catchLocation)` 携带异常对象以及它将被捕获的位置，未捕获的异常则为 `Unset`。
++         `Access(cls, field, target)` 和 `Modification(cls, field, target, incoming)` 携带被触及的类和字段，以及被触及的对象（静态字段为 `Unset`）；修改还携带 `incoming` 值，它是在写入生效之前观察到的。
++   entry .ExceptionInfo   正在抛出的异常的摘要：它的类、它的消息，以及它是否会被捕获
++     entry #className   异常的类，按堆栈跟踪的渲染方式进行名称还原
++     entry #message   构造时使用的细节消息，为 null 时为 `Unset`
++     entry #caught   这次抛出是否会被捕获
++   entry .Position   一个物理帧所代表的一个逻辑源代码位置
+
+% 1 1 0 14a02679c0545d081dd993bc092f6545
+
+@ 0 12 0 0ec1bad47a8472ff19847491a8895331
++         对于内联代码，是代码编写处的文件和行；对于帧本身，是它自己的源文件和真实行。
++         `name` 是显示名称（类或方法）；`source` 是记录的文件基本名，`path` 是其更完整的路径（如果已知）；`inlined` 表示这是内联来源而不是帧本身；`cls` 是原始的 `ScalaClass` 层类名，供持有类路径的调用者通过 TASTy 解析定义，就像 `Namer` 所做的那样。
++     entry #name   显示名称：类和方法，或内联来源的类
++     entry #source   源文件的基本名（如果已知）
++     entry #path   源文件的更完整路径（如果 SMAP 记录了的话）
++     entry #line   源代码行
++     entry #inlined   这个位置是否是内联来源，而不是物理帧
++     entry #cls   SMAP 为内联来源记录的原始类名（如果有）
+
+@ 0 1 0 04dc35951d91ae5516cc82d225884f95
++ entry .Variable   挂起帧处的一个逻辑变量，以程序员编写时的形式表示
+
+% 1 1 0 1103611ffbfb4c6a179fc60c09f4dd61
+
+@ 0 7 0 1b15b1b5163b8c9009756bac31ab1405
++       `Variable` 是 `Halt#variables` 恢复出的内容：编写时的 `name`（捕获从其合成字段中还原展开）、来自 JVM 签名的 `erased` 类型、当 `Evaluator#variables` 从 TASTy 恢复出声明类型时的 `static` 类型、以 `Variable.Snapshot` 表示的 `value`（未强制求值的惰性 val 则没有）、指明其存储位置以便写入知道去往何处的 `provenance`、它是否为 `mutable`（一个装箱在引用单元中的 `var`），以及它的 `state`——`Forced`，或者对于尚未求值的惰性 val 为 `Unforced`。
+
+% 2 1 0 166a512d252afd7a07dac5b3b577f276
+
+% 1 1 0 1cc66d83177c856d13f8f42166aa5e6f
+
+% 0 1 0 18bc4487287c4c921f89ef0169da785a
+
+% 0 1 0 1aaceeab194a34f5082982303c37a0b1
+
+% 0 1 0 089077cb3b456a4a06c3336e7c3935e7
+
+% 0 1 0 06d5760cd6fad768007ea9e6f10521dd
+
+% 0 1 0 1d31b2f47baa820902131de297633ddf
+
+% 1 1 0 14836ab0a7f5b6110834567e55c9540f
+
+@ 0 3 0 1d7e1559875e5a6d034feb705dc5bce9
++       `Variable` 没有导出到 `soundness`，因为那里已经有 ambience 的 `Variable`（环境变量）：请写 `vivisection.Variable`，或者先 `import soundness.{Variable as _, *}` 再 `import vivisection.Variable`。
+
+% 1 1 0 12dd32f7d1eed3b61aa9bd54c2b820d1
+
+% 1 1 0 0ab0d08c21d6a73616234163dadf71c0
+
+@ 0 9 0 0e0af605404abea018e9885bd952643d
++   entry #name   源代码中编写的名称
++   entry #static   声明的 Scala 类型，当由 `Evaluator` 从 TASTy 恢复时存在；否则为 `Unset`
++   entry #erased   经过名称还原的 JVM 类型：`Int`、`Array[Int]`、`scala.collection.List`
++   entry #value   值，以 `Variable.Snapshot` 表示；未强制求值的惰性 val 为 `Unset`
++   entry #provenance   存储所在的位置，以便赋值知道写到哪里
++   entry #mutable   变量是否为 `var`：其存储是一个 `scala.runtime.*Ref` 单元
++   entry #state   惰性绑定是否已被求值：`Forced` 或 `Unforced`
++   entry .inspectable   把变量渲染为 `name:value`，未强制求值的惰性 val 用 `∿∿∿`，没有值时用 `○`
++   entry .Snapshot   调试器一侧对远程值的视图：基本值、字符串、数组前缀、对象或 null
+
+% 1 1 0 11eee63e9c8a612010d34236f8405b05
+
+@ 0 11 0 1c3260f440e82b961b5b0d375a617a38
++         `Primitive(value)` 保存一个已解码的 `Jdwp.Value`；`Str(id, text)` 是一个字符串，会被立即获取；`Arr(id, component, length, prefix)` 是数组的标识、元素 `Jdwp.Tag`、长度以及前十个元素，会被立即获取；`Obj(id, cls)` 是任何其他对象的摘要——它的标识和经过名称还原的类——供 `Halt#children` 展开；`Null` 是 null 引用。
++     entry .inspectable   渲染快照：字面量按原样，数组为 `⦋🅸₀1∣₁2∣…⦌＠id`，对象为 `Cls＠id`
++         远程标识渲染为类名（或数组的元素类型字母），后跟一个全角 `＠` 和 JDWP 对象标识符——与 Java 的 `Play@1a2b` 足够接近，可以读作一个标识，又与任何字面量的渲染都不同。
++         这个 given 对枚举的各分支类型参数化，因为 `Inspectable` 是不变的。
++   entry .Provenance   找到变量存储的位置，携带写入所需的任何标识
+
+% 1 1 0 1ed5cfa8575e1ab80c1605f2a9a53cfc
+
+@ 0 8 0 1d7a0a3d451fd8471044cee26df82baa
++         `Local(slot)` 是帧槽位；`Captured(fieldPath, holder, field)` 是沿 `fieldPath` 在 `this` 或某个 `$outer` 上的捕获字段；`Field(owner, target, field)` 是 `target` 上的成员字段，带有经过名称还原的 `owner` 类；`Element(array, index)` 是数组元素；`Cell(cell, elem, inner)` 是在 `inner` 处找到的 `scala.runtime.*Ref` 单元的 `elem` 字段。
++         这些标识符只在 halt 的线程保持挂起时才稳定。
++   entry .State   惰性绑定是否已被求值：`Forced` 或 `Unforced`
++       未强制求值的惰性 val *永远不会*被调试器强制求值——强制求值会改变被观察的程序——因此它的值不存在，并渲染为 `∿∿∿`。
+
+@ 0 14 0 12523f0d9f0d20ae04510a99a531bd80
++ entry .ObjectId   JDWP 对象标识符：`Jdwp.Ref[Jdwp.Ref.Object]`
++     虚拟机发出的每个标识符都是一个以幻影种类作标记的 `Jdwp.Ref`，因此这九个别名在编译时互不相同，在运行时则没有开销。
++     `ThreadId`、`ThreadGroupId`、`StringId` 和 `ClassLoaderId` 可拓宽为 `ObjectId`，因为在 JDWP 中，线程、线程组、字符串和类加载器都*是*对象；`ReferenceTypeId`、`MethodId`、`FieldId` 和 `FrameId` 则不能。
++     空对象是 `Jdwp.Ref.empty`，用扩展方法 `empty` 检测。
++ entry .ThreadId   线程的标识符：`Jdwp.Ref[Jdwp.Ref.Thread]`，可拓宽为 `ObjectId`
++ entry .ThreadGroupId   线程组的标识符：`Jdwp.Ref[Jdwp.Ref.Group]`，可拓宽为 `ObjectId`
++ entry .StringId   字符串对象的标识符：`Jdwp.Ref[Jdwp.Ref.Str]`，可拓宽为 `ObjectId`
++ entry .ClassLoaderId   类加载器的标识符：`Jdwp.Ref[Jdwp.Ref.Loader]`，可拓宽为 `ObjectId`
++ entry .ReferenceTypeId   类、接口或数组类型的标识符：`Jdwp.Ref[Jdwp.Ref.Type]`
++ entry .MethodId   方法的标识符，作用域限于其引用类型：`Jdwp.Ref[Jdwp.Ref.Method]`
++ entry .FieldId   字段的标识符，作用域限于其引用类型：`Jdwp.Ref[Jdwp.Ref.Field]`
++ entry .FrameId   栈帧的标识符，在其线程挂起期间有效：`Jdwp.Ref[Jdwp.Ref.Frame]`
+
+@ 0 1 0 1d3baf7630fe0c85084bdf92371256e6
++ entry .Jdwp   以值表示的 Java 调试线协议（Java Debug Wire Protocol）：标识符、位置、值、事件、编解码器和连接
+
+% 1 1 0 1f93df533608fb4b0c8c05d39d8f869d
+
+@ 0 5 0 1217ba73cefaa3fb13ed62fad3ce4981
++       `Jdwp` 对协议的建模方式使这个库可以对照规范阅读：命令集和命令保留其公布的编号，事件种类和错误种类保留其公布的名称，标识符保留虚拟机协商的宽度。
++       它是 `Debug` 之下的一层，用于会话不公开的工作：带有自己的 `Jdwp.Modifier` 的原始事件请求、在被调试程序中调用的方法、在那里驻留的字符串。
+
+@ 0 9 0 183e003566497940189b5d0c7f7d46ff
++       它的组成部分有：不透明的 `Ref`（以及建立在它之上的标识符别名 `ThreadId`、`FrameId` 等）；请求或回复携带的枚举（`TypeTag`、`SuspendPolicy`、`EventKind`、`StepDepth`、`StepSize`、`Tag`）；`Location`；带标签的 `Value`；约束事件请求的 `Modifier`；解码后的回复结构（`Version`、`ClassInfo`、`MethodInfo`、`FieldInfo`、`LineTable`、`VariableTable`、`Capabilities` 等）；虚拟机发回的 `Event`；手写的大端序编解码器 `Reader` 和 `Writer`；`Packet` 分帧；以及 `Connection`，即在双工通道上对数据包分帧并加以关联的线上级客户端。
++       除 `Connection` 外，没有任何部分接触套接字。
+
+% 2 1 0 16bcb4a2fae451601421511412b77aa9
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 0 1 0 19cec55ae206e0e10c7e12f427aeaa76
+
+% 0 1 0 1fbe5553719731f61f56df00032c533c
+
+% 0 1 0 01fa4fe952a842df0c888d38e1e2133e
+
+% 0 1 0 1dfe2c89869aea8303b37f3cad16aca4
+
+% 0 1 0 026d2322ad6068751c036d15df47aa70
+
+% 1 1 0 12ea5bbf09cb574005750f6af877bc3c
+
+@ 0 2 0 0edc459562585ea4018925621ae9d1e8
++       请求和回复按数据包 id 关联，因此可以同时有多个命令在进行中，而在某个命令进行期间到达的事件不会干扰它。
+
+% 1 1 0 1bfa637417d2d8c203c361b0543f4fc5
+
+% 1 1 0 0f0a44d5cb02786b0f4835cedae68f15
+
+@ 0 2 0 09c61d7ff031e62d03ac66c1dc1b90ed
++   entry .Handshake   在任何数据包之前，两端各自发送并期待收回的十四个 ASCII 字节 `JDWP-Handshake`
++   entry .Ref   一个以幻影种类作标记的不透明 `Long`：每个 JDWP 标识符之下的类型
+
+% 1 1 0 0cce9892658d8b9e1418476ba23cb6a7
+
+@ 0 23 0 195355d6aeca84261f8a235f6d4e17fc
++         `Ref[kind]` 在运行时是一个 `Long`，在编译时则对每个 `Ref.Kind` 都是不同的类型，因此 `ThreadId` 永远不能传到需要 `FieldId` 的地方，而种类上的协变又让 `ThreadId` 可以拓宽为 `ObjectId`。
++         `Ref(long)` 创建一个引用，`Ref.empty` 是空对象（标识符为零）；扩展方法 `long` 和 `empty` 把它读回。
++         每个种类在线上的宽度按连接协商（`IdSizes`），这就是 `Reader` 和 `Writer` 要用这些宽度来构建的原因。
++     entry .Kind   引用可携带的幻影种类的根
++     entry .Object   任何对象引用的种类；`Thread`、`Group`、`Str` 和 `Loader` 扩展它
++     entry .Thread   线程引用的种类
++     entry .Group   线程组引用的种类
++     entry .Str   字符串引用的种类
++     entry .Loader   类加载器引用的种类
++     entry .Type   引用类型（类、接口或数组类型）标识符的种类
++     entry .Method   方法标识符的种类
++     entry .Field   字段标识符的种类
++     entry .Frame   帧标识符的种类
++     entry .apply   `Ref[kind](long)`：包装虚拟机发来的标识符
++     entry .empty   任意种类下的空对象，标识符为零
++     entry .showable   把引用渲染为其十进制标识符
++     entry .equality   同一种类的引用之间的 `CanEqual`
++   entry .long   引用所包装的标识符，以 `Long` 表示；任何 `Ref` 上的扩展方法
++   entry .empty   引用是否为空对象（标识符为零）；任何 `Ref` 上的扩展方法
++   entry .IdSizes   协商得到的五种标识符宽度，以字节计，每种为 1 到 8
+
+% 1 1 0 12e80ce51c6a8b7309e3bf23cec5c8c8
+
+@ 0 15 0 14fbb67f94cd92690fb5b178f1c56f4f
++         `VirtualMachine.IDSizes`：`field`、`method`、`objectId`（它也决定字符串、线程、线程组、类加载器、类对象和数组的宽度）、`referenceType` 和 `frame`。
++         `Reader` 或 `Writer` 用连接协商得到的宽度（`Connection#sizes`）构建；`IdSizes.bootstrap` 全部为八，只用于解码布局固定的 IDSizes 回复本身，以及对不携带标识符的数据包分帧。
++     entry #field   字段标识符的宽度
++     entry #method   方法标识符的宽度
++     entry #objectId   对象标识符的宽度，以及每个可拓宽为对象标识符的种类的宽度
++     entry #referenceType   引用类型标识符的宽度
++     entry #frame   帧标识符的宽度
++     entry .bootstrap   全部为八：协商之前使用的宽度，用于 IDSizes 回复和数据包头部
++   entry .TypeTag   引用类型是类（1）、接口（2）还是数组（3）
++     entry .apply   `TypeTag(byte)`：线上字节对应的标签，无法识别的字节对应 `Class`
++     entry #id   线上字节
++   entry .SuspendPolicy   事件触发时挂起虚拟机的多少部分：`None`、`EventThread` 或 `All`
+
+% 1 1 0 0d444b510fcc2b5007878c5d0b4cf170
+
+@ 0 7 0 17bb666eb2cf5c6a1408f85d075f8f77
++         `None`（0）不挂起任何线程，`EventThread`（1）只挂起引发事件的线程，`All`（2）挂起所有线程。
++         JDWP 每个复合事件挂起一次，分发器按复合事件的方针恢复执行；带处理函数的断点使用 `All`，单步或类准备请求使用 `EventThread`。
++     entry .apply   `SuspendPolicy(byte)`：线上字节对应的方针，无法识别的字节对应 `None`
++     entry #id   线上字节
++   entry .EventKind   请求可以要求、复合事件可以报告的事件种类，按其 JDWP 编号
+
+% 1 1 0 15b907f46a97bc3810c2109a3e064ddc
+
+@ 0 12 0 11c97072685f21811c0692ed6ec40778
++         `SingleStep`（1）、`Breakpoint`（2）、`FramePop`（3）、`Exception`（4）、`UserDefined`（5）、`ThreadStart`（6）、`ThreadDeath`（7）、`ClassPrepare`（8）、`ClassUnload`（9）、`ClassLoad`（10）、`FieldAccess`（20）、`FieldModified`（21）、`MethodEntry`（40）、`MethodExit`（41）、`VmStart`（90）、`VmDeath`（99），以及用于此处未命名的任何编号的 `Other(id)`。
++         `Debug#clear` 接受要取消的请求的种类。
++     entry .apply   `EventKind(int)`：线上编号对应的种类，无法识别的编号对应 `Other(id)`
++     entry #id   线上编号
++   entry .StepDepth   单步的方向：`Into`（0）、`Over`（1）或 `Out`（2）
++     entry #id   线上编号
++   entry .StepSize   单步的粒度：`Min`（0），即一条字节码指令，或 `Line`（1），即一行源码
++     entry #id   线上编号
++   entry .Tag   在线上标识值的运行时类型的标签字节
+
+% 1 1 0 03001c450618ab0115aa93411b6e3032
+
+@ 0 15 0 02ad95d83423378e16c3dce63cf1afc3
++         `ArrayTag`（`[`）、`ByteTag`（`B`）、`CharTag`（`C`）、`ObjectTag`（`L`）、`FloatTag`（`F`）、`DoubleTag`（`D`）、`IntTag`（`I`）、`LongTag`（`J`）、`ShortTag`（`S`）、`VoidTag`（`V`）、`BooleanTag`（`Z`）、`StringTag`（`s`）、`ThreadTag`（`t`）、`GroupTag`（`g`）、`LoaderTag`（`l`）和 `ClassTag0`（`c`，如此命名是为了不遮蔽 `scala.reflect.ClassTag`）。
++         请求值时使用其声明类型的标签，即 JVM 签名的第一个字符，而回复携带精确的标签。
++     entry .apply   `Tag(char)`：签名字符或线上字符对应的标签，无法识别的字符对应 `ObjectTag`
++     entry .isObject   标签的线上载荷是否为对象标识符，而非内联的原始值
++     entry #id   线上字符
++   entry .Location   一个可执行位置：一个引用类型、它的一个方法，以及该方法内的一个字节码索引
++     entry #tag   该类型是类、接口还是数组
++     entry #cls   引用类型
++     entry #method   方法
++     entry #index   方法内的字节码索引；行号表把它映射到源码行
++   entry .Value   从槽、字段或数组元素读取或写入其中的带标签的值
+
+% 1 1 0 0ed6bbe866eb43c40fb68a08093863e0
+
+@ 0 8 0 1a3b0f519ee535fb08de7b849a748464
++         原始值被立即解码为 `OfByte`、`OfChar`、`OfDouble`、`OfFloat`、`OfInt`、`OfLong`、`OfShort` 和 `OfBoolean`；`Void` 是 void 结果；`Reference(tag, id)` 则保持为带运行时标签的标识符，留给 `Halt` 和 `Variable.Snapshot` 解释。
++         `Halt#assign` 接受一个具有该变量擦除后类型的 `Value`。
++     entry .inspectable   原始值按其自身记法渲染，引用渲染为 `tag＠id`，空值渲染为 `null`
++         以该枚举的各分支类型为参数，因为 `Inspectable` 是不变的：只为 `Value` 提供的实例不会覆盖 `OfInt` 或 `Reference`。
++   entry .Modifier   事件请求的约束，每个都带有其 JDWP modkind
+
+% 1 1 0 04bed0f6619fc5ec18bcb226b6814b76
+
+@ 0 34 0 10df565d26afa9a40ead107535e4930b
++         `Count(count)`（1）使请求触发这么多次后失效；`ThreadOnly`（3）、`ClassOnly`（4）、`ClassMatch(pattern)`（5）和 `ClassExclude(pattern)`（6）按线程或类加以限制，其中的模式是一个确切的名称，或以单个 `*` 为界的名称；`LocationOnly(location)`（7）设置断点；`ExceptionOnly(cls, caught, uncaught)`（8）选择异常，空引用表示任何类；`FieldOnly(cls, field)`（9）指定被监视的字段；`Step(thread, size, depth)`（10）描述一次单步；`SourceNameMatch(pattern)`（12）在虚拟机支持时按源文件限制类准备事件。
++         JDWP 只把 `Count` 应用于通过了它之前各修饰符的事件，因此它放在最后。
++   entry .Version   虚拟机的版本回复：一段描述、JDWP 主版本号和次版本号，以及虚拟机的版本和名称
++     entry #description   虚拟机自己的描述文本
++     entry #major   JDWP 主版本号
++     entry #minor   JDWP 次版本号
++     entry #vmVersion   虚拟机的版本字符串
++     entry #vmName   虚拟机的名称
++   entry .ClassInfo   一个已加载的引用类型：其标签、标识符、JNI 签名和状态
++     entry #tag   类、接口或数组
++     entry #cls   引用类型
++     entry #signature   JNI 签名，如 `Lcom/example/Main;`
++     entry #status   类的状态位：已验证、已准备、已初始化、出错
++   entry .MethodInfo   引用类型的一个方法：其标识符、名称、JNI 签名和修饰符
++     entry #method   方法
++     entry #name   方法名，构造器为 `<init>`
++     entry #signature   JNI 签名，如 `(I)Ljava/lang/String;`
++     entry #modifiers   访问标志；位 0x40 标记桥接方法，0x1000 标记合成方法
++   entry .FieldInfo   引用类型的一个字段：其标识符、名称、JNI 签名和修饰符
++     entry #field   字段
++     entry #name   字段名
++     entry #signature   JNI 签名
++     entry #modifiers   访问标志；位 0x8 标记静态字段
++   entry .LineEntry   行号表的一行：一个字节码索引，以及从那里开始的源码行
++     entry #index   字节码索引
++     entry #line   源码行
++   entry .LineTable   方法的行号表：其第一个和最后一个字节码索引，以及各行
+
+% 1 1 0 14bce0dd8767c46f03b9df917adc44b9
+
+@ 0 6 0 09a2e865a75c4b570e10f8bcc97652b9
++         对于没有可执行代码的方法（抽象方法、本地方法），`start` 为 −1。
++         一个位置的源码行，是 `index` 不大于该位置索引的最后一个条目的 `line`。
++     entry #start   最小的字节码索引，没有代码的方法为 −1
++     entry #end   最大的字节码索引
++     entry #lines   各行，按字节码顺序
++   entry .SlotInfo   局部变量表的一行：槽的字节码范围、名称、JNI 签名和槽号
+
+% 1 1 0 1d5eda791afc8b3d186a414f95a1f8d0
+
+@ 0 17 0 1d817599fa26272e196e08a08240e638
++         槽在 `[index, index + length)` 范围内的字节码索引处是活跃的；`Halt#variables` 据此过滤。
++     entry #index   槽开始活跃的字节码索引
++     entry #name   变量名
++     entry #signature   JNI 签名
++     entry #length   槽保持活跃的字节码索引个数
++     entry #slot   槽号，即 `Connection#slotValues` 所接受的形式
++   entry .VariableTable   方法的局部变量表：其参数个数和各槽
++     entry #argCount   方法参数所占的槽数
++     entry #slots   各槽，以 `SlotInfo` 表示
++   entry .ThreadStatus   线程的状态：其运行状态，以及是否已挂起
++     entry #threadStatus   僵死（0）、运行（1）、睡眠（2）、监视器（3）或等待（4）
++     entry #suspendStatus   线程挂起时为 1
++   entry .Invocation   在被调试程序中调用方法的结果：其返回值和它抛出的异常
++     entry #result   返回值，void 方法为 `Void`
++     entry #exception   抛出的异常；方法正常返回时为空引用
++   entry .Capabilities   本库从 `VirtualMachine.CapabilitiesNew` 中查阅的标志
+
+% 1 1 0 0998f88a901de6f01e3bbf4382de562b
+
+@ 0 14 0 1ac81fbfe3650b580ba579a7ffb05ef3
++         由 `Connection#capabilitiesNew` 解码，并由 `Debug#capabilities` memoize；旧虚拟机的回复较短时，缺失的标志为 false。
++         构造器参数的顺序是 `canWatchFieldModification`、`canWatchFieldAccess`、`canGetBytecodes`、`canGetSyntheticAttribute`、`canPopFrames`、`canGetSourceDebugExtension`、`canUseSourceNameFilters`、`canGetConstantPool`。
++     entry #canWatchFieldModification   能否对写操作使用 `Debug#watch`
++     entry #canWatchFieldAccess   能否对读操作使用 `Debug#watch`
++     entry #canGetBytecodes   能否读取方法的字节码，单步过滤器用它识别转发器
++     entry #canGetSyntheticAttribute   虚拟机是否报告合成成员
++     entry #canPopFrames   能否使用 `Halt#pop`
++     entry #canGetSourceDebugExtension   能否读取 SMAP，感知内联的位置和单步需要它
++     entry #canUseSourceNameFilters   类准备请求能否按源文件缩小范围
++     entry #canGetConstantPool   能否读取类的常量池，单步过滤器需要它
++   entry .Reader   解码数据包载荷：大端序，标识符按协商的宽度读取
+
+% 1 1 0 0a77d6b7c73bb97f1ac2a2725a645da7
+
+@ 0 4 0 0310785efc4d15c41650a8c0ba279f75
++         `Reader(data, sizes)` 从头遍历一个已具体化的 `Data` 载荷；每次读取都推进其位置，因此它是一个 `caps.Mutable` 类，以 `Reader^` 的形式持有，并且每次只由一个解码器按顺序使用。
++         `Connection#request` 返回一个覆盖回复载荷的读取器，`Event.composite` 则从读取器解码一个复合事件。
+
+% 2 1 0 0ad78a51b33247b602e6268e81d04e09
+
+% 3 1 0 04c8e768de7a121914f85a4046474ca9
+
+% 5 1 0 1c4eff9d5dcdcbae1e74e39719211eb7
+
+% 0 1 0 1dd43a7a73155798170a7db07d334291
+
+% 0 1 0 183b6e4ee9454acc178a4df7ba0d692d
+
+% 0 1 0 036178325f313de111948d9a007a414b
+
+% 0 1 0 09f3f49c8c108c710dac5a266b64e129
+
+% 1 1 0 17ea6cfee661798c039dc1e45ed57ed6
+
+@ 0 32 0 03c62204f7f62df410a31b6a47f9d99a
++     entry #remaining   尚未读取的字节
++     entry #byte   读取一个字节
++     entry #boolean   读取一个字节作为布尔值
++     entry #short   读取一个大端序 16 位整数
++     entry #char   读取一个大端序 16 位字符
++     entry #int   读取一个大端序 32 位整数
++     entry #long   读取一个大端序 64 位整数
++     entry #float   读取一个 32 位 IEEE 浮点数
++     entry #double   读取一个 64 位 IEEE 双精度浮点数
++     entry #id   读取一个给定字节宽度的标识符
++     entry #objectId   按协商的对象宽度读取一个 `ObjectId`
++     entry #threadId   按协商的对象宽度读取一个 `ThreadId`
++     entry #threadGroupId   按协商的对象宽度读取一个 `ThreadGroupId`
++     entry #stringId   按协商的对象宽度读取一个 `StringId`
++     entry #classLoaderId   按协商的对象宽度读取一个 `ClassLoaderId`
++     entry #referenceTypeId   按协商的引用类型宽度读取一个 `ReferenceTypeId`
++     entry #methodId   按协商的方法宽度读取一个 `MethodId`
++     entry #fieldId   按协商的字段宽度读取一个 `FieldId`
++     entry #frameId   按协商的帧宽度读取一个 `FrameId`
++     entry #string   读取一个带长度前缀的 JDWP 字符串，采用 JNI 修改版 UTF-8
++         空字符以 `C0 80` 到达，基本多文种平面之外的字符则以两个三字节序列到达，它们会作为所编码的代理对原样通过；严格的 UTF-8 解码器会拒绝这两者。
++     entry #modifiedUtf8   读取一段长度已读出的修改版 UTF-8，与类文件常量池的存储方式相同
++     entry #skip   跳过若干字节
++     entry #location   读取一个 `Location`：类型标签、引用类型、方法和索引
++     entry #value   读取一个带标签的 `Value`
++     entry #untaggedValue   读取一个调用者已知其标签的 `Value`
++     entry #arrayRegion   读取一个数组区段：整个区段一个标签，一个计数，然后是各元素
++         原始类型的区段紧凑地存放其单一类型的无标签值；对象区段携带普通的带标签值，因为各元素的运行时类型可能不同。
++   entry .Writer   编组数据包载荷：流式接口、大端序，标识符按协商的宽度写入
+
+% 1 1 0 15abcf50d16534e7003972bc63677c60
+
+@ 0 3 0 1d0b458dc276ba94153eacd73b2532aa
++         `Writer(sizes)` 累积字节；每次写入都返回该写入器，`#data` 则对已写入的内容做快照。
++         `Connection#request` 把一个写入器借给调用者的 `write` 函数。
+
+% 2 1 0 1fac1c7f550efad40e2b1d3dca90fc42
+
+% 3 1 0 07eb35cfbb8a9c9b0b1700f83070b84d
+
+% 5 1 0 0d5189651bf7a46804c8373ac0afc67d
+
+% 0 1 0 0f69f5b813ae986d14b44de9e0cbf3f3
+
+% 1 1 0 08fc2dc73bb80f150723311ea0e3146d
+
+@ 0 26 0 0f2225bb0f33ab371381abca15672abb
++     entry #byte   写入一个字节
++     entry #boolean   把布尔值写为一个字节
++     entry #short   写入一个大端序 16 位整数
++     entry #char   写入一个大端序 16 位字符
++     entry #int   写入一个大端序 32 位整数
++     entry #long   写入一个大端序 64 位整数
++     entry #float   写入一个 32 位 IEEE 浮点数
++     entry #double   写入一个 64 位 IEEE 双精度浮点数
++     entry #id   以给定字节宽度写入一个标识符
++     entry #objectId   按协商的对象宽度写入一个 `ObjectId`
++     entry #threadId   按协商的对象宽度写入一个 `ThreadId`
++     entry #threadGroupId   按协商的对象宽度写入一个 `ThreadGroupId`
++     entry #stringId   按协商的对象宽度写入一个 `StringId`
++     entry #classLoaderId   按协商的对象宽度写入一个 `ClassLoaderId`
++     entry #referenceTypeId   按协商的引用类型宽度写入一个 `ReferenceTypeId`
++     entry #methodId   按协商的方法宽度写入一个 `MethodId`
++     entry #fieldId   按协商的字段宽度写入一个 `FieldId`
++     entry #frameId   按协商的帧宽度写入一个 `FrameId`
++     entry #string   写入一个带长度前缀的 JDWP 字符串，采用 JNI 修改版 UTF-8
++     entry #location   写入一个 `Location`
++     entry #value   写入一个带标签字节的 `Value`
++     entry #untaggedValue   写入一个不带标签的 `Value`，用于字段写入或原始类型数组区段
++     entry #modifier   写入一个 `Modifier`：先是其 modkind 字节，然后是其载荷
++     entry #bytes   追加原始字节
++     entry #data   到目前为止写入的字节，以 `Data` 表示
++   entry .Event   虚拟机发回的事件，从 Composite 命令解码而来
+
+% 1 1 0 1d9e63b30a2dddb50eafe7ac5add295c
+
+@ 0 11 0 06fd33ab0bac5d4b057470c936918b1c
++         `VmStart(request, thread)`、`VmDeath(request)`、`ThreadStart` 和 `ThreadDeath`（`request, thread`）、`Breakpoint`、`SingleStep`、`MethodEntry` 和 `MethodExit`（`request, thread, location`）、`Thrown(request, thread, location, exception, catchLocation)`、`FieldAccess(request, thread, location, tag, cls, field, obj)`、`FieldModified(…, obj, incoming)`、`ClassPrepared(request, thread, tag, cls, signature, status)` 和 `Unknown(kind, request)`。
++         只有本调试器会请求的种类才得到完整建模：无法识别的种类解码为 `Unknown` 并结束该复合事件，因为它的载荷长度未知，在数据包内无法重新同步流（下一个数据包不受影响，因为它按长度分帧）。
++         `request` 是引发该事件的事件请求的 id，对于 `VmStart` 这类自动事件则为 `0`。
++     entry .Composite   一条 Composite 命令：一个挂起方针，以及它携带的事件
+
+% 1 1 0 10d1acacefc1d6b31ab8114869411eee
+
+@ 0 6 0 018fe14ad4de32e51b66125e99a233b5
++           JDWP 每个复合事件按其 `policy` 挂起一次，分发器也只恢复一次；没有处理函数认领的复合事件会被整体交给 `Debug#events`。
++       entry #policy   该复合事件挂起了虚拟机的多少部分
++       entry #events   各事件，按虚拟机发送的顺序
++     entry .composite   从定位在 Composite 命令载荷处的读取器解码一个复合事件
++   entry .Packet   一个完整的 JDWP 数据包：id、标志、错误码、命令集、命令和正文
+
+% 1 1 0 18413305bf1655c312a94297b036d7a7
+
+@ 0 16 0 130451885326344909b39d3857fd47be
++         4 字节的长度前缀计算整个数据包，包括头部；`flags` 的最高位标记回复，回复在命令携带 1 字节命令集和 1 字节命令的位置上携带 2 字节的错误码。
++         `Packet.command` 对命令分帧，`Packet.reply` 对回复分帧（就像测试中的假虚拟机所做的那样），`Packet.decode` 则把数据包读回。
++     entry #id   数据包 id，用于把回复与其命令关联起来
++     entry #flags   标志字节；最高位标记回复
++     entry #code   回复的错误码，成功时为零；命令则为零
++     entry #commandSet   命令的命令集编号；回复则为零
++     entry #command   命令在其命令集内的编号；回复则为零
++     entry #body   十一字节头部之后的载荷
++     entry #reply   该数据包是否为回复
++     entry .headerLength   十一：载荷之前的字节数
++     entry .command   由 id、命令集、命令编号和正文构成一个命令数据包
++     entry .reply   由 id、错误码（失败时非零）和正文构成一个回复数据包
++     entry .decode   解码一个完整的数据包，恰好读取其自身长度的字节
++   entry .Connection   线上级客户端：在双工通道上对数据包分帧并加以关联
+
+% 1 1 0 13317c320fa226b8145adedb56a8da6f
+
+@ 0 8 0 03bbffd3ebdbf7270b515a546a4e68ea
++         `Connection` 拥有会话所需的各个泵：单个写入任务排空待发的数据包，使写入永不交错；读取任务重组按长度分帧的数据包，兑现每个回复所对应的 promise，或把每个复合事件放入队列；分发任务运行已注册的处理函数，而绝不是由读取任务来运行，因此处理函数自己发出的命令不会等待那个必须交付其回复的任务。
++         发出命令的处理函数在等待期间会重入地抽取复合事件队列，因为被调用的方法可能引发一个事件（链接期间的类准备），挂起正在执行该调用的那个线程，而只有分发器才能处理它。
+
+@ 0 6 0 1a5dd26e071802871785aed6b7d7218b
++         它是一个 `SharedCapability`，同时由它的三个任务和会话的线程驱动，其所有状态都经过同步。
++         `Debug` 包装一个 `Connection`；对于会话不公开的命令，可以直接使用它，正如 `Evaluator` 为在被调试程序中分配数组、驻留字符串和调用 `defineClass` 所做的那样。
++         各命令方法以规范中的名称命名，按命令集分组，并且每个都接受一个 `Tactic[Debugger.Error]`，回复的错误码通过它抛出。
+
+% 0 1 0 0c96f91005cce50f10f67496a0a201a7
+
+@ 0 78 0 18e77459d362a19c014f3dee0445692f
++     entry #sizes   会话开始时协商的标识符宽度
++     entry #request   对命令分帧并发出，交回一个覆盖回复载荷的读取器
++         `request(set, command)(write)` 把一个 `Writer` 借给 `write`，发送数据包，等待回复，并返回一个定位在其载荷处的 `Reader^`。
++         失败的回复会抛出一个 `Debugger.Error`，带有虚拟机给出的原因和细节 `command (set, command)`，并返回一个空读取器，使解码降级而不是崩溃。
++     entry #version   `VirtualMachine.Version`（1, 1）：虚拟机的版本
++     entry #allClasses   `VirtualMachine.AllClasses`（1, 3）：每个已加载的引用类型
++         它枚举整个虚拟机，因此当某个线程持有类加载锁而处于挂起状态时（在 `ClassPrepare` 事件处），不得调用它：请使用 `Connection#classesBySignature`。
++     entry #classesBySignature   `VirtualMachine.ClassesBySignature`（1, 2）：恰好具有某个 JNI 签名的已加载类
++         每个定义加载器一个。
++         与 `Connection#allClasses` 不同，在 `ClassPrepare` 事件处使用是安全的。
++     entry #allThreads   `VirtualMachine.AllThreads`（1, 4）：所有线程
++     entry #suspendAll   `VirtualMachine.Suspend`（1, 8）：挂起所有线程
++     entry #resumeAll   `VirtualMachine.Resume`（1, 9）：恢复所有线程
++     entry #dispose   `VirtualMachine.Dispose`（1, 6）：结束调试会话，清除所有请求
++     entry #createString   `VirtualMachine.CreateString`（1, 11）：在被调试程序中驻留一个字符串，供调用使用
++     entry #capabilitiesNew   `VirtualMachine.CapabilitiesNew`（1, 17）：`Capabilities` 中列出的标志
++     entry #signature   `ReferenceType.Signature`（2, 1）：类型的 JNI 签名
++     entry #sourceFile   `ReferenceType.SourceFile`（2, 7）：编译出该类型的源文件，取其基本名
++     entry #classLoader   `ReferenceType.ClassLoader`（2, 2）：定义该类型的加载器，引导类则为空引用
++     entry #smap   类的已解析 SMAP，在会话内 memoize；没有则为 `Unset`
++         由 digression 从 `Connection#sourceDebugExtension` 解析；不存在的情况也会被 memoize，因此没有调试扩展的类（或不具备 `canGetSourceDebugExtension` 的虚拟机）总共只花费一次往返。
++         正是它使位置和单步能够感知内联。
++     entry #sourceDebugExtension   `ReferenceType.SourceDebugExtension`（2, 12）：原始 SMAP 文本
++     entry #methods   `ReferenceType.Methods`（2, 5）：类型的方法
++     entry #fields   `ReferenceType.Fields`（2, 4）：类型自己的字段，不含继承的字段
++     entry #constantPool   `ReferenceType.ConstantPool`（2, 18）：类的方法引用所携带的名称，经过 memoize
++         返回本库自己解析的常量池，单步过滤器查阅它，按被调用者的名称识别转发器；它是包私有的，因此库外的调用者只能把它传递下去。
++         需要 `canGetConstantPool`；没有它时常量池为空。
++     entry #bytecodes   `Method.Bytecodes`（6, 3）：方法的字节码，以位于其第一条操作码处的读取器表示
++         需要 `canGetBytecodes`。
++     entry #superclass   `ClassType.Superclass`（3, 1）：直接超类，`Object` 则为空引用
++         沿它向上遍历可以找到 `Connection#fields` 省略的继承字段；`Halt#exceptionInfo` 遍历它来找到 `Throwable` 的 `detailMessage`。
++     entry #invokeStatic   `ClassType.InvokeMethod`（3, 3）：在挂起的线程上调用静态方法
++         单线程执行：在此期间其他所有线程都保持挂起，因此需要其他线程的方法会死锁。
++         返回带有结果和任何异常的 `Invocation`。
++     entry #newInstance   `ClassType.NewInstance`（3, 4）：在挂起的线程上构造一个对象
++     entry #newArray   `ArrayType.NewInstance`（4, 1）：在被调试程序中分配给定长度的数组
++     entry #lineTable   `Method.LineTable`（6, 1）：方法从字节码到行号的映射
++     entry #variableTable   `Method.VariableTable`（6, 2）：方法的局部变量表，没有调试信息时为 `Unset`
++         对于编译时没有局部变量调试信息的类，虚拟机回答 `AbsentInformation`（101），它被解码为 `Unset` 而不是被抛出，因为调用者会降级到捕获的状态和字段状态。
++     entry #referenceType   `ObjectReference.ReferenceType`（9, 1）：对象的运行时类型，连同其标签
++     entry #fieldValues   `ObjectReference.GetValues`（9, 2）：对象各字段的值
++     entry #setFieldValues   `ObjectReference.SetValues`（9, 3）：写入对象的字段，不带标签
++     entry #invokeMethod   `ObjectReference.InvokeMethod`（9, 6）：在挂起的线程上调用实例方法
++         与 `Connection#invokeStatic` 一样是单线程执行。
++         JDWP 调用会忽略访问控制，`Evaluator` 正是借此调用类加载器受保护的 `defineClass`。
++     entry #reflectedType   `ClassObjectReference.ReflectedType`（17, 1）：一个 `java.lang.Class` 对象所代表的引用类型
++     entry #stringValue   `StringReference.Value`（10, 1）：字符串对象的文本
++     entry #threadName   `ThreadReference.Name`（11, 1）：线程的名称
++     entry #suspendThread   `ThreadReference.Suspend`（11, 2）：挂起一个线程
++     entry #resumeThread   `ThreadReference.Resume`（11, 3）：恢复一个线程
++     entry #threadStatus   `ThreadReference.Status`（11, 4）：线程的运行状态和挂起状态
++     entry #frameCount   `ThreadReference.FrameCount`（11, 7）：挂起线程的栈深度
++     entry #frames   `ThreadReference.Frames`（11, 6）：挂起线程的一段帧，连同其位置
++     entry #arrayLength   `ArrayReference.Length`（13, 1）：数组的长度
++     entry #arrayValues   `ArrayReference.GetValues`（13, 2）：数组的一段元素
++     entry #setArrayValues   `ArrayReference.SetValues`（13, 3）：写入数组的一段元素，不带标签
++     entry #eventRequestSet   `EventRequest.Set`（15, 1）：安装一个事件请求，返回其 id
++         接受 `EventKind`、`SuspendPolicy` 和各个 `Modifier`；`Connection#eventRequestClear` 和 `Debug#clear` 接受的就是这个 id。
++     entry #eventRequestClear   `EventRequest.Clear`（15, 2）：按种类和 id 取消一个事件请求
++     entry #slotValues   `StackFrame.GetValues`（16, 1）：帧中各槽的值，每个槽都以其类型的标签请求
++     entry #setSlotValues   `StackFrame.SetValues`（16, 2）：写入帧的槽
++     entry #thisObject   `StackFrame.ThisObject`（16, 3）：帧的 `this`，在静态帧或本地帧中为空对象
++     entry #popFrames   `StackFrame.PopFrames`（16, 4）：丢弃直到并包括某一帧的所有帧，使恢复执行时重新执行该调用
++         需要 `canPopFrames`，以及一个因事件而挂起的线程。
++     entry .Reply   命令的结果：带载荷的 `Ok(data)`，或带虚拟机错误码的 `Failed(code)`
++         这是一个专用类型而不是 `Either`，因此回复通道不携带 `Nothing` 类型的载荷。
++         `Failed(-1)` 表示连接丢失。
++     entry .Slot   在连接的注册表中以 `Halt => Unit` 的形式持有一个断点处理函数
+
+% 1 1 0 1a3029a5d2c6e660149bdef1c06b633e
+
+% 2 1 0 186388b163d7060217783213887893c6
+
+@ 0 4 0 06fcd97a3193d235003438a6703dd107
++           不供直接使用：它是一个持有者，把捕获了会话的处理函数挡在捕获跟踪的世界之外，因为处理函数与会话同生共死。
++           它的 `run` 就是该处理函数。
++     entry .PrepareSlot   在注册表中以 `Event.ClassPrepared => Unit` 的形式持有一个类准备处理函数
+
+% 1 1 0 1a7b59d143f074ca044eba5d3755e19b
+
+% 2 1 0 023d830796a10b95124bfe370939ee9a
+
+@ 0 2 0 00d5c21e8874d5dd0856995ffd4a8a34
++           不供直接使用：它是 `Slot` 在类准备方面的对应物，接收原始事件，因为已准备的类没有可供检视的已停止帧。
++           它的 `run` 就是该处理函数。
+
+@ 0 8 0 04e864c11f1e619d111800b8e29566fc
++ entry .evaluator   在被调试程序的类路径上打开一个编译器会话，并在停止处借出一个 `Evaluator`
++     `vivisection.eval` 中 `Halt` 上的扩展方法。
++     `stop.evaluator(classpath) { eval ?=> … }` 在启动被调试程序时所用的 `LocalClasspath` 上启动一个预热的 `Scalac[3.9]` 会话（带有 `-experimental`，因为被调试程序自己的类型和 `Inspectable` 使用了实验性特性），在其上构建一个 `Purview`，并为该代码块借出一个 `Evaluator`。
++     会话和求值器都随代码块一同结束，二者都不能比借出该 halt 的那次停止活得更久。
++     它需要一个 `Monitor`、一个 `System`、一个 `Compiler.Event is Loggable`，以及针对 `Async.Error`、`Compiler.Error` 和 `Debugger.Error` 的战术。
+
+% 2 1 0 0af40051e441ee5c106f6d665a518944
+
+% 3 1 0 14cd74f953b81967056d728d90ad4f06
+
+% 4 1 0 1b4905f89fb4dd141e59bb0093dea94b
+
+% 5 1 0 08e8518b324e58b70ffff289c9e2fb22
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 2 1 0 186c628c923e452b0be1a299e2f3b006
+
+% 0 1 0 0e508544d36b2e2901457020b9a164b0
+
+% 0 1 0 18315cf186f7e3a8128d46162e3c2352
+
+% 0 1 0 099f8df1222599c211bbe69b85e34415
+
+% 0 1 0 172827ffe058009f044d337a1f0a8a29
+
+% 0 1 0 115586cb220576921f2eaf4fbdd29681
+
+% 1 1 0 1b16b50f7bbcc72407105afb2800b0f4
+
+@ 0 4 0 1a8a4b998ce6a9f316ed66abe973e7bc
++     类路径必须是编译被调试程序的类时所用的那个，包括 TASTy：求值器针对它编译，而 `Purview` 从它的 TASTy 读取声明类型。
++     在测试宿主下，它是 `LocalClasspath.of(Classloader[Main.type])`，而不是 `java.class.path` 属性。
+
+@ 0 1 0 023954f2c0e600ba1871137b9d0a9248
++ entry .Evaluator   通过编译并注入一个类，在挂起的帧处对 Scala 表达式求值
+
+% 1 1 0 166fa6efdb267198129724351ed13b4f
+
+@ 0 8 0 1c5de0139537aeaa0a16c3889f03acb4
++       `Evaluator` 把已停止帧中可见的局部变量映射为一个新命名的合成类的构造器参数，该类位于帧自己的包中；它在 `evaluator` 借出的预热编译器会话中针对被调试程序的类路径编译这个类，把每个类文件以 `byte[]` 的形式送进被调试程序，交给帧的类加载器的 `defineClass`（JDWP 没有定义类的命令，而它的调用会忽略访问控制），用局部变量的实时值实例化该类，并在已停止的线程上调用它的 `run`。
++       因此，处理函数中的 `total + 1` 的含义，与它在源码那一行处的含义相同。
+
+% 2 1 0 198c183da293f7b903cc31367b3a164d
+
+% 3 1 0 024b086f3822d825038aa3d52f4430d1
+
+% 4 1 0 0d57b82fce3e2d7f0b1d55004fb83767
+
+% 5 1 0 1e6147cae7edc9ec1512e4dc9e352e50
+
+% 1 1 0 1196bdae74362ebb08a9d6fce7b2fa8b
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 2 1 0 09a36bf305d4867c0601b615bb06c2d5
+
+% 0 1 0 01229336118353b507a643434b90d1ad
+
+% 1 1 0 1f020a29eda9fb3f12fb4d2c238c1ef3
+
+% 0 1 0 1afe749a1942f56d022bcac84665e29a
+
+% 0 1 0 13323c994ad2e80d1fbccb6f70ca2724
+
+% 0 1 0 1b651311ac3a95351e13439e186a5fbc
+
+% 0 1 0 17c1b8088bcb1c050e7c86f256ec6be8
+
+% 0 1 0 166cfc647720a6441d176dc8a26cb363
+
+% 1 1 0 0866cccdb62937f0087da698e349e101
+
+@ 0 7 0 1241bc91e2f399c709da4ef395cadbfb
++       当 `Purview` 能从 TASTy 恢复时，每个局部变量都以其*声明*类型为类型，例如不透明的 `Port`，而不是它擦除后的 `Int`；因此 `inspect` 选择的 `Inspectable` 实例与程序员自己的代码所选的相同，`assign` 则让编译器强制检查可赋值性。
++       只有方法的值参数和方法体中的 `val` 以这种方式解析；其他一切都保持擦除后的类型。
++       `Evaluator` 是一个 `ExclusiveCapability`，被限制在 `evaluator` 代码块内。
++       每个合成类的名称都不相同，因为编译器会话保留的符号表禁止重新定义一个名称。
+
+% 1 1 0 18dc6863bc8a902d05a93b372d75e916
+
+% 0 1 0 1a70f691279ba3a413d9e3735b1d1f0e
+
+% 1 1 0 19e08ca8163241c91054bbc9e4677a4f
+
+@ 0 33 0 1225baeb98a0c1ad188e49844b829dd5
++   entry #apply   对表达式求值，并以快照形式返回其 `String.valueOf` 形式
++       `eval(expression)` 编译 `String.valueOf((expression): Any)`，运行它，并返回带有该文本的 `Variable.Snapshot.Str`（所有结果类型都走同一条解码路径）；如果调用没有产生字符串（void 或失败的运行），则返回一个 `Primitive`。
++   entry #assign   以变量的声明类型对表达式求值，并把结果写入该变量
++       `assign(binding, expression)` 找到名为 `binding` 的可见变量，以它的声明类型（若无法得到，则以擦除后的类型）为合成的 `run` 定型，从而让编译器强制检查可赋值性，并把原始值作为原始值返回；然后通过 `Halt#assign` 写入结果，按变量的来源路由。
++       这就是前端的变量编辑。
++   entry #completion   补全宿主应当做类型检查的合成源码，以及片段在其中的偏移量
++       `completion(fragment)` 准备（但不编译）与 `apply` 相同的类，以控制台片段作为类型为 `Any` 的 `run` 方法体，并返回源码以及片段开始处的偏移量。
++       这里不运行编译器：宿主在偏移量之后的某个光标位置，用覆盖被调试程序类路径的类型检查 `Highlight` 对源码做类型检查，并把替换跨度按同一偏移量重新定位，因此对局部变量的补全会针对其声明类型解析，包括扩展方法和 given。
++       没有顶层帧时为 `Unset`。
++   entry #elaborations   帧所在方法中由编译器展开的调用点，取自被调试程序的 TASTy
++       每个 `prophesy.Elaboration` 记录类型检查器在一处调用中插入的内容，即推断出的类型实参和合成的 `using` 实参，它们读自反序列化的树，因此反映的是实际运行的内容。
++       这是悬停提示的原材料。
++   entry #variables   帧中的可见变量，在 TASTy 提供时，每个都带有其声明的静态类型
++       即 `Halt#variables`，其中的 `Variable#static` 通过 `Purview#rendered` 填写：每个参数和方法体局部变量的声明类型经 stenography 渲染的结果，包括捕获集。
++       类型无法恢复的绑定在那里保持 `Unset`，并在 `erased` 中保留其擦除后的类型。
++   entry #inspect   通过可见绑定的 `Inspectable` 实例渲染它，该实例在被调试程序中解析并运行
++       `inspect(binding)` 在导入 `spectacular` 的情况下对 `(binding).inspect` 求值。
++       由于合成类以绑定的声明类型为其定型，召唤是静态的，所得实例就是程序员自己的代码会选的那个；因此不透明类型通过它自己的记法而不是其底层表示的记法渲染，数组渲染为 `⦋…⦌` 而不是它的 `toString`。
++   entry .Injector   通过 JDWP 在运行中的被调试程序里定义类文件
+
+% 1 1 0 10d2f485dcde690e0c307fbb2d6ee812
+
+@ 0 8 0 08cc87ba56e75a7b18f4fa9d65bd0118
++         由求值器为一次求值而构建，覆盖连接、已停止的线程和目标类加载器。
++         每个类文件以 `byte[]` 的形式发送，该数组经由线上分配并填充，然后传给加载器受保护的 `defineClass`；链接是惰性的，因此顺序无关紧要。
++         不直接构造。
++     entry #define   按二进制名称定义一个类文件，返回已加载类的引用类型
++         从 `defineClass` 交回的 `java.lang.Class` 对象恢复得到，因此不需要按名称查找（新定义的类可能尚未出现在 `allClasses` 中）。
++         定义操作什么都没返回时为 `Unset`。
+
+@ 0 1 0 1231dca3fb8b7de6090eda410de816a7
++ entry .Purview   从被调试程序已编译的 TASTy 中恢复帧中各绑定所声明的 Scala 类型
+
+% 1 1 0 01baabb6445ef4130f04a37016ed579e
+
+@ 0 7 0 168fd663a4fa3de30685e6ce9a73d304
++       `Purview(classpath)` 在被调试程序的 `LocalClasspath` 上持有一个独立的编译器上下文，只预热一次：编译器自己的符号加载器从类路径读取各类的 TASTy，然后直接从绑定的符号读取其声明类型（对方法的值参数而言），或者从反序列化的树中读取（对方法体中的 `val` 而言；同名的后一个绑定遮蔽前一个，与停止处的情形一样）。
++       正是这一点让值能够通过其*声明*类型所选的实例渲染：不透明类型通过它自己的 `Inspectable`，而不是其底层表示的 `Inspectable`。
+
+@ 0 4 0 0e95f3b359e07e190be9408c76b32604
++       每个方法在任何失败时（类不在类路径上、编译器无法读取 TASTy）都会降级为空结果，因为调试器是伺机读取类型的，绝不能让帧失败。
++       打印为 `proscenium.Int` 的类型会被规范化为合成求值类编译时所用的普通名称。
+
+% 1 1 0 139cdd0c991274c00898e45642f8c5d4
+
+@ 0 10 0 08532d6e5d99a8830af3cfe19f53caea
++   entry #parameters   方法每个绑定的可编译源码类型，按名称作键
++       编译器自己的打印形式，是有效且可解析的 Scala，`Evaluator` 用它为合成类的参数定型。
++       `className` 是名称还原后的运行时类（`com.example.Main`），`methodName` 是方法。
++   entry #elaborations   方法体中类型检查器所展开的调用点，以 `prophesy.Elaboration` 表示
++       推断出的类型实参和合成的 `using` 实参，连同源码位置一起从反序列化的树中读取，因此能区分写出的实参和推断出的实参。
++   entry #rendered   每个绑定的声明类型面向人的渲染结果，经由 stenography
++       感知捕获集且与源码一致，按名称作键：调试器以 `Variable#static` 显示的内容。
+
+@ 0 1 0 1ebd1678cc55dbc01e9f8c3790e80e19
++ entry .Namer   根据被调试程序类文件旁的 TASTy 为内联位置命名
+
+% 1 1 0 0f30a6a6c08e9cbf0a07d6c99b08561f
+
+@ 0 13 0 0651212faf792d020e568556f14a5f9f
++       对于一个 `ScalaClass` 层的类名和类的 SMAP 中记录的一个原始位置，`Namer(classpath)` 给出程序员在那里写下的定义，即所有者和名称，按堆栈跟踪渲染它们的方式做名称还原，这样内联帧就能以它所来自的方法而不是它的类来命名。
++       覆盖启动类路径的类加载器只获取 `.tasty` 资源；它从不在调试器的 JVM 中定义被调试程序的类。
++       查找按类 memoize，包括不存在的情况；未命中时会沿 `$` 连接的外围类向外查找，因为嵌套类和模块类都在其顶层类之下序列化。
++       DAP 适配器在 `launch` 时构建一个。
++   entry #define   类的源码中某一行处的定义，形如 `owner.name`，或为 `Unset`
++       `define(cls, path, line)` 接受 `Halt.Position` 在 `cls` 中携带的原始类名、源路径和行号。
++       当类在类路径上没有 TASTy、其 TASTy 编译自与 SMAP 所记录的不同的路径，或者没有定义覆盖该行时，结果为 `Unset`。
+
+@ 0 1 0 1daafbd04f3378281c4ce4bae7ccd3c3
++ entry .Dap   调试适配器协议（Debug Adapter Protocol）：基于会话的 stdio 服务器，以及该协议的消息类型
+
+% 1 1 0 09db7700e9d667580e144bb7cceb3287
+
+@ 0 11 0 0c0c630c8b527e720e7e99ec5979ad4a
++       `Dap.listen` 通过标准流上以 `Content-Length` 分帧的 JSON，把调试会话提供给编辑器，即 VS Code 或任何其他使用该协议的编辑器。
++       编辑器的 `launch`（按主类和类路径）或 `attach`（按端口）打开会话；`setBreakpoints`、`setFunctionBreakpoints`、`setExceptionBreakpoints` 和 `setDataBreakpoints` 在程序运行之前设置断点；`configurationDone` 恢复程序运行；`threads`、`stackTrace`、`scopes` 和 `variables` 检视一次停止；`continue`、`next`、`stepIn`、`stepOut` 和 `pause` 驱动线程；`evaluate`、`setVariable`、`setExpression`、`completions` 和 `exceptionInfo` 经由 `Evaluator` 处理；`restartFrame` 弹出一个帧。
++       在启动类路径的 TASTy 能够命名的情况下，感知内联的位置显示为 `subtle` 帧，以程序员写下的定义命名。
+
+% 2 1 0 0792884b5beafc1103818f2932c0b719
+
+% 3 1 0 198334c68fe81f2915ebf27284672060
+
+% 4 1 0 149497751ba06f931fdc1efad19d20ce
+
+% 5 1 0 1f3d2546f1818d96160bef5187793838
+
+% 1 1 0 069934decac3d2d414ff0d652a53dffa
+
+% 1 1 0 01b1a6b5b9a07614193f5109118311b1
+
+% 2 1 0 176cec9b52eac1aa15275f2410b9a6d2
+
+% 3 1 0 191dd5e78547659f0a1367af9980e904
+
+% 4 1 0 023f1292a08990c40b1a39a11876d220
+
+% 5 1 0 0155c4224329e27d1dac09b37962e58e
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 1 1 0 1ca4051cbfa31eb90edc8424bc1d7df0
+
+% 2 1 0 0d3f821d4f1a581d0b866620120be636
+
+% 3 1 0 05d92be10bf39cb50c731f22da98d7f1
+
+% 4 1 0 02c585b2f79ab3f017a69390170444c3
+
+% 0 1 0 1df36e9f80c69ca1074e720cb8d6a3ae
+
+% 0 1 0 07c0075935e5f893046456bfa9ecdb7c
+
+% 1 1 0 00ac0062964dde9d0a8a2830b359e26e
+
+@ 0 6 0 0ea4660b140711170082f347c44ab097
++       该对象的其余部分是协议的消息模型，即本适配器所使用的子集：参数类型是 `Json.Decodable`（它们是传入的），正文类型是 `Json.Encodable`（它们是传出的），每个类型的 given 都在其伴生对象中，而 `Unset` 成员在线上就直接不出现。
++       字段名与规范完全一致，包括 `camelCase` 和保留字 `type`。
++       它们对驱动或模拟 DAP 客户端的程序有用，本库的测试就是如此；调试 JVM 的程序则直接使用 `Debug`。
+
+% 1 1 0 0503d2894f8fc83a1ddec47e7a296d27
+
+% 1 1 0 1246486a56a49d980453ffeb67245faa
+
+@ 0 11 0 198a64b476fcee211717f77014444553
++   entry .listen   在环境标准流上提供该协议，直到输入耗尽
++       前端启动的规范 stdio 传输。
++       所有传出流量都经过同一个写入任务，因此响应和事件永不交错，每个请求都在调用线程上按到达顺序处理。
++       `observer` 看到双向每条消息的原始文本（它在写入任务上运行，因此只能捕获共享能力）。
++       `Stdio` 会被消耗：写入任务拥有标准流，调用者在调用 `listen` 之后不得再使用它们。
++       需要 `Debuggee.Sessional` 的启动 given、一个 `System`、一个 `Compiler.Event is Loggable`，以及针对 `Async.Error`、`Framing.Error`（格式错误的帧）和 `Truncation.Error` 的战术。
++       客户端未经 `disconnect` 就断开连接时，被调试程序仍会在输入结束时被释放。
++   entry .Envelope   任意 DAP 消息，只读取决定如何处理它的那些成员
+
+% 1 1 0 05d2e485dc6dca9b0c8ecf2600e6a9e0
+
+@ 0 18 0 0f0caa1a8d9d256d01534ade5680449b
++         `seq`、`type`、`command` 和 `event`，全部是可选的，因此每条消息都能解码；`Dap.envelope` 从任意 JSON 读取一个信封，默认为空信封。
++     entry #seq   消息的序列号
++     entry #type   `request`、`response` 或 `event`
++     entry #command   请求的命令名
++     entry #event   事件的名称
++     entry .decodable   从 JSON 读取信封
++   entry .envelope   任意 JSON 消息的信封；无法解码时为空信封
++   entry .response   为请求构建一个成功的响应，带有序列号和可选的正文
++   entry .failure   为请求构建一个失败的响应，带有序列号和一条消息
++   entry .event   按名称构建一条事件消息，带有序列号和可选的正文
++   entry .ExceptionFilter   适配器公布的一个异常断点过滤器：其 id、标注和默认值
++     entry #filter   过滤器的 id：`uncaught` 或 `caught`
++     entry #label   显示给用户的标注
++     entry #default   过滤器初始时是否启用
++     entry .encodable   把过滤器写为 JSON
++   entry .exceptionFilters   公布的两个过滤器：`uncaught`（默认开启）和 `caught`
++   entry .Capabilities   适配器在其 `initialize` 响应中公布的内容
+
+% 1 1 0 17ca78006e06f86114fb7526faa34606
+
+@ 0 16 0 078a43cbbdea28ea0d08ebbb330d559c
++         configuration-done、函数断点、数据断点和异常断点、`setVariable`、`setExpression`、`exceptionInfo`、`restartFrame`、补全（由 `.` 触发）以及用于悬停的求值，默认全部为 `true`；缺失的标志读作 false。
++     entry #supportsConfigurationDoneRequest   客户端应在设置断点之后发送 `configurationDone`
++     entry #supportsFunctionBreakpoints   处理 `setFunctionBreakpoints`
++     entry #supportsDataBreakpoints   处理 `dataBreakpointInfo` 和 `setDataBreakpoints`
++     entry #supportsSetVariable   处理 `setVariable`
++     entry #supportsSetExpression   处理 `setExpression`
++     entry #supportsExceptionInfoRequest   处理 `exceptionInfo`
++     entry #supportsRestartFrame   处理 `restartFrame`
++     entry #supportsCompletionsRequest   处理 `completions`
++     entry #supportsEvaluateForHovers   处理带 `hover` 上下文的 `evaluate`
++     entry #completionTriggerCharacters   触发补全的字符：`.`
++     entry #exceptionBreakpointFilters   提供的过滤器：`Dap.exceptionFilters`
++     entry .encodable   把公布的内容写为 JSON
++   entry .LaunchArguments   `launch` 请求的参数：主类和类路径，与 `Debuggee` 相对应
+
+% 1 1 0 17b60d8a0640a98019ba136f45338b79
+
+@ 0 18 0 0dd3d251aec800be14ecbbfab3a67537
++         规范规定由适配器定义。
++         适配器以 `java -classpath <classpath> <mainClass>` 启动程序，并在一个空闲端口上挂载代理，启动时即挂起。
++     entry #mainClass   要运行其 `main` 的类
++     entry #classpath   类路径，以 `java.class.path` 文本表示
++     entry .decodable   从 JSON 读取参数
++   entry .AttachArguments   `attach` 请求的参数：端口，以及可选的主机名
++     entry #port   虚拟机代理监听的端口
++     entry #hostName   主机，默认为 `localhost`
++     entry .decodable   从 JSON 读取参数
++   entry .Source   源码引用：名称和路径，二者都是可选的
++     entry #name   文件的基本名
++     entry #path   文件的路径
++     entry .decodable   从 JSON 读取源码引用
++     entry .encodable   把源码引用写为 JSON
++   entry .SourceBreakpointSpec   一个请求的源码断点：其行号
++     entry #line   从一开始计数的行号
++     entry .decodable   从 JSON 读取规格
++   entry .SetBreakpointsArguments   `setBreakpoints` 请求：源文件，以及其中想要的每个断点
+
+% 1 1 0 0083c1c12f68c224009df568b0129164
+
+@ 0 15 0 05365e22a4e5b1c013fe400fe9ed973a
++         协议的替换语义：请求中的断点替换此前在该源文件中设置的所有断点。
++     entry #source   源文件
++     entry #breakpoints   想要的断点，以 `SourceBreakpointSpec` 表示
++     entry .decodable   从 JSON 读取参数
++   entry .SetExceptionBreakpointsArguments   `setExceptionBreakpoints` 请求：已启用的过滤器 id
++     entry #filters   `uncaught`、`caught`、两者皆有或两者皆无
++     entry .decodable   从 JSON 读取参数
++   entry .FunctionBreakpointSpec   一个请求的函数断点：一个 `Class.method` 名称
++     entry #name   运行时类和方法，如 `com.example.Ledger.deposit`
++     entry .decodable   从 JSON 读取规格
++   entry .SetFunctionBreakpointsArguments   `setFunctionBreakpoints` 请求：想要的每个函数断点
++     entry #breakpoints   想要的断点，以 `FunctionBreakpointSpec` 表示
++     entry .decodable   从 JSON 读取参数
++   entry .DataBreakpointInfoArguments   `dataBreakpointInfo` 请求：变量名及其作用域引用
+
+% 1 1 0 009db121cabe21ee05d10d9a5b7de028
+
+@ 0 26 0 0f3f7df5a6253c6a11ac2870c5a11a8f
++         以一个 `DataBreakpointInfoBody` 作答，对于成员字段，其 `dataId` 为 `owner:field`；成员字段是数据断点唯一支持的变量种类。
++     entry #name   变量名
++     entry #variablesReference   变量所在的作用域
++     entry .decodable   从 JSON 读取参数
++   entry .DataBreakpointSpec   一个请求的数据断点：形如 `class:field` 的 `dataId`
++     entry #dataId   `dataBreakpointInfo` 响应给出的 id
++     entry .decodable   从 JSON 读取规格
++   entry .SetDataBreakpointsArguments   `setDataBreakpoints` 请求：想要的每个数据断点
++     entry #breakpoints   想要的断点，以 `DataBreakpointSpec` 表示
++     entry .decodable   从 JSON 读取参数
++   entry .ThreadArguments   指明一个线程的请求：`next`、`stepIn`、`stepOut`、`pause`、`exceptionInfo`
++     entry #threadId   适配器为该线程分配的句柄
++     entry .decodable   从 JSON 读取参数
++   entry .StackTraceArguments   `stackTrace` 请求：线程，以及可选的帧范围
++     entry #threadId   适配器为该线程分配的句柄
++     entry #startFrame   想要的第一个帧
++     entry #levels   想要的帧数
++     entry .decodable   从 JSON 读取参数
++   entry .FrameArguments   指明一个帧的请求：`scopes` 和 `restartFrame`
++     entry #frameId   适配器为该帧分配的句柄
++     entry .decodable   从 JSON 读取参数
++   entry .VariablesArguments   `variables` 请求：要展开的作用域或结构
++     entry #variablesReference   `scopes` 或 `variables` 响应给出的句柄
++     entry .decodable   从 JSON 读取参数
++   entry .SetVariableArguments   `setVariable` 请求：作用域、变量名，以及以文本表示的新值
+
+% 1 1 0 1d95e61ffa44265b0dbaaa840b95d96a
+
+@ 0 7 0 0e2852d8a3f544151e562133ccb77983
++         该值按变量擦除后的类型解析：原始类型，以及一个新的远程字符串。
++         更复杂的内容属于 `setExpression`。
++     entry #variablesReference   变量所在的作用域
++     entry #name   变量名
++     entry #value   新值，以文本表示
++     entry .decodable   从 JSON 读取参数
++   entry .EvaluateArguments   `evaluate` 请求：表达式、帧，以及发出请求时的上下文
+
+% 1 1 0 1cb6e4041c8620341a5713f1d68f45a9
+
+@ 0 9 0 144fa2b98c42e124133f7e9c64219148
++         `hover` 上下文从不运行被调试程序的代码，因为它在光标移动时触发：它只回答可见局部变量的值和静态类型，或已停止方法中所指名调用的展开结果。
++         其他所有上下文（`repl`、`watch`、缺失）都经由 `Evaluator` 求值。
++     entry #expression   表达式
++     entry #frameId   求值所针对的帧
++     entry #context   `hover`、`repl`、`watch` 或缺失
++     entry .decodable   从 JSON 读取参数
++   entry .CompletionsArguments   `completions` 请求：控制台文本、光标列和帧
+
+% 1 1 0 1d15bb1247d31a23011b101a3c94cffb
+
+@ 0 34 0 0aec17451bfa98b409298008519e3c6e
++         `column` 是 `text` 内从一开始计数的字符位置；`line` 被接受但不使用，因为适配器补全的是单行控制台输入。
++     entry #text   到目前为止的控制台文本
++     entry #column   `text` 中从一开始计数的光标位置
++     entry #frameId   其局部变量在作用域内的帧
++     entry #line   被接受但不使用
++     entry .decodable   从 JSON 读取参数
++   entry .SetExpressionArguments   `setExpression` 请求：一个绑定、表示其新值的表达式，以及帧
++     entry #expression   要赋值的绑定
++     entry #value   要赋其值的表达式
++     entry #frameId   帧
++     entry .decodable   从 JSON 读取参数
++   entry .Breakpoint   报告给客户端的断点：是否已验证，以及其 id、行号和消息
++     entry #verified   断点是否已绑定到某个位置
++     entry #id   适配器为它分配的 id
++     entry #line   它的行号
++     entry #message   它未经验证的原因，如有给出
++     entry .encodable   把断点写为 JSON
++   entry .BreakpointsBody   `setBreakpoints` 系列响应的正文：每个请求对应一个 `Breakpoint`
++     entry #breakpoints   各断点，按请求的顺序
++     entry .encodable   把正文写为 JSON
++   entry .DataBreakpointInfoBody   `dataBreakpointInfo` 响应的正文：数据 id、描述和访问类型
++     entry #dataId   `owner:field`；变量不支持数据断点时为 `Unset`
++     entry #description   给用户的描述，或不支持的原因
++     entry #accessTypes   `write`，唯一支持的访问类型
++     entry .encodable   把正文写为 JSON
++   entry .ThreadInfo   报告给客户端的线程：其句柄和名称
++     entry #id   适配器分配的句柄
++     entry #name   线程的名称
++     entry .encodable   把线程写为 JSON
++   entry .ThreadsBody   `threads` 响应的正文
++     entry #threads   所有线程
++     entry .encodable   把正文写为 JSON
++   entry .StackFrame   报告给客户端的帧：句柄、名称、行、列、源文件和展示提示
+
+% 1 1 0 04df0b4c5fb129610c7f27a1b862a34a
+
+@ 0 38 0 0761f9e95175f5e3079bd6f72368b51f
++         每个*逻辑*位置一个：内联代码中的一个物理帧会展开为它的各个内联来源，提示为 `subtle`，其后是位于真实行号处的该帧本身。
++     entry #id   适配器分配的句柄
++     entry #name   方法，或程序员写下的被内联的定义
++     entry #line   源码行
++     entry #column   列，始终为 `0`
++     entry #source   源文件，如果已知
++     entry #presentationHint   内联来源为 `subtle`
++     entry .encodable   把帧写为 JSON
++   entry .StackTraceBody   `stackTrace` 响应的正文：各帧及其总数
++     entry #stackFrames   各帧，最内层在前
++     entry #totalFrames   帧的数量
++     entry .encodable   把正文写为 JSON
++   entry .Scope   变量作用域：其名称、句柄，以及展开它是否代价高昂
++     entry #name   `Locals`，所提供的唯一作用域
++     entry #variablesReference   `variables` 请求所接受的句柄
++     entry #expensive   始终为 `false`
++     entry .encodable   把作用域写为 JSON
++   entry .ScopesBody   `scopes` 响应的正文
++     entry #scopes   帧的各作用域
++     entry .encodable   把正文写为 JSON
++   entry .VariableInfo   报告给客户端的变量：名称、渲染后的值、展开句柄和类型
++     entry #name   变量名
++     entry #value   渲染后的值
++     entry #variablesReference   用于展开它的句柄，叶子则为 `0`
++     entry #type   恢复得到时为其静态类型，否则为其擦除后的类型
++     entry .encodable   把变量写为 JSON
++   entry .VariablesBody   `variables` 响应的正文
++     entry #variables   该作用域或结构中的变量
++     entry .encodable   把正文写为 JSON
++   entry .SetVariableBody   `setVariable` 或 `setExpression` 响应的正文：写入后的值
++     entry #value   新值，以文本表示
++     entry .encodable   把正文写为 JSON
++   entry .EvaluateBody   `evaluate` 响应的正文：结果和展开句柄
++     entry #result   结果，以文本表示
++     entry #variablesReference   用于展开它的句柄，或 `0`
++     entry .encodable   把正文写为 JSON
++   entry .CompletionItem   一个补全项：其标注、种类，以及它所替换文本的跨度
+
+% 1 1 0 1a7e708da27f6d311e19fe7c134068ae
+
+@ 0 20 0 0bc28c5ae95b3fc116b4d0968a9f7525
++         `start` 和 `length` 界定该补全项所替换的、请求的 `text` 中的区域，单位与请求的 `column` 相同，从一开始计数；省略时，客户端在请求的列处插入 `label`。
++     entry #label   补全文本
++     entry #type   `method`、`class`、`module`、`keyword` 或 `variable`
++     entry #start   被替换区域的起点，从一开始计数
++     entry #length   被替换的长度
++     entry .encodable   把补全项写为 JSON
++   entry .CompletionsBody   `completions` 响应的正文
++     entry #targets   各补全项
++     entry .encodable   把正文写为 JSON
++   entry .ExceptionInfoBody   `exceptionInfo` 响应的正文：异常的类、中断模式和消息
++     entry #exceptionId   异常的类名
++     entry #breakMode   已捕获的异常为 `always`，未捕获的异常为 `unhandled`
++     entry #description   异常的消息
++     entry .encodable   把正文写为 JSON
++   entry .ContinueBody   `continue` 响应的正文：是否所有线程都已继续
++     entry #allThreadsContinued   始终为 `true`
++     entry .encodable   把正文写为 JSON
++   entry .StoppedBody   `stopped` 事件的正文：原因、线程，以及命中了哪些断点
+
+% 1 1 0 1e5d6237b25b2dea171f04837cfd6f2f
+
+@ 0 19 0 17ac72765b3d921f00c141870ed5b063
++         发送的原因有 `breakpoint`、`function breakpoint`、`data breakpoint`、`exception`、`step`、`pause` 和 `restart`。
++     entry #reason   线程停止的原因
++     entry #threadId   适配器为该线程分配的句柄
++     entry #allThreadsStopped   是否所有线程都已停止；单步或暂停时为 `false`
++     entry #hitBreakpointIds   命中的断点的 id
++     entry .encodable   把正文写为 JSON
++   entry .ContinuedBody   `continued` 事件的正文：线程，以及是否所有线程都已继续
++     entry #threadId   适配器为该线程分配的句柄
++     entry #allThreadsContinued   是否所有线程都已继续
++     entry .encodable   把正文写为 JSON
++   entry .OutputBody   `output` 事件的正文：被调试程序的输出及其类别
++     entry #output   文本
++     entry #category   `stdout` 或 `stderr`
++     entry .encodable   把正文写为 JSON
++   entry .ExitedBody   `exited` 事件的正文：被调试程序的退出码
++     entry #exitCode   退出码
++     entry .encodable   把正文写为 JSON
++   entry .BreakpointEventBody   `breakpoint` 事件的正文：原因，以及断点的新状态
+
+% 1 1 0 194626e6ffd148fb01aacf8ceeb826fe
+
+@ 0 2 0 15b3f6575ec023b5046a626ab60f0f1f
++         当一个延迟的源码断点完成绑定时，以原因 `changed` 发送，使客户端把它标记为已验证。
+
+% 0 1 0 0f1127942578fd310c165c8d7efa16fb
+
+@ 0 2 0 09b0cd0627e9c907191246b06dcecd3a
++     entry #breakpoint   断点的新状态
++     entry .encodable   把正文写为 JSON

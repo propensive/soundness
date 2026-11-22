@@ -1,0 +1,1194 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1858fc9b32d9fcd900c4c57120d035cf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 00204fbe0542b3d5089e475121b77bec
++ info   将光栅图像作为不可变的类型化值：以五种格式读取、检视、变换和写入
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0f9612e5132e65f30c0f327d54be9ba9
++     _Hallucination_ 将光栅图像（PNG、JPEG、WebP、GIF 和 BMP）读写为 `Raster` 值：一个不可变的像素网格，它知道自己的宽度和高度，将每个像素读作类型化的颜色，并在其类型中携带其**格式**，因此 `Raster in Png` 和 `Raster in Jpeg` 是不同的类型，在两者之间转换只需一个方法 `to[Jpeg]`。
++     JVM 的 `BufferedImage` 是可变的，会忘记它来自哪种格式，并把每个编码决定留给由标志驱动的调用；`Raster` 是一个值，读取不属于所指定格式的字节会得到类型化的 `Raster.Error`，而不是 null。
+
+@ 0 6 0 11b2b0530b6c77b50f8b23aa199675cf
++     光栅也可以在其类型中携带其**像素布局**（`Raster by Rgba`，或 `Raster by (Channel.Red[5], Channel.Green[6], Channel.Blue[5])`），它是 iridescence `Channel` 类型的元组，最高有效位在前。
++     布局类型化光栅的 `pixel` 读取一个 `Pixel[layout]`，只需一次在编译时计算出的移位和掩码，而 `repack` 在布局之间转换。
++     无论布局如何，光栅的 `descriptor` 都是该布局在运行时的镜像，供必须适用于任何图像的操作使用，而 `raster(x, y)` 将像素读作 `Chroma`。
+
+% 2 1 0 10d6ccf403fd968e08c4d88372f2abaa
+
+% 3 1 0 0e97137eae2dbb38150ba4b8c16bb34e
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 2 1 0 1146cecce2df4bae08a5fd0e1631e470
+
+% 4 1 0 0a96f99cf232f2a61f33378c16a83167
+
+% 5 1 0 16bd276ff6462fd0027b9d37a64fcd2f
+
+% 0 1 0 0fb5852b4c490a681eb62788dbf5f8be
+
+% 0 1 0 1384129907b88e1007063b939ebc5d2a
+
+% 0 1 0 0bece0311d300bb107ca4080d1f2f260
+
+% 0 1 0 1969baa4e24f782f0f13476c866b6656
+
+% 0 1 0 0bf8b147f714be560bcc4c62430b8f2d
+
+% 1 1 0 15642813da1b69f81ac0e6dbf561c2ae
+
+@ 0 4 0 075e689ad687cc7f1b5b7554a0b3180d
++     读取使用的是其他每种来源都提供的同一个 `read[…]`，并将格式指定为光栅的形式；写入则是将光栅读作 `Data`，通过 `Raster` 伴生对象中的 `Streamable` given 完成。
++     格式未知的光栅由 `Raster(data)` 根据其开头的字节识别，候选格式是作用域中的 `Raster.Formats` 所指定的那些。
+
+@ 0 4 0 1212595954647b190e549950f54b7e36
++     绘图算法若要逐像素写入图像，则将其作为 `Canvas` 打开（`raster.open[Canvas](Read & Write)`），这会在其缓冲区上提供一个有作用域的 `CanvasHandle`；该句柄的 `snapshot` 获取一个独立的副本。
++     `canvasOpenable` given 位于顶层，必须按名称导入。
+
+@ 0 4 0 048f4128fd590c19047af80163ad7889
++     每种格式都是一个 `Rasterizable`（`Bmp`、`Gif`、`Jpeg`、`Png`、`Webp`），其伴生对象将其编解码器作为 given `rasterization` 持有，位于隐式作用域中；`Png()` 是作为值的同一个实例，供 `Raster.Formats` 使用。
++     该库按组件划分，因此程序只编译它所指定的编解码器：
+
+@ 0 15 0 023e66a33477ecbd0df71ff4b29795ff
++     - `hallucination.core`：`Raster`、`Raster.Error`、`Raster.Formats`、`Rasterizable`、`Descriptor`、`Canvas`，以及 `pixel` 和 `repack` 扩展。在 JVM 上，它还持有格式后端所用的 `javax.imageio` 桥接。
++     - `hallucination.bmp`、`hallucination.gif`、`hallucination.jpeg`、`hallucination.png`：各含一个编解码器，带有在每个平台上编译的纯 Scala 实现。在 JVM 上，解码和编码经由 `javax.imageio` 进行，其原生编解码器更快；在 Scala.js 和 WASI 上则使用纯编解码器。每个组件都添加一个 `construables` given（`pngConstruable`，……），将该格式的媒体类型绑定到 `Raster in Png`。
++     - `hallucination.webp`：WebP 编解码器，包括有损的 VP8 和无损的 VP8L，在每个平台上都是纯 Scala，因为没有任何标准 JRE 带有 WebP 读取器。
++     - `hallucination.formats`：given `allRasterFormats`，一个包含全部五种格式的 `Raster.Formats`，使 `Raster(data)` 能识别该库实现的任何格式；它会链接每个编解码器。
++     - `hallucination.canvas`：`CanvasHandle`、`RasterOpenable` 和 `canvasOpenable` given，基于 aperture 的 `Openable`。
+
+@ 0 4 0 0063c791e3c609ea10a1b4755cdb3df9
++     除 `Descriptor` 外，一切都导出到 `soundness` 总括包：`Descriptor` 会与那里的 OCI `Descriptor` 冲突，因此通过 `hallucination.Descriptor` 访问。
++     `construables` 包与总括包自己的同名包合并，其中的 given 按名称导入，因为 `import soundness.*` 不导入 given。
+
+@ 0 3 0 1e32a8db59d385d31572fdc5bed06fe5
++     `Raster` 也是 `Graphical`，即 anticipation 为任何具有宽度、高度和像素之物提供的接口；而 `Raster in <format>` 可以 `Abstractable` 为带有该格式媒体类型的 HTTP 正文，因此图像可以直接作为响应提供。
+
+% 0 1 0 1e6c105b23e39ab002e5d5c0b6a3148e
+
+% 0 1 0 0644dbe5d72a27d21319ddaac75ce299
+
+% 0 1 0 085d85dfb349acdb08c7a0ad201b8b26
+
+% 0 1 0 0b764c105012dec31922728379e92d17
+
+@ 0 1 0 1c23d5e565a1019f030cccf0bad5adb5
++ entry .Raster   不可变的光栅图像：采用已知布局的像素，其格式在其类型中
+
+% 1 1 0 03171eda5edaba3304cf5f08d5b46f4d
+
+@ 0 7 0 1781f21b0b9600ce15ba169a5c6cad10
++       `Raster` 是 `width` 乘 `height` 的像素网格，每个像素存储为一个机器字，采用其布局所需的存储原始类型（byte、short、int 或 long），构建后即不可变。
++       其类型接受两个可选的细化：**形式**幻影 `Raster in Png` 是图像格式，由 `to[Format]` 设置，由 `Streamable` given 读取；**操作数**幻影 `Raster by Rgba` 是像素布局，即 iridescence 通道类型的元组，供 `pixel` 和 `repack` 使用。
++       布局在运行时的对应物是 `#descriptor`，与布局无关的操作会查阅它。
+
+@ 0 4 0 018fda60133d5b18014d6aa0fd2f0984
++       光栅可以用 `.apply` 从像素函数构建，用 `data.read[Raster in Png]` 从字节解码（通过 `.aggregable`），或用 `Raster(data)` 根据其开头的字节识别，并用 `raster.to[Png].read[Data]` 写出（通过 `.streamable`）。
+
+% 2 1 0 06ffc281cffed56116a1f029990ab5ec
+
+% 3 1 0 04aac41d864af1e41bfa248d52001dea
+
+% 4 1 0 024031a92163097b1784269236f46191
+
+% 5 1 0 07facb93fbd2569b1f85daa4aff67f08
+
+% 0 1 0 124573f0683a1e4909f63d108e1fc831
+
+% 0 1 0 16f7118a50ee7b2b0844621c943b62e6
+
+% 0 1 0 0e637bd88af4d9c01721fc038a5aa4dc
+
+% 0 1 0 0e706d6135128c5b198bc6414d154710
+
+% 0 1 0 093be098fb7a41d9117a2e723a94aa40
+
+% 0 1 0 07632159e21eb7250ae5d39d29b9b9ec
+
+% 1 1 0 137ad7898f9c2848107898ed20ed979c
+
+@ 0 6 0 06f38b052f09879718e04fed0ef22d07
++       无论布局如何，`#apply` 都将像素读作 `Chroma`；而布局类型化光栅的 `pixel` 扩展则以常量移位和掩码读取一个 `Pixel[layout]`。
++       `#crop`、`#flipX`、`#flipY` 和 `#rotate` 各自构建一个布局相同的新光栅；它们都不进行修改。
++       就地写入像素是通过在光栅上打开的 `Canvas` 完成的，带有 `Write` 授权的 `CanvasHandle` 会就地修改它：这是光栅不可变性的唯一刻意例外，且局限于该代码块。
+
+@ 0 4 0 1f5d15916f74ec7e1e5aff5054fb0f85
++       通过 `Raster in <format>` 类型读取图像会分派给该格式的编解码器：不属于该格式的字节会抛出 `Raster.Error`。
++       解码所得光栅的布局是 `Rgb` 还是 `Rgba`，取决于图像是否有 alpha 通道（每个 GIF 都是 `Rgba`，因为 GIF 可能是透明的）；`repack[Rgba]` 使其统一。
+
+% 1 1 0 0f3de730e52373e6038448d5908666c9
+
+% 1 1 0 118cfd6626c8edbc09dc51dd2cda4947
+
+% 0 1 0 1e8ecacf46cb6c8b16091e8a61e55250
+
+% 0 1 0 168371370612324b1e8714704cd4d5db
+
+@ 0 7 0 0ca06bab43af94aa14186a97babda3cc
++   entry .apply   从像素函数构建光栅（带或不带布局），或从未指定格式的字节解码
++       有三个重载。
++       `Raster(width, height)((x, y) => chroma)` 从左上角开始逐行在每个坐标处求值该函数，将每个 `Chroma` 打包为 24 位 RGB，得到一个 `Raster by Rgb`。
++       `Raster[layout](width, height)((x, y) => pixel)` 在每个坐标处接受一个 `Pixel[layout]`，得到一个 `Raster by layout`，采用该布局总位深所需的存储原始类型，因此由 `(Channel.Red[5], Channel.Green[6], Channel.Blue[5])` 像素构成的光栅每个像素以两个字节存储。
+
+% 2 1 0 0df7c1d17ce40aef1849c0b21ef9cf92
+
+% 3 1 0 103cbba1145907d9011749819299fd50
+
+% 0 1 0 0f39387c38bcb58e19dd092c02e32f07
+
+% 0 1 0 1d6b18fe4e32f0cb117e1b0ccc35f80f
+
+% 0 1 0 01fb29a10a2eb0a702c45b50c8aaeba4
+
+% 1 1 0 0fcaa67a77193ee71dceadd15a20b4cc
+
+@ 0 9 0 1c26bb9955b63c4f1cbcf4ffd010e721
++       `Raster(input)` 适用于任何 `Streamable by Data` 的 `input`（字节、文件、响应正文），它读取整个输入，并按作用域中 `Raster.Formats` 所指定格式中能识别其开头字节的那一种解码，按指定的顺序尝试。
++       它需要一个 `Tactic[Raster.Error]`，当没有候选格式能识别数据时抛出不带格式的 `Raster.Error`（`rasterizable` 为 `Unset`），当所识别格式的编解码器拒绝数据时则抛出该格式自己的错误。
++       只有已链接且被指定的格式才能被识别：`import soundness.allRasterFormats`（来自 `hallucination.formats`）指定全部五种，或者一个 `Raster.Formats(Png(), Jpeg())` given 将候选格式缩小到程序所编译的那些。
+
+% 2 1 0 16b8460f88f7706f06c56267cf33052a
+
+% 3 1 0 03d2baaf575a1cad0a6d5c23829fd59b
+
+% 4 1 0 124c1eb344be215c10bf45a479dc4b5a
+
+% 5 1 0 0f4161fff2c8d79c1ae74ee9a0813f2a
+
+% 7 1 0 096a6611fdab580e0800121567fd2eab
+
+% 8 1 0 0021943da1bfa6a60ed58ad05d2c36de
+
+% 0 1 0 10fad68983126bd71c71701e1688b38b
+
+% 0 1 0 00a66bb2d66cdab80a5a73861ff6d9a5
+
+% 0 1 0 1193e721a53669d00571767ff4a4f11d
+
+% 1 1 0 13cee88bcb07cc7c030ca246a14d4678
+
+@ 0 11 0 1b1e398533b8ecb50b13f2b3a398f9db
++       进行识别的重载返回的是普通的 `Raster`，没有形式幻影：格式是一个运行时事实，因此在写出之前，必须用 `to[Png]` 给光栅指定一个格式。
++   entry .streamable   将 `Raster in <format>` 写为该格式的字节，即 `raster.read[Data]`
++       使带有形式幻影的光栅成为 `Streamable by Data` 的 given：将 `Raster in Png` 读作 `Data` 会通过 `Png` 的编解码器对其编码，而同一个光栅经 `to[Jpeg]` 读取则编码为 JPEG。
++       它需要作用域中有一个 `<format> is Rasterizable`，由每种格式的伴生对象提供，因此无需导入；没有形式幻影的光栅在 `to[Format]` 给它一个之前无法写出。
++       编码形式是 8 位真彩色，在光栅布局和格式（`Rasterizable#alpha`）都带有 alpha 时包含 alpha；JPEG 和 BMP 丢弃 alpha，GIF 量化为 256 色调色板。
+
+% 2 1 0 03f8b1f63ff7752c06555596cd7ec2d3
+
+% 3 1 0 1fbdd8c227504660043ea020fa30ee1e
+
+% 4 1 0 11b4defdfdf28a6519eb80b75a8b2cc9
+
+% 5 1 0 0c6c30313e44e53b1fa755ffafac2eea
+
+% 7 1 0 1196908dcb0aec1a12777e2ae8e7c697
+
+% 1 1 0 0276a1532cfe9b11167f9fc50c18dcb4
+
+% 1 1 0 1e923162b3a8bc551bf13bfed45e3a2b
+
+% 1 1 0 02b08ea628ed5e6d1de9d01378a8ec2d
+
+@ 0 16 0 03307abe810b7d0108b2b5684c267456
++       它也是 `source[Data]` 和 `Abstractable` HTTP 正文所用的 `Streamable`。
++   entry .abstractable   作为带有该格式媒体类型的 HTTP 响应正文的 `Raster in <format>`
++       使带有形式幻影的光栅可以 `Abstractable` 为 `HttpStreams` 的 given：其 `genericize` 将该格式的 `mediaType`（`image/png`、`image/jpeg`，……）与作为正文的编码字节配对，因此 `Raster in Png` 可以从请求处理函数返回或作为正文发送，客户端看到的是 `Content-Type: image/png`。
++   entry .graphical   作为 anticipation 的 `Graphical` 的 `Raster`：宽度、高度以及每个像素的 `Chroma`
++       让任何光栅（无论其布局）都可在需要 `Graphical` 之处使用的 given：`width`、`height` 和 `pixel(x, y)` 委托给 `#width`、`#height` 和 `#apply`。
++   entry .aggregable   将字节解码为 `Raster in <format>`：`data.read[Raster in Png]`
++       对任何 `<format> is Rasterizable`，使 `Raster in <format>` 成为 `Aggregable by Data` 的 given：字节被收集起来，交给该格式的 `read`。
++       它需要一个 `Tactic[Raster.Error]`，当数据不属于该格式时抛出（对于纯编解码器，还包括数据被截断、校验和错误或使用了不受支持的变体的情况，由 `Raster.Error#reason` 说明是哪一种）。
+
+% 2 1 0 06cf7a770e40acfb1c865419b48d7e9b
+
+% 3 1 0 103c9e40fbd82b820077abd9d622f2e9
+
+% 4 1 0 1ebba07b23b8105e065eb17a724f679e
+
+% 5 1 0 19a94e3f9eb2c5aa0a75e999d7882626
+
+% 7 1 0 1594ee730386810d00fb816d07fc388b
+
+% 8 1 0 0b90be188bbd85f108162054d963553d
+
+% 0 1 0 1fabd0c66d335c47160addf9a050b042
+
+% 0 1 0 1cc4113d5b5d03f11db0ee9c886116a1
+
+% 1 1 0 0dccac67bb5f01500cdb1355b7f5bea4
+
+@ 0 8 0 06a85dad4da28c3c077e53c1c6f969c4
++       同一个 given 可以将文件、类路径资源或 HTTP 响应正文读作光栅，因为它们都是 `Streamable by Data`。
++   entry .aggregable2   将字节解码为普通的 `Raster`，根据其开头的字节识别格式
++       使 `Raster` 本身成为 `Aggregable by Data` 的 given，因此 `data.read[Raster]` 无需指定格式即可工作。
++       它就是作为 given 的 `Raster(data)`：它需要作用域中有一个 `Raster.Formats`（例如 `allRasterFormats`）和一个 `Tactic[Raster.Error]`，当没有候选格式能识别这些字节时抛出不带格式的 `Raster.Error`。
++   entry .Error   当字节无法读作光栅图像时抛出
+
+% 1 1 0 12abfff80dbcd7bb05de204116cea90a
+
+@ 0 7 0 1f914cef7ae0d65e0f80a148a4bb3803
++         _unable to read the raster image in `format` format_，其中格式是失败的编解码器的 `Rasterizable#name`（`PNG`、`JPEG`、`WEBP`、`GIF`、`BMP`），或者当 `Raster(data)` 找不到能识别这些字节的格式时为 `unspecified`。
++         它由 `Aggregable` given、`Rasterizable#read` 和 `Rasterizable#decode` 以及 `Raster(data)` 抛出。
++         它是一个 case class，因此同一格式和原因的两个错误相等，测试正是借此检查是哪个编解码器拒绝了其输入：`capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())`。
+
+@ 0 6 0 10086ea991079f4908c6b6458ffc88cd
++         在 JVM 上使用的 `javax.imageio` 后端不报告原因；在 Scala.js 和 WASI 上使用的纯编解码器（以及在所有平台上的 WebP）在 `#reason` 中说明原因。
++         构造一个此错误需要作用域中有一个 `Diagnostics`，例如 `errorDiagnostics.stackTracesDiagnostics`。
++     entry .Reason   纯编解码器拒绝其输入的原因
++         一个未编号的枚举，列出纯 Scala 编解码器所区分的各种失败，本身不带消息：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 15a8af3290fa26021160f07eee0acf74
++         column  分支
++         column  含义
++         row  `BadSignature`  开头的字节不是该格式的魔数
++         row  `BadCrc`  PNG 块的校验和不匹配
++         row  `Truncated`  数据在图像结束之前就结束了，或者某次读取越过了其末尾
++         row  `UnsupportedVariant`  编解码器未实现的形式：游程编码的 BMP、算术编码的 JPEG、它不认识的 GIF 扩展块
++         row  `Bitstream`  JPEG 或 WebP 中格式错误的熵编码流
++         row  `Huffman`  JPEG 或 WebP 中格式错误的熵编码流
++         row  `InvalidTransform`  解码器无法应用的 WebP 无损变换
+
+% 1 1 0 0b3813efce48534d0ccd4308f946acd2
+
+@ 0 3 0 02b6a87d7d43de221e9e898dcaa84552
++     entry #rasterizable   编解码器失败的格式，或在未识别出格式时为 `Unset`
++     entry #reason   来自纯编解码器的 `Raster.Error.Reason`，或来自 `javax.imageio` 后端时为 `Unset`
++   entry .Formats   在未指定格式时 `Raster(data)` 将按顺序尝试的格式
+
+% 1 1 0 15c469f1d9cc6e4010c01d6cb4c9f2f0
+
+@ 0 5 0 02c45d448187da431a01bf2879dcce09
++         在未指定格式的情况下解码的 `Raster` 必须根据数据开头的字节识别出一种格式，而它只能识别其编解码器已被链接的格式：每个编解码器都是独立的组件。
++         因此候选格式是一个上下文值 `Raster.Formats`，它列出要按顺序尝试的 `Rasterizable`；`#recognise` 返回第一个其 `sniff` 接受该数据的格式。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0e153802d4a4aece0e84a60074e9f31c
+
+% 0 1 0 09d396f74be3e445044950f7285bce36
+
+% 1 1 0 067fa7e6f1a5ff560b9604a248c0f3d4
+
+@ 0 32 0 028e4756517a8818063d16e83072e707
++         `hallucination.formats` 提供 `allRasterFormats`，一个包含全部五种格式的 given，供愿意链接每个编解码器的程序使用；链接较少编解码器的程序则提供自己的 given。
++     entry .apply   由给定编解码器构成的 `Raster.Formats`，按要尝试的顺序排列
++         `Raster.Formats(Png(), Jpeg(), Gif())`：每个参数都是一个 `Rasterizable`，由每种格式伴生对象的 `apply` 返回。
++     entry #candidates   要按顺序尝试的编解码器
++     entry #recognise   第一个其 `sniff` 接受该数据的候选格式，或 `Unset`
++         只读取开头的字节：PNG 凭其八字节签名，JPEG 凭其 SOI 标记，GIF 凭 `GIF`，BMP 凭 `BM`，WebP 凭其 `RIFF`/`WEBP` 头部。
++         空数据以及不属于任何指定格式的数据得到 `Unset`。
++         识别并不说明数据的其余部分能否解码。
++   entry #width   图像的宽度，以像素计
++   entry #height   图像的高度，以像素计
++   entry #descriptor   像素布局在运行时的描述：每个通道的标注和位深
++       一个 `Descriptor`（通过 `hallucination.Descriptor` 访问，因为它未导出到总括包），在光栅根据其静态布局构建时确定。
++       与布局无关的操作使用的就是它：`descriptor.hasAlpha`、`descriptor.alpha(word)`、`descriptor.chroma(word)`。
++       解码所得图像的描述符具有八位通道：`Rgb` 或 `Rgba`。
++   entry #Operand   当光栅的类型声明了像素布局时，即该布局，一个通道类型的元组
++       `Raster by Rgba` 背后的类型成员：iridescence 通道类型的 `Tuple`，例如 `Channel.Red[8]`。
++       它是一个幻影：布局在光栅构建时确定，而该细化为 `pixel` 和画布记录下它。
++       从字节读取的光栅在其类型中没有布局；`repack[Rgba]` 给它一个布局。
++   entry #apply   `(x, y)` 处的像素，作为 `Chroma`，无论布局如何
++       `raster(x, y)` 读取像素字，并通过描述符将其通道重新缩放为 24 位 RGB：RGB 布局的通道被重新缩放为八位，CMYK 或灰度布局通过其颜色模型转换，alpha 被忽略。
++       坐标从左上角开始，`x` 向右，`y` 向下。
++       结果是一个 iridescence `Chroma`，其 `red`、`green` 和 `blue` 为字节。
++       对于布局类型化的光栅，`pixel` 扩展读取类型化的 `Pixel`，不做任何转换。
+
+% 2 1 0 04f0180853d58a880469b047177b8fa4
+
+% 3 1 0 16394fdbc04b75c71c7f1a82937bb3e5
+
+% 0 1 0 19a148a3181a8f741d68242b1c9c2c31
+
+% 0 1 0 1f711620ccb5e0260d9e80adba1b194a
+
+% 1 1 0 1ee70c5c89a4440612fe8b25e5314b1c
+
+@ 0 5 0 1a76089a840e06c50e678e04ea515b54
++   entry #to   以另一种格式重新表达的同一图像：`raster.to[Jpeg]`
++       设置形式幻影，仅此而已：`to[Jpeg]` 以 `Raster in Jpeg` 返回相同的像素，之后在读作 `Data` 时编码为 JPEG。
++       类型参数必须是 `Rasterizable`：`Bmp`、`Gif`、`Jpeg`、`Png` 或 `Webp`，前提是其组件已被链接。
++       在光栅被读取之前不会进行任何编码。
+
+% 2 1 0 1cda47398d2d266c1222bd92131f4bec
+
+% 3 1 0 1f0e77343a7325191a7efacf365bd69d
+
+% 4 1 0 0338d784595584910e343f96963b7b56
+
+% 5 1 0 0de49e020b68de601de1b30973280563
+
+% 7 1 0 1b8144e7045d6e9f0c32447ea5520f4f
+
+% 1 1 0 0d3e392f40ff147d1f330468a2e7b1f0
+
+% 0 1 0 0a07c5cff6042f870222bb3cfa2c4096
+
+% 1 1 0 05d7f19a12d67aab147366349ad41d76
+
+@ 0 5 0 112d3de96648c3a60875858d4eb665a1
++   entry #crop   从四条边中的任意一条移除行和列后得到的新光栅
++       `crop(left, bottom, top, right)`，每个参数默认为 `0`：从每条边移除的像素数。
++       `crop(top = 1, bottom = 1)` 保留中间的行，`crop(right = 1)` 丢弃最右侧的一列，而 `crop()` 是一个副本。
++       结果具有相同的布局；像素是复制的，而非共享的。
+
+% 2 1 0 013cd445cc19fbb814c2838afad83704
+
+% 3 1 0 131cbd7484d77aa81b56d3ce9180ce13
+
+% 0 1 0 0bfa632ec5f13ef001c43f6a583fbd18
+
+% 0 1 0 145edfbd8617d64b119a2c997492ccea
+
+% 0 1 0 1ec5db8cb8763a5a0a176c073c5621c0
+
+% 1 1 0 13601956e7ffc3fe19efa9df5e84e64e
+
+@ 0 11 0 1ce6472e57e7a7670a8c9b554a590963
++   entry #flipX   左右镜像后的新光栅
++       `(x, y)` 处的像素变为 `(width - 1 - x, y)` 处的像素；尺寸保持不变，翻转两次即可恢复图像。
++   entry #flipY   上下镜像后的新光栅
++       `(x, y)` 处的像素变为 `(x, height - 1 - y)` 处的像素；尺寸保持不变。
++       `flipX.flipY` 就是 `rotate(180)`。
++   entry #rotate   顺时针旋转四分之一、半圈或四分之三圈后的新光栅
++       角度的类型为 `90 | 180 | 270`，因此只能写出无需重采样的旋转；`rotate(45)` 无法编译。
++       `rotate(90)` 和 `rotate(270)` 交换宽度和高度；`rotate(180)` 保持不变。
++       四次四分之一旋转，或 `rotate(90).rotate(270)`，可恢复图像。
+
+% 2 1 0 04184d7c3c362714020603641ffa2054
+
+% 3 1 0 0c38edb1b085d70b025a73dc73f5e25d
+
+% 0 1 0 01a4ce5daaa1bb8c1d69ad83f292306e
+
+% 0 1 0 099637506012c572163998fef76e80fc
+
+% 0 1 0 07e093a5a01b9cf30dfa960aa479e6b9
+
+% 0 1 0 03230312df8d5a2b13407425d12411b7
+
+% 1 1 0 1b1a7fb2ba8022b60a287e625a5c7447
+
+@ 0 3 0 17064ef12db491e31762976c4340493d
++   entry #portrait   图像的高度是否大于宽度
++   entry #square   宽度和高度是否相等
++   entry #landscape   图像的宽度是否大于高度
+
+@ 0 1 0 15c07cc72e23e1460d9140a0deca6b4a
++ entry .Rasterizable   光栅图像格式及其编解码器：名称、媒体类型、解码、编码、嗅探
+
+% 1 1 0 180766ad787686ad1d3acaf5d3dfd88b
+
+@ 0 8 0 095be0cff4601868092899349cf9006c
++       图像格式的类型类。
++       每种格式的伴生对象持有一个实例作为 given `rasterization`（`Png.rasterization: Png is Rasterizable`），并从 `Png()` 返回同一个实例，因此格式既是一个类型（`Raster in Png` 中的形式幻影），也是一个值（`Raster.Formats` 中的候选格式）。
++       该实例位于格式自己的组件中，因此程序只编译它所指定的编解码器，并且它按平台选择自己的实现：`Bmp`、`Gif`、`Jpeg` 和 `Png` 在 JVM 上通过 `javax.imageio` 解码和编码，在 Scala.js 和 WASI 上通过其纯 Scala 编解码器，而 `Webp` 在所有平台上都是纯 Scala。
+
+% 2 1 0 15cd616f1b8e86d30999e437ebefecad
+
+% 3 1 0 1c69bad9e3d85fd01954337e421e3224
+
+% 0 1 0 1cb097517cb417f51fd5f913b7719bf8
+
+% 0 1 0 0925b021becb9b7c15e891265519aa88
+
+% 0 1 0 101ccbc49933d34e128fa3721c396ac5
+
+% 0 1 0 11abd35cb9efd7c31ee3751ddeb992cd
+
+% 1 1 0 04b57ffd1ed0278b16a8962aca45e88c
+
+@ 0 3 0 18f380b56651276d03ab919fc518450b
++       想要某种格式的另一种实现的程序提供自己的 given；用于读写的 `Raster` given 会采用作用域中的任何 `<format> is Rasterizable`。
+
+% 1 1 0 13abc2622c8abfcd183b1dec127684ad
+
+% 0 1 0 095f2c119672d22405997eb7b8b17f73
+
+@ 0 25 0 104b688c2fac22f71be5253bdad51cd8
++   entry #name   格式的名称，即 `javax.imageio` 所知的名称：`PNG`、`JPEG`、`WEBP`、`GIF`、`BMP`
++       用于 `Raster.Error` 的消息中，并在 JVM 上用于选择 `javax.imageio` 的读取器和写入器。
++   entry #mediaType   格式的媒体类型：`image/png`、`image/jpeg`、`image/webp`、`image/gif`、`image/bmp`
++       `Raster in <format>` 作为 HTTP 正文提供时所用的类型。
++   entry #alpha   编码形式能否携带 alpha 通道
++       PNG、GIF 和 WebP 为 `true`；JPEG 和 BMP 为 `false`，其编码器会丢弃光栅的 alpha。
++       能携带 alpha 的格式仅在光栅的布局也有 alpha 通道时才写入它。
++   entry #decode   将此格式的字节解码为 `Raster`，失败时抛出 `Raster.Error`
++       原始的编解码器入口：将整个图像的字节转换为具有八位 `Rgb` 或 `Rgba` 布局的光栅。
++       需要一个 `Tactic[Raster.Error]`。
++       `data.read[Raster in Png]` 是访问它的常用方式；`#read` 对任何可流式传输的来源做同样的事。
++   entry #encode   将光栅（无论其布局）编码为此格式的字节
++       每个光栅在输出时都会被重新缩放为八位真彩色，在格式和布局都有 alpha 时包含 alpha。
++       `raster.to[Png].read[Data]` 是访问它的常用方式。
++   entry #sniff   数据是否以此格式的魔数字节开头
++       只读取开头的几个字节，并不解码：`Png().sniff(jpegBytes)` 为 `false`，而 `Png().sniff(truncatedPng)` 可能为 `true`。
++       `Raster.Formats#recognise` 依次询问每个候选格式。
++   entry #read   将任何可流式传输的来源读作 `Raster in <this format>`
++       `Png().read(file)` 适用于任何 `Streamable by Data` 的来源，它读取整个来源，用 `#decode` 解码，并将结果的类型定为 `Raster in Png`。
++       需要一个 `Tactic[Raster.Error]`。
++       `Raster.aggregable` given 为 `source.read[Raster in Png]` 调用它。
+
+@ 0 1 0 139316a5f15de65d136a432cb1eaf766
++ entry .Descriptor   像素布局在运行时的镜像：按顺序排列的每个通道的标注和位深
+
+% 1 1 0 09920297641f8bd50b59d8f1ff958684
+
+@ 0 8 0 04cb086308cddfd50643b40d816784f4
++       `Descriptor` 是 `Descriptor.Entry` 的列表，每个通道一项，最高有效位在前，例如对 `Rgba` 而言是 `red` 8、`green` 8、`blue` 8、`alpha` 8。
++       每个 `Raster` 都持有一个作为其 `descriptor`，在根据其静态布局构建时确定；它支撑那些因对布局泛型而无法使用 `Pixel` 内联访问器的操作：`Raster#apply`、`repack`、`Graphical` given 以及各编解码器。
++       它将任何像素字读作颜色（`#chroma`、`#srgb`、`#alpha`），并将颜色打包为像素字（`#pack`），依次尝试 RGB、CMYK、灰度，取决于布局完整具有哪些通道组。
+
+% 2 1 0 0f4d5812391b1439099d073e24309554
+
+% 3 1 0 1cff6bf1b626c89e06a3573f72600da2
+
+% 0 1 0 1c5eb705fbdfa00518f85495257b1027
+
+% 0 1 0 0eaf76ec8de2d35506cc63334daf47da
+
+% 0 1 0 049f1968dcc651490f1e04a28a1a9f5b
+
+% 0 1 0 1d16620f855f2aff12845aacb456da15
+
+% 0 1 0 1abef1424b8347b604e336b9a469e83c
+
+% 1 1 0 159eca2f51282588095698c16e3fcf3b
+
+@ 0 2 0 10ee7705893fb56818f314aea43d729d
++       `Descriptor` 未导出到 `soundness` 总括包，因为 embarcadero 的 OCI `Descriptor` 已导出：请通过 `hallucination.Descriptor` 访问它。
+
+% 1 1 0 0d044f3ba4b541330349d29aac95c957
+
+@ 0 1 0 09f0ee17d6ad512c16be5937f1e6c8b8
++   entry .Entry   布局中的一个通道：其标注及以位计的深度
+
+% 1 1 0 0acd7fbc173e7e590035e4aec4c24ce8
+
+@ 0 36 0 1deb6b95d0a7e9e21facfd92bb4a07d0
++         `Descriptor.Entry(label, depth)`：标注是 iridescence 的 `Channel.Label` 所给出的通道名称（`red`、`green`、`blue`、`alpha`、`cyan`、`magenta`、`yellow`、`key`、`grey`），深度是它占用的位数。
++     entry #label   通道的名称，例如 `red` 或 `alpha`
++     entry #depth   通道的位宽
++   entry .rgb   八位 `Rgb` 布局的描述符
++   entry .rgba   八位 `Rgba` 布局的描述符
++   entry .of   静态布局的描述符：`Descriptor.of[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]`
++       一个内联方法，在编译时遍历布局元组，从 iridescence 的 `Channel` 类型函数读取每个通道的标注和深度，并将各项构建为值。
++   entry #entries   各通道，最高有效位在前
++   entry #totalBits   一个像素占用的位数：各通道深度之和
++   entry #storageBits   存储像素的原始类型的宽度：8、16、32 或 64
++       byte、short、int 和 long 中能容纳 `#totalBits` 的最小者；此布局的光栅是该原始类型的扁平数组。
++   entry #locate   带标注通道的移位和深度，若布局中没有该通道则为 `Unset`
++       在 `Rgba` 上，`locate(t"green")` 为 `(16, 8)`：该通道从最低有效位往上第十六位开始，宽八位，因此 `(word >>> 16) & 0xff` 就是它的值。
++   entry #has   布局是否有带给定标注的通道
++   entry #hasAlpha   布局是否有 `alpha` 通道
++       编码器据此决定是否写入 alpha。
++   entry #alpha   像素字的不透明度，取值在单位区间内；没有 alpha 通道时为 `1.0`
++   entry #srgb   像素字的颜色，作为 `Srgb`，通过布局所具有的任一模型得出
++       先尝试 RGB 通道，然后是 CMYK，再然后是灰度；通道组不完整的布局（有 `red` 但没有 `green`）会转到下一种，一种也没有的则得到黑色。
++       结果在任何通道深度下都是精确的。
++   entry #chroma   像素字的颜色，重新缩放为 24 位 RGB，作为 `Chroma`
++       `Raster#apply` 返回的就是它：RGB 通道经舍入重新缩放为八位，其他任何模型都通过 `#srgb` 转换。
++   entry #pack   以此布局保存某种颜色和不透明度的像素字
++       `pack(srgb, alpha)` 将每个分量缩放到其通道的深度并移位到位：放入 RGB 通道（布局有 alpha 时一并放入 alpha），或放入 CMYK 通道（由颜色转换而来），或按 Rec. 601 亮度放入灰度通道。
++       不透明度默认为 `1.0`。
++       它是 `Pixel[layout](color)` 在运行时的对应物，也是 `repack` 在布局之间转换时所用的方法。
+
+@ 0 1 0 1226825a1dfcbf1d01500f4e46bdb1aa
++ entry .Canvas   为进行有作用域的像素访问而打开光栅时所用的形式：`raster.open[Canvas](…)`
+
+% 1 1 0 0418f6d2b37059660f7bbd9999c4e0c9
+
+@ 0 8 0 10cc665c1472db3e14dabbea7f7c7271
++       `Raster` 是不可变的，而通过 `Raster(width, height)(…)` 构建光栅并不是每个绘图算法都想要的形态。
++       `Canvas` 是一个形式幻影，它通过 aperture 的 `Openable` 协议打开布局类型化的光栅：代码块以上下文值的形式接收一个 `CanvasHandle[layout]`，它由捕获检查限制在该代码块内，通过 `canvas(x, y)` 读取像素；以 `Write` 授权打开时，还通过 `canvas(x, y) = pixel` 写入像素，就地修改光栅的缓冲区。
++       仅为读取而打开的画布没有 `update`：这种不匹配是编译错误，而不是运行时错误。
+
+% 2 1 0 04d234b0297bb95704f4f72209762f12
+
+% 3 1 0 0e74c24afbfe41cb191cdc9913bf803b
+
+% 4 1 0 0d9a371e77492c440857e8afed1da07b
+
+% 0 1 0 1c3284e96f0fbb7702e1820d66a4928f
+
+% 2 1 0 1a854046e98ed93d01304a2d669a00fa
+
+% 0 1 0 10c608fa1d8300a8122344d0004fa9ee
+
+% 0 1 0 1a37991062247e3a0c3872457d15530f
+
+% 1 1 0 1a4e7f561985213113500ed33ebf440c
+
+@ 0 5 0 09eb8a2c040eafd512accd39a64d67a5
++       `Openable` 实例，即 `hallucination.canvas` 中的 `canvasOpenable`，是一个顶层 given，必须按名称导入（`import soundness.canvasOpenable`）；没有它，`open[Canvas]` 无法编译，因为 `Openable` 没有回退。
++       光栅的类型中必须带有布局（`Raster by Rgba`，由 `Raster[Rgba](…)` 和 `repack[Rgba]` 给出），这样句柄的像素类型才是已知的。
+
+@ 0 2 0 175200580c3764b216c70960ba44a819
++       下面的流水线读取一幅图像，裁剪它，通过画布在上面绘制，并以另一种格式写出：
+
+% 2 1 0 1094315abf09cb6f0f54e292e22ea097
+
+% 3 1 0 1c4467d6efbd340b1f51fd9afd2098db
+
+@ 0 1 0 0d8b39c665346d8c17331c380602ff93
++         label 读取 PNG
+
+% 1 1 0 167e8df7155fd853163af16b27a385cc
+
+% 2 1 0 0eb9659423b561d603329577602f118a
+
+% 3 1 0 011e32a18032e456044065898222dd31
+
+% 4 1 0 0f8826c3ca6f798d0b379b50844781f5
+
+% 5 1 0 1ae73e31dce5cc44006f403b4ae3ad24
+
+% 7 1 0 12988c2f74aa9ba70d5ce4609e1e756d
+
+% 8 1 0 045d9c3ca4eaadb3122c550593f8940b
+
+% 0 1 0 0ff7aa5309b04f220440e4c9ef1d948c
+
+% 1 1 0 118d282d692bba85128f78c1bb7adc05
+
+@ 0 1 0 166c8e980bfb486f1c2b046cc97529f7
++         label 裁剪它并给它一个布局
+
+% 1 1 0 16207b7ed409cbc701895cac85279338
+
+% 2 1 0 0475dae81fb2d48d152a731e0f5f028f
+
+% 3 1 0 1b1c91dba712b69c17063dd82519e23b
+
+% 4 1 0 133e2b7bfaf4cddc0ebab17cabb85c88
+
+% 5 1 0 13431f3baac7c05504860f25ee6f3780
+
+% 7 1 0 1032bf5254b053060a9185c9e17a3ff8
+
+% 8 1 0 1ce39b8ae4ae93791e29521d5e6ec278
+
+% 10 1 0 01394c3f803ffee8056c56700c31c529
+
+% 1 1 0 0e60011a772685c903869eeab56125ad
+
+@ 0 1 0 1100516a70b6062502935106d250a208
++         label 通过画布绘制
+
+% 1 1 0 064b6ea846c2f91210d6c12742f5570b
+
+% 2 1 0 0a287f78c0fa8f591f94a99580e492aa
+
+% 3 1 0 0bb2069c2edb0b25036f4516c19eaedc
+
+% 4 1 0 1751bca6162db77715f6521a36201ff2
+
+% 5 1 0 1d14b3cd4761446a08205f0eb5379943
+
+% 7 1 0 00b2a706624bfef71a691b244cc08e10
+
+% 8 1 0 08f9ca6b1851bcf40e5ad9b99bf10a2c
+
+% 10 1 0 1e71d5721c39edf30b9d7e5dc6c53d05
+
+% 12 1 0 134334100d7bbd4d16ad9ec885f6abdd
+
+% 13 1 0 159b1eba2411781b059456c3162b0827
+
+% 1 1 0 1ef3436b20d13e6d1ca7a71b7f39359d
+
+@ 0 1 0 0a438317dff9eb1107dd1190797cc429
++         label 将它写为 GIF
+
+% 1 1 0 077a7555b392ca8d19672d69cf45b83c
+
+% 2 1 0 1faeee4ddce39da907cdc350c79d4d89
+
+% 3 1 0 0f93ef3137dafe3a0744fd6c54d2c6d9
+
+% 4 1 0 1eca0d9241d8748519ad518ae5a00d25
+
+% 5 1 0 10787c49e908c5ec08a7dc56ac71b9a0
+
+% 7 1 0 10eabae23d40d94d03f8526dc9389ca4
+
+% 8 1 0 094eb521c31a2b150cd5166a3aae29cb
+
+% 10 1 0 1612d81f3c7c7d930d18cb12bb15fb8d
+
+% 12 1 0 1403b374f7e27c4113dd8d1be02fde49
+
+% 13 1 0 15b3ffc60dc66d6a0d3b85ebe0266883
+
+% 0 1 0 13ab67618ad61fb70243b5c29e15b3c8
+
+% 1 1 0 075bd18f57edcf3a0e925d8f7f130c11
+
+% 2 1 0 07d873b6a7d907f6135c6fd005bf2299
+
+@ 0 4 0 0f512188fd352c7d0e31c33e2d719bb6
++       通过画布写入是光栅构建后其像素发生变化的唯一途径，而且这种变化对光栅的每个持有者都可见，就像通过打开的文件句柄写入一样；若要派生新图像，则用 `CanvasHandle#snapshot` 获取一个独立的副本。
+
+% 0 1 0 17844e2ecc87874010022500c7ff5b40
+
+% 1 1 0 0659bc897a9fbc5f162b25e8caf39b1d
+
+% 1 1 0 13d1eb60cf58ad2a1319b5b835e9bd42
+
+@ 0 1 0 0ab415492e7662a102fa3283495ec5a1
++ entry .CanvasHandle   打开的光栅像素之上的有作用域的句柄：用 `apply` 读取，用 `update` 写入
+
+% 1 1 0 16fef69b14b8223f1ee848a0c40308db
+
+@ 0 5 0 0a32d75c4feb9e1b18eaefcd87ebe11b
++       `raster.open[Canvas](…)` 提供给其代码块的东西，与该模式所授予授权的 `Granting` 取交集：`CanvasHandle[layout] & Granting[Grant.Read]` 可以读取，带有 `Grant.Write` 的句柄还可以写入。
++       像素操作是以这些授权为门槛的扩展，因此只读句柄根本没有 `update`。
++       该句柄是一种独占的能力：它不能逃逸出代码块，同一光栅上也不会同时打开其他句柄。
+
+% 2 1 0 08c722027cbde4a10465b9024797c00b
+
+% 3 1 0 12b55777eb42005209f3b3b534bddb51
+
+% 4 1 0 1fd09c36ec659cec0d1a73132a217db9
+
+% 0 1 0 10adb3a3ee3efb701d339e383c782587
+
+% 0 1 0 1be5b29374f3afc71b06e5717404667f
+
+% 0 1 0 18df9f234ebc8af009d653b24d2f96da
+
+% 2 1 0 132e0ab4d3f9c0df0723a1e4dc7d5657
+
+% 0 1 0 1405d38d1cfacd781bf92b96306bb490
+
+% 0 1 0 1a5c94bd0293883c1408199df781bb1e
+
+% 0 1 0 03a95f6c1992441f1fc3a1487a92aebe
+
+% 1 1 0 1721d37b0337e2ab19a319de2539eeac
+
+% 1 1 0 11c0d9185fd41d5d00305c3b2b052d82
+
+% 1 1 0 09e7f972812bbbec1b666f330dd97d69
+
+@ 0 14 0 13bb3a98dd8fc2311860be33e5ee7d80
++   entry .apply   `canvas(x, y)`：通过任何打开的画布读取某坐标处的类型化像素
++       针对被授予 `Read` 的句柄的扩展，每个打开的画布都是如此：与光栅上的 `pixel` 扩展相同的常量移位和掩码，得到一个 `Pixel[layout]`。
++   entry .update   `canvas(x, y) = pixel`：通过以 `Write` 打开的画布就地写入像素
++       仅针对被授予 `Write` 的句柄的扩展：用 `open[Canvas]()` 打开的画布没有 `update`，该赋值无法编译。
++       写入将像素字直接存入光栅的缓冲区，因此光栅本身以及对它的所有其他引用都会立即看到它。
++   entry #width   打开的光栅的宽度
++   entry #height   打开的光栅的高度
++   entry #snapshot   光栅当前状态的独立副本
++       一个拥有自己缓冲区的新 `Raster by layout`，不受之后通过画布进行的写入影响，用于在不关闭画布的情况下根据绘图的状态派生图像。
+
+@ 0 1 0 1f13cc0c8716a69503115fdb310a563e
++ entry .RasterOpenable   将 `Raster by layout` 作为 `Canvas` 打开的 `Openable` 实例类
+
+% 1 1 0 0d90cb9f1e8a0a2d0a1e7e9394f4de56
+
+@ 0 6 0 0bc3128fd7037a5a0df0546761fc513e
++       `raster.open[Canvas](…)` 背后的类型类实例：其 `Self` 是 `Raster by layout`，其 `Form` 是 `Canvas`，它不接受标志（`Operand` 为 `Nothing`），其 `Result` 是 `CanvasHandle[layout]`。
++       它是一个具名类而非匿名 given，以便准确声明句柄的类型；提供它的 given 是 `canvasOpenable`，程序导入的就是它。
++       直接指名此类不会带来任何好处。
+
+% 1 1 0 19b3b545bd61f77d11120026bac9dee0
+
+@ 0 8 0 1072b18c7583275a14cfde31b832cd32
++   entry #Self   `Raster by layout`：此实例所打开的光栅类型
++   entry #Form   `Canvas`：打开光栅时所用的形式
++   entry #Operand   `Nothing`：画布不接受标志
++   entry #Result   `CanvasHandle[layout]`：代码块接收的句柄
++   entry #open   以光栅上的一个 `CanvasHandle` 运行代码块，授予该模式所授予的授权
++       由 aperture 的 `open` 调用：将光栅包装在句柄中，用该模式的授权细化它，并以上下文值的形式将其传给代码块。
++       每次打开都会生成新的句柄。
+
+@ 0 6 0 183b3f86a3a092cb065385e55ea39f9b
++ entry .canvasOpenable   使 `Raster by layout` 能作为 `Canvas` 打开的 given；请按名称导入它
++     `hallucination.canvas` 中的一个顶层 given，这样解码图像时就不必同时编译有作用域资源的机制：它不在隐式作用域中，必须以 `import soundness.canvasOpenable`（或 `import hallucination.canvasOpenable`）导入。
++     它为每种布局提供一个 `RasterOpenable[layout]`。
++     没有它，`raster.open[Canvas]()` 无法编译，因为 `Openable` 没有泛型回退。
+
+% 2 1 0 18fb071f3a80de7218b38c0be084a605
+
+% 3 1 0 14eeca1d1e0edee51db1d10c537b2a6a
+
+% 0 1 0 02fcb6e46b60bae10c952107e1966e60
+
+% 0 1 0 0a30702a0f0b5fae0fd64f8d54c04819
+
+% 0 1 0 0e0e44d66534f14a19bb760ec1938d94
+
+% 0 1 0 1cbb15bca553236a05085fe3875a487f
+
+% 1 1 0 07274075444e89fd1b3675a0275c6e11
+
+@ 0 7 0 10a20a08f79fe2db00bef06efe4dbe45
++ entry .pixel   布局类型化光栅的类型化像素：作为 `Pixel[layout]` 的 `raster.pixel(x, y)`
++     `Raster by layout` 上的一个内联扩展。
++     光栅的存储原始类型在编译时就可从布局得知，因此读取只是一次数组加载，而 `Pixel` 的通道访问器（`red`、`alpha`、`grey`，……）各自都是一次常量移位和掩码：这是逐像素处理的热路径，途中不会转换为 `Chroma`。
++     类型中没有布局的光栅没有 `pixel`；`Raster#apply` 将其读作 `Chroma`，而 `repack[Rgba]` 给它一个布局。
+
+% 2 1 0 16560c72494a2f4a137d4b16593c885d
+
+% 3 1 0 0e8b0ab9d00db236176ee27911bc4849
+
+% 0 1 0 02779ceb893dd037097869860f5132e2
+
+% 0 1 0 070559266627fe0317099718d5077bae
+
+% 0 1 0 1159ca9e24e2742712e6c3ff29b653d0
+
+% 0 1 0 0c997d5ff6f625381ae0c3468eef23ba
+
+% 1 1 0 0a74fbe175de669309c4ea49c05be992
+
+@ 0 7 0 0807542d575de6af0d0bfeeb2b251c2b
++ entry .repack   以另一种像素布局表示的光栅副本：`raster.repack[Rgba]`
++     任何 `Raster` 上的一个内联扩展，得到一个 `Raster by layout`。
++     每个像素都通过光栅的描述符读作一种颜色和一个不透明度，并打包为新布局：深度不同时重新缩放通道，模型（RGB、CMYK 或灰度）不同时转换颜色，两种布局都有 alpha 时保留 alpha，只有目标布局有 alpha 时则设为完全不透明。
++     重新打包为光栅已有的布局会返回同一个光栅，因此当图像本已带有 alpha 时，`decoded.repack[Rgba]` 不产生任何开销。
+
+% 2 1 0 1afc87f86e2e60fe00de0c835282ae20
+
+% 3 1 0 08c5aacbfb36dea8159eb08789ccb031
+
+% 0 1 0 1163113909c525f016c84c94794aacd9
+
+% 0 1 0 07a706bc069306af027f146093e01de4
+
+% 0 1 0 1d80bb02930611e607121ed842dc5b3b
+
+% 0 1 0 0a9062d2b5d3cbb91cf54678a98660e2
+
+% 0 1 0 1bd488d1c436838109117c5feb9cfaf1
+
+% 0 1 0 0dda79316ce8d7d81c6f6b3bc1ee8a32
+
+% 1 1 0 1b88033161a3479a015d34ce5156db5b
+
+@ 0 1 0 12b57e937f15990d0cb7a45abb8fa7bf
++ entry .Png   PNG 格式：无损，带 alpha；`Raster in Png`
+
+% 1 1 0 0d38a4f713b928010bf42b5224220396
+
+@ 0 4 0 10aae165325d1ffb07caed634ee12fe6
++       PNG 图像的形式幻影，以及持有其编解码器的伴生对象。
++       PNG 用 `data.read[Raster in Png]` 读取，用 `raster.to[Png].read[Data]` 写入，并用 `Png()` 指定为识别的候选格式。
++       其媒体类型是 `image/png`，它携带 alpha。
+
+% 2 1 0 17333bc3179c9e2a1a1bc51882184dbd
+
+% 3 1 0 08b344c473090ab4146b3a80f19be4f2
+
+% 4 1 0 13df2dd0d3bd20100f0713d630acb698
+
+% 5 1 0 06010378f1745f950b2d1d1fd09cdc03
+
+% 0 1 0 1d9ca25a1dd27b580a1e83e4045204a1
+
+% 1 1 0 082db0466c5bcc7e18aaab60219cbadb
+
+% 0 1 0 03013410fefdbf560cde28a9622b3f39
+
+% 1 1 0 056f0d4bbef040830bec6f23a59da88f
+
+@ 0 9 0 014acbad35465caf1695df468ef4ca25
++       在 JVM 上，`hallucination.png` 通过 `javax.imageio` 解码和编码。
++       在 Scala.js 和 WASI 上，它使用基于 pneumatic 的 `Zlib` 的纯 Scala 编解码器：解码涵盖每种关键块和颜色类型（灰度、真彩色、调色板，带或不带 alpha）、1 到 16 的位深（十六位样本被缩减为其高字节）、全部五种过滤器、`tRNS` 透明度以及 Adam7 隔行扫描，并校验每个块的 CRC，不匹配时抛出原因为 `BadCrc` 的 `Raster.Error`；编码写出八位真彩色，在光栅的布局有 alpha 时包含 alpha，并按绝对差之和最小的原则为每条扫描线选择过滤器。
++       两种实现逐像素一致。
+
+% 1 1 0 02e43caf09ad51bc0f081053592fa8da
+
+% 2 1 0 0fc28f16148828f01a1a0c583cabe323
+
+% 3 1 0 1978e228cc83c2351334f4496caaef05
+
+@ 0 6 0 10dece970f82c852183e90fcaa67a084
++   entry .apply   作为 `Rasterizable` 值的 PNG 编解码器，供 `Raster.Formats(Png(), …)` 使用
++       与 given `.rasterization` 是同一个实例。
++   entry .rasterization   given `Png is Rasterizable`，位于隐式作用域中
++       名称为 `PNG`，媒体类型为 `image/png`，alpha 为 `true`；`sniff` 检查八字节 PNG 签名的前两个字节。
++       它位于 `Png` 的伴生对象中，因此读写 `Raster in Png` 无需导入。
+
+@ 0 1 0 127f67a04f5e1abc0c3c544c993e97a5
++ entry .Gif   GIF 格式：256 色调色板，其中一项为透明；`Raster in Gif`
+
+% 1 1 0 04521bd605e1596a1998b140686a8944
+
+@ 0 7 0 129f9cd5ee0efc8c1f4b59a084419d12
++       GIF 图像的形式幻影，以及持有其编解码器的伴生对象。
++       GIF 用 `data.read[Raster in Gif]` 读取，用 `raster.to[Gif].read[Data]` 写入，并用 `Gif()` 指定以供识别。
++       其媒体类型是 `image/gif`。
++       解码所得的 GIF 总是具有 `Rgba` 布局，因为任何 GIF 都可以声明一种透明颜色；编码所得的 GIF 最多包含 256 种颜色，因此颜色更多的光栅会按中位切分法量化，而带 alpha 的光栅会保留一个调色板项用于透明，不透明度不足一半的像素被设为透明。
+
+% 2 1 0 0bd6dbaa00095b271361961422bb0f86
+
+% 3 1 0 0a22c85a0e9817c11dfa226f8634eaba
+
+% 4 1 0 03fd2f242daf7d9708eab22b9567fd78
+
+% 5 1 0 0333da98785a802810c2f9a5d7f6d734
+
+% 0 1 0 1fe5ffa7518c04cc14ee1e0f75dd7ffc
+
+% 1 1 0 03bc2ab9b5d881b50bd0f50bd7105443
+
+% 0 1 0 145fc058213c26b100afe1be1181e202
+
+% 1 1 0 030e5ca3a0c427fb1297fd5866a4de4d
+
+@ 0 6 0 061a53d64908ec580eafe2185ccce93c
++       在 JVM 上，`hallucination.gif` 通过 `javax.imageio` 解码和编码。
++       在 Scala.js 和 WASI 上，它使用其纯 Scala 编解码器：解码读取 GIF87a 和 GIF89a，支持全局和局部颜色表、隔行扫描和透明度，将第一帧合成到逻辑屏幕上（动画的后续帧被忽略），遇到不认识的块时抛出原因为 `UnsupportedVariant` 的 `Raster.Error`；编码使用 GIF 版本的 LZW 写出单个 GIF89a 帧。
+
+% 1 1 0 1e25141b88c637ff14b236cd7b175bc4
+
+% 2 1 0 05e37ac7932f587a18a5b10c9321aee5
+
+% 3 1 0 091191cce1846db80f7c52b62cf21854
+
+@ 0 6 0 163f1d931199eefc16cc1eaba20da99c
++   entry .apply   作为 `Rasterizable` 值的 GIF 编解码器，供 `Raster.Formats(Gif(), …)` 使用
++       与 given `.rasterization` 是同一个实例。
++   entry .rasterization   given `Gif is Rasterizable`，位于隐式作用域中
++       名称为 `GIF`，媒体类型为 `image/gif`，alpha 为 `true`；`sniff` 检查三个字节 `GIF`。
++       它位于 `Gif` 的伴生对象中，因此读写 `Raster in Gif` 无需导入。
+
+@ 0 1 0 01efef014c3a36491906aaa47a490374
++ entry .Bmp   BMP 格式：未压缩的 24 位像素，无 alpha；`Raster in Bmp`
+
+% 1 1 0 1c86c467bd62b6ae0679ab4be23dede5
+
+@ 0 4 0 18b29f408fea6d7c13e881cbeb75c2e8
++       Windows 位图的形式幻影，以及持有其编解码器的伴生对象。
++       BMP 用 `data.read[Raster in Bmp]` 读取，用 `raster.to[Bmp].read[Data]` 写入，并用 `Bmp()` 指定以供识别。
++       其媒体类型是 `image/bmp`，其编码器会丢弃 alpha：透明的光栅被写为不透明。
+
+% 2 1 0 10d49c29963dcbba1cbbf1e70c6dd46a
+
+% 3 1 0 15d7901314af40ab018e245788aa57ba
+
+% 4 1 0 08b8f4ff9c49fcf50bc8974ae067be33
+
+% 5 1 0 03ec5dbdcd19c27a033f265e6e09ee0c
+
+% 0 1 0 09af332b7947de840ba74551a175bf25
+
+% 1 1 0 1a5fe3e071fa294e0d4e5455f1a7dde5
+
+% 0 1 0 02bf63c9f712cd320928eeea319f7d45
+
+% 1 1 0 153d5996479fd35219640d1952559bfa
+
+@ 0 7 0 1a02598a3e9025ca0c1be11016e0b1e2
++       在 JVM 上，`hallucination.bmp` 通过 `javax.imageio` 解码和编码。
++       在 Scala.js 和 WASI 上，它使用其纯 Scala 编解码器：解码读取 1、4 和 8 位调色板图像以及 16、24 和 32 位像素，`BI_RGB` 或 `BI_BITFIELDS`（V4 或 V5 头部中的 alpha 掩码会得到 `Rgba` 光栅），两种行序均可，遇到游程编码的文件或带有 OS/2 核心头部的文件时抛出原因为 `UnsupportedVariant` 的 `Raster.Error`；编码写出自下而上的 24 位 `BI_RGB`，这是读取支持最广泛的形式。
+
+% 1 1 0 1d1eb6e79b45df371e875f5b1aee3abc
+
+% 2 1 0 06f61d64ee32ef5903bb3a18503a53b3
+
+% 3 1 0 16195f8819381ada06f7a6f11e156c89
+
+@ 0 6 0 068bc32ca3fcdc271cc880bb28d41080
++   entry .apply   作为 `Rasterizable` 值的 BMP 编解码器，供 `Raster.Formats(Bmp(), …)` 使用
++       与 given `.rasterization` 是同一个实例。
++   entry .rasterization   given `Bmp is Rasterizable`，位于隐式作用域中
++       名称为 `BMP`，媒体类型为 `image/bmp`，alpha 为 `false`；`sniff` 检查两个字节 `BM`。
++       它位于 `Bmp` 的伴生对象中，因此读写 `Raster in Bmp` 无需导入。
+
+@ 0 7 0 198fd0c8902f303a0e68c84d74a35057
++ entry .allRasterFormats   作为 given 的 `Raster.Formats`，包含该库实现的每种格式
++     `hallucination.formats` 中的一个顶层 given，以 `import soundness.allRasterFormats` 按名称导入：`Raster.Formats(Bmp(), Gif(), Jpeg(), Png(), Webp())`，按此顺序，使 `Raster(data)` 和 `data.read[Raster]` 能根据数据开头的字节识别五种格式中的任何一种。
++     依赖 `hallucination.formats` 会链接全部五个编解码器；需要较少格式的程序应依赖那些格式的组件，并提供自己的 `Raster.Formats`。
+
+% 2 1 0 07cba0d85854cdfd0e44f1e3565ba8a7
+
+% 3 1 0 13dcef6d09880bf51e6d21f79270d703
+
+% 0 1 0 13a7d2a416321bae0f4ac72f4a55d679
+
+% 1 1 0 1296b0bde1196e7e14b137e69a101e84
+
+% 2 1 0 096c2aff2bc3fbfe15d255b45026209b
+
+% 4 1 0 1840bf5dc640fbf008873da1f11dc7d9
+
+% 5 1 0 1d7a452af9615938107d6e0a66b49624
+
+% 0 1 0 17ad4e67bf1da93d071bdcbc0baa8dd9
+
+% 0 1 0 0b6c89afef0975200715cc77cc50c03b
+
+% 1 1 0 0abddec70ab4802f0a8765aeaaa0b56a
+
+@ 0 1 0 15b3b7ee17f936f701b5edc9a35423ad
++ entry .construables   将 HTTP 正文解释为 `Raster` 的媒体类型绑定，按名称导入
+
+% 1 1 0 14e3cc7ff730cd051c1b6c9388baaced
+
+@ 0 7 0 05df38053d63e2820072ea756be2c34f
++       gesticulate 的 `Construable` 家族将以单例字符串表示的媒体类型映射到某个 Soundness 类型，该媒体类型的正文即读作这一类型，也由这一类型写出。
++       每个格式组件都添加一个：`("image/png" is Construable to (Raster in Png))`，`image/gif`、`image/bmp`、`image/jpeg` 和 `image/webp` 亦然。
++       从 API 规范得知响应媒体类型的客户端便可在编译时询问应将其解释为什么（对于 `image/png` 响应是 `Raster in Png`），服务器也可以用同样的方式为请求正文确定类型。
+
+% 2 1 0 0b5222f28ceef0ed19cdca008572bf79
+
+% 3 1 0 06b854d183d914a4070350db3c4d8e56
+
+% 0 1 0 1178b3a0be85f2961ae01449e23de4bc
+
+% 1 1 0 1045e4fbed8c34da1526b3780777e4bb
+
+@ 0 9 0 1345925740477917190851e94ad727ed
++       不经刻意选择，就不会解释任何东西：`import soundness.*` 不会引入其中任何一个，每一个都要按名称导入。
++       该包与总括包自己的 `construables` 合并，因此无论 given 来自哪个库，导入方式都相同。
++   entry .pngConstruable   `image/png` 解释为 `Raster in Png`
++       位于 `hallucination.png` 中。
++       请按名称导入：`import construables.pngConstruable`。
++   entry .gifConstruable   `image/gif` 解释为 `Raster in Gif`
++       位于 `hallucination.gif` 中。
++       请按名称导入：`import construables.gifConstruable`。
++   entry .bmpConstruable   `image/bmp` 解释为 `Raster in Bmp`
++       位于 `hallucination.bmp` 中。
++       请按名称导入：`import construables.bmpConstruable`。
+
+@ 0 13 0 1a741c90b4582dab0eb68ed48f036a11
++   entry .jpegConstruable   将 `image/jpeg` 响应解释为 `Raster in Jpeg`
++       given `("image/jpeg" is Construable to (Raster in Jpeg))`，声明于 `hallucination.jpeg` 中，它告诉以媒体类型驱动的客户端（例如 apoplexy 的 `Api`），媒体类型为 `image/jpeg` 的正文通过 `Jpeg` 自己的编解码器读作 `Raster in Jpeg`。
++       该类型类本身不带任何操作。
++       它位于 `construables` 选择包中，因此必须按名称导入，即 `import construables.jpegConstruable`；`import soundness.*` 不会引入它。
++   entry .webpConstruable   将 `image/webp` 响应解释为 `Raster in Webp`
++       given `("image/webp" is Construable to (Raster in Webp))`，声明于 `hallucination.webp` 中，它告诉以媒体类型驱动的客户端（例如 apoplexy 的 `Api`），媒体类型为 `image/webp` 的正文通过 `Webp` 自己的编解码器读作 `Raster in Webp`。
++       它位于 `construables` 选择包中，因此必须按名称导入，即 `import construables.webpConstruable`；`import soundness.*` 不会引入它。
+
+@ 0 1 0 0476c879a6960d1507bb1e61593be70f
++ entry .Jpeg   JPEG 格式：`Raster in Jpeg`，由基线和渐进式 DCT 编解码器读写
+
+% 1 1 0 069d1090b51a33b712dd5c2ea0581794
+
+@ 0 5 0 032d87feda90c8151b8048a774e573c2
++       `Jpeg` 是 JPEG 光栅 `Raster in Jpeg` 的幻影格式类型，其伴生对象将编解码器作为 given `.rasterization` 持有，即一个 `Jpeg is Rasterizable`，凡是指名 `Jpeg` 之处它都位于隐式作用域中。
++       `Jpeg()` 将同一个实例作为普通的 `Rasterizable` 值返回，供 `Raster.Formats(Jpeg(), …)` 和 `Raster.Error(Jpeg())` 使用。
++       该类型是一个没有实例的 sealed trait：它只为写在类型中而存在。
+
+% 2 1 0 0c77e566b7c92d391f3599690db7ce55
+
+% 3 1 0 0d9fcfa43dd7f0460cf8260fc4492b33
+
+% 4 1 0 1f925ca66a84412f08d0cd6d057aa1d0
+
+% 0 1 0 1f23fa791fecc19a01e6df230e3f0ac8
+
+% 0 1 0 12d92fdbf40d0e6d0af3deee5b22a31a
+
+% 0 1 0 1140030085fb2ac21ab8ef2add0014df
+
+% 1 1 0 17364f37361f3b1518d0eb3b6961b0a4
+
+@ 0 6 0 0b8e23ac2191c9d00f637594dc03bf6f
++       读取经由 `Rasterizable#read` 进行，因此需要一个 `Tactic[Raster.Error]`，当字节不是 JPEG 时抛出 `Raster.Error(Jpeg())`，若由纯编解码器解码则附带一个 `Raster.Error.Reason`：数据在流中途结束时为 `Truncated`，标记序列格式错误时为 `Bitstream`，遇到编解码器未实现的标准部分时为 `UnsupportedVariant`。
++       写入从不失败：`encode` 接受任何 `Raster`，无论其像素布局，并丢弃 alpha 通道，因为 JPEG 的 `alpha` 为 `false`。
+
+@ 0 7 0 0445fe77f3e2505b05ff1f3ee352d73e
++       该组件是 `hallucination.jpeg`，它只依赖 `hallucination.core`，因此指名 `Jpeg` 的程序只编译此编解码器，不编译其他编解码器。
++       它按平台划分：在 JVM 上，解码和编码经由 `javax.imageio` 进行，其原生编解码器比任何纯编解码器都快，而纯 Scala 编解码器在其旁边一同编译，并以它为基准进行测试；在 Scala.js 和 WASI 上，纯编解码器是唯一的实现。
++       两个解码器的结果非常接近但并非逐位相同，因为各自使用自己的逆 DCT，所以从 JPEG 读取的像素在不同平台之间可能相差几个单位。
+
+@ 0 9 0 114d73a9d79d8a7403b080fde198d3ee
++       纯解码器读取每个样本八位、具有一个、三个或四个分量的基线和渐进式霍夫曼编码图像：灰度、YCbCr、RGB（依据 Adobe 标记）、CMYK 和 YCCK，支持任意色度子采样、重启间隔以及 JFIF 和 Adobe 应用段。
++       算术编码、无损和分层模式、十二位样本以及由 DNL 定义的高度属于 `UnsupportedVariant`。
++       纯编码器以质量 90 写出基线顺序 JPEG，使用针对每幅图像优化的霍夫曼表和完整的 4:4:4 色度；质量不是公共 API 的参数，因此需要其他质量的程序必须提供自己的 `Jpeg is Rasterizable`。
++       JVM 后端以 `javax.imageio` 的默认设置写出。
+
+% 2 1 0 1fab0dce772de375108861b8f42730a9
+
+% 3 1 0 1f90879feca944ce0f8179044f75605e
+
+@ 0 1 0 04308478b5bbec9a1affe177aca759a6
++         label 读取 JPEG，指定其格式
+
+% 1 1 0 17d6ff0a2cdf008302fa729b044413b3
+
+% 2 1 0 176229be9d6f497118a598de2b1079ac
+
+% 3 1 0 02b6945e1317eb3009c494994731f0c5
+
+% 5 1 0 0a6db7607b114232143e1d337d1f6ee3
+
+% 6 1 0 1c9a4d1d3768f1e11897cba256ec7dfc
+
+% 0 1 0 165b00557f69ec29039e7cdf8c32f5bd
+
+% 1 1 0 1528fff76529b5641f749364cc3da7c2
+
+@ 0 1 0 1aa0b3b30d1ad1511ddb10f3b4957e39
++         label 将它重新表达为无损 WebP
+
+% 1 1 0 1f27e4da8ac4ef3801ab6633b066a318
+
+% 2 1 0 1e986e683a58e58503aec3e62f478da8
+
+% 3 1 0 1034ab749ab7144e0c4b864279610a68
+
+% 5 1 0 1600975914aa43a31a988819a864a375
+
+% 6 1 0 1de15e60bf5cd99a1062cfc142db166b
+
+% 0 1 0 1a187425d14055ae1de2e48337310088
+
+% 0 1 0 11599f4a44ffc2ec05ea55a8468319d5
+
+% 1 1 0 0b3d48b8c6dd66ae12261e90c5a5dd4e
+
+@ 0 1 0 00e006155d40787902b4933a00ef7239
++         label 让字节自己说明其格式
+
+% 1 1 0 19fee779dfd340041b955aff3a100ead
+
+% 2 1 0 0e78ecd157eabb320122ae9cddd914a5
+
+% 3 1 0 10fbdbf44e9609580ffb020827091338
+
+% 5 1 0 17b97a3520c6b28d0dd8a74db36d66b4
+
+% 0 1 0 092638cce237786f01133289b5a3e2ac
+
+% 0 1 0 1683180863534cf00d425ad3762caf6a
+
+% 0 1 0 066104e3ed11128411c3b98cc950efe4
+
+% 1 1 0 00412a7a4ee46bad17ff416ded3a85d5
+
+% 2 1 0 0dd21c8c41979d960210f048544c7ab9
+
+@ 0 2 0 1c47296a42ab91011d37b878494dd8b8
++       一切都导出到 `soundness` 总括包：`Jpeg` 本身以及 `construables.jpegConstruable`。
+
+% 1 1 0 12361ccf6a8718b6037459a0346976c7
+
+% 2 1 0 1dcf430b2d6c330912904eb2b53c29b4
+
+% 0 1 0 10f5b5024f54720e1ab94b7247bbdeb2
+
+% 1 1 0 09c22927e02f2dab0c308d22de1df231
+
+@ 0 13 0 0d85fad08d72d5fd0eb28f8595f73ee0
++   entry .apply   作为 `Rasterizable` 值的 JPEG 编解码器：`Jpeg()`
++       返回 `.rasterization`，因此 `Jpeg()` 可以列在 `Raster.Formats(…)` 中用于格式识别，可以用 `Jpeg().sniff(data)` 直接嗅探，也可以在 `Raster.Error` 中匹配：失败的 `read[Raster in Jpeg]` 就是 `Raster.Error(Jpeg())`。
++   entry .rasterization   given `Jpeg is Rasterizable`：JPEG 编解码器，位于隐式作用域中
++       名为 `JPEG`，媒体类型为 `image/jpeg`，没有 alpha 通道。
++       其 `decode` 将 JPEG 读入 `Raster`，在作用域中有 `Tactic[Raster.Error]` 时抛出 `Raster.Error`；其 `encode` 将任何光栅写为 JPEG，丢弃 alpha；其 `sniff` 对以字节 `ff d8 ff` 开头的数据为真，`Raster.Formats#recognise` 正是借此在不解码的情况下将 JPEG 与其他格式区分开来。
++       在 JVM 上它委托给 `javax.imageio`；在 Scala.js 和 WASI 上则委托给纯 Scala 编解码器。
++       由于位于伴生对象中，它无需导入；不同的 JPEG 编解码器就是一个同类型的普通 given，在局部绑定即可优先生效。
+
+@ 0 1 0 1509c9c16612114f07eafe3e6af63c31
++ entry .Webp   WebP 格式：`Raster in Webp`，可读取其有损、无损和扩展形式
+
+% 1 1 0 0a0e077f38cdd1731a8e98a8fd460ccf
+
+@ 0 4 0 0254609db6db64210e303f9f8aa63b08
++       `Webp` 是 WebP 光栅 `Raster in Webp` 的幻影格式类型，其伴生对象将编解码器作为 given `.rasterization` 持有，即一个 `Webp is Rasterizable`，凡是指名 `Webp` 之处它都位于隐式作用域中。
++       `Webp()` 将该实例作为 `Rasterizable` 值返回。
++       该类型是一个没有实例的 sealed trait：它只为写在类型中而存在。
+
+% 2 1 0 1bf68d436b88d6481b9b2ae97a32445f
+
+% 3 1 0 1971cf425d44a01116b317c836f7ca06
+
+% 4 1 0 10e1a68238c88a010ef145c78e50e2e7
+
+% 0 1 0 0377be7baa85de71011d21a8d86d9758
+
+% 0 1 0 1ec220beaf7c79df0a37c7f305f4d48a
+
+% 0 1 0 0af03e48aa97884007a10e8874253d76
+
+% 0 1 0 1b9750a378579c011387a75ee49a15fc
+
+% 1 1 0 0698a051463bf80c0de9d655f2b05355
+
+@ 0 5 0 19ce1bf67242ed8e0297814afa94ae34
++       任何标准 JRE 上都没有 WebP 的 `javax.imageio` 读取器，因此与其他格式不同，此格式不按平台划分：纯 Scala 编解码器（移植自 Rust 的 `image-webp` crate）在 JVM、Scala.js 和 WASI 上同样运行，相同的字节在每个平台上解码为相同的像素。
++       该解码器与 libwebp 的 `dwebp -nofancy` 逐字节一致，后者使用同样简单的色度上采样。
+
+@ 0 12 0 09bd95d7a91655b81120e03050f5c004
++       解码器根据 RIFF 头部之后的第一个块读取三种容器：无损的 `VP8L` 图像，包括其预测器变换、颜色变换、减绿变换和颜色索引变换，元霍夫曼组、反向引用和颜色缓存，得到 RGBA 光栅；有损的 `VP8` 关键帧，包括帧内预测、反量化和环路滤波器，得到不透明的 RGB 光栅；以及扩展的 `VP8X` 容器，其中有损图像可以携带 `ALPH` 块（原始的或经 VP8L 压缩的，可使用四种过滤器中的任何一种），因而解码为 RGBA，而动画只解码其第一帧，合成在画布上。
++       编码器写出无损的 VP8L，使用减绿变换和预测器变换以及游程编码，因此光栅经 `to[Webp]` 往返后逐像素不变，alpha 亦然：WebP 的 `alpha` 为 `true`。
++       该组件中存在有损的 VP8 编码器，但无法通过公共 API 访问，因此程序写出的每个 WebP 都是无损的；需要有损输出的程序须提供自己的 `Webp is Rasterizable`。
+
+@ 0 6 0 095871f9d9e849760a25697db623899c
++       读取需要一个 `Tactic[Raster.Error]`，并抛出带有原因的 `Raster.Error(Webp())`：字节没有 `RIFF…WEBP` 头部或第一个块未知时为 `BadSignature`，流提前结束时为 `Truncated`，霍夫曼码或标记格式错误时为 `Bitstream`，VP8L 变换被应用两次时为 `InvalidTransform`，而 VP8 帧间帧、非零的 VP8L 版本、未知的 alpha 压缩方式，或不含解码器所知任何块的扩展文件则为 `UnsupportedVariant`。
+
+@ 0 2 0 1bfd074b5128d602115200fda50b5307
++       作为无损 WebP 写出时，RGBA 光栅保留每个像素；作为 JPEG 写出时，它会失去 alpha 通道和一些精度：
+
+% 2 1 0 047b43b660d5ed641727ca11d11bf2f7
+
+% 0 1 0 058c7b020fcd018f12e1533aa7389467
+
+% 1 1 0 0f1e8972c5bc4a7c1d3a9d98f62ad51e
+
+% 2 1 0 1cacbf78e274161d0556158797cc469b
+
+% 3 1 0 03d72d804e2a173c104fe0d48b56bc30
+
+% 5 1 0 0a579a0b42c3be851aa240b29840acd1
+
+% 6 1 0 0e69df1f981fa8501c38f2c540faf216
+
+% 0 1 0 04d74b3105b173250856c86a86c7188f
+
+% 0 1 0 19934c3d13cafd280877d0d211142196
+
+% 0 1 0 0860fd824df7d51607657df316deeebc
+
+% 1 1 0 0c6e96ff208e463a046d7c91f7fb88ee
+
+% 2 1 0 1553e35c3b5b00041fb79b0dd495eb25
+
+% 3 1 0 02fb6c672be9ce430bb8f288f412a57f
+
+% 5 1 0 18e5f08c4814e197199bebc30ff4c981
+
+% 6 1 0 1e85bac03270b7430fb0c68bf27da674
+
+% 0 1 0 0c30cf89c8aacd081271831aaf9ed85d
+
+% 0 1 0 1da2dd5ee323a5110397ae8f0328085c
+
+% 1 1 0 0262a397b70044cb09562052a627cb56
+
+% 2 1 0 05a776b66bfb292f17f13b73b2a6a03e
+
+@ 0 3 0 0fd6b913209946b402e00f4359628d7b
++       该组件是 `hallucination.webp`，只依赖 `hallucination.core`。
++       一切都导出到 `soundness` 总括包：`Webp` 本身以及 `construables.webpConstruable`。
+
+% 1 1 0 12bc343ee10902fe010efab7e7a3028b
+
+% 2 1 0 028dd3a01dde464a0dfbb48941eb88de
+
+% 0 1 0 125ff86256121b501f8ddc1c2736f0b9
+
+% 1 1 0 1e6d73edc62cc22313ecf42780515b9a
+
+@ 0 14 0 0af029ea35fe53fa0dc742c0b526a462
++   entry .apply   作为 `Rasterizable` 值的 WebP 编解码器：`Webp()`
++       返回 `.rasterization`，因此 `Webp()` 可以列在 `Raster.Formats(…)` 中，可以用 `Webp().sniff(data)` 直接嗅探，也可以在 `Raster.Error` 中匹配：失败的 `read[Raster in Webp]` 就是 `Raster.Error(Webp())`。
++   entry .rasterization   given `Webp is Rasterizable`：WebP 编解码器，位于隐式作用域中
++       名为 `WEBP`，媒体类型为 `image/webp`，带有 alpha 通道。
++       其 `decode` 将无损、有损或扩展的 WebP 读入 `Raster`，在作用域中有 `Tactic[Raster.Error]` 时抛出 `Raster.Error`；其 `encode` 将任何光栅写为无损的 VP8L WebP，在光栅带有 alpha 时保留 alpha；其 `sniff` 对至少十二字节长、以 `RIFF` 开头且在偏移量八处有 `WEBP` 的数据为真，`Raster.Formats#recognise` 正是借此在不解码的情况下将 WebP 与其他格式区分开来。
++       同一个纯编解码器服务于每个平台。
++       由于位于伴生对象中，它无需导入；不同的 WebP 编解码器就是一个同类型的普通 given，在局部绑定即可优先生效。

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 12 0 01becbfee9c75a7014a280a00d20f9d7
++         基于 `Long` 的不透明类型。
++         它在 `vexillology` 包下的页面有完整说明。
++     entry .apply   一个枚举上没有任何位被置位的空标志集，`Flags[Color]()`
++   entry .apply   某个分支是否在某组标志中被置位，`flags(case)`
++       要求枚举是 `Enumerable` 的，以便找到分支的序数。
++   entry .update   某组标志的副本，其中某个分支被置位或清除，`flags(case) = enabled`
++       返回新的 `Flags` 而不是修改接收者，因此保存标志的变量需要重新赋值：`flags = flags(Orange) = true`。
++   entry .bits   作为底层位的标志，一个 `B64`：索引为 `n` 的分支占有第 `n` 位
++       不需要 `Enumerable`。
++       `B64` 用 `.long` 转换为 `Long`。
++   entry .set   某组标志中被置位的分支，作为该枚举的 `Set`
++       只访问被置位的位，从最低位开始。

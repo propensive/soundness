@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1dd2bb7feeed61801477839a742c257c
+
+@ 0 1 0 02607d2ebeb108410436155d8eca4869
++ 当一个值无法解析为有效的电子邮件地址时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 14c5458202433ee60ff4bff9ad8a583d
++ Urticose 依据 RFC 5321 / 5322 中的语法规则（带有一些实用性的放宽）验证电子邮件地址。
++ 消息为 `the email address is not valid because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 17 0 168bdc38eea7e66504b996bfce9ba948
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.100.4.1`  `Empty`  值为空。  `[↯/s.100.4.1] the email address is not valid because it is empty`  提供一个非空的地址。
++ row  `↯/s.100.4.2`  `InvalidDomain`  域名部分既不是有效的主机名，也不是有效的 IP 字面量。  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  更正域名的语法；具体细节请查看内部的 `HostnameError`/`IpAddress.Error` 变体。
++ row  `↯/s.100.4.3`  `LongLocalPart`  本地部分超过 64 个字符。  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  将本地部分缩短到最多 64 个字符。
++ row  `↯/s.100.4.4`  `TerminalPeriod`  本地部分以句点结尾。  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  删除末尾的句点。
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  本地部分包含两个相邻的句点。  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  删除其中一个句点；如果确实需要连续的句点，则为本地部分加上引号。
++ row  `↯/s.100.4.6`  `InitialPeriod`  本地部分以句点开头。  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  删除开头的句点。
++ row  `↯/s.100.4.7`  `UnescapedQuote`  本地部分中的双引号未经转义。  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  用反斜杠转义该引号，或使用正确加引号的本地部分。
++ row  `↯/s.100.4.8`  `UnclosedQuote`  加引号的本地部分没有闭合引号。  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  添加缺失的 `"`。
++ row  `↯/s.100.4.9`  `MissingDomain`  地址没有域名部分。  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  在末尾添加 `@`，后接域名。
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  地址中不含 `@`。  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  在本地部分与域名之间插入 `@`。
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  域名以 `[` 开头，但不以 `]` 结尾。  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  用 `]` 闭合 IP 字面量。
++ row  `↯/s.100.4.12`  `InvalidChar`  本地部分包含一个不允许的字符。  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  删除该违规字符，或为本地部分加上引号以允许它。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 3 0 080ee2477f0e9ce21a2538138076467e
++ - 源代码：`lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` — 主机名验证
++ - `↯/s.100.2` — IP 地址验证

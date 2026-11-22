@@ -1,0 +1,78 @@
+orthant 2 language
+
+% 0 1 0 1dd3ff184458127015ae1ccf3652f901
+
+@ 0 1 0 124ac3af023a355109edffee6244bdfb
++ 当 Enigmatic 无法解码加密数据时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0129e0129ab5b46d1d2bf8b64b5f4687
++ 密码学原语（密码算法、签名或 MAC）拒绝了输入。
++ 构造器接受一个 `reason: Reason`，说明操作失败的原因；渲染出的消息是 `could not decode the encrypted data because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 12f19e8f03c14d4308be60932eed2510
+
+@ 0 3 0 1fbb23f06adec7d61c68f6492c06516f
++ 填充字节不符合密码算法的预期，通常是因为密文已损坏或提供了错误的密钥（在 AEAD 模式下为认证码不匹配）。
+
+@ 0 1 0 1739d6e19df659901ee93e8aa56a6fe8
++ **示例。** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+@ 0 3 0 18d6ff2039ddebc11ab7da7730df6f92
++ **解决方法。** 确认密钥和 IV 与加密时所用的一致；检查密文在传输中没有被截断或修改。
+
+% 0 1 0 0d5d3bc275d259271bdf4903a900601c
+
+@ 0 2 0 1ac8b0e57b4d7c25191149a0a958fd31
++ 输入长度不是密码算法块大小的倍数，或在其他方面与密码算法的分帧不兼容。
+
+@ 0 1 0 030998a246c79ec119f4b4a064e2d636
++ **示例。** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+@ 0 2 0 0e8bd28c57ce4caa1e9b80596ea98e3c
++ **解决方法。** 检查密文是否完整，以及它是否由当前用于解密的同一密码算法和模式产生。
+
+% 0 1 0 169cce07803a4a17033792e518b82d17
+
+@ 0 2 0 0b0ab3f02879e1040067b20d58e980e5
++ 密钥字节被密码算法拒绝：大小错误、格式无效或参数不受支持。
+
+@ 0 1 0 03b840945e05f4b2096b23d229a9cc4b
++ **示例。** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+@ 0 2 0 0b7b6a6cc3122a1d1dfc629e8c43fdb6
++ **解决方法。** 确认密钥是为同一密码算法和参数集生成的。
+
+% 0 1 0 1f2c73535fe27d980bfea5daeed9b614
+
+@ 0 2 0 08d33c41a5ad27c505463e0f89a77113
++ 所请求的算法或模式在 JVM 已配置的提供者中不可用。
+
+@ 0 1 0 01e72f0b9cfa5e7a1c0c2ff08284276a
++ **示例。** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+@ 0 2 0 0bc734f8dee0286d18fec3497ebb67d8
++ **解决方法。** 安装或启用支持该算法的 JCA 提供者；检查 `java.security` 中的安全方针。
+
+% 0 1 0 051a0972608a20a409b0c698aa7c2c98
+
+@ 0 2 0 08baa998e193943a0fa1d4eef46d2047
++ 密码算法实现无法读写数据缓冲区，通常是底层 I/O 故障。
+
+@ 0 1 0 1a6338eabe0ee4f5026a09eea17d4598
++ **示例。** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+@ 0 1 0 050f887854411c1313d244ed279d6f20
++ **解决方法。** 检查原因链，找出底层的 I/O 错误。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 0388722c1a8ac94308aa18340e8189b1
++ - 源代码：`lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`，当 PEM 编码的密钥无法解析时抛出

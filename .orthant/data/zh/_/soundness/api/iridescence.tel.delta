@@ -1,0 +1,1521 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19f4b02f648a74080e26a7e8d6ed6019
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0eabacc7d2d59a4901f8b4901c30748a
++ info   各种模型中的颜色——sRGB、HSL、HSV、CIELAB、XYZ、CMY、CMYK——可转换、混合、调整和打包
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 16928c904ea36dfc0e68021387b6a436
++     _Iridescence_ 用最适合任务的模型来表示颜色：`Srgb` 用于屏幕，`Cielab` 用于感知距离，`Hsl` 或 `Hsv` 用于直观的调整，`Cmy` 和 `Cmyk` 用于印刷，`Xyz` 作为与设备无关的中枢，并用一个方法 `to[Model]` 在它们之间转换。
++     每个模型都是独立的类型，因此编译器知道一个值属于哪个模型；而依赖观察条件的转换，如果作用域中没有说明光源的 `Colorimetry`，就无法写出。
+
+% 2 1 0 02d61f8ed8651d1203649c17c679fe08
+
+% 3 1 0 0b14f3e536bf294a098cd5c4fd79396f
+
+% 0 1 0 07328927d9e475091e529e10b2460d02
+
+% 0 1 0 0389f6800f929dd709411a3d9b70b9fc
+
+% 0 1 0 0b125fea6daf313106c7d6072b72533e
+
+% 0 1 0 1669b6ca6afaa011040874277d6086f0
+
+% 0 1 0 02b0766f380328231c2234d8164ed432
+
+% 0 1 0 1b0f92cad6d59a3119775e634a019a77
+
+% 1 1 0 0f939b6a2044055e0988b71c15c1392e
+
+@ 0 7 0 1329195cc66c655d0fc9ada13b573b70
++     周边功能包括：141 种具名的 `WebColors`；`rgb"#abcdef"`，一种在代码编译时检查的十六进制字面量，它给出终端所需的整数 `Chroma`，并可用 `color` 转换为 `Color in Srgb`；混合，可用 `mix` 两两混合，或在从 `mixing` 导入的混合模式下用 `Daub` 算术按份数混合（`5*Red + 3*Yellow`）；`Theme` 和 `Palette`，用于协调的颜色集合，内置 Solarized，并由 `luminosity` 选择；以及 `Pixel[layout]`，一种以任意通道布局打包进整数的颜色，另有 `Rgb12` 和 `Rgb32` 两种固定打包方式。
+
+@ 0 8 0 06bcc68cab3ab26e1c4b5ad4b4cda963
++     这个库只有一个源码集 `iridescence.core`，它依赖 anticipation 的 `Chroma`、`Chromatic` 和 `Channel` 类型，以及 hypotenuse 和 geodesy 的 `Angle`，可编译到 JVM、Scala.js 和 Scala Native（`Palette#selectDynamic` 使用反射，而 Native 不支持反射；具名角色则是普通方法）。
++     一切都导出到 `soundness` 总括包，`colorimetry`、`luminosity`、`mixing` 和 `themes` 这几个选择包与总括包自身的同名包合并：它们的 given 要按名称导入，因为 `import soundness.*` 不会导入 given，而且每个 given 都选择一种方针——光源、亮色或暗色变体、混合模式、主题——这些都不应是隐式的。
+
+% 0 1 0 08a6ba434b9f11a008872e81b1b1c075
+
+% 0 1 0 0eb6401f048e04b01d56e28ddf273900
+
+% 0 1 0 1e9365ef3fbf8563189feb8f649bbf71
+
+% 0 1 0 1a68859dff45ece108a2ed4bb5204dfd
+
+% 0 1 0 07297ef77b26ffd01653ce4464d81e40
+
+% 0 1 0 0c76c7e5c0b6de0b11c41525e98f8627
+
+% 0 1 0 0f9f1d7e7ff23df51124da6fd32723a6
+
+% 0 1 0 012c99f78622c8d40aa94d63de2f2e95
+
+@ 0 1 0 02717694e2ec8b1118648bf45be92cb5
++ entry .Color   某个模型中的颜色，可用 `to[Model]` 转换到另一个模型
+
+% 1 1 0 09d8ad54cc9d5c900601d9f9f4e6ecb9
+
+@ 0 5 0 0b0d9efc83bbb0d20554fbb357f8a088
++       每个颜色模型都扩展的特质。
++       `Color` 的类型成员 `Form` 是它自身的模型，`to[Model]` 通过从 `Form` 到 `Model` 的 `Perceptual` 实例进行转换，该实例在两个模型的伴生对象中找到。
++       介词式写法 `Color in Srgb` 指 `Form` 为 `Srgb` 的颜色，这也是 `WebColors` 条目和 `Palette` 角色的类型；具体的 `Srgb` 就是这样一种颜色。
+
+@ 0 6 0 142d8143a9f00d2b097be09d7e4473c5
++       已声明的实例有：`Srgb` 与 `Xyz`、`Cielab`、`Cmy`、`Cmyk`、`Hsl` 和 `Hsv` 中每一个之间的双向转换，`Xyz` 与 `Cielab` 之间的双向转换，以及 `Cmy` 与 `Cmyk` 之间的双向转换。
++       每个模型都可经由 `Srgb` 到达其他任何模型，但这一跳要由调用者写出：`hsl.to[Xyz]` 没有实例，而 `hsl.to[Srgb].to[Xyz]` 有。
++       `Srgb` 与 `Xyz` 或 `Cielab` 之间的转换需要作用域中有一个 `Colorimetry`，因为这些模型是相对于参考白定义的。
+
+% 2 1 0 14b1f78ed6af30751e7ba1dccf894659
+
+% 3 1 0 11553ac344a3231713853c172daa137f
+
+@ 0 1 0 008ede7ad352f8b9188b512c1033ca66
++         label sRGB 中的颜色
+
+% 1 1 0 13203db6708125351dd2d4022d91d675
+
+% 2 1 0 10f0a40b3506e88b13221c8cd494917e
+
+% 3 1 0 1f48f8ae5d361fc00cef674461b470b6
+
+% 0 1 0 0ba4c045779a52a11d528fb326c4696e
+
+% 1 1 0 0952c5ccc776de4d117366c1ebe16921
+
+@ 0 1 0 199fa57c375eb9de0a9796b910515503
++         label 转换为 HSL，其中色相是一个角度
+
+% 1 1 0 170248b42096d5a21859024919090bc7
+
+% 2 1 0 1b439dd4fbeeeb3a1753ad935821054c
+
+% 3 1 0 1a8c3a23c841ed660a78cd769b292013
+
+% 0 1 0 000a8fa900a05e8301ad608aef9fc959
+
+% 1 1 0 0f63ccc76527562f102632085e904b35
+
+@ 0 1 0 0ea02d3df01f81e5138088cef5c6c48c
++         label 转换为 XYZ，相对于日光参考白
+
+% 1 1 0 118d48fe1444fa2516e34de8a81984da
+
+% 2 1 0 163f8d85b721a1c20acd1c8250dfb7e0
+
+% 3 1 0 0baf3b60c6970b750a641b1912552621
+
+% 0 1 0 179cfefe5e6c7816025e3450a8b6d85b
+
+% 1 1 0 1f9030ed81feb70101e0ad852ed86c8f
+
+@ 0 1 0 09f7ede698fecf7d1b5536be37901773
++         label 转换为 CIELAB，其中距离是感知上的
+
+% 1 1 0 00e9ef406dd6a47e1aa27028d57e52c3
+
+% 2 1 0 128b2dcddafa2c0c15b35b8b166b88a0
+
+% 3 1 0 0280272093c1ba830725a1441154821e
+
+% 0 1 0 12ec3f99071307ef072cca8789afa6e0
+
+% 0 1 0 0df89171f1b3d7a00392659b781fd4bb
+
+% 1 1 0 1861c120ddf151500df5027aef0ad884
+
+@ 0 1 0 0af52563e06d5100157a85117c5d797b
++         label 再转换回 sRGB，误差在舍入范围内
+
+% 1 1 0 1042db607d60661e1e0f88cf6dfcc68f
+
+% 2 1 0 1d9a221825f5fa820085254128cbfd8e
+
+% 3 1 0 01b60c1dcc345fb009bd1c14db11dcec
+
+% 0 1 0 1532dbd33cffba3911f78a4bd6a4ca7c
+
+% 1 1 0 14f0d7397cfb63111ee968ddc60d8679
+
+% 2 1 0 10090428c41cb26c091f0978c9d6683a
+
+@ 0 3 0 0dd801199761aaa0161b9f3afbc43b01
++       颜色是 `Pure` 的：它不持有任何能力，因此可以自由存储和共享。
++       每个颜色都是 `Chromatic` 的（`.chromatic`），因此在终端或图像需要 `Chroma` 的任何地方都可以接受它，而 `n*color` 把它提升为一个 `n` 份的 `Daub`，用于混合。
+
+% 0 1 0 0557c1e12d0e66a70ad6428cd2258e01
+
+% 1 1 0 0b4bb97a89c0106f1c72c823fd8e7b78
+
+% 1 1 0 1dc6efcc4574fd47001b828214671927
+
+@ 0 18 0 1aec84ec42a534331c7de7a89ffa5c0f
++   entry .chromatic   任何可转换为 `Srgb` 的颜色都是 `Chromatic` 的：一个供终端和图像使用的 24 位 `Chroma`
++       转换为 `Srgb`，并把每个通道缩放到 `0`–`255`，截断取整（`0.5` 为 `127`）。
++       正因如此，`e"${WebColors.Red}(text)"` 才能为终端文本着色，`Fg(WebColors.Red)` 才能直接接受颜色。
++       `Pixel#chroma` 则是四舍五入，因此一个颜色打包再解包后，可能在某个通道上与此相差一。
++   entry .multiplicable   用于 `Double` 的 `parts*color`：由该颜色的这么多份组成的 `Daub`
++       `Multiplicable` 实例放在这里，而不是 `Daub` 的伴生对象中，因为 `Daub` 只出现在结果中：`0.5*WebColors.Red` 的隐式作用域由 `Double` 和颜色的类型构成。
++       `Color in Srgb` 和普通的 `Srgb` 都提升为同一个 `Daub[Srgb]`，因此二者可以相加。
++   entry .wholeMultiplicable   用于 `Int` 的 `parts*color`：由该颜色的这么多份组成的 `Daub`
++       `5*WebColors.Red` 是五份红色。
++       份数只在 daub 相加时才有意义。
++   entry #Form   颜色自身的模型：`Srgb` 的为 `Srgb`，依此类推
++   entry #to   转换到另一个模型的颜色：`color.to[Cielab]`
++       需要一个 `Form is Perceptual in Model` 实例，伴生对象为每一对模型都提供了该实例；当 `Srgb`、`Xyz` 或 `Cielab` 作为源或目标时（`Xyz` 到 `Srgb` 除外），还需要作用域中有一个 `Colorimetry`。
++       把颜色转换到它自身的模型是恒等转换。
++       结果是目标的具体类型，因此 `to[Hsl].rotate(…)` 可以链式调用。
+
+@ 0 1 0 156d6c4747e18bde1291ee4ca705968d
++ entry .Srgb   以红、绿、蓝占满强度的比例表示的颜色，即屏幕的模型
+
+% 1 1 0 1ae04f00a651c7a0057c639fb22b22fd
+
+@ 0 4 0 11785b85a959a2a51773bab0ad8a07ba
++       `Srgb(red, green, blue)`，每个分量在 `0`–`1` 之间。
++       其他一切都经由这个模型转换：`Chromatic` 实例通过转换到这里来渲染颜色，`Palette` 和 `Spectrum` 在这里比较颜色，`WebColors` 也在这里定义。
++       转换到 `Xyz` 时会应用标准 sRGB 伽马，使用 D65 原色。
+
+% 2 1 0 1fd7c957197abe6e1393f8f511a6cd39
+
+% 3 1 0 1ac395aded9fd57518e263489b48618a
+
+% 0 1 0 0998a3f47fe7414901f0e469dd51c13f
+
+% 0 1 0 041d4ae0bbe9150e0a9a31cdb9c48538
+
+% 0 1 0 1b98e6f0b7bdbc9a11477dc31e74b0c7
+
+% 0 1 0 140712b9082078aa055438cc6cbc8ef6
+
+% 1 1 0 12e6fc527239a929128365106ed13bbf
+
+% 2 1 0 089e1a52558332800719be748761b5ea
+
+% 0 1 0 1073c051d014ff6c1953101e71ecf440
+
+@ 0 14 0 09e49cd12d9a339f1de6e59d2f373af6
++   entry .xyz   `Srgb` 到 `Xyz`：把每个通道线性化并应用 sRGB 矩阵；需要 `Colorimetry`
++   entry .cielab   `Srgb` 到 `Cielab`，经由 `Xyz`；需要 `Colorimetry`
++   entry .cmy   `Srgb` 到 `Cmy`：每个通道的补值
++   entry .cmyk   `Srgb` 到 `Cmyk`，经由 `Cmy`
++   entry .hsl   `Srgb` 到 `Hsl`：色相作为色环上的 `Angle`，以及饱和度和亮度
++       灰色（所有通道相等）的色相为 `0`，饱和度为 `0`。
++   entry .hsv   `Srgb` 到 `Hsv`：色相作为 `Angle`，以及饱和度和明度（最亮的通道）
++   entry #red   红色通道，`0`–`1`
++   entry #green   绿色通道，`0`–`1`
++   entry #blue   蓝色通道，`0`–`1`
++   entry #mix   本颜色与另一颜色按比例逐通道混合
++       `mix(that, ratio)` 在每个通道上取本颜色的 `(1 - ratio)` 和 `that` 的 `ratio`，因此 `mix(that)`（比例 `0.5`）是平均值，`mix(that, 0)` 是本颜色，`mix(that, 1)` 是另一颜色。
++       这是屏幕值的混合；`Cielab#mix` 混合的是眼睛所感知的颜色。
+
+@ 0 1 0 1923ea616843f322174d987d5f31d535
++ entry .Hsl   以色相、饱和度和亮度表示的颜色：用于调整颜色的模型
+
+% 1 1 0 14381cb7e2131a0011330dc477840111
+
+@ 0 5 0 07732299770019bc03888ca4f275f09d
++       `Hsl(hue, saturation, lightness)`，其中色相是一个 `Angle`——色环上的一个点，因此单位要写出来（`208.8.deg`、`π.rad`），而不是默认假定——另外两个分量在 `0`–`1` 之间。
++       它的方法正是人们想要的那些调整：`rotate` 色相，`saturate` 或 `desaturate`，`lighten` 或 `darken`，取 `complement`。
++       先转换为 `Hsl`，调整，再转换回去。
+
+% 2 1 0 13bcf530c255ddcc1abe1dce12a49a35
+
+% 3 1 0 0754bb2744dc182e0500c9a8af8501c7
+
+% 0 1 0 0c41bb1a887435321addae07f7a2d454
+
+% 0 1 0 0f7716bcb924fb3d17e4ef8efafda384
+
+% 0 1 0 0e0dfa6bc72ef2c405a0f86fc63df48e
+
+% 0 1 0 01051f4195324ab312d7585bedac7b7d
+
+% 0 1 0 0b31e712870df4b407b2d8538f4283c4
+
+% 1 1 0 032bfd1f1acce9ee0fad723696b46a8e
+
+@ 0 3 0 1a777f3163c14dfe0d0d27a7fd6e189b
++       `Hsl` 没有 `Blendable` 实例，因此它的 daub 不能相加：逐坐标地平均两个色相时，只要这对色相跨越零点，就会绕色环的远路走，两种红色会混合成青色。
++       请改在 `Srgb` 或 `Cielab` 中混合。
+
+% 0 1 0 0656060393d4ca2a1067b109a4d91054
+
+% 1 1 0 1462ae0dac158efb18bd92af77403ecc
+
+@ 0 15 0 00f374ba67affee51dfd896865d81ae4
++   entry .perceptual   `Hsl` 到 `Srgb`
++   entry #hue   色相，作为色环上的 `Angle`
++   entry #saturation   饱和度，`0`（灰色）到 `1`（纯色）
++   entry #lightness   亮度，`0`（黑色）到 `1`（白色）
++   entry #saturate   色相和亮度不变、饱和度为满的颜色
++   entry #desaturate   亮度不变、没有饱和度的颜色：一种灰色
++   entry #rotate   色相转过一个角度，并折回到其主值
++       `rotate(360.deg)` 不改变色相，向后转过零点会折回到色环的顶端；恰好落在零点的转动是 `0`，而不是一整圈。
++   entry #complement   色相转过半圈：`rotate(180.deg)`
++   entry #pure   饱和度为满、亮度居中的该色相：该色相最纯的颜色
++   entry #lighten   亮度向 `1` 移动一定比例
++       对亮度 `0.4` 调用 `lighten(0.5)` 得到 `0.7`；`lighten(1)` 是白色。
++   entry #darken   亮度向 `0` 移动一定比例
++       对亮度 `0.4` 调用 `darken(0.5)` 得到 `0.2`；`darken(1)` 是黑色。
+
+@ 0 1 0 0166e1fe4dd517fd12710d9fbf5f22b2
++ entry .Hsv   以色相、饱和度和明度表示的颜色，带有淡色、暗色和调和色
+
+% 1 1 0 19487d6b418009db19841d60a5a151ed
+
+@ 0 4 0 0404dc531a94f08707deda7a1f743e41
++       `Hsv(hue, saturation, value)`：色相是一个 `Angle`，饱和度在 `0`–`1` 之间，明度是最亮通道的强度，在 `0`–`1` 之间。
++       它的调整方式与 `Hsl` 相同——`rotate`、`saturate`、`desaturate`、`complement`、`pure`——并加上画家的词汇：`tint` 向白色混合，`shade` 向黑色混合，`tone` 同时向二者混合。
+
+% 2 1 0 02f838947e8a4e22122611479ae922dc
+
+% 3 1 0 13ea2cdeff0bf6e018f3a63289f3298e
+
+% 0 1 0 1e7675287584c6250e2706229d6fb5f7
+
+% 0 1 0 0036da7761604efc16f55c2f0fc4c855
+
+% 0 1 0 0967ec1fdaf7c6621c454e806485c08c
+
+% 0 1 0 17c2cdd89072f1590765f25a621b5da2
+
+% 1 1 0 0fa4c9910fb7f70c1949e528dcad0bb1
+
+@ 0 1 0 0fbf3489d5f4e5b5054094b71a69c9df
++       与 `Hsl` 一样，`Hsv` 没有 `Blendable` 实例，因为色相是环形的。
+
+% 0 1 0 0656060393d4ca201067b109a4d9104a
+
+@ 0 14 0 153a9a8509ca463f010f491e633ebda3
++   entry .perceptual   `Hsv` 到 `Srgb`
++   entry #hue   色相，作为 `Angle`
++   entry #saturation   饱和度，`0`–`1`
++   entry #value   明度：最强通道的强度，`0`–`1`
++   entry #saturate   色相和明度不变、饱和度为满的颜色
++   entry #desaturate   明度不变、没有饱和度的颜色
++   entry #rotate   色相转过一个角度，并折回到其主值
++   entry #complement   色相转过半圈
++   entry #pure   饱和度为满、明度为满的该色相
++   entry #shade   变暗的颜色：明度乘以 `1 - black`
++       `shade(0)` 是原样的颜色；`shade(1)` 的明度为 `0`。
++   entry #tint   变白的颜色：饱和度乘以 `1 - white`
++       `tint(0)` 是原样的颜色；`tint(1)` 的饱和度为 `0`。
++   entry #tone   先 `shade(black)` 再 `tint(white)`
+
+@ 0 1 0 187a74e4e2a3196b1999564386dd428c
++ entry .Xyz   CIE 1931 XYZ：每次感知转换都要经过的、与设备无关的模型
+
+% 1 1 0 1eccbe621fd056251385848892fdd588
+
+@ 0 5 0 037ded110a0f630802be3854dcefde9f
++       `Xyz(x, y, z)`，即三刺激值，其标度使参考白的 `y = 100`。
++       这里不做任何调整；它是 `Srgb` 与 `Cielab` 之间的中枢。
++       转换到 `Cielab` 时除以作用域中 `Colorimetry` 的参考白；转换到 `Srgb` 时应用逆 sRGB 矩阵和伽马，不需要 `Colorimetry`。
+
+% 1 1 0 1046107291cd2f9b0b481ed5fa421167
+
+% 1 1 0 18c5e57987ef3a271ea501d256dcfc9a
+
+@ 0 5 0 173516d9f1a8c0670ff0c8ac0b03755d
++   entry .cielab   `Xyz` 到 `Cielab`，相对于 `Colorimetry` 的 2° 参考白
++   entry .srgb   `Xyz` 到 `Srgb`：逆 sRGB 矩阵，然后是伽马
++   entry #x   X 三刺激值
++   entry #y   Y 三刺激值：亮度，参考白为 `100`
++   entry #z   Z 三刺激值
+
+@ 0 1 0 06fe89b317ca53db076ddfa971376758
++ entry .Cielab   CIE L*a*b*：颜色之间的距离与其看起来的差异相符的模型
+
+% 1 1 0 146925c7281453511aca1308e4ccca33
+
+@ 0 7 0 06f873820d263ad103bd948d3cf0ad28
++       `Cielab(lightness, blueYellow, greenRed)`：L* 从 `0`（黑色）到 `100`（白色），以及两条对立轴 a*（`greenRed`，负值偏绿）和 b*（`blueYellow`，负值偏蓝），各自大致在 `-128`–`127` 之间。
++       这个空间的构造使相等的距离对应相等的感知差异，`#delta` 测量的正是这一点：delta 小意味着两种颜色难以区分。
++       它是在背景上选择可读前景色的合适模型，这时原始 RGB 距离会产生误导；这里的 `#mix` 也比混合屏幕值给出更自然的中点。
+
+% 2 1 0 0d264a31855a0e97154b99c6cd59daf6
+
+% 3 1 0 146ce42ba360cb81031157c46d37f29b
+
+% 4 1 0 083fadce9b725dc9089b179c50f607c4
+
+% 0 1 0 11c4e7f0daef270907be3d531a66a425
+
+% 0 1 0 16b8f65a9ee50221133e04bdd6616ada
+
+% 0 1 0 1ad78a812f0dea780e507b4d12c09981
+
+% 0 1 0 0ec4f2e852a9d3230fd8095fa8f35d38
+
+% 1 1 0 19052f15802389981fee4f43273ca068
+
+@ 0 3 0 109e6c2925f4b0cf026b08130bc28eee
++       它的坐标不是 `0`–`1` 的比例，因此它不是 `Tonal` 的：它的 daub 只能在 `proportionalMixing` 下相加，对 CIELAB 使用 `import mixing.multiplyMixing` 无法编译。
+
+% 0 1 0 0b26bd1e3fbfdccc19907e363a5eeb83
+
+% 1 1 0 1dede88ab62f7d28117b7898be5cfab7
+
+@ 0 8 0 1eab3651ac6e718e0e8a426ca4893cf5
++   entry .xyz   `Cielab` 到 `Xyz`，相对于 `Colorimetry` 的 2° 参考白
++   entry .srgb   `Cielab` 到 `Srgb`，经由 `Xyz`；需要 `Colorimetry`
++   entry #lightness   L*：`0` 黑色到 `100` 白色
++   entry #blueYellow   b*：负值偏蓝，正值偏黄
++   entry #greenRed   a*：负值偏绿，正值偏红
++   entry #delta   在全部三条轴上到另一颜色的欧几里得距离：ΔE*ab
++   entry #mix   本颜色与另一颜色在全部三条轴上按比例混合
++       `mix(that)` 是中点；`mix(that, ratio)` 是向 `that` 走 `ratio` 比例的位置。
+
+@ 0 1 0 08b1ebc274a12c5e13d8fb56db1c529c
++ entry .Cmy   以青、品红和黄表示的颜色：sRGB 的减色补色
+
+% 1 1 0 060e283c66c8a6a2134f72a8c6bb73cf
+
+@ 0 3 0 07a6b15f303ab6b21c227f5afd462b1d
++       `Cmy(cyan, magenta, yellow)`，每个分量在 `0`–`1` 之间，且各自是对应 sRGB 通道的补值：`Srgb(1 - c, 1 - m, 1 - y)`。
++       它是 `Srgb` 与 `Cmyk` 之间的一步，并且是 `Tonal` 空间，因此可以在任何混合模式下混合。
+
+% 0 1 0 11b0104c3f3d3149169dc64083d2e445
+
+@ 0 7 0 0e7d057d79fb99e716f973d166d2dae8
++   entry .cmyk   `Cmy` 到 `Cmyk`：三种油墨的公共部分成为 key（黑色）
++       key 是三者中的最小值（或为 `1`，得到纯黑）；油墨则是去掉它后的剩余部分，再重新缩放。
++   entry .srgb   `Cmy` 到 `Srgb`：每个通道的补值
++   entry #cyan   青色油墨，`0`–`1`
++   entry #magenta   品红油墨，`0`–`1`
++   entry #yellow   黄色油墨，`0`–`1`
+
+@ 0 1 0 03ea57cb682398430766ac687b7f9471
++ entry .Cmyk   以青、品红、黄和 key（黑色）表示的颜色：打印机的模型
+
+% 1 1 0 1681e0ce0b61e6d7066142a2546e2bbc
+
+@ 0 4 0 1861d3c7b5d587140f57090a713a0fb6
++       `Cmyk(cyan, magenta, yellow, key)`，每个分量在 `0`–`1` 之间。
++       key 是代替其他三种油墨等量部分的黑色油墨；`Cmyk(0, 0, 0, 1)` 是黑色。
++       它是 `Tonal` 空间，因此可以在任何混合模式下混合。
++       `Cmyk8` 是相同通道的 32 位打包布局；这个类型则是基于 `Double` 的模型。
+
+% 0 1 0 1b4f355816dacff400c196ede7ef605f
+
+@ 0 6 0 07876d6f531c8108197318737c5a1ade
++   entry .cmy   `Cmyk` 到 `Cmy`：把 key 加回到每种油墨中
++   entry .srgb   `Cmyk` 到 `Srgb`，经由 `Cmy`
++   entry #cyan   青色油墨，`0`–`1`
++   entry #magenta   品红油墨，`0`–`1`
++   entry #yellow   黄色油墨，`0`–`1`
++   entry #key   黑色油墨，`0`–`1`
+
+@ 0 1 0 1af870c1f3ee647f0e274d491dadf064
++ entry .Perceptual   颜色模型之间转换的类型类：`Form is Perceptual in Model`
+
+% 1 1 0 10e24f0b05fabaab12003e714f3aeb5c
+
+@ 0 7 0 0c1503ca467ab7db1c6ff8757b587190
++       `color.to[Model]` 召唤一个 `color.Form is Perceptual in Model` 并调用它的 `#convert`。
++       实例声明在它们所转换的源模型的伴生对象中（`Srgb.hsl`、`Cielab.xyz`……），因此无需导入即可解析；新模型加入这个库的方式是：用 `type Form = NewModel` 扩展 `Color`，并在其伴生对象中声明与 `Srgb` 之间双向的 `Perceptual`。
++       伴生对象的 `identity` 实例使转换到颜色自身的模型不花任何代价，`Daub.perceptual` 则让 daub 按其所持有的颜色进行转换。
+
+% 2 1 0 03739d46527d90790519617c54ef812d
+
+% 3 1 0 09c70853e7e2380111a9237f301c2bbe
+
+% 0 1 0 0f436d6e5bad05371120b2e0fc4530e1
+
+% 0 1 0 1b9f8e7ec8c2e8e20c88f4870cefa909
+
+% 0 1 0 15043b46989e1cce19ba9c95442c15b3
+
+% 0 1 0 0066338307a428d31a119a1d7918342f
+
+% 0 1 0 086982b5e8d0ab7b1ceef01f4d92e79c
+
+% 1 1 0 16c3936ebc97084811e0a5f2fe46a646
+
+% 2 1 0 09098996dceee8b71c8077a72a02a42f
+
+@ 0 4 0 093e5c472a81a17205cbb5d4cc0dbd22
++   entry .identity   任何颜色都可原样转换到自身的模型
++   entry #Self   转换的源模型
++   entry #Form   转换的目标模型
++   entry #convert   转换本身，从 `Self` 的颜色到 `Form` 的颜色
+
+@ 0 1 0 01b821acbadde9e714e05ad7ba684e32
++ entry .Blendable   其颜色逐坐标组合的模型的类型类
+
+% 1 1 0 17a4108da00cbca111af39814a0db5a7
+
+@ 0 7 0 1280338d1fd84bfb180eb27fe3529826
++       混合一次只处理一个坐标，因此模型只需说明对其坐标的逐点运算如何重建一个颜色：`#zip(left, right, operation)`。
++       `Daub` 的加法需要它，同时还需要一个 `Mixing` 模式。
++       `Srgb`、`Cmy`、`Cmyk`、`Cielab` 和 `Xyz` 在伴生对象中有实例；`Hsl` 和 `Hsv` 有意没有实例，因为它们的色相是圆上的角度，逐坐标地平均两个色相时，只要这对色相跨越零点就会绕远路——两种红色会得到青色。
+
+% 1 1 0 11893d95a3854aa3114e1610aada155b
+
+% 2 1 0 0ba817d3678e2fbe12b629b206504c1f
+
+@ 0 7 0 0bd1f3c8c3d2954216504b1dfe607228
++   entry .srgb   `Srgb` 在红、绿、蓝上混合
++   entry .cmy   `Cmy` 在青、品红、黄上混合
++   entry .cmyk   `Cmyk` 在青、品红、黄和 key 上混合
++   entry .cielab   `Cielab` 在 L*、a* 和 b* 上混合
++   entry .xyz   `Xyz` 在 X、Y 和 Z 上混合
++   entry #Self   其颜色进行混合的模型
++   entry #zip   用一个作用于每对坐标的函数组合两个颜色
+
+@ 0 1 0 151eb9ebb7d894770705d95bb5d88a5b
++ entry .Tonal   标记一个所有坐标都在 `0` 到 `1` 之间的模型，因此每种混合模式都适用于它
+
+% 1 1 0 13e3a83317cf521f0a587b3fe7c554b5
+
+@ 0 7 0 0d82e45ac0d12ae5069f9ea128ab889f
++       `Srgb`、`Cmy` 和 `Cmyk` 是 `Tonal` 的。
++       除 `proportionalMixing` 外，每种 `Mixing` 模式都把坐标读作满强度的比例——`multiply` 是坐标之积，`screen` 是其补值之积——在坐标可以是 `100` 或负数的地方，二者都没有意义，因此这些模式只提供给 `Tonal` 模型：`import mixing.multiplyMixing` 加上 `1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)` 是编译错误，而不是悄然变成按比例混合。
++       `Cielab` 和 `Xyz` 没有实例。
+
+% 1 1 0 1a68a6a9b518fb37007eb5326e396b31
+
+@ 0 4 0 139e4c2fe82dba051441e69f58579db0
++   entry .srgb   `Srgb` 是 `Tonal` 的
++   entry .cmy   `Cmy` 是 `Tonal` 的
++   entry .cmyk   `Cmyk` 是 `Tonal` 的
++   entry #Self   所有坐标都是比例的模型
+
+@ 0 1 0 166425f92a37a35f0bc5d3a18845a724
++ entry .Mixing   混合模式的类型类：图层的坐标如何与其下方的背景组合
+
+% 1 1 0 0bd90e848b937f050627ec3f5cc00dbf
+
+@ 0 6 0 12c1741ba3fe2526190e99b5d80a2aa6
++       `#blend(backdrop, layer)` 是 Photoshop 和 GIMP 的一种可分离混合模式，采用 W3C 合成规范给出的形式。
++       daub 相加时，模式以全强度应用，结果再按所加 daub 在总份数中所占的份额混合回去——这正是图层不透明度滑块的作用——因此只有 `proportionalMixing` 满足交换律；在其他任何模式下，`5*Red + 3*Yellow` 与 `3*Yellow + 5*Red` 不同，就像交换两个图层的顺序一样。
+
+@ 0 4 0 11a9ab42899fc0a01e4423e007cf786a
++       这个伴生对象中有意没有默认实例：一个可经由隐式作用域找到的模式，会在导入的模式不适用时被找到，于是在 `import mixing.multiplyMixing` 下混合 CIELAB 就会悄然回退为按比例混合，而不是被拒绝。
++       模式总是通过从 `mixing` 导入来指定。
+
+% 1 1 0 0034f1a9898c4b2511b655029acc8f2d
+
+% 1 1 0 08da6cf1e60b3d9101d4d8f4bf726bc1
+
+@ 0 2 0 1991aca56772135809547c1ab0e58beb
++   entry #Self   这种混合模式适用的模型
++   entry #blend   在这种模式下，图层的坐标覆盖在背景的坐标之上
+
+@ 0 1 0 07fe578a31436138036c069d55a0a6a1
++ entry .Daub   一定量的颜料：一种颜色，连同它进入混合物的份数
+
+% 1 1 0 0fb92786b8bf21080f7ef35e7db61783
+
+@ 0 5 0 070af1ba380aad9e18c681faa15c7a74
++       `5*WebColors.Red` 是五份红色的 `Daub[Srgb]`（经由 `Color.wholeMultiplicable`，对 `Double` 则经由 `Color.multiplicable`）。
++       daub 本身就是一个 `Color`——五份红色仍然是红色——因此像 `5*Red + 3*Yellow` 这样的表达式可以像任何颜色一样转换、渲染和测量，而 `#parts` 只在另一个 daub 与它相加时才有意义。
++       相加需要模型是 `Blendable` 的，并需要从 `mixing` 导入一个 `Mixing` 模式。
+
+% 2 1 0 1481f64596502a211ef47dc6bf7d7563
+
+% 3 1 0 134bb1beaae5f0610e4c6fa03c262a86
+
+@ 0 1 0 0145c970ead650ed00bfdd17f2d1efa4
++         label 五份红色
+
+% 1 1 0 07fd0cd7820405131d14ec5a978feb7c
+
+% 2 1 0 0316c957ff2f06af0ae3b8d386d2aae9
+
+% 3 1 0 0384c06bdfb1db7f1445b7133fd3591a
+
+% 0 1 0 1d578c701f9699ae06a59d3aaf05273b
+
+% 0 1 0 06cf583683f6d11d17a7a527b6f3d32d
+
+% 1 1 0 1e68b5af300c35680cc2f596ff94dd76
+
+@ 0 1 0 0d66ae7eed228dfe06181f0fa9fe9120
++         label 加入三份黄色
+
+% 1 1 0 173ce9364e016fab09549281c64dbed7
+
+% 2 1 0 15f20c52a8637fe1007cae956bdc2924
+
+% 3 1 0 0ce3853aafef9b1711e11a9cb6d72440
+
+% 0 1 0 0c280cefd4d85d2218d46667098b523e
+
+% 0 1 0 0e60f0d449fcd3380b6b48830373046c
+
+% 0 1 0 0c5cf473443bc2f8108a4a6d6978b2d5
+
+% 1 1 0 0c5c11962c98b5700742c5064844e63b
+
+@ 0 1 0 1df1e8f7c69baa0209f4b75faa75d31a
++         label 加入两份白色：相对于目前的八份加权
+
+% 1 1 0 08e1c8c1163391ed1c980c89b588db4e
+
+% 2 1 0 149d11ec2e6ebef7053dfb06621bc162
+
+% 3 1 0 17a2b21916864a9313ca91b3dc6a7e57
+
+% 2 1 0 0f97815da1f7bdd4104fea4f3051dcb5
+
+% 0 1 0 0e18d2e7d1243473162bc67315f49be2
+
+% 1 1 0 18c6d3d21720cb8d04ad06610fb1346f
+
+@ 0 1 0 14f1891020f96d401973fd1f096ad6ac
++         label 同样的 daub，换一种模式
+
+% 1 1 0 130684b17477aa5704232e650d5e1d95
+
+% 2 1 0 03362d29f6c5c0c30aa28fa39ae05a76
+
+% 0 1 0 125af8b65baa190f0ecf656ba9a0658b
+
+% 2 1 0 06ec18588e5d061415aca343c671a14a
+
+% 0 1 0 087a4d82319a381d1a1fef28afa05d35
+
+% 1 1 0 100e3894cb4da24b046271840ac443fe
+
+% 2 1 0 13f8c31cb2c50bc6013def35d0e411e9
+
+@ 0 6 0 1485a56cd2e39c960318b37ac602efb2
++       份数是比例，因此 `5*Red + 3*Yellow` 和 `50*Red + 30*Yellow` 是同一种颜色；第三个 daub 是相对于目前的总量加权，而不是相对于它的相邻项：`1*Red + 1*Lime + 1*Blue` 是三者各占三分之一。
++       零份的 daub 完全不参与——在 `multiply` 下，`0*Red + 1*Blue` 是蓝色，不会被红色调暗。
++       `Color in Srgb` 和普通的 `Srgb` 提升为同一个 `Daub[Srgb]`，因此 `WebColors` 条目与字面量可以混合在一起。
+
+% 1 1 0 068a27fdc17d34af0f2455a3d172abfa
+
+% 1 1 0 040e4e42303f447f178296d1e7ce2258
+
+% 0 1 0 0c4113ba31d426d309aa43666a4a501b
+
+@ 0 8 0 180fdb029d6f39711c79a003903197bc
++   entry .addable   `left + right`：在作用域中的 `Mixing` 下，右侧 daub 按其所占份额覆盖在左侧之上
++       需要 `topic is Blendable` 和 `topic is Mixing`。
++       结果的份数为二者之和，并且逐坐标为 `backdrop + (mode(backdrop, layer) - backdrop)*share`，其中 `share` 是右侧 daub 在新总量中所占的比例。
++       任一侧为零份的 daub 都会原样返回另一侧。
++   entry .perceptual   daub 可以转换到其颜色所能转换到的任何模型
++   entry #parts   该颜色有多少份：与另一个 daub 相加时它所带的权重
++   entry #color   颜色本身，处于其模型中
+
+@ 0 1 0 1666420f1cf4e26305ca4ea31347669d
++ entry .Colorimetry   感知转换所假定的参考白：一种光源和观察者
+
+% 1 1 0 1481a9181dcd61f7094c8df2ff638b00
+
+@ 0 7 0 024d07df8c30096114e5fffd3aebd511
++       `Colorimetry(x2, y2, z2, x10, y10, z10)` 保存参考白在 CIE 1931 2° 观察者和 CIE 1964 10° 观察者下的 XYZ 三刺激值。
++       `Xyz` 与 `Cielab` 之间（因而 `Srgb` 与 `Cielab` 之间）的转换要除以它，因此同样的坐标在日光下和钨丝灯下表示不同的颜色；转换使用 2° 的值。
++       要选择一个，可以从 `colorimetry` 包导入一个 given，或在局部绑定；没有默认值，因为假定光源就等于假定观察条件。
+
+% 2 1 0 0d86ad70bbc1905809ac376b66b14d42
+
+% 3 1 0 0bac9ad20c58d7b10b03a7f54c054214
+
+% 0 1 0 0dce6f2301670d8d01c779ccd4505e9b
+
+% 0 1 0 1dc5b70b2d336ecd133af530963b5398
+
+% 1 1 0 19074442300339d00f3305e648c944bc
+
+% 0 1 0 0a46d2d9b892707202f92bb35b67c146
+
+% 1 1 0 0a57f38123dec4641f2df992eea3dff6
+
+@ 0 6 0 19b42e1cd2014f97191bb8763d798d53
++   entry #x2   参考白的 X，2° 观察者
++   entry #y2   参考白的 Y，2° 观察者：`100`
++   entry #z2   参考白的 Z，2° 观察者
++   entry #x10   参考白的 X，10° 观察者
++   entry #y10   参考白的 Y，10° 观察者：`100`
++   entry #z10   参考白的 Z，10° 观察者
+
+@ 0 1 0 07b341b0cb34f39312a8be53b840252e
++ entry .colorimetry   标准光源，每个都是一个按名称导入的 `Colorimetry` given
+
+% 1 1 0 0b6cf78e7b42a1170a7fad17f46e9943
+
+@ 0 3 0 11216d19ba256d790829e045b53347ef
++       按名称给出的 CIE 标准光源和常见荧光灯。
++       `daylightColorimetry` 是 D65，即 sRGB 和大多数屏幕工作所假定的光源，适合几乎所有程序。
++       有几个 given 是其他 given 的别名：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 1 0 1f27d5dd99d1a1730d67410cdb653120
++       column  光源
+
+% 0 1 0 1e4885e8a51732730f898cd0ea0f750c
+
+@ 0 19 0 051f7409c892b24a1324c3bab9ab1734
++       column  光
++       column  别名
++       row  A  `incandescentTungstenColorimetry`  白炽钨丝灯
++       row  B  `oldDirectSunlightAtNoonColorimetry`  正午直射阳光，已废弃
++       row  C  `oldDaylightColorimetry`  平均北天空日光，已废弃
++       row  D50  `iccProfilePcsColorimetry`  ICC 配置文件连接空间
++       row  D55  `midMorningDaylightColorimetry`  上午或下午中段的日光
++       row  D65  `daylightColorimetry`  正午日光，常用选择  `srgbColorimetry`, `adobeRgbColorimetry`
++       row  D75  `northSkyDaylightColorimetry`  北天空日光
++       row  E  `equalEnergyColorimetry`  各波长能量相等
++       row  F1  `daylightFluorescentF1Colorimetry`  日光荧光灯
++       row  F2  `coolFluorescentColorimetry`  冷白荧光灯
++       row  F3  `whiteFluorescentColorimetry`  白色荧光灯
++       row  F4  `warmWhiteFluorescentColorimetry`  暖白荧光灯
++       row  F5  `daylightFluorescentF5Colorimetry`  日光荧光灯
++       row  F6  `liteWhiteFluorescentColorimetry`  淡白荧光灯
++       row  F7  `daylightFluorescentF7Colorimetry`  D65 模拟光源  `d65SimulatorColorimetry`
++       row  F8  `sylvaniaF40Colorimetry`  Sylvania F40，D50 模拟光源  `d50SimulatorColorimetry`
++       row  F9  `coolWhiteFluorescentColorimetry`  豪华冷白荧光灯
+
+% 0 1 0 16f32ff231d488cf116fa8e3dfd1b85f
+
+% 0 1 0 09d6d03ccaa6253b091df4c5be35cf10
+
+% 0 1 0 1cba70876377c1a600cc40a79c99e5c1
+
+% 1 1 0 04e728466a23afa51f77d4902fd84c7b
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 4 1 0 1f69dbfb822f99a110b68bfb2c9440c5
+
+% 0 1 0 0fa487c06d9c5a2e104688af00191bac
+
+% 1 1 0 15f49a91873066611aa3e17bd89fbdc6
+
+@ 0 27 0 0336455dd1e925521f4a5ccd497ab151
++   entry .incandescentTungstenColorimetry   光源 A：白炽钨丝灯，2856 K
++   entry .oldDirectSunlightAtNoonColorimetry   光源 B：正午直射阳光，已废弃
++   entry .oldDaylightColorimetry   光源 C：平均北天空日光，已废弃
++   entry .iccProfilePcsColorimetry   光源 D50：地平线光，ICC 配置文件连接空间
++   entry .midMorningDaylightColorimetry   光源 D55：上午或下午中段的日光
++   entry .daylightColorimetry   光源 D65：正午日光，sRGB 参考白；常用选择
++   entry .srgbColorimetry   sRGB 参考白：D65，与 `daylightColorimetry` 相同
++   entry .adobeRgbColorimetry   Adobe RGB 参考白：D65，与 `daylightColorimetry` 相同
++   entry .northSkyDaylightColorimetry   光源 D75：北天空日光
++   entry .equalEnergyColorimetry   光源 E：各波长能量相等
++   entry .daylightFluorescentF1Colorimetry   光源 F1：日光荧光灯，6430 K
++   entry .coolFluorescentColorimetry   光源 F2：冷白荧光灯，4230 K
++   entry .whiteFluorescentColorimetry   光源 F3：白色荧光灯，3450 K
++   entry .warmWhiteFluorescentColorimetry   光源 F4：暖白荧光灯，2940 K
++   entry .daylightFluorescentF5Colorimetry   光源 F5：日光荧光灯，6350 K
++   entry .liteWhiteFluorescentColorimetry   光源 F6：淡白荧光灯，4150 K
++   entry .daylightFluorescentF7Colorimetry   光源 F7：D65 模拟光源，6500 K
++   entry .d65SimulatorColorimetry   D65 模拟光源：与 `daylightFluorescentF7Colorimetry` 相同
++   entry .sylvaniaF40Colorimetry   光源 F8：Sylvania F40，D50 模拟光源，5000 K
++   entry .d50SimulatorColorimetry   D50 模拟光源：与 `sylvaniaF40Colorimetry` 相同
++   entry .coolWhiteFluorescentColorimetry   光源 F9：豪华冷白荧光灯，4150 K
++   entry .philipsTl85Colorimetry   光源 F10：Philips TL85，5000 K
++   entry .ultralume50Colorimetry   Ultralume 50：与 `philipsTl85Colorimetry` 相同
++   entry .philipsTl84Colorimetry   光源 F11：Philips TL84，4000 K
++   entry .ultralume40Colorimetry   Ultralume 40：与 `philipsTl84Colorimetry` 相同
++   entry .philipsTl83Colorimetry   光源 F12：Philips TL83，3000 K
++   entry .ultralume30Colorimetry   Ultralume 30：与 `philipsTl83Colorimetry` 相同
+
+@ 0 1 0 1829bd51119c80370dab9f4770544b68
++ entry .mixing   混合模式，每个都是一个 `Mixing` given，在 daub 相加之前按名称导入
+
+% 1 1 0 11898287d8b293471456464e07a6c1b8
+
+@ 0 6 0 144a6fb4dc1fb44b0185bbda50d719e8
++       `proportionalMixing` 按份数平均各颜色，这正是两两 `mix` 所做的，也是在坐标不局限于 `0`–`1` 的模型中唯一有意义的模式。
++       其余的是 Photoshop 和 GIMP 的混合模式，按 W3C 合成规范的定义来定义，并且只提供给 `Tonal` 模型（`Srgb`、`Cmy`、`Cmyk`）：在 `Cielab` 中请求其中之一无法编译。
++       在 daub 相加的地方恰好导入一个模式；默认情况下作用域中没有任何模式。
+
+% 2 1 0 0c84afd6ad2b3816064a5a88714cd314
+
+% 3 1 0 13c63a8ce3ecfd2612fa6806f8963e3f
+
+% 0 1 0 12dcc8cf4aa7795a02f82cd438686fd8
+
+% 0 1 0 02c0e09e90c7774a1d0dfb71274e0908
+
+% 1 1 0 1e0ce56a86ed0d1b0a1c56f70d4f57ce
+
+@ 0 3 0 1592cb3ccf61091a1d766679cd8d5643
++       daub 在总份数中所占的份额充当它的不透明度：模式以全强度应用，结果再按这个比例混合回去，因此在 `multiply` 下，`3*White + 1*Black` 是 `Srgb(0.75, 0.75, 0.75)`，`9*White + 1*Black` 是 `0.9` 的灰色。
+
+% 1 1 0 1f94b949842e5feb00519dc2cc73e3b7
+
+% 2 1 0 1fc7b44b6b5962251f2145e694a1e86b
+
+% 0 1 0 0a297eb642a01c610e8d789370ad53c2
+
+@ 0 14 0 08648e9d47a683961e5f50d4b00d665b
++   entry .proportionalMixing   图层取代背景：按份数加权平均；适用于任何模型
++   entry .multiplyMixing   `backdrop × layer`：总是更暗，如同油墨或滤镜叠加
++   entry .screenMixing   `1 - (1 - backdrop)(1 - layer)`：总是更亮，如同投射的光叠加
++   entry .darkenMixing   两者中较小的坐标
++   entry .lightenMixing   两者中较大的坐标
++   entry .differenceMixing   两者之差的绝对值
++   entry .exclusionMixing   `backdrop + layer - 2·backdrop·layer`：类似差值，但对比度较低
++   entry .linearDodgeMixing   两者之和，上限为 `1`
++   entry .linearBurnMixing   两者之和减 `1`，下限为 `0`
++   entry .hardLightMixing   图层暗处用正片叠底，亮处用滤色
++   entry .overlayMixing   背景暗处用正片叠底，亮处用滤色：交换了操作数的强光
++   entry .softLightMixing   较柔和的强光，按 W3C 公式
++   entry .colorDodgeMixing   被图层提亮的背景：`backdrop / (1 - layer)`，上限为 `1`
++   entry .colorBurnMixing   被图层加深的背景：`1 - (1 - backdrop) / layer`，下限为 `0`
+
+@ 0 4 0 017507a531c523950b59b13fbf122a94
++ entry .Brightness   主题是暗色还是亮色：由 `Dark` 和 `Light` 组成的枚举
++     同时提供两者的 `Theme` 所用的变体，也是 `dark` 和 `light` 所检验的值。
++     通过导入 `luminosity.darkBrightness` 或 `luminosity.lightBrightness` 来选择其一，这样经由主题设置样式的终端输出就能适应终端的背景。
+
+@ 0 1 0 1e5d869715916f22002f582e8c1eca16
++ entry .luminosity   暗色或亮色，每个都是一个按名称导入的 `Brightness` given
+
+% 1 1 0 0c18876193e5fe2202a123788b4ac178
+
+% 2 1 0 012f72133c8857051fa31cc892f55119
+
+% 3 1 0 1e6010279d81974e1e7c1bace568bb21
+
+% 4 1 0 0c41a12af5a2227e1b1dd794b8c7cddd
+
+% 5 1 0 0a365b5ccf508bc01862ae26749ca79d
+
+% 0 1 0 1fdf7f839a33650e1dc7b470cd9a9fa0
+
+% 1 1 0 0e03a502e5eea1550ac8d141a40dbff7
+
+@ 0 2 0 18b00da6e341de8e0216948b8ec80b2d
++   entry .darkBrightness   `Brightness.Dark`：主题的暗色变体
++   entry .lightBrightness   `Brightness.Light`：主题的亮色变体
+
+@ 0 3 0 1f0ae0b11f5c81f71ba0608a7cbc241c
++ entry .dark   作用域中的 `Brightness` 是否为 `Dark`
++     对上下文中 `Brightness` 的内联检验，供主题或调色板在其变体之间选择：`if dark then base03 else base3`。
+
+@ 0 1 0 18347cd78158b4df11c23e3ddce00d1f
++ entry .light   作用域中的 `Brightness` 是否为 `Light`
+
+@ 0 1 0 1af3b96f352013980bc119e7e7c580bb
++ entry .Theme   一组协调的颜色：背景、前景、强调色，以及它是暗色还是亮色
+
+% 1 1 0 1bca193d156a9bab0e48a007837324cb
+
+@ 0 6 0 128042de532c2ca6055a0b8a5259cc85
++       `Theme` 有一个模型（`#Form`，可转换为 `Srgb`）、该模型中的 `#background` 和 `#foreground`、一个强调色列表 `#colors`，以及它的 `#luminosity`。
++       它的 `#spectrum` 按最接近的颜色把强调色分配给八个原色角色——红、黄、绿、蓝、青、品红、黑、白——因此想要“主题的红色”的程序会去问 spectrum。
++       `Solarized` 是内置主题，`themes.solarizedTheme` 是在作用域中的 `Brightness` 下选择它的 given。
+
+% 2 1 0 157946992b50ee5412a4cd666cf95b5d
+
+% 3 1 0 168b41e906c798b80f4c38068bee1589
+
+% 0 1 0 09370ffe534413c019d6ad4ff883f21b
+
+% 1 1 0 1a553b8d25f9c044073150eb19e2fe24
+
+% 0 1 0 0e8073935679befd00a9fc7dfaf77b10
+
+% 0 1 0 097e48ed0afb29d416e035d5283bc930
+
+% 0 1 0 1d7e2f060b35f2ce12e25494ad7eaf83
+
+% 0 1 0 10771255de72fdb609ffa30146f42133
+
+% 1 1 0 1f994a219fc77ae71e495ae6d3ced3a3
+
+% 0 1 0 09cdc5592f5959e30b811c3391c188c0
+
+% 0 1 0 1abfc4f7f3e4a4621a8408a624d8ef34
+
+% 0 1 0 132395f37b25cce3171e9b99e53a526b
+
+@ 0 7 0 1ab41ef3316688e004ea37a93b242494
++   entry #Form   主题颜色所在的模型
++   entry #luminosity   主题是暗色还是亮色
++   entry #background   背景色
++   entry #foreground   前景色
++   entry #colors   主题的强调色，spectrum 由它们分配而来
++   entry #spectrum   按最接近的颜色分配给八个原色角色的强调色，只计算一次
++       一个 `lazy val`，首次使用时用 `Spectrum.apply` 从 `#colors` 计算出来。
+
+@ 0 1 0 1e02d36f851b331b0f7fb00977efe673
++ entry .Solarized   Solarized 主题的十六种颜色，作为 `Srgb` 中的 `Theme`
+
+% 1 1 0 0546ca14bb75e9160e455d93393d20d4
+
+@ 0 5 0 0205d88867bc6d6e01d0502978a7681a
++       Ethan Schoonover 的调色板：八种强调色（`red`、`yellow`、`blue`、`green`、`orange`、`cyan`、`magenta`、`violet`）和八种单色调，从最暗的 `base03` 到最亮的 `base3`。
++       这个特质把 `luminosity`、`background` 和 `foreground` 留为抽象；`themes.solarizedTheme` 根据作用域中的 `Brightness` 补全它，暗色变体是 `base3` 底上的 `base03`，亮色变体则相反。
+
+% 0 1 0 1422d0f2f22ec0600478d5ecfdd426de
+
+% 0 1 0 05949b5c177e2abc18fa7f3261fedb12
+
+% 0 1 0 0a835c515377db500bb217b885cb078a
+
+% 0 1 0 09e8f79e6f67e509198b735e761363d2
+
+% 0 1 0 0024da6c9c3b18cd0513e7fcebac0e5f
+
+% 0 1 0 1d6c510b0439b6fc0b26944bbf6ce64f
+
+% 0 1 0 112933520a3e0b9c1d6880bf30cb15b6
+
+% 0 1 0 0f71591b2cfd04e5075b05577db71031
+
+% 0 1 0 0eda7a2bbc31b4a30b57564fb3d5324b
+
+@ 0 1 0 1de36bab8adbbdae07bbc7c2b5fb4e56
++   entry #base03   最暗的单色调，`Srgb(0, 0.169, 0.212)`：暗色变体的背景
+
+% 0 1 0 041b023792f74b69169b2ccd95911336
+
+% 0 1 0 1ee50d2f269853ca1c7067725e050dae
+
+% 0 1 0 05069f954308278d113d09a156c92eca
+
+% 0 1 0 0fcbe81d06cdef381f58fef21603ddba
+
+% 0 1 0 0bde150c5f0f198e0cc683b0f4b29a9f
+
+% 0 1 0 0c3288ba2ae8008805c6e87ac3edb8eb
+
+@ 0 2 0 06657739b6a65d80088914e341353fcf
++   entry #base3   最亮的单色调，`Srgb(0.992, 0.965, 0.890)`：亮色变体的背景
++   entry #colors   八种强调色，然后是 `base3` 和 `base03`
+
+@ 0 1 0 01d8cf1c8af7584c04df34eae3394b60
++ entry .themes   内置主题，每个都是一个按名称导入的 `Theme` given
+
+% 1 1 0 1d419537646eec661e0a92e6aa896017
+
+% 2 1 0 1d3fa85489fb8f1a121781b30abc3ccf
+
+% 3 1 0 1bbe5af08b9eab7506bdce1ecbffe7e9
+
+% 4 1 0 036ca2b81b40624d0e317b05b3b8338f
+
+% 5 1 0 0047ee0a5bfe31261f55080c1a472966
+
+% 0 1 0 1c43230723814b371bcc20c7d6406205
+
+% 1 1 0 12a261fbd43875530f3f35141d9796ed
+
+@ 0 3 0 0cb659494583225415c9c5e7c5832d20
++   entry .solarizedTheme   Solarized，取作用域中 `Brightness` 所选择的暗色或亮色变体
++       需要一个 `Brightness` given——`luminosity.darkBrightness` 或 `luminosity.lightBrightness`——并且是一个 `Solarized`，因此它的十六种颜色可以按名称访问。
+
+@ 0 1 0 16c601c026fa2984062a95bd9ef8bd13
++ entry .Spectrum   分配给八个原色角色的主题强调色
+
+% 1 1 0 00061b74bbecffbc16b70b028265d678
+
+@ 0 6 0 090760c979aea0ab17106808c1c0d3ef
++       `Spectrum(colors)` 接受一个颜色列表，颜色可以属于任何可转换为 `Srgb` 的模型，并按 `black`、`white`、`red`、`green`、`blue`、`yellow`、`cyan` 和 `magenta` 的顺序为每个角色分配一个颜色，每次都在尚未分配的颜色中选取（按 sRGB 距离）最接近纯原色的那个；列表用完后会重新填充，因此短列表也能满足每个角色。
++       `Theme#spectrum` 就是一个 spectrum，由主题的强调色计算而来。
+
+% 1 1 0 1ef632eb1367922512f91a41326c6702
+
+@ 0 11 0 0490ee9e57108efa11913047a0873310
++   entry .apply   `Spectrum(colors)`：按最接近的颜色分配角色，在列表用完之前不重复
++       只有列表为空时才会 panic。
++   entry #Form   颜色所在的模型
++   entry #red   最接近纯红的颜色
++   entry #yellow   最接近纯黄的颜色
++   entry #green   最接近纯绿的颜色
++   entry #blue   最接近纯蓝的颜色
++   entry #cyan   最接近纯青的颜色
++   entry #magenta   最接近纯品红的颜色
++   entry #black   最接近黑色的颜色
++   entry #white   最接近白色的颜色
+
+@ 0 1 0 00cf4a323f40eed51928c6c0ef7312c5
++ entry .Palette   按角色组织的一组颜色，用 `subdue` 和 `accent` 把某个颜色推向背景或推离背景
+
+% 1 1 0 18d2fa41f6b3c39415ca1c164fb6f9f7
+
+@ 0 7 0 1a274abaa770becb11fd6d0718a16677
++       `Palette` 有一个模型（`#Form`）、一个 `#background` 和一个 `#foreground`，以及扩展它的特质所声明的任何角色（`palettes.Reporting` 加上 `success`、`error`、`warning`；一个库自己的调色板特质加上它自己的角色）。
++       `#subdue(color)` 把颜色向背景混合一半，`#accent(color)` 向前景混合，`#mix` 混合任意两个角色，因此少数几个角色的调色板就能产生许多颜色。
++       这个特质是 `into` 的，因此在需要 `Palette` 的地方，值会被适配为它；它也是 `Selectable` 的，因此在 JVM 上可以用 `selectDynamic` 按名称读取角色。
+
+% 2 1 0 03fd6fb73f3142bd03ef57347d2bb149
+
+% 3 1 0 18675b964bff958e087ac337d7539c1e
+
+% 0 1 0 1d0382410672d3e70e425068bb376459
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 15431d6cc837ea37186c4f5b5e720493
+
+% 0 1 0 0b61d80aa86ebc76116ed643b6ac7f43
+
+% 0 1 0 107d6a511fffc2f50d6a946285236fe0
+
+% 0 1 0 057465be7e9047e00035cedc0340caef
+
+% 0 1 0 032e4036ea555b531ea5d6d880c3dba7
+
+% 0 1 0 13649ac92dff447713ebead5bc3aec82
+
+% 0 1 0 05fa541d72b745bb1252111d32447c2f
+
+% 1 1 0 07370104a4bf57d50e42c64ab529a2f7
+
+@ 0 2 0 0e7f2248fb54cd1b18381b2da3c9aaaa
++       用十六进制字面量写成的调色板为每个角色给出一个 `rgb"…".color`，因为角色是 `Color in Srgb`。
+
+% 0 1 0 1cc739ab668bada5179f64537bfefd2c
+
+% 1 1 0 06fdf1c93c2c402607690e6a843d8c8b
+
+@ 0 11 0 06726f593781a861024daf8bafc4e89c
++   entry #Form   角色所在的模型，可转换为 `Srgb`
++   entry #background   背景色
++   entry #foreground   前景色
++   entry #black   纯黑，`Srgb(0, 0, 0)`
++   entry #white   纯白，`Srgb(1, 1, 1)`
++   entry #subdue   向背景混合的颜色，默认混合一半
++   entry #accent   向前景混合的颜色，默认混合一半
++   entry #mix   在 sRGB 中逐通道混合的两种颜色，默认各占一半
++   entry #selectDynamic   通过反射按名称读取的角色：`palette.selectDynamic("error")`
++       仅限 JVM：它以反射方式调用同名方法，因此在 Scala Native 上不可用，在那里具名角色仍是普通调用。
+
+@ 0 1 0 1983a2158bca3f54016d6fdc98890eda
++ entry .palettes   `Palette` 可以声明的角色集合：报告结果、终端的十六种颜色、语法
+
+% 1 1 0 15088dacdf9a49090b1c91e83f4dde3d
+
+@ 0 4 0 0c061147cec0da750526d69ad15365d4
++       混入特质，每个都以 `Palette` 为自身类型，它们指定某类调色板必须提供的角色，这样为报告、终端或源代码设置样式的代码就可以请求一个 `Palette with palettes.Reporting`，并按名称访问其角色。
++   entry .Reporting   用于结果的调色板角色：`success`、`error` 和 `warning`
+
+% 1 1 0 1fb06fcbcb5680df003abacc10ad27e5
+
+@ 0 5 0 18471504a32f09f415cfedaac81a4b5e
++         `Palette` 的一个自身类型混入。
++     entry #success   成功的颜色
++     entry #error   错误的颜色
++     entry #warning   警告的颜色
++   entry .Terminal   作为角色的十六种 ANSI 颜色：`black` 到 `white`，以及 `brightBlack` 到 `brightWhite`
+
+% 1 1 0 1cedac58d5b926390f4714a76f0c6023
+
+@ 0 19 0 1e08a78123c360a81db2794f4dc297b5
++         `Palette` 的一个自身类型混入，用于再现或替代终端自身十六色调色板的调色板。
++     entry #black   ANSI 颜色 0
++     entry #red   ANSI 颜色 1
++     entry #green   ANSI 颜色 2
++     entry #yellow   ANSI 颜色 3
++     entry #blue   ANSI 颜色 4
++     entry #magenta   ANSI 颜色 5
++     entry #cyan   ANSI 颜色 6
++     entry #white   ANSI 颜色 7
++     entry #brightBlack   ANSI 颜色 8
++     entry #brightRed   ANSI 颜色 9
++     entry #brightGreen   ANSI 颜色 10
++     entry #brightYellow   ANSI 颜色 11
++     entry #brightBlue   ANSI 颜色 12
++     entry #brightMagenta   ANSI 颜色 13
++     entry #brightCyan   ANSI 颜色 14
++     entry #brightWhite   ANSI 颜色 15
++   entry .Syntax   语法高亮调色板的角色
+
+% 1 1 0 07cccd064c4f6b9d156fbbd3b68b0cec
+
+@ 0 12 0 11161dba3746eec601d9de6bca119136
++         `Palette` 的一个自身类型混入：高亮器区分的每种词法单元类别对应一个角色。
++     entry #error   错误的词法单元
++     entry #number   数值字面量
++     entry #modifier   修饰符关键字
++     entry #identifier   标识符
++     entry #term   项层面的关键字
++     entry #meta   元词法单元：注解、指令
++     entry #string   字符串字面量
++     entry #parenthesis   方括号和圆括号
++     entry #symbol   运算符或符号
++     entry #comment   注释
+
+@ 0 1 0 0c3873dda023619f05eb431d5c01fd17
++ entry .WebColors   CSS 的 141 种具名颜色，每个都是一个 `Color in Srgb`
+
+% 1 1 0 0cedf1b507eef10f1a120f950954b4f5
+
+@ 0 4 0 1a34f15375fec9210bbe428ec9e5fb4f
++       网页可以指名的颜色，从 `AliceBlue` 到 `YellowGreen`，都是 `Color in Srgb` 类型的值，因此每个都可以像其他颜色一样转换、混合和渲染；每个也都是 `Chromatic` 的，因此可以直接为终端文本设置样式。
++       `.colors` 列出全部颜色，大致按字母顺序排列。
+
+% 2 1 0 16346e26b8b3c4f5032692f72bf74c8f
+
+% 3 1 0 139175fe07ab16b90d9c0b15761fa71e
+
+% 0 1 0 10130f080ab04fb00214ab012e6ec4f7
+
+% 0 1 0 10cb4d83c75b4d6c17c484f10b47e813
+
+% 1 1 0 04e90be71f57674f0dbcbc3c008a0d3f
+
+@ 0 4 0 0773143ff431f6781df525ce067d8817
++       这些值是四舍五入到三位小数的 CSS 定义，因此 `WebColors.Tomato` 是 `Srgb(1, 0.388, 0.278)`，它的 `Chroma` 是 `Chroma(255, 98, 70)`，与 CSS 的 `rgb(255, 99, 71)` 在每个通道上相差不超过一，因为 `Chromatic` 转换会截断取整。
++       `Gray` 及其他灰色名称只使用美式拼写。
+
+% 1 1 0 048a2cdc77b51f481ecbb4f644ad7a84
+
+% 1 1 0 0d48cab004bcc3c51c463ae1669d98b8
+
+@ 0 142 0 08eb69fb21a2ef531303cbf6b3d90d76
++   entry .colors   所有具名颜色，作为一个大致按字母顺序排列的列表
++   entry .AliceBlue   CSS 颜色 `aliceblue`：`Srgb(0.941, 0.973, 1)`
++   entry .AntiqueWhite   CSS 颜色 `antiquewhite`：`Srgb(0.98, 0.922, 0.843)`
++   entry .Aquamarine   CSS 颜色 `aquamarine`：`Srgb(0.498, 1, 0.831)`
++   entry .Aqua   CSS 颜色 `aqua`：`Srgb(0, 1, 1)`
++   entry .Azure   CSS 颜色 `azure`：`Srgb(0.941, 1, 1)`
++   entry .Beige   CSS 颜色 `beige`：`Srgb(0.961, 0.961, 0.863)`
++   entry .Bisque   CSS 颜色 `bisque`：`Srgb(1, 0.894, 0.769)`
++   entry .Black   CSS 颜色 `black`：`Srgb(0, 0, 0)`
++   entry .BlanchedAlmond   CSS 颜色 `blanchedalmond`：`Srgb(1, 0.922, 0.804)`
++   entry .Blue   CSS 颜色 `blue`：`Srgb(0, 0, 1)`
++   entry .BlueViolet   CSS 颜色 `blueviolet`：`Srgb(0.541, 0.169, 0.886)`
++   entry .Brown   CSS 颜色 `brown`：`Srgb(0.647, 0.165, 0.165)`
++   entry .BurlyWood   CSS 颜色 `burlywood`：`Srgb(0.871, 0.722, 0.529)`
++   entry .CadetBlue   CSS 颜色 `cadetblue`：`Srgb(0.373, 0.62, 0.627)`
++   entry .Chartreuse   CSS 颜色 `chartreuse`：`Srgb(0.498, 1, 0)`
++   entry .Chocolate   CSS 颜色 `chocolate`：`Srgb(0.824, 0.412, 0.118)`
++   entry .Coral   CSS 颜色 `coral`：`Srgb(1, 0.498, 0.314)`
++   entry .CornflowerBlue   CSS 颜色 `cornflowerblue`：`Srgb(0.392, 0.584, 0.929)`
++   entry .Cornsilk   CSS 颜色 `cornsilk`：`Srgb(1, 0.973, 0.863)`
++   entry .Crimson   CSS 颜色 `crimson`：`Srgb(0.863, 0.078, 0.235)`
++   entry .Cyan   CSS 颜色 `cyan`：`Srgb(0, 1, 1)`
++   entry .DarkBlue   CSS 颜色 `darkblue`：`Srgb(0, 0, 0.545)`
++   entry .DarkCyan   CSS 颜色 `darkcyan`：`Srgb(0, 0.545, 0.545)`
++   entry .DarkGoldenrod   CSS 颜色 `darkgoldenrod`：`Srgb(0.722, 0.525, 0.043)`
++   entry .DarkGray   CSS 颜色 `darkgray`：`Srgb(0.663, 0.663, 0.663)`
++   entry .DarkGreen   CSS 颜色 `darkgreen`：`Srgb(0, 0.392, 0)`
++   entry .DarkKhaki   CSS 颜色 `darkkhaki`：`Srgb(0.741, 0.718, 0.42)`
++   entry .DarkMagenta   CSS 颜色 `darkmagenta`：`Srgb(0.545, 0, 0.545)`
++   entry .DarkOliveGreen   CSS 颜色 `darkolivegreen`：`Srgb(0.333, 0.42, 0.184)`
++   entry .DarkOrange   CSS 颜色 `darkorange`：`Srgb(1, 0.549, 0)`
++   entry .DarkOrchid   CSS 颜色 `darkorchid`：`Srgb(0.6, 0.196, 0.8)`
++   entry .DarkRed   CSS 颜色 `darkred`：`Srgb(0.545, 0, 0)`
++   entry .DarkSalmon   CSS 颜色 `darksalmon`：`Srgb(0.914, 0.588, 0.478)`
++   entry .DarkSeaGreen   CSS 颜色 `darkseagreen`：`Srgb(0.561, 0.737, 0.545)`
++   entry .DarkSlateBlue   CSS 颜色 `darkslateblue`：`Srgb(0.282, 0.239, 0.545)`
++   entry .DarkSlateGray   CSS 颜色 `darkslategray`：`Srgb(0.184, 0.31, 0.31)`
++   entry .DarkTurquoise   CSS 颜色 `darkturquoise`：`Srgb(0, 0.808, 0.82)`
++   entry .DarkViolet   CSS 颜色 `darkviolet`：`Srgb(0.58, 0, 0.827)`
++   entry .DeepPink   CSS 颜色 `deeppink`：`Srgb(1, 0.078, 0.576)`
++   entry .DeepSkyBlue   CSS 颜色 `deepskyblue`：`Srgb(0, 0.749, 1)`
++   entry .DimGray   CSS 颜色 `dimgray`：`Srgb(0.412, 0.412, 0.412)`
++   entry .DodgerBlue   CSS 颜色 `dodgerblue`：`Srgb(0.118, 0.565, 1)`
++   entry .FireBrick   CSS 颜色 `firebrick`：`Srgb(0.698, 0.133, 0.133)`
++   entry .FloralWhite   CSS 颜色 `floralwhite`：`Srgb(1, 0.98, 0.941)`
++   entry .ForestGreen   CSS 颜色 `forestgreen`：`Srgb(0.133, 0.545, 0.133)`
++   entry .Fuchsia   CSS 颜色 `fuchsia`：`Srgb(1, 0, 1)`
++   entry .Gainsboro   CSS 颜色 `gainsboro`：`Srgb(0.863, 0.863, 0.863)`
++   entry .GhostWhite   CSS 颜色 `ghostwhite`：`Srgb(0.973, 0.973, 1)`
++   entry .Goldenrod   CSS 颜色 `goldenrod`：`Srgb(0.855, 0.647, 0.125)`
++   entry .Gold   CSS 颜色 `gold`：`Srgb(1, 0.843, 0)`
++   entry .Gray   CSS 颜色 `gray`：`Srgb(0.502, 0.502, 0.502)`
++   entry .Green   CSS 颜色 `green`：`Srgb(0, 0.502, 0)`
++   entry .GreenYellow   CSS 颜色 `greenyellow`：`Srgb(0.678, 1, 0.184)`
++   entry .HoneyDew   CSS 颜色 `honeydew`：`Srgb(0.941, 1, 0.941)`
++   entry .HotPink   CSS 颜色 `hotpink`：`Srgb(1, 0.412, 0.706)`
++   entry .IndianRed   CSS 颜色 `indianred`：`Srgb(0.804, 0.361, 0.361)`
++   entry .Indigo   CSS 颜色 `indigo`：`Srgb(0.294, 0, 0.51)`
++   entry .Ivory   CSS 颜色 `ivory`：`Srgb(1, 1, 0.941)`
++   entry .Khaki   CSS 颜色 `khaki`：`Srgb(0.941, 0.902, 0.549)`
++   entry .LavenderBlush   CSS 颜色 `lavenderblush`：`Srgb(1, 0.941, 0.961)`
++   entry .Lavender   CSS 颜色 `lavender`：`Srgb(0.902, 0.902, 0.98)`
++   entry .LawnGreen   CSS 颜色 `lawngreen`：`Srgb(0.486, 0.988, 0)`
++   entry .LemonChiffon   CSS 颜色 `lemonchiffon`：`Srgb(1, 0.98, 0.804)`
++   entry .LightBlue   CSS 颜色 `lightblue`：`Srgb(0.678, 0.847, 0.902)`
++   entry .LightCoral   CSS 颜色 `lightcoral`：`Srgb(0.941, 0.502, 0.502)`
++   entry .LightCyan   CSS 颜色 `lightcyan`：`Srgb(0.878, 1, 1)`
++   entry .LightGoldenrodYellow   CSS 颜色 `lightgoldenrodyellow`：`Srgb(0.98, 0.98, 0.824)`
++   entry .LightGray   CSS 颜色 `lightgray`：`Srgb(0.827, 0.827, 0.827)`
++   entry .LightGreen   CSS 颜色 `lightgreen`：`Srgb(0.565, 0.933, 0.565)`
++   entry .LightPink   CSS 颜色 `lightpink`：`Srgb(1, 0.714, 0.757)`
++   entry .LightSalmon   CSS 颜色 `lightsalmon`：`Srgb(1, 0.627, 0.478)`
++   entry .LightSeaGreen   CSS 颜色 `lightseagreen`：`Srgb(0.125, 0.698, 0.667)`
++   entry .LightSkyBlue   CSS 颜色 `lightskyblue`：`Srgb(0.529, 0.808, 0.98)`
++   entry .LightSlateGray   CSS 颜色 `lightslategray`：`Srgb(0.467, 0.533, 0.6)`
++   entry .LightSteelBlue   CSS 颜色 `lightsteelblue`：`Srgb(0.69, 0.769, 0.871)`
++   entry .LightYellow   CSS 颜色 `lightyellow`：`Srgb(1, 1, 0.878)`
++   entry .LimeGreen   CSS 颜色 `limegreen`：`Srgb(0.196, 0.804, 0.196)`
++   entry .Lime   CSS 颜色 `lime`：`Srgb(0, 1, 0)`
++   entry .Linen   CSS 颜色 `linen`：`Srgb(0.98, 0.941, 0.902)`
++   entry .Magenta   CSS 颜色 `magenta`：`Srgb(1, 0, 1)`
++   entry .Maroon   CSS 颜色 `maroon`：`Srgb(0.502, 0, 0)`
++   entry .MediumAquamarine   CSS 颜色 `mediumaquamarine`：`Srgb(0.4, 0.804, 0.667)`
++   entry .MediumBlue   CSS 颜色 `mediumblue`：`Srgb(0, 0, 0.804)`
++   entry .MediumOrchid   CSS 颜色 `mediumorchid`：`Srgb(0.729, 0.333, 0.827)`
++   entry .MediumPurple   CSS 颜色 `mediumpurple`：`Srgb(0.576, 0.439, 0.859)`
++   entry .MediumSeaGreen   CSS 颜色 `mediumseagreen`：`Srgb(0.235, 0.702, 0.443)`
++   entry .MediumSlateBlue   CSS 颜色 `mediumslateblue`：`Srgb(0.482, 0.408, 0.933)`
++   entry .MediumSpringGreen   CSS 颜色 `mediumspringgreen`：`Srgb(0, 0.98, 0.604)`
++   entry .MediumTurquoise   CSS 颜色 `mediumturquoise`：`Srgb(0.282, 0.82, 0.8)`
++   entry .MediumVioletRed   CSS 颜色 `mediumvioletred`：`Srgb(0.78, 0.082, 0.522)`
++   entry .MidnightBlue   CSS 颜色 `midnightblue`：`Srgb(0.098, 0.098, 0.439)`
++   entry .MintCream   CSS 颜色 `mintcream`：`Srgb(0.961, 1, 0.98)`
++   entry .MistyRose   CSS 颜色 `mistyrose`：`Srgb(1, 0.894, 0.882)`
++   entry .Moccasin   CSS 颜色 `moccasin`：`Srgb(1, 0.894, 0.71)`
++   entry .NavajoWhite   CSS 颜色 `navajowhite`：`Srgb(1, 0.871, 0.678)`
++   entry .Navy   CSS 颜色 `navy`：`Srgb(0, 0, 0.502)`
++   entry .OldLace   CSS 颜色 `oldlace`：`Srgb(0.992, 0.961, 0.902)`
++   entry .OliveDrab   CSS 颜色 `olivedrab`：`Srgb(0.42, 0.557, 0.137)`
++   entry .Olive   CSS 颜色 `olive`：`Srgb(0.502, 0.502, 0)`
++   entry .OrangeRed   CSS 颜色 `orangered`：`Srgb(1, 0.271, 0)`
++   entry .Orange   CSS 颜色 `orange`：`Srgb(1, 0.647, 0)`
++   entry .Orchid   CSS 颜色 `orchid`：`Srgb(0.855, 0.439, 0.839)`
++   entry .PaleGoldenrod   CSS 颜色 `palegoldenrod`：`Srgb(0.933, 0.91, 0.667)`
++   entry .PaleGreen   CSS 颜色 `palegreen`：`Srgb(0.596, 0.984, 0.596)`
++   entry .PaleTurquoise   CSS 颜色 `paleturquoise`：`Srgb(0.686, 0.933, 0.933)`
++   entry .PaleVioletRed   CSS 颜色 `palevioletred`：`Srgb(0.859, 0.439, 0.576)`
++   entry .PapayaWhip   CSS 颜色 `papayawhip`：`Srgb(1, 0.937, 0.835)`
++   entry .PeachPuff   CSS 颜色 `peachpuff`：`Srgb(1, 0.855, 0.725)`
++   entry .Peru   CSS 颜色 `peru`：`Srgb(0.804, 0.522, 0.247)`
++   entry .Pink   CSS 颜色 `pink`：`Srgb(1, 0.753, 0.796)`
++   entry .Plum   CSS 颜色 `plum`：`Srgb(0.867, 0.627, 0.867)`
++   entry .PowderBlue   CSS 颜色 `powderblue`：`Srgb(0.69, 0.878, 0.902)`
++   entry .Purple   CSS 颜色 `purple`：`Srgb(0.502, 0, 0.502)`
++   entry .RebeccaPurple   CSS 颜色 `rebeccapurple`：`Srgb(0.4, 0.2, 0.6)`
++   entry .Red   CSS 颜色 `red`：`Srgb(1, 0, 0)`
++   entry .RosyBrown   CSS 颜色 `rosybrown`：`Srgb(0.737, 0.561, 0.561)`
++   entry .RoyalBlue   CSS 颜色 `royalblue`：`Srgb(0.255, 0.412, 0.882)`
++   entry .SaddleBrown   CSS 颜色 `saddlebrown`：`Srgb(0.545, 0.271, 0.075)`
++   entry .Salmon   CSS 颜色 `salmon`：`Srgb(0.98, 0.502, 0.447)`
++   entry .SandyBrown   CSS 颜色 `sandybrown`：`Srgb(0.957, 0.643, 0.376)`
++   entry .SeaGreen   CSS 颜色 `seagreen`：`Srgb(0.18, 0.545, 0.341)`
++   entry .SeaShell   CSS 颜色 `seashell`：`Srgb(1, 0.961, 0.933)`
++   entry .Sienna   CSS 颜色 `sienna`：`Srgb(0.627, 0.322, 0.176)`
++   entry .Silver   CSS 颜色 `silver`：`Srgb(0.753, 0.753, 0.753)`
++   entry .SkyBlue   CSS 颜色 `skyblue`：`Srgb(0.529, 0.808, 0.922)`
++   entry .SlateBlue   CSS 颜色 `slateblue`：`Srgb(0.416, 0.353, 0.804)`
++   entry .SlateGray   CSS 颜色 `slategray`：`Srgb(0.439, 0.502, 0.565)`
++   entry .Snow   CSS 颜色 `snow`：`Srgb(1, 0.98, 0.98)`
++   entry .SpringGreen   CSS 颜色 `springgreen`：`Srgb(0, 1, 0.498)`
++   entry .SteelBlue   CSS 颜色 `steelblue`：`Srgb(0.275, 0.51, 0.706)`
++   entry .Tan   CSS 颜色 `tan`：`Srgb(0.824, 0.706, 0.549)`
++   entry .Teal   CSS 颜色 `teal`：`Srgb(0, 0.502, 0.502)`
++   entry .Thistle   CSS 颜色 `thistle`：`Srgb(0.847, 0.749, 0.847)`
++   entry .Tomato   CSS 颜色 `tomato`：`Srgb(1, 0.388, 0.278)`
++   entry .Turquoise   CSS 颜色 `turquoise`：`Srgb(0.251, 0.878, 0.816)`
++   entry .Violet   CSS 颜色 `violet`：`Srgb(0.933, 0.51, 0.933)`
++   entry .Wheat   CSS 颜色 `wheat`：`Srgb(0.961, 0.871, 0.702)`
++   entry .WhiteSmoke   CSS 颜色 `whitesmoke`：`Srgb(0.961, 0.961, 0.961)`
++   entry .White   CSS 颜色 `white`：`Srgb(1, 1, 1)`
++   entry .YellowGreen   CSS 颜色 `yellowgreen`：`Srgb(0.604, 0.804, 0.196)`
++   entry .Yellow   CSS 颜色 `yellow`：`Srgb(1, 1, 0)`
+
+@ 0 7 0 104c64de5cd4c0781d00e28ad7208f69
++ entry .rgb   `rgb"…"` 插值器：作为 `Chroma` 的十六进制颜色，在代码编译时检查
++     `rgb"#rrggbb"` 或 `rgb"rrggbb"` 读取六个十六进制数字（大小写均可），作为 `Chroma` 的红、绿、蓝通道，即终端和图像所接受的整数 24 位颜色。
++     宏在代码编译时解析字面量并拼接出 `Chroma(r, g, b)`，因此格式错误的字面量是编译错误：_the color must be in the form `rgb"#rrggbb"` or `rgb"rrggbb"` where rr, gg and bb are 2-digit hex values_。
++     该插值器不接受替换，_an rgb literal cannot have substitutions_。
+
+% 2 1 0 1717c92eb80f235d16077f4ae7db6e9d
+
+% 3 1 0 142ace60a18eb23c18426d0d9fb14ce3
+
+% 0 1 0 12c0c6701a18acc2114a3586bd987450
+
+% 0 1 0 11e9231fd2b3550d043d528016fedbfd
+
+% 0 1 0 0f3f7819598735b40755d087a6c4a51c
+
+% 0 1 0 0018462339da27f507f19db3612e8a69
+
+% 0 1 0 031326e48e1c5eca1856551bf9810195
+
+% 1 1 0 18ea2497b7580d69027231062b3090b4
+
+@ 0 3 0 084646d1ca93b85f04ccc7f45c32d3cc
++     `Chroma` 是 `Chromatic` 的，因此该字面量可以直接为终端文本设置样式（`e"${rgb"#ff6347"}(tomato)"`）；`color` 则是通往感知模型、`Palette` 角色和 `Daub` 混合的一步，它们都接受 `Color in Srgb`。
+
+@ 0 5 0 1c896f96522111551e7a7f72998bb2ea
++ entry .color   `chroma.color`：作为 `Color in Srgb` 的 `Chroma`，每个通道除以 `255`
++     anticipation 的 `Chroma` 上的扩展方法。
++     `Chroma` 本来就是 sRGB，只是通道为整数，因此转换只是每个通道做一次除法，不损失任何信息；它是从 `rgb"…"` 字面量或任何其他 `Chroma` 进入库中其余部分的那一步。
+
+% 2 1 0 1947eee2818c20a70d7bd439a330d465
+
+% 3 1 0 12527d231a4935bf16a2adfb11494f98
+
+% 0 1 0 095f81e7bfcc5a6a10a2b0a671252942
+
+% 0 1 0 1b6aeca224ccf54b012165b72f09aea0
+
+% 1 1 0 10f2297efddfec3712f20cb08f1b1d87
+
+@ 0 2 0 1421b6adf107377c083bbca919ca64b5
++     返回的路径是 `Color.chromatic` given，它会截断每个通道，因此通道不是 `1/255` 倍数的颜色转换回来时可能小一。
+
+@ 0 5 0 0e3199af93c9df8b0402add4825959af
++ entry .packed   作为 `Pixel[Rgb]` 的 `Chroma`，或作为 10/12/10 `Pixel` 的 `Rgb32`，位不作任何改变
++     同名的两个扩展方法。
++     `chroma.packed` 是 `Chroma` 的 `Pixel[Rgb]`——每通道八位——而 `rgb32.packed` 是 `Rgb32` 的 `Pixel[(Red[10], Green[12], Blue[10])]`。
++     每种类型本来就恰好以这种布局打包其通道，因此转换只是重新指定位的类型。
++     `rgb32` 从 10/12/10 像素转换回去。
+
+% 2 1 0 1fe0aa9b617308c90be587cd933b114c
+
+% 3 1 0 0f81b44e12cda7451bfa9c3fb0d363d3
+
+% 0 1 0 1e4286561dba6f910ccde6980ae4bd38
+
+% 0 1 0 1a11ba9bd39ccb081e489cea3c202c7f
+
+% 0 1 0 04835b9939c2327808385b1801298ba3
+
+% 0 1 0 0d44a11f4b67c94c197b01c07cf4304f
+
+% 1 1 0 177b0cca1ca8e78d18f273f618fb6266
+
+@ 0 2 0 04a39169ef5cc98b0fe48d6b48461e23
++     在早期版本中它名为 `pixel`；之所以改名，是因为总括包还从另一个库导出了一个 `pixel`。
+
+@ 0 3 0 1314edfa1a9651cb1ee9af8af990cd71
++ entry .rgb32   具有相同位的 `Rgb32` 形式的 10/12/10 `Pixel`
++     `Pixel[(Red[10], Green[12], Blue[10])]` 上的扩展方法，是 `rgb32.packed` 的逆运算：`Rgb32(600, 3000, 200).packed.rgb32` 是 `Rgb32(600, 3000, 200)`。
+
+@ 0 3 0 09ebd94e9790fcae1268bf003bb248ab
++ entry .Rgb   24 位颜色的像素布局：红、绿、蓝各八位
++     `(Red[8], Green[8], Blue[8])`，即 `Chroma` 和 `chroma.packed` 的布局。
++     它的存储类型 `anticipation.Channel.Storage[Rgb]` 是 `Int`。
+
+% 2 1 0 155193deb1d40ef71b68b20100fa8770
+
+% 3 1 0 151988227fcffe59054eb345c1be071b
+
+% 0 1 0 055bfbd3589109dd1765c740e87430b7
+
+% 1 1 0 1c74ecda782304511db084b5d695c1c3
+
+@ 0 3 0 097bb0a3e4705c891b44d13c40da8723
++ entry .Rgba   带 alpha 的 32 位颜色的像素布局：红、绿、蓝和 alpha 各八位
++     `(Red[8], Green[8], Blue[8], Alpha[8])`。
++     `Pixel[Rgba](color)` 把 alpha 通道设为完全不透明，因为 `Color` 没有透明度。
+
+@ 0 4 0 097e4dbb6c687b50174690a8e57d71ad
++ entry .Cmyk8   32 位 CMYK 的像素布局：青、品红、黄和黑各八位
++     `(Cyan[8], Magenta[8], Yellow[8], Key[8])`。
++     之所以命名为 `Cmyk8`，是因为 `Cmyk` 是基于 `Double` 的颜色模型。
++     `Pixel[Cmyk8](color)` 像 `to[Cmyk]` 一样把颜色分解为油墨，像素的 `color` 是一个 `Cmyk`。
+
+% 2 1 0 07fc644598ac5446005894def549c721
+
+% 3 1 0 1ea3908c52836b54006126b1e71943b3
+
+% 0 1 0 04820a5c1ce93cb71b82ca490bffdd96
+
+% 0 1 0 1be116ae0aab69d11a1f2ede8f5b3e47
+
+% 1 1 0 1602b115c3f5e4da1f865ca65e785175
+
+@ 0 7 0 0d71321260f60fe51aad574a68492c9e
++ entry .Pixel   按通道布局打包进一个整数的颜色：`Pixel[Rgb]`、`Pixel[Rgba]`、`Pixel[Cmyk8]`……
++     `Pixel[layout]` 是在此导出的不透明类型 `iridescence.PixelOpaque.Pixel`：一个 `Long`，在其低位中保存 `layout` 的各通道——`layout` 是 anticipation 通道类型的元组，例如 `(Red[5], Green[6], Blue[5])`，最高位在前。
++     每个通道的移位和掩码在代码编译时由元组推出，因此读取一个通道就是一次操作数为常量的移位加掩码，没有运行时分派，而布局中没有的通道根本无从读取：`Pixel[Rgb]` 没有 `alpha`。
+
+% 2 1 0 006a23ec18e3d74e0088b8beb800b943
+
+% 3 1 0 12cd5d707aab5e301632025fe82ada08
+
+% 0 1 0 02928bc0fedffe1d175245fed917b88b
+
+% 0 1 0 1ea16c1b358285910442be63d600188f
+
+% 0 1 0 0243aaca622ba6640fdeb9ac405ea51a
+
+% 0 1 0 1d7824e317f492b10bb725237484e476
+
+% 0 1 0 024c51e51cef2e470c46713b49f5b2ba
+
+% 0 1 0 0ddcb416bc56039e02a0d4c4e0eb2661
+
+% 1 1 0 08cbfad3d9907fd91307f26e1439af53
+
+@ 0 5 0 0f183f1c2009305a1d1cadc79446ac6a
++     `Pixel[layout](color)` 把任何 `Color in Srgb` 打包进布局所具有的通道：红、绿、蓝（任何 alpha 通道都设为完全不透明），青、品红、黄和黑，或者按 Rec. 601 亮度得出的单个灰度通道。
++     每个比例都缩放到通道的位深并取整。
++     `Pixel.make` 包装一个已按布局排列的原始 `Long`，`Pixel.value` 则把它解开。
+
+@ 0 6 0 0545a16f8c36bc24067b5df72f435f82
++     通道访问方法——`red`、`green`、`blue`、`alpha`、`cyan`、`magenta`、`yellow`、`key`、`grey`，以及适用于任何标注的 `channel["label"]` 和 `proportion["label"]`——返回原始通道值或其占满位深的比例。
++     `color` 是以其布局的自然模型表示的像素（RGB 和灰度布局为 `Srgb`，CMYK 布局为 `Cmyk`），`srgb` 总是一个 `Srgb`，`chroma` 是 24 位 `Chroma`，取整方式与 `Rgb32` 的 `chroma` 相同。
++     像素是 `Chromatic` 的，因此可以直接为终端文本设置样式。
+
+@ 0 5 0 0fa9d52a6a49518710be4912f5df07e1
++     访问方法是 `inline` 的，因此需要具体的布局：本身对 `layout` 泛型的代码不能调用它们，而应改用运行时的通道描述。
++     这是 hallucination 的图像用于类型化像素访问的表示。
++     总括包还导出了自己的 `Channel`（WebSocket 通道），因此布局机制要通过 `anticipation.Channel` 访问。
+
+@ 0 1 0 01a988a3eab17d320a116289bed10956
++ entry .PixelOpaque   不透明类型 `Pixel`、其伴生对象及其通道访问方法的所在
+
+% 1 1 0 069fc12bb9d5a81f0f1dff330037fce3
+
+@ 0 4 0 0d39126e1f8f043e0ddce29496345da8
++       这个对象的存在是为了让 `Pixel` 可以是不透明的；该类型以 `Pixel` 的名称导出到 `iridescence` 包，其页面有完整说明。
++       这里声明的扩展方法通过该类型的隐式作用域适用于任何 `Pixel[layout]`，无需导入。
+
+% 0 1 0 10a0c3b0631b633e0df6b87a6bbd17f3
+
+@ 0 1 0 01968b8b88f0fefc15da78640797c0ca
++   entry .Pixel   按通道布局打包进 `Long` 的颜色；参见 `iridescence.Pixel`
+
+% 1 1 0 1d2e02f6ce2786a11d2d84f87defc53c
+
+@ 0 35 0 19eaca954c2452a11c7c6c76d3c2c364
++         不透明类型 `Pixel[layout <: Tuple] = Long` 及其伴生对象。
++     entry .underlying   表明 `Pixel` 底层是 `Long` 的 `Underlying` given
++     entry .chromatic   `Pixel` 是 `Chromatic` 的：通过其 `chroma`，因此可以直接为终端文本设置样式
++     entry .make   `Pixel.make[layout](value)`：已按布局打包的原始 `Long`，作为 `Pixel`
++         `Pixel.make[(Red[10], Green[12], Blue[10])](1023L << 22 | 2048L << 10 | 512L).red` 是 `1023`。
++         不检查任何位，也不施加掩码。
++     entry .value   `Pixel` 的原始 `Long`
++     entry .apply   `Pixel[layout](color)`：把 `Color in Srgb` 缩放到布局的各通道并打包
++         把颜色转换为 `Srgb`，再打包进 RGB 布局（任何 alpha 通道设为完全不透明）、CMYK 布局（黑色为最亮通道的补值，其余为油墨），或单个灰度通道（Rec. 601 亮度，`0.299·red + 0.587·green + 0.114·blue`），每个比例都缩放到通道的位深并取整。
++   entry .channel   `pixel.channel["label"]`：具体布局中某个带标注通道的原始值
++       编译为一次操作数为常量的移位和一次掩码。
++       布局中不包含的标注无法编译，因为无法计算移位量。
++   entry .red   红色通道的原始值，适用于含该通道的布局
++   entry .green   绿色通道的原始值，适用于含该通道的布局
++   entry .blue   蓝色通道的原始值，适用于含该通道的布局
++   entry .alpha   alpha 通道的原始值，适用于含该通道的布局
++   entry .cyan   青色通道的原始值，适用于含该通道的布局
++   entry .magenta   品红通道的原始值，适用于含该通道的布局
++   entry .yellow   黄色通道的原始值，适用于含该通道的布局
++   entry .key   key（黑色）通道的原始值，适用于含该通道的布局
++   entry .grey   灰度通道的原始值，适用于含该通道的布局
++   entry .proportion   `pixel.proportion["label"]`：通道占其满位深的比例，`0`–`1`
++       `Pixel.make[(Red[16], Green[16], Blue[16])](65535L << 32).proportion["red"]` 是 `1.0`。
++   entry .color   以布局的自然模型表示的像素：RGB 和灰度为 `Srgb`，CMYK 为 `Cmyk`
++       一个 transparent inline 方法，因此结果的静态类型就是该模型本身。
++       在任何通道位深下都是精确的。
++   entry .srgb   作为 `Srgb` 的像素，无论其布局的模型是什么
++       CMYK 像素通过 `Cmyk` 转换；灰度像素的各通道相等。
++   entry .chroma   缩放为 24 位 `Chroma` 的像素，取整到最近的级
++       RGB 布局逐通道缩放，取整方式与 `Rgb32` 的 `chroma` 相同；其他布局则经由 `srgb`。
++       `Color.chromatic` 转换是截断，而这里是取整，因此两者在某个通道上可能相差一。
+
+@ 0 6 0 1281878496a57cf808c168ad4f42fc2f
++ entry .Rgb12   十二位的颜色，每通道四位：CSS 简写的 `#rgb`
++     `Rgb12` 是在此导出的不透明类型 `iridescence.Rgb12Opaque.Rgb12`：一个 `Int`，红、绿、蓝各占四位。
++     `Rgb12(red, green, blue)` 接受 `0`–`15` 范围内的每个通道，只保留其低四位，扩展方法 `red`、`green` 和 `blue` 把它们读回。
++     `color` 给出 `Color in Srgb`（每个通道除以 `15`），`chroma` 给出 24 位 `Chroma`，每个通道乘以 `17`，因此 `f` 变为 `ff`。
+
+% 2 1 0 170db6474b3dba9c1409f72fc7c4ca2f
+
+% 3 1 0 1aae9fc73ef6adc612052323bb600450
+
+% 0 1 0 16fdf80f212fc405179647693d6bb85f
+
+% 0 1 0 1925e6575d21ea0f17c142c46716e18d
+
+% 0 1 0 0077674908025b9d09e6ef2e7f289156
+
+% 0 1 0 0232c64f1862576001f733de037acc48
+
+% 1 1 0 0445ad196ea05b3b02891c124691f6f3
+
+@ 0 2 0 041d9d053881e436118c8e37c42c5093
++     它是 `Chromatic` 的，因此可以直接为终端文本设置样式，并且是 `Inspectable` 的，检视为其三位十六进制形式。
+
+@ 0 1 0 090d1c2cf82e2d331542f1d562d30655
++ entry .Rgb12Opaque   不透明类型 `Rgb12`、其伴生对象及其通道访问方法的所在
+
+% 1 1 0 12146047cc482b861c4375d65902bfa2
+
+@ 0 3 0 177d363a8e7a7fa71d2eb037ee8d67e0
++       这个对象的存在是为了让 `Rgb12` 可以是不透明的；该类型导出到 `iridescence` 包，其中 `Rgb12` 的页面有完整说明。
++       这里的扩展方法适用于任何 `Rgb12`，无需导入。
+
+% 0 1 0 114fcebaef193e8619273489ae21535f
+
+@ 0 1 0 0917b756855f3daa0e7729288a22e7e5
++   entry .Rgb12   `Int` 中的十二位颜色；参见 `iridescence.Rgb12`
+
+% 1 1 0 166e94cb8e151fe20b98fd43eef7e653
+
+@ 0 10 0 1a4da5f71a6bc5560314528fd8f4b50c
++         不透明类型 `Rgb12 = Int` 及其伴生对象。
++     entry .underlying   表明 `Rgb12` 底层是 `Int` 的 `Underlying` given
++     entry .inspectable   `Rgb12` 检视为其三位十六进制形式，`#f0f`
++     entry .chromatic   `Rgb12` 通过其 `chroma` 是 `Chromatic` 的
++     entry .apply   `Rgb12(red, green, blue)`：三个四位通道，每个都掩码到 `0`–`15`
++   entry .red   红色通道，`0`–`15`
++   entry .green   绿色通道，`0`–`15`
++   entry .blue   蓝色通道，`0`–`15`
++   entry .color   作为 `Color in Srgb` 的颜色，每个通道除以 `15`
++   entry .chroma   作为 24 位 `Chroma` 的颜色，每个通道乘以 `17`
+
+@ 0 7 0 1098899439cf5a471223a1326fdf2b8f
++ entry .Rgb32   三十二位的颜色：红十位、绿十二位、蓝十位
++     `Rgb32` 是在此导出的不透明类型 `iridescence.Rgb32Opaque.Rgb32`：一个 `Int`，保存 `0`–`1023` 的红、`0`–`4095` 的绿和 `0`–`1023` 的蓝，绿色多出的位与人眼对绿色更高的敏感度相符。
++     `Rgb32(red, green, blue)` 把每个通道掩码到其宽度，扩展方法 `red`、`green` 和 `blue` 把它们读回，`color` 给出 `Color in Srgb`，`chroma` 给出 24 位 `Chroma`，取整到最近的级。
+
+% 2 1 0 1af212bbd93da7310938eecfed397912
+
+% 3 1 0 0e86eae6c4c080ea000993eacb21a09a
+
+% 0 1 0 1df54a5ec199dd400f3d83f9818ef2f2
+
+% 0 1 0 0635e733c4d2db8c1e3426f583104dce
+
+% 0 1 0 1c6790b2ef96cb340a6f480d0531259c
+
+% 0 1 0 13ec38861f393af10bc0ceb18d1930f3
+
+% 1 1 0 1abbe6d0232338b911a5b11750e049b8
+
+@ 0 3 0 15921e7f75106b1700d2d8f0e173d8ff
++     它是 `Chromatic` 的，因此可以直接为终端文本设置样式，并且是 `Inspectable` 的，检视为其三个通道。
++     `packed` 把它重新定型为 `Pixel[(Red[10], Green[12], Blue[10])]`，两者的位相同。
+
+@ 0 1 0 16fa02b261f30d661f9c8f68f968dd09
++ entry .Rgb32Opaque   不透明类型 `Rgb32`、其伴生对象及其通道访问方法的所在
+
+% 1 1 0 1239fdc0c9cea8561a1ded137f985031
+
+@ 0 3 0 06eb803d66f107831d8fbe0f2b3ac2f2
++       这个对象的存在是为了让 `Rgb32` 可以是不透明的；该类型导出到 `iridescence` 包，其中 `Rgb32` 的页面有完整说明。
++       这里的扩展方法适用于任何 `Rgb32`，无需导入。
+
+% 0 1 0 19cea3cbfa5f502c1f5a48e5b50239e8
+
+@ 0 1 0 16e772b2e17f20b71157727af4eb891e
++   entry .Rgb32   `Int` 中的 10/12/10 位颜色；参见 `iridescence.Rgb32`
+
+% 1 1 0 024bc27020938ddf1ba82c4960513578
+
+@ 0 10 0 1154d81c14a4cd121ba53af6460f09ce
++         不透明类型 `Rgb32 = Int` 及其伴生对象。
++     entry .underlying   表明 `Rgb32` 底层是 `Int` 的 `Underlying` given
++     entry .chromatic   `Rgb32` 通过其 `chroma` 是 `Chromatic` 的
++     entry .inspectable   `Rgb32` 检视为其三个通道，`rgb32(1023, 4095, 0)`
++     entry .apply   `Rgb32(red, green, blue)`：十位、十二位和十位的通道，每个都掩码到其宽度
++   entry .red   红色通道，`0`–`1023`
++   entry .green   绿色通道，`0`–`4095`
++   entry .blue   蓝色通道，`0`–`1023`
++   entry .color   作为 `Color in Srgb` 的颜色，每个通道除以其最大值
++   entry .chroma   作为 24 位 `Chroma` 的颜色，每个通道缩放到 `0`–`255` 并取整
+
+@ 0 1 0 06452bec173ab5cc1faf21546b14c19c
++ entry .internal   `rgb"…"` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 17d624f509bedba50e07027adaa03b7d
++       不供直接使用：这个对象的存在是为了给宏一个稳定的归属。
++   entry .rgbMacro   在代码编译时解析 `rgb"…"` 字面量并拼接出 `Chroma`
++       接受带或不带前导 `#` 的六个十六进制数字，否则，或者字面量带有替换时，以一条消息中止编译。

@@ -1,0 +1,1080 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e6a18700ede5e9c11fb68d4cd364ecc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 00df30d91596154d01a0c47f5cdf92d9
++ info   序数、区间和受限索引：凭证明而不是凭整数来计数和索引
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 010b0999f812869310c3b52ae4d039e7
++     _Denominative_ 是 Soundness 计数和索引的方式。
++     它的核心类型是 `Ordinal`，即一个位置（第一、第二、第三），它与 `Int` 是完全不同的类型，因此差一错误就是类型错误：不存在第零个序数，第一个是 `Prim`，然后是 `Sec`、`Ter`、`Quat`、`Quin`、`Sen` 和 `Sept`；数字只有在说明它来自哪种约定之后才能转为序数（`0.z` 读取从零开始的索引，`1.u` 读取从一开始的计数；两者都是 `Prim`）。
++     序数的范围是 `Interval`（`Ter thru Sen`、`Ter till Sen`、`Ter span 3`），而源码中一个有位置的字符范围是 `Span`。
+
+@ 0 7 0 071e39193d913dcf09655bfdf33a7226
++     第二个思想是*受限*序数 `Ordinal in xs.type`：其类型记录了它已被证明可以索引的集合的序数。
++     只有已经确立了边界的组合子才能铸造它（`xs.extent`（整个范围，带品牌）、`ordinal .within(xs)`、`xs.spot(p)`、`xs.prefix(p)`、rudiments 的 `confine` 和 `pick`），而用它读取时走的是全函数 `apply`，它产生裸元素，未经证明的索引则产生 `Optional`。
++     因此，计数循环的写法既不需要计数器，两侧也都不需要边界检查：
+
+% 2 1 0 14e6afde004b59000aa8994881f7d3e7
+
+% 3 1 0 120c4e6fcafd5a270af171c92f905608
+
+% 0 1 0 0b2de6d833d1760f0f6091831ca20116
+
+% 1 1 0 03f7be57838835f00bf129ea0b35af3d
+
+% 0 1 0 0ab76ac32925e6c7060738753e0f5fc5
+
+% 1 1 0 1754da86067bea880adfcb28706059f8
+
+@ 0 8 0 15d4d9b82939d7ae1735cec1cdda1fea
++     使值可计数、可索引的类型类都在这里：`Countable`（它的 `size`，以及由此派生的序数：`gamut`、`extent`、`limit`、`ult`、`pen`、`ant`）、`Vacuiscible`（只有是否为空，`nil`，处处 O(1)）、`Applicable`（按索引或键的 `contains` 和 `access`，位于 rudiments 的 `apply`、`at`、`defines`、`confine` 和 `pick` 背后）、`Definable` 和 `Omissible`（写时复制的 `define` 和 `omit`），以及 `Terminable` 和 `Truncable`（`last` 和 `lead`）。
++     它们的实例覆盖冻结的 `Array[e]^{}` 和 `Data`、`Sequence`、`Text`、`Set`、`Map`、`Ledger`、标准库的 `IndexedSeq` 以及少数可变缓冲区；在一次确认之后，还覆盖 `List` 和 `Chain`。
+
+@ 0 10 0 14f9198757ea9a1d06159c03db4824be
++     这种确认就是第三个思想。
++     当一个操作的代价随其主体之外的数据增长时，它就是 *dysasymptotic* 的：`size` 在 `Sequence` 上不花代价，在 `List` 上却是一次遍历；`List` 上的 `last` 要走到末尾，`List` 上的 `at` 要从头部开始走；`Chain` 上的 `size` 会强制求值整个流，并且可能永远不返回。
++     这样的实例在 `using` 位置接受一个普通的标记类型（`Dysasymptotic.LinearSize`、`LinearAccess`、`UnboundedSize`、`LinearScan`），文件通过从 `dysasymptotics` 包*按名称*导入相应的 given 来选择启用（`import dysasymptotics.linearSize`；通配符导入不会把 given 带入作用域），最好是在接受这一代价的那个代码块中导入，并附上注释说明为何可以接受。
++     每一次确认都可以用 grep 找到，而 `nil` 从不受门控。
++     绕过门控的 `.stdlib.length` 会掩盖代价；应当打开门控。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 13c815945e7d47ba0eab1f4334a845be
++       label 列表的大小需要一次遍历，因此不能直接使用
+
+% 1 1 0 1f567df21a737c880037aadc4a8edc8d
+
+% 2 1 0 0ad6aba74b02c0cb160437a87ba3640e
+
+% 1 1 0 163100e11903eb2f1a9a0adb30e5978c
+
+% 0 1 0 0a563b4c95824e4b18938395ae2933c8
+
+% 1 1 0 0e06259b50475e25162c1172c0066835
+
+@ 0 1 0 05a70fbda2bf94aa0065a2ce0c0c563d
++       label 按名称确认线性代价
+
+% 1 1 0 123e2e1d1e90d58a0616015e9e6bff11
+
+% 2 1 0 0cf7be5a412d713c1bbe818cdb5d9d4e
+
+% 0 1 0 115309b089989daa1e3a1b6760047f5a
+
+% 1 1 0 0d308c06a0a59f8f08d17af79ae3dc63
+
+% 0 1 0 0715c1ef4eb2e72d1927295d3d9d956b
+
+% 1 1 0 02913bf12330089c020fe23815a19145
+
+@ 0 1 0 0869aa5ac88d46871759bd909a82e306
++       label 按位置访问是另一种确认
+
+% 1 1 0 1bf46486b3da58a5027bb42eedda2b98
+
+% 2 1 0 17888d0a1d94aadf128941fe49fe1b81
+
+% 0 1 0 052f7c2ab1a2b2de0c688803ab7c55ed
+
+% 1 1 0 1fc5ac85e053ca471b3b6a662e53d0af
+
+% 0 1 0 191b56b0552c67981c67631645a4fb6d
+
+% 0 1 0 1488521b886b63050ef83ac3b04a3954
+
+% 0 1 0 07395a684bb81f3a002df3ecff1d0f89
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 11 0 178365be5c54a48411737795995c0fe4
++     这个库只有一个源码集 `denominative.core`，可编译到 JVM、Scala.js 和 Scala Native，位于 vacuous 和 prepositional 之上、rudiments 之下：返回 `Optional` 的读取操作（`at`、`apply`、`pick`、`confine`、`head`、`last`）是 rudiments 和 concordance 在这些类型类之上的扩展。
++     所有内容都导出到 `soundness` 总括包，其中 `dysasymptotics` 和 `ordinalTextualizables` 选择包会与总括包自身的同名包合并；`thru`、`till` 和 `tabulate` 在那里重新声明（`each` 则在 rudiments 的总括包文件中），而不是导出，因为导出只转发扩展的一个重载，而普通重载和受限重载都必须可达。
++     直接导入 `denominative.*` 的文件，不能再为相同的名称整体导入 `rudiments.*`。
+
+% 0 1 0 0d543012a96a5b79082b13071e349205
+
+% 0 1 0 19ceb655aa5e355a0260a4bb658a8f06
+
+% 0 1 0 0020385201e25d0101bf57ffd069e1e3
+
+% 0 1 0 1e652ce139c6bbfc0d8a31b5d83b32e9
+
+% 0 1 0 1937552efbee812107700684c6af4a56
+
+@ 0 5 0 1db78b33ec9e1db719a5566ad12f99f0
++ entry .Prim   第一个序数
++     `Ordinal.zerary(0)`，也写作 `0.z` 和 `1.u`。
++     来自 “primary”。
++     七个具名序数是 `Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen` 和 `Sept`；在此之后，序数写作 `7.z`（第八个）或 `8.u`。
++     它们是稳定值而不是内联定义，因此可以用作模式：`case Prim => …`。
+
+@ 0 8 0 1733466253f6bb8800b938318c278ac1
++ entry .Sec   第二个序数，`1.z`
++ entry .Ter   第三个序数，`2.z`
++ entry .Quat   第四个序数，`3.z`
++ entry .Quin   第五个序数，`4.z`
++ entry .Sen   第六个序数，`5.z`
++ entry .Sept   第七个序数，`6.z`
++     具名序数中的最后一个；第八个是 `7.z`。
++     注意 `7.z` 是*第八个*位置（索引 7），而 `Sept` 是第七个（索引 6）。
+
+@ 0 3 0 1d4e4c77fc40934112cb9264917d128a
++ entry .z   `n.z`：从零开始的索引 `n` 处的序数，因此 `0.z` 是 `Prim`
++     `Int` 上的内联扩展，在数字进入的那一点记录它来自从零开始的约定（线路协议、JVM 数组索引）。
++     `n.z.n0` 又得到 `n`。
+
+@ 0 3 0 140187907f339caa084b680938d726c4
++ entry .u   `n.u`：从一开始的计数 `n` 处的序数，因此 `1.u` 是 `Prim`
++     `z` 在从一开始的约定下的对应物，例如规范中的“第 3 个字段”或行号。
++     `n.u.n1` 又得到 `n`。
+
+@ 0 5 0 08c606b4774cb5a901413ba135f6e0b3
++ entry .nil   `xs.nil`：值是否为空，对任何形状都是 O(1)
++     基于 `Vacuiscible`，每个 `Countable` 都扩展了它：`List`、`Chain`、`Set`、`Map`、`Text`、冻结数组、`Option`、`StringBuilder`、……
++     从不受门控：`List` 是否为空只需一次指针测试，因此 `list.size` 需要确认之处，`list.nil` 不需要；标准库的 `nonEmpty` 在这里的惯用写法是 `!xs.nil`。
+
+@ 0 6 0 0d6d378eb8d2da270442395d28235f96
++ entry .size   `xs.size`：任何 `Countable` 值的元素个数
++     在 `Sequence`、`Set`、`Map`、`Ledger`、`Text`、冻结数组和标准库的 `IndexedSeq` 上是 O(1)；在 `List` 上是一次遍历，只有在 `import dysasymptotics.linearSize` 之下才能解析；在 `Chain` 上会强制求值整个流，只有在 `unboundedSize` 之下才能解析。
++     `Int` 计数自身（`5.size` 为 `5`），`Option` 的大小为零或一。
+
+@ 0 4 0 1faf34f890a73cc10f52596c83d4809b
++ entry .gamut   `xs.gamut`：可计数值的整个范围，作为从 `Prim` 开始的 `Interval`
++     `Interval.initial(xs.size)`：从 `Prim` 直到但不包括 `xs.limit` 的序数。
++     一个不带品牌的区间；`extent` 是限定于该值的同一范围，这正是循环所需要的。
++     在 `List` 或 `Chain` 上，它与 `size` 一样受门控。
+
+@ 0 8 0 0770b03d95b24a82049352ad69886b40
++ entry .extent   `xs.extent`：值的整个范围，作为限定于它的区间 `Interval in xs.type`
++     带品牌的 `gamut`。
++     迭代它（`xs.extent.each`、`xs.extent.tabulate`、`xs.extent.all`）时，交给 lambda 的序数类型为 `Ordinal in xs.type`，而在这样的序数上调用 `xs(ordinal)` 是全函数：返回裸元素，没有边界检查，没有 `Optional`。
++     `capped(n)`、`beyond(n)`，以及由两个受限序数构成的 `start thru end`，都可以缩小它而不失去品牌。
++     对于稳定路径（`val`）上的不可变接收者，这是可靠的；可变的可计数值如果在品牌铸造后缩小，品牌就会失效，而接收者若是表达式而不是 `val`，就没有可以打上品牌的稳定路径。
+
+% 2 1 0 1bc5a71b6f2ad390056c761835f2cfbe
+
+% 3 1 0 06dd3acb941babf60e5f38ebd2fa78ab
+
+% 0 1 0 0b296445d076e13d0ec3a9f2035b4461
+
+% 0 1 0 0c9f20bb747c390f0da236c540a56c00
+
+% 0 1 0 0b3faaf702e39f0613c9780da68932e5
+
+% 0 1 0 16c195155da9b68f1b0e22040a9852a1
+
+% 0 1 0 1275e2316f74c31717fb48e06af39866
+
+% 1 1 0 0427188cd9aa4cea0bc816545ce56f0a
+
+@ 0 5 0 1dfa57916717d9881fd61744e2a229e3
++ entry .iterate   `xs.iterate { i => … }`：访问值或受限子区间的每个受限序数
++     `xs.extent.each` 的旧写法，通过接收者而不是区间打上品牌；两者等价，而 `xs.iterate(range)` 接受一个 `Interval in xs.type`（来自 `extent.capped`、`prefix`、`thru`），以访问其中一部分。
++     lambda 的序数是 `Ordinal in xs.type`，因此其中的 `xs(i)` 是全函数。
++     编译为紧凑的整数循环。
+
+@ 0 8 0 0c63076a1febf61818212a8d152eac69
++ entry .tabulate   `xs.tabulate { i => … }` 或 `range.tabulate { i => … }`：每个序数一个元素，作为 `Sequence`
++     `iterate` 和 `each` 的收集版本：按顺序为每个位置构建一个元素组成 `Sequence`，lambda 的序数限定于该值（或带品牌区间的值），因此其中的读取返回裸元素。
++     在 `Array(10, 20, 30)` 上，`array.tabulate { i => array(i) + i.n0 }` 为 `Sequence(10, 21, 32)`；`Interval.initial(3).tabulate (_.n1)` 为 `Sequence(1, 2, 3)`。
++     它取代 `zipWithIndex`（一个原始 `Int`）和可变构建器。
++     三个重载：基于 `Countable`、基于普通 `Interval`，以及基于 `Interval in form`。
+
+@ 0 6 0 1c9cae470cfa632b0f5e930f9fffbf8d
++ entry .spot   `xs.spot(p)`：满足谓词的第一个受限序数，或 `Unset`
++     带守卫的前向扫描在调用者要使用停止索引时的安全形式：谓词看到的是 `Ordinal in xs.type`，结果是 `Optional[Ordinal in xs.type]`，因此 `let` 中的读取是全函数。
++     `xs.spot(after)(p)` 从一个已扫描的带品牌区间的上限处继续扫描，即两阶段扫描的第二阶段。
++     从 `spot(…).or(…)` 保存下来的 `Ordinal in xs.type` 保持其品牌，因此 `xs(index)` 仍是全函数。
+
+@ 0 6 0 1f63998ec5b2f01e02ce770186ab6abc
++ entry .prefix   `xs.prefix(p)`：满足谓词的最长前导索引段，作为受限区间
++     结果的 `limit` 就是停止索引，因此 `xs.prefix(p)` 取代那些调用者随后从 `i` 处切片或继续的 `while i < size && p(i) do i += 1` 循环。
++     双参数形式 `xs.prefix(after)(p)` 用下一段*延伸* `after`，是累积的，这样空段就不会丢失其锚点（每个空 `Interval` 都规范化到位置零），而上限总是继续点。
++     多阶段扫描读起来就是连续的各个阶段：
+
+% 2 1 0 13319c558f233a5e1ba7d80921a56f78
+
+% 3 1 0 0060fb36f29897041d4eb858a447bc23
+
+% 0 1 0 14025024d404c8ab1cb89da7cb029776
+
+% 0 1 0 158ee10b450971b817c5fed1ef5cbf6d
+
+% 0 1 0 15fb443ff731c335150779f83102a566
+
+% 0 1 0 181e160eeb8db6a913011172c69fba7d
+
+% 1 1 0 079fa4dec8e1868419f3a055f064c922
+
+@ 0 1 0 09836af96632632d15ffbb4af56383f2
++     命名为 `prefix` 而不是 `lead`，因为后者是 `last` 的补。
+
+@ 0 4 0 0b4a2e00c4b33ca61addd033f034aba5
++ entry .pare   `xs.pare(floor)(p)`：修剪掉末尾一段后剩下的区间，元素个数不少于 `floor`
++     末尾修剪的形状：`while count > 1 && xs(count - 1) == 0 do count -= 1` 变成 `xs.pare(1)(xs(_) == 0)`，即一个从 `Prim` 到修剪后长度的受限 `Interval in xs.type`。
+
+@ 0 1 0 1e45556610cf9f871eb9e7e602112af2
++ entry .retrace   `xs.retrace { i => … }`：逆序的 `iterate`，从最后一个受限序数向下到第一个
+
+@ 0 9 0 05b25086fccde4d908278bfbbac960bf
++ entry .each   `interval.each { i => … }`：按顺序访问区间的每个序数
++     两个重载：基于普通 `Interval` 时，lambda 接收普通 `Ordinal`；基于受限的 `Interval in form`（来自 `extent`、`capped`、`beyond`、`prefix`，或受限端点上的 `thru`/`till`）时，它接收 `Ordinal in form`，因此其中的读取是全函数，返回裸元素。
++     这个组合子取代 `var i = 0; while i < xs.length do … i += 1`，并编译成同样紧凑的循环。
++     一个不相关类型上的同名 `each`，若经由文件所导入的伴生对象可达，可能会压过受限重载，并悄无声息地剥去品牌（读取又变成 `Optional`，且没有任何错误），这就是为什么其他接收者上不使用这个名称。
+
+@ 0 3 0 0746fe2a4b443ca9165930c577c85b4c
++ entry .all   `interval.all(p)`：是否每个序数都满足谓词，在第一个不满足的序数处停止
++     与 `each` 有相同的两个重载，因此 `xs.extent.all { i => xs(i) == ys.readUnchecked (i.n0) }` 以全函数方式读取。
++     它取代 `xs.stdlib.indices.forall`。
+
+@ 0 6 0 10206d02eda87617075f6937cf24e00a
++ entry .thru   `start thru end`：从一个序数到另一个序数的区间，包含终点
++     `Ter thru Sen` 是 `Ter, Quat, Quin, Sen`。
++     限定于同一个值的两个序数界定了一个限定于该值的区间（两个有效索引之间的每个序数本身也是有效的），这是构建不从 `Prim` 开始的受限区间的唯一方式。
++     两个重载都在包级别，这样任何一个都不会经由不透明类型的隐式作用域压过另一个。
+
+@ 0 3 0 0c22989d8a108fef0372254d2dda017b
++ entry .till   `start till end`：从一个序数到另一个序数的区间，不包含终点
++     `Ter till Sen` 是 `Ter, Quat, Quin`；`Sec till Sec` 为空。
++     与 `thru` 一样，受限端点给出受限区间。
+
+@ 0 4 0 0f84b88d376747f41deba701ca5ee74a
++ entry .capped   `range.capped(n)`：受限区间中至多前 `n` 个序数，保留品牌
++     有效范围的子区间本身也是有效的，因此截取会保留证明：`array.extent.capped(2).each { i => … array(i) … }` 以全函数方式读取前两个位置。
++     负的 `n` 视为零。
+
+@ 0 4 0 0a808624751b978e027cb78abeba01c9
++ entry .beyond   `range.beyond(n)`：去掉前 `n` 个序数的受限区间，保留品牌
++     `capped` 的补；两者一起可以在两端界定一个窗口，而不会有 `Optional` 挡路。
++     命名为 `beyond`，是因为 `skip`、`keep` 和 `after` 是 rudiments 的分段词汇，而总括包中的顶层名称只能归一个模块所有。
+
+@ 0 3 0 1960c6458179a9cb0ea36780eb041f9e
++ entry .limit   `xs.limit`：可计数值的排他上界，即越过其最后一个元素一位的序数
++     `xs.size.z`。
++     在 `List` 或 `Chain` 上，它与 `size` 一样受门控。
++     不受限：它不是有效索引，但它是扫描*开始*的安全位置。
+
+@ 0 6 0 0a79089402a557dd0e216b3d7cd59f4c
++ entry .ult   `xs.ult`：最后一个（“ultimate”）元素的序数，限定于该值，或为 `Unset`
++     `Optional[Ordinal in xs.type]`，因此 `xs.ult.let(xs(_))` 以全函数方式读取最后一个元素。
++     在类型为 `& Populated` 的接收者（`List(a, b)` 字面量、`occupied` 的结果）上，它会适配并返回裸的 `Ordinal in xs.type`，因此 `xs(xs.ult)` 不需要 `let`。
++     它是序数而不是元素：元素是 rudiments 的 `last`。
++     在 `List` 或 `Chain` 上，它与 `size` 一样受门控。
+
+@ 0 1 0 090432a4172ad91c06376838eb006433
++ entry .pen   `xs.pen`：倒数第二个元素的受限序数，元素少于两个时为 `Unset`
+
+@ 0 1 0 057c43137645545b1f4271d527f52af2
++ entry .ant   `xs.ant`：倒数第三个元素的受限序数，元素少于三个时为 `Unset`
+
+@ 0 6 0 0a00e793f086409c08762ef6bfdff4f5
++ entry .coextent   `xs.coextent(ys)`：若两个值大小相同，则为一个 `Coextent` 令牌，否则为 `Unset`
++     一个品牌不能同时服务两个接收者（`Ordinal in xs.type & Ordinal in ys.type` 不是其中任何一个的子类型），因此并行读取要改为通过这个令牌进行；它承载那一次大小检查，并在两个品牌之间转移序数：`shared(i)` 把 `Ordinal in xs.type` 变成 `Ordinal in ys.type`，而 `shared.each { (i, j) => … }` 以同时对两者都得到证明的索引进行迭代。
+
+% 2 1 0 1eae585346817fdb125ff587edf79389
+
+% 3 1 0 1b38bf784add09c31bf26521726e45b5
+
+% 5 1 0 02881b7187d161ac175c5c1a0ba3c26f
+
+% 6 1 0 16a4f2af078fa0f4088869f03be3eb0d
+
+% 7 1 0 106f6ce3067d4f2d09e259b58bad223f
+
+% 9 1 0 18910db3ec7f5ebc088d276521b583ba
+
+% 0 1 0 1f1198080af868730b24ff6af063b127
+
+% 1 1 0 1526c5cac34673d20175f764190f627d
+
+@ 0 6 0 0835e8d67813a8961c5bf385f33b1ea5
++ entry .aka   `value.aka["label"]`：带有标注类型的值，用于具名的上下文参数
++     中缀类型 `subject aka "label"` 以及构造它的扩展。
++     写作 `(state aka "state", next aka "next") ?=> …` 的 lambda 以上下文值的形式接收参数，由名称 `state` 和 `next` 选取；`Interval#fuse` 以及 rudiments 的 `fuse` 和 `each` 就是这样无需参数列表地提供 `state`、`next` 和 `ordinal`。
++     用 `()` 解包。
+
+@ 0 8 0 0b495a3e578784cb03d14f2e01b5300f
++ entry .Ordinal   作为与 `Int` 不同的类型的位置（第一、第二、第三），没有第零个
++     `Ordinal` 是不透明类型 `denominative.internal.Ordinal`，在这里导出，表示为它所代表的从零开始的 `Int`，但从不与之互换。
++     `Int` 只有通过指明其约定才能变成序数（`n.z` 表示从零开始的索引，`n.u` 表示从一开始的计数，或者 `Ordinal.zerary(n)` 和 `Ordinal.uniary(n)`），而序数只有通过 `n0` 或 `n1` 才能再变回 `Int`，因此约定在两次转换处都写明，差一错误无处藏身。
++     前七个序数有名称：`Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen` 和 `Sept`。
+
+% 2 1 0 0d52d03299645b091b0f1c8ca12f541f
+
+% 3 1 0 00476eb079d326710723a162fab644e3
+
+% 0 1 0 021cf0238c36bb4b1dae2ab7a1a60d8e
+
+% 0 1 0 0224c7338109200e1db39d4dc3621daf
+
+% 0 1 0 000291893b38fdd307a5bf76ad2a6453
+
+% 0 1 0 0e2bd832391db2a6170d38fd11a791b3
+
+% 0 1 0 10b40a14c75705ea1457c8a1dd12414e
+
+% 0 1 0 0f29eeebe4e02df81fe9bd476b4ac534
+
+% 0 1 0 1049bdc376f84bc70bd62a3578489e51
+
+% 1 1 0 037fb0d1a78b14e90a90e539f37e6fcf
+
+@ 0 5 0 046423fc6dfaa854038ea9f15efb6e5d
++     算术通过 symbolism 的 `+` 和 `-` 进行：加上或减去一个 `Int` 得到 `Ordinal`，一个序数减去另一个序数得到 `Int` 距离，而序数通过 `Comparable` 用 `<`、`<=` 等进行比较（或者在没有类型类介入时，用内联的 `le`、`lt`、`ge` 和 `gt`）。
++     所有这些都位于不透明类型自身的隐式作用域中，因此无需导入。
+
+@ 0 5 0 09464e6f2f2408b80de5249431611648
++     *受限*序数 `Ordinal in xs.type` 是一个 `Ordinal`，其类型记录了它已被证明可以索引 `xs`：`extent`、`spot`、`prefix`、`ult`、`within` 和 rudiments 的 `confine` 会铸造它们，而在其上读取 `xs` 是全函数。
++     受限序数上允许做算术（它的带品牌的 `+` 和 `-` 也在伴生对象中），但结果是普通的 `Ordinal`，因为它可能已经离开了已证明的范围；`within` 会重新限定它。
+
+@ 0 3 0 045983dc392443e60ff1d54cda50829c
++     序数只有通过从 `ordinalTextualizables` 包按名称选择的 `Textualizable` 才能渲染为文本，因为没有哪种渲染方式（`3rd`、`ter`、`2♯`）在所有地方都正确。
+
+@ 0 7 0 187a8644dbd840641e240782a3ee2acf
++ entry .Interval   连续的序数范围，从一个起始序数开始，持续若干个位置
++     `Interval` 是不透明类型 `denominative.internal.Interval`，在这里导出：一个起始 `Ordinal` 和一个大小打包在一个 `Long` 中，因此区间不需要任何分配。
++     它写作 `Ter thru Sen`（包含终点）、`Ter till Sen`（不包含终点）或 `Ter span 3`（起点和大小），或者用 `Interval.zerary(start, end)`、`Interval.sized(start, count)` 和 `Interval.initial(size)` 从整数构建。
++     无论请求的起点是什么，空区间都会规范化为位置零、大小为零。
+
+% 2 1 0 11486eeb13fb4ccc177053eb99dab545
+
+% 3 1 0 14b9a0471ef2210a0d3bddb2874eabc2
+
+% 0 1 0 12dcfe4e337d785417f3f2c5a6973025
+
+% 0 1 0 187383ccaeb0ffdd1408b584bbbd92c3
+
+% 0 1 0 02fc6c62808fab1801ba8bc3ed73fca5
+
+% 0 1 0 0cc9b510e1238cc706d546afc70aa785
+
+% 0 1 0 0130edd2163366831ac40b3660d37eb3
+
+% 0 1 0 027d640bce5d85271bcc4fa2b66d0973
+
+% 1 1 0 02f874359a36fdda17d23a2d95713d7b
+
+% 0 1 0 196cff232d04662c10581b3569d9847c
+
+% 1 1 0 1457c5b44195281c0a23c85041dee704
+
+@ 0 5 0 03971a41da1836c51e9fe7b3facdd861
++     当区间中的每个序数都是 `xs` 的有效索引时，区间可以是*受限*的，即 `Interval in xs.type`：`xs.extent`、`xs.prefix(…)`、`xs.pare(…)(…)`、`capped`、`beyond`，以及两个受限序数之间的 `thru` 或 `till` 都会产生受限区间。
++     用 `each`、`all` 或 `tabulate` 迭代受限区间时，交给 lambda 的是受限序数，因此其中的每次读取都是全函数。
++     普通的 `xs.gamut` 是不带品牌的同一范围。
+
+@ 0 8 0 11fe6f7321e226bc086ef35a0127d891
++ entry .Span   源码中一个有位置的字符范围（偏移、行、多行或区域），存放在一个 `Long` 中
++     `Span` 是不透明类型 `denominative.internal.Span`，在这里导出：源文本中的一个位置，打包在单个 `Long` 中，并以最高三位中的 `Span.Mode` 作为标签，这样解析器可以在其构建的每个节点上记录位置，而不付出分配代价。
++     五种模式是 `Empty`（没有位置：`Span.empty`，全为零，因此不存在的跨度不需要 `Optional`）、`Offset`（字符偏移和长度，用于没有行的源）、`Line`（一行、一列以及该行内的长度）、`Lines`（若干整行）和 `Area`（从起始行列到结束行列）。
+
+% 2 1 0 0dfe2020b8004e06045b084f0131bd96
+
+% 3 1 0 0a6929be63be90770ff6c1cf59023789
+
+% 0 1 0 0ce99909bc69a1e71aa90153da020b6f
+
+% 0 1 0 1fc0976654b579b818c98baac3176691
+
+% 0 1 0 0c25b762362fa2ee05cfec6ad75e1fae
+
+% 0 1 0 0e7dce8d4b052ca10e0fe216721f9b3b
+
+% 0 1 0 172b386e1a1352f0156b0f2e852209d8
+
+% 0 1 0 0ceda8ec65ddf4041f290e7907a65bc1
+
+% 1 1 0 1a66f61780ed253108b2991d256856da
+
+@ 0 4 0 1c6c73935332911b0bd2bfc700de7a50
++     模式不携带的每个访问器都返回 `Unset`。
++     行、列和偏移都是从零开始的序数；字段宽度把 `Offset` 跨度限制在 2³¹ 以下的偏移，把 `Line` 跨度限制在 2²³ 行和 2¹⁹ 列，把 `Area` 限制在 2²² 行、2¹⁴ 列以及 2¹¹ 行的范围。
++     XML、TEL、YAML 和源代码解析器都把其节点的位置记录为跨度。
+
+@ 0 9 0 0b0a689d0d346ba0135e4454d1ab6ac0
++ entry .Coextent   两个值大小相同的证据，用于在它们之间转移受限序数
++     `Coextent[form1, form2]` 是不透明类型 `denominative.internal.Coextent`，在这里导出，以共同的大小表示。
++     它只由 `xs.coextent(ys)` 铸造，后者做那一次大小检查，并在大小不同时返回 `Unset`。
++     受限序数只能携带一个值的品牌（`Ordinal in xs.type & Ordinal in ys.type` 不是其中任何一个的子类型），因此对两个值的并行读取要通过这个令牌：把它应用于 `Ordinal in xs.type` 得到 `Ordinal in ys.type`，`invert` 给出反方向的令牌，而它的 `each` 以对每个值都得到证明的序数迭代共同的范围。
+
+% 2 1 0 19caaf096b47292d1da4313cd89cba33
+
+% 3 1 0 106b1e81d41f39520554fc15296a1f25
+
+% 5 1 0 1954d2891d40ac7d1ff478d4ed933c67
+
+% 6 1 0 03f8acc4b900e23f07577d116da4d821
+
+% 7 1 0 0494484a1330d6131c1cebcd1c72a6b5
+
+% 9 1 0 166866b05a0a0b321a9cd901e1e2cb23
+
+% 0 1 0 1b84ed22db5e798117fa07d754798485
+
+% 1 1 0 1f828e4cc99cd1cb07db35c4c5dbddb2
+
+@ 0 1 0 0719b6cbd643bcd413bdf6be0cd26ebc
++ entry .internal   `Ordinal`、`Interval`、`Span` 和 `Coextent` 的不透明表示及其操作
+
+% 1 1 0 06da1c18ae2b967f037f9774e28bd82d
+
+@ 0 5 0 0a417b2deb1bf15318643a6aab837573
++       定义这四个不透明类型的对象，使它们的表示（`Int`、`Long`、`Long` 和 `Int`）只在这里可见。
++       这些类型导出到 `denominative` 包，它们的操作是这个对象中的扩展方法，而这个对象是每个不透明类型的隐式作用域的一部分：用户从不需要写出 `internal`，`ordinal.n0`、`interval.size` 或 `span.mode` 无需导入即可解析。
+
+@ 0 4 0 17906f7664c6487f021f6c08c8addb89
++       带品牌的扩展（接受 `Ordinal in form` 或 `Interval in form`）刻意*不*放在这里：在这个对象内部，不透明类型就是它的表示，因此对它的细化会塌缩。
++       出于这个原因，`thru`、`till`、`capped`、`beyond`、`each`、`all` 和 `tabulate` 位于 `denominative` 的包级别。
+
+% 0 1 0 1978c32d3ded86ca13590c62411ee981
+
+% 0 1 0 1dcbaec1b9bc56bb09ef9fb3ede7fd1f
+
+% 0 1 0 1fa09e9f459adf540bd607037afd43e8
+
+% 0 1 0 00387bfea269910112522000c9329338
+
+@ 0 1 0 12fde04fa7e7232c0335eea98b97f2d0
++   entry .Ordinal   不透明的序数，以其从零开始的索引表示
+
+% 1 1 0 139e4f7900add711112a98a5d6ac98a6
+
+@ 0 18 0 0b22d6178d808a5e0a46a2e2529dcf42
++         `denominative.Ordinal` 所导出的类型，连同其伴生对象：整数构造器以及算术和排序实例，全部位于隐式作用域中。
++     entry .zerary   `Ordinal.zerary(n)`：从零开始的索引 `n` 处的序数，即 `n.z` 的写法
++     entry .uniary   `Ordinal.uniary(n)`：从一开始的计数 `n` 处的序数，即 `n.u` 的写法
++     entry .addable   `ordinal + n`：向前移动 `Int` 个位置的 `Ordinal`
++     entry .subtractable   `ordinal - other`：从一个序数到另一个序数的 `Int` 距离
++     entry .subtractable2   `ordinal - n`：向后移动 `Int` 个位置的 `Ordinal`
++         结果不做截取：`Prim - 1` 是第一个之前的序数，没有任何集合会接受它作为索引。
++         `previous` 则会在 `Prim` 处截取。
++     entry .comparable   序数按位置比较，与其从零开始的索引一致
++         使 `<`、`<=`、`>`、`>=`、`max`、`min` 和排序对序数可用。
++     entry .brandedAddable   受限 `Ordinal in form` 上的 `ordinal + n`，得到普通 `Ordinal`
++         类型类的 `Self` 是精确的，因此对于受限接收者找不到不带品牌的 `.addable`；这个孪生实例可以找到，并且它会丢弃品牌，因为算术可能离开已证明的范围。
++         用 `within` 重新限定结果。
++     entry .brandedSubtractable   受限序数之间的 `ordinal - other`，得到 `Int` 距离
++     entry .brandedSubtractable2   受限 `Ordinal in form` 上的 `ordinal - n`，得到普通 `Ordinal`
++   entry .Interval   不透明的区间，起点和大小打包在一个 `Long` 中
+
+% 1 1 0 1a64cf30ef80158f0d6bef8c4db5b396
+
+@ 0 7 0 16dfa358b6b640a91e4a0871db9e9523
++         `denominative.Interval` 所导出的类型，连同其由构造器组成的伴生对象。
++     entry .sized   `Interval.sized(start, count)`：从从零开始的 `start` 起的 `count` 个位置；`count` ≤ 0 时为空
++     entry .initial   `Interval.initial(size)`：前 `size` 个位置，从 `Prim` 开始
++         该大小的值的所有有效索引的范围，`gamut` 就是这样构建的。
++     entry .apply   由两个序数构成的 `Interval(start, end)`，包含终点；`Interval()` 为空
++     entry .zerary   `Interval.zerary(start, end)`：从从零开始的 `start` 到从零开始的 `end`，不包含终点
++   entry .Span   不透明的源码跨度，模式及其字段打包在一个 `Long` 中
+
+% 1 1 0 0292bc7fc0ed5d0017bf3102b3705aa7
+
+@ 0 16 0 1fd1804df83a5bc7149a3101365103e0
++         `denominative.Span` 所导出的类型，连同其由构造器组成的伴生对象。
++         每个构造器都把字段屏蔽到其宽度，因此超出范围的行或列会被截断，而不是被拒绝。
++     entry .Mode   `Span` 携带哪些字段：`Empty`、`Offset`、`Line`、`Lines` 或 `Area`
++         一个枚举，可以用 `==` 比较。
++         `Empty` 表示不存在；`Offset` 是字符偏移和长度；`Line` 是一行、一列和长度；`Lines` 是起始行和行数；`Area` 是起始行列和结束行列。
++     entry .equality   `CanEqual[Span, Span]`，使两个跨度可以用 `==` 比较
++     entry .empty   不记录任何位置的跨度，所有位都为零
++     entry .offset   `Span.offset(start, length)`：从偏移 `start` 起的 `length` 个字符，用于没有行的源
++     entry .line   `Span.line(line, column, length)`：一行之内的 `length` 个字符
++     entry .lines   `Span.lines(startLine, lineCount)`：连续的若干整行
++     entry .area   `Span.area(startLine, startColumn, endLine, endColumn)`：跨越多行的区域
++         结束行存储为相对起始行的增量，因此在起始行之前的结束行会被视为起始行。
++   entry .Coextent   不透明的同大小令牌，以共同的大小表示
+
+% 1 1 0 090f35c658a671d8062873febf750c1c
+
+@ 0 33 0 19240578858f24030454740ee6a7646d
++         `denominative.Coextent` 所导出的类型。
++         它的操作是其伴生对象中的扩展，而不在包级别，因为 `each` 和 `size` 已经是 `denominative` 中的包级名称。
++     entry .apply   `shared(ordinal)`：把 `Ordinal in form1` 转移为 `Ordinal in form2`
++     entry .invert   交换了两个品牌的同一令牌，用于反方向转移
++     entry .size   两个值共同的大小
++     entry .each   `shared.each { (i, j) => … }`：每个共同的位置，对两个值都得到证明
++         一个紧凑的整数循环；lambda 接收同一个位置，分别按每个值定型一次，因此 `left(i)` 和 `right(j)` 都是全函数。
++   entry .span   `start span size`：从 `start` 开始的 `size` 个位置构成的区间
++       `Ter span 3` 是 `Ter thru Quin`。
++       中缀。
++   entry .le   该序数是否位于另一个序数处或之前，不经类型类
++   entry .lt   该序数是否严格位于另一个序数之前，不经类型类
++   entry .ge   该序数是否位于另一个序数处或之后，不经类型类
++   entry .gt   该序数是否严格位于另一个序数之后，不经类型类
++       这四个比较是内联扩展，编译为单次整数比较，并且对受限序数和普通序数都适用。
++   entry .next   该序数之后的序数；对于区间，是其终点之后的序数（即其 `limit`）
++   entry .previous   该序数之前的序数，在 `Prim` 处截取；对于区间，是其起点之前的序数
++   entry .n0   作为从零开始的 `Int` 索引的序数：`Prim.n0` 为 `0`
++       面向从零开始计数的 API（JVM 数组、`String` 偏移、线上格式）时转换回整数的方式。
++       `n.z.n0 == n`。
++   entry .n1   作为从一开始的 `Int` 计数的序数：`Prim.n1` 为 `1`
++       面向人类可读数字（行号、“第 3 个字段”）时转换回整数的方式。
++       `n.u.n1 == n`。
++   entry .subsequent   紧接在一个序数之后，或一个区间终点之后的 `size` 个位置构成的区间
++       `Prim.subsequent(3)` 是 `Sec thru Quat`。
++   entry .preceding   紧接在一个序数或区间之前的至多 `size` 个位置构成的区间
++       在 `Prim` 处截取：`Sec.preceding(5)` 只是 `Prim`。
++   entry .within   `ordinal.within(xs)`：若该序数能索引 `xs`，则为限定于 `xs` 的序数，否则为 `Unset`
++       把普通 `Ordinal` 变成 `Ordinal in xs.type` 的那一次边界检查，此后在它上面读取 `xs` 都是全函数。
++       `xs` 需要一个 `Countable` 实例和一条稳定路径（`val`）。
++       对受限序数使用时，它会重新限定到另一个值。
+
+% 2 1 0 0a7fb44eb5e88b0d04888f6a8dba2efe
+
+% 3 1 0 15416e0bb3cb2d1c0ff7a2e62efb8274
+
+% 0 1 0 141059ce271c8ea21d19efe7fb2ce552
+
+% 0 1 0 1915086738f909d407c7e0d7b2c9318c
+
+% 0 1 0 000a6a0ead29da11182bbe452adaff9c
+
+% 1 1 0 0d9c78661a919fdc1cf1494e39eb64ed
+
+@ 0 25 0 150a5573b1b070321f538c3cab0e0f11
++   entry .start   区间的第一个序数
++   entry .size   区间中序数的个数
++   entry .end   区间的最后一个序数，包含在内
++       对于空区间，这是 `Prim` 之前的序数；应先测试 `nil`。
++   entry .limit   越过区间终点一位的序数，不包含在内
++   entry .contains   某个序数是否位于区间之内
++   entry .fuse   `interval.fuse(initial)(…)`：以 `state` 和 `next` 为上下文名称、对区间进行的折叠
++       lambda 是一个关于 `state`（累积值）和 `next`（当前序数）的上下文函数，两者都用 `aka` 标注，因此名称无需参数列表即可选取它们：`(Sec span 3).fuse(0)(state + next.n0)` 是 `1 + 2 + 3`，即 `6`。
++   entry .nil   区间是否为空
++   entry .bits   跨度的原始 `Long` 编码，用于存储或传输
++   entry .vacant   跨度是否为 `Span.empty`，即不记录任何位置
++   entry .exists   跨度是否记录了任意模式的位置
++   entry .mode   跨度处于五种 `Span.Mode` 中的哪一种
++   entry .startLine   跨度开始的从零开始的行，对于 `Offset` 或 `Empty` 跨度为 `Unset`
++   entry .startColumn   跨度开始的从零开始的列，除非是 `Line` 或 `Area` 跨度，否则为 `Unset`
++   entry .endLine   跨度结束的从零开始的行（包含在内），对于 `Offset` 或 `Empty` 跨度为 `Unset`
++   entry .endColumn   跨度结束的列，除非是 `Line` 或 `Area` 跨度，否则为 `Unset`
++       对于 `Line` 跨度，它是起始列加上长度，即最后一个字符之后紧接的那一列。
++   entry .length   跨度的字符长度，除非是 `Offset` 或 `Line` 跨度，否则为 `Unset`
++   entry .offset   跨度的从零开始的字符偏移，除非是 `Offset` 跨度，否则为 `Unset`
++   entry .lineCount   跨度覆盖的行数，对于 `Offset` 或 `Empty` 跨度为 `Unset`
++   entry .singleLine   跨度是否位于一行之内：`Line` 跨度，或位于一行之内的 `Area`
+
+@ 0 1 0 005ddd47620431bb1a9411d3b8e32b07
++ entry .protointernal   `aka` 背后的不透明 `Tagged` 类型
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 0c4f9fa5d54c7c720f21f13328531929
++       不供直接使用：`subject aka label` 是 `Tagged[subject, label]` 的别名，带标注的值用 `value.aka["label"]` 构造，用 `()` 解包。
++   entry .Tagged   在类型层面带有标注的值，即 `aka` 的表示
+
+% 1 1 0 104bc4658e5b6e3219ed00eb59c4df93
+
+@ 0 3 0 06bce9e857ab773d0be71530688161a1
++         值自身类型的不透明别名，因此打标注在运行时没有任何代价。
++     entry .apply   把值包装为带有给定标注的 `Tagged`；`aka` 调用的就是它
++   entry .apply   `tagged()`：`Tagged` 中的值，恢复其自身的纯度
+
+@ 0 1 0 17ec7173ed18c62f1104ad3a608cb8db
++ entry .Zerary   匹配 `Int` 并将其绑定为从零开始的 `Ordinal` 的模式
+
+% 1 1 0 0683940ca321d3790642e8c0470c76b8
+
+@ 0 4 0 05c9216a7f2b6d7d1ee07e9e801a035b
++       `case Zerary(ordinal) =>` 匹配任何 `Int`，并把 `ordinal` 绑定为 `int.z`；对整数结果（例如搜索返回的索引）进行匹配时，就是这样在模式处而不是在分支体中转为序数的。
++       匹配总是成功，因此它最适合在对 `Optional[Int]` 的匹配中，作为与 `Unset` 并列的一个分支。
+
+% 2 1 0 18af995aede6dc1f0f8fcc88771c5fd6
+
+% 3 1 0 1380280204bbb7e51685879c19973695
+
+% 0 1 0 0eb8a4f59348e7050e9967323008c433
+
+% 0 1 0 04b8da1954f5ffb114f357a74e3c41b6
+
+% 0 1 0 0151b68f415deaec08039dac1e05db4c
+
+% 0 1 0 02b915bcfcb1b72a132b4783a927c859
+
+% 1 1 0 0904eba7aa49ff711d5faa2cfdc5c446
+
+@ 0 1 0 13218d978bbf2b5d02f3fcc6b5c592c8
++   entry .Match   `Zerary.unapply` 的结果，总是成功，且不分配内存
+
+% 1 1 0 1a23476db73c48460367ab632dbbc879
+
+@ 0 5 0 0cfff91224adf0160472548105dae173
++         一个值类，因此成功的匹配不分配任何东西。
++     entry #int   匹配到的整数
++     entry #isEmpty   总是 `false`：匹配从不失败
++     entry #get   作为从零开始的 `Ordinal` 的匹配整数
++   entry .unapply   匹配一个 `Int`，将其作为从零开始的 `Ordinal` 产生
+
+@ 0 1 0 17f72b7e237e0307196fd7727ac47376
++ entry .Dysasymptotic   为代价随主体之外数据增长的操作设置门控的标记类型
+
+% 1 1 0 0e3f5f6a02e20cd21202d967bd1026e0
+
+@ 0 8 0 00e3e1cc072358060bba77be2f5bb168
++       当数据结构上的一个操作的代价随非其主体的数据（所在结构的大小，或主体距访问点的距离）增长（超过对数级），而主体本身保持有界时，这个操作就是 *dysasymptotic* 的。
++       `List` 上的 `size`（主体是一个数字，代价是整个列表）、`List` 上的 `at(n)`（一个元素，走 `n` 步）、`Chain` 上的 `size`（一个数字，流被强制求值到末尾）都是 dysasymptotic 的；`List` 上的 `fold` 则不是，因为无论多大，它的代价都与其主体同步。
++       这是操作在某种*表示*上的性质：`size` 在 `Sequence` 上不花代价。
+
+@ 0 5 0 0b66946d5f1568561cb3670c0a7c5125
++       因此，这类操作的类型类实例以这些标记类型之一作为 `using` 参数，程序通过从 `dysasymptotics` 包按名称导入相应的 given 来选择启用。
++       它们是普通的标记，而不是能力：它们不携带任何权限，除了解析之外不约束任何东西，因此对隐藏代价的每一次确认都是一个可以用 grep 找到的导入，最好限定在代码块作用域内并附上注释。
+
+% 2 1 0 0b4433b324515b8302bd99bc7b80dfbf
+
+% 3 1 0 0a1ecd78eae7fb3607ac63eb283adda6
+
+% 0 1 0 0dda7cf4052c4d9b0a8306bf742a9dcb
+
+% 0 1 0 03bd7cd25f1d86291b40d00fdbf26901
+
+% 0 1 0 1b08bc52fcaa9e0119e6f4a198a6359f
+
+% 1 1 0 13f57a8309334e5c1ad380d80e6c7211
+
+% 0 1 0 0219c824ef3999b5152964e9a53a2e92
+
+@ 0 17 0 1a10eaaf69f59cbe09eb052dabcad563
++   entry .LinearSize   严格链式结构求长度的代价，或为有界改动而整体重建的代价
++       为 `List` 上的 `size` 及由它派生的一切（`gamut`、`limit`、`ult`、`pen`、`ant`、`extent`、`iterate`、`retrace`）、`List` 上的 `last` 和 `lead`，以及冻结数组的写时复制编辑（`define`、`omit`、`lead`，以及追加或前置一个元素）设置门控，其中每一项都会复制整个数组。
++       由 `dysasymptotics.linearSize` 启用。
++   entry .LinearAccess   从头部走到严格链式结构中某个位置的代价
++       为 `List` 的按位置读取（带序数的 `at`、`apply` 和 `confine`）以及 `List` 上会重建其前缀的 `define` 设置门控。
++       头部不花代价：读取它是有界的遍历。
++       由 `dysasymptotics.linearAccess` 启用。
++   entry .UnboundedSize   把惰性结构强制求值到末尾的代价，对于无限结构则永不返回
++       为 `Chain` 上的 `size`、`last` 和 `lead` 设置门控。
++       由 `dysasymptotics.unboundedSize` 启用。
++       判断是否为空（`nil`）只强制求值第一个单元，从不受门控。
++   entry .LinearScan   在没有为主体保存索引的结构中通过扫描查找主体的代价
++       例如在只存储后继的图中查找某个节点的前驱：无论前驱有多少，代价都与整个图成线性关系。
++       由 `dysasymptotics.linearScan` 启用。
+
+@ 0 1 0 16291bbac70fd3280263d044383a63bc
++ entry .dysasymptotics   对隐藏代价的四种确认，每种都是按名称导入的 given
+
+% 1 1 0 057db32dfc51137615761f01a15065ec
+
+@ 0 7 0 03d814a8f52568c918114c1af043f4c0
++       导入其中一个 given，会在该导入的作用域内打开以其 `Dysasymptotic` 标记设置门控的所有操作。
++       它们必须按名称导入（`import dysasymptotics.linearSize`），因为通配符 `import dysasymptotics.*` 不会把 given 带入作用域。
++       这个包与总括包自身的同名包合并，因此只需 `import soundness.*` 再加上按名称的导入即可。
++       把导入限定在接受这一代价的代码块中，并附上注释说明为何可以接受；不要用 `.stdlib.length` 之类的方式绕过门控，那样会把同样的代价藏在谁也找不到的地方。
+
+% 2 1 0 1c4b6d0038fe7cc9149645224c02f467
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 18820354cd6bd0b217ed8692da71eb0d
++         label 不受门控：判断是否为空对任何形状都是 O(1)
+
+% 1 1 0 047da9c8193b0465164bc9394aef80b4
+
+% 2 1 0 18c891f5180a72231aca9824859532e6
+
+% 3 1 0 133057d4e3e2514f1db30d95d0960665
+
+% 0 1 0 1d5b3e32dba17a731bbc5af3cb53a329
+
+% 1 1 0 0170f0ad25e89cde09d3a221a8a35ead
+
+@ 0 1 0 076dbd4fc515f9f21f2767e4ff01d526
++         label 受门控：列表的大小需要一次遍历
+
+% 1 1 0 05dfe879bb6290711a76523b1a2974a3
+
+% 2 1 0 166375cd8f8f4fa8019439ff22e8c5e2
+
+% 3 1 0 02b69917f4d96c651386a36872bf074f
+
+% 0 1 0 078b7a0b4f5f43b40e29ca31bc676861
+
+% 1 1 0 11d2f838eef484200f5d31e738752a21
+
+@ 0 1 0 1d2f9fee97401b7f01e9a02ebbbfa0eb
++         label 在付出代价的代码块中确认
+
+% 1 1 0 05b885091770902d0c37063bd34386fd
+
+% 2 1 0 1686a4bed667b65e066f573618be1891
+
+% 0 1 0 15c8012edc25dc9f1dd358885bb6076e
+
+% 1 1 0 15384b54c774c2ab1a9f4877c752f51a
+
+% 0 1 0 13a5a08c5a3427f61b2f8289e8dbde15
+
+% 1 1 0 06e9769b55dfc9c70ffc582b7584f70d
+
+% 2 1 0 017d05e4d1d9de9d1a45a446d628db7f
+
+% 0 1 0 14c5992ad5b24cc2093a41162fd31f46
+
+@ 0 4 0 1858080fca084f7f0f6f30753b9712e3
++   entry .linearSize   打开 `List` 上的 `size` 及由大小派生的操作，以及冻结数组的复制式编辑
++   entry .linearAccess   打开对 `List` 的按位置访问：`at`、带序数的 `apply` 以及 `define`
++   entry .unboundedSize   打开 `Chain` 上的 `size`、`last` 和 `lead`，它们在无限结构上永不返回
++   entry .linearScan   打开通过扫描无索引结构来查找主体的操作
+
+@ 0 1 0 154d5f75b068cf1b0836e80a2bad3090
++ entry .ordinalTextualizables   `Ordinal` 的各种文本渲染，每种都是按名称导入的 given
+
+% 1 1 0 00bf97c2f9724d0113f95553d99a9b70
+
+@ 0 5 0 0a9ba704e4d0aec7069e606eb97457ec
++       `Ordinal` 在隐式作用域中没有渲染方式，因为没有哪一种在所有地方都正确：面向用户的消息需要 `3rd`，调试跟踪需要两种索引，协议需要一个裸数字。
++       按名称恰好导入其中一个 given（`import ordinalTextualizables.englishOrdinal`），`ordinal.textual` 就会使用它；通配符导入不会把 given 带入作用域。
+
+% 2 1 0 169c63687e8a0f0a1b844c8747a9433f
+
+% 0 1 0 044f508a5d3d64370ba73cf12cf7d38a
+
+% 1 1 0 029c113f1d5f4f02124d4849f93a72f7
+
+% 2 1 0 064c4ffa113ba0a51d0e9c306c2b8528
+
+% 0 1 0 0c7d67f168bb9bcc02b63498a9f1050c
+
+% 0 1 0 0504d1f24970953613a1a045c254cb55
+
+% 0 1 0 148c1246d51b5ad60688008c722d9e76
+
+% 1 1 0 1b605b955660ddd9196bc50d9703cea5
+
+% 2 1 0 00d48b49779ca51d003e09639b5f5221
+
+% 0 1 0 19895ab56945a75d117e7a92720cdc3c
+
+% 0 1 0 12dda54915b58c8b0c984e6b1afec7a3
+
+% 0 1 0 01afd7c27d606e8106492957d97f7f32
+
+% 1 1 0 071a1cb0585bc4f01606552f968c3158
+
+% 2 1 0 17ef20536cc24d3c025a29d4f76ce6b3
+
+% 0 1 0 1d07644dc58c93040a004a7ed0b336d4
+
+% 0 1 0 01995c974e9741dc0e07ccb0079570e4
+
+% 0 1 0 0b86c627a465fabd1dd2cf634be1d98a
+
+% 1 1 0 1233beba25a7813d1e2116c75c07aa56
+
+% 2 1 0 04198cf183d19f930dd243aac1dd0691
+
+% 0 1 0 03c2b1c90530108d123e63954924f03a
+
+% 0 1 0 061adc2cbd86a9cb140a4eec62fb739f
+
+% 1 1 0 0f3d19ee18df295101a55b788eedf6f8
+
+% 2 1 0 010e4e3f1c809f7b00da1e3040cf1398
+
+@ 0 12 0 1298d52c9a30c4591394a93b6f3f33af
++   entry .nominalOrdinal   序数的名称（`prim`、`sec`、……`sept`），第七个之后为 `7.z`
++   entry .uniaryOrdinal   以 `♭` 标记的从一开始的计数：`Prim` 是 `1♭`
++   entry .zeraryOrdinal   以 `♯` 标记的从零开始的索引：`Prim` 是 `0♯`
++   entry .unmarkedUniaryOrdinal   不加标记的从一开始的计数：`Prim` 是 `1`
++   entry .unmarkedZeraryOrdinal   不加标记的从零开始的索引：`Prim` 是 `0`
++   entry .intermediateOrdinal   同时给出两种索引，先从零开始，再从一开始：`Prim` 是 `⌞0⌟|⌞1⌟`
++   entry .englishOrdinal   英语序数后缀：`1st`、`2nd`、`3rd`、`4th`、`11th`、`21st`
++   entry .englishSuperscriptOrdinal   上标形式的英语后缀：`1ˢᵗ`、`2ⁿᵈ`、`3ʳᵈ`、`4ᵗʰ`
++   entry .frenchOrdinal   法语形式：`1ᵉʳ`，然后是 `2ᵉ`、`3ᵉ`、……
++   entry .italianOrdinal   意大利语形式：`1ᵒ`、`2ᵒ`、……
++   entry .spanishOrdinal   西班牙语形式：`1.ᵒ`、`2.ᵒ`、……
++   entry .russianOrdinal   俄语形式：`1-й`、`2-й`、……
+
+@ 0 1 0 0f6b6c2937d39ef908927d323d3aa403
++ entry .Countable   有大小因而有序数范围的值：`Self is Countable`
+
+% 1 1 0 1d81b8626cd3078e0fc914b9bcfa541c
+
+@ 0 5 0 17b7f79d9ada976c1a35ed04cf74e2e7
++       `Countable` 是 `size` 背后的类型类，并经由它成为每个从大小派生序数的操作背后的类型类：`gamut`、`extent`、`limit`、`ult`、`pen`、`ant`、`iterate`、`retrace`、`tabulate`、`spot`、`prefix`、`pare`、`coextent` 和 `within`，以及 rudiments 的分段操作。
++       它扩展了 `Vacuiscible`，因此可计数的值也可以测试是否为空，默认实现为 `size == 0`。
+
+% 2 1 0 059eb91216265dc20f564bc02e72c858
+
+% 3 1 0 182e6c276cb3418a0a12ef03d78c10c6
+
+% 0 1 0 04bf20f433268a170a93629761fc256b
+
+% 0 1 0 0afce615c85537e30842024b1bc93118
+
+% 0 1 0 10f377474aa4a9de1d161ae16570e097
+
+% 1 1 0 19fcf93025cf30eb081948455fc745aa
+
+@ 0 7 0 12e00522fb1943de080d5b1317bcc875
++       不受门控的实例存在于冻结数组（及其 `Sized` 形式）、`Sequence`、`Set`、`Map`、`Ledger`、`Text`、标准库的 `IndexedSeq` 和 `Iterable`、`Option`（零或一）、`Int`（计数自身），以及可变的 `ArrayBuffer`、`HashMap`、`TrieMap` 和 `StringBuilder`。
++       `List` 的大小需要一次遍历，因此 `.list` 需要 `import dysasymptotics.linearSize`；`Chain` 的大小会强制求值整个流，因此 `.chain` 需要 `import dysasymptotics.unboundedSize`。
++       这两种门控都不适用于 `nil`，`Vacuiscible` 对两者都以 O(1) 作答。
+
+@ 0 3 0 19a98e6d59ed075c0ef900057a7edef2
++       在可变的可计数值（`ArrayBuffer`、`StringBuilder`）上铸造的受限序数，只在该值不缩小时有效；对于保存在 `val` 中的不可变值，品牌是可靠的。
+
+% 0 1 0 17304e2133633ca20f7c3be60665f325
+
+% 0 1 0 08b09680cdc4900d14cb42a0f9aedcba
+
+% 0 1 0 03ab6f91417113c70fee45085ebf0057
+
+@ 0 29 0 03ad7a5f06405e3c175286a920cbf87a
++   entry #size   值中元素的个数
++   entry #nil   值是否为空；默认是其大小是否为零
++   entry .frozenArray   冻结的 `Array[e]^{}` 计数其长度，O(1)
++   entry .sizedFrozenArray   `Sized[length]` 冻结数组，由其自己的实例计数
++       这是一个单独的实例，而不是对 `.frozenArray` 的放宽：以捕获类型为上界的类型变量会被展开为 `array^{any.rd}`，从而无法满足为纯数组声明的证据。
++   entry .int   `Int` 计数自身，因此 `5.extent` 是前五个序数
++   entry .arrayBuffer   可变的 `ArrayBuffer` 计数其当前长度
++   entry .option   `Option` 的大小为零或一
++   entry .list   `List` 的大小，通过遍历得到；需要作用域中有 `dysasymptotics.linearSize`
++       以 `Dysasymptotic.LinearSize` 作为 `using` 参数，因此在 `import dysasymptotics.linearSize` 进入作用域之前，`list.size`、`list.gamut`、`list.extent` 等都无法解析。
++       对子类型参数化，因此 `List[e] & Populated` 也能匹配。
++   entry .iterable   任何标准库 `Iterable` 都计数其大小，代价等同于它自己的 `size`
++   entry .map   `Map` 计数其条目，O(1)
++   entry .ledger   `Ledger` 计数其条目，O(1)
++   entry .trieMap   并发的 `TrieMap` 计数其条目
++   entry .hashMap   可变的 `HashMap` 计数其条目
++   entry .chain   `Chain` 的大小，通过强制求值整个流得到；需要作用域中有 `dysasymptotics.unboundedSize`
++       对于无限链，它永不返回，这就是为什么门控是更强的 `Dysasymptotic.UnboundedSize`，而不是 `LinearSize`。
++   entry .stringBuilder   `StringBuilder` 计数其当前长度
++   entry .set   `Set` 计数其元素，O(1)
++   entry .indexedSeq   标准库的 `IndexedSeq` 计数其长度，O(1)
++   entry .sequence   `Sequence` 计数其元素，O(1)
++   entry .text   `Text` 计数其 UTF-16 码元，O(1)
++       与 `String#length` 的计数相同：基本多文种平面之外的字符计为两个。
+
+@ 0 1 0 07605388b7e80c17110736e7680ba4d3
++ entry .Vacuiscible   可以测试是否为空的值，对任何形状都是 O(1)：`Self is Vacuiscible`
+
+% 1 1 0 1c3a2954fb75bbb71bb1d11c65685de8
+
+@ 0 5 0 1e1e63f96e3708ca1a9208463b30ef09
++       只有是否为空，从 `Countable` 中拆分出来，使大小代价高昂的形状（`List`、`Chain`）仍然可以廉价且不受门控地回答 `nil`。
++       只需要知道值是否为空的操作应当要求 `Vacuiscible`，而不是 `Countable`。
++       每个 `Countable` 都经由 `.countable` 成为 `Vacuiscible`；`List` 和 `Chain` 有各自的实例，优先于受门控的实例。
+
+% 2 1 0 1072245cb3b4726511d73c87faa26f8e
+
+% 3 1 0 1a8d6eff997b9b5315b225f6545a75c2
+
+% 0 1 0 05f269bbc6ee4889048099094e5b9313
+
+% 0 1 0 0a57f57867b08e930e257a8f74b67ce0
+
+% 0 1 0 1ed7ee74a5609eca1d1866fc76c499a3
+
+% 1 1 0 1fb7a83c987434a1123c11b0921a228c
+
+% 0 1 0 0cb729766ae573260a115f7052d606d3
+
+% 1 1 0 066f1eb6c70f31781144d4cde7c7cfc0
+
+@ 0 7 0 15f9c8c56f6e59430aeb438a3843caf5
++   entry #nil   值是否没有元素
++   entry .countable   每个 `Countable` 都是 `Vacuiscible`，通过它自己的实例回答 `nil`
++       之所以需要它，是因为对 `X is Vacuiscible` 的隐式搜索只查看 `Vacuiscible` 及其父类型的伴生对象，从不查看其子类型的伴生对象，否则就找不到 `Countable` 的实例。
++   entry .list   `List` 是否为空，一次指针测试；与其大小不同，不受门控
++   entry .chain   `Chain` 是否为空，只强制求值其第一个单元；与其大小不同，不受门控
+
+@ 0 1 0 1bee944c74b9f3d51cf15f73f3107339
++ entry .Applicable   可以按索引或键读取的值：`Self is Applicable by Operand to Result`
+
+% 1 1 0 1bdc2f64823e9c4c15e1c95176f19ce3
+
+@ 0 6 0 1e41e4c7171f33e11177067eb887399e
++       `Applicable` 是索引的读取一侧：`#contains` 说明一个索引是否有效，`#access` 在有效索引处读取。
++       rudiments 的 `xs(index)`、`xs.at(index)`、`xs.defines(key)`、`xs.confine(index)` 和 `xs.pick(index)` 解析到的就是它，这也是为什么这些读取对受限序数可以是全函数，对其他索引则是 `Optional`：`access` 本身只会在 `contains` 之后或在某个证明之后才被调用。
++       对于按位置的形状，`Operand` 是 `Ordinal`；对于按键的形状，它是键类型。
+
+% 2 1 0 0b5310cb9ff690cd0c0dc10e117a745e
+
+% 3 1 0 03bb85ec446cf6141b8cdb4b316492d0
+
+% 0 1 0 1051055c947de84100c8ac71ad59d4ff
+
+% 0 1 0 05517cde37325f791a2a72919be8fe0a
+
+% 0 1 0 08532d3db73736e41743997af45b0f16
+
+% 0 1 0 1241ffdc2a352dd6168cf10cf2976832
+
+% 0 1 0 1378d42d2ecf777d15f99674c4ca32e3
+
+% 0 1 0 095e40ca3f15bd581da1268736d9e303
+
+% 1 1 0 0c6b22d9dcd0a02d17418bc02117fb56
+
+@ 0 4 0 0e3c6eae40f67a44029e9ed8cf18f457
++       实例：按序数的有冻结数组及其 `Sized` 形式、`Sequence`、标准库的 `IndexedSeq` 和 `Text`（按 `Char`）；按键的有 `Map`、`Ledger` 和可变的 `HashMap`；还有按序数的 `List`，它位于 `import dysasymptotics.linearAccess` 之后，因为到达一个位置要从头部开始走。
+
+% 1 1 0 13e5cf15e820111f007992f454067070
+
+% 1 1 0 124bca232a08373c04fe4fb108ca5476
+
+@ 0 15 0 07e393f1720889c0003e28f90939da9f
++   entry #contains   该索引对该值是否有效：在范围之内，或是一个存在的键
++   entry #access   在已知有效的索引处的元素
++       不做检查：在无效索引上调用它可能会抛出异常。
++       应通过 rudiments 的 `apply`、`at` 或 `pick` 来使用它，它们会先检查或证明索引。
++   entry .frozenArray   在序数处读取冻结的 `Array[e]^{}`，通过一次边界检查和一次不检查的读取
++   entry .sizedFrozenArray   在变量序数处读取 `Sized[length]` 冻结数组
++       对 `Sized` 数组的字面量索引在编译时检查，从不会到达这个实例；变量序数仍然是经过边界检查、返回 `Optional` 的读取。
++   entry .indexedSeq   在序数处读取标准库的 `IndexedSeq`
++   entry .sequence   在序数处读取 `Sequence`，实际上是常数时间
++   entry .list   从头部开始走，在序数处读取 `List`；需要 `dysasymptotics.linearAccess`
++   entry .text   在序数处读取 `Text`，得到一个 `Char`（一个 UTF-16 码元）
++   entry .map   在键处读取 `Map`，得到其值
++   entry .ledger   在键处读取 `Ledger`，得到其值
++   entry .hashMap   在键处读取可变的 `HashMap`，得到其值
+
+@ 0 1 0 1a616da724bfbb910e8f754faa78f402
++ entry .Definable   在索引或键处的写时复制更新：`Self is Definable by Operand to Result`
+
+% 1 1 0 142af51097d32ec306fb8f43e69a1929
+
+@ 0 3 0 1427ef8e6e7f9e171b5e77446ee38c3e
++       `Applicable` 的写入孪生，位于 rudiments 的 `xs.define(index, value)` 背后：值的一个副本，在其中于 `index` 处读取会得到 `value`。
++       它是全函数：超出范围的序数原样返回该值，不存在的键会添加一个条目。
+
+% 2 1 0 15c24e314b6d5b8c19581b6dd28af51e
+
+% 3 1 0 13a2023b9e9deabc0b0db342f3526972
+
+% 0 1 0 1f55967e841a567c1da032b42b7b7a82
+
+% 0 1 0 0923fa53ce8698e71b912ec68dcfd6ad
+
+% 0 1 0 02abf72de2fd00bb0be7aff61231917b
+
+% 1 1 0 1db2a0aa9ba7bf2c006fea5ded3bd8c9
+
+@ 0 4 0 00f3d2d1aa0048b11d5446ca4a6ae304
++       不受门控的实例存在于 `Sequence`、标准库的 `IndexedSeq`、`Map` 和 `Ledger`；`List` 的实例位于 `dysasymptotics.linearAccess` 之后，因为它会重建前缀；冻结数组的实例位于 `dysasymptotics.linearSize` 之后，因为每次编辑都会复制整个数组。
+
+% 0 1 0 01485a04775768a518a4862baa3424e4
+
+% 0 1 0 0a6eacc9f9812c55023d04a86bea2511
+
+@ 0 8 0 01b4fb3bcdfe9ce40b1357fedeff6f7a
++   entry #define   在 `index` 处为 `result` 的值
++   entry .sequence   替换了一个位置的 `Sequence`；序数超出范围时保持不变
++   entry .frozenArray   替换了一个位置的新冻结数组；需要 `dysasymptotics.linearSize`
++       需要元素的 `ClassTag`。
++       副本是新的，因此冻结它不需要证明。
++   entry .list   替换了一个位置的 `List`，会重建其前缀；需要 `dysasymptotics.linearAccess`
++   entry .indexedSeq   替换了一个位置的标准库 `IndexedSeq`
++   entry .map   把一个键设为某个值的 `Map`，键不存在时添加
++   entry .ledger   把一个键设为某个值的 `Ledger`；新键放在顺序的末尾
+
+@ 0 1 0 09b1733f577df5e013cddd2c3e19dec0
++ entry .Omissible   在索引或键处的写时复制删除：`Self is Omissible by Operand`
+
+% 1 1 0 109ad659ebde880d12c3bf92853203cf
+
+@ 0 7 0 003364045204c8790862cb7e7a1bf7ab
++       `define` 的逆操作，位于 rudiments 的 `xs.omit(index)` 背后。
++       它是一个独立的类型类，因为链式和顺序形状无法诚实地提供它：删除一个位置会使之后的每个索引移位，因此 `List` 和 `Sequence` 没有实例，`omit` 在它们上面无法编译。
++       冻结数组是例外，因为对它的每次编辑本来就会复制整个数组，所以删除一个槽位的代价与 `define` 相同；它以同样的 `dysasymptotics.linearSize` 设置门控。
++       超出范围的序数或不存在的键会原样返回该值。
+
+% 2 1 0 192b8e8f56ac0d7d04fcd39a125cb749
+
+% 3 1 0 03d5d2df901069c61ee651b7cc191408
+
+% 0 1 0 02df009b8cf2873d1a4e4512a194500d
+
+% 1 1 0 01ede67bf1b4b89801c6ff1cb56778f4
+
+% 1 1 0 12c2a55abd022c9615989858803446ff
+
+@ 0 4 0 049d1e27814128241c236939b83e915a
++   entry #omit   去掉 `index` 处元素后的值
++   entry .frozenArray   少一个槽位的新冻结数组；需要 `dysasymptotics.linearSize` 和一个 `ClassTag`
++   entry .map   去掉一个键的 `Map`
++   entry .ledger   去掉一个键的 `Ledger`，其余顺序保持不变
+
+@ 0 1 0 1ebc03d75389507711d806873ced8b28
++ entry .Terminable   可以读取最后一个元素的值：`Self is Terminable by Operand`
+
+% 1 1 0 17ea37a6f21a29530a86a38cd049dd07
+
+@ 0 4 0 14b98afa9ede53040ef606b906912dde
++       值的末端，位于 rudiments 的 `xs.last` 背后（它对空值返回 `Unset`，对类型为 `& Populated` 的值返回裸元素）。
++       它是与 `Truncable` 分开的类型类，因为两者的代价不同：数组的最后一个元素只需一次读取，而去掉它则要复制数组。
++       凡是 `last` 不只是窥视之处，它都受门控。
+
+% 2 1 0 0781c3b645adfa2904085848a7a0ef8a
+
+% 3 1 0 135bf61a7d38483a19b6b39b51a901ba
+
+% 0 1 0 022d64aa09c2d11b1697422e0549bd52
+
+% 0 1 0 0a7c92c53206b3ff115b10a5892ac91b
+
+% 1 1 0 007ca953fe9d1eae138ccd627871c947
+
+@ 0 4 0 164efab1e722e9311962933231d123d8
++       实例：`Sequence`、冻结数组及其 `Sized` 形式、`Text`（按 `Char`）和标准库的 `IndexedSeq`，O(1)；`List` 的实例位于 `dysasymptotics.linearSize` 之后，因为它要走到末尾；`Chain` 的实例位于 `dysasymptotics.unboundedSize` 之后，因为它会强制求值整个流。
+
+% 0 1 0 0246b2f72ae5a40e1d2c6df7e219bbaf
+
+@ 0 8 0 096464723a11ad681730838c839addbe
++   entry #last   非空值的最后一个元素
++   entry .sequence   `Sequence` 的最后一个元素，O(1)
++   entry .frozenArray   冻结数组的最后一个槽位，O(1)
++   entry .sizedFrozenArray   `Sized[length]` 冻结数组的最后一个槽位，由其自己的实例提供
++   entry .text   `Text` 的最后一个 `Char`
++   entry .indexedSeq   标准库 `IndexedSeq` 的最后一个元素
++   entry .list   `List` 的最后一个元素，通过走到末尾得到；需要 `dysasymptotics.linearSize`
++   entry .chain   `Chain` 的最后一个元素，通过强制求值到末尾得到；需要 `dysasymptotics.unboundedSize`
+
+@ 0 1 0 0dd865f278fb29521fe23852c9e9040d
++ entry .Truncable   可以去掉最后一个元素的值：`Self is Truncable to Result`
+
+% 1 1 0 1fbd01058c5220321b16840c809e0f4a
+
+@ 0 4 0 006c0e96adb8f3541e830a6cf1c6216b
++       `last` 的补，位于 rudiments 的 `xs.lead` 背后：除最后一个元素之外的一切，因此 `lead` 加上 `last` 就是整个值。
++       `Result` 是一个普通类型而不是 `Self`，因为去掉一个元素可能使值变空，而 `& Populated` 品牌不能保留下来。
+
+% 2 1 0 174271e1b1f712031548881cf4184ed0
+
+% 3 1 0 022339e09c5443961f53818fe34db71f
+
+% 0 1 0 11834529ba72d02e13e9e21ca51ef1bc
+
+% 0 1 0 043bf8b3cc9ae57b16682c1b008f2887
+
+% 1 1 0 1389b6d2508c0b33067bc78db91c5086
+
+@ 0 3 0 1fdb20d4a7cfb74e04b8d937118744b0
++       实例：`Sequence`（均摊 O(1)）、`Text` 和标准库的 `IndexedSeq`，不受门控；`List` 和冻结数组位于 `dysasymptotics.linearSize` 之后，因为它们各自都要复制整个结构；`Chain` 位于 `dysasymptotics.unboundedSize` 之后。
+
+% 0 1 0 0a14733a9edca07804241eb55245d180
+
+@ 0 8 0 09c53a65c2aeaa6006019970eee8e07d
++   entry #lead   去掉最后一个元素后的值
++   entry .sequence   去掉最后一个元素的 `Sequence`，均摊 O(1)
++   entry .text   去掉最后一个 `Char` 的 `Text`
++   entry .indexedSeq   去掉最后一个元素的标准库 `IndexedSeq`
++   entry .list   去掉最后一个元素的 `List`，会复制其主干；需要 `dysasymptotics.linearSize`
++   entry .frozenArray   少一个槽位的新冻结数组；需要 `dysasymptotics.linearSize` 和一个 `ClassTag`
++       空数组截断后仍为空数组。
++   entry .chain   去掉最后一个元素的 `Chain`；需要 `dysasymptotics.unboundedSize`

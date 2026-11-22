@@ -1,0 +1,260 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 17ce6dd5de3773731bddabb274f25ef1
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 01a13deee3ab393f0b4a3b3fb331e59c
++ info   一个在编译时为 given、测试套件和测试建立索引的编译器插件，供工具日后查找
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 164616ab90af759711b6212bfea12955
++     _Beneficence_ 是一个 Scala 3 编译器插件，附带一小部分运行时代码。
++     每个模块编译时，插件遍历类型化的树，并向模块的输出目录写入三个索引，这样工具日后无需加载或运行任何内容，就能得知一个类路径提供了什么：
+
+@ 0 11 0 1e0d7e0fe1d394880e4a114440339458
++     - `META-INF/givens/<typeclass>`——每个 `Findable` 类型的具名 given，按程序员导入它时所用的完全限定名称记录。`frontier` 库在解释缺失的上下文值时会（通过 `givens`）读取这个索引，以建议能够提供该值的 given，例如为缺失的 `System` 建议 `systems.javaBaseSystem`。
++     - `META-INF/services/probably.Suite`——每个 `probably.Suite` 对象，采用标准的 `ServiceLoader` 布局。套件没有主类：fume 测试运行器仅凭这个索引发现套件，因此不使用该插件编译的测试模块没有可运行的测试。
++     - `META-INF/probably/tests/<source>-<hash>`——每个源文件一个文件，列出每个测试、测试组和套件，及其在层级中的位置、种类、别名、标签和行号，这样运行器无需运行套件就能列出和选择测试。
+
+@ 0 1 0 13d32ba7caccf15701bca3230e2de867
++     一个类型通过扩展 `Findable` 参与 given 索引：
+
+% 2 1 0 1ba2836ac564cfd61c93a4ec9eb07d58
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 1e02286af3c0250a00297434acd2e40d
+
+% 0 1 0 055395efa336d90506acb78519d15f05
+
+% 0 1 0 055ea710e1e1b1b7082beeed05137e76
+
+% 0 1 0 0efc6cea83328dfe012c6ecbb9f67b1f
+
+% 1 1 0 00682fd81fe6065f082577d6ccbc25f5
+
+@ 0 2 0 077d8eea7032b6331f0655fda3b73844
++     使用该插件编译时，这会把 `renderers.plainRenderer` 写入 `META-INF/givens/Renderer`，位于一行指明其来源文件的 `# source:` 之下。
+
+@ 0 7 0 19537c386c656be614b927d611f257ce
++     插件通过指向 `beneficence.plugin` jar 的 `-Xplugin:` 启用，除非 `beneficence.Findable` 位于编译的类路径上，否则它什么也不做。
++     它只写入目录形式的输出；直接编译为 JAR 时不写入任何索引。
++     编译对增量编译是安全的：由正在重新编译的源文件贡献的条目会被替换，其他所有源文件的条目则被保留，而且每个文件都先写入其旁边一个唯一的临时文件，再以原子方式移动到位，因此并发地编译到同一目录中的多次编译不会相互破坏。
+
+@ 0 3 0 04f40904be8db8611da633857564511f
++     由于每个模块写入每个索引中属于它自己的片段，把多个模块合并为一个 JAR 的构建（assembly、fat jar）必须拼接 `META-INF/givens/`、`META-INF/services/` 和 `META-INF/probably/` 下的文件，而不是只保留其中一个。
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     这个库有两个组件：
+
+@ 0 5 0 0d8d409e1878683b12346a3a5cd41282
++     - `beneficence.core`——`Findable` 和 `givens` 查找，几乎每个 Soundness 库都依赖它。导出到 `soundness` 总括包。
++     - `beneficence.plugin`——`BeneficencePlugin` 及其阶段，针对编译器构建，并作为独立的制品发布，因为一个 `-Xplugin:` jar 恰好声明一个插件。
+
+% 0 1 0 0d1e1293c0f484560e6c09d2a0704e43
+
+% 0 1 0 1f163f1f18d047531b0c3e039aed5092
+
+% 0 1 0 152e77a6c4f4f6450203edc7b547674c
+
+@ 0 1 0 1b82343d5dc2225502afd3c304e54213
++ entry .Findable   标记一个类型，其具名 given 会被记录在 `META-INF/givens` 索引中
+
+% 1 1 0 1112cd08c86005f61337c75d31119105
+
+@ 0 6 0 1941cb9fbc53472b0b1bc963acf5ac48
++       `Findable` 是一个空的标记特质。
++       类型的基类中含有 `Findable` 的 `given`，会被 beneficence 插件记录在 `META-INF/givens/<typeclass>` 下，其中类型类是该 given 的第一个真正的基类：对于 `given javaBaseSystem: System`，文件是 `META-INF/givens/ambience.System`，行是 `ambience.systems.javaBaseSystem`。
++       带有细化体的 given（`given puck: T: …`）由编译器实现为一个单独的类，它被记录在 `T` 之下。
+
+@ 0 1 0 017b61ef16ff3b1a013538d5094f8fcb
++       随着声明的变化，插件所记录的内容：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0b22bee2fda1bd370dd8e3fdbd920c93
++         label 普通特质：不记录任何内容
+
+% 1 1 0 03e897c4528b77c30bed803fc3e66695
+
+% 0 1 0 02c215b05dd756770a79fbf36090cb53
+
+% 1 1 0 126933c6f538104d15dab1270095001d
+
+% 3 1 0 1009a52b5439023608d71b134808f736
+
+% 4 1 0 0f03d28f0eac691415b55f372bf6e2ff
+
+% 5 1 0 1ce1cad46ea882351f2d779dbe0e6b8f
+
+% 6 1 0 16f8b90f8bdd7c651acfbe6a45d5c638
+
+@ 0 1 0 0b247098c05502a20677b2f3c3e2f428
++         label 扩展 Findable：`dialects.ansiDialect` 被写入 META-INF/givens/Dialect
+
+% 1 1 0 04214016c1349ec31a166f6ba242c1e1
+
+% 2 1 0 0057b2b1bed2e2111bf11fc3095d0c5c
+
+% 3 1 0 1377c9f8d90f979a17790504417136ab
+
+% 3 1 0 1d11306c0c1ab2f6080eae67cab3f62b
+
+% 4 1 0 1479e0b48df865631325b3c4230d474b
+
+% 5 1 0 12efd14edb82022112f034422a200221
+
+% 6 1 0 09fd5c97eafd046115ebe6192b037af7
+
+@ 0 1 0 144db3b3a1101b5617168bbbd3f5c4bb
++         label 类中的 given 无法导入，因此不被记录
+
+% 1 1 0 0cebea128d9683d11fd899414b9521ef
+
+% 2 1 0 0c5ff96a61810b460064e1298c565d56
+
+% 3 1 0 0afc1735bdd775210ff93a3300a7544e
+
+% 0 1 0 07e4e070a805fd440f40f740f1a194fd
+
+% 1 1 0 14929716d901f05e0b99bac072363ecb
+
+% 2 1 0 037f6ef91a56357f0eec26c2bcec0c0a
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 6 0 1edeb576be638d9a06ec8dd80275c02a
++       只记录普通的 `import` 能够到达的 given：每个外围作用域都必须是包或对象。
++       类、特质或方法体中的 given 会被跳过，匿名 given 也是如此，因为它没有可供导入的名称。
++       许多 Soundness 上下文都是 `Findable`（`System`、`Clock`、`Random`、`Timezone`、`Environment`、`Serializable`、`Deserializable`……），正因如此，缺少其中某一个时的编译错误才能建议提供它的导入。
+
+% 0 1 0 05d1090f77b738141f38f8bd85f66b62
+
+@ 0 7 0 07998e1c3a5dc1a814943ec9157d671a
++ entry .givens   编译器类路径上为某个类型类记录的 given，供宏使用
++     `givens(typeRepr)` 是一个宏展开时的查找：给定 `Quotes` 上下文中的一个 `TypeRepr`，它读取宏自身类加载器的类路径上的每个 `META-INF/givens/<typeclass>` 资源（文件名由去别名后类型的类决定），跳过空行和 `#` 注释，去除重复项，并把每个完全限定名称解析为该 given 的 `Symbol`，即其所属对象或类的一个方法或字段。
++     不再能解析的名称会被悄悄丢弃，没有类符号的类型给出 `Nil`。
+
+% 2 1 0 0a0362e75b01ff1f11cb73c82479e5c0
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 1 1 0 03683557f751aba6066aa7200860680a
+
+% 0 1 0 0722b7ad7eeb5eb608ce2a35db51be12
+
+% 0 1 0 0d1371cb9127a4db0b4b8071b6c7c3d9
+
+% 0 1 0 1ac5afcf3b11c11b04c7a84dec0656a0
+
+% 1 1 0 0791f32dd3968cf50e2c732b3a08e7eb
+
+@ 0 3 0 0eae0ca7c9a0d605111ed4daed8924c6
++     结果是由 `quotes.reflect.Symbol` 组成的 stdlib `List`，因为它只被宏代码使用。
++     `frontier` 用它来建议能够满足缺失上下文参数的 given。
+
+@ 0 1 0 0ce38bb8dbf72cc81e5db8c379fd4d7a
++ entry .internal   `givens` 背后的类路径读取器
+
+% 1 1 0 030b78ab957466920386b1f7d058de82
+
+% 2 1 0 19bd283e6ee7d9681329c3ca1f511f52
+
+@ 0 2 0 02a176c8d67faa3006026c595a154328
++       不供直接使用：`givens` 委托给它。
++   entry .givens   读取并解析某个类型的 `META-INF/givens` 条目；参见 `beneficence.givens`
+
+@ 0 1 0 1d60c13ce82abe4a06d650bf901da23c
++ entry .BeneficencePlugin   写入 given、套件和测试索引的编译器插件
+
+% 1 1 0 029fa8236c33160815a4727de70f40f3
+
+@ 0 5 0 08fc07d985656e8d0ec4b8b6377ba1ba
++       名为 `beneficence` 的 `StandardPlugin`，它安装一个阶段 `GivensPhase`。
++       通过以 `-Xplugin:<path to the jar>` 的形式把 `beneficence.plugin` jar 传给编译器来启用它，它不接受任何选项。
++       插件只向目录形式的输出写入索引，并且只在 `beneficence.Findable` 位于类路径上时记录 given；只有在 `probably.Suite`（以及 `probably.Testable`）位于类路径上时，才为套件和测试建立索引。
+
+% 0 1 0 1fc086a56d77b8e1066428b52cc00c5e
+
+@ 0 1 0 1898b7dc8aa31aea035e2e77082bbf0e
++   entry #name   插件的名称：`beneficence`
+
+@ 0 1 0 1d7cd6ffb4748af8030a2ad5c0dcf901
++ entry .GivensPhase   收集 given、套件和测试并写入其索引的插件阶段
+
+% 1 1 0 01051d0d42cbebd31fde0d82c03a1542
+
+@ 0 2 0 1a76feb8273541580a0f82a30880b3ec
++       在 `typer` 之后、`pickler` 之前运行，一次处理一轮编译的所有编译单元。
++       它记录：
+
+@ 0 4 0 11807bc52c6be9f71376e96651105dcc
++       - 每个可稳定访问的、`Findable` 类型的具名 given，记录在其类型类之下；
++       - 每个扩展 `probably.Suite` 的顶层或嵌套在对象中的 `object`，记录到 `META-INF/services/probably.Suite`；
++       - 每个源文件的测试，通过 `TestsIndex` 记录到 `META-INF/probably/tests`。
+
+@ 0 7 0 16e48c92a07c7c5610ab98347130ce75
++       然后它用 `GivensWriter` 把找到的内容合并到输出目录中。
++       在为测试建立索引时，该阶段还可能报告两个编译错误：对于 `Topic` 不是这种标识符的套件，报告 _the suite id "…" must be a letter or `_` followed by letters, digits, `_` or `-`, so that it can be typed on a command line_；对于接受一个 `Topic` 不固定的 `Testable` 的方法，报告 _this Testable has no topic, so a test declared in this method would not be declared for it_（应写 `Testable of "<suite>"`，或者对于类型参数 `topic <: Label` 写 `Testable of topic`）。
+
+% 0 1 0 1a96ad76e95a860f01f60bf3f59d7a99
+
+% 0 1 0 17bed36861bb978a0cd69d58a2cf0b1f
+
+@ 0 1 0 1110d9c12a487a850beb620616068f84
++   entry #phaseName   阶段的名称：`beneficenceGivens`
+
+@ 0 1 0 02d5d4d6bd360b911a512a74b0b2514a
++ entry .Entry   一个被记录的名称，以及声明它的源文件
+
+% 1 1 0 0d698321c1e27c3a1ebd25b7a94d8d49
+
+% 2 1 0 123bdedc5056d7b20745fd22f68a8c2a
+
+@ 0 4 0 0321f6897eb8451e0352e3475caa850d
++       插件的工作记录，在合并索引时按源文件分组。
++       不供直接使用。
++   entry #fqn          given 或套件的完全限定名称
++   entry #sourceFile   声明它的源文件的路径
+
+@ 0 1 0 0fae77d68ab3274a0794f40541d5b943
++ entry .GivensWriter   把插件收集到的条目合并到输出目录的索引文件中
+
+% 1 1 0 113881db28822ad7136834e971719b3e
+
+% 2 1 0 172a23dffaa3d8601910037ced86fa3d
+
+@ 0 12 0 1cba37f38b95b6161a03df2888455df5
++       不供直接使用。
++       每个索引文件是一系列块，每个源文件一个块，每块以 `# source: <path>` 开头，后跟每行一个完全限定名称。
++       合并时丢弃正在重新编译的源文件的块，按原有顺序保留其他块，并追加新块，然后在目标旁边写入一个唯一的临时文件，再以原子方式把它移动到位。
++       输出为 JAR 时，不写入任何内容。
++   entry .merge         把收集到的 given 合并到 `META-INF/givens/<typeclass>`，每个类型类一个文件
++   entry .mergeSuites   把收集到的套件合并到 `META-INF/services/probably.Suite`
++       当编译没有发现任何套件时完全跳过，保留之前的文件不变。
++   entry .writeTests    把每个源文件的测试索引写入 `META-INF/probably/tests`
++       每个源文件一个文件，以源文件的文件名及其路径的 SHA-256 的前六个字节命名，因此一个 assembly 中不会有两个模块写入同一个文件。
++       现在不再声明任何测试的源文件，其文件会被删除。
+
+@ 0 1 0 1d6caede2b3985a31118cf4f7e09e8c3
++ entry .TestsIndex   插件为每个源文件写入的 Probably 测试静态索引
+
+% 1 1 0 1818a2a62282b3ca0c68779b89f5f788
+
+% 2 1 0 0317566158046d9b0b6d2eb93698dd74
+
+@ 0 10 0 0e7053813c4f56091311d23dc6c1c786
++       不供直接使用；该格式由 fume 等测试运行器读取。
++       每个文件以 `# probably tests <version>` 和 `# source: <path>` 开头，后跟六种以制表符分隔的行——`suite`、`group`、`test`、`nest`、`call` 和 `open`——它们按编译器为每个测试声明选择的 `probably.Testable`，而不是按其在源文件中的位置，把测试声明放入其套件的层级中。
++       在 `impromptu` 代码块中声明的测试被排除在外，`open` 行标记该位置拥有的测试多于所列出的测试。
++       字段中的反斜杠、制表符和换行符用反斜杠转义，`\*` 代表名称中只有在运行时才知道的部分。
++   entry .version   索引格式的版本，写在每个文件的第一行
++   entry .index     一个编译单元的索引行

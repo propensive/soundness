@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 0658b673ccba045a15ce4b619cf4706c
++ # `↯/s.62.2` – Niezdefiniowana zmienna środowiskowa
+
+@ 0 2 0 0e27100ec70a50170f4134620683fc14
++ Zgłaszany, gdy zmienna środowiskowa wymagana przez program nie jest zdefiniowana w bieżącym
++ `Environment`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 1590558cc6e6e1fa0156dbcd3f304c79
++ Ambience wyszukuje zmienne środowiskowe przez klasę typów `Environment`. Jeśli wskazanej
++ zmiennej brakuje – tzn. `System.getenv` nie zwraca żadnej wartości – rzucany jest ten błąd.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 00e844a9ee6491b20e56a069f60839aa
+
+% 1 1 0 15e5024946dc9a9517fdc308a7eee7b5
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 0dfba71e9b58c75c153b5f6b3b44df4e
++ Należy ustawić zmienną środowiskową przed uruchomieniem programu albo podać wartość domyślną,
++ używając metod dostępu `Optional` zamiast ścisłych.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 07c043842a0778440f351038f505af2a
++ - Źródło: `lib/ambience/src/core/ambience.Environment.scala`

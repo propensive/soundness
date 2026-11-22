@@ -1,0 +1,144 @@
+orthant 2 language
+
+@ 0 6 0 18bde842eaafb6c2030a76a358be455a
++     Wszystko jest eksportowane do modułu zbiorczego `soundness` z wyjątkiem typów kolacji, a
++     pięć pakietów wyboru – `charsets`, `codepages`, `textSanitizers`, `textMetrics` i
++     `communication` – łączy się z własnymi pakietami modułu zbiorczego o tych nazwach.
++     Ponieważ `import soundness.*` nie importuje givens, program nazywa kodowanie, sanityzator
++     i metrykę, których chce: `import codepages.utf8Codepage`, `import
++     textSanitizers.strictSanitizer`, `import textMetrics.uniformMetric`.
+
+@ 0 23 0 1d873dff0e4308d807341aebad2d1951
++         `encoding`_. Zgłaszany przez `Tactic[Charset.Error]` przez
++         `textSanitizers.strictSanitizer` przy pierwszej sekwencji, której nie da się
++         zdekodować, i przez `textSanitizers.accrueSanitizer` przy każdej takiej (który
++         kontynuuje dekodowanie). Pozycja to przesunięcie bajtowe w wejściu, liczone przez
++         wszystkie porcje, gdy dekodowany jest strumień, a sekwencja pozostawiona niekompletna
++         na końcu wejścia jest zgłaszana na pozycji równej długości wejścia. Sanityzatory
++         pomijający i podstawiający nigdy go nie zgłaszają.
++     entry #position   przesunięcie bajtowe sekwencji, której nie da się zdekodować
++     entry #encoding   kodowanie, które nie potrafiło jej zdekodować
++   entry #encoding   kodowanie, które dekoduje ten charset
++   entry #sanitizer   sanityzator konsultowany przy każdej sekwencji bajtów, której nie da się zdekodować
++       `TextSanitizer`, który był w zasięgu, gdy charset został utworzony. Given z `charsets`
++       pobiera go z miejsca użycia, więc ten sam `charsets.utf8Charset` jest ścisły w jednym
++       bloku, a tolerancyjny w innym, zależnie od tego, który sanityzator jest tam
++       zaimportowany.
++   entry #Self   to, co produkuje ten charset: `Text`
++   entry #Form   to, co konsumuje ten charset: `Data`
++   entry #decoded   tekst z bajtów albo strumień tekstu ze strumienia bajtów
++       `decoded(bytes)` dekoduje całe `Data` jako jeden `Text`. `decoded(stream)` przyjmuje
++       `Chain[Data]` i daje `Chain[Text]`, dekodując każdą zawartość bufora w miarę jej
++       napływania i przenosząc niekompletną sekwencję wielobajtową do następnej porcji, więc
++       podział wejścia na porcje nigdy nie wpływa na tekst; puste porcje są pomijane w
++       wyjściu. Obie wersje konsultują `#sanitizer` przy każdej usterce, więc mogą zgłosić
++       `Charset.Error` przez jego taktykę przy `strictSanitizer` lub `accrueSanitizer`.
++       Przeciążenie z dwoma parametrami `decoded(bytes, omit)` działa tak samo jak
++       `decoded(bytes)`.
+
+@ 0 6 0 027a366880bc28e70fdf77d69d3c289f
++       Znak, którego kodowanie nie potrafi przedstawić, jest domyślnie zastępowany (znakiem
++       zastępczym kodowania, `?` dla ASCII). Przy `encodingSanitizers.strictEncodingSanitizer`
++       zamiast tego zgłasza `Codepage.Error`; decyduje `EncodingSanitizer` w zasięgu w miejscu,
++       gdzie codepage jest przywoływany. Kodowanie
++       strumienia jest przyrostowe i przeprowadza znaki przez bufor, więc para surogatów
++       rozdzielona między dwie porcje jest kodowana jako jeden znak astralny, podczas gdy
++       kodowanie każdej porcji osobno by ją uszkodziło.
+
+@ 0 20 0 0ccaf61ff7ef5bc905e5ba9b37da6bdb
++         Błąd `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_.
++         Typ błędu dla znaku spoza repertuaru kodowania. `Codepage#encoded` zgłasza go przy
++         `encodingSanitizers.strictEncodingSanitizer`; domyślnie znak, którego nie da się
++         odwzorować, jest zastępowany, tak jak zastępuje go `String#getBytes`.
++     entry #char   znak, którego nie dało się zakodować
++     entry #encoding   kodowanie, które nie potrafiło go zakodować
++   entry #encoding   kodowanie, którym koduje ten codepage, o którym wiadomo, że potrafi kodować
++       Typowane jako `Encoding { type CanEncode = true }`.
++   entry #sanitizer   `EncodingSanitizer` konsultowany przy każdym znaku, którego nie da się zakodować
++   entry #sanitized   ten sam codepage z innym `EncodingSanitizer`
++   entry #Self   to, co konsumuje ten codepage: `Text`
++   entry #Form   to, co produkuje ten codepage: `Data`
++   entry #encoded   bajty tekstu albo strumień bajtów ze strumienia tekstu
++       `encoded(text)` koduje cały `Text` jako jedno `Data`, przez `String#getBytes` z
++       rozwiązanym charsetem. `encoded(stream)` przyjmuje `Chain[Text]` i daje `Chain[Data]`,
++       kodując zawartość bufora po zawartości bufora: para surogatów, której połówki trafiają
++       do różnych porcji, jest przenoszona i kodowana w całości, kodowanie ze stanem jest
++       opróżniane raz na końcu, a puste porcje są pomijane w wyjściu. Niepoprawne wejście lub
++       wejście, którego nie da się odwzorować, jest zastępowane lub zgłaszane do `EncodingSanitizer` codepage'a, a ścisły sanityzator zgłasza
++       je jako `Codepage.Error`.
+
+@ 0 5 0 138fc8d8625833211edf37a0e1c0bbaf
++       O tym, w jakim kodowaniu odczytywane są bajty, decyduje given `Charset` w zasięgu, a
++       wybór nigdy nie jest niejawny: `import soundness.*` nie wprowadza żadnego z nich i
++       importuje się jeden z nazwy. Każdy rozwiązuje `TextSanitizer` w zasięgu w miejscu
++       użycia, więc ten sam `utf8Charset` jest ścisły tam, gdzie zaimportowano
++       `strictSanitizer`, a tolerancyjny tam, gdzie `skipSanitizer`.
+
+@ 0 9 0 1dda4ae744c35904149839a2db4da54c
++   entry .utf8Charset   UTF-8, z sanityzatorem w zasięgu
++   entry .utf16Charset   UTF-16, odczytujący znacznik kolejności bajtów i domyślnie big-endian, z sanityzatorem w zasięgu
++   entry .utf16LeCharset   UTF-16 little-endian, z sanityzatorem w zasięgu
++   entry .utf16BeCharset   UTF-16 big-endian, z sanityzatorem w zasięgu
++   entry .asciiCharset   US-ASCII, z sanityzatorem w zasięgu
++       Każdy bajt powyżej `0x7f` jest usterką, obsługiwaną tak, jak każe sanityzator.
++   entry .iso88591Charset   ISO-8859-1 (Latin-1), z sanityzatorem w zasięgu
++       Każdy bajt jest poprawnym znakiem Latin-1, więc sanityzator nigdy nie jest
++       konsultowany, ale jakiś musi być w zasięgu, tak jak dla pozostałych charsetów.
+
+@ 0 5 0 0c97b3626f1d4e1c1543be1670b76195
++   entry .utf16Codepage   UTF-16, zapisywany jako big-endian ze znacznikiem kolejności bajtów
++   entry .utf16LeCodepage   UTF-16 little-endian, bez znacznika kolejności bajtów
++   entry .utf16BeCodepage   UTF-16 big-endian, bez znacznika kolejności bajtów
++   entry .asciiCodepage   US-ASCII; znak powyżej `0x7f` jest zapisywany jako `?`
++   entry .iso88591Codepage   ISO-8859-1 (Latin-1); znak powyżej `0xff` jest zapisywany jako `?`
+
+@ 0 1 0 1bc692221253160f18d8f7ecab39c967
++ entry .encodingSanitizers   polityki dla znaków, których nie da się zakodować, każda jako given `EncodingSanitizer` do importu z nazwy
+
+% 1 1 0 1ab2e89e538479b9199f81ef40088bc0
+
+@ 0 4 0 055f70e00e9156cf02611047e6f9478c
++       `Codepage` konsultuje `EncodingSanitizer` w zasięgu w miejscu, gdzie jest przywoływany,
++       przy każdym znaku, którego jego kodowanie nie potrafi przedstawić. W odróżnieniu od
++       `TextSanitizer` jakiś jest zawsze dostępny: domyślny, w obiekcie towarzyszącym
++       `EncodingSanitizer`, po cichu podstawia znak zastępczy, więc import stąd jest potrzebny
++       tylko do zachowania ścisłości.
+
+% 2 1 0 0d265841fd66f0660ee65995c72b9c46
+
+% 3 1 0 06005ff627f1186c053afedd24b76537
+
+% 4 1 0 03853ef122c99fb50c5e2b25bfa3e36b
+
+% 0 1 0 0c7b755c69ee0d141ba010d0da8a937c
+
+% 0 1 0 0e6e5d8e1e031ce3087b20699ab0bd3f
+
+% 1 1 0 0c530ade344c65d91c67e27daf40aeaf
+
+% 0 1 0 0baccc87ced1e1611112b9893061fec9
+
+% 1 1 0 01ee8f0601beefb10a5954e97f18f3c5
+
+@ 0 2 0 18d3d243c215bd8109ed481526b17f43
++   entry .strictEncodingSanitizer   znak, którego nie da się zakodować, zgłasza `Codepage.Error`; wymaga `Tactic[Codepage.Error]`
++   entry .substituteEncodingSanitizer   znak, którego nie da się zakodować, jest zapisywany jako znak zastępczy kodowania: domyślny, z nazwy
+
+@ 0 1 0 068c32a217fbcc0805caabeb0770c513
++ entry .EncodingSanitizer   co `Codepage` robi ze znakiem, którego jego kodowanie nie potrafi przedstawić
+
+% 1 1 0 0eb394207208d7b719dec6109c4e1d5d
+
+@ 0 5 0 19d8ad7719c3f5bd16cde99f8119495b
++       Kodujący odpowiednik `TextSanitizer`. Codepage wywołuje `#unmappable` z każdym znakiem,
++       którego nie potrafi zakodować; jeśli wywołanie powróci, w miejscu znaku zapisywany jest
++       znak zastępczy kodowania. Instancja, której `#substitutes` to `true`, nigdy nie jest
++       wywoływana, a podstawianie pozostawia się koderowi JDK – to szybka ścieżka, którą
++       wybiera domyślna instancja.
+
+% 0 1 0 14ea65ce9236353e0f565d84047c5f16
+
+@ 0 3 0 0f10f4f4f142417a1415e654ec1b327e
++   entry .substitute   domyślny: podstawia po cichu
++   entry #substitutes   czy znaki, których nie da się zakodować, są zastępowane bez wywoływania `#unmappable`
++   entry #unmappable   wywoływany z każdym znakiem, którego nie da się zakodować, oraz z kodowaniem

@@ -1,0 +1,84 @@
+orthant 2 language
+
+@ 0 1 0 1e03424cfee6a5cf08bc0919fa79db82
++ # `↯/s.73.3` – `Moment.Error`
+
+@ 0 1 0 0f55c16ef5a9281103adce6e91156496
++ Zgłaszany, gdy Aviation nie może ustalić wartości daty i czasu cywilnego.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 5 0 1e4dae32af3d4f640260bed6fd9669a2
++ `Moment` to data, godzina zegarowa i strefa czasowa razem, a ten błąd zgłasza każda operacja,
++ która go buduje: parsowanie tekstu według formatu, konstruowanie daty w kalendarzu, nazywanie
++ miesiąca i sprowadzanie czasu zegara ściennego na oś czasu jako chwili. Komunikat to
++ `the date was not valid because $reason`.
+
+@ 0 2 0 0c28884dd517f3511d3babbcff4b8dc5
++ Czasy trwania nie są momentami, więc czas trwania, którego nie da się sparsować, zgłasza
++ `Timespan.Error` (`↯/s.73.4`), a nie wariant tego błędu.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 143decb5d8cc66890779b58410619d72
++ ### `↯/s.73.3.1` – `Format`
+
+@ 0 1 0 0b74023595698ef507d92bb3715b1235
++ Dane wejściowe nie pasowały do parsowanego formatu daty.
+
+@ 0 1 0 098ec7ddd50b42b90e3c4e045d72cab1
++ **Przykład.** `[↯/s.73.3.1] the date was not valid because 2026-13-01 does not conform to format ISO-8601 (... at ...)`
+
+@ 0 2 0 04af7532ec28053f1e3bc157b88a5aba
++ **Rozwiązanie.** Przekazać dane wejściowe pasujące do formatu albo wybrać format pasujący do
++ danych wejściowych.
+
+@ 0 1 0 0b4e9a2038dc3da21a4524c6a7d9a879
++ ### `↯/s.73.3.2` – `Invalid`
+
+@ 0 2 0 1b6c61492ff8e2bb085d50387423eb84
++ Składniki liczbowe tworzą datę, która nie istnieje w wybranym kalendarzu (np. 30 lutego w
++ kalendarzu gregoriańskim).
+
+@ 0 1 0 1415c8f0c512f5921492ade0795defb8
++ **Przykład.** `[↯/s.73.3.2] the date was not valid because 2026-2-30 does not exist in the calendar Gregorian`
+
+@ 0 1 0 0acd84d63fc4d9f308f8f3d1a00cfb8f
++ **Rozwiązanie.** Poprawić dzień, miesiąc lub rok na poprawną kombinację.
+
+@ 0 1 0 0bca2e34a8a39f8008f1425a53345f8e
++ ### `↯/s.73.3.3` – `Unknown`
+
+@ 0 2 0 0e379201f30fe08e1d1c370907ced669
++ Wartość tekstowa nie nazywała rozpoznawanego rodzaju elementu daty (np. nazwy dnia, nazwy
++ miesiąca).
+
+@ 0 1 0 1a759dca434c61e1015f311f01c39e39
++ **Przykład.** `[↯/s.73.3.3] the date was not valid because Ides is not a recognized weekday`
+
+@ 0 1 0 1f607ab27ef2f8b80436f03c8ead87d6
++ **Rozwiązanie.** Użyć jednej z udokumentowanych nazw dla danego rodzaju.
+
+@ 0 1 0 0f020800e09f0ad714b154d2f49a6dc4
++ ### `↯/s.73.3.4` – `Gap`
+
+@ 0 1 0 1f9ed17356246401118f542cf66ecb80
++ Czas zegara ściennego nazywa chwilę, która nie istnieje, ponieważ zegary przesunięto do przodu
++ ponad nią.
+
+@ 0 1 0 0110e99a46dce5bb13b995609521d77f
++ **Przykład.** `[↯/s.73.3.4] the date was not valid because the wall-clock time does not exist in its timezone (a spring-forward DST gap)`
+
+@ 0 1 0 13fa12e77d33d62a1395dc3b180aec80
++ **Rozwiązanie.** Wybrać `GapPolicy`: domyślna przesuwa czas do przodu za lukę, a inne
++ przesuwają go wstecz albo zgłaszają ten błąd. Należy zaimportować politykę odpowiednią dla
++ aplikacji.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 12f3589d8cbf62051ed41b4b1420c332
++ - Źródło: `lib/aviation/src/core/aviation.Moment.scala`
++ - Powiązane: `↯/s.73.4` (`Timespan.Error`)

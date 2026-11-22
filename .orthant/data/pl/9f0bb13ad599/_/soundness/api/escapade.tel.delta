@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 1b246355a8128b7e045abd8d6c854057
++     entry .BrightWhite   SGR 97
++   entry .background   szesnaście kolorów tła, SGR 40–47 i 100–107, każdy resetowany przez SGR 49

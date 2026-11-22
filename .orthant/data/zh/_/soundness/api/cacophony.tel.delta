@@ -1,0 +1,753 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0fcb99d21a940cb6118d872a3ad61432
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 08e8215a62763f6a0ffdb4232f803df6
++ info   以带类型的不可变 PCM 值表示音频：读写 WAV、AIFF、AIFC、AU 和 SND；从设备录音、向设备播放
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 14e15a932c0c8546148740d39bf60039
++     _Cacophony_ 以带类型的值读写音频，从机器的输入录音，并通过其输出播放。
++     读取 WAV、AIFF、AIFC、AU 或 SND 文件会得到一个 `Audio`——一个不可变的 PCM 样本块，它知道自己的采样率（一个真正以赫兹为单位的量）、声道数、位深以及它所持有的每个样本——而文件格式体现在类型中：`Audio in Wave` 与 `Audio in Aiff` 不同，二者之间的转换是 `to[Aiff]`，音频值编码后的字节以 `Data` 的形式从中读出，所用的 `read` 与任何其他来源相同。
+
+% 2 1 0 0e3680c87ea1bd121d192dab07c24fa7
+
+% 3 1 0 12ea840c9ef7c3ac1f700a107ee2824e
+
+% 4 1 0 116671e4be77eb690da3c30c7c521bc5
+
+% 0 1 0 1ed027e852a54088071e3dbc93cd640e
+
+% 1 1 0 07bc271aa800be5216353ae2a362b35e
+
+% 2 1 0 107364b6d342526d135c52b3256ae2ec
+
+% 0 1 0 00a33526333526991eb14ecc5a1e6f9f
+
+% 0 1 0 16b9838ed2ac40ed0250d7676c67d52b
+
+% 0 1 0 18541d770fa4f4dd1595f9978b3953dd
+
+% 0 1 0 17142d159bea29cf07cd8c2d0bf488e8
+
+% 0 1 0 0f9193b8fcc30b1b078ad783597a0a35
+
+% 0 1 0 1fac60acbb3be05507c611da6c6bf141
+
+% 0 1 0 0a62a232130cdd8f09791ba7291c2187
+
+% 0 1 0 146ed6025a96ed7602b72bbb0c4908d0
+
+% 0 1 0 021efc2d44b23dc90400748a2b779c82
+
+% 1 1 0 0f495c99dc0768fd067c2be94417f207
+
+@ 0 7 0 0fd153e22c4533860fe1ea439175a4ad
++     从底层看，未压缩的音频是一个以固定速率播放的数字网格，各种格式的区别更多在于头部而非实质；Java 的声音库通过可变对象和无类型的格式暴露它，声道数错了就表现为噪音。
++     在这里，格式是一个 `Audible` 类型类实例（`Wave`、`Aiff`、`Aifc`、`Au`、`Snd`），声道布局是一个可选的 `ChannelLayout`，以 `across Stereo` 或 `across Surround[6]` 的形式带在类型中，而尚不是 PCM 的音频在读取时会被转换为 16 位有符号 PCM，因此每个 `Audio` 都有相同的内部形式。
+
+@ 0 1 0 0d9fa578cb7220d219b15242df0766f8
++     观察一个音频值如何在流水线中移动，可以看出各部分是如何连接的：
+
+% 2 1 0 18eb9110b481d71211f7f3e7b98eab1d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 18562670bae2508f05fc8ae875a9ee5b
++       label 指明格式后，字节变成音频值
+
+% 1 1 0 0b11c62ee06d4686021e5ed98cd5c0d4
+
+% 2 1 0 0e45c721aa1b94a300c58c435a8e592a
+
+% 1 1 0 14d4bc26671c934208af0fe55e6371f8
+
+@ 0 1 0 093dba8d827bd41719f314675595073d
++       label 以另一种格式重新表达，样本不变
+
+% 1 1 0 0974ff694f75d97205beda13540584a3
+
+% 2 1 0 1d4adf4ae390996306927216436ae369
+
+% 3 1 0 08a2efaadd5181730050f1a25ea7bd64
+
+% 0 1 0 0c6152412151b98506fb4a55b42e497e
+
+% 1 1 0 010190561c388f340409b374e4a4358c
+
+@ 0 1 0 153d16024695a9a3163e2d14c7bf0001
++       label 音频值可读作其编码后的字节
+
+% 1 1 0 0ff2f3f4a499e90e1a9026a56d25f44c
+
+% 2 1 0 021eb3cb31cbee8a108dd71270c7df25
+
+% 3 1 0 1e17bc086a841f32007c7a8bd186893c
+
+% 4 1 0 18c82db5c3aacb2713ef888127cb5711
+
+% 1 1 0 1990e87054bfecfd03c74bf58cec36cd
+
+@ 0 1 0 15df879f97324ef00ec8047c428332cc
++       label 这些字节又可按该格式读回为音频
+
+% 1 1 0 0b0cd132b1e883411e924384415c3398
+
+% 2 1 0 017fa662013ff9ee0c182d7f1c39d0a1
+
+% 3 1 0 048776f4592b295911c25d886198d3ce
+
+% 4 1 0 08a6ab957e50f9450e32ffed41739854
+
+% 0 1 0 1c9e00c50826eb3c05b1b97965f92ef4
+
+% 1 1 0 1cff3193f46fd0391fdcf406f72701ac
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 8 0 17b3bd77590b1b9a1816390c7a444835
++     设备是 `Audio.Feed`（输入，由 `Audio.Feed.list` 列出）和 `Audio.Outlet`（输出，由 `Audio.Outlet.list` 列出），每个都是一个 `Audio.Device`，具有名称、厂商、描述以及它所提供的 `configurations`。
++     `Audio.Feed#record` 和 `Audio.Outlet#play` 在程序需要的时间内一直占用设备，返回一个 `Recording` 或 `Playback`；对于恰好在一个块内占用的设备，可以像打开文件那样用 `Pcm` 形式*打开*一条线路——`feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` 和 `outlet.open[Pcm](Write)`——并在块结束时释放，播放受 `Write` 授权的限制，因此拒绝向采集线路播放的是编译器，而不是驱动程序。
+
+@ 0 6 0 19bae215314e585008def4932c1c34a2
++     读取通过作用域中的 `Tactic` 抛出 `Audio.Error`；录音抛出 `Audio.Feed.Error`，播放抛出 `Audio.Outlet.Error`。
++     该库只有一个源集 `cacophony.core`，用于 JVM，基于 `javax.sound.sampled`；在 macOS 上，JVM 必须已获得麦克风权限，否则不会列出任何输入设备。
++     除 `Audio.Device` 外，所有内容都导出到 `soundness` 总括包；`Audio.Device` 是 `Audio.Feed` 和 `Audio.Outlet` 共同的父类型，通过 `cacophony.Device` 访问。
+
+% 0 1 0 06345c2b4e037c1b1cda2e2a0d1e52aa
+
+% 0 1 0 18eeff539dff79ca1d989456cbd700dc
+
+% 0 1 0 18e3d8c484a92dc50fceef6143b9f1e1
+
+% 0 1 0 12ae337614b0fb9f04540ba7e335f755
+
+% 0 1 0 1d9604d0ae9ae2f01769f58413265140
+
+@ 0 1 0 1d33018ec3005f5c15d1399e8652439a
++ entry .Audio   不可变的 PCM 样本块，知道自己的采样率、声道、位深和每个样本
+
+% 1 1 0 07de46431be0bb9f1a9efe7fffbf8aa0
+
+@ 0 7 0 1df32558576e5fb21e3679c227c0ad12
++       `Audio` 是纯的、不可变的：它的样本是一个冻结数组，因此一个值可以自由共享。
++       它的 `Form` 类型成员是读取它时所用的、或它被转换成的文件格式（`Audio in Wave`），它的 `Domain` 是声道布局（如果已知的话，`Audio across Stereo`）；普通的 `Audio` 两者都没有。
++       它通过读取字节得到——通过 `.aggregable` 的 `data.read[Audio in Wave]`，或在需要检测格式时通过 `.aggregable2` 的 `data.read[Audio]`——或者用 `Audio[Wave](format, samples)` 从样本构建。
+
+% 2 1 0 16e285bd263f74af0a19a57926e504a7
+
+% 3 1 0 021fcfe487757cf00171195c9066820c
+
+% 4 1 0 118f61cacecd0ac30a076fe5eb87d151
+
+% 4 1 0 1202d6305c9f2d3819a053895dfe589d
+
+% 5 1 0 0af187d59970fd3b0dff321fc81c48e9
+
+% 1 1 0 07776dcb9a46318e12af56213247943a
+
+% 0 1 0 1057617750f807d30d6d0cc4175a710d
+
+% 0 1 0 06381bbfab2d901f1f4d31fb1b60ece9
+
+% 0 1 0 0104e5452296b8cb1408f0cc4bec716c
+
+% 0 1 0 1c8b8206809f985b0f6c11d441cd632d
+
+% 1 1 0 135661f88deef4c50f56c52466ff312b
+
+@ 0 5 0 0a0f642b53bb181200629bcfef237dbc
++       尚不是有符号或无符号 PCM 的音频（例如 AU 文件中的 µ-law）在读取时会被转换为 16 位有符号 PCM，因此 `#apply` 索引的总是普通样本。
++       `Audio in form` 是 `Streamable`（`.streamable`），因此可以读作 `Data`，并直接写入文件句柄；它还是 `Abstractable`，可作为带有该格式媒体类型的 HTTP 响应正文（`.abstractable`）。
++       `#to` 用另一种格式重新表达它。
+
+% 0 1 0 19f0a58581289f131a6a7261646cf529
+
+% 1 1 0 0f5e5cd02504e9c7038d6d0543005434
+
+% 0 1 0 0d59affbc0d3bab91ddf6accf995bc6a
+
+@ 0 5 0 01f8681bac8822e11bc64a69c16d8e6b
++   entry .apply   从任意字节来源读取音频并检测格式，或从格式和样本构建音频
++       对于任何 `Streamable by Data over Credit` 来源，`Audio(source)` 让 `javax.sound.sampled` 检测文件格式，若编码不是 PCM 则转换为 16 位有符号 PCM，并返回一个没有 `Form` 的普通 `Audio`；若这些字节不是 JVM 所知任何格式的音频，则抛出 `Audio.Error(Unset)`。
+
+@ 0 4 0 1b9231942c76f6391986c988ac162485
++       `Audio[form](format: javax.sound.sampled.AudioFormat, data: Array[Byte]^{})` 从原始 PCM 样本和描述它们的 Java 格式构建一个 `Audio in form`，用于程序中生成的音频。
++       样本必须是一个冻结数组：对独占数组调用 `Array.freeze`，或用 `Array.tabulate` 构建。
+
+% 2 1 0 16d64694c77469be0fdce4cf03273244
+
+% 3 1 0 06fda8a7f5e7bf060c62024b682c04c4
+
+% 4 1 0 1f638737ce190f900db244e71d9fdcd0
+
+% 0 1 0 1b740aac1b6dda22149e7d1dbe832f69
+
+% 0 1 0 01b69c59475684111eba4f18481ef196
+
+% 0 1 0 09d316738321b71e0c38a32048ef3a52
+
+% 0 1 0 10b522de70a160e718e0850d4e99c8dc
+
+% 0 1 0 1f9a25f68beaf5a80a53c6c0fa6d042b
+
+% 0 1 0 0dfac313459f81860da1639110050ffe
+
+% 0 1 0 198d0efd1f07f2721737097c8585e59c
+
+% 0 1 0 0b86bea59ad8a991084f3b56d78533f9
+
+% 0 1 0 0ab6dc27f773d83c16b90c6784fd52cc
+
+% 0 1 0 0574d3a365e552000d15138b48b3ff5e
+
+% 1 1 0 16748d9b2313ee81014c01668cf5c1e6
+
+@ 0 20 0 1c1bfbb1d5315b641ada0b590f1e7ba7
++   entry .streamable   `Audio in form` 可读作其编码后的字节，因而可写入任何目标
++       针对任何其 `Form` 具有 `Audible` 的 `Audio` 的 `Streamable by Data over Credit` given：`audio.read[Data]` 是完整的文件，包括头部在内，`handle.write(audio)` 写出它。
++       编码由 JVM 针对该格式名称的写入器完成，因此 JVM 无法写入的格式会抛出异常，而不是通过策略抛出错误。
++   entry .streamableAcross   与 `.streamable` 相同，用于 `Audio in form across layout`
++       之所以是一个单独的 given，是因为同时带有两个成员的细化类型不会被只带 `Form` 的那个匹配。
++   entry .abstractable   作为 HTTP 响应正文的 `Audio in form`，带有其格式的媒体类型
++       `audio/x-wav`、`audio/x-aiff`、`audio/x-aifc` 或 `audio/basic`，并以编码后的字节作为正文，因此音频值可以直接提供出去。
++   entry .aggregable   `data.read[Audio in form]`：以指定格式把字节读作音频
++       针对 `Audio in form` 的 `Aggregable by Data` given，适用于任何具有 `Audible` 的 `form`。
++       需要一个 `Tactic[Audio.Error]`，若这些字节不是该类型的音频，就带着格式抛出它：把 WAV 读作 `Audio in Aiff` 会失败，因为格式是对字节的断言，而不是要求转换它们。
++   entry .aggregable2   `data.read[Audio]`：把字节读作音频并检测格式
++       针对普通 `Audio` 的 `Aggregable by Data` given，通过 `Audio.apply` 实现；错误中不指明格式。
++   entry .Error   在字节不是预期格式的音频时抛出
+
+% 1 1 0 1b710104c75d7eda04d631a4c172a51a
+
+@ 0 4 0 09ee8e850542c8ff1ae3c3775c25c065
++         _unable to read the audio in `format` format_，需要检测格式时为 `unspecified`。
++         由 `.aggregable` 和 `Audible#read` 在以下情况下抛出：JVM 无法解析这些字节，把它们解析为与所指定格式不同的格式，或无法把它们的编码转换为 PCM。
+
+% 2 1 0 169b45c88857a96606acf4504cc20b41
+
+% 3 1 0 0ea5aa1dbc41322204a530b69188234e
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 0f588bdc8322926a04812435f747299b
+
+% 0 1 0 0574f563d7594a0118bffb96681bbfa7
+
+% 1 1 0 1b571e7ce03ed52e15a64c6611625d0d
+
+@ 0 16 0 184da1feb022a48c0441764d14271cac
++     entry #audible   预期的格式，若需要检测格式则为 `Unset`
++   entry #channels   声道数：单声道为 1，立体声为 2
++   entry #bitsPerSample   每个样本的位深：8、16、24 或 32
++   entry #frames   帧数，每帧为每个声道各持有一个样本
++   entry #sampleRate   作为频率的采样率：`8000.0*Hertz`
++       一个 `Quantity[Seconds[-1]]`，因此它能与其他量一起参与算术运算，而不是一个裸数字。
++   entry #duration   以秒计的音频长度：帧数除以采样率
++       一个 `Quantity[Seconds[1]]`。
++   entry #apply   某个声道和帧上的样本，作为有符号整数
++       `audio(channel, frame)` 从字节中解码一个样本，遵循格式的字节序和符号性，并进行符号扩展，因此 16 位样本的范围是 −32768 到 32767。
++       下标不会对照 `#channels` 和 `#frames` 进行检查。
++   entry #to   以另一种格式重新表达的同一音频：`audio.to[Aiff]`
++       样本是共享的，而不是复制的，声道布局保持不变；只有 `Form` 改变，随之改变的是该值读作的字节以及提供它时所用的媒体类型。
+
+@ 0 1 0 105c541a4c1c8cfb077d3d75f4af9fca
++   entry .Configuration   设备线路提供的一种格式：声道、采样率、位深、编码和字节序
+
+% 1 1 0 15de1a95e4fbdebf0ebacd332786412a
+
+@ 0 3 0 17f579938ef2be351cd078fac55b324f
++         由 `Device#configurations` 返回，混音器的线路报告的每种格式对应一个。
++         当线路接受任意采样率时（JVM 报告 −1），采样率为 `Unset`，这种情况很常见。
+
+% 2 1 0 1bdaceba0a959bb808f99f819d251ea4
+
+% 3 1 0 1e1e8ba38b15ce50072a2bdff07b1a0b
+
+% 0 1 0 1b34324b3aee9bd2089a01a7db2b6c35
+
+% 1 1 0 0edc69b3979ed670087a56e7f6746dee
+
+% 1 1 0 17f746b3d5a333440dbd60774e0e3294
+
+@ 0 6 0 1d1960437162b39f1c6e232f78f8ce78
++     entry #channels   该格式的声道数
++     entry #sampleRate   采样率，若线路接受任意采样率则为 `Unset`
++     entry #bitsPerSample   位深：8、16、24 或 32
++     entry #encoding   `Sonation.PcmSigned` 或 `Sonation.PcmUnsigned`
++     entry #bigEndian   多字节样本是否为大端序
++   entry .Device   `Feed` 和 `Outlet` 的共同之处：系统所描述的一个混音器，以及它提供的线路
+
+% 1 1 0 052b7455efacea740acd9a703cd03cc7
+
+@ 0 5 0 06b414e07469d8851f300b238b3a0864
++         `Device` 包装一个 `javax.sound.sampled.Mixer.Info`，给出它的 `#name`、`#vendor` 和 `#description`，它的相应种类线路（对 `Feed` 是目标线路，对 `Outlet` 是源线路）所报告的 `#configurations`，以及在使用某种格式之前先询问它的 `#supports`。
++         它不导出到 `soundness` 总括包：程序指名 `Feed` 或 `Outlet`，或在同时适用于两者的代码中指名 `cacophony.Device`。
+
+% 2 1 0 0729d027795547771639f466978a5259
+
+% 3 1 0 1d6ba3c5b97854230d80c97e72067005
+
+% 0 1 0 075ca76d45f5549405336426ebf2552c
+
+% 0 1 0 02eaa1faabe7b3fe07c37a142da8410e
+
+% 1 1 0 1a6170f6cc206b250a471fedd71bbc0b
+
+% 0 1 0 0650a996ebe761dd0c21290629a54de5
+
+% 0 1 0 151d83b97e2e588f07b9b81383d9dca3
+
+@ 0 9 0 0366c49bd53008041f48c4a9d7b01930
++     entry #name   系统报告的设备名称
++     entry #vendor   设备的厂商
++     entry #description   设备的描述
++     entry #configurations   设备线路报告的每种格式，作为 `Configuration`
++     entry #supports   设备能否以某种布局、采样率和位深打开一条有符号小端序 PCM 线路
++         `device.supports[Stereo](44100.0*Hertz, 16)` 询问混音器是否支持这样的线路，而不打开它；在此结果为 `false` 的地方，`record` 和 `play` 会抛出 `UnsupportedConfiguration`。
++   entry .Feed   输入设备：以所选的布局、采样率和位深录音
+
+% 1 1 0 0b781310df0d8afa085d24fd7d353cec
+
+@ 0 6 0 1c6583f9a04e4471020773625cf1a113
++         机器的输入设备是 `Feed.list`；一台机器可能一个也没有，因此第一个是 `Optional`。
++         输入设备是一个 `Device`，具有名称、厂商、描述和 `configurations`，以及在录音前询问某种格式的 `supports`。
++         `#record` 打开一条线路，并返回一个 `Recording`，其 `stream` 在停止之前不断产生 `Audio` 数据块；对于恰好在一个块内占用的线路，`feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` 改为借出一个 `Pcm.PcmInput`（见 `Pcm`）。
+
+% 2 1 0 15e3aebd0a953209144c3bc0f498d56c
+
+% 3 1 0 1d5735d5db8268bd12cea5715676f1ff
+
+% 4 1 0 1339df75b2833fb3017d6e9229bfeeb6
+
+% 5 1 0 182d8023d549123516279b58440b7651
+
+% 6 1 0 190055e95813e819164fe03dfb6a9225
+
+% 0 1 0 17adefb3fe3bef5d1d2de6928c84cb51
+
+% 0 1 0 15a87c0e6606dee10292b4727c9c995a
+
+% 0 1 0 105ad19a26510c7812074c334006750f
+
+% 0 1 0 1ce0330ca9625c420b59f41d8b34b6f2
+
+% 0 1 0 1b1774f597c507000175259b86e8d5ff
+
+% 1 1 0 0079dc64a16c396f01bab1fdb93e97fc
+
+@ 0 3 0 0d99884adfa0562e1ec05110e8b2b0a2
++         从不可用或无法满足配置的输入设备录音会抛出 `Feed.Error`。
++         在 macOS 上，JVM 必须已获得麦克风权限，否则 `Feed.list` 为空。
+
+% 0 1 0 1b582573d7b96ff50a67df2a0a246b8b
+
+% 1 1 0 05e21817ea3b09e4138b546edb617b06
+
+% 2 1 0 0c7bee6b0200d47912d63f9d54931af1
+
+@ 0 4 0 020a3b683352defb1b7208f7b21fb020
++     entry .list   每个带有可录音线路的混音器，作为 `Feed`
++         枚举 JVM 的混音器，保留提供 `TargetDataLine` 的那些。
++         每次调用时列表都是新的，因此能看到此后插入的设备。
++     entry .Error   在输入设备无法录音时抛出
+
+% 1 1 0 12cc78ad76eff0b30a3fc1731db3e5c6
+
+@ 0 16 0 0b80fe036fc2f2370671fd553cf3032e
++           错误 `↯/s.82.2`：_could not record from feed `name` because …_，后面附上原因的编号和消息。
++           由 `Feed#record` 以及把输入设备作为 `Pcm` 打开时抛出。
++       entry .Reason   `Unavailable`、`UnsupportedConfiguration` 或 `Closed`
++           `Unavailable`（1），_the audio line could not be opened_：另一个程序占用着它，或者系统拒绝了；`UnsupportedConfiguration`（2），_the requested configuration is not supported_，这可由 `Device#supports` 预先得知；以及 `Closed`（3），_the recording has already been stopped_。
++       entry #feed   输入设备的名称
++       entry #reason   无法录音的原因
++     entry #record   打开一条线路，以某种布局、采样率和位深录音，作为由数据块组成的 `Recording`
++         `feed.record[Stereo](44100.0*Hertz, 16, chunkBytes = 65536)`：以该布局的声道打开一条有符号小端序 PCM 线路并启动它；`Recording` 的 `stream` 从中读取至多 `chunkBytes` 大小的数据块，每个都是一个 `Audio across layout`，直到 `stop` 关闭线路。
++         抛出带有 `UnsupportedConfiguration` 或 `Unavailable` 的 `Feed.Error`。
++         在调用 `stop` 之前，线路一直被占用。
++   entry .Outlet   输出设备：在后台播放音频值，或在某个作用域内同步播放
+
+% 1 1 0 168f98016e48b61d0b9b33f83950f0a2
+
+@ 0 5 0 02a7423ce79f60dd0ebed887fd7d9cd1
++         机器的输出设备是 `Outlet.list`。
++         输出设备是一个 `Device`，具有名称、厂商、描述、`configurations` 和 `supports`。
++         `#play` 按音频自身的格式打开一条线路，并返回一个在自己的线程上运行的 `Playback`，可以等待它或停止它；对于恰好在一个块内占用的线路，`outlet.open[Pcm](Write)` 借出一个 `Pcm.PcmOutput`，其 `play` 是同步的，并且需要 `Write` 授权（见 `Pcm`）。
+
+% 2 1 0 1bd187d13b8f2a9115c84d4bf5c7f9f9
+
+% 3 1 0 119f1a2ac7c39cf10a73177854886cb7
+
+% 4 1 0 035abea604eb3e03101852a6f8be628c
+
+% 5 1 0 1a11bd6bd9e60c6214d2033be96af7bd
+
+% 6 1 0 1e0a1005677eb1331d4ee5d9f0d36ce7
+
+% 0 1 0 180e7ef2edb31136028d971550c4b693
+
+% 0 1 0 0a8574a748560c241d7cc7f2db09d7a4
+
+% 0 1 0 146be646a7240c850616ed85bcdae359
+
+% 2 1 0 0e48eae2a2a28a000b700adc0f796ca9
+
+% 0 1 0 0cbc23b84b7b51600960aea2e2a943cc
+
+% 0 1 0 14336e750f7ed20d176f7682b9f5e216
+
+% 2 1 0 0a34fc55bc70ba5a12f8aa72f32db753
+
+% 0 1 0 0a88a99d198f2b3913764f0632f32621
+
+% 0 1 0 0c77e66cba0976a119a24673ba939944
+
+% 1 1 0 165bfc2ba831cacf01e7bee9e23a5309
+
+@ 0 2 0 0a7a89b8f68f5d8214097ebde2ae643f
++         向不可用或无法接受该音频配置的输出设备播放会抛出 `Outlet.Error`。
+
+% 0 1 0 02cae70c6c2ac762080df6dfe574ae97
+
+% 1 1 0 1da1abc21c02742b07b526f07c564d88
+
+% 2 1 0 134ec6886b6908890d2c58c8ea6b3e8f
+
+@ 0 3 0 14be42175a1e6c09102a8254d94dc399
++     entry .list   每个带有可播放线路的混音器，作为 `Outlet`
++         枚举 JVM 的混音器，保留提供 `SourceDataLine` 的那些。
++     entry .Error   在输出设备无法播放时抛出
+
+% 1 1 0 141aba69a7ee14bb1f729356fc6b4961
+
+@ 0 16 0 04f02f8984f0b5ce1fbb9cf3f5ea8b41
++           错误 `↯/s.82.1`：_could not play to outlet `name` because …_，后面附上原因的编号和消息。
++           由 `Outlet#play` 以及在已打开的输出设备上调用 `Pcm.play` 时抛出。
++       entry .Reason   `Unavailable`、`UnsupportedConfiguration` 或 `Closed`
++           `Unavailable`（1），_the audio line could not be opened_；`UnsupportedConfiguration`（2），_the requested configuration is not supported_：该音频的采样率、位深或声道不是输出设备能播放的，这可由 `Device#supports` 预先得知；以及 `Closed`（3），_the playback has already been stopped_。
++       entry #outlet   输出设备的名称
++       entry #reason   无法播放的原因
++     entry #play   在虚拟线程上播放音频值，作为可以等待或停止的 `Playback`
++         `outlet.play(audio, chunkBytes = 65536)` 按音频的格式打开一条线路（否则为 `UnsupportedConfiguration` 或 `Unavailable`），启动它，并从后台线程分块写入样本，音频结束时排空线路并关闭它。
++         `Playback#stop` 在数据块之间被检查，并立即关闭线路；`await` 汇合该线程。
++         任何 `Audio` 都能播放，无论其 `Form` 如何：样本已经是 PCM。
+
+@ 0 1 0 166ca25857cbfcd00e184439dd378ab1
++ entry .Audible   可以读取和写入音频的文件格式：它的名称和媒体类型
+
+% 1 1 0 1a3510096296e7311c4423a347c17f39
+
+@ 0 5 0 08d4990b4056e7c915dd2e15d59bf0b0
++       `Audio in form` 背后的类型类：`Wave`、`Aiff`、`Aifc`、`Au` 和 `Snd` 各自在其伴生对象中有一个实例。
++       `#name` 是 `javax.sound.sampled` 识别该格式所用的类型名称（`WAVE`、`AIFF`、`AIFC`、`AU`、`SND`），它必须与 JVM 检测到的结果一致，读取才能成功；`#mediaType` 是提供音频值时所用的媒体类型。
++       `#read` 是读取本身，`Audio.aggregable` 委托给它。
+
+% 2 1 0 114353bcece870940546bacd0f781ccf
+
+% 3 1 0 08c59f8fba03869d1e6af8951d67eb50
+
+% 4 1 0 105bcc90dc37c0260667ee6859bccedf
+
+% 0 1 0 1dbfe1e9e0003e840b312b656705c9f7
+
+% 0 1 0 02ab94689303877510e5b97525032f51
+
+% 0 1 0 02252b30738579810a0e43c08fe0f3c0
+
+% 1 1 0 1d4f5a7b6087e73b130511ac594701db
+
+% 0 1 0 1221dc90e2925959049ef1e7fcd714f8
+
+% 1 1 0 19d3a78720e4e3251aa8e39512955718
+
+@ 0 5 0 0d19e0f05e19731803dd5e110affecf3
++   entry #name   JVM 音频系统所报告的该格式的类型名称
++   entry #mediaType   该格式的媒体类型，用于通过 HTTP 提供音频
++   entry #read   把字节来源读作 `Audio in Self`，若不是该格式则抛出 `Audio.Error`
++       解析文件格式，检查它是否就是这一格式，把非 PCM 编码转换为 16 位有符号 PCM，并把每个样本读入内存。
++       需要一个 `Tactic[Audio.Error]`。
+
+@ 0 5 0 0e7c9777ef5c833b1e1666692a113cd0
++ entry .Wave   WAV（RIFF）格式，作为 `Audio in Wave`
++     一个没有值的密封类型，用作类型参数；它的伴生对象持有 `Audible` 实例 `audibility`，名称为 `WAVE`，媒体类型为 `audio/x-wav`。
++     `Wave()` 把该实例作为 `Audible` 返回，`Audio.Error` 就是这样指明格式的。
+
+% 2 1 0 086cd88d8bfc50640a88687c8a47cabf
+
+% 3 1 0 03cdf98dad962a631ff6ccda7a1f819c
+
+% 4 1 0 083bd1d7254444690ac637ed34626d11
+
+% 1 1 0 03be7709bec89e3f0374256e41bde08a
+
+% 2 1 0 0621fc74c7f575c90add07fba7b5f5b2
+
+% 0 1 0 1dd473d0423e6cf4132338b9a0d6499a
+
+% 1 1 0 0669077e0d697f3814f3590bb5453c91
+
+@ 0 4 0 11eb0932d41834c904ea59520873ab29
++ entry .Aiff   AIFF 格式，作为 `Audio in Aiff`
++     一个密封类型，其伴生对象持有 `Audible` 实例 `audibility`，名称为 `AIFF`，媒体类型为 `audio/x-aiff`；`Aiff()` 返回它。
++     AIFF 文件是大端序的，`Audio#apply` 在索引样本时会遵循这一点。
+
+@ 0 3 0 0f2fc911d096a0b8044c7ac8ffd6a0aa
++ entry .Aifc   AIFF-C 格式，作为 `Audio in Aifc`
++     一个密封类型，其伴生对象持有 `Audible` 实例 `audibility`，名称为 `AIFC`，媒体类型为 `audio/x-aifc`；`Aifc()` 返回它。
+
+@ 0 4 0 1e76c5e2a014e55c0a18fca3cd1c35f6
++ entry .Au   Sun 的 AU 格式，作为 `Audio in Au`
++     一个密封类型，其伴生对象持有 `Audible` 实例 `audibility`，名称为 `AU`，媒体类型为 `audio/basic`；`Au()` 返回它。
++     持有 µ-law 或 A-law 音频的 AU 文件在读取时会被转换为 16 位有符号 PCM。
+
+@ 0 3 0 191059e78a5bfd5c0ad59b26cdfd2fcb
++ entry .Snd   NeXT 的 SND 格式，作为 `Audio in Snd`
++     一个密封类型，其伴生对象持有 `Audible` 实例 `audibility`，名称为 `SND`，媒体类型为 `audio/basic`；`Snd()` 返回它。
+
+@ 0 1 0 19a774277bca07cc0d4f2f2dc0ed1580
++ entry .ChannelLayout   带在类型中的声道布局：有多少个声道，静态已知
+
+% 1 1 0 05fc16acb83cc9f20e58a5efdbaf5519
+
+@ 0 4 0 16898796b44fe2e20d8569dc6e0b00cc
++       `Audio across layout`、`Recording across layout` 和 `Pcm across layout` 背后的类型类：`Monaural` 有一个声道，`Stereo` 有两个，`Surround[n]` 有字面量 `n` 个。
++       输入设备以某种布局录音——`feed.record[Stereo](…)`——因此它所产生内容的声道数体现在类型中，而不是一个有待检查的数字。
+
+% 2 1 0 17f2fd6bfb5716241833092312e1c057
+
+% 3 1 0 15d50e43ad5d775210fa5f35640e54f7
+
+% 0 1 0 00fb6699272b12e4093702877f679579
+
+% 0 1 0 0dcf407256487a5600f5133194a96a7a
+
+% 0 1 0 089eec5da2f281e21281ff99573a4de6
+
+% 1 1 0 1c694af77b73c851041b233202dd4a6d
+
+% 0 1 0 17f6923aac7c56400e36bbef8a255805
+
+% 0 1 0 0e1f2747f628dd4d037ef76a912b8554
+
+@ 0 1 0 1655181ad5715650086d94f2a4247b4c
++   entry #channels   该布局中的声道数
+
+@ 0 3 0 0ff5d29f8e59071d12878e06baf22fab
++ entry .Monaural   单声道布局，作为 `Audio across Monaural`
++     一个密封类型，其伴生对象持有它的 `ChannelLayout` 实例 `channelLayout`，有一个声道。
+
+@ 0 3 0 12d777027380c713092c7c28b3dd665f
++ entry .Stereo   双声道布局，作为 `Audio across Stereo`
++     一个密封类型，其伴生对象持有它的 `ChannelLayout` 实例 `channelLayout`，有两个声道。
+
+@ 0 4 0 0eb1a2ee041cba921fa44316845ed0ec
++ entry .Surround   声道数为字面量的环绕布局，作为 `Audio across Surround[6]`
++     `Surround[N]` 接受一个字面量 `Int`，它的伴生对象的 `channelLayout` given 对任何带有 `ValueOf` 的 `N` 都给出该数目的声道，因此 `Surround[6]` 和 `Surround[8]` 是不同的布局，无需为其中任何一个编写实例。
+
+@ 0 3 0 029c9cc85b125f3300c484d5b93f1ff9
++ entry .Sonation   样本如何编码：`PcmSigned` 或 `PcmUnsigned`
++     设备 `Audio.Configuration` 所报告的编码。
++     每个 `Audio` 值在读取后都是有符号 PCM，因此 `PcmUnsigned` 只出现在设备声称支持的内容中。
+
+@ 0 1 0 0aed9c9e3b13fa8c1cc93d81f3b53cee
++ entry .Recording   一次进行中的录音：停止之前的音频数据块流
+
+% 1 1 0 1ef01d09188b3f87183fe54e10add4e6
+
+@ 0 4 0 0465daf2da10f2031c7deb10b9e792aa
++       由 `Audio.Feed#record` 返回。
++       `#stream` 是一个由 `Audio across Domain` 数据块组成的惰性链，每块至多为开始录音时设定的数据块大小，在强制求值该链时从线路读取；当 `#stop` 关闭线路，或线路不再提供任何内容时，它就结束。
++       `Domain` 类型成员是录音所用的布局。
+
+% 2 1 0 0daac62b92f831800e5e3f26602af195
+
+% 3 1 0 193dde3c24b76a871e85a44d1364aa24
+
+% 4 1 0 05d43bfc49100f32000c0ea51c1a5857
+
+% 5 1 0 12257b67a08ff053086d3543003a7db9
+
+% 6 1 0 0cb1f64f70e2bc261e88bccc0f2378be
+
+% 2 1 0 1e1838bd7bff2c8505e7a0ded6408e02
+
+% 0 1 0 16ec1df34977084f1d8febf03d1a3307
+
+% 0 1 0 0bad92424ae632e811892cf8757116c0
+
+% 0 1 0 083817eaa45aeaef121a718678f563b2
+
+% 0 1 0 0b89f729c908c9da1ab626c6a266b385
+
+% 1 1 0 162265011af69ee213e9bcc5cd38980e
+
+% 2 1 0 079028b1741a8b1001deb4086213548c
+
+@ 0 8 0 0bcb5ca746613bea08f6093d94f4eccb
++   entry #active   录音是否尚未停止
++   entry #stop   停止线路并关闭它；流随之结束
++       幂等。
++       在调用它之前，线路一直被占用，因此录音总是应当被停止；`Audio.Feed` 的作用域形式 `open[Pcm across layout]` 会在块结束时这样做。
++   entry #stream   已录制和将要录制的数据块，作为惰性链
++       每次强制求值从线路读取一个数据块，阻塞直到它填满，因此该链以设备产生样本的速率被消耗。
+
+@ 0 1 0 19d461773f958568179c75e453c3297a
++ entry .Playback   在后台播放的音频：等待它结束，或提前停止它
+
+% 1 1 0 0dd1d7ca46ac60940eb30d1b8d977dd0
+
+@ 0 4 0 1276d23b0c6120df0976e7131b39370b
++       由 `Audio.Outlet#play` 返回。
++       样本从一个虚拟线程写出；`#await` 阻塞直到音频播放到末尾（或被停止），`#stop` 提前结束它，并冲掉尚未发声的部分。
++       `stop` 和音频结束二者中先发生的那个会关闭线路，且恰好一次。
+
+% 1 1 0 0b3cab0910a7312006f2fd869a7156d1
+
+@ 0 5 0 146ca66e0ecf588110eac897d2a66e09
++   entry #active   音频是否仍在播放
++   entry #stop   立即停止播放，丢弃尚未发声的部分，并关闭线路
++       幂等，并且可以从启动播放的线程以外的线程安全地调用：写入者会在数据块之间察觉到它。
++   entry #await   阻塞直到播放结束，无论是到达末尾还是被停止
+
+@ 0 1 0 0c9c5f3d6819086212a9ff7d8f40fc24
++ entry .Pcm   作用域内音频线路访问的形式：输入设备作为 `Pcm across layout` 打开，输出设备作为 `Pcm` 打开
+
+% 1 1 0 19b07630c5115ec80a3dabce9a805bf7
+
+@ 0 8 0 160aa57a65dfb97b0a86c3cebb1de96c
++       `Audio.Feed#record` 和 `Audio.Outlet#play` 在程序需要的时间内一直占用设备，而线路也可以像文件那样，恰好在一个块内被*打开*：操作系统的线路恰好与作用域存续同样长的时间，无论作用域如何结束都会被释放。
++       `Pcm` 是在 `open` 时指名的形式：`Audio.Feed` 作为 `Pcm across layout` 打开用于采集，借出一个 `.PcmInput`，其 `stream` 产生 `Audio across layout` 数据块；`Audio.Outlet` 作为普通的 `Pcm` 打开用于播放，借出一个 `.PcmOutput`，其 `.play` 同步地播放每个 `Audio`。
++       `Openable` 实例 `.feedOpenable` 和 `.outletOpenable` 位于伴生对象中，因此不需要导入。
+
+% 2 1 0 00d9726939cf46651bc74ccb1d80eb26
+
+% 3 1 0 1bb6b1c7aa3bf6ce087c1f23fea38698
+
+% 4 1 0 09a0f3e2a86ec7d706f1889c4093769b
+
+% 5 1 0 0a49b3622f56f3820910617560b682e5
+
+% 6 1 0 151cebf919ec9d3c098e23be1cb2f7c9
+
+% 4 1 0 1574f128893e90711a38994eb58bea54
+
+% 5 1 0 1a6a16fb16a14a6d0f2724c8907154e7
+
+% 1 1 0 1af38e5cb5bb05e30560b35776dae0ae
+
+% 2 1 0 0b8f0e08872834f31cb86ecd5fe8a27b
+
+% 0 1 0 111980fcecb024721b36d228724cd028
+
+% 0 1 0 1488370d56a2d7f61cde5b79c67804f7
+
+% 0 1 0 06a76e43cdc347481b1530003cf25b52
+
+% 0 1 0 0e87ce67f66c12720cf95aaf633e7b38
+
+% 0 1 0 0a5574d52ff23b1011e263f8df4ef50a
+
+% 1 1 0 1dfa8d15f57a45021f633c40ea2b2e29
+
+@ 0 6 0 169358ca8cd6c622067569c35139a564
++       配置以 `PcmFlag` 给出：`PcmFlag.Rate(hertz)`（默认 44100）、`PcmFlag.Bits(bits)`（16）和 `PcmFlag.Chunk(bytes)`（65536）；输出设备只读取 `Chunk`，因为每次 `play` 都按音频自身的格式打开线路。
++       播放需要 `Write` 授权：不带授权的 `outlet.open[Pcm]()` 借出的 `PcmOutput` 上，`play` 无法编译，因此不能向为采集而打开的线路播放，而指出这一点的是编译器，不是音频驱动程序。
+
+% 2 1 0 11a4f9d52a75283c0d811a67aa708940
+
+% 3 1 0 1da2700eae44b5b511c500b38275245c
+
+% 4 1 0 1914c37217f4dafc01e99b72a62af9d5
+
+% 0 1 0 124e4f6452686961064f6c63fbcb45d0
+
+% 0 1 0 0a8d4920c2cb177313ec7fcc79f1d5ec
+
+% 0 1 0 1f5cf575b1e035c81d64714ae9fb189a
+
+% 0 1 0 13e653c085a438d91ccafd3ba7bee35c
+
+% 1 1 0 05abfcfa51e32f73105d6e25ec744deb
+
+% 2 1 0 0d17b6d97abbc425028d41955628bdd1
+
+% 1 1 0 0bdee4d032f44aad0fd4481074c4d25b
+
+% 0 1 0 18d43a086abc8ded077e1c6f93f400f2
+
+@ 0 1 0 06c1059374ae989e1e64451232ef9a46
++   entry .PcmInput   把 `Feed` 作为 `Pcm across layout` 打开时借出的句柄：音频数据块流
+
+% 1 1 0 18dc19aa295401321b4eef787559dd89
+
+@ 0 5 0 14bf40f4b21576f21dcc86f403a8c477
++         对一条已打开并已启动的线路的独占能力，在它被借给的块内有效。
++         `#stream` 在被强制求值时读取数据块，每个都是一个至多为 `PcmFlag.Chunk` 大小的 `Audio across layout`；块结束时，线路被停止并关闭。
++     entry #stream   在作用域存续期间采集到的数据块，作为惰性链
++   entry .PcmOutput   把 `Outlet` 作为 `Pcm` 打开时借出的句柄：在有 `Write` 授权时播放音频值
+
+% 1 1 0 14ba997ec45f3434011724572e0d8117
+
+@ 0 13 0 18829ffa22345dd106ab2919a04e2cb1
++         对输出设备的独占能力，在它被借给的块内有效。
++         每次 `Pcm.play`（受授权限制的扩展方法）或 `#playAudio` 都按音频自身的格式打开一条线路，把它播放完毕并关闭；下一次可以是不同的格式。
++     entry #playAudio   按音频的格式打开一条线路，播放到末尾，然后关闭线路
++         它是公有的，以便受授权限制的 `play` 扩展方法能够访问它；应使用会检查 `Write` 授权的 `play`，而不是它。
++         抛出带有 `UnsupportedConfiguration` 或 `Unavailable` 的 `Audio.Outlet.Error`。
++   entry .play   在以 `Write` 授权打开的 `PcmOutput` 上调用 `out.play(audio)`：同步播放
++       `PcmOutput & Granting[Grant.Write]` 上的扩展方法，因此只在 `outlet.open[Pcm](Write)` 内可用。
++       阻塞直到音频发声完毕，若输出设备无法播放它则抛出 `Audio.Outlet.Error`。
++   entry .FeedOpenable   把 `Feed` 作为 `Pcm across layout` 打开、借出 `PcmInput` 的 `Openable`
+
+% 1 1 0 15c41e518b9ed56c1e16d03001d7a710
+
+@ 0 9 0 098197bd45e3bb57038b2e62d990dab4
++         这是一个具名类而不是匿名 given，以便它的类型成员是稳定的：`Self = Audio.Feed`、`Form = Pcm across layout`、`Operand = PcmFlag`、`Result = PcmInput[layout]`。
++         由 `.feedOpenable` 根据作用域中的 `ChannelLayout` 和 `Tactic[Audio.Feed.Error]` 构造。
++     entry #open   以标志所给的采样率、位数和数据块大小，按布局的声道为该块打开一条线路
++         以 `PcmFlag.Rate`（默认 44100）和 `PcmFlag.Bits`（16）的有符号小端序 PCM；线路在块之前启动，在块之后停止并关闭。
++         抛出带有 `UnsupportedConfiguration` 或 `Unavailable` 的 `Audio.Feed.Error`。
++   entry .OutletOpenable   把 `Outlet` 作为 `Pcm` 打开、借出 `PcmOutput` 的 `Openable`
+
+% 1 1 0 0cafc419a852076511d0447aab0561cb
+
+@ 0 10 0 1faa39766e7e8ec41fb4e4f48708acab
++         `Self = Audio.Outlet`、`Form = Pcm`、`Operand = PcmFlag`、`Result = PcmOutput`。
++         由 `.outletOpenable` 根据作用域中的 `Tactic[Audio.Outlet.Error]` 构造。
++         打开本身不涉及任何线路：块内的每次 `play` 都为其音频打开一条线路。
++     entry #open   以标志所给的数据块大小向该块借出一个 `PcmOutput`
++   entry .feedOpenable   使 `feed.open[Pcm across layout](…)` 可用的 given
++       需要该布局的 `ChannelLayout` 和一个 `Tactic[Audio.Feed.Error]`，并捕获后者。
++       通过伴生对象位于隐式作用域中。
++   entry .outletOpenable   使 `outlet.open[Pcm](…)` 可用的 given
++       需要一个 `Tactic[Audio.Outlet.Error]`，并捕获它。
++       通过伴生对象位于隐式作用域中。
+
+@ 0 5 0 0fc4a25c1fee190319e8b52414f556c1
++ entry .PcmFlag   作用域内线路的选项：`Rate(hertz)`、`Bits(bits)` 和 `Chunk(bytes)`
++     在模式之后传给 `open[Pcm …]`。
++     `Rate(hertz)` 是以赫兹计的采样率（缺省时为 44100），`Bits(bits)` 是位深（16），`Chunk(bytes)` 是从输入设备读取或向输出设备写入的每个数据块的大小（65536）。
++     输入设备读取全部三个；输出设备只读取 `Chunk`，因为它的线路采用所播放音频的格式。
+
+% 2 1 0 1dc95472a7debd3c1a087f47d583c281
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 2 1 0 00c648c4451d3840102b5a9ac5af6427
+
+% 0 1 0 13b9a15ca021416c13688599cdc07957
+
+% 0 1 0 12fb334e8ad0a83d03a97142adbf913b
+
+% 0 1 0 03757c1de6a74e3e05d9a9cb22a3fef2
+
+% 1 1 0 1ae1302a2e6ce2ee0eee24c0131d3877

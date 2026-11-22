@@ -1,0 +1,1512 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1866150ecbc5dda91e755367aeb0d04c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cd8dc1c0400040d07ec64e45739db0b
++ info   作为值的 TrueType 和 OpenType 字体，以及用于排版文本的有类型字体族、字样和供给
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 14bfe67a88d84b3400f8977d0802f9c7
++     _Phoenicia_ 读取字体文件，并按照文档命名和使用字体的方式为其赋予类型。
++     它有两层，在中间相遇。
+
+@ 0 9 0 1742c8e63e946a03011664ee56254400
++     下层是**字体文件**。
++     `Sfnt` 是 TrueType 和 OpenType 共用的表容器，可以从任何字节来源读取；`Truetype` 是轮廓为二次曲线（`glyf` 和 `loca`）的字体，`Opentype` 是轮廓为 PostScript（`CFF `）的字体，`Sfnt(data)` 根据存在哪些表来区分二者。
++     各个表惰性解析，每个表都是一个值：`cmap` 把字符映射到它的 `Glyph`，`hmtx` 给出步进宽度和侧边距，`head` 给出每 em 单位数和边界框，`name` 给出族名和 PostScript 名称，`OS/2` 给出字重、字宽和嵌入权限，`fvar` 给出可变字体的轴，`GSUB`/`GPOS` 给出它实现的布局特性。
++     `Sfnt#width` 以 em 为单位度量一段文本，`Truetype#subset` 构建一个只包含某段文本所需字形的新字体。
+
+@ 0 9 0 1970f43a040cecbd022bec103d031176
++     上层是**排版请求**。
++     `Typeface` 是以名称表示的字体族，名称同时也是它的类型（`Typeface["Inter"]` 是 `Typeface of "Inter"`）；`Face` 说明它应如何排版——一个 `Weight`、一个 `Slant`、一个 `Stretch`、在其他 `Variation` 轴上的位置，以及要启用或禁用的 `Face.Feature`——而不涉及字体从何而来。
++     `Typesettable` 供给说明一个 `Medium`（网页、印刷，或渲染器定义的任何媒介）如何获得该字体族，以及随后能排版哪些字样，表示为一个 `Coverage`。
++     `Font` 把一个字样与该媒介中其字体族在作用域内的供给配对，并且是渲染器接受字体的唯一形式，因此文档无法使用它未携带的字体族，也无法向供给索要它排不了的字样。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 14aa36c394dcafe60d01e835074ba4f2
+
+% 0 1 0 10891421cbed82481ae8fac7a21e8b9e
+
+% 1 1 0 1e2995190281206e1fe9d76dbddc58fd
+
+% 2 1 0 04c585ec192223b016fd40b1dd3724e2
+
+% 0 1 0 0d350c7e5e66a51f113866595e1f5456
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 1 0 0c402fde44414bad06248bef18d0d589
+
+% 0 1 0 13ab6dde57221b8e0ddfd7a0c7b91d14
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 12ae2323372107d50640764eeefc1216
++     请求会被检查两次。
++     一次总是在运行时创建字体之时：供给缺少的字重、它没有的斜体、它的表未实现的特性，或超出字体范围的轴值，都会抛出 `Font.Error`，指明字体族和问题所在。
++     另一次在供给由类路径文件创建（`Typesettable.embedded (cp"/fonts/Inter.ttf")`，其路径成为供给的 `Locus`）且字样的请求记录在其类型中（`inter.bold.italic` 带有 `Weights = 700` 和 `Slanting = "italic"`）时：编译器读取该文件，并在代码编译时以同样的消息拒绝这一配对。
+
+@ 0 7 0 03b29709a6290b771a7b1635b1608754
++     这个库只有一个源集 `phoenicia.core`，可为 JVM、Scala.js 和 Scala Native 编译，不依赖任何平台特定的东西；`Sfnt(source)` 可以从任何 `Streamable by Data` 的来源读取。
++     媒介及其供给与渲染器放在一起：cataclysm 的 `Web` 持有 CSS 通用族以及 `Web.linked`、`Web.imported` 和 `Web.local` 工厂，facsimile 的 `Print` 持有 PDF 的标准十四种字体。
++     这些 given 位于媒介的伴生对象中，因此无需导入。
++     项目自己的供给是它声明并按名称导入的 given，因为 `import pkg.*` 不会导入 given。
+
+@ 0 3 0 012e1b7c32c785c9065f36ae71793b3b
++     所有内容都导出到 `soundness` 总括包：`Coverage`、`Face`、`Font`、`Glyph`、`Medium`、`Opentype`、`Sfnt`、`Slant`、`Stretch`、`Truetype`、`Typeface`、`Typesettable`、`Variation` 和 `Weight`。
+
+% 0 1 0 109fa47ff5f3bd6d0571fce426a43e07
+
+% 0 1 0 0f0b1d6064528d4c10db460412c24385
+
+% 0 1 0 15104d77b892450111a9fd20a13773cc
+
+% 0 1 0 0b3ddc8123ae0d7208516ef15515dab8
+
+% 0 1 0 17e121497a8530891227fd00ebb19157
+
+% 0 1 0 0e23135c50c6b3041b84a24f166220ba
+
+% 0 1 0 028d54a33b69a0541369b63c2b9a0532
+
+@ 0 1 0 0001bfb9f303302f0c82f773be6bf1c9
++ entry .Sfnt   作为值的字体文件：TrueType 和 OpenType 共用的 sfnt 表容器
+
+% 1 1 0 078ca577aad2f05307ec65aa94722b04
+
+@ 0 6 0 11e925aa775bb68a14d1d7b26a7e6ee5
++       `Sfnt` 是一个字体文件，以其 `#data` 持有，并逐表惰性读取。
++       这个名称来自格式本身：_sfnt_ 是一种容器——一个头部、一个带标签的表的目录，以及这些表——TrueType 和 OpenType 都使用它，区别仅在于存储轮廓的方式。
++       两者共有的一切都在这里定义：字符映射、水平度量、头部、命名表、OS/2 度量、PostScript 元数据、可变字体的轴以及布局特性。
+
+@ 0 4 0 116690128ed80f251b3d5f1099aaf80f
++       `Sfnt(source)` 从任何 `Streamable by Data` 的来源（galilei 路径、类路径资源、URL）读取字体，`Sfnt(data)` 包装手头已有的字节。
++       如果目录中有 `CFF ` 表，两者都返回 `Opentype`，否则返回 `Truetype`，因此可以用一次匹配在适用之处使用仅限 TrueType 的操作：
+
+% 2 1 0 0458cfbdd150f22b1eeaa197f93ea748
+
+% 3 1 0 0b015a9bc7599c141f3e57e33903e4de
+
+% 4 1 0 01e824b796eff2cb0d05fce3b09fc212
+
+% 0 1 0 01d582a488c5c4e40e69712408c1d2b1
+
+% 0 1 0 02c7ff65c19d25490413248f952c3c41
+
+% 0 1 0 0c02291d1d8f9ce9044d9909f8d08ccf
+
+% 0 1 0 0b1f30df551bfc2414ad1a957135dfc5
+
+% 1 1 0 14b781944cb7957905c51c4b02739cc6
+
+@ 0 9 0 18fb08e1af16ad3516a3336e3df6fa73
++       构造是全函数的：包装字节永远不会失败，无法读取的目录会得到一个 `Truetype`。
++       每个表在首次被请求时解析，因此一个不是字体的文件，或缺少某操作所需之表的文件，会在那次读取时抛出 `Font.Error`：`Font.Error.Reason.MissingTable` 指明缺少的表，`MagicNumber` 表示 `head` 表的校验常量错误，`UnknownFormat` 表示库不读取的 `cmap` 子表格式，`MissingEncoding` 表示字体没有可用的字符映射。
++       访问器 `#head`、`#cmap`、`#hhea`、`#hmtx`、`#maxp`、`#post`、`#os2` 和 `#name` 都接受一个 `Tactic[Font.Error]`；`#fontName`、`#familyName`、`#fvar` 和 `#features` 吸收错误，回答 `Unset` 或 `Nil`。
+
+@ 0 4 0 013338be52c1b7bb1e6138e37bd4648d
++       排版代码最常问的问题可以直接得到回答：`#glyph` 通过首选字符映射解析一个字符，`#advanceWidth` 和 `#leftSideBearing` 以设计单位给出字符的度量，`#width` 以 em 度量一段文本，结果是一个有类型的量，乘以磅值即得到物理宽度。
+
+% 2 1 0 13e7f947d5185997005d214326523a8d
+
+% 3 1 0 11778af9a091cadf1f1d4173eaa3cc04
+
+% 4 1 0 08eb928478cb23820b277272794d517f
+
+% 0 1 0 1a335216f558fc410addc81ce8e31847
+
+% 0 1 0 0f591fdb6abba76918920f53298cd19b
+
+% 1 1 0 0f313be179f64f2b0b87f8e4e15ad751
+
+@ 0 4 0 139f3bbe5d90c86a18835bce616f7318
++       字体的表通过 `#tables` 读取，它是一个从 `Sfnt.Table.Tag` 到表的 `TableOffset` 的 `Map`；库未命名的标签会被丢弃。
++       `Sfnt.assemble` 是其逆操作：它把一组表序列化为字体文件，`Truetype#subset` 就是这样写出结果的。
+
+% 1 1 0 184de4136bd9bd84034cea2723fbfe38
+
+% 1 1 0 1eadeb55b32c6dbf0417cfc30bec68ab
+
+% 1 1 0 0f766614488e070f0f031dc9a8c8fbd2
+
+% 0 1 0 08f5437fa29f893b030c74eca9fc87ff
+
+@ 0 24 0 1f47efafc0cdd4640e25b6bbffbed509
++   entry .apply   从字节或任何可流式读取的来源读取字体，结果为 `Truetype` 或 `Opentype`
++       `Sfnt(data)` 包装一个 `Data` 值；`Sfnt(source)` 完整读取任何 `Streamable by Data over Credit` 来源并包装结果。
++       两者都会在表目录中探测 `CFF ` 表（PostScript 轮廓），存在则返回 `Opentype`，否则返回 `Truetype`。
++       探测包裹在 `safely` 中，因此目录无法读取的字节会成为 `Truetype` 而不是失败：构造总是全函数的，故障会在首次读取某个表时以 `Font.Error` 的形式出现。
++   entry .PlatformId   `cmap` 或 `name` 记录的平台：Unicode、Macintosh、Windows 或自定义
++       一个枚举，其序数是 OpenType 平台标识符 0 到 3。
++       库在 `CmapTable.GlyphEncoding` 和 `NameTable.Record` 中把平台标识符读作普通的 `Int`，并把 Windows 和 Unicode 记录排在 Macintosh 记录之前；这个枚举为这些值命名。
++   entry .EncodingId   `cmap` 记录的 Unicode 编码标识符
++       `Unicode1`、`Unicode1_1`、`IsoIec10646`、`Unicode2Bmp`、`Unicode2Full`、`UnicodeVariation` 和 `UnicodeFull`，其序数是 Unicode 平台的编码标识符 0 到 6。
++       `CmapTable#best` 优先选择完整 Unicode 编码（4 和 6），其次才是仅限 BMP 的编码。
++   entry .NameId   命名表中字符串的标识符；每个分支的序数就是它的名称 id
++       `Copyright`、`Family`、`Subfamily`、`UniqueId`、`FullName`、`Version`、`PostScriptName`、`Trademark`、`Manufacturer`、`Designer`、`Description`、`VendorUrl`、`DesignerUrl`、`License`、`LicenseUrl`、`Reserved`、`TypographicFamily`、`TypographicSubfamily`、`CompatibleFullName`、`SampleText`、`PostScriptCidName`、`WwsFamily`、`WwsSubfamily`、`LightBackgroundPalette`、`DarkBackgroundPalette` 和 `VariationsPostScriptNamePrefix`，按 OpenType `name` 表的 id 0 到 25 排序。
++       `NameTable#apply` 接受其中一个，并给出与之对应的最佳记录。
+
+% 2 1 0 0de3995b31de4a100ca7cd2d234cfafc
+
+% 3 1 0 13d2c235fd4698d50e0194aec7f96766
+
+% 4 1 0 14f4c9f3f21e2804123d1ae31deb93f7
+
+% 0 1 0 157aa9d18c6cf6e60b0a1a0e831174ee
+
+% 1 1 0 14389f33fc5b3ef7099c7a757357e55c
+
+@ 0 1 0 0646bfdbf9cdc8c11f65cf95da95f936
++   entry .Table   字体可携带的表的标签，分为 `Ttf`（TrueType）和 `Otf`（OpenType）两个枚举
+
+% 1 1 0 1c5fa3dac41df3d4111caa166a9ed6b4
+
+@ 0 12 0 1328713b5ea681db15f3c00cda3bcd5a
++         表的四字符标签在目录中标识它。
++         标签分为 TrueType 集合（`Sfnt.Table.Ttf`：`cmap`、`head`、`hhea`、`hmtx`、`maxp`、`name`、`post`、`glyf`、`loca`、`fvar`……）和 OpenType 集合（`Sfnt.Table.Otf`：`CFF `、`OS/2`、`GSUB`、`GPOS`、`GDEF`、`STAT`……），两者都是 `Sfnt.Table.Tag`，也都是 `Sfnt#tables` 的键。
++         每个伴生对象都是从标签文本出发的提取器，因此目录项通过匹配 `Sfnt.Table.Otf(tag)` 和 `Sfnt.Table.Ttf (tag)` 来分类；两者都未命名的标签会从表映射中丢弃。
++     entry .Tag   `Ttf` 和 `Otf` 标签的共同类型
++       entry #text   标签在文件中的拼写：`cmap`、`OS/2`、`CFF `、`cvt `
++           四个字符，包括 `CFF ` 和 `cvt ` 末尾的空格。
++           TrueType 标签为小写，OpenType 标签为大写，`OS/2` 和 `CFF ` 是例外。
++     entry .Ttf   TrueType 表：`avar`、`cmap`、`cvar`、`cvt `、`fpgm`、`fvar`、`gasp`、`glyf`……
+
+% 1 1 0 01fcbbf4cd79c79702882760a3ed10fb
+
+@ 0 6 0 1b40d8a6bffe2aa213b6729ce4bdd66c
++           `Avar`、`Cmap`、`Cvar`、`Cvt`、`Fpgm`、`Fvar`、`Gasp`、`Glyf`、`Gvar`、`Hdmx`、`Head`、`Hhea`、`Hmtx`、`Kern`、`Loca`、`Maxp`、`Meta`、`Name`、`Post`、`Prep`、`Sbix`、`Vhea` 和 `Vmtx`。
++           伴生对象从文本中提取一个分支（`Sfnt.Table.Ttf(t"cmap")`），`cvt ` 要连同末尾空格一起拼写。
++       entry .extract   四字符文本对应的 `Ttf` 标签，或 `Unset`
++     entry .Otf   OpenType 表：`BASE`、`CFF `、`CFF2`、`COLR`、`GDEF`、`GPOS`、`GSUB`、`OS/2`……
+
+% 1 1 0 1cafae1a72627da906a3b22aad2f218d
+
+@ 0 15 0 0b108eb99c7e65851b4ce66cfa40716f
++           `Base`、`Cbdt`、`Cblc`、`Cff`、`Cff2`、`Colr`、`Cpal`、`Dsig`、`Ebdt`、`Eblc`、`Ebsc`、`Gdef`、`Gpos`、`Gsub`、`Hvar`、`Jstf`、`Ltsh`、`Math`、`Merg`、`Mvar`、`Os2`、`Pclt`、`Stat`、`Svg`、`Vdmx`、`Vorg` 和 `Vvar`。
++           伴生对象从文本中提取一个分支（`Sfnt.Table.Otf(t"OS/2")`），`OS/2` 和 `CFF ` 按文件中的写法拼写。
++       entry .extract   四字符文本对应的 `Otf` 标签，或 `Unset`
++   entry .assemble   把带标签的表序列化为完整的 sfnt 文件，包括校验和
++       `Sfnt.assemble(version, tables)` 接受四字节版本号（字体的前四个字节：TrueType 为 `0x00010000`）和一个 `(tag, bytes)` 对的列表，写出头部、按标签排序并带有格式所要求的搜索字段的目录，以及四字节对齐、以零填充的各个表。
++       每个目录项都带有其表的校验和；如果其中有 `head` 表，它的校验和调整值会被设定，使整个文件之和等于格式规定的常量。
++       提供的 `head` 表必须把调整值置零。
++       `Truetype#subset` 就是这样构建结果的。
++   entry #data   字体文件的字节
++   entry #TableOffset   一个目录项：表的标签、校验和、偏移量和长度
+
+% 1 1 0 107201dc06eb1e6f1edcf48d2e5a7e6d
+
+@ 0 20 0 1a4b769cdd4b1bf016f8c4a94b36a283
++         即 `#tables` 的值。
++         偏移量和长度确定表在 `#data` 中的位置；校验和取自文件，库会记录它但不验证。
++     entry #id   表的 `Sfnt.Table.Tag`
++     entry #checksum   目录记录的校验和，类型为 `B32`
++     entry #offset   表相对于文件开头的偏移量
++     entry #length   表的字节长度
++   entry #numTables   目录声明的表的数量
++   entry #searchRange   目录的 `searchRange` 字段：不大于表数量的最大二的幂，乘以 16
++   entry #entrySelector   目录的 `entrySelector` 字段：`searchRange` 除以 16 的对数
++   entry #rangeShift   目录的 `rangeShift` 字段：表数量乘以 16，减去 `searchRange`
++   entry #tables   库所命名的每个表，按标签给出其偏移量和长度
++       从目录读取的 `Map[Sfnt.Table.Tag, TableOffset]`。
++       既不是 `Ttf` 分支也不是 `Otf` 分支的标签会被丢弃，因此字体的私有表不会出现在其中。
++       读取这个映射是全函数的；格式错误的目录会使它为空，此后每个表访问器都会以 `MissingTable` 抛出 `Font.Error`。
++   entry #glyph   通过字体的首选字符映射得到某个字符的字形
++       即 `cmap.glyph(char)`：字形的类型是 `Glyph[this.type]`，绑定到这个字体，因此一个字体的字形不能用于另一个字体。
++       字体未映射的字符得到字形 0，即缺失字形，而不是错误。
++       如果字体没有可用的 `cmap` 子表，以 `MissingEncoding` 抛出 `Font.Error`；如果没有 `cmap`，则以 `MissingTable` 抛出。
+
+% 2 1 0 01589e61a9a43eec1b77923bdba4c157
+
+% 3 1 0 1111d550203a46b20ab7a8e3b96581f0
+
+% 4 1 0 1a8292b8723b295f14f4af7248ee7121
+
+% 0 1 0 12322af46b5987e801e328e66d6e8761
+
+% 1 1 0 0f31409e14edba8d1979ce961e592b60
+
+@ 0 9 0 105b0c978c0885e118f08a40d070d393
++   entry #advanceWidth   字符的步进宽度，以字体的设计单位表示
++       字符字形在 `hmtx` 中的水平步进，单位是 em 的 `head.unitsPerEm` 分之一。
++       超出表中度量数量的字形重复最后一个步进值，这是格式为等宽尾部规定的做法。
++       如果缺少 `cmap`、`hhea` 或 `hmtx`，抛出 `Font.Error`。
++   entry #width   一段文本在此字体中的宽度，以 em 为单位的量
++       各字符步进宽度之和除以每 em 单位数，类型为 `Quantity[Ems[1]]`。
++       em 宽度是有类型的量，因此不会被误当作像素或磅的度量；按字号缩放它需要显式的算术运算。
+
+% 2 1 0 1b8562d593ca5ac817abd5e390e20023
+
+% 3 1 0 18bb21b93b6fcb741ac84c181afdbede
+
+% 4 1 0 0c43af336724a6f71b688c0b2a045484
+
+% 0 1 0 080d990923bb95ff1e2cdabed7295ca8
+
+% 1 1 0 0b954aa3d20c99cf128da7a0a2d4456d
+
+@ 0 35 0 13de57935fd2f2e20c85dd3a665fe9f0
++   entry #leftSideBearing   字符的左侧边距，以字体的设计单位表示
++       字符字形在 `hmtx` 中的边距；对于超出度量数量的字形，边距在单独的数组中延续。
++       如果缺少所需的表，抛出 `Font.Error`。
++   entry #head   `head` 表：每 em 单位数、边界框、创建日期以及 `loca` 格式
++       解包为 `HeadTable`；缺失时以 `MissingTable` 抛出 `Font.Error`，表的校验常量不是格式规定的 `0x5f0f3cf5` 时以 `MagicNumber` 抛出。
++   entry #cmap   `cmap` 表：字符到字形的映射
++       类型为 `CmapTable`，其 `best` 子表按 Unicode 偏好选出，其 `glyph` 解析字符。
++       缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #hhea   `hhea` 表：上伸部、下伸部、行距以及度量数量
++       解包为 `HheaTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #hmtx   `hmtx` 表：按字形给出的步进宽度和左侧边距
++       类型为 `HmtxTable`，大小由 `hhea.numberOfHMetrics` 决定；任一表缺失时抛出 `Font.Error`。
++   entry #maxp   `maxp` 表：字形数量
++       类型为 `MaxpTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #post   `post` 表：斜体角度、下划线度量以及字体是否等宽
++       类型为 `PostTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #os2   `OS/2` 表：字重和字宽等级、排版度量、嵌入权限
++       类型为 `Os2Table`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #name   `name` 表：字体的本地化名称，按 `Sfnt.NameId` 索引
++       类型为 `NameTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #fontName   字体的 PostScript 名称，或 `Unset`
++       即 `name(Sfnt.NameId.PostScriptName)`，吸收任何 `Font.Error`：PDF 和 PostScript 文档引用字体时使用的名称。
++       字体未记录该名称或没有 `name` 表时为 `Unset`。
++   entry #familyName   字体的族名，或 `Unset`
++       即 `name(Sfnt.NameId.Family)`，吸收任何 `Font.Error`。
++   entry #fvar   可变字体的 `fvar` 表；静态字体为 `Unset`
++       可变字体的轮廓沿之变化的轴，每个轴带有其范围。
++       该表存在时，`Coverage.of` 从这里读取字重和字宽范围。
++   entry #features   字体实现的布局特性，按标签给出，来自 `GSUB` 和 `GPOS`
++       两个布局表的特性列表，作为 `Face.Feature` 并去重。
++       两个表都没有的字体不实现任何特性。
++       `Coverage.of` 记录的就是这些，因此启用字体所缺特性的字样会被拒绝。
+
+% 2 1 0 193d7615390939c91c14cf3b7557fde9
+
+% 3 1 0 0dd9d82342add75d0a21f3be962c06f7
+
+% 0 1 0 023e88caee675ae30c25145143d93c9a
+
+% 1 1 0 1d390aee43c25ddb1d7c5e94c8854bdc
+
+@ 0 1 0 195baa6fd3d260a41f10e2833dcc78e7
++   entry #FvarTable   可变字体的字体变化表
+
+% 1 1 0 193c9eb7e84c685a06375c7310a770d7
+
+@ 0 13 0 1cec7e728098abc10359e7f5cc9beff4
++         可变字体的轴——`wght`、`wdth`、`ital`、`slnt`、`opsz` 或字体自有的轴——每个轴带有它所允许的最小值、默认值和最大值，表示为 `Axis` 记录。
++         通过 `Sfnt#fvar` 获得。
++     entry #axisCount   轴的数量
++     entry #axisSize   每条轴记录的字节大小
++     entry #axes   各个轴，每个带有其标签、范围和名称 id
++     entry #Axis   一个轴：它的四字符标签、最小值、默认值、最大值，以及它的 `name` id
++       entry #tag   轴标签，例如 `wght`
++       entry #minimum   轴允许的最小值
++       entry #default   轴的默认值
++       entry #maximum   轴允许的最大值
++       entry #nameId   轴显示名称在 `name` 表中的 id
++   entry #HeadTable   字体头部：版本、校验常量、每 em 单位数、边界框、标志
+
+% 1 1 0 058934154e9eb90e16d06afbd0c00de6
+
+@ 0 5 0 0f9bc475c4f5e1900f083d2b341898a6
++         `head` 表，按格式自身的定宽类型（`U16`、`S16`、`B16`、`B32`、`S64`）逐字段解包，因此每个字段都读作格式所定义的整数或位模式。
++         `unitsPerEm` 是联系设计单位与 em 的比例；`xMin`、`yMin`、`xMax` 和 `yMax` 是所有字形的边界框；`indexToLocFormat` 说明 `loca` 使用短偏移量还是长偏移量。
+
+% 2 1 0 19ef62565b2fbbd91c8080ba024d0dda
+
+% 3 1 0 0680a632c9ae5d021dcf479880fd454e
+
+% 4 1 0 00113718cebb877a0e98c5151b7e892a
+
+% 0 1 0 128237ade6865a061c6406d0ecfac66b
+
+% 0 1 0 0d4ac6149dae80b7144afc32d0ad1439
+
+% 1 1 0 143d68e7cb1492be1b527236566bed52
+
+@ 0 20 0 067b8f3359954acc1fbc2d2cdfac26e8
++     entry #majorVersion   表的主版本号，1
++     entry #minorVersion   表的次版本号，0
++     entry #fontRevisionHigh   字体修订号的整数部分
++     entry #fontRevisionLow   字体修订号的小数部分
++     entry #checksumAdjustment   使整个文件之和等于格式常量的值
++     entry #magicNumber   校验常量 `0x5f0f3cf5`；若不同，`Sfnt#head` 抛出 `MagicNumber`
++     entry #flags   头部的标志位
++     entry #unitsPerEm   一个 em 中的设计单位数，步进值除以它得到 em 宽度
++     entry #created   创建日期，以自 1904 年起的秒数表示
++     entry #modified   修改日期，以自 1904 年起的秒数表示
++     entry #xMin   所有字形边界框的左边缘
++     entry #yMin   所有字形边界框的下边缘
++     entry #xMax   所有字形边界框的右边缘
++     entry #yMax   所有字形边界框的上边缘
++     entry #macStyle   Macintosh 样式位：粗体、斜体、下划线……
++     entry #lowestRecPpem   可读的最小尺寸，以每 em 像素数表示
++     entry #fontDirectionHint   已弃用的方向提示
++     entry #indexToLocFormat   0 表示短 `loca` 偏移量（减半，16 位），1 表示长偏移量（32 位）
++     entry #glyphDataFormat   字形数据格式，0
++   entry #HheaTable   水平头部：上伸部、下伸部、行距、光标斜率以及度量数量
+
+% 1 1 0 0812011019a2943e0fc02883d7f1f15f
+
+@ 0 22 0 15978ae2ea5331de124a4f86fe5cb256
++         `hhea` 表，逐字段解包。
++         `ascender`、`descender` 和 `lineGap` 是行布局所需的垂直度量，以设计单位表示；`numberOfHMetrics` 是 `hmtx` 在其等宽尾部之前持有的完整（步进，边距）对的数量。
++     entry #majorVersion   表的主版本号
++     entry #minorVersion   表的次版本号
++     entry #ascender   排版上伸部，以设计单位表示
++     entry #descender   排版下伸部，以设计单位表示，在基线以下为负
++     entry #lineGap   排版行距
++     entry #advanceWidthMax   `hmtx` 中最大的步进宽度
++     entry #minLeftSideBearing   最小的左侧边距
++     entry #minRightSideBearing   最小的右侧边距
++     entry #xMaxExtent   所有字形中最大的水平范围
++     entry #caretSlopeRise   光标斜率的纵向分量；直立光标为 1
++     entry #caretSlopeRun   光标斜率的横向分量；直立光标为 0
++     entry #caretOffset   光标的水平偏移量
++     entry #reserved0   保留字段
++     entry #reserved1   保留字段
++     entry #reserved2   保留字段
++     entry #reserved4   保留字段
++     entry #metricDataFormat   度量数据格式，0
++     entry #numberOfHMetrics   `hmtx` 中完整度量对的数量
++   entry #HmtxTable   水平度量：每个字形一个步进宽度和左侧边距
+
+% 1 1 0 169e15ebf15bef1011b21e0c483050f3
+
+@ 0 12 0 010a1181545e1c16093a9184b8a4e237
++         每个字形一个 `HMetrics` 对，直到 `hhea` 声明的数量为止，此后最后一个步进值重复（即等宽尾部），而边距在单独的数组中延续。
++         `Sfnt#advanceWidth` 和 `Sfnt#leftSideBearing` 在这里查找字符的字形。
++     entry #offset   表在文件中的偏移量
++     entry #count   完整度量对的数量，来自 `hhea`
++     entry #metrics   完整度量对，只读取一次
++     entry #advanceWidth   按 id 给出字形的步进宽度，尾部重复最后一个值
++     entry #leftSideBearing   按 id 给出字形的左侧边距，来自度量对或边距尾部
++     entry #HMetrics   一个字形的步进宽度和左侧边距
++       entry #advanceWidth   水平步进，以设计单位表示
++       entry #leftSideBearing   左侧边距，以设计单位表示
++   entry #MaxpTable   最大值概况表；只读取字形数量
+
+% 1 1 0 1de1a7a9f010e8211f95070062b6bf56
+
+@ 0 4 0 177eae10948580a4178b06534de28ea8
++         `maxp` 表。
++         `glyphCount` 决定 `loca` 表的大小，并限定每个字形 id 的范围。
++     entry #offset   表在文件中的偏移量
++     entry #glyphCount   字体中字形的数量
++   entry #PostTable   PostScript 元数据：斜体角度、下划线位置和粗细、固定间距
+
+% 1 1 0 0819608ec2d75535020ea0466c14e933
+
+@ 0 3 0 1655c1ee0592f93209aa21d44bcc7f3f
++         `post` 表。
++         斜体角度是以度为单位的定点数，向右倾斜时为负，它是 `Coverage.of` 判断文件是否为斜体时读取的标志之一。
+
+% 2 1 0 0d8007feb17c29d80633110110991d13
+
+% 3 1 0 1bb832052ec26fed1ca18ace09d9b8d0
+
+% 4 1 0 12910f6aa4bb4a0612b49f226e185336
+
+% 0 1 0 182cc677406fb3f9005bca4610f62a92
+
+% 1 1 0 0ed542def9e6811d027eeeea8067746e
+
+@ 0 6 0 02506cc09eb384340182fef0f64db8a6
++     entry #offset   表在文件中的偏移量
++     entry #italicAngle   斜体角度，以度表示，直立为 0，从 16.16 定点数解码
++     entry #underlinePosition   下划线相对于基线的位置
++     entry #underlineThickness   下划线的粗细
++     entry #monospaced   字体是否为固定间距
++   entry #Os2Table   OS/2 与 Windows 度量：字重和字宽等级、嵌入权限、排版度量
+
+% 1 1 0 0a9dfe56abbc4d430b4744ccb143107f
+
+@ 0 6 0 0af574572a7fa3f51b6d8c1be46edc09
++         `OS/2` 表，按其版本定义的偏移量逐字段读取。
++         字重等级（1–1000，即 `Weight` 使用的刻度）和字宽等级（1–9，由 `Stretch.widthClass` 命名）是 `Coverage.of` 为静态字体记录的内容；选择位说明字样是否为斜体；排版上伸部、下伸部和行距，Windows 上升值和下降值，x 字高和大写字高，是 PDF 字体描述符所需要的。
++         表的版本早于其出现的字段为 `Unset`。
+
+% 2 1 0 1f3c26e404c5056811b71529abc83609
+
+% 3 1 0 0b41dfb5ba5754301cf4906be14f8b2d
+
+% 4 1 0 1faaf41055f072b810686fd5f69f36dc
+
+% 0 1 0 0d9556c6db19f57c0f556392467fc482
+
+% 1 1 0 19d674a81db981d4004d720453dc7c2b
+
+@ 0 20 0 1407cbc0b9127c3113b64c62ab6e40bd
++     entry #offset   表在文件中的偏移量
++     entry #version   表的版本，决定后续哪些字段存在
++     entry #weightClass   1–1000 刻度上的字重；`Weight(weightClass)` 即为相应的 `Weight`
++     entry #widthClass   字宽等级，1 到 9；由 `Stretch.widthClass` 命名
++     entry #fsType   嵌入权限位
++     entry #familyClass   IBM 字体类别和子类别
++     entry #selection   `fsSelection` 位：斜体、下划线、反色、空心、删除线、粗体……
++     entry #typoAscender   排版上伸部
++     entry #typoDescender   排版下伸部
++     entry #typoLineGap   排版行距
++     entry #winAscent   Windows 上升值：裁剪区域的顶部
++     entry #winDescent   Windows 下降值：裁剪区域的底部
++     entry #xHeight   x 字高，自该表第 2 版起提供；此前为 `Unset`
++     entry #capHeight   大写字高，自该表第 2 版起提供；此前为 `Unset`
++     entry #embeddable   字体是否可以嵌入文档
++         可安装嵌入为 0，而在限制位中只有 `0x0002` 完全禁止嵌入，因此“预览与打印”字体和可编辑字体都算作可嵌入。
++     entry #italic   选择位是否把字样标记为斜体或伪斜体
++         `fsSelection` 的第 0 位标记斜体字样，第 9 位标记伪斜体字样；两者都是倾斜的。
++   entry #NameTable   命名表：本地化的、按平台区分的字符串，例如族名和 PostScript 名称
+
+% 1 1 0 13e7def6a423940d08436c3fb8de6172
+
+@ 0 9 0 1e995057357f21b71e5c520cfc59d7a3
++         `name` 表的记录，每条记录是某个名称 id 在某个平台、编码和语言下的一个字符串。
++         `apply` 为一个 `Sfnt.NameId` 选出最佳记录：首先是 Windows 美式英语，然后是其他 Windows 和 Unicode 记录，最后是旧式 Macintosh 记录。
++         Windows 和 Unicode 字符串按 UTF-16BE 解码，Macintosh 字符串按 MacRoman 解码，并以 ISO-8859-1 作为回退。
++     entry #offset   表在文件中的偏移量
++     entry #count   名称记录的数量
++     entry #records   每条记录，带有其平台、编码、语言、名称 id 和范围
++     entry #apply   某个名称 id 的最佳字符串；字体未记录任何字符串时为 `Unset`
+
+% 1 1 0 09199ca52fc79c1f06aff5a8509d8145
+
+% 2 1 0 128d011e463d04bf0778473a555495e8
+
+% 3 1 0 118501d041d753f11774bc8293c2de4c
+
+% 0 1 0 17fe423f4b6b726e1936f006fdbeb132
+
+% 1 1 0 19ec48fa56284abc0067fe5fb53d3124
+
+@ 0 9 0 038cb873360cfb9b1701bcf053a6c547
++     entry #Record   一条名称记录：平台、编码、语言、名称 id，以及其字符串所在的位置
++       entry #platformId   平台：0 为 Unicode，1 为 Macintosh，3 为 Windows
++       entry #encodingId   平台内的编码
++       entry #languageId   语言；`0x409` 是 Windows 美式英语
++       entry #nameId   名称 id，与 `Sfnt.NameId#ordinal` 匹配
++       entry #length   字符串的字节长度
++       entry #start   字符串在文件中的偏移量
++       entry #decode   按其平台的编码解码后的字符串
++   entry #CmapTable   字符到字形的映射，由多种格式的编码子表组成
+
+% 1 1 0 01b72f255071c2a511efcddc775cace6
+
+@ 0 20 0 117d6773ea55655908939344d0b24f49
++         `cmap` 表持有一个或多个 `GlyphEncoding` 子表，每个对应一个平台和编码，并采用库可读取的格式之一：0（按字节索引的数组）、4（覆盖基本多文种平面的分段范围）、6（连续的一段）和 12（覆盖全部 Unicode 的分组）。
++         `best` 选出首选子表——完整 Unicode 先于 BMP，Unicode 先于 Windows 符号和 Macintosh——`glyph` 通过它解析字符。
++         其他格式的子表会在首次读取其 `format` 时以 `UnknownFormat` 抛出 `Font.Error`。
++     entry #offset   表在文件中的偏移量
++     entry #version   表的版本
++     entry #numTables   编码子表的数量
++     entry #glyphEncodings   每个编码子表，带有其平台、编码和偏移量
++     entry #best   首选子表；没有子表时为 `Unset`
++         按（平台，编码）排序：Windows 完整 Unicode（3, 10）居首，然后是 Unicode 完整（0, 4）和（0, 6）、Windows BMP（3, 1）、Unicode BMP（0, 3）、其他 Unicode、Windows 符号（3, 0），Macintosh Roman（1, 0）居末。
++     entry #glyph   通过最佳子表得到某个字符的字形
++         没有子表时以 `MissingEncoding` 抛出 `Font.Error`，最佳子表的格式是库不读取的格式时以 `UnknownFormat` 抛出。
++         未映射的字符是字形 0。
++     entry #GlyphEncoding   一个编码子表：它的平台、编码、偏移量和解析后的格式
+
+% 1 1 0 0d8f14ce80a70db50682924a774aff90
+
+@ 0 30 0 1ab351025f728ec2004e474f1fc98f35
++           子表的 `format` 在首次使用时解析一次，成为一个 `Format`，由它的 `glyph` 执行查找；解析结果在互斥锁下记忆化，因此并发读取共享同一结果。
++       entry #platformId   子表的平台
++       entry #encodingId   子表的编码
++       entry #offset   子表在文件中的偏移量
++       entry #formatId   子表的格式编号，立即读取
++       entry #format   解析后的子表；对不读取的格式以 `UnknownFormat` 抛出 `Font.Error`
++       entry #Segment   一个格式 4 的分段：一个字符范围，带有其增量和范围偏移量
++         entry #start   分段的第一个字符
++         entry #end   分段的最后一个字符
++         entry #delta   范围偏移量为零时，加到字符上即得其字形的值
++         entry #rangeOffset   分段通过字形 id 数组间接查找时不为零
++       entry #Format   每个解析后的子表都能做的事：把字符映射到此字体的字形
++         entry #glyph   字符的字形；未映射时为字形 0
++       entry #Format0   按字节索引的字形 id 数组，只覆盖前 256 个字符码
++         entry #start   数组的偏移量
++         entry #glyph   256 以下字符的字形，否则为字形 0
++       entry #Format4   覆盖基本多文种平面的分段范围，通过增量或间接查找
++         entry #idRangeOffsetsStart   范围偏移量数组的偏移量，间接查找相对于它进行
++         entry #segments   各个分段，按其结束字符排序
++         entry #glyph   字符的字形：先按分段查找，再通过增量或字形 id 数组得到
++       entry #Format6   连续字符码范围的一段连续字形 id
++         entry #first   这一段的第一个字符码
++         entry #count   这一段中字符码的数量
++         entry #start   字形 id 数组的偏移量
++         entry #glyph   这一段内字符的字形，否则为字形 0
++       entry #Format12   覆盖全部 Unicode 的顺序映射分组，以二分查找检索
++         entry #groupCount   分组的数量
++         entry #start   分组数组的偏移量
++         entry #glyph   字符的字形，通过在分组上二分查找得到
+
+@ 0 1 0 0cdf83def44c05a011e576661ed7a75c
++ entry .Truetype   TrueType 字体：轮廓为二次曲线、存放于 `glyf` 和 `loca` 中的 sfnt，可以子集化
+
+% 1 1 0 0f6d0daaef38c31b1efd2708c5640e10
+
+@ 0 5 0 1f7bfbe93ca6fbe41c407a88cb99acaf
++       `Truetype` 是带有两个轮廓表的 `Sfnt`——`loca` 是每个字形数据所在位置的索引，`glyf` 是数据本身——以及需要它们的操作。
++       `Truetype(source)` 从任何可流式读取的来源读取字体，不探测格式；通常的入口是 `Sfnt(source)`，因为它对没有 `CFF ` 表的字体返回 `Truetype`。
+
+@ 0 2 0 0b3dbde7ac8f3f2f191501b4e258ddf1
++       重要的操作是 `#subset`：一个只包含某些字符所需轮廓的新字体，用于嵌入文档。
+
+% 2 1 0 01e34357d1b1ace312bda73e1eccb3bd
+
+% 3 1 0 082f214d778838a10b376348fbbcb81e
+
+% 4 1 0 04bf0752aa0731c81b0a8592033ab19f
+
+% 0 1 0 085ef5989bf2586711352803bcfe1585
+
+% 1 1 0 1f43393010905c2c00b0d29c9ed4bca2
+
+@ 0 7 0 13e15d547801325a1014f3b5778f991d
++       子集化保留原有的字形编号——未使用的字形保留编号，但轮廓为空——因此字符映射、度量以及字形之间的每个引用无需重写便仍然有效，其他每个表都原样保留。
++       复合字形会被追踪：保留的集合是在组合关系下的传递闭包（`#glyphClosure`），因此带重音的字符会保留构成它的组件。
++       结果是一个完整的文件，包括校验和，`head` 改为使用长 `loca` 偏移量。
+
+% 1 1 0 0d0668d2963a5cac1d77311fe281e317
+
+% 1 1 0 03b9109a5c4a70e80bd1193965612465
+
+@ 0 17 0 13d55e93ad58c91418e67185942eebf9
++   entry .apply   从任何可流式读取的来源读取 TrueType 字体
++       `Truetype(source)` 完整读取一个 `Streamable by Data over Credit` 来源；`Truetype(data)` 是基于字节的 case class 构造器。
++       两者都不检查轮廓格式：`Sfnt(…)` 会检查，文件可能是 OpenType 时应使用它。
++   entry #data   字体文件的字节
++   entry #loca   `loca` 表：每个字形在 `glyf` 中的偏移量
++       大小由 `maxp.glyphCount` 决定，按 `head.indexToLocFormat` 指定的格式读取。
++       如果缺少 `loca`、`maxp` 或 `head`，以 `MissingTable` 抛出 `Font.Error`。
++   entry #glyf   `glyf` 表：字形轮廓，通过 `loca` 索引
++       如果缺少 `glyf` 或 `loca`，以 `MissingTable` 抛出 `Font.Error`。
++   entry #subset   只包含某些字符所需字形的新字体，保留编号
++       `subset(chars: Set[Char])` 或 `subset(text: Text)`。
++       保留的字形是这些字符映射到的字形、字形 0，以及在复合组件关系下的传递闭包。
++       其他每个字形保留编号而失去轮廓；`glyf` 和 `loca` 会被重建（后者总是采用长格式，并相应调整 `head`），其他每个表逐字节复制。
++       整个文件用 `Sfnt.assemble` 重新组装，因此其校验和是有效的。
++       如果重建所需的表缺失，抛出 `Font.Error`。
+
+% 2 1 0 1491c2eb7077bb6f113ebac8c10128e5
+
+% 3 1 0 1c43205d7c84a62d0aabcf5c7ffebea0
+
+% 4 1 0 128150f0a8e57f601696e138a75cc2b1
+
+% 0 1 0 1e54c0e3d5f664e215a06352159ec437
+
+% 1 1 0 094218539787af3605ca9832dcd856d7
+
+@ 0 5 0 1e05bac3a07e98391176986ca47d9db8
++   entry #glyphClosure   渲染一组字形所需的字形，追踪复合组件
++       一组字形 id 在 `GlyphRecord#components` 下的传递闭包：复合字形由其他字形绘制而成，而这些字形本身也可能是复合的。
++       `#subset` 用它来决定保留什么。
++       如果缺少 `glyf` 或 `loca`，抛出 `Font.Error`。
++   entry #LocaTable   字形位置索引：每个字形的数据在 `glyf` 中的起始位置
+
+% 1 1 0 0be39871a176076307e815a4cf7c3890
+
+@ 0 8 0 1dad3bbcb148a6791533d1c867acfae6
++         每个字形一个偏移量，外加一个，因此字形的范围是它的偏移量与下一个偏移量之差。
++         短格式中，偏移量减半后以十六位存储；长格式中，偏移量按原值存储。
++     entry #offset   表在文件中的偏移量
++     entry #glyphCount   字形的数量，来自 `maxp`
++     entry #longFormat   偏移量是 32 位（`true`）还是减半的 16 位（`false`）
++     entry #offsets   未减半的偏移量，只读取一次
++   entry #GlyfTable   字形轮廓，每个按 id 作为 `GlyphRecord` 获得
+
+% 1 1 0 16647e7ae6ed233e183495ec885cdeda
+
+@ 0 7 0 1ae66e92beb693900dc31769f9409964
++         `glyf(id)` 通过 `loca` 定位字形的数据。
++         记录暴露原始字节、轮廓数量、字形是否为复合字形，以及（若是）构成它的组件；轮廓本身不会被进一步解码。
++     entry #offset   表在文件中的偏移量
++     entry #loca   轮廓所依据的 `loca` 表
++     entry #apply   某个字形 id 的记录
++     entry #GlyphRecord   一个字形的原始数据：它的范围、轮廓数量和复合组件
+
+% 1 1 0 0e216b8083a71b041f7fc195c58820d0
+
+@ 0 12 0 0a069cfa24b5049c0797d2d3d93fbc72
++           没有轮廓的字形——空格，或被 `#subset` 丢弃的字形——范围为零；复合字形的轮廓数量为负，并列出组装它的字形。
++       entry #start   字形数据在文件中的偏移量
++       entry #length   字形数据的长度；没有轮廓的字形为 0
++       entry #empty   字形是否没有轮廓
++       entry #bytes   字形的原始数据
++       entry #contourCount   轮廓的数量；复合字形为负值
++       entry #composite   字形是否由其他字形组装而成
++       entry #components   复合字形由之绘制的字形 id；简单字形为 `Nil`
++           只读取一次，按标志遍历组件记录：字或字节参数，以及单一缩放、x 与 y 分别缩放或 2×2 变换。
+
+@ 0 1 0 182d0e6aa3d51277062e20b4752d43d4
++ entry .Opentype   OpenType 字体：轮廓为 PostScript、存放于 `CFF ` 表中的 sfnt
+
+% 1 1 0 1dd00472635714ef1561a03d7f211472
+
+@ 0 5 0 121ca1c72fd327a202a59853e1987736
++       字形轮廓存储在 `CFF ` 中的 `Sfnt`。
++       每个共用的表都可用——字符映射、度量、名称、`OS/2`、`fvar`、布局特性——但轮廓数据尚未解析，因此没有与 `Truetype#glyf` 对应的东西，也不能子集化。
++       `Sfnt(source)` 在找到 `CFF ` 表时返回 `Opentype`；`Opentype(source)` 不经检查直接读取。
+
+% 1 1 0 0c4c215b71ade75b0b6d56ebb8f467cc
+
+% 1 1 0 09b149d3fc254bef09ba8abba6758304
+
+@ 0 2 0 0c91981056ea5ecc1f041c6f3a788ea9
++   entry .apply   从任何可流式读取的来源读取 OpenType 字体
++   entry #data   字体文件的字节
+
+@ 0 1 0 0c5db2110664c2570b4ab363baa721e7
++ entry .Glyph   某个特定字体的字形，以其 id 表示
+
+% 1 1 0 11b918146ab2279108f4a4429996976c
+
+@ 0 5 0 18e1d59210ffb7b8181885211bffd32d
++       `Glyph[font.type]` 是字形 id 的不透明包装，类型绑定到解析它的字体，因此一个字体的字形不能用于索引另一个字体。
++       获得字形的方式是 `Sfnt#glyph(char)`；`glyph.id` 是在 `internal` 中声明的扩展，用于读回 id（0 是缺失字形）。
++       `Glyph(font, id)` 包装一个已知的 id。
++       该类型是 `phoenicia.internal.Glyph`，在此导出。
+
+% 2 1 0 052a7e1e06e94e0f056f2e0594b80f82
+
+% 3 1 0 0b8aa9def61b663a1feb47bce5956c14
+
+% 4 1 0 0437f580ddb9394b0e7e2814ea5147d5
+
+% 0 1 0 1ea461913e74a44f1c6eba2654932309
+
+% 1 1 0 06a9444b0df9015216b804848f2c4e9c
+
+@ 0 2 0 07dd1ebec1967310045a30e568b0ac77
++       其伴生对象的成员在 `internal.Glyph` 中声明，类型从那里导出，并在那里编写文档。
+
+% 1 1 0 12674fa921ae801c1856518f6b62ffa3
+
+@ 0 1 0 0d00cde479db274807a554a0b3bcdf7a
++ entry .Typeface   以名称表示的字体族，名称也是它的类型：`Typeface["Inter"]` 是 `Typeface of "Inter"`
+
+% 1 1 0 00c18c298fa0541d0f3401adfe263f02
+
+@ 0 5 0 1857563d580f4d3d1b4c12f772e2d551
++       `Typeface` 命名一个族——文档引用该字体族时写下的名称，即 CSS 的 `font-family` 或 PDF 的 `/BaseFont`——并把这个名称作为它的 `Topic` 携带，因此 `Typeface["Inter"]` 的类型是 `Typeface of "Inter"`，一个字体族的供给与另一个字体族的供给在代码编译时就能区分开。
++       它不涉及字体从何而来：那是 `Typesettable` 供给的事。
+
+@ 0 3 0 02b07e962b0b2fe902a1e75a96489591
++       字体族的字样可以流畅地获得。
++       `#face`（或 `#regular`）是它的常规直立字样，`#bold`、`#light`、`#italic` 等由此进行选择；每一个都是 `Face of "Inter"`，在其类型中携带请求，以供编译时检查。
+
+% 2 1 0 0e3de47e2ccd08a110fee7d5c02ccfdc
+
+% 3 1 0 0f0502210be118600c016a683d7b3c63
+
+% 0 1 0 1fd77387225ee42216a80fae5635289c
+
+% 0 1 0 0569c5651bd2d5710d79c49a6d57b445
+
+% 0 1 0 0591e0ad8475396a07feb7f5d602e53f
+
+% 0 1 0 042ea1d71f2fedc109f39a620eaa62dc
+
+% 1 1 0 044bc9cfdfb4316c007f6287f5b8305e
+
+@ 0 4 0 07a8f6deb7d9484b0ff0751aa6c41618
++       CSS 通用族——`.SansSerif`、`.Serif`、`.Monospace`、`.Cursive`、`.Fantasy` 和 `.SystemUi`——也是字体族；浏览器用它拥有的任何字体来排版它们，因此 cataclysm 的 `Web` 伴生对象无需任何声明即可提供它们。
++       两个字体族的名称相等时，它们相等；字体族显示为它的名称。
+
+% 1 1 0 029191e12616d51d011f5bcee30664ad
+
+% 2 1 0 0c8cd626203e4d7f1cfb92633fa45ddf
+
+% 2 1 0 16b416dfa30cbdec108782ef3340319b
+
+@ 0 25 0 0af5d7232768e72d03175cc37e6dcdc8
++   entry .apply   `Typeface["Inter"]`：由作为字面量类型的名称得到一个族的字体族
++       一个内联方法，其类型参数是族名，类型为 `Label`：名称用 `constValue` 从类型中读取，因此必须是字面量。
++       结果是 `Typeface of family`，名称既是值也是类型。
++   entry .SansSerif   CSS 通用 `sans-serif` 族，即 `Typeface of "sans-serif"`
++   entry .Serif   CSS 通用 `serif` 族，即 `Typeface of "serif"`
++   entry .Monospace   CSS 通用 `monospace` 族，即 `Typeface of "monospace"`
++   entry .Cursive   CSS 通用 `cursive` 族，即 `Typeface of "cursive"`
++   entry .Fantasy   CSS 通用 `fantasy` 族，即 `Typeface of "fantasy"`
++   entry .SystemUi   CSS 通用 `system-ui` 族，即 `Typeface of "system-ui"`
++   entry .showable   把字体族显示为它的族名
++   entry .inspectable   把字体族检视为 `Typeface["Inter"]`
++   entry #name   族名，作为文本
++   entry #Topic   作为字面量类型的族名：`Typeface["Inter"]` 的为 `"Inter"`
++   entry #face   字体族的常规直立字样，其他字样由此选出
++       一个 `Face of Topic`，采用 `Weight.Regular`、`Slant.Upright` 和 `Stretch.Normal`，没有变化，也没有特性，其类型记录 `Weights = 400`、`Slanting = "upright"` 和 `Enabled = Nothing`。
++       `#regular` 是同一个字样。
++   entry #regular   常规直立字样；与 `#face` 相同
++   entry #light   细体（300）直立字样
++   entry #medium   中等（500）直立字样
++   entry #semibold   半粗（600）直立字样
++   entry #bold   粗体（700）直立字样
++   entry #black   特粗（900）直立字样
++   entry #italic   常规斜体字样
+
+@ 0 1 0 0772c9b9f4dc08981eb17598a0b450d6
++ entry .Face   字体族应如何排版：字重、倾斜、字宽、变化轴和布局特性
+
+% 1 1 0 1b60a2357a29fbf918a49303d16ead1b
+
+@ 0 5 0 017d643ec3b2880b0eaf3c19bd9c3756
++       `Face` 描述一个请求：一个 `#typeface`，采用某个 `#weight`、`#slant` 和 `#stretch`，在可变字体的其他轴上有 `#variations`，以及要启用或禁用的 `#features`。
++       它不涉及字体从何而来；把它与一个 `Typesettable` 供给配对，就得到一个 `Font`。
++       字体族的族名是字样的 `Topic`，因此 `Typeface["Inter"].bold` 是 `Face of "Inter"`。
+
+@ 0 2 0 07ba8bacd63b51dd049fe305f1f7e347
++       字样从字体族的 `face` 开始流畅地构建，每个方法返回一个改变了某一部分的新字样，并相应更新其类型：
+
+% 2 1 0 150083330a06980c148330eaf92b6044
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04554ff5aa7fbff011575f4fe320ecd7
++         label 常规字样
+
+% 1 1 0 04c62758f4f83ac1153f9fb7ce33b9af
+
+% 0 1 0 0184f8be8bf7a3db003c5c0054d7f08e
+
+% 0 1 0 02de0783f879a54910f30064330e8f62
+
+% 1 1 0 1f7fca2031e3261912e5430dd89e41fb
+
+@ 0 1 0 121c3c927674ac221315e5bd29a3a62c
++         label 粗体
+
+% 1 1 0 1d6e75103b2ce451138ae63de30a7210
+
+% 0 1 0 0d71b14ffd26e3501840c43492c7d6de
+
+% 0 1 0 1be8535929107ef8169e964b530d3074
+
+% 1 1 0 08893dbd810f73c5080ae887ef94bdb8
+
+@ 0 1 0 1effa55a791cc2561b59e3931df954f0
++         label 粗斜体
+
+% 1 1 0 128ae89ae0a17a080c53be56ca133ec4
+
+% 0 1 0 1d1d0436b816aece0cf422f0fd200839
+
+% 0 1 0 030cb1b67323f5581aeefb5daa8d3223
+
+% 1 1 0 17abffee9f19b9b51227bb572eb61f84
+
+@ 0 1 0 19c61af23a6d01220888c182f086757a
++         label 使用旧式数字
+
+% 1 1 0 066baf3fbf40be5e0ec41ef05a4d2ae9
+
+% 0 1 0 0338895b0ad0be5110a2fb002bedd872
+
+% 0 1 0 18a5affb21db0d8306e71d1bbc44b9da
+
+% 1 1 0 03208a2d69f8707a1db07b7af8ea612d
+
+@ 0 1 0 0cf795cd3ff681c00ca1e60da84e84aa
++         label 在运行时决定的字重
+
+% 1 1 0 0565070e99edbd38189dd18933ec865d
+
+% 0 1 0 0b2fdbff1fe44bc207c1115b13aa6ce6
+
+% 0 1 0 0c0aa6b929b0c0130b682ec920d3f242
+
+% 0 1 0 054a0417a0857ac20b9419f2045bb890
+
+% 1 1 0 0d91bb94e3a6bdc806259c1d088a6784
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 07345358dec714fe1c5b999b31194c92
++       三个类型成员记录代码所请求的内容，只要它在代码编译时可知：`#Weights` 是作为字面量的字重（`700`），`#Slanting` 是 `"upright"` 或 `"italic"`，`#Enabled` 是已启用特性的标签的并集（`"onum" | "tnum"`，没有则为 `Nothing`）。
++       在运行时决定的部分——用计算得到的字重调用 `#weighing`、`#slanted`、按标签给出特性的 `#featuring`——记录为 `Face.Runtime`。
++       当 `Font` 由一个文件位于类路径上的供给创建时，记录下的请求会在代码编译时对照该文件检查；其余部分在创建字体时检查。
++       标注为普通 `Face of "Inter"` 的字样会丢失这些记录，只在运行时检查。
+
+@ 0 2 0 135a63b7af107b8a18c5ad4a75c104f0
++       `Face(typeface, weight, slant, …)` 由运行时的值构建字样，每个类型成员都是 `Runtime`。
++       字样显示为 `Inter 700 italic`。
+
+% 1 1 0 15b5badb1ec0839e10188b1b40403207
+
+% 2 1 0 0daf18bbbf36f6ac13c4eb7e509d7b5c
+
+% 0 1 0 011566bfdd640c841186f1c1dc58fad3
+
+% 0 1 0 0d8247cc4d067a2e1e25d2357ce87338
+
+% 0 1 0 1d813bd53f13f3d308064c2d493b6b86
+
+% 0 1 0 0c8caa14dfa91dfb1ad3ca2bd89b8599
+
+@ 0 14 0 0678009e746a07e804e795f88c2bae3b
++   entry .Runtime   表示请求中在运行时决定之部分的标记类型
++       一个只作为类型使用的密封 trait：`Weights = Face.Runtime` 表示字重是计算得到的，而不是按名称选择的，因此编译时检查把它留给运行时检查。
++   entry .Shape   `Face.Shape[family, weights, slanting, enabled]`：整个请求都在类型中的字样
++       细化类型 `Face { type Topic = family; type Weights = weights; type Slanting = slanting; type Enabled = enabled }`，每个流畅方法都返回它。
++   entry .apply   由运行时的值构建的字样：`Face(typeface, weight, slant, stretch, variations, features)`
++       字体族之后的每个参数都有默认值——常规、直立、正常、无、无——结果是 `Face.Shape[family, Runtime, Runtime, Runtime]`，因此由它创建的字体只在运行时检查。
++   entry .showable   把字样显示为它的字体族、字重和倾斜：`Inter 700 italic`
++       直立时省略倾斜：`Inter 400`。
++   entry .inspectable   把字样检视为 `Face("Inter", Weight(700), Slant.Italic)`
++   entry .Feature   以四字符标签表示的 OpenType 布局特性，标签也是它的类型
+
+% 1 1 0 1d47b1870b7424bf15c82c46d7213a4f
+
+@ 0 5 0 07689c5ef1a1d5751aee5512b31599d2
++         `Face.Feature.OldstyleNumerals` 是 `Feature of "onum"`：标签是特性的 `Topic`，因此启用它的字样会在其 `Enabled` 类型中记录 `"onum"`。
++         常见的已注册特性都有名称；样式集和字符变体按编号表示（`.stylisticSet(3)` 是 `ss03`）；`Face.Feature(t"…")` 接受任何其他标签，作为 `Feature of Runtime` 只在运行时可知。
+
+@ 0 3 0 1c22c6c81c286f7c1af81b9bf9082b2b
++         特性通过 `#enabled`、`#disabled` 或 `#set(value)` 成为一个 `Setting`，字样通过 `Face#enabling`、`Face#disabling` 和 `Face#featuring` 接受设置。
++         两个特性的标签相等时，它们相等；特性显示为它的标签。
+
+% 2 1 0 0889b0e1d22969a71d0e9aefaa7b6c96
+
+% 3 1 0 08d077412ca15afc1a461d852a13b098
+
+% 0 1 0 1769430724898de31be42a7827eae01f
+
+% 0 1 0 10b86447a4f855c910404542c7ca3e48
+
+% 0 1 0 065936e7b4611481136f34010d2ff993
+
+% 0 1 0 119715f7bd03c72a0612a8019b4c38ec
+
+% 1 1 0 02f032f2bd8bcc581c50b694c13481d9
+
+@ 0 25 0 013630e430d8277c0bcd6e5b1b59aa92
++     entry .apply   `Face.Feature(tag)`：任意标签表示的特性，只在运行时可知
++         结果是 `Feature of Runtime`，因此启用它会向字样的 `Enabled` 类型添加 `Face.Runtime` 而不是标签，编译时检查会跳过它。
++     entry .Ligatures   标准连字，`liga`
++     entry .DiscretionaryLigatures   自选连字，`dlig`
++     entry .HistoricalLigatures   历史连字，`hlig`
++     entry .ContextualAlternates   上下文替代字形，`calt`
++     entry .Kerning   字距调整，`kern`
++     entry .OldstyleNumerals   旧式数字，`onum`
++     entry .LiningNumerals   等高数字，`lnum`
++     entry .TabularNumerals   等宽数字，`tnum`
++     entry .ProportionalNumerals   比例数字，`pnum`
++     entry .SlashedZero   带斜线的零，`zero`
++     entry .Fractions   分数，`frac`
++     entry .Ordinals   序数标记，`ordn`
++     entry .SmallCapitals   由小写字母转换的小型大写字母，`smcp`
++     entry .CapitalSmallCapitals   由大写字母转换的小型大写字母，`c2sc`
++     entry .Swashes   花饰字形，`swsh`
++     entry .Superscript   上标字形，`sups`
++     entry .Subscript   下标字形，`subs`
++     entry .stylisticSet   第 _n_ 个样式集，`ss01` 到 `ss20`，作为运行时特性
++         编号补零至两位。
++         结果是 `Feature of Runtime`，因为标签是在运行时生成的。
++     entry .characterVariant   第 _n_ 个字符变体，`cv01` 到 `cv99`，作为运行时特性
++     entry .Setting   带有设定值的特性：0 禁用，1 启用，更大的值选择一个替代字形
+
+% 1 1 0 023ef310e079b2031585c9aa0cdb1ac0
+
+@ 0 58 0 0021f1bbcce04e6b187ed3366d466d0c
++           字样在其 `features` 列表中持有的内容。
++           大多数特性只有开和关；字符变体和其他一些特性用更大的值在替代字形中进行选择。
++       entry #feature   特性
++       entry #value   值：0 为关，1 为开，或某个替代字形的编号
++     entry .showable   把特性显示为它的标签
++     entry .inspectable   把特性检视为 `Face.Feature("onum")`
++     entry #tag   四字符标签
++     entry #enabled   开启该特性的设置，值为 1
++     entry #disabled   关闭该特性的设置，值为 0
++     entry #set   带有所选值的设置，用于在替代字形中进行选择的特性
++   entry #typeface   字样所属的字体族
++   entry #weight   字重，在 1–1000 刻度上
++   entry #slant   直立、斜体，或按某个角度的伪斜体
++   entry #stretch   字宽，以正常宽度的百分比表示
++   entry #variations   在可变字体其他轴上的位置
++   entry #features   布局特性设置，按添加的顺序排列
++   entry #Topic   作为字面量类型的族名
++   entry #Weights   作为字面量类型的所请求字重（`700`），或 `Face.Runtime`
++   entry #Slanting   所请求的倾斜，为 `"upright"` 或 `"italic"`，或 `Face.Runtime`
++   entry #Enabled   已启用特性的标签，作为联合类型；没有则为 `Nothing`，或包含 `Face.Runtime`
++   entry #weighing   采用任意字重的字样，在运行时决定
++       `Weights` 变为 `Face.Runtime`，因此字重只在创建字体时检查。
++       具名字重（`#bold`、`#light`……）则会记录其字面量。
++   entry #thin   字重为 100 的字样
++   entry #light   字重为 300 的字样
++   entry #regular   字重为 400 的字样
++   entry #medium   字重为 500 的字样
++   entry #semibold   字重为 600 的字样
++   entry #bold   字重为 700 的字样
++   entry #black   字重为 900 的字样
++   entry #slanted   采用任意倾斜的字样，在运行时决定
++       `Slanting` 变为 `Face.Runtime`。
++       `#italic`、`#upright` 和 `#oblique` 则会记录倾斜。
++   entry #italic   斜体字样；`Slanting` 变为 `"italic"`
++   entry #upright   直立字样；`Slanting` 变为 `"upright"`
++   entry #oblique   按某个角度（以度表示）倾斜的字样，为正时向右倾斜
++       伪斜体是倾斜的直立字样，而不是单独绘制的斜体，但为了覆盖范围检查，它被记录为 `"italic"`，因为能排版它的是提供斜体字样的供给。
++   entry #stretched   采用任意字宽的字样
++       字宽不记录在类型中，因此只在创建字体时检查。
++   entry #condensed   宽度为正常宽度 75% 的字样
++   entry #expanded   宽度为正常宽度 125% 的字样
++   entry #varying   在可变字体的其他轴上带有某个位置的字样
++       `varying(Variation.Axis.OpticalSize, 24.0)` 添加一个 `Variation`。
++       已注册的字重、字宽、斜体和倾斜轴分别通过字重、字宽和倾斜来设定，因此对静态字体和可变字体的请求方式相同；`varying` 用于光学尺寸和字体自有的轴。
++       字体缺少的轴，或超出其范围的值，会在创建字体时被拒绝。
++   entry #featuring   带有在运行时生成的特性设置的字样
++       添加一个 `Face.Feature.Setting`。
++       该设置可能启用任何东西，因此 `Enabled` 会加入 `Face.Runtime`，编译时检查会跳过它看不到的内容。
++   entry #enabling   启用了某个特性的字样，其标签记录在类型中
++       `enabling(Face.Feature.OldstyleNumerals)` 向 `Enabled` 添加 `"onum"`，因此文件缺少该特性的供给会在代码编译时拒绝这个字体。
++   entry #disabling   禁用了某个特性的字样
++       禁用字体所缺的特性不会改变任何东西，因此它不添加任何要求，类型也不变。
+
+@ 0 1 0 0d049b2356a65e1b1ccc5e0e48ecf6f3
++ entry .Weight   位于 CSS 和 OpenType 共用的 1–1000 刻度上的字重，带有常用名称
+
+% 1 1 0 09eff044f2ccc99f0e9efc84d3c2f83d
+
+@ 0 6 0 1d9f6627f944869015753bd166fddcbd
++       一个不透明的 `Int`（`phoenicia.internal.Weight`，在此导出）。
++       `Weight(value)` 会把刻度之外的值移到较近的一端，而不是拒绝它。
++       九个具名字重是 `.Thin`（100）、`.ExtraLight`（200）、`.Light`（300）、`.Regular`（400）、`.Medium`（500）、`.Semibold`（600）、`.Bold`（700）、`.ExtraBold`（800）和 `.Black`（900）。
++       `.Range` 是一个闭区间，就像可变字体的 `wght` 轴或 `@font-face` 声明所提供的那样，用 `lower to upper` 或 `weight.range` 生成。
+
+% 2 1 0 1ecd1e6b0efe3c8f11f6db5270a8fb8b
+
+% 3 1 0 132e69f2d79997410c2fcf7ca434e4e7
+
+% 0 1 0 042644f2a8dfa05b0810f3ab0e6b7700
+
+% 0 1 0 0eb743b5eedaf65a09612bc077dd7dd1
+
+% 1 1 0 043e0da8ea1c9ec11dc0fdb1ba05b93b
+
+@ 0 2 0 08188797f03da00117d84e37e501b492
++       其伴生对象的成员声明在 `internal.Weight` 中，类型也从那里导出，并在那里有文档说明。
+
+% 2 1 0 1bec525c99cc39040bd1063941c247cc
+
+% 2 1 0 067d5b52c2dc79e0025d4cb595104d4e
+
+@ 0 1 0 1c9672acf789b333099c1f2a3a5b6499
++ entry .Slant   字样是否倾斜：直立、真正的意大利体，或带角度的倾斜体
+
+% 1 1 0 1c8d022b8beb5c8617eb7646050514a3
+
+@ 0 6 0 094430f8c55a14c504f606c7b5255625
++       `Upright` 和 `Italic` 是两种绘制出来的字样；`Oblique(angle)` 是按以度为单位的角度倾斜的直立体，为正时向右倾。
++       就覆盖范围而言，倾斜体算作意大利体。
++       倾斜显示为 `upright`、`italic` 或 `oblique 11.5°`。
++   entry .showable   把倾斜显示为 `upright`、`italic` 或 `oblique 11.5°`
++   entry .inspectable   把倾斜检视为 `Slant.Upright`、`Slant.Italic` 或 `Slant.Oblique(11.5)`
++   entry #upright   该倾斜是否为 `Upright`
+
+@ 0 1 0 1d6f08e8fab9fee5172a95132721e8b0
++ entry .Stretch   字样的宽度，以其正常宽度的百分比表示，从 50% 到 200%
+
+% 1 1 0 1b67957a969d3982049c622769fb225a
+
+@ 0 5 0 16e4978ed37437800d16a707a051e10e
++       一个不透明的 `Double`（`phoenicia.internal.Stretch`，在此导出），按 CSS `font-stretch` 的度量方式。
++       `Stretch(percentage)` 会钳制到 50–200。
++       从 `.UltraCondensed`（50%）经 `.Normal`（100%）到 `.UltraExpanded`（200%）的九个具名宽度，就是 OS/2 表的 `usWidthClass` 编号为 1 到 9 的宽度，由 `.widthClass` 映射。
++       `.Range` 是一个闭区间，就像可变字体的 `wdth` 轴所提供的那样。
+
+@ 0 2 0 05b6503d0bee3df803580d5fba17aa62
++       其伴生对象的成员声明在 `internal.Stretch` 中，类型也从那里导出，并在那里有文档说明。
+
+% 2 1 0 08e77ae33884235d0b9f361cfeed72b0
+
+@ 0 1 0 0ff5cf9aad030ea61eff1bfb01e2cdc0
++ entry .Variation   可变字体某个轴上的一个位置
+
+% 1 1 0 0c18be9fb183f9ea03ab208313f9e44f
+
+@ 0 5 0 0cb7e82dcfbd31091b26cbc372a23707
++       `Variation(axis, value)` 是 `Face#varying` 添加到字样上的东西。
++       已注册的字重、宽度、意大利体和倾斜轴通过字样的 `Weight`、`Stretch` 和 `Slant` 设置，因此 `Variation` 用于光学尺寸和字体自己的轴。
++       供给会对照字体的 `fvar` 范围检查每个变体值：字体没有的轴以 `Font.Error.Reason.UnknownAxis` 拒绝，超出范围的值以 `AxisOutOfRange` 拒绝。
+
+% 2 1 0 0f3c1498ec3ec97c070d06e66ac5f1dd
+
+% 3 1 0 1125ea5ffc3d4f091ac851150b05e94f
+
+% 0 1 0 18d424417af5566f138a0ee981ac6578
+
+% 1 1 0 09545358c386809e14b15dac95bc09ee
+
+% 1 1 0 1b1a18c5db142b161c1b4d29ad292f67
+
+% 2 1 0 017f05980cf9c1380185dd5d7a5482ec
+
+@ 0 1 0 067ae38ffb01d2d40f8525953387402a
++   entry .Axis   以四字符标签表示的变体轴
+
+% 1 1 0 145f4148020c60a70e49df43c0c48061
+
+@ 0 19 0 04f3aeea0a009413154872e0e0e354eb
++         一个不透明的 `Text`。
++         五个已注册的轴有名称：`.Weight`（`wght`）、`.Width`（`wdth`）、`.Italic`（`ital`）、`.Slant`（`slnt`）和 `.OpticalSize`（`opsz`）；字体自己的轴用 `Variation.Axis(tag)` 从其标签生成。
++     entry .apply   由标签得到的轴
++     entry .Weight   `wght` 轴
++     entry .Width   `wdth` 轴
++     entry .Italic   `ital` 轴
++     entry .Slant   `slnt` 轴
++     entry .OpticalSize   `opsz` 轴
++     entry .showable   把轴显示为其标签
++     entry .inspectable   把轴检视为 `Variation.Axis("opsz")`
++     entry .tag   四字符标签
++   entry .Range   字体在某个轴上接受的值，取自其 `fvar` 表
++     entry #axis   该轴
++     entry #lower   接受的最小值
++     entry #upper   接受的最大值
++     entry #contains   某个值是否位于该范围内
++   entry #axis   该轴
++   entry #value   在该轴上的位置
+
+@ 0 1 0 17d8a4db9386a541179f33b124c20c1a
++ entry .Medium   排版文本所在的媒介：网页、印刷，或渲染器定义的任何媒介
+
+% 1 1 0 164f3733010e4fa016b730f0fcf058a4
+
+@ 0 5 0 061927d782f5affe0023df31f3f4caab
++       一个开放的特质。
++       `Typesettable` 供给把它所服务的媒介作为其 `Form`，`Font in Web` 是供浏览器使用的字体，`Font in Print` 是供 PDF 使用的字体。
++       `in Medium` 本身的供给（嵌入的字体文件）服务于每一种媒介，因为文件可以被携带到任何地方，这就是请求方要求 `in (? >: medium)` 的供给、而不是 `in medium` 的供给的原因。
+
+@ 0 4 0 1236a77117f0bec41a71e19796f1eb59
++       每个渲染器都把自己的媒介声明为一个带伴生对象的特质，而该媒介总能兑现的供给就位于这个伴生对象中，处于隐式作用域内：cataclysm 的 `object Web` 持有 CSS 通用字体族，facsimile 的 `object Print` 持有 PDF 的标准十四种字体。
++       测试或自定义的渲染器用一行代码声明一个媒介：
+
+% 2 1 0 0fd58c4c51e6fcda11c18ba0aaf2cddf
+
+% 3 1 0 136953f30898647d05e0420401af0f1e
+
+% 2 1 0 0c1bd193120172b21ae02cb9f3afbb62
+
+% 1 1 0 12b201685371fa2914380c76084cfdbc
+
+% 2 1 0 1d2357269924b1ac19facc48518da793
+
+% 3 1 0 1df29d565a498ccd057f13efef4f36f5
+
+@ 0 1 0 1afdf3ca45c6c1801cf558ff1403188c
++ entry .Typesettable   字体族在某种媒介中的供给：字体从何而来，以及它能排版哪些字样
+
+% 1 1 0 16d61dd86bf58055027cfc83fa9ec0d5
+
+@ 0 8 0 0677e2c93a40a4ed01c605619d4df30b
++       `Typeface of "Inter" is Typesettable in Web` 说明网页如何获得 Inter，即其 `#sources`：字体文件本身、一个 URL、读者已安装的字体、一个样式表，或对于通用字体族什么也没有；并说明随后它能排版哪些字样，即其 `#coverage`。
++       所服务的媒介是它的 `Form`，一个从 `Formal` 继承的类型成员：`Medium` 表示每种媒介，也可以是某一种媒介，如 `Web`。
++       它以 given 的形式声明一次，而只有在作用域中有该字体族在该媒介中的供给时，才能生成 `Font`：正是这一点保证了文档为它所命名的每个字体族都携带其媒介所需的东西。
+
+% 2 1 0 0e69cfb0089c1e8f0a228523858934ad
+
+% 3 1 0 0694d98170217235132d82443eb6c934
+
+% 4 1 0 09b0dc000b8165860246e3300eceb64d
+
+% 0 1 0 0ec3b16c63b240e905072027e08983c3
+
+% 0 1 0 1d71b97489d920e306751232a49a3683
+
+% 0 1 0 1d66122d61624ee41d9b9d5338d43fdd
+
+% 0 1 0 187acf8f10fb57de0db00dd08059b2a8
+
+% 1 1 0 1fb8b47aa69b73b9092133b6ce155499
+
+@ 0 7 0 04590d238ceedadb161bfee666e5abdd
++       `.embedded` 由字体文件生成供给，每种媒介都能携带字体文件，因此它是 `in Medium`；其覆盖范围从文件中读取，多个文件（常规体、粗体、意大利体）构成一个供给，其覆盖范围是它们的并集。
++       属于某一种媒介的供给通过该媒介声明：`Web.linked` 用于某个 URL 上的文件，`Web.imported` 用于样式表，`Web.local` 用于已安装的字体，各自带有声明的覆盖范围，因为没有文件可读；`Print` 的标准十四种字体无需声明，网页上的通用字体族也一样。
+
+@ 0 4 0 17b876113cfb0ebe01ddce3f02b2a577
++       请求方要求 `in (? >: medium)` 的供给：`in Medium` 的实例服务于每种媒介，而 `in Web` 的实例只服务于网页，作用域中只有 `Web` 供给时调用 `Font.of[Print](face)` 是编译错误。
++       `@missingContext` 消息会说明这一点，并指出两种声明方式。
+
+@ 0 5 0 0825728665a9f59503055d809b0fd5c6
++       供给是 `Locative` 的：由类路径资源生成时（`Typesettable.embedded (cp"/fonts/Inter.ttf")`），它把路径保留为其 `Locus`，由它生成的 `Font` 会在代码编译时对照该文件进行检查。
++       此时整个类型要在具名 given 中加上括号，因为否则 given 的类型中不允许出现带字面量类型的中缀链：
+
+% 2 1 0 1c6a5435bb0d273f0f3029ff3131fcb7
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 18d07e8a352d11ed1ecd461c9345d31b
+
+% 0 1 0 088e390e17f4c8ae01c149c44fd1bbad
+
+% 1 1 0 17cf565af6301afc1f1e0ae3951de9b6
+
+@ 0 3 0 0fc6ab032dd5443917bc0b01cf86eed3
++       供给是纯数据，位于媒介所在之处：媒介总是具备的供给位于 `Web` 或 `Print` 的伴生对象中，项目自己的供给位于一个按名称导入的对象中，即 `import fonts.inter`，因为 `import fonts.*` 不会导入 given。
+
+% 1 1 0 1616cca3f7c6e3c30048ed2e32dd91ba
+
+% 2 1 0 14afe8ec5325a26e037ce8b0dee74556
+
+% 1 1 0 1c15c96efd7af7af0f0d4109eed1e62e
+
+% 1 1 0 020f1537fe2ce5260d5314a53ad64b86
+
+@ 0 1 0 0a8830c6adfc80e306051fc6c45d10d1
++   entry .Source   媒介获得字体族的方式：嵌入、链接、本地、导入或通用
+
+% 1 1 0 1901000c13a44ec3033defaa75ef7923
+
+@ 0 10 0 1fd60cdfa8c2e8fb029380c0deb87318
++         `Embedded(sfnt)` 在文档内携带字体文件本身；`Linked(url, format)` 指定一个要获取的文件，已知时带上其 `Format`；`Local(name)` 指定读者已安装的字体；`Imported(url)` 指定一个声明该字体族的样式表；`Generic` 是每种媒介都能排版的字体族。
++         文档收集其字体的来源，并输出其媒介所需的任何东西：`@font-face` 规则、嵌入的字体程序。
++     entry .Format   链接字体文件的格式：`Ttf`、`Otf`、`Woff` 或 `Woff2`
++         即 `@font-face` 的 `src` 用 `format(…)` 声明的内容，使浏览器可以跳过它无法读取的文件。
++   entry .Embedding   `.embedded` 返回的供给：携带在文档内的文件
+
+% 1 1 0 181b1776bf92744e1720a756da1949e9
+
+@ 0 15 0 074ef594c183338e0acb30d11a181a46
++         一个具名类，使该供给具有稳定的类型。
++         它是 `in Medium`，其来源是每个文件一个 `Source.Embedded`，其覆盖范围是对各文件的 `Coverage.of` 进行 `Coverage.combine` 的结果。
++     entry #Self   所提供的字体族
++     entry #Form   `Medium`：嵌入的文件服务于每种媒介
++     entry #sources   每个字体文件一个 `Typesettable.Source.Embedded`
++     entry #coverage   各文件覆盖范围的并集，从其表中读取
++   entry .embedded   由字体文件生成的供给，`in Medium`，覆盖范围从文件中读取
++       两个重载。
++       `Typesettable.embedded[family](sfnts*)` 接受任意数量已在手中的 `Sfnt`，生成一个 `Typeface of family is Typesettable in Medium`；字体族显式给出，或从 given 声明的类型推断。
++       `Typesettable.embedded (source)` 接受一个 `Locative` 的可流式读取来源（一个 `cp"…"` 资源），读取它，并把其路径保留为供给的 `Locus`，因此由该供给生成的 `Font` 会在代码编译时，对照编译器类路径上该路径处的文件进行检查。
++       文件不在编译器类路径上时，检查留到运行时进行。
+
+% 2 1 0 0ed84d5ccb4d89541ac59b9d374e518d
+
+% 3 1 0 1fca932335e3697a10a2d869321f9a3c
+
+% 4 1 0 1c7a7410d73bf6090737e55738130c5e
+
+% 2 1 0 03264539c79d32080a9a95ea147082e5
+
+% 0 1 0 0f44654b5b4588f20d270017fe412b5f
+
+% 1 1 0 0224dd887c2f602d1dea1aeb2dbc4396
+
+@ 0 3 0 0b351250db6feb9e0f4bff0eb75ee79a
++   entry #Self   所提供的字体族，一个 `Typeface of family`
++   entry #sources   媒介获得该字体族的方式，每个部分一个 `Typesettable.Source`
++   entry #coverage   该供给能排版的字样
+
+@ 0 1 0 0741e81772fb52580e0e4c00487490cf
++ entry .Coverage   供给能排版哪些字样：字重、倾斜、宽度、轴和特性
+
+% 1 1 0 1dc12cc4f9f755c5191d516aa4454bba
+
+@ 0 5 0 17d692121e37018d0d2447b7c54e5053
++       `Coverage` 要么是 `Unknown`，即对来源所提供的字样一无所知，因此接受每一个字样；要么是 `Entries(entries)`，一个 `Coverage.Entry` 列表，每一项是供给提供的一个字样，或可变字体提供的一系列字样。
++       只有覆盖范围接受的字样才能生成 `Font`；`#complaint` 给出不接受时的 `Font.Error.Reason`，接受时给出 `Unset`。
+
+@ 0 5 0 00e0279350c4ccb00988c4cac78247ed
++       覆盖范围的匹配方式与浏览器匹配 `@font-face` 声明的方式相同：先找出跨越该字重的条目，再从中找出具有该倾斜的条目，然后是宽度，最后对照剩下的条目检查字样的变体值和特性。
++       第一个失败的步骤决定拒绝的原因：`UncoveredWeight`、`UncoveredSlant`、`UncoveredStretch`、`UnknownAxis`、`AxisOutOfRange` 或 `MissingFeature`。
+
+@ 0 7 0 1d1206267dd7c32a1e979523926d98c2
++       `.of(sfnt)` 从字体文件的表中读取其覆盖范围：可变字体的 `fvar` 轴，否则是 `OS/2` 表记录的单一字重和宽度、`OS/2` 和 `post` 的意大利体位，以及 `GSUB` 和 `GPOS` 的特性；`.combine` 求多个文件覆盖范围的并集。
++       `Coverage(weights = …, italic = …)` 为文件不在手边的来源（一个 URL 或已安装的字体）声明覆盖范围；只接受所声明的内容，因此声明为某一字重的链接字体会拒绝对另一字重的请求，而不是让浏览器合成它。
+
+% 2 1 0 16c1a2cb7e038d260c2fbcb205da06a5
+
+% 3 1 0 197e3704e71f89490385220e29001fd9
+
+% 4 1 0 19caa94135d6b4d31be3128fcca52010
+
+% 0 1 0 041f7ba406b014f41225266f45670872
+
+% 0 1 0 08f91640e7fe16f40c5fec30f9807291
+
+% 0 1 0 18e643efdc9e3b621ee9ab0dc2340cc6
+
+% 0 1 0 0d339d4c183b840704c68660060df84c
+
+% 1 1 0 140583bcad764f6d1a3d3c13f772dde3
+
+% 2 1 0 188700662bb987f0195d0088bf2f59b2
+
+% 3 1 0 1db9a2eef0be519f09285df32996ebaf
+
+% 1 1 0 13c1c9b3c3007e6917b22ce0f7264ca5
+
+@ 0 1 0 0d272a16e1e60a9000c19a3fe7cd534c
++   entry .Entry   供给提供的一个字样，或可变字体提供的范围
+
+% 1 1 0 1f9051b251db0cb107afda4d1ac13807
+
+@ 0 3 0 044eb7edef18a5b212155c15f5e8b920
++         所跨越的字重和宽度、该条目是直立、意大利体还是两者皆有、其他轴及其范围，以及所实现的布局特性；对于没有文件而声明的字样，特性为 `Unset`，此时接受任何特性。
+
+% 2 1 0 18ecba61dae7a5fd17bc504d0149b329
+
+% 3 1 0 159383fb6c6da50318a93ba85fa293e3
+
+% 0 1 0 07fae3b532d799d9037ccf21f667ddde
+
+% 1 1 0 0e1cb3e9d8454f7c0ccb8da1d26aec57
+
+@ 0 29 0 0b3adea0af96d1871ca133ea626f3092
++     entry #weights   字重的跨度
++     entry #upright   是否提供直立字样
++     entry #italic   是否提供意大利体字样
++     entry #stretches   宽度的跨度
++     entry #axes   其他变体轴，各带其范围
++     entry #features   所实现的特性；未知时为 `Unset`
++     entry #sets   该条目的字重、倾斜和宽度是否接受某个字样
++     entry #complaint   该条目无法给出的第一个变体值或特性设置，或 `Unset`
++         `complaint(name, variations, settings)` 对照 `axes` 检查每个变体值的轴和值（`UnknownAxis`、`AxisOutOfRange`），对照 `features` 检查每个设置的特性（`MissingFeature`），并在原因中指明字体族。
++         未知的特性接受任何东西。
++   entry .apply   为文件不在手边的来源声明的覆盖范围
++       `Coverage(weights, upright, italic, stretches, axes)`，各参数都有默认值（常规字重、仅直立、正常宽度、无轴），生成一个特性未知的 `Entry`。
++       用于 URL 或已安装的字体，它们的字样就是声明所说的那些，别无其他。
++   entry .of   字体文件的覆盖范围，从其表中读取
++       对于可变字体，取自其 `fvar`：`wght` 轴作为字重跨度，`wdth` 作为宽度跨度，`ital` 或 `slnt` 轴表示两种姿态都提供，每个轴都作为一个 `Variation.Range`。
++       对于静态字体：`OS/2` 的字重类别和宽度类别作为单一字重和宽度。
++       `OS/2` 的意大利体位和非零的 `post` 斜体角度使该条目成为意大利体。
++       特性为 `Sfnt#features`。
++       表无法读取的文件具有 `Unknown` 覆盖范围，接受一切，而不是拒绝它很可能具备的字样。
++   entry .combine   多个覆盖范围的并集；任何一个 `Unknown` 都会使整体成为 `Unknown`
++   entry #complaint   某个字样为何无法依此覆盖范围排版；可以排版时为 `Unset`
++       两个重载。
++       `complaint(face)` 检查整个字样。
++       `complaint(name, weight, slant, stretch, variations, features)` 只检查给出的部分：以 `Unset` 传入的部分不做检查，当字样的字重或倾斜在运行时才确定时，编译时检查使用的就是这种形式。
++       `Unknown` 覆盖范围从不报错。
+
+@ 0 1 0 0c2244085e8284e712a00e43ffb4b3fe
++ entry .Font   字样与其字体族在某种媒介中的供给配成的对：渲染器所接受的东西
+
+% 1 1 0 14a85fce5520f1a102b1beb993b35da8
+
+@ 0 6 0 05e009981d69a23c0e13cf49b47f7482
++       `Font in Web` 是一个字样，连同使其字体族在网页上可用的 `Typesettable` 供给；`Font in Print` 对 PDF 而言也是如此。
++       媒介是字体的 `Form`，一个从 `Formal` 继承的类型成员：`Web`、`Print`，或生成该字体时所用的任何媒介。
++       渲染器只接受这种形式的字体，因此文档无法命名它没有携带供给的字体族；随后文档收集其字体的供给，并输出其媒介所需的任何东西。
+
+@ 0 6 0 1f7fe236ec8c62b5160fd2efcc19b6eb
++       字体有两种生成方式。
++       `Font(face)` 从预期类型推断媒介，这既适用于 `Font in Web`，也适用于 `Optional[Font in Web]`，因此像 `Lettering(…, font = Font(inter.bold))` 这样的字段无需标注。
++       `Font.of[Web](face)` 指明媒介，用于没有预期类型可供推断的地方。
++       两者都需要作用域中有一个 `Typeface of family is Typesettable in (? >: medium)`（该字体族在该媒介或在每种媒介中的供给），以及一个 `Tactic[Font.Error]`。
+
+% 2 1 0 125b0bfe28a0eede002b202ace4c0f87
+
+% 3 1 0 1c42b24180ede9de1085b38050d7843d
+
+% 4 1 0 006abfe38fd8410709484402f4cdebf4
+
+% 2 1 0 125872f2f7be30ac107700393afdc178
+
+% 2 1 0 1e3a5fdd1f8219d51307ddf394a88d12
+
+% 2 1 0 101eac0fbc3bb91801c2f7ac6ba22696
+
+% 0 1 0 17dd2c034102d2ee03de10456ee197f4
+
+% 0 1 0 0f155b072f013bfc0a04ba245c6cf25e
+
+% 1 1 0 10f3136a5247606614fcf2298db18f20
+
+@ 0 8 0 0e1f9edb6d01993d0012d3c2e1a7df29
++       供给无法排版的字样（它缺少的字重、它不具备的意大利体、其文件未实现的特性、超出其范围的轴值）会被拒绝，而不是被合成或被悄悄忽略。
++       拒绝在生成字体时表现为一个 `Font.Error`，指明字体族和问题。
++       而当供给的文件位于类路径上（其 `Locus`，来自 `Typesettable.embedded(cp"…")`），并且字样的请求体现在其类型中时，拒绝就是一个带有相同消息的编译错误：_phoenicia: the font at /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_。
++       只有静态已知的内容才会静态检查；运行时检查总是执行。
+
+@ 0 1 0 004b61c62a504e291c549425b71844d4
++       字体显示为其字样：`Inter 700 italic`。
+
+% 1 1 0 16037dbbbd1d1b5b0f3d596d4cee9c6f
+
+% 2 1 0 0709d8ac5eba537702ba4141abd86bbc
+
+% 1 1 0 022c7470f76563fe1d1b1998f8a8a4ab
+
+% 1 1 0 00c6d790ce27ec4507d47e05e616c43a
+
+@ 0 1 0 1aa7a474aec88e3b11877786d7fa877c
++   entry .Error   当字体无法读取或字样无法排版时抛出
+
+% 1 1 0 070c11b9b382a52f10ac0012a60c942e
+
+@ 0 4 0 019da1316175b04302682a8c61d77367
++         错误 `↯/s.89.1`，_the font could not be used because …_，带有一个 `Reason`，其编号是该错误的子代码。
++         读取表相关的原因由 `Sfnt` 的访问器抛出；覆盖范围相关的原因在供给的 `Coverage` 拒绝该字样时，由 `Font(…)`、`Font.of[…](…)` 和 `Font.paired` 抛出。
+
+% 2 1 0 1e93e1320fd6713e034c6a69dc493bab
+
+% 3 1 0 0dc8c28f47c5da4f07a3b401b1624d6a
+
+% 0 1 0 0d375dffa5cb104510e1e4be880d77cc
+
+% 0 1 0 107914071670bd261df9fbb8862d6e87
+
+% 0 1 0 0e179f043036efa40dfa965b9dec8eda
+
+% 0 1 0 035922082b4c447c1dcc12eb85a072db
+
+% 1 1 0 03e7fc7e0387bcef0889a2a6c9912504
+
+@ 0 1 0 07b4985405fcfd22113ad33f4438b4cc
++     entry .Reason   原因：缺失或无法读取的表，或供给无法排版的字样
+
+% 1 1 0 0638f6b27c63fd7616ecf253b017f3ec
+
+@ 0 2 0 0e564163af85634f02392d43a498ec5f
++           分支 1 到 4 是字体中的错误；5 到 10 是覆盖范围相关的原因，各自指明字体族：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 1c4ad983f4b5fa30181d9ad19cc706a5
+
+@ 0 2 0 0054814f03f3d5fb1a93dd1bb214f017
++           row  `UnknownFormat(format)`  2  _the table contains data in unknown format `format`_  库不读取的 `cmap` 子表格式
++           row  `MagicNumber`  3  _the font did not contain expected check data_  常量错误的 `head` 表
+
+% 0 1 0 1ddf15d6fbb89b70090a67d9323b6f17
+
+% 0 1 0 13f42d1e7aee81791c845d0381cda9a9
+
+% 0 1 0 1a5ab34546c5197f1220c337f331eb81
+
+% 0 1 0 00ab2183a62de84f0a289632e92f0b2d
+
+% 0 1 0 18b39f7e79dfe7e41b5ae69629822f24
+
+% 0 1 0 0c065683cdd6b3ef11b4bc4dbed67f87
+
+% 0 1 0 1e923beff40363a4089e955ee33b00c7
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 14 0 1fff80839d9997da13f14f30e649ef04
++       entry #number   原因的编号，1 到 10，即该错误的子代码
++     entry .communicable   把每个原因渲染为其消息
++     entry #reason   原因
++   entry .apply   `Font(face)`：在预期类型所指的媒介中，把字样与作用域中的供给配对
++       一个内联方法，其媒介从预期类型推断：`Font in Web` 或 `Optional[Font in Web]`，因为 `Form` 是类型成员，预期类型会将其固定。
++       需要一个 `Typeface of family is Typesettable in (? >: medium)` 和一个 `Tactic[Font.Error]`。
++       当供给带有 `Locus` 时，字样所记录的请求会在编译时检查；无论如何，随后都会执行运行时检查。
++       没有预期类型时，使用 `.of`。
++   entry .of   `Font.of[Web](face)`：同样的配对，但指明媒介
++       返回一个 `.Of[medium]`，其 `apply` 接受字样，这样只需写出媒介，字体族从字样推断。
++       Cataclysm 的 `Web.font(face)` 就是 `Font.of[Web](face)`。
++   entry .Of   `.of` 返回的辅助对象，其 `apply` 接受字样
+
+% 1 1 0 0af5c9210c2d09dd1d95629e46ab13fb
+
+@ 0 14 0 16a55c120b9a73f40a6110c65d862239
++         `Font.of[medium]` 是一个 `Of[medium]`；`Font.of[medium](face)` 是它的 `apply`。
++         两个参数子句是分开的，因此可以只指明媒介而不指明字体族。
++     entry #apply   在指明的媒介中，把字样与作用域中其字体族的供给配对
++   entry .paired   内联形式展开成的运行时配对：先检查覆盖范围，再生成字体
++       `Font.paired[family, medium](face)` 检查 `provision.coverage.complaint(face)`，如有原因就以该原因抛出 `Font.Error`，否则生成 `Font in medium`。
++       内联的 `.apply` 和 `.of` 在它前面加上编译时检查；不需要静态检查的代码，或其字样的请求不在类型中的代码，可以直接调用它。
++   entry .showable   把字体显示为其字样：`Inter 700 italic`
++   entry .inspectable   把字体检视为 `Font(Face("Inter", Weight(700), Slant.Italic))`
++   entry #face   该字样
++   entry #provision   使该字体族在该媒介中可用的供给
++   entry #typeface   该字样的字体族
+
+@ 0 1 0 0cf5baab85f731440b64b372aa49e5a7
++ entry .internal   不透明类型 `Glyph`、`Weight` 和 `Stretch`，以及 `Font(…)` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 086e18a9ada832a01cf705c32199716d
++       不供直接使用。
++       `Glyph`、`Weight` 和 `Stretch` 在这里声明为不透明类型，连同其伴生对象，并导出到 `phoenicia` 包，它们的页面也在那里；这个对象的存在，是为了让不透明类型和 `Font` 宏有一个稳定的归属。
++   entry .Glyph   某个字体的一个字形；参见 `phoenicia.Glyph`
+
+% 1 1 0 1d627a11a94314041be65e496f9e5129
+
+@ 0 3 0 14da46e639e336d4174ab61b53f0904b
++         不透明类型 `Glyph` 的伴生对象，与之一起导出到 `phoenicia` 包。
++     entry .apply   `Glyph(font, id)`：把字形 id 包装为该字体的一个字形
++   entry .Weight   位于 1–1000 刻度上的字重；参见 `phoenicia.Weight`
+
+% 1 1 0 0ef8f8b9044d280e0bf5f1b0c09c9cc4
+
+@ 0 22 0 0b5ebd34e20d2eb2165fc00ac6091f2b
++         不透明类型 `Weight` 的伴生对象，与之一起导出到 `phoenicia` 包。
++     entry .apply   由整数得到的字重，钳制到 1–1000
++     entry .Thin   字重 100
++     entry .ExtraLight   字重 200
++     entry .Light   字重 300
++     entry .Regular   字重 400
++     entry .Medium   字重 500
++     entry .Semibold   字重 600
++     entry .Bold   字重 700
++     entry .ExtraBold   字重 800
++     entry .Black   字重 900
++     entry .Range   字重的闭区间
++       entry #lower   区间中最细的字重
++       entry #upper   区间中最粗的字重
++       entry #contains   某个字重是否位于该区间内
++     entry .showable   把字重显示为其数字：`700`
++     entry .inspectable   把字重检视为 `Weight(700)`
++     entry .value   作为整数的字重
++     entry .to   `lower to upper`：两个字重之间的闭区间
++     entry .range   仅包含此字重的区间
++   entry .Stretch   以百分比表示的宽度；参见 `phoenicia.Stretch`
+
+% 1 1 0 0428f2bee5250dd801e6371b89b5e1a5
+
+@ 0 3 0 1710d841929ea8b410f97e4d2dbec662
++         不透明类型 `Stretch` 的伴生对象，与之一起导出到 `phoenicia` 包。
++     entry .apply   由百分比得到的宽度，钳制到 50–200
+
+% 0 1 0 1dc6dc90d21fdf010aa6f9dc5f69d397
+
+% 0 1 0 08d469758f6dd4f91daffd39af248e4f
+
+% 0 1 0 0699a8c2c79ef89f0c27fd14b400230c
+
+% 0 1 0 080b3c0ef8d044b20869433ee9bca0cd
+
+% 0 1 0 147375e30489178d02b8d2e2cd24749d
+
+% 0 1 0 1f20daa655ed25b60a1ec7cecf62ff6f
+
+% 0 1 0 13b3369dc384fd1c1229c72b91260d22
+
+% 0 1 0 167d2d2478be0668074a24f23cee198b
+
+% 0 1 0 08cf05b3dc43292807e370548b988b71
+
+@ 0 17 0 1cd9f63e8eb7f66103b9ab3bcc973586
++     entry .widthClass   OS/2 宽度类别 1 到 9 所对应的宽度；5 或未知值对应 `Normal`
++     entry .Range   宽度的闭区间
++       entry #lower   区间中最窄的宽度
++       entry #upper   区间中最宽的宽度
++       entry #contains   某个宽度是否位于该区间内
++     entry .showable   把宽度显示为百分比：`100.0%`
++     entry .inspectable   把宽度检视为 `Stretch(100.0)`
++     entry .percentage   以正常宽度百分比表示的宽度
++     entry .to   `lower to upper`：两个宽度之间的闭区间
++     entry .range   仅包含此宽度的区间
++   entry .id   字形在其字体中的 id；0 是缺失字形
++   entry .font   `Font(face)` 和 `Font.of[medium](face)` 背后的宏
++       从供给的类型中读取其 `Locus`；如果它是一个字符串字面量，指向编译器类路径上的某个资源，就读取该字体（每个路径一次），推导其 `Coverage`，并对照它检查字样的 `Weights`、`Slanting` 和 `Enabled` 类型成员，拒绝时以 _phoenicia: the font at `path` cannot set this face: …_ 中止。
++       然后展开为 `Font.paired`。

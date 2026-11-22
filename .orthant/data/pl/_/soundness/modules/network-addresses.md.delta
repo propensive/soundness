@@ -1,0 +1,400 @@
+orthant 2 language
+
+@ 0 1 0 1e7cf5f1b50ff4591cdbe1fe87052445
++ ## Adresy sieciowe
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 6 0 0c78b721ef5375680e8057770e138666
++ Każdy z identyfikatorów sieciowych ma własny typ:
++ [adresy URL](https://en.wikipedia.org/wiki/URL),
++ [nazwy hostów](https://en.wikipedia.org/wiki/Hostname),
++ [adresy IP](https://en.wikipedia.org/wiki/IP_address),
++ [adresy e-mail](https://en.wikipedia.org/wiki/Email_address), porty i
++ [adresy MAC](https://en.wikipedia.org/wiki/MAC_address).
+
+@ 0 3 0 0664a4663c2a5b180141fa65fa1d4561
++ Literał jest walidowany w [czasie kompilacji][czas kompilacji], więc niepoprawny literał jest
++ błędem kompilacji w miejscu, w którym go zapisano. Tekst jest parsowany do tych samych typów w
++ [czasie wykonania][czas wykonania], a gdy nie jest zgodny, zgłaszany jest typowany błąd.
+
+@ 0 1 0 0245399382511ce1184a2a61662100e4
++ ### O identyfikatorach sieciowych
+
+@ 0 4 0 16e6d2495f3380890dd61deb4a2c3e6a
++ W większości kodu adres URL, adres IP i adres e-mail to po prostu napisy. Różnice między nimi
++ istnieją tylko w głowie programisty. Wartość, która w rzeczywistości nie jest poprawnym adresem,
++ wędruje przez program, dopóki coś nie spróbuje jej użyć i nie zawiedzie. Walidacja odbywa się
++ późno, jeśli w ogóle, i daleko od miejsca, w którym zła wartość weszła do programu.
+
+@ 0 6 0 176239c2fb17cc9716b757bc03e1e405
++ Tutaj każdy identyfikator ma własny typ i jest walidowany w najwcześniejszym możliwym momencie:
++ literał podczas kompilacji, a tekst w chwili dekodowania. Wiadomo, że `Hostname`, `EmailAddress`
++ i `Port` są poprawne. Ich części również są typowane: port adresu URL jest liczbą, a jego host to
++ nazwa hosta lub adres IP. Adres, którego nie da się skonstruować jako niepoprawnego, to
++ [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md) w najprostszej
++ postaci.
+
+@ 0 2 0 1c2fee29596c6422194462ee7c65dca2
++ Wszystko pochodzi z pakietu `soundness`. Przykłady rzucają każdy błąd jako wyjątek, a ostatni
++ import pozwala im wypisywać wyniki:
+
+% 2 1 0 0683c532939f05bd1bf8f090f2826090
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0aa8bd59cfcb7ee70926e68fe6707e18
++ ### Adresy URL
+
+@ 0 1 0 127c24ba836509cf0fdcefdbe9acf139
++ [Interpolator][interpolator] `url"…"` zapisuje adres URL i sprawdza go w czasie kompilacji:
+
+% 2 1 0 14258efcc1f841e702c16f7f6df23ff9
+
+% 0 1 0 0080617fa6303b42002bd32bae67483f
+
+% 1 1 0 0e55088f8edd9ae611521f9387878442
+
+@ 0 3 0 04b2aed1fb9cb6590ffa5d23f049372c
++ Części adresu URL są typowanymi składowymi: schemat, host, port, ścieżka, zapytanie i fragment.
++ Podstawienie umieszcza wartość we właściwym miejscu. Liczba staje się portem, a wartość tekstowa
++ jest kodowana w ścieżce zgodnie z kodowaniem URL.
+
+@ 0 1 0 0ab9b10e36df56f00e64aac566ac359f
++ Niepoprawny adres URL się nie kompiluje:
+
+% 2 1 0 1024e20e528e98f70ae499c9a9c46df0
+
+% 3 1 0 0110c116919d3d4f04f31783292d2c93
+
+% 4 1 0 0082ae7b23709c271cc65cb52f47f901
+
+% 5 1 0 0e331d9f13737a3d1516e51db7f227df
+
+% 0 1 0 019fc721bde1fe0b0ce3493479a9a680
+
+% 1 1 0 1530e898fea5af3611bd168ee08fb691
+
+@ 0 1 0 085b2d78a77383ec148522ffeba0fbd2
++ Tekst dekoduje się do `HttpUrl` w czasie wykonania za pomocą `as`:
+
+% 2 1 0 1dbb5524069cc26b0d06ed7313b70af8
+
+% 3 1 0 0374eb79136d215c0f557a44ebe357e3
+
+% 4 1 0 1dc230039467221c17e62376bd3f2365
+
+% 0 1 0 1caebe0a3b65a3b214dec52d5adb8f9e
+
+% 1 1 0 0f1d4288624cfb210dc65ab06dd9d186
+
+@ 0 2 0 00c194682c2bb626015983a3a72814b5
++ [Klient HTTP](http-client.md) wysyła żądania pod adresy URL, a [Ścieżki](paths.md) opisują
++ hierarchię, którą ścieżka adresu URL dzieli ze ścieżkami systemu plików.
+
+@ 0 1 0 199be985af5dbdb01d2dbe145f501c91
++ ### Nazwy hostów i adresy IP
+
+@ 0 2 0 042866d3ac2771b70d4125df5a7f4e51
++ Nazwę hosta zapisuje się za pomocą `host"…"`, a adres IPv4 lub IPv6 za pomocą `ip"…"`. Każdy
++ jest walidowany podczas kompilacji:
+
+% 2 1 0 022534e50fede2161a430f66630fa854
+
+% 0 1 0 0fd7317b383fea19074d578a5038519e
+
+% 0 1 0 14118b3611a787830217a22d9d62d6d8
+
+% 0 1 0 02302b2f460018ce0c5b6958b0e6a108
+
+% 1 1 0 03a493a25267978f01b56e1712fa0b43
+
+@ 0 1 0 1c2bc271ca1f40351de8414abf16c80d
++ Adres, który nie jest poprawny, się nie kompiluje:
+
+% 2 1 0 0224ec756b8ebd80159cae8a8f23728d
+
+% 3 1 0 013048877af913420a50dfad8d1dccaa
+
+% 4 1 0 1e1c887aa28a93e40e2b7afcd067ec63
+
+% 5 1 0 1bfe3fe48b910ecd15dcea448cd9bd5f
+
+% 0 1 0 03bc52c29bfd11e305eeb134d2e9dcf4
+
+% 1 1 0 1e647eaf2508f46f057888f6b861f2b7
+
+@ 0 4 0 11ebd7c6f23a1fc4143e4c0fc05fa933
++ Interpolator `ip"…"` obsługuje obie rodziny adresów. Typ, `Ipv4` lub `Ipv6`, przyjmuje od tego,
++ co otrzymał, a sprawdzenia są pełne dla każdej z nich. Prefiks podsieci także jest sprawdzany
++ względem zakresu jego rodziny, więc niemożliwa maska zostaje wychwycona wraz z adresem:
+
+% 2 1 0 03c057f40d6d57ec08c08481064e718d
+
+@ 0 1 0 1e6c099402bdedec1995caf874dfe781
++ column  Reguła
+
+% 0 1 0 134ffc194b9b526e1d59242025e7e0a0
+
+% 0 1 0 134ffc194b9b52701d59242025e7e0a2
+
+@ 0 4 0 1cefa2adfe9f344603ecf8e2216e67f4
++ row  grupy  dokładnie cztery, rozdzielone kropkami  najwyżej osiem, rozdzielone dwukropkami
++ row  każda grupa  liczba z zakresu 0–255  od jednego do czterech znaków szesnastkowych
++ row  skrót  brak; wyłącznie cyfry i kropki  najwyżej jedno `::`
++ row  prefiks podsieci  0–32  0–128
+
+% 1 1 0 0e40448e8388d93c1d4f536d7d3d3d6f
+
+@ 0 1 0 0115739e63b9f5a518b0eb67e4a76f6f
++ ### Podsieci
+
+@ 0 4 0 1f99a477b3a3ee360e32efaf68fbf7d5
++ Adres IP daje podsieć, zapisywaną w zwykłej notacji z ukośnikiem, a `subnet"…"` zapisuje ją
++ bezpośrednio, z długością prefiksu, sprawdzaną w czasie kompilacji. Bity hosta poniżej prefiksu
++ są maskowane, więc niedbale zapisana podsieć zostaje poprawiona, a nie błędnie zinterpretowana:
+
+% 2 1 0 0f51996c7d27d605023424e7f234da76
+
+% 3 1 0 15f71786b16e722e07d8e434e8df3ae2
+
+% 4 1 0 044a358eb16d183c1c6607ccce4cc54b
+
+% 0 1 0 02c7c80c21f5762a15e96a2fbadf42ee
+
+% 0 1 0 1d084672af36ed450d7967526b2be36c
+
+% 0 1 0 08c3f4f9647add910560d9c4b7c2419d
+
+% 0 1 0 1588f0c80139660305ec8022c3f0734b
+
+% 1 1 0 1d3d5629854b7fad04a5d4c1474ce04c
+
+@ 0 2 0 03d2a6717a93b7241fa139eafc5e1356
++ Podsieć odpowiada na pytanie, czy adres do niej należy, czego potrzebuje reguła dostępu lub
++ decyzja o routingu. Jest wartością, a nie parą napisów do porównywania ręcznie.
+
+@ 0 1 0 057c43566e322d60162b3b59fda48980
++ ### Adresy e-mail
+
+@ 0 2 0 07803b43f14b4ff5029d9ead5af34144
++ Adres e-mail zapisuje się za pomocą `email"…"`, a z tekstu parsuje za pomocą `as`. Oba sposoby
++ walidują go według reguł poprawnego adresu:
+
+% 2 1 0 19f183e6f965a7481f6f400aa8c23f10
+
+% 0 1 0 0ace9f85da163d1e0e3370a5bb3847ef
+
+% 1 1 0 02edcebe490dd84313d5a76023955935
+
+% 3 1 0 13ebd0ff51b74b7810c5d57d802f8e43
+
+% 4 1 0 0a82b416ffdc164511c49faa7a020b5d
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 0a3c4f66b3fea5ef0498fb9eab82540c
+
+% 1 1 0 05567ede4ed2673f0ab8526bd03649c7
+
+% 3 1 0 0dd15bde44bbd6bf1d4afa8a3b8191ed
+
+% 4 1 0 1fc8d6854e5d34c6033d5c839fb79451
+
+% 5 1 0 00e00696cf7ac6ae1a3e6535248992ff
+
+% 6 1 0 0d176efed1d3fad5155266ac9788c426
+
+% 0 1 0 06c33167c17ab9321605f61195404390
+
+% 1 1 0 159ca571bd37b110090b174f1cb47413
+
+@ 0 1 0 1699940d0e27bd721fd17466d1e477c2
++ [E-mail](email.md) wysyła wiadomości pod takie adresy.
+
+@ 0 1 0 09788d85f8b135240924430f2845bb4d
++ ### Porty
+
+@ 0 4 0 0f3749d986a4b73116ae13c9c2f70e1f
++ Port zapisuje się za pomocą `tcp"…"` lub `udp"…"`. Jego typ zapisuje transport, a w przypadku
++ literału także numer. Port można nazwać jego
++ [nazwą usługi IANA](https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml)
++ zamiast numerem, a nazwa jest rozwiązywana w czasie kompilacji:
+
+% 2 1 0 0f3c52ede34bb15d0b34c1c3ed34f850
+
+% 3 1 0 01bd765be649974106763568a2c646e4
+
+% 4 1 0 05d60ba4885e87a504e6532858dead30
+
+% 0 1 0 1b096fa6cedb4617095cabcb174808c3
+
+% 0 1 0 1f387eae840b69fb0907a9520c293ae2
+
+% 1 1 0 18dc269b7a5b83c411187c24f5a058ec
+
+@ 0 2 0 16fba20a3a61fe1718bb89b2fd613257
++ Nazwy są sprawdzane względem rejestru usług, łącznie z tym, dla którego transportu każda jest
++ zarejestrowana. Żądanie usługi przez niewłaściwy transport się nie kompiluje:
+
+% 2 1 0 1553ebc07c3b5fff1e3a670629082944
+
+% 3 1 0 1ae3d89b3f10f1b80165c1d93b936aae
+
+% 4 1 0 167d33cb4339a5431a7c629133ef1838
+
+% 5 1 0 1691b085e87f7d380e4eb95f783b10ea
+
+% 0 1 0 125e09ad2b1d80d018c4efa521222cd6
+
+% 1 1 0 19271b0ee1a2915509aa6c26a6a2beb8
+
+@ 0 4 0 159409161ca53db50995ffaa96112c2b
++ `Port[Tcp]()`, bez numeru, prosi system operacyjny o port, który nie jest używany. Tego
++ potrzebuje serwer testowy lub usługa, która wiąże port dynamicznie. Zwracany port to taki, który
++ faktycznie można związać, a nie domysł, który może ścigać się z innym procesem.
++ [Gniazda](sockets.md) wiążą porty i łączą się z nimi.
+
+@ 0 1 0 1ef75bcf8ed396301e38c9363aea0575
++ ### Interfejsy
+
+@ 0 2 0 148e088f8f90700f1c5a1ef24ea3ceb6
++ Własne interfejsy sieciowe maszyny są wymieniane jako typowane wartości. Każdy podaje, czy jest
++ interfejsem pętli zwrotnej, i do każdego można odwołać się po nazwie:
+
+% 2 1 0 1e9b679445a075b60a5a65b75eda964b
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 18a28c39d1f17a8f0340f432f8ebb32f
+
+% 0 1 0 1b859092907ce8a30fa8eb31c0ef2466
+
+% 1 1 0 08c161ca583cb43404f63f45289d77b5
+
+@ 0 1 0 1f66da3f233e9b5f11b137ed38e47a77
++ ### Adresy MAC
+
+@ 0 2 0 04ec6818f5b9fe721d7978149f7504d1
++ Adres MAC zapisuje się za pomocą `mac"…"` lub dekoduje z tekstu. Jest walidowany jako sześć grup
++ szesnastkowych:
+
+% 2 1 0 1a7b49441f37620a0d33831b64d67981
+
+% 0 1 0 1aea3e08be5ce63d074f3970c7776661
+
+% 1 1 0 031115b6c321396b097fec5c39aa37ea
+
+% 3 1 0 02509922fae910d70e52a984774fe4e1
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 19326afe07d95a290e766aa0664f242c
+
+% 1 1 0 0265af2fdd50c16e1ce9d9bd3274f0d2
+
+@ 0 1 0 1e9eff5ff37f893307653ff618c86c7c
++ ### Nazwy i komunikaty DNS
+
+@ 0 5 0 0b178b1c0f307f9b0d49c7d1ebc76003
++ DNS ma własne nazwy. Każda etykieta może zawierać dowolny UTF-8, w tym kropki i spacje, na czym
++ polegają nazwy instancji usług DNS-SD, takie jak `Hamlet's Printer._ipp._tcp.local`. `Dns.Name`
++ zapisuje się za pomocą `dns"…"` i sprawdza w czasie kompilacji. Równość ignoruje wielkość liter
++ ASCII, tak jak sam DNS porównuje nazwy, a etykiety zachowują swoją pisownię:
+
+% 2 1 0 0bd79f63b45ccdc3182aae015fac3a76
+
+% 3 1 0 0edb3f1b65a4a3dc198744888e7eb500
+
+% 4 1 0 0fbf923e9cd277b81361b4a0c65c21cd
+
+% 0 1 0 18f758c92b3208d607e2b5891ad8a03e
+
+% 0 1 0 1b1802b198bf32f60287202df6c5c47e
+
+% 1 1 0 131c0062ff63a73413700803dfcafb90
+
+@ 0 4 0 09196439d3fcc1e201ade84ecd05737b
++ Komunikaty RFC 1035 to pytania oraz rekordy, które przechowują typowane dane oparte na powyższych
++ adresach. Są kodowane do `Data` i dekodowane z niego zwykłymi `in` i `as`. Nazwy są kompresowane
++ przy wysyłaniu i ściśle walidowane przy odbiorze. Dane rekordu są jednym z rozpoznawanych typów
++ lub `Unknown`, który przechowuje ich bajty:
+
+% 2 1 0 04e45f882e9f6a651f7b0e2543e77d5e
+
+% 0 1 0 17550eba7ce5cd3813d96a9d9a20d591
+
+% 0 1 0 065af9087663108e0c163e6d0afd11fe
+
+% 1 1 0 0414c2169ac0fcb7019bccbfad83bdd7
+
+@ 0 4 0 10e6fb2c0745f3ce14abee23817aa23b
++ mDNS dodaje dwa bity: pytanie, które akceptuje odpowiedź unicastową, oraz rekord, który opróżnia
++ pamięć podręczną odbiorcy. Są to zwykłe pola, `unicast` i `flush`, domyślnie wyłączone.
++ `Dns.resolve` sięga do resolvera platformy, a [Wykrywanie usług](service-discovery.md) buduje na
++ tych komunikatach.
+
+@ 0 1 0 066c2593796962940a87d010416acb9b
++ ### Parsowanie w czasie wykonania
+
+@ 0 4 0 138ca7ad8f984c3c0a35c70fe823861f
++ Każdy identyfikator, który ma postać literałową, jest też dekodowany z tekstu za pomocą
++ [`as`](decoding.md#decoding-a-value), z podaniem typu docelowego. Wartość niezgodna zgłasza
++ typowany błąd, który dokładnie wskazuje, co było nie tak. Program walidujący dane wejściowe
++ użytkownika może więc zgłosić usterkę, zamiast jedynie odrzucić wartość:
+
+% 2 1 0 1e0052dc0e5f9cd103e3e8d965ea0bed
+
+@ 0 9 0 015ae6e0eae19df5041fbc9861a8f3ec
++ column  Identyfikator
++ column  Literał
++ column  Typ
++ column  Błąd
++ row  adres URL  `url"…"`  `Url` lub `HttpUrl` dla HTTP  `Url.Error`
++ row  nazwa hosta  `host"…"`  `Hostname`  `Hostname.Error`
++ row  adres IP  `ip"…"`  `Ipv4` lub `Ipv6`  `IpAddress.Error`
++ row  podsieć  `subnet"…"`  `Ipv4Subnet` lub `Ipv6Subnet`  `IpAddress.Error`
++ row  adres e-mail  `email"…"`  `EmailAddress`  `EmailAddress.Error`
+
+% 0 1 0 14259b388293d18e08246e4ce2c57ecf
+
+@ 0 2 0 1a5df394fbab981e1c46820ddac26e88
++ row  adres MAC  `mac"…"`  `MacAddress`  `MacAddress.Error`
++ row  nazwa DNS  `dns"…"`  `Dns.Name`  `Dns.Error`
+
+% 1 1 0 13a58c4c57d65b1914600cb20cc4bb2a
+
+% 3 1 0 1c4ab1cabff1dd260e9b56a792c0ba23
+
+% 4 1 0 1f72cfc2be7b21d80c30faef5ed38473
+
+% 5 1 0 15394b48a1f98e351df371796dc606c2
+
+% 6 1 0 03b960c826bac4aa0da2af632ecb7035
+
+% 0 1 0 15988ddd96f65a1c0d5d3c99e3723703
+
+% 1 1 0 1dc238443a6c548f07f92c7426517f2d
+
+@ 0 2 0 0098853224c035cf11e23693b1d1a975
++ Pole jednego z tych typów w klasie case jest dekodowane w ten sam sposób, więc `Hostname` w pliku
++ konfiguracyjnym jest walidowany podczas odczytu [JSON](json.md) lub [YAML](yaml.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 1 0 1be7ac72129b9c751a29387529166d27
++ - [Formularze](forms.md), [geografia](geography.md), [HTML](html.md) i [interpolacja](interpolation.md) sprawdzają i przenoszą adresy URL i inne adresy.

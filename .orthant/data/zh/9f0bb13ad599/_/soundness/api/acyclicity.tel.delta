@@ -1,0 +1,21 @@
+orthant 2 language
+
+% 0 4 0 00c2b0b4755587fb158510c7379f9947
+
+@ 3 0 0 126e45750d1d96470753b7a416f37c42
++       各层和连线都是 `Sequence`，按 `Ordinal` 读取，`rank` 和 `position` 是 `Map`，因此每次读取都返回 `Optional`：对不存在的层或不在图中的节点返回 `Unset`。
+
+@ 0 4 0 00e8b1f2d88a57b91a87591af6b117e0
++       `dendrology` 的 `LayeredDagDiagram` 为分层分配列并渲染它；其他绘图方式可以直接使用 `layers` 和 `links`。
+
+@ 0 11 0 13b2ff4a59f011121d17e855e3ec1fcf
++   entry .Vertex   层中的一个槽位：图的一个节点，或一条较长的边穿过的点
++       一个枚举：`Real(value)` 是图的一个节点，而 `Virtual(source, target)` 是从 `source` 到 `target`、跨越多层的边穿过这一层的地方。
++       绘图会给虚拟顶点分配一列，并让边从它穿过。
++   entry #layers   各层，自上而下，每层是按绘制顺序排列的 `Layering.Vertex` 组成的 `Sequence`
++   entry #links   `links(i)` 把第 `i` 层连接到第 `i + 1` 层，表示为各自层内位置组成的对
++       一个 `Sequence`，除最后一层外，每层对应一个连线 `List`。
++       每条连线都连接相邻的层：跨越更多层的边在其虚拟顶点处断开。
++   entry #rank   每个节点所在的层，作为 `Map`
++   entry #position   每个节点在其层内的位置，作为 `Map`
++   entry #crossings   整个分层中相互交叉的连线对数

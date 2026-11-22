@@ -1,0 +1,176 @@
+orthant 2 language
+
+@ 0 1 0 0b2c629ed211caf0065a2179968e7d86
++ # Standardy benchmarków w Soundness
+
+@ 0 4 0 19a472c57dc527b20dde8bb4933cafae
++ Ten dokument określa, jak pisze się i organizuje benchmarki w bibliotekach Soundness. Benchmarki
++ opierają się na [Probably](https://github.com/propensive/probably/), a w przypadku etapowanej
++ pracy w czasie kompilacji – na [Sedentary](https://github.com/propensive/sedentary/). Uzupełnia on
++ `testing.md`. Przykłady pochodzą z `lib/*/src/bench/*.scala`.
+
+@ 0 1 0 128121213fd1bbc803c5506b0f37a470
++ ## 1. Położenie i nazewnictwo
+
+@ 0 3 0 16adaf2337405a3b10190d265f7c595f
++ Benchmarki znajdują się w katalogu `src/bench` modułu, w pliku o nazwie
++ `<module>.Benchmarks.scala`. Obiekt rozszerza `Suite` i zwyczajowo nosi nazwę `Benchmarks`:
+
+% 2 1 0 109c1285c5002524066573369b66b571
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 187a0801a33f8d720e6b2ffa22ab2044
+
+% 0 1 0 05b21312d4476d490bedde74e2206bb2
+
+% 1 1 0 176ab5997d1a33eb01209ac7d07807b2
+
+@ 0 1 0 1148561eea39dcb70bdc49b11320baae
++ Identyfikator zestawu testów to identyfikator testów modułu z dopisanym `-bench`.
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Struktura
+
+@ 0 4 0 0effc5924ef7bed01ad97e8d117f6167
++ Benchmark deklaruje się ze środowiskiem `Bench`, które mierzy ciało zamiast asercji, jaką
++ wykonałby test. Środowisko potrzebuje `BenchmarkDevice`, do którego wysyła, a w zasięgu, w którym
++ jest stosowane, także classloadera, środowiska systemowego, systemu, katalogu plików tymczasowych
++ do etapowania oraz strategii obsługi błędów dla ciała, które nie daje się skompilować lub wykonać. Powiązane benchmarki grupuje się za pomocą `suite`:
+
+% 2 1 0 12f4efb7b281bdee1a8c1b289ec176f5
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 03c9874b4d17338b1cba21d2250ea99e
+
+% 0 1 0 1f3ec1445fd475cd1c4d48121b736115
+
+% 0 1 0 1960a27411d56a4918648090905f651f
+
+% 0 1 0 07c972ede95ca1f20f3b89f978cb2ef1
+
+% 0 1 0 1226558befcee4150d92740b7f09277b
+
+% 0 1 0 0a11fd23229f88840c4f78a5cc9c860b
+
+% 0 1 0 0d64621ddb4c73780500fc1ff2846e31
+
+% 0 1 0 0b1fe24093cccfe11abbf509d6b02bf2
+
+% 1 1 0 1bb0bf8e28dbd48a182a78896def91eb
+
+@ 0 2 0 0cae50d80d506c4a07232ce4ce246eb9
++ Środowisko najpierw wykonuje ciało bez pomiaru czasu, aby JIT mógł osiągnąć stan ustalony, a
++ następnie kalibruje je i mierzy w partiach, zgodnie z tymi parametrami:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0db7771dbbbca55019fcee859eb3a410
++ column  Parametr
++ column  Wartość domyślna
++ column  Znaczenie
++ row  `target`  brak; wymagany  jak długo trwa faza pomiaru, łącznie ze wszystkimi mierzonymi partiami
++ row  `warmups`  wartość `iterations`  partie kalibracyjne, które ustalają, ile operacji mieści się w jednej partii
++ row  `iterations`  `5`  mierzone partie
+
+% 1 1 0 07d4347af78ca8fd071ae2d171779129
+
+@ 0 1 0 1a0ae6cb7dd316d01fc3b0bd663b792e
++ Należy wybrać cel na tyle duży, by wynik był stabilny.
+
+@ 0 1 0 1dabd2996e6d45c615064a5f1aea8f78
++ ## 3. Mierzyć wynik, a nie efekt uboczny
+
+@ 0 4 0 1c7a49b8261927c0123fe377d44993d9
++ Ciało musi wytwarzać wartość, którą benchmark konsumuje; w przeciwnym razie JIT może udowodnić,
++ że praca nie jest używana, i ją wyeliminować, a pomiar nic nie zmierzy. Należy zwracać wynik
++ testowanej operacji, zamiast go odrzucać, i nigdy nie mierzyć ciała, którego wartość jest
++ wyrzucana.
+
+@ 0 1 0 14c41a6c5245a05c14596a56648f9df0
++ ## 4. Benchmarki etapowane
+
+@ 0 3 0 0acdec63a6096aa61ce160301b55edad
++ Ciało benchmarku to cytat, kompilowany ponownie w mierzącej JVM. Mierzoną pracę należy zapisać w
++ całości wewnątrz cytatu, tak by każde ciało czytało się jak samowystarczalny fragment, jak w
++ benchmarkach Honeycomb:
+
+% 2 1 0 04db716ce4b506b1095aa6f88c361dbe
+
+% 3 1 0 04fd58747d74cd841bbd38d0380f250e
+
+% 4 1 0 1de00ce9fd0fa2da11bb6c13a6a562a1
+
+% 0 1 0 0cc1131b2962a445181d2f0281732176
+
+% 0 1 0 056aeed64d69f7c11ed0d9c7dec589b7
+
+% 1 1 0 0f8c1e2630f51bc605e67cc00294100d
+
+@ 0 4 0 001a5892f14110ff0bf99ab395e8a3ca
++ Ciało może odwoływać się do wszystkiego, co jest osiągalne ścieżką statyczną, więc nazywa
++ składowe obiektu benchmarku ich w pełni kwalifikowanymi nazwami
++ (`honeycomb.Benchmarks.htmlText1`), a wartości wybrane w `run()` docierają do niego tylko przez
++ wstawkę (`$size`). Nie może się odwoływać do składowej `private`. Takie składowe należy
++ zarezerwować dla:
+
+@ 0 7 0 1c30741b1899776d0ecde3f249180826
++ - danych, na których pracuje ciało: korpusów, pamięci podręcznych i ich budowniczych;
++ - instancji derywowanych raz, takich jak kodek z makra derywacji, tak by ciało mierzyło ich
++   użycie, a nie ich rozwinięcie czy alokację;
++ - instrumentów, które wiele ciał współdzieli, choć nie są tym, co mierzą, takich jak stały
++   `Buffering` czy adapter uruchomieniowy konkurenta;
++ - przebiegów, które wywołuje też `run()`, aby przed pomiarem sprawdzić, czy konkurenci są zgodni.
++   Pozostają one metodami, tak by kod sprawdzany i kod mierzony były tym samym kodem.
+
+@ 0 4 0 1846a59d907bd80b01d79d6a61b6a41c
++ Cytat jest typowany tam, gdzie go zapisano, ale metoda inline, która rozwiązuje instancję podczas
++ rozwijania (przez `summonFrom` lub `summonInline`), robi to dopiero wtedy, gdy kompilowane jest
++ etapowane drzewo, gdzie żaden z importów pliku nie jest w zasięgu. `import` zapisany wewnątrz
++ cytatu podróżuje razem z nim, więc tam należy zaimportować wszystko, czego taka metoda potrzebuje:
+
+% 2 1 0 10bc27b9fef924c404a458365e05fa21
+
+% 3 1 0 01591b996d8f675c0c6dbe090cb23788
+
+% 4 1 0 14802a8b81f144cc129d9381f3f148fa
+
+% 0 1 0 09e8a554e179617a1bfd973089920334
+
+% 0 1 0 05f5dc434f74ff2115756999dccc00b4
+
+% 0 1 0 045e3f99d5b02c9115a1e4939763fe28
+
+% 0 1 0 000000000000007f000000000000007f
+
+% 1 1 0 1748c998fdf6ce8012c206e115e4a54e
+
+@ 0 3 0 1ca17631e3b5a84215d501a09b331c69
++ Givena będącego makrem transparent inline w ogóle nie da się rozwinąć wewnątrz cytatu, więc
++ wywołanie, które go potrzebuje (`lens` z Panopticon w ten sposób rozwiązuje optykę dla każdego
++ segmentu ścieżki), musi nastąpić w metodzie obiektu benchmarku, którą ciało następnie wywołuje.
+
+@ 0 2 0 05fe366633138aea115525639ccf7b1b
++ Harness wiąże ciało jako osobną metodę, więc ciało zapisane w miejscu jest kompilowane przez JIT
++ dokładnie tak samo jak takie, które deleguje do metody.
+
+@ 0 1 0 07990295bf0da21e081146a08dda88ae
++ ## 5. Benchmarki poza zestawem testów
+
+@ 0 3 0 14af6e8a66777d8306bb635c0e57595d
++ Benchmarki nie są uruchamiane w ramach `make test` ani poświadczanej kompilacji CI; uruchamia się
++ je celowo, gdy mierzy się wydajność. Należy trzymać je w `src/bench`, aby nie spowalniały
++ zwykłego cyklu testów.

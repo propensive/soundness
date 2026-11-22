@@ -1,0 +1,329 @@
+orthant 2 language
+
+@ 0 1 0 1683d3798e6598930c0f174aa56f32a2
++ ## Automatyzacja sieci WWW
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 0f591615f6e77b8a0edd57ae264cdc53
++ Sterowanie przeglądarką i skryptowanie strony to dwie strony automatyzacji sieci WWW i obie są
++ tu omówione. Przeglądarką steruje się przez protokół
++ [WebDriver](https://www.w3.org/TR/webdriver2/). Uruchamia się Chrome lub Firefoksa, otwiera
++ [sesję][sesja], przechodzi między stronami, a elementy się odnajduje, klika i wpisuje do nich
++ tekst – to cała maszyneria testów end-to-end.
+
+@ 0 3 0 1fc59d8db8413cdb18664757881ea576
++ Zachowanie po stronie przeglądarki pisze się jako *typowany* JavaScript. Wyrażenia DOM są
++ podczas kompilacji sprawdzane względem własnych definicji interfejsów przeglądarki w
++ [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) i przedstawiane jako JavaScript dla handlerów
++ zdarzeń strony.
+
+@ 0 1 0 01e33bd4ea64d6e80b098f5b4185ba4e
++ ### O automatyzacji sieci WWW
+
+@ 0 4 0 1c31f6cb3b247e83120a503b58af65ed
++ Skrypty automatyzujące przeglądarkę są podwójnie typowane napisami. Elementy lokalizuje się
++ napisami selektorów, a wstrzykiwane zachowanie to JavaScript w literałach napisowych,
++ niesprawdzany, dopóki nie uruchomi go przeglądarka. Błędnie zapisana metoda DOM, taka jak
++ `getElementByld`, to dokładnie ten rodzaj pomyłki, do wyłapywania których istnieje kompilator,
++ i dokładnie ten rodzaj, który te napisy ukrywają.
+
+@ 0 6 0 104ae37710c055960725f0c2e0018b20
++ Tutaj obie warstwy są typowane. Elementy lokalizuje się przez te same typowane selektory
++ i walidowane identyfikatory, których używają [CSS](css.md) i [HTML](html.md). Skryptowanie DOM
++ jest sprawdzane względem faktycznych definicji interfejsów DOM, więc da się zapisać tylko
++ istniejące metody, z argumentami właściwych typów. Sesja ograniczona do swojego bloku i skrypty
++ strony sprawdzane względem własnych definicji DOM realizują
++ [ograniczone zasięgi](../../philosophy/delimited-scopes.md) oraz
++ [bezpieczeństwo z konstrukcji](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 159e7253226fe6d109786f5e34739131
++ Wszystko pochodzi z pakietu `soundness`. W zasięgu znajdują się dostęp do internetu, klient HTTP
++ do komunikacji ze sterownikiem i współbieżność dla procesu sterownika:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 1 0 03ab0efadb174eab0d9be849ee5779d7
++ Przykłady sterujące przeglądarką są kompilowane, ale nie uruchamiane.
+
+@ 0 1 0 082da622afb8974b1563de0d63f6add6
++ ### Sterowanie przeglądarką
+
+@ 0 2 0 1f07a9b2dfb8f251135e40d81f6efb81
++ Sesja przeglądarki uruchamia sterownik, otwiera sesję i zamyka oba, gdy blok się kończy,
++ niezależnie od tego, czy zwraca wartość, czy rzuca wyjątek. Wewnątrz niej sesja nawiguje
++ i wykonuje zapytania:
+
+% 2 1 0 1b1c307c2188b9b612a251813584719f
+
+% 3 1 0 09cd9dc7db64c38f1ba16211c3d4f78f
+
+% 4 1 0 17df9d385a03692a0b3df37da6104e04
+
+% 5 1 0 01f9d58fb3986bce13a81eee29ce73c1
+
+% 6 1 0 1cc477e17b71d557097fadcb7b5d358b
+
+% 0 1 0 0c6bc228d82d96011233283748bfd5e0
+
+% 0 1 0 0bb780337a7cf1461316e1346ac661d0
+
+% 1 1 0 083eb6a5f8834bbe0bacb3e90ce4bbb7
+
+@ 0 3 0 06fa3b6233d86b59041437c5898a55f3
++ `WebDriver.Firefox`, `WebDriver.Safari` i `WebDriver.Edge` działają identycznie, a każdy
++ steruje swoim standardowym plikiem wykonywalnym sterownika.
++ `WebDriver(url"http://localhost:4444", capabilities)` steruje już działającym sterownikiem,
++ także zdalną siatką, przez ten sam interfejs.
+
+@ 0 5 0 0aa1cb1a2e226d3d0a119edf660d931a
++ Uchwyt sesji jest [zdolnością][zdolność], ograniczoną przez sprawdzanie przechwytywania do
++ bloku, który go posiada. Zwrócenie go, albo czegokolwiek, co go przechwytuje, jest błędem
++ kompilacji, ponieważ zamknięta sesja nie jest czymś, co program powinien móc trzymać. Uchwyty
++ elementów natomiast są czystymi wartościami. Każda operacja na nich wymaga jednak sesji
++ w zasięgu, więc poza nią są bezużyteczne.
+
+@ 0 1 0 0eeba2e8552706e504512797b9ae52d6
++ ### Odnajdywanie i używanie elementów
+
+@ 0 1 0 02f54ca385b2db3d13c7a69848150edc
++ Elementy lokalizuje się według typowanych kryteriów. `\` zwraca wszystkie dopasowania,
++ a `element` dokładnie jedno:
+
+% 2 1 0 022d05f4c84c97ea0c23ee750d0bd0df
+
+@ 0 9 0 17fac7d62a276ac60468f70725d4c6dd
++ column  Lokalizator
++ column  Zapis
++ column  Dopasowuje według
++ row  tag HTML  `H1`, `Button`  nazwy tagu
++ row  lista selektorów CSS  `SelectorList.parse(t"nav li")`  selektora CSS
++ row  walidowany identyfikator DOM  `Name[DomId](t"query")`  selektora CSS, z identyfikatorem poprzedzonym `#`
++ row  lista klas  `ClassList["checkbox"]()`  selektora CSS, z każdą klasą poprzedzoną `.`
++ row  XPath  `xp"//li"`  XPath
++ row  `Text`  `t"Sign in"`  tekstu odnośnika
+
+% 1 1 0 1b86897a11eb85fb14f3f78413807be8
+
+@ 0 2 0 1d2cbcae91af76540671034c6ca30b13
++ Elementy odnajdywane wewnątrz elementów schodzą w głąb drzewa, a każdy oferuje operacje
++ potrzebne w testach:
+
+% 2 1 0 14a8b54a27d4c1611d5caae6b20bccb4
+
+% 3 1 0 14562c58cce498130a9fafd49ee687ff
+
+% 4 1 0 003fdce09ac5bd2316b874038642a405
+
+% 0 1 0 1842b9c5dc5960d41f15df4cf22b7ce2
+
+% 0 1 0 1fc9838b78d8789711406c3ffe982615
+
+% 2 1 0 02f6338c0aceacd416f7d72f910bb21b
+
+% 3 1 0 1643c3f6be77d43d00447e85634f7cfd
+
+% 0 1 0 142b725252c61a541a20af1ce4eec0b2
+
+% 0 1 0 0f949dd57a77e2f20f2c5a678cc04f6e
+
+% 0 1 0 1705c47398c79dea0ab647719370e736
+
+% 0 1 0 06c1dd2ca393ee0514edb1b4b91f3b7b
+
+% 0 1 0 06447f83973c2ec916832cbfccfea5ab
+
+% 0 1 0 0a2cf4c7c678ebc203c65a0c101b22b8
+
+% 0 1 0 1717ce40cc28f70b1ec750c966a25f42
+
+% 0 1 0 0402c34679e196720eb16e6f3c712a52
+
+% 0 1 0 1400ae6cb3c50b700055d944d87dc299
+
+% 1 1 0 1b168b8d5addf4320de4d518efc2f9a1
+
+@ 0 2 0 093a7b2816df73ae1bfdfff59277f442
++ `property` odczytuje żywą właściwość DOM, a nie znaczniki. Oto operacje na elemencie; wszystkie
++ wymagają sesji w zasięgu:
+
+% 2 1 0 098a45806171da7c15d47d340a0790d2
+
+@ 0 13 0 1b75ebc267eb8af905d75ce46584874f
++ column  Operacja
++ column  Działanie
++ row  `click()`, `clear()`  klika element lub czyści pole wejściowe
++ row  `value(text)`  wpisuje tekst do pola wejściowego
++ row  `innerText()`  odczytuje wyrenderowany tekst
++ row  `attribute(name)`, `property(name)`  odczytuje atrybut ze znaczników lub żywą właściwość DOM, jako `Optional`
++ row  `cssValue(name)`  odczytuje obliczoną wartość CSS
++ row  `tagName()`, `role()`, `label()`  odczytują tag elementu, jego dostępną rolę i dostępną etykietę
++ row  `enabled()`, `selected()`, `displayed()`  podają stan elementu
++ row  `rect()`  odczytuje położenie i rozmiar elementu
++ row  `screenshot()`, `screenshotData()`  przechwytują element jako `Raster in Png` lub jako bajty PNG
++ row  `element(locator)`, `\`  odnajdują elementy wewnątrz niego
++ row  `shadowRoot()`  sięga do jego otwartego korzenia shadow
+
+% 1 1 0 0b0aee203bf2ec8104bfe6498136f9d7
+
+@ 0 5 0 1850cd75c656dc4f0166ec4bf348c45f
++ Wszystko, czego nie da się wyrazić lokalizatorem, osiąga się przez `execute`, które uruchamia
++ JavaScript na stronie i zwraca jego wynik jako `Json`. Modyfikatory, akordy klawiszy, najechania
++ i przeciągnięcia przechodzą przez `perform` i typowane API akcji. Porażka dowolnego rodzaju
++ przychodzi jako `WebDriver.Error`, który niesie kod błędu W3C zgłoszony przez sterownik, jego
++ komunikat oraz ślad stosu po stronie przeglądarki.
+
+@ 0 1 0 1929ffb4de3748920d5d609e19cbab8e
++ ### Oczekiwanie
+
+@ 0 2 0 10a34aa8d90d9a170621011ac5aba71e
++ Większość niestabilności automatyzacji przeglądarki bierze się z zależności czasowych, a protokół
++ pomaga tylko w części z nich. *Niejawny* limit czasu WebDrivera obejmuje polecenia
++ wyszukiwania i ustawia się go raz dla sesji:
+
+% 2 1 0 19008e8a8b4a83d5097b5300bef1140f
+
+% 3 1 0 0a0514df068f27d506dba54a8a3556a8
+
+% 4 1 0 101708dbb6a8f12b133a1c53391aa385
+
+% 5 1 0 1db29423a965660a1c4fe90b6f3a5820
+
+% 6 1 0 0b2e90e973596ba91dd6d41062c2a6e6
+
+% 0 1 0 02c5afc32e3d9e3e11bc474e6defb97d
+
+% 1 1 0 01eec85da9c1a1ce1902c1fd5d373878
+
+@ 0 2 0 16ceae27f45a973106e37104de7f9db2
++ Nic innego nie ma po stronie serwera pojęcia oczekiwania. Dla przycisku, który staje się
++ aktywny, albo nagłówka, którego tekst się zmienia, trzy metody odpytują zgodnie z polityką
++ ponowień w zasięgu:
+
+% 2 1 0 0bb5e9dbab69083e01189aa395a4f6b3
+
+@ 0 6 0 16212bb91db7b5750a8bfcd9dfb52f7a
++ column  Metoda
++ column  Czeka, aż
++ column  Zwraca
++ row  `awaitElement(locator)`  jakiś element pasuje  pierwsze dopasowanie
++ row  `awaitElements(locator)`  dowolny element pasuje  wszystkie dopasowania
++ row  `awaitUntil(condition)`  warunek jest spełniony  nic
+
+% 1 1 0 1f89a33ecd55a2d21ec406c59ff3195c
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 041f58525b124e6a1e2ea54b00b4cad7
+
+% 2 1 0 11d32dba5a0e50df08bd723ed67612ed
+
+% 3 1 0 07bf6983b14664221ee336bc0656964f
+
+% 0 1 0 1735b48893f649a5131e6267fa4ca880
+
+% 0 1 0 158e18e44a64ab61189af8013e15ba4c
+
+% 1 1 0 069f241e40e9aa0a196798d12b032adc
+
+@ 0 6 0 12202d9859fcbe451235aeef8245108c
++ Polityką jest `Tenacity`, ten sam [harmonogram ponowień](concurrency.md#retrying), którego używa
++ się gdzie indziej, więc odstęp i liczba prób należą do wywołującego. Ich wyczerpanie zgłasza
++ `Tenacity.Error`. Te metody odpytują endpoint w liczbie mnogiej, który zgłasza brak jako pustą
++ listę, a nie jako błąd. To celowe. [Strategia][strategia] obsługi błędów sesji jest ustalana
++ przy jej otwarciu, więc błędu zgłoszonego wewnątrz odpytywanego bloku nie dałoby się tu
++ przechwycić, by sterować następną próbą.
+
+@ 0 1 0 0ee277fbab855a691cad92900b1e0ace
++ ### Typowane skryptowanie stron
+
+@ 0 4 0 02ba42bf86d41b33114324d84db5a6a1
++ Zachowanie dołączone do strony, takie jak `onclick` czy `onchange`, zapisuje się jako typowane
++ wyrażenie DOM, a nie jako napis z JavaScriptem. Wartości `document` i `window` nawigują po
++ rzeczywistych interfejsach DOM, sprawdzanych względem WebIDL, i są przedstawiane jako JavaScript
++ tam, gdzie atrybut [HTML](html.md) oczekuje skryptu:
+
+% 2 1 0 09680ae80952cf6f02812324170353a2
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10a015fbb549ff8011f948ce95f0e5d2
+
+% 0 1 0 09473cf9e8f4146b1c839348c664a020
+
+% 1 1 0 029aca4d1d8ac11f1c3a8530e08ebe4b
+
+@ 0 1 0 1d2aad6c43d6316c06f0d35b5f53b3f3
++ Metoda, której DOM nie definiuje, albo argument złego typu, jest błędem kompilacji:
+
+% 2 1 0 18695607f2a3a2390d429a4723942e11
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1825a32e774c34a00d9b21e4eb91a863
+
+% 1 1 0 14cb5e96844c9a1414e0e452e3419bae
+
+@ 0 2 0 1ac568729aa89f0b0ab156d415a0c5c9
++ JavaScript, który trafia na stronę, jest na pewno poprawnie zbudowany względem interfejsów,
++ które wywołuje.
+
+@ 0 1 0 1b567a34a312e8bd1837dbd47b0d9d83
++ ### Gdzie co pasuje
+
+@ 0 4 0 1c1abcbb952ffa350835f9b63927a7ad
++ Obie połowy spotykają się w testowaniu. Strona, której handlery wygenerowano ze sprawdzonych
++ wyrażeń, jest testowana przez sterownik, którego lokalizatory są sprawdzonymi selektorami. Cały
++ pełny obieg – generowanie, serwowanie, sterowanie i asercje – pozostaje wewnątrz systemu typów,
++ a jedynym niesprawdzanym składnikiem jest przeglądarka.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 8 0 10a35aa49d7a42a21abebc59fa88aebf
++ - [HTML](html.md) i [CSS](css.md) opisują typowane dokumenty, selektory i identyfikatory, które
++   współdzielą lokalizatory i handlery.
++ - [DOM przeglądarki](dom.md) opisuje skryptowanie, które działa w samej przeglądarce, pod
++   Scala.js.
++ - [Interoperacyjność z obcym kodem](foreign-interop.md) wyjaśnia, jak odczytywane są definicje
++   WebIDL.
++ - [Testowanie](testing.md) obejmuje testy end-to-end, które sterują przeglądarką.
++ - [Współbieżność](concurrency.md#retrying) opisuje `Tenacity`, które rządzi oczekiwaniem.
++ - [Obrazy](images.md) opisują `Raster in Png`, który daje zrzut ekranu.
++ - [System plików](filesystem.md), [terminal](terminal.md) i [XML](xml.md) opisują uchwyty,
++   naciśnięcia klawiszy i lokalizatory XPath, których używa sesja przeglądarki.

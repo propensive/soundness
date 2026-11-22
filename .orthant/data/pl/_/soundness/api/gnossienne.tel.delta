@@ -1,0 +1,254 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 082c183b14f8412400c6cf416a9e480d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 050c561742c60e5d1da6d9f2706fd530
++ info   typowane referencje do encji, przechowujące tylko ich klucze i rozwiązywane z powrotem przez magazyn
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 165c198dfaf4a0380e9de6258e9be4f3
++     _Gnossienne_ przedstawia referencję do encji – osoby, produktu, wiersza – jako wartość,
++     która nie przechowuje niczego poza kluczem encji i jest typowana tym, do czego się odnosi.
++     `Reference to Person` zbudowana z `t"juliet@example.com"` nie jest `Text` i nie da się jej
++     pomylić z referencją do czegokolwiek innego.
+
+@ 0 5 0 0d3e22cb5db93ca40e1253ea49bd2d13
++     Sposób, w jaki klucz odnajduje swoją encję, określa instancja klasy typów `Resolvable`.
++     Zwykłą instancję buduje się ze zbioru wartości przez `Resolvable(store)` i przeszukuje je
++     ona według pola oznaczonego adnotacją `@primary`. Gdy ta instancja jest w zasięgu,
++     rozszerzenie `ref` bierze referencję dowolnej wartości, a zastosowanie referencji
++     rozwiązuje ją z powrotem, zgłaszając `Reference.Error`, jeśli w magazynie nic nie ma tego
++     klucza.
+
+% 2 1 0 1126c05c50a3369e022aa000ddbe7877
+
+% 3 1 0 08cec7ff608e3d5e057e46fbfd8b182f
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 2 1 0 1c7dc61d53a29d8b061b2bba1dd82fd6
+
+% 0 1 0 1ac908a88e2af4bd14442782478975c3
+
+% 1 1 0 0337c74c2cf22f661b88e950e0d8e899
+
+% 0 1 0 14d9782da58e6c961428ff598f24584c
+
+% 0 1 0 0676d78f6a5371bf02c1c6f77fd476cb
+
+% 0 1 0 1b6d075363438ad4083e12421b9d076a
+
+% 0 1 0 0b237a8b4919e02b1c4e18e03809e12a
+
+% 0 1 0 0a16332cc20701de19baca19d5ab591c
+
+% 1 1 0 1753336499458167141afa111752b4f9
+
+@ 0 2 0 16166f0ae511d9010d0aed3952a25478
++     Referencja koduje się jako swój klucz i dekoduje się z niego, więc można ją zapisać lub
++     wysłać jako tekst i rozwiązać później. Jest walidowana dopiero przy zastosowaniu, nigdy
++     przy budowie.
+
+@ 0 3 0 09190bc14448707a16b1e72dd19ba4e7
++     Biblioteka ma jeden zbiór źródeł, `gnossienne.core`, dla każdej platformy, a wszystko jest
++     eksportowane do modułu zbiorczego `soundness`. Samouczek o bazach danych pokazuje
++     referencje używane razem z relacjami.
+
+% 0 1 0 0e36480fb14dca771324f8eb427889d4
+
+% 0 1 0 125fe216bebe48d10ca1f6c0c08fa479
+
+% 0 1 0 18cf172329b85318071977aff881b740
+
+% 0 1 0 00e3da3dfa54be6812bd8334fb98cde5
+
+@ 0 1 0 19e0e115124f7efb10d472bcb1d9bd78
++ entry .Reference   typowana referencja do encji, przechowująca jej klucz i rozwiązywana przez `Resolvable`
+
+% 1 1 0 03a448e92f3fd8aa1cd4154d3b446b35
+
+@ 0 4 0 1d619a95af6bd54d0f9d3a49f10a9ba9
++       `Reference` przechowuje klucz encji oraz, jako składową typową `#Result`, typ encji, do
++       której się odnosi: `Reference to Person` to referencja do `Person`. Tworzy się ją z
++       wartości rozszerzeniem `ref` albo z klucza przez `Reference[Person](key)`; w obu
++       przypadkach jej `#key` jest typowany jako `Operand` instancji `Resolvable` w zasięgu.
+
+@ 0 4 0 12a047f3a84551450b9fdc1db1bc09c5
++       Zastosowanie referencji, `reference()`, wyszukuje klucz przez `Person is Resolvable` i
++       zwraca encję, zgłaszając `Reference.Error`, jeśli jej nie ma. Referencja utworzona z
++       klucza, który do niczego nie pasuje, pozostaje poprawną referencją: błąd pojawia się
++       dopiero przy jej zastosowaniu.
+
+% 2 1 0 1b2bd7e6836fc16c16413a9c7f5db92f
+
+% 3 1 0 066d0923965235f61762cbecc2701a26
+
+% 4 1 0 1b5952cfb9b2cf99144942aeebae835d
+
+% 0 1 0 03192bf9c781dae10151efc5bfe7d029
+
+% 0 1 0 0764f101609dc5c408f7899bc196c085
+
+% 0 1 0 085b66bfd9ef18e4117ffa58a3be9bd6
+
+% 0 1 0 0474fe082ebd5cb91ba19501c625ecc7
+
+% 0 1 0 1d5fdd59d4acd1ca1a7fbfacf05158f8
+
+% 1 1 0 05e68c83701539ef04ce678c3fb81a3e
+
+@ 0 2 0 0aeb4d982fa5d2b900a3d506b0b3aed0
++       Referencja koduje się jako tekst przez `.encodable` i dekoduje przez `.decodable`, w obu
++       przypadkach za pośrednictwem własnego kodeka klucza, więc `t"1001".as[Reference to Product]`
++       ją odczytuje.
+
+% 0 1 0 165cda82ce1c6a321430f1b948ed1292
+
+% 0 1 0 169a1c95367cc8c30aa77110c57a79a7
+
+@ 0 11 0 1c96f4c2d7d7e9fe1bb4f0709dc523b2
++   entry .apply   tworzy referencję z klucza, jako `Reference[Entity](key)`
++       Typem klucza jest `Operand` instancji `Resolvable` dla encji, która musi być w zasięgu.
++       Nic nie jest wyszukiwane: klucz, który nie pasuje do żadnej encji, tworzy referencję,
++       która przy zastosowaniu zgłasza `Reference.Error`.
++   entry .encodable   koduje referencję jako tekst: kodowanie jej klucza
++       Dostępne dla `Reference to Entity` zawsze, gdy `Entity is Resolvable`, a typ jej klucza
++       jest `Encodable in Text`. Znajduje się w zasięgu niejawnym.
++   entry .decodable   dekoduje referencję z tekstu, dekodując jej klucz
++       Dostępne dla `Reference to Entity` zawsze, gdy `Entity is Resolvable`, a typ jej klucza
++       jest `Decodable in Text`. Zdekodowana referencja nie jest sprawdzana względem magazynu,
++       dopóki nie zostanie zastosowana.
+
+% 2 1 0 09479b5c768963c410b170eefb118ade
+
+% 3 1 0 0f57a4f823b9303e1d156994d3464936
+
+% 4 1 0 1189d248c90512e31393b3aab10755d9
+
+% 6 1 0 11268607142430ff0a681d94b4d948cb
+
+% 0 1 0 104bcb25460eb5470c472c1a2064a69e
+
+% 0 1 0 0fac05e1d49696a814722a83c89d2f8e
+
+% 1 1 0 0e2e2da6fcd958060375a58be8ea0fcf
+
+@ 0 1 0 030f5fd136f6306810cb2a2b6898e703
++   entry .Error   zgłaszany, gdy klucz referencji nie pasuje do żadnej encji w magazynie
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 7 0 007249a8de547b371b1ac80401859390
++         Błąd `↯/s.31.1`: _the reference `reference` could not be resolved because `reason`_.
++         Zgłaszany przez `Reference#apply` (i `Resolvable#resolve`), gdy magazyn nie ma encji,
++         której pole `@primary` jest równe kluczowi. `#reference` to klucz zakodowany jako
++         tekst.
++     entry #reference   klucz, którego nie udało się rozwiązać, zakodowany jako tekst
++     entry #reason   dlaczego nie udało się rozwiązać referencji, jako `Reference.Error.Reason`
++     entry .Reason   dlaczego nie udało się rozwiązać referencji
++         Jedynym przypadkiem jest `NotFound`: _no target with that reference was found in the
+
+% 0 1 0 07fc1c0bc035989a0ed2a1ca405d6aa4
+
+@ 0 8 0 12a7e79d129455b31c3e428f420b176a
++     entry .communicable   przedstawia `Reference.Error.Reason` jako komunikat
++   entry #Result   typ encji, do której odnosi się referencja
++   entry #key   klucz referencji, typowany jako `Operand` instancji `Resolvable`
++       Wymaga `Result is Resolvable` w zasięgu, co ustala typ klucza.
++   entry #apply   rozwiązuje referencję do jej encji, zgłaszając `Reference.Error`, jeśli jej nie ma
++       Wymaga `Result is Resolvable` w zasięgu oraz `Tactic[Reference.Error]`. Każde
++       zastosowanie wyszukuje klucz od nowa, więc referencja utworzona, zanim jej encja trafiła
++       do magazynu, rozwiązuje się, gdy encja już tam jest.
+
+@ 0 1 0 1a99baa4ad8060030b831ba3275213ad
++ entry .Resolvable   klasa typów określająca, jak klucz typu `Operand` rozwiązuje się do encji typu `Self`
+
+% 1 1 0 129cb53513dddf8d05dd397383bbaddc
+
+@ 0 3 0 0d6c838d499cd6960d3b191330a82fd9
++       `Person is Resolvable by Text` mówi, że klucz `Text` identyfikuje `Person`, które pole
++       `Person` jest tym kluczem (`#field`) i jak klucz jest rozwiązywany (`#resolve`).
++       Rozszerzenie `ref` i `Reference#apply` potrzebują takiej instancji w zasięgu.
+
+@ 0 1 0 0f513113d3242a1102a034bc6ac6f7e6
++       Zwykłą instancję buduje się z magazynu wartości przez `Resolvable(store)`:
+
+% 2 1 0 0373e8a323ce26431f057f8493563f5b
+
+% 3 1 0 1e2f0f2e18f56a751359581a0e66b136
+
+% 4 1 0 00385efef82382d013f8e2b511c710dc
+
+% 6 1 0 1168c682dabb32701e4e79dd5bf3488a
+
+% 0 1 0 014ab5048463d0b9187cedf65314118f
+
+% 0 1 0 0668617fa0ee633c04f88dab7eb15377
+
+% 0 1 0 0fbfc0bb4ff805f70727e3401459cada
+
+% 0 1 0 1b794459f9c4c1c4027801ef50b6c3da
+
+% 1 1 0 178252eba82f44150ac3ae9c0ee2e25e
+
+@ 0 2 0 0ddbb4b9f9c6eaf304aed5a01e94241b
++       Magazyn innego rodzaju – tabela bazy danych, zdalna usługa – może implementować ten trait
++       bezpośrednio.
+
+% 0 1 0 1f89e113889f43d80b463269e38ad210
+
+% 0 1 0 1a5adb2a45d0f5c81e52f2466562e150
+
+@ 0 5 0 1ec29f1aa428c49810f648da33915d3f
++   entry .apply   `Resolvable`, który przeszukuje zbiór wartości według ich pola `@primary`
++       `Resolvable(store)` wymaga, by typ encji miał dokładnie jedno pole z adnotacją
++       `@primary` (tak by był `Annotated by primary`), by to pole dało się wybrać jako
++       `Dereferenceable to Operand` i by typ pola był `Encodable in Text` (dla komunikatu o
++       błędzie). Zarówno typ klucza, jak i pole są wnioskowane z adnotacji.
+
+@ 0 3 0 1586cbc4300a743d17cb3ea0b465c5e4
++       Magazyn jest przyjmowany przez nazwę i wartościowany przy każdym rozwiązaniu, więc
++       magazyn, który się zmienia, jest przeszukiwany w takim stanie, w jakim jest w chwili
++       zastosowania referencji. Wyszukiwanie to liniowe przejrzenie zbioru.
+
+@ 0 7 0 06176ca5588dea32057abe9994cc6711
++       Jego typem wyniku jest `raises Reference.Error`, więc zbudowanie instancji wymaga
++       `Tactic[Reference.Error]` w zasięgu (albo `unsafely(Resolvable(store))`), choć nic nie
++       może zawieść, dopóki klucz nie zostanie rozwiązany.
++   entry #Self   typ encji, do której rozwiązuje się klucz
++   entry #Operand   typ klucza
++   entry #resolve   znajduje encję o danym kluczu, zgłaszając `Reference.Error`, jeśli jej nie ma
++   entry #field   nazwa pola klucza encji, jako tekst
+
+@ 0 4 0 15bf15b143a345091ecfff133f60340e
++ entry .primary   oznacza pole klasy case będące jej kluczem, dla `Resolvable(store)`
++     Adnotacja na jednym parametrze klasy case:
++     `case class Person(@primary email: Text, name: Text)`. `Resolvable(store)` znajduje pole z
++     adnotacją przez `Annotated by primary` i używa jego typu jako typu klucza każdej
++     `Reference` do tej klasy.
+
+@ 0 4 0 097f6379bb5b114f0cfd6b84377be524
++ entry .ref   referencja do wartości: jej klucz, typowany jako `Reference` do typu wartości
++     Rozszerzenie dla dowolnej wartości, której typ jest `Resolvable`. Odczytuje pole klucza
++     wartości (to oznaczone `@primary`) i opakowuje je jako `Reference to Entity`. Nic nie jest
++     wyszukiwane, więc nie potrzebuje taktyki; późniejsze zastosowanie referencji rozwiązuje ją
++     z powrotem.
+
+% 2 1 0 0c495ed8c153c68413285640a3834eae
+
+% 3 1 0 1001fcf1764c42d01832b3fd168d1c40
+
+% 2 1 0 11facafdcea7c03c07bd970bd84fcdbb
+
+% 1 1 0 1088d3ae6bab006a0a18203b364810ca
+
+% 0 1 0 1c511eb281f3e0a71350970840d6d2cb
+
+% 0 1 0 114e2f84450ce25500dab855159892f0
+
+% 1 1 0 1b6d37ee3e6225cd0ebd76dd4a944e2d

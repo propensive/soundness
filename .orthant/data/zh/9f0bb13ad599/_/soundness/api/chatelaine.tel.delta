@@ -1,0 +1,74 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19dea67b4c87ab0e04fdc5517c4d3b95
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 04e0ac29f41b3f8f1385ae2a3f122ac2
++ info   面向依赖方的 WebAuthn：通行密钥和安全密钥的注册仪式与认证仪式
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 16ce0d66850388b2041144da57208490
++     _Chatelaine_ 实现了 [Web Authentication](https://www.w3.org/TR/webauthn-2/) 中依赖方一侧的功能：使用认证器为单个站点生成、且从不外泄的密钥对进行无密码登录。
++     一切都是 `WebAuthn` 的成员。
+
+@ 0 2 0 154aec462c907320098f4b31f2a8c8b3
++     两种仪式各由两次调用组成：一次生成页面交给浏览器的选项，一次检查页面发回的应答：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 11a8761d091bcae20a857a0acb9e6de5
+
+% 0 1 0 084f3fa5c4af7bbc16235483c676569f
+
+% 0 1 0 01f6e077d6d404f8141c693ce5983582
+
+% 0 1 0 019ca73842e72b51096abb17ce03ad5d
+
+% 0 1 0 1606e2b0880ee61e1d66b2105c9ba64f
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 0406be96df43adb8171399cd2404808a
++     `WebAuthn.register` 和 `WebAuthn.authenticate` 执行标准要求依赖方进行的每一项检查（§7.1 和 §7.2），对未通过其中任一项的应答抛出 `WebAuthn.Error`。
++     支持 `none` 和 `packed` 证明格式。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     该库有两个源集：
+
+@ 0 4 0 112b51161014ea551dea708d1e24e822
++     - `chatelaine.core` — `WebAuthn`：选项、应答的检查，以及依赖方存储的 `WebAuthn.Credential`。
++     - `chatelaine.server` — `Ceremonies`，在一次仪式的两个请求之间保存每个会话的质询。
+
+@ 0 3 0 19e4102d4c39c43408eb14f858e81152
++     两者都导出到 `soundness` 总括包。
++     它没有自己的选择包；仪式需要一个 `Crypto` 提供者（`providers.javaBaseProvider`），注册还需要一个 `Clock`。
+
+% 0 1 0 17e566a8b38b5ad51b4fedd56dc9f310
+
+% 0 1 0 0ffee6fb81b3698701c31b1ed8ce0e44
+
+@ 0 1 0 01a0f226b16b1ff609f4591746ae6258
++ entry .WebAuthn   Web Authentication 中依赖方一侧的功能：选项，以及应答的检查
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 4 0 10eea03e630598f712531afa7cd06380
++       `WebAuthn.registration` 和 `WebAuthn.authentication` 以 JSON 形式生成仪式的选项；`WebAuthn.register` 和 `WebAuthn.authenticate` 检查其应答，前者给出一个待存储的 `WebAuthn.Credential`，后者给出签名计数器已前移的该凭据。

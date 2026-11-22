@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 12449672bad8caa5135a98b985856cd2
++ # `↯/s.25.1` – `Number.Error`
+
+@ 0 2 0 0f86df0190823637185b3a16f206f4c9
++ Zgłaszany, gdy Distillate nie może zdekodować wartości tekstowej do typu liczbowego.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 6 0 1de50e6ec4b54fa31d0b7bf1e8b7a114
++ Instancje `Decodable in Text` z Distillate dla liczbowych typów prostych parsują dane wejściowe
++ parserami liczb z JDK, a następnie sprawdzają, czy wynik mieści się w granicach typu docelowego.
++ Konstruktor zapisuje błędny `text`, `specializable` (typ docelowy) i `reason: Reason`;
++ przedstawiony komunikat to `$text is not a valid $specializable because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 19dda8f4ff93aeb90f0ad888562693f9
++ ### `↯/s.25.1.1` – `Unparseable`
+
+@ 0 3 0 072d9c0b4e25b328176cac9230332bc1
++ Dane wejściowe nie były składniowo poprawną liczbą dla typu docelowego – `Integer.parseInt`
++ (lub metoda pokrewna) rzuciła `NumberFormatException`.
+
+@ 0 1 0 0afd67c4ebdb5629042434081fece0a6
++ **Przykład.** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
+
+@ 0 2 0 1e23c6696f04df8a1c033034332ba597
++ **Rozwiązanie.** Oczyścić dane wejściowe przed dekodowaniem albo zabezpieczyć się przed
++ wartościami nieliczbowymi.
+
+@ 0 1 0 0c7f9fca9e9f0a991c8d833e612afa8e
++ ### `↯/s.25.1.2` – `OutOfRange`
+
+@ 0 4 0 0e0b05467c4746ef1f29597c64f8bc93
++ Dane wejściowe były składniowo poprawną liczbą, ale wykraczały poza zakres reprezentowalny w
++ typie docelowym – obecnie zgłaszane przez dekodery `Byte` i `Short`, gdy liczba całkowita
++ wykracza poza ich granice.
+
+@ 0 1 0 1728082eede3e2230f82632e059fa5e3
++ **Przykład.** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
+
+@ 0 2 0 0ccfab37794347bb1580fe375ec042ef
++ **Rozwiązanie.** Zdekodować do szerszego typu (np. `Int`) albo ograniczyć wartość przed
++ dekodowaniem.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1dfb810349e636350de39c82796e9678
++ - Źródło: `lib/distillate/src/core/distillate.Number.scala`

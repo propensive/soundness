@@ -1,0 +1,287 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 010905da1477091f0db56699e618fd88
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0329b2c55c70e46b0a0b10c74d123fbc
++ info   为任何具有 `apply`、`map` 和 `flatMap` 的类型派生的 `Identity`、`Functor` 和 `Monad` 类型类
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0787ca7d4ad789d507f85a30c36d75ed
++     _Mercator_ 对各种容器进行抽象，例如 `Option`、`Try`、标准集合、`Either`、`parasite` 的 `Task`，它们的 `map` 和 `flatMap` 名称相同，却没有共同的类型，抽象之后一个操作只需编写一次就能用于所有这些容器。
++     它的三个类型类构成一个阶梯：`Identity` 把值提升到容器中（`point`），`Functor` 增加映射，`Monad` 增加 `bind`，也就是换了一个容器尚未使用的名称的 `flatMap`。
+
+@ 0 5 0 08377c7b58530562029d62df329caa37
++     实例无需编写。
++     每个伴生对象都有一个 `inline given` 宏，它根据类型已有的方法构造实例：`Identity` 来自伴生对象中唯一一个接受单个元素的 `apply`，`Functor` 来自该类型唯一的 `map`，`Monad` 来自其唯一的 `flatMap`。
++     即使编写容器时完全没有考虑这些，它也照样可以参与，而方法有歧义或缺失的容器会产生一个指明问题的编译错误。
+
+% 2 1 0 1cdffce75cf5874a0b0d0f8509d1f164
+
+% 3 1 0 0f574b73e25dc7de1521fe65f49b0de7
+
+% 0 1 0 0c3addb2e68ed914050f5a7b26961781
+
+% 0 1 0 101cd9d02075e4dd12ac6cb12b44b3e4
+
+% 0 1 0 039ca6d38ca819471ac2a41ae52e233d
+
+% 0 1 0 155a4e2337cbd55f121fb1cd91eb41e3
+
+% 1 1 0 071f04b996090774173dae4e27191ef0
+
+@ 0 5 0 0958b1db91530b9e12d300d7ad0b70b0
++     有了这些类型类，两个操作随即可用，这也正是需要它们的原因：`sequence` 把一个由容器组成的集合内外翻转，`traverse` 把一个可能失败的函数映射到集合上，并把结果收集到一个容器中，即“解析所有这些，有任何一个失败就失败”。
++     两者都适用于标准库的 `Iterable` 集合；Soundness 自己的不透明 `List`、`Set` 和 `Vector` 不是 `Iterable`，不参与其中。
+
+@ 0 6 0 0c05ac3c51093bd70a02da7430053a01
++     该库只有一个源集 `mercator.core`。
++     `Cofunctor`、`Functor`、`Identity`、`Monad`、`sequence` 和 `traverse` 导出到 `soundness` 总括包。
++     扩展方法 `map` 和 `bind` **不**导出：在 `import soundness.*` 下，这些名称属于 `murmuration` 和 `rudiments` 的集合方法，因此要通过 `import mercator.bind` 或 `import mercator.map`（或 `import mercator.*`）使用 mercator 的版本，而同时导入 `mercator.*` 和 `rudiments.*` 的代码可能会发现 `Text` 上的 `bind` 有歧义。
+
+% 0 1 0 1333a5488dbeb95f0f9e021360aadb7e
+
+% 0 1 0 0a546e2b412981ae16dbbb9374cea0f0
+
+% 0 1 0 166e11564a4f840203565ec83faf3a46
+
+% 0 1 0 10bdd5bcc5ab17021210916d7bd357a5
+
+% 0 1 0 05ad3b82e73aa0951c88d6a925c5000a
+
+@ 0 1 0 16b17bd1d1f7e9300f0023f7ded5efc8
++ entry .Identity   把单个值提升到容器中的类型类：`point`
+
+% 1 1 0 0bbd01075daa631e07435475f2cab70a
+
+@ 0 3 0 03914bd95cf7e54817a4e2fa0cc627c9
++       `Identity[F]` 只有一个方法 `#point`，它创建一个只包含 `value` 的 `F[value]`：`Some(value)`、`List(value)`、`Success(value)`、`Right(value)`。
++       它是 `Functor` 和 `Monad` 的基础，二者的派生都会查找它。
+
+% 2 1 0 1566c89a73b118fc030869f8b07433d2
+
+% 3 1 0 16ca9199ec991c3116c9494b8bd9c55c
+
+% 0 1 0 0a177b037469942b062ea48feac4acfb
+
+% 0 1 0 10d91935265140c009786b7fa94855fc
+
+% 1 1 0 07554c8398de676605309b4b40d1793a
+
+@ 0 2 0 00e50fe79020ecc81be4ff15eef256fe
++       除 `Either` 之外，任何类型构造器的实例都由 `.ident` 根据伴生对象的 `apply` 派生。
+
+% 1 1 0 145b135857b4435e1e0555d82534f9c1
+
+@ 0 11 0 02fd09a11378b5cf1e0b9e40178dc074
++   entry .either   `Either[?, value]` 的 `Identity`，其 `point` 是 `Right(value)`
++       位于隐式作用域中。
++       `Either` 的伴生对象没有 `apply`，因此派生的 `.ident` 无法用于它；这个实例提供偏右的 point。
++   entry .ident   为伴生对象恰有一个合适 `apply` 的任何类型构造器派生 `Identity[F]`
++       一个 `inline given` 宏，位于隐式作用域中。
++       它在 `F` 的伴生对象中查找只有一个类型参数、并接受一个该类型值的 `apply` 方法，无论该值是直接传入、按名传入，还是作为可变参数传入（如 `List.apply(elements*)`），并把 `#point` 构建为对它的调用。
++       没有候选项是一个编译错误，_the companion object `Play` has no candidate apply methods_（↯/s.17.4），多于一个则是另一个编译错误，_the companion object `Play` has more than one candidate apply method_（↯/s.17.6）。
++   entry #point   把单个值提升到容器中
+
+@ 0 1 0 176ece65009c41920e080569489fcad9
++ entry .Functor   把函数映射到容器内容上的类型类，其 `point` 来自 `Identity`
+
+% 1 1 0 06f39ca708d42baa08425c6e80714bd2
+
+@ 0 3 0 09cf8fd51a6fa5790fae258c5b59141a
++       `Functor[F]` 提供 `#apply`，它把函数映射到 `F[value]` 上，得到 `F[value2]`；调用它的 `#map` 扩展方法；以及提升值的 `#point`。
++       对于任何只有一个 `map` 方法并具有 `Identity` 的类型，它由 `.general` 派生。
+
+% 2 1 0 044defb5776903b407c835a41c9747fd
+
+% 3 1 0 068bab6e0a19020010bbc647baf4b897
+
+% 0 1 0 0d37872680ccebb5073762dcc540eb6a
+
+% 0 1 0 1ee3e590ebd0c07108bd9bb26ba9b81e
+
+% 1 1 0 02b6103df5b2f08201c98294a00f1348
+
+@ 0 1 0 075291e509fe74bf16418512ca669fed
++       `Functor` 是 `Findable`。
+
+% 0 1 0 176fb7882d78a94b00283cd2d8452e93
+
+% 0 1 0 08e9e79fc9e6c3bb0787efef2a8c8740
+
+@ 0 12 0 112593fa9932a16506aabbd941fdd6c0
++   entry .general   为任何只有一个 `map` 方法并具有 `Identity[F]` 的类型派生 `Functor[F]`
++       一个 `inline given` 宏，位于隐式作用域中。
++       `#apply` 调用该类型自己的 `map`，`#point` 调用它找到的 `Identity`。
++       缺少 `Identity` 是一个编译错误，_could not find Identity value for `Play`_（↯/s.17.8）；没有 `map` 的类型是另一个，_the type `Play` has no map methods_（↯/s.17.7），而 `map` 有多个重载的类型是第三个，_the type `Play` has more than one possible map method_（↯/s.17.2）。
++   entry #point   把单个值提升到容器中
++   entry #apply   把函数映射到容器的内容上：`functor(value)(lambda)`
++   entry #map   `#apply` 的扩展方法形式，可用于容器类型的任何值
++       只要这个 `Functor[F]` 作为值位于词法作用域中，就可以用于 `F[value]`，例如 `functor.map(Some(1))(_ + 1)`；而包级别的 `map` 扩展方法则通过上下文搜索找到 `Functor`。
+
+@ 0 1 0 1961c52c529dc9011aa8d71b42dd3cb1
++ entry .Monad   在容器中依次组合计算的类型类：`bind`，以及 `map` 和 `point`
+
+% 1 1 0 0880a64770cab7f20767d4a9d4f4eaed
+
+@ 0 4 0 17b6b27e56ef4d880647bc9f39f49519
++       `Monad[F]` 在 `Functor[F]` 的基础上增加 `#bind`，它把一个返回容器的函数应用于容器的内容，并把结果展平：即 `flatMap`，只是换了一个不与容器自身方法冲突的名称。
++       对于任何只有一个 `flatMap` 方法并具有 `Functor` 的类型，它由 `.monad` 派生。
+
+% 2 1 0 1c64416317827d9e12fd95f04cee7700
+
+% 3 1 0 121be44fa44b1e390dc831b582993026
+
+% 0 1 0 0ac8bd034c6b3311187c8f6fd1b665bc
+
+% 0 1 0 12213dc5001d5daf1c1dd1f190c7b508
+
+% 1 1 0 142d0356c1acd2e50e6950dcef0b0910
+
+@ 0 4 0 05fa4df9010b08f304e62272dd309a7a
++       无法派生的实例需要手写：`parasite` 的 `Task` 在其伴生对象中有一个 `Monad[Task]`，它需要作用域内有 `Monitor` 和一个遗嘱认证。
++       `Monad` 是 `Findable`。
++       `sequence` 和 `traverse` 是每个 `Monad` 都为集合提供的操作。
+
+% 1 1 0 09481d65fd132de815e2d8227dc93e89
+
+% 0 1 0 11bf7beea8d43c4b0ee26f7814694bf2
+
+% 0 1 0 06aee1b4ca63c5de195ab4b3be5af457
+
+% 0 1 0 083a41283f6948fc08759b995d532a33
+
+@ 0 10 0 1082459dafd028a01a83673c3f619e13
++   entry .monad   为任何只有一个 `flatMap` 方法并具有 `Functor[F]` 的类型派生 `Monad[F]`
++       一个 `inline given` 宏，位于隐式作用域中。
++       `#bind` 调用该类型自己的 `flatMap`，`point` 和映射来自它找到的 `Functor`。
++       缺少 `Functor` 是一个编译错误，_could not find Functor value for `Play`_（↯/s.17.5）；没有 `flatMap` 的类型是另一个，_the type `Play` has no flatMap methods_（↯/s.17.1），而 `flatMap` 有多个重载的类型是第三个，_the type `Play` has more than one possible flatMap method_（↯/s.17.3）。
++   entry #bind   把返回容器的函数应用于容器的内容，并展平结果
++       `monad.bind(value)(lambda)`：换了名称的 `flatMap`。
++   entry #flatMap   `#bind` 的扩展方法形式，使 `for` 推导式可以通过 `Monad` 工作
++       只要这个 `Monad[F]` 作为值位于词法作用域中，就可以用于 `F[value]`。
+
+@ 0 1 0 1ce3e5b226ca5faf02c5b2d2a057258c
++ entry .Cofunctor   把函数反向映射到逆变容器中的类型类：`contramap`
+
+% 1 1 0 1ffff66129d4a1e41e9be86a1c544094
+
+@ 0 4 0 05ed846778e056ba13bfb841ff71deb6
++       `Cofunctor[F]` 是 `Functor` 针对逆变 `F[-value]`（例如消费者、编码器或排序）的对偶：给定一个函数 `value2 => value`，它通过适配输入，把 `F[value]` 变为 `F[value2]`。
++       与另外三个类型类不同，它没有派生：实例需要手写。
+
+% 2 1 0 129e782b2498b8270c6fdacd4b5c2d00
+
+% 3 1 0 019495cfae8e9fca1e11f2ad0dc10af8
+
+% 0 1 0 13ba4045ecdc2f9c1a0d292b08a1191e
+
+% 0 1 0 1eddedf25eb0de030e9754fba25d2ad0
+
+% 0 1 0 0b9d855f19becac0016e7de8fb5d6432
+
+% 0 1 0 16843c72f957b63c0dfc474ca7f912fa
+
+% 0 1 0 05416f1c4396d3bc11b08a2422037c1a
+
+% 1 1 0 079200dd9bd0b94f0b65baeaf77660f2
+
+% 1 1 0 0b72c0a5d09c428304ee7b830297b2e0
+
+@ 0 2 0 124ea8035cd546110ab265744dfb03ee
++   entry #apply   使逆变容器适配为接受另一种类型：`cofunctor(value)(lambda)`
++   entry #contramap   `#apply` 的扩展方法形式，可用于逆变类型的任何值
+
+@ 0 5 0 03130f414d2c0c0c0d3cac61f17e95d9
++ entry .map   以扩展方法的形式，把函数映射到任何具有 `Functor` 的容器上
++     对于作用域内有 `Functor[F]` 的任何 `F[value]`，写作 `value.map(lambda)`。
++     它没有导出到 `soundness` 总括包，在那里 `map` 是 `murmuration` 的集合方法；要以 `import mercator.map` 导入它。
++     由于大多数容器都有自己的 `map` 方法，而方法总是优先于扩展方法，这只对针对抽象 `F` 的泛型代码有意义：
+
+% 2 1 0 0bd4909af16ab63601f69eebb8a63105
+
+% 3 1 0 139e2ac4ad5f3eff03d80b73f00701bd
+
+% 0 1 0 184afd2639e61e6000d1be90dc055f42
+
+% 0 1 0 1cc275c18822f32f00b11c0046cf64c8
+
+% 1 1 0 18dcf97a79e8fd4b104b72790775c4c3
+
+@ 0 4 0 02962a52b0b6360d1cfb7123c6e7fa6c
++ entry .bind   任何具有 `Monad` 的容器上的单子绑定，以及 `Text` 上的逐字符绑定
++     两个扩展方法共用这个名称。
++     对于作用域内有 `Monad[F]` 的任何 `F[value]`，`value.bind(lambda)` 就是 `flatMap`。
++     在 `Text` 上，`text.bind(lambda)` 把一个 `Char => Text` 函数应用于每个字符，并把结果连接起来。
+
+@ 0 3 0 118a7803b1ed3c670de73dcd09d052e2
++     二者都没有导出到 `soundness` 总括包，在那里 `bind` 是 `rudiments` 的集合方法；要以 `import mercator.bind` 导入它。
++     同时导入 `mercator.*` 和 `rudiments.*` 的文件会发现 `Text` 上的 `bind` 有歧义。
+
+% 2 1 0 111ba48d7ea8358f0d26faeb89e45ad1
+
+% 3 1 0 09462907812825591b9ed05d6b3567e1
+
+% 0 1 0 107bdb06ed74138b06fba784b60f9b40
+
+% 0 1 0 00ffbab96d536a63195d7b5df14e21ba
+
+% 0 1 0 1cf826147fb8f1090a2e0248e0ba8b6f
+
+% 0 1 0 0b33f1ef93e84ea30baf24b4649c8470
+
+% 1 1 0 0f67406abb4b0fa905f8c64cbef9a581
+
+@ 0 4 0 04e33664d6bdd74b1a5db0b37191af5e
++ entry .sequence   把由容器组成的集合内外翻转：从 `List[Try[Int]]` 到 `Try[List[Int]]`
++     作用于任何由 `F[element]` 组成的集合的扩展方法，要求作用域内有 `Monad[F]`；它按顺序组合这些容器，并在一个容器内重建同类的集合：全部成功时为包含每个值的 `Success`，否则为第一个 `Failure`；对于 `Option`，只要有一个是 `None` 就为 `None`；对于集合，则为每一种组合。
+
+% 2 1 0 13fd94d8dc5decac15da97e625f503ae
+
+% 3 1 0 073bdde1461892f916ee37de45c90702
+
+% 0 1 0 032e6924f2bc0ecc1087bdd394507218
+
+% 0 1 0 1631d151f148e899139aaf01a3bff156
+
+% 1 1 0 000635253f5604a013d80d35d19083e5
+
+@ 0 2 0 1b240ac34eca10701b8d1aeef2f6fd9d
++     集合通过其 `Reshapable` 实例重建，因此 `List` 经 sequence 后得到 `List`，`Set` 得到 `Set`。
+
+@ 0 4 0 0f1a8c09acdb1e170a65be7c63f3b1b6
++ entry .traverse   把返回容器的函数映射到集合上，并把结果收集到一个容器中
++     `elements.traverse(lambda)` 就是一次完成的 `elements.map(lambda).sequence`：作用于任何集合的扩展方法，接受函数 `element => F[element2]`，要求作用域内有 `Monad[F]`。
++     它就是“解析所有这些，有任何一个失败就失败”的形式。
+
+% 2 1 0 1aa713afb75a9c3e1bfe63ba0ab00c13
+
+% 3 1 0 03aee40741366b300c7761f339bf54c7
+
+% 0 1 0 173789601aa630c81bdff4173885e6a8
+
+% 0 1 0 0b560fe3eadfa6fe063ed64dafac82d2
+
+% 0 1 0 17dd7eaffc1f9924018d0e9050245659
+
+% 1 1 0 1d11fa97caabffa50f6f73b445828adf
+
+@ 0 1 0 10e595172ca92af30e88c622e0e3723f
++     与 `sequence` 一样，结果具有该集合自身的形状。
+
+@ 0 1 0 001895162809ff311ea63f4f9edba40b
++ entry .internal   派生 `Identity`、`Functor` 和 `Monad` 实例的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 1848382e17be8abb07c2d2b0642adfc7
++       不供直接使用：given `Identity.ident`、`Functor.general` 和 `Monad.monad` 会拼接它们。
++   entry .point   根据伴生对象的 `apply` 派生 `Identity`
++   entry .functor   根据类型的 `map` 派生 `Functor`
++   entry .monad   根据类型的 `flatMap` 派生 `Monad`

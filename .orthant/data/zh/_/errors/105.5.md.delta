@@ -1,0 +1,69 @@
+orthant 2 language
+
+% 0 1 0 09fbcbdae03a5ca4160f26a8aac8c980
+
+@ 0 1 0 140a0843629ce8ad000b7aca0f860cda
++ 当 Enigmatic 无法构建 X.509 证书时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 6 0 13cca1974cfbe8bf07752ba0d0dd89a0
++ 证书生成会拒绝那些会产生结构上有效、却没有任何验证者会接受的证书的输入：超出 X.509 允许范围的序列号、永远不会开始的有效期、编码不是 `SubjectPublicKeyInfo` 的密钥，或者没有为该组合分配对象标识符的密码算法与摘要。
++ 消息为 `could not build the certificate because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 13f2fc8bb3f129f51b3286c1a6a6888a
+
+@ 0 3 0 16ca40573160779407d7a418b13715f1
++ 密码算法与环境中的 `SignatureDigest` 之间没有对应的签名算法对象标识符。
++ RSA 和 ECDSA 只为 SHA-256、SHA-384 和 SHA-512 分配了标识符。
+
+@ 0 1 0 1e3541f31b0b2cea07832466a53fc17f
++ **示例。** `[↯/s.105.5.1] could not build the certificate because no signature algorithm is assigned to SHA1`
+
+@ 0 2 0 0e6d79dc6137c72a1917c733f541f398
++ **解决方法。** 选择一个有标识符的摘要；默认的 SHA-256 正是当前所有证书配置规范所要求的。
+
+% 0 1 0 0e3b55bc87972f5619c65cd151e06819
+
+@ 0 2 0 013b4903dd15e17c1d7a70a431d43ee7
++ 密钥的公钥部分不是 DER `SubjectPublicKeyInfo`，因此无法嵌入证书。
+
+@ 0 1 0 145083d0aa97c2e71805504b23f997cb
++ **示例。** `[↯/s.105.5.2] could not build the certificate because the public key was not a SubjectPublicKeyInfo`
+
+@ 0 2 0 1a6125439d32eb8d05d83319ac57335b
++ **解决方法。** 这表明某个提供者没有遵循 `Crypto` 契约规定的密钥编码；请检查作用域中是哪个提供者。
+
+% 0 1 0 0687947107d0cfa20c8c5b10dee7df02
+
+@ 0 2 0 04f2172e95419ae81cb809723a4a2bc9
++ 序列号为零或负数。
++ RFC 5280 要求它是一个正整数。
+
+@ 0 1 0 128703b3715221d419087741274c5711
++ **示例。** `[↯/s.105.5.3] could not build the certificate because the serial number was negative or zero`
+
+@ 0 2 0 0c4d9ea341a3aa5b01fce545c3e21ae9
++ **解决方法。** 使用正的序列号；对于证书颁发机构，它还必须在其签发的所有证书中唯一。
+
+% 0 1 0 0ca4125e71421fb70cbaf68a43c535e9
+
+@ 0 1 0 0bd7218162cbd6d70ddfb404c25a5a7b
++ 有效期的结束时间不晚于其开始时间。
+
+@ 0 1 0 1b374f263443b1431f1e13e6248298c6
++ **示例。** `[↯/s.105.5.4] could not build the certificate because the validity period ended before it began`
+
+@ 0 2 0 197a038feb19064d16a947f0dbfa3777
++ **解决方法。** 构建有效期时把较早的瞬时放在前面，即 `notBefore ~ notAfter`。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 3 0 1cfce0c752685a200ce00f0c359faa8f
++ - 源代码：`lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.4` — `Asn1Error`，在无法读回证书的 DER 时抛出

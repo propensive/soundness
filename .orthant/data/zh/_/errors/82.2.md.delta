@@ -1,0 +1,56 @@
+orthant 2 language
+
+% 0 1 0 1b20ccfadbfed0500d96cfd162acb9cd
+
+@ 0 1 0 1ed6ee8637ae50810a4aaf966372439e
++ 当 Cacophony 无法从音频输入源录音时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1260e6a6efd9e5de114814780cb4eebf
++ Cacophony 打开一条音频采集线路并从中读取采样。
++ 此错误报告的是线路本身、所请求的配置，或录音停止后执行的操作所存在的问题。
++ 消息为 `could not record from feed $feed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 1ec234f5d6b936cb078edc535e66f43a
+
+@ 0 3 0 119987e16bd6e26c01ba47eb0cd8160f
++ 无法打开所请求的音频线路——通常是因为没有连接输入设备，或者另一个进程独占了它。
+
+@ 0 1 0 1ae3a649be3e11c117d2dc71becb6cf1
++ **示例。** `[↯/s.82.2.1] could not record from feed default because the audio line could not be opened`
+
+@ 0 2 0 0a10bcc644f2110819ae012c0fef4a2e
++ **解决方法。** 确保已连接输入设备，并且进程有权使用它。
+
+% 0 1 0 17a89aeecb2adaf11df666e3e6d95a15
+
+@ 0 2 0 10a144670334fe270f186c4d12c25b3b
++ 设备不支持采样率、声道数和采样大小的这种组合。
+
+@ 0 1 0 169ac148e6a2000e14290360dcc9e904
++ **示例。** `[↯/s.82.2.2] could not record from feed default because the requested configuration is not supported`
+
+@ 0 2 0 07c3168e3c7dad8208346ff928cd990c
++ **解决方法。** 选择设备支持的配置；查询设备所支持的特性，并挑选一种兼容的格式。
+
+% 0 1 0 00984a0c1c2dde020c24e67e75e3eb12
+
+@ 0 1 0 101e052d0bb1c9c711ed493b2a965ade
++ 在录音停止后尝试了某个操作。
+
+@ 0 1 0 1980b764b112e78a171f0eee0f986cd9
++ **示例。** `[↯/s.82.2.3] could not record from feed default because the recording has already been stopped`
+
+@ 0 2 0 008b1787c228ffcf12a5df7e017ff113
++ **解决方法。** 打开一次新的录音，而不是重复使用已停止的录音。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 06e02ba3712ad3c4132026a245feb3ae
++ - 源代码：`lib/cacophony/src/core/cacophony.Feed.scala`

@@ -1,0 +1,175 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12c51ec2a255dfe307ae1a2f6c8a8e5f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c0b1b5741d01c6f05e4b0c520bc2c4d
++ info   pomocnicze narzędzia metaprogramowania: każda instancja given w zasięgu, typy wyników makr, importy w miejscu wywołania
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 1291c08b85811cb200c43dac6bf0ae4e
++     _Gigantism_ to niewielki zestaw narzędzi dla własnych makr bibliotek Soundness oraz dla
++     każdej biblioteki, która tak jak one potrzebuje od kompilatora nieco więcej, niż oferuje
++     publiczne API refleksji Scali.
+
+@ 0 5 0 019c1c4f82f00505127179dc87dd9c68
++     Jego główną funkcją jest `every[T]`, które zbiera *każdą* instancję given typu `T`
++     widoczną w miejscu wywołania – łącznie z instancjami wzajemnie niejednoznacznymi, które
++     zwykłe `summon` odrzuca – w `Every[T]`. W ten sposób biblioteka pozwala użytkownikowi
++     włączyć kilka opcji naraz, importując kilka givens: dekoder `Boolean` zbiera
++     `Every[Truth]`, a gniazda coaxial zbierają `Every` opcję gniazda w zasięgu.
+
+% 2 1 0 1aa7a7da55f13e3e07cd70c0b3e49155
+
+% 3 1 0 0fd3a53392543d5511cbd4b4dd3647bc
+
+% 0 1 0 1a12b930d81785af0cdb0afe65193532
+
+% 0 1 0 0c3293b2b2b128301d71855ae329f96b
+
+% 0 1 0 0fec5d581218f4890945106668d0ba3e
+
+% 0 1 0 0168540847d4a6341ab85d30168fd7c2
+
+% 0 1 0 041d27ca0f62882504744b38f137bde8
+
+% 0 1 0 1d702f3a53eeae5915bddd80620bdc6f
+
+% 0 1 0 0a79be357cd823be1aa8834531d4fb2b
+
+% 1 1 0 16446a5e2430100219877d6eda977191
+
+@ 0 3 0 048a9b46899a268e19297e88800ee581
++     Obok niego są `Macro[T]`, typ wyniku implementacji makra; `Lifts`, które podnosi listy
++     `List` wyrażeń z Soundness do list w cytacie i varargs; oraz `metaprogramming.imports`,
++     które wymienia importy w zasięgu w miejscu wywołania makra.
+
+@ 0 4 0 1f8ebae719f41ea811625dc1f00dc2f4
++     `every` i `metaprogramming` sięgają do wewnętrznego API kompilatora
++     (`dotty.tools.dotc`), więc są związane z wersją kompilatora, którą kompilowany jest
++     Soundness. Biblioteka ma jeden zbiór źródeł, `gigantism.core`, a wszystko jest
++     eksportowane do modułu zbiorczego `soundness`.
+
+% 0 1 0 09c4d1410d2ef3811f0fe94795bccf97
+
+% 0 1 0 19dff483c4b51ba71cc4ae0bde1647be
+
+% 0 1 0 1bce562b9ec6aaef0fdb047a1bfde797
+
+@ 0 1 0 1a54cd97dfdde41e04a33a6c83a7d91f
++ entry .Every   każda instancja given typu widoczna w miejscu wywołania, zebrana w listę
+
+% 1 1 0 1795abc8182d4f3905fc5a0a0c880462
+
+@ 0 4 0 102dcbb844481f271da70b843046c4c8
++       `Every[T]` przechowuje w `#values` wszystkie given `T` w zasięgu w miejscu, gdzie
++       zostało przywołane. Tworzy się je przez `every[T]` albo przywołuje jako parametr
++       kontekstowy za pośrednictwem givena `.default` z obiektu towarzyszącego, który nie
++       wymaga importu: metoda przyjmująca `(using Every[Option])` widzi każdy given `Option`,
++       który jej wywołujący ma w zasięgu.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 04b0044dd6433a0b04e8a680bdf25784
+
+% 0 1 0 04ea60bb96ff950e0c3026d4e670f2d0
+
+% 0 1 0 1abc9a1ab52eb50a1e4420c99214b47a
+
+% 0 1 0 0caf0dfd4031115204f8421a7d8a8426
+
+% 0 1 0 02b0368c71fde08a14bbe10217cecb65
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 3 0 160d3aff2c561ac202f298e0a72f6de8
++       Instancje są znajdowane niezależnie od tego, czy są lokalne, zaimportowane po nazwie, czy
++       w zasięgu niejawnym, i uwzględniane są wszystkie wzajemnie niejednoznaczne; instancja
++       spoza zasięgu nie jest. Kolejność wartości nie jest określona. Gdy w zasięgu nie ma
++       żadnej instancji, `#values` jest puste.
+
+% 0 1 0 05cd74e95943f8e6048971c9cdcf0a0c
+
+@ 0 11 0 00de7323de3b023410731949273dd4ec
++   entry .default   przywołuje `Every[T]` ze wszystkimi instancjami `T` w zasięgu, jako parametr kontekstowy
++       Przezroczysty given inline: rozwija się w każdym miejscu użycia, więc widzi instancje
++       w zasięgu w tym miejscu.
++   entry .summonAll   makro, które zbiera każdą instancję typu w zasięgu w miejscu swojego rozwinięcia
++       Implementacja stojąca za `every` i `.default`. Wielokrotnie szuka instancji, ignorując
++       już znalezione, a z niejednoznacznego wyszukiwania odzyskuje obie alternatywy za
++       pośrednictwem wewnętrznego `AmbiguousImplicits` kompilatora.
++   entry #values   znalezione instancje, jako `List` z biblioteki standardowej
++       Lista pochodzi z biblioteki standardowej Scali, a nie z Soundness, ponieważ zebrane
++       instancje mogą przenosić zdolności, których `List` z Soundness nie przechowuje.
++       `List.from(every[T].values)` ją konwertuje.
+
+@ 0 4 0 0ef33791380a46530907b2dfef9476ec
++ entry .every   zbiera każdą instancję given typu widoczną w miejscu wywołania, jako `Every`
++     `every[T]` rozwija się do `Every[T]` przechowującego każdy given `T` w zasięgu w miejscu
++     wywołania, łącznie z instancjami wzajemnie niejednoznacznymi. Nie zawodzi, gdy w zasięgu
++     nie ma żadnej: wynik jest wtedy pusty.
+
+% 2 1 0 1e6e0e9590e8cdb7097f7202cabe589d
+
+% 3 1 0 116aa2aee29b49a30f13bd01285ad581
+
+% 0 1 0 1d8ea0e093ca76b800e7f8d1610728f5
+
+% 0 1 0 0fd9f35046b3f6270f71df2216711b29
+
+% 0 1 0 145fad91442647bb15e9e560a201c5e3
+
+% 0 1 0 0757b072cb32fe1901cb1cbc36971cb4
+
+% 1 1 0 0c39eede3e04bc570eb616eca85395a6
+
+@ 0 3 0 0fa294985018e9120a922eba13d1898b
++ entry .Macro   typ wyniku implementacji makra: `Quotes ?=> Expr[T]`
++     Implementacja makra zadeklarowana jako zwracająca `Macro[T]` otrzymuje `Quotes` jako
++     parametr kontekstowy, więc `def impl(x: Expr[Int]): Macro[Text] = '{…}` nie potrzebuje
++     `(using Quotes)`.
+
+@ 0 1 0 1f44a5ffd935e92c01ab85a71b6b3f42
++ entry .Lifts   podnosi listy `List` wyrażeń z Soundness do list w cytacie i varargs
+
+% 1 1 0 174d807dc6bbf97f1e363e627d3a7076
+
+@ 0 5 0 135c00abe6204d6b0cab5da6d047ac72
++       Odpowiedniki `Expr.ofList` i `Varargs` dla kodu makr, który przechowuje swoje
++       podniesione wyrażenia w `List` z Soundness, a nie w `Seq` z biblioteki standardowej.
++   entry .list   podnosi `List` wyrażeń do wyrażenia typu `List`
++   entry .varargs   podnosi `List` wyrażeń do argumentu varargs, `Expr[Seq[T]]`
++   entry .Varargs   dopasowuje argument varargs, podając wyrażenia jego elementów jako `List`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 3 0 1c33f3fb42989d8f0344c2764de6a915
++         Ekstraktor będący odpowiednikiem `Lifts.varargs`: `case Lifts.Varargs(elements) =>`
++         dopasowuje `Expr[Seq[T]]` zapisane jako literalne argumenty.
++     entry .unapply   wyrażenia elementów argumentu varargs, jeśli zapisano go jako literalne argumenty
+
+@ 0 4 0 0461b64f53e3287918ee46b8d45b7571
++ entry .metaprogramming   możliwości kompilatora wykraczające poza publiczne API refleksji, dla `Quotes` w zasięgu
++     Wewnątrz implementacji makra `metaprogramming` opakowuje `Quotes` w zasięgu jako
++     `Metaprogramming`, dzięki czemu `metaprogramming.imports` wymienia importy widoczne w
++     miejscu wywołania makra.
+
+@ 0 1 0 1262f1a883756bac0b4c1ac6357fd4f0
++ entry .Metaprogramming   możliwości kompilatora wykraczające poza publiczne API refleksji, dla jednego `Quotes`
+
+% 1 1 0 034793d8705e9c3b0db32a1cd681c8ec
+
+@ 0 7 0 090f5c53810cc41b01c01e7c880cb99a
++       Tworzone przez `metaprogramming` wewnątrz implementacji makra. Sięga do wewnętrznego
++       kontekstu kompilatora, więc zależy od wersji kompilatora.
++   entry #Import   jeden import widoczny w miejscu wywołania makra
++     entry #wildcard   czy import jest wieloznaczny, `import p.*`
++     entry #term   term, z którego importowano, jako `TermRef`
++   entry #quotes   `Quotes`, które to opakowuje
++   entry #imports   każdy import w zasięgu w miejscu wywołania makra, od najbardziej zewnętrznego

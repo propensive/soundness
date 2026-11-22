@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 7 0 17ba98e4f07396441288739143c29fab
++ entry .tastySymbolTeletypeable   把 `Tasty.Symbol` 渲染为由其属性组成的两列表格
++     `Tasty.Symbol` 的 `Teletypeable` given，需要一个 `TastyPalette`。
++     表格有一行名称（前缀暗淡，名称粗体）、一行标志（已设置的标志在调色板的 `flagOn` 颜色上高亮）、一行属性（已设置的属性使用 `propertyOn`），以及每个细节一行。
++     它是顶层 given，因此在 `hyperbole` 内部无需导入即可解析，在其他地方则按名称导入：`import soundness.tastySymbolTeletypeable`。

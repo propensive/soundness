@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  Próba
++ column  Przedstawienie
++ row  1  własna instancja `Inspectable` typu
++ row  2  jego instancja `Encodable in Text`, między `⸤` a `⸥`
++ row  3  jego instancja `Showable`, między `⸢` a `⸣`
++ row  4  dla `Optional` – przechowywana wartość, między `｢` a `｣`, albo `○`, jeśli wartość nie jest ustawiona
++ row  5  przedstawienie strukturalne derywowane z jego kształtu
++ row  6  przedstawienie ostatniej szansy: jego `toString` między `“` a `”`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ Nawiasy oznaczają przedstawienie zapożyczone z innej klasy typów lub z `toString`, które nie
++ jest własnym przedstawieniem typu.

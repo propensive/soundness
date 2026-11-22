@@ -1,0 +1,390 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 09f9b3580b93958b12c3b3f6816f2dd0
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 164b271f5c6c84e113b0375784e19f44
++ info   精简的应用程序 JAR：依赖以内容哈希命名，在启动时获取、校验并缓存
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0d22614a4426a84705af0707c7336625
++     _Burdock_ 让应用程序 JAR 变小，而又不使其变得脆弱。
++     携带全部所需依赖的 JAR 会附带数十兆字节的库代码，其中大部分早已在某个公开位置发布；Burdock 将每个已发布的依赖替换为对它的引用，该引用以编译器所读取的确切字节的 SHA-256 命名，并由一个小型引导加载器在应用程序启动时获取、校验并缓存这些依赖。
+
+@ 0 1 0 139226c9051e22730df2cf8677630385
++     这项工作分三个阶段进行：
+
+@ 0 11 0 131f44ef7edf332015a82411ee735ea4
++     - **在编译时**，`externalize` 包装应用程序的入口点；它的宏对构建类路径上的每个依赖 JAR 计算哈希，将其逐一硬链接到 Burdock 缓存中，并把哈希列表作为资源 META-INF/burdock.deps 嵌入编译输出；
++     - **在构建之后**，`soundness.repackage` 入口点（即这里的 `repackage` 方法）就地重写 JAR：每个能解析到公开 URL 的哈希——通过提示的 GitHub 仓库的发布资产（`GitHub`）或通过 deps.dev（`DepsDev`）——都变为一条 `Burdock-Require` 引用，其余的则从缓存中内联；
++     - **在启动时**，`Bootstrap` 作为重新打包后的 JAR 唯一添加的类，下载每个尚未缓存的依赖需求，按其哈希逐一校验，然后在按清单顺序排列的类路径上启动应用程序。
+
+% 2 1 0 0b2da459aa70eb6b0973908a153dce34
+
+% 3 1 0 06c0ff0a23330d70059e2d9cec06abf0
+
+% 4 1 0 0a83c018dfabd88b1220ace28c621fd0
+
+% 5 1 0 0166f0d4ee644fac1807ae5402293925
+
+% 7 1 0 1e49be2a5d47ef1a1ef7bdf9a38b136a
+
+% 8 1 0 11837241d1e97b8105d88523e0b43e90
+
+% 9 1 0 0f8e1858a617a1711ff47f04adca2465
+
+% 10 1 0 0f5d07125506a414159da9fc56eb961e
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 14a5bda1ec07d949162b52ecd9e9b0a0
+
+% 0 1 0 068d187c050d033b11ee166b57afb891
+
+% 1 1 0 0eb3a4d2a3dd1c65154b2914098fa517
+
+@ 0 6 0 1d7611d41d71ca2603bac864b3baf66b
++     **缓存。**
++     依赖 JAR 按哈希保存为 `~/.cache/soundness/jars/<sha256>.jar`。
++     `externalize` 宏和重新打包器使用用户主目录下的这个目录；引导程序遵循 `XDG_CACHE_HOME`，当它已设置且非空时使用 `$XDG_CACHE_HOME/soundness/jars`。
++     早期版本使用 `~/.cache/burdock`；没有任何迁移，因此升级后的首次启动会重新下载每个依赖需求，旧目录可以删除。
+
+@ 0 3 0 0db1b1d06f2e38551f35c8aa3dc05df9
++     由于引用指向确切的字节，完整性不变式成立：每个依赖要么被引用，要么就在 JAR 中；既不属于前者也不属于后者的哈希会以 `Repackager.RepackageError` 终止重新打包，而校验和不匹配的下载会终止启动。
+
+@ 0 5 0 19228348add8886c161275291d3054aa
++     该库有两个仅限 JVM 的源集：`burdock.core`，包含 `externalize`、`Repackager` 及其解析器，它与 `soundness.repackage` 命令行入口点一起导出到 `soundness` 总括包；以及 `burdock.boot`，即单个 Java 类 `Bootstrap`，它除 JDK 外不依赖任何东西，因此能在获取任何依赖之前运行。
+
+% 0 1 0 0931b7e60dd25bf3150928dd9f610638
+
+% 0 1 0 08d48c5e1e07dc071b37cab7daf96619
+
+% 0 1 0 0e945906d49b33771688ae210349e6cb
+
+% 0 1 0 11e972ab47fd639e11d49653b8ae1b22
+
+@ 0 7 0 16486a260e83ba770327f3b30a9eb78e
++ entry .externalize   包装应用程序的入口点，使 Burdock 能够将其依赖外部化
++     `externalize(block)` 在运行时原样返回 `block`。
++     在代码编译时，它的宏读取编译器的类路径，计算其中每个依赖 JAR 的 SHA-256，将其逐一硬链接到缓存 `~/.cache/soundness/jars/<sha256>.jar`（缓存位于其他文件系统时则复制），并将这些哈希每行一个写入编译输出中的资源 META-INF/burdock.deps，使它像其他资源一样被打包进 JAR。
+
+% 2 1 0 0e99dbb96856deed1bfe34487250c571
+
+% 3 1 0 1cf760a014630032131a351affb02874
+
+% 4 1 0 183a17f8ee5a4f341299c037e83c6902
+
+% 5 1 0 11afc1d17b0751970ddb8203f166e35a
+
+% 7 1 0 0eb60e62c7ebec2b089703a773e8545b
+
+% 8 1 0 11c34d50498e175a0ae47790ad0b317e
+
+% 9 1 0 0020bdcc58fd239e1c109a8146c402cd
+
+% 10 1 0 1f497d8dd48e6f14067cd3eceb07978f
+
+@ 0 5 0 0bd499fda97382a51126a28c9e2f2725
++     应用程序的其余部分都不变：它作为普通 JAR 构建、测试和运行，在 `repackage` 读取之前，该资源不起任何作用。
++     每个依赖是否已发布，由重新打包器稍后决定；无法解析的依赖由缓存兜底。
++     硬链接位于构建机器上，因此带有未发布依赖的 JAR 必须在构建它的地方重新打包。
+
+@ 0 1 0 1cbada924fd2db7f021fb2ded0eba203
++ entry .repackage   就地重写正在运行的应用程序的 JAR，将其已发布的依赖外部化
+
+% 1 1 0 09d270df3b7fb84c0d386c61854fa3ca
+
+@ 0 2 0 1b4b49ab38566914077fe73aca394571
++       `soundness.repackage` 背后的命令行逻辑，以应用程序 JAR 和 Burdock 位于类路径上的方式启动：
+
+% 0 1 0 0ea4573b9a94b84305f895477a981119
+
+% 0 1 0 1f73723a902ae2b60b45da869918b11d
+
+% 1 1 0 0deb161ba903856c05416f7294440c5c
+
+@ 0 6 0 1210980a5882d1a8167043c059c3b4d2
++       它把持有 META-INF/burdock.deps 的类路径条目认定为应用程序 JAR（没有这样的条目，或该条目是目录时，抛出 `Repackager.UserError`），从 Burdock 自身的 JAR 中读取 `Bootstrap` 类，构建一个先查询提示的 GitHub 仓库、再查询 deps.dev 的解析器，并调用 `Repackager.repackage` 写入一个临时的同级文件，然后用它原子地替换原文件。
++       若设置了 `GITHUB_TOKEN` 环境变量，它会解除 GitHub 对未认证请求的速率限制。
+
+@ 0 6 0 0d6e3521b62ba700041e60902c480ed2
++       只接受 `--github owner/repo`、`--github=owner/repo` 形式的参数，或二者之一的逗号分隔列表（参见 `parseArguments`）。
++       解析期间，若标准输出是终端，会就地绘制进度条，输出被重定向时则不绘制；结束时打印摘要：读取和写入的条目、保留、内联和剥离的类、已索引的 GitHub 资产，以及每个外部化的依赖需求。
++       任何错误都会被打印，进程以状态 1 退出。
+
+@ 0 3 0 043f76f9a1fdedab16e284d8ce3204bd
++       此方法不导出到 `soundness` 总括包：总括包自身的 `soundness.repackage` 是一个以 `Text*` 接收参数的 `@main` 方法，它才是要启动的入口点，并调用 `burdock.repackage`。
+
+% 1 1 0 1f48e5804c979b4d11c0beb9ab7884e8
+
+% 0 1 0 0cae827af171905f05384bd36fc64a12
+
+@ 0 6 0 0e92cb8c46f91d70033296e7458121fb
++ entry .parseArguments   将 `--github` 提示解析为 GitHub 仓库
++     接受 `--github owner/repo`、`--github=owner/repo` 以及这两种形式的逗号分隔列表，次数不限。
++     无法识别的参数、没有操作数的 `--github`，或不符合 owner/repo 形式的仓库，会抛出带有用法行的 `Repackager.UserError`：_usage: soundness.repackage [--github owner/repo]..._。
++     它不导出到 `soundness` 总括包，因此以 `burdock.parseArguments` 访问。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 09533f74603f57ba0eacded4b81f0b69
+
+% 1 1 0 0c001e31ec66b99703edeb8f5962d164
+
+@ 0 1 0 1df4c03f584521611a01eea0b7ce0efb
++ entry .Repackager   重写 JAR：已发布的依赖变为引用，其余的从缓存中内联
+
+% 1 1 0 163607676bda89480bf3cc6f644ecb38
+
+@ 0 6 0 1a44ada56dd335181a71c52953b2efed
++       重新打包器的核心，除读取输入 JAR 和写入输出外不做任何 I/O。
++       `.repackage` 保留应用程序自身的类，丢弃它能解析到 URL 的每个依赖的捆绑类（改为在 `Burdock-Require` 清单属性中列出它们），从缓存中内联其余依赖的类，添加 `Bootstrap` 类，并重写清单，使 `Main-Class` 为 `burdock.Bootstrap`，`Burdock-Main` 为原来的入口点。
+
+@ 0 2 0 1336e017d37f61d80a6bcd49ef6957a2
++       解析器、缓存查找和进度回调都是注入的，因此这一逻辑无需网络或文件系统即可测试：
+
+% 2 1 0 0abc498caa38428c1ef8691940e4480f
+
+% 3 1 0 0edfd905c3610aa213587d3de558b097
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 139ea05eb8cdf49d09fa72d435c9020e
+
+% 0 1 0 1cc1242f9ac8b87412cbe382eb11e3f0
+
+% 0 1 0 190d1b8975778ff21be5ad9f287382c9
+
+% 0 1 0 057eefc8822dbc30041c7fca98195e4d
+
+% 1 1 0 0f2c90f5e812666d15f7bc909ca1683f
+
+@ 0 5 0 03bf209784f976f009bdeddb1c8b3e76
++       条目按原样复制，保持压缩状态，因此 Stored 条目仍为 Stored，Deflated 条目保留其 CRC 和压缩后大小；只有新的清单和引导类会重新压缩。
++       目录条目被丢弃；两个条目同名时保留第一个：强制包含的引导类优先于任何捆绑副本，应用程序的类优先于缓存中的类。
+
+% 0 1 0 0f95ff38b7c458c0135a8c2b9bdfdb18
+
+% 0 1 0 04f876c8ceebf2f60af4923eff4509bb
+
+% 0 1 0 19073802cd2eecf011a26563eff4be06
+
+@ 0 36 0 14bcbb8670b1636302daa60f33a3bbf9
++   entry .partition   将依赖哈希划分为要引用的依赖需求和要内联的缓存条目
++       `partition(hashes, resolve, cached, progress)` 对每个哈希分类：`resolve` 能映射到 URL 的成为 `Requirement`，`cached` 能找到的贡献其条目，二者皆非的抛出 `Repackager.RepackageError`：_dependency `hash` is neither published nor cached_。
++       查找在虚拟线程上并发执行，每次十六个，每组完成后在调用线程上以 `(completed, total)` 调用 `progress`。
++       结果按 `hashes` 的顺序排列，即类路径顺序。
++   entry .repackage   将 `inputJar` 重写为 `outputJar`，返回 `Repackager.Summary`
++       接收输入和输出路径、一个 `Resolver`、一个 `CacheReader`、`Bootstrap` 类的字节以及一个可选的 `Progress` 回调；当 JAR 没有清单、没有 META-INF/burdock.deps 资源或没有 `Main-Class` 时，当某个依赖既未发布也未缓存时，以及任何文件系统、流或归档失败时，抛出 `Repackager.RepackageError`。
++       在缓存中找到的已发布依赖，其捆绑条目会被剥离；不在缓存中的依赖无法识别，因此其条目保持捆绑：结果仍然正确，只是没有精简。
++   entry .Resolver   将依赖哈希解析为其公开下载 URL，或 `Unset`
++       `Text => Optional[HttpUrl]`。
++       命令行将 `GitHub.index` 与 `DepsDev.mavenUrl` 组合使用。
++   entry .Progress   每组依赖分类完成后接收 `(completed, total)` 的回调
++   entry .CacheReader   在本地缓存中查找依赖哈希，给出其条目或 `Unset`
++       `Text => Optional[List[Zip.Entry]]`。
++       目录和清单被排除，载荷保持惰性，因此按名称剥离已发布依赖的条目时不会读取缓存 JAR 的内容。
++   entry .Requirement   一个外部化的依赖：其 URL 及其必须匹配的 SHA-256
++     entry #url   引导程序从何处下载该依赖
++     entry #digest   该依赖的 SHA-256，以小写十六进制表示
++     entry #text   该依赖需求在 `Burdock-Require` 中的形式：`<sha256>:<url>`
++   entry .Summary   一次重新打包做了什么，供调用方报告
++     entry #inputEntries   输入 JAR 有多少条目
++     entry #directoriesSkipped   丢弃了多少目录条目
++     entry #ownKept   保留了多少应用程序自身的条目
++     entry #externalized   写入 `Burdock-Require` 的依赖需求，按类路径顺序
++     entry #inlined   从缓存依赖中内联了多少条目
++     entry #stripped   移除了多少已发布依赖的捆绑条目
++     entry #outputEntries   输出 JAR 有多少条目，包括清单
++   entry .UserError   调用重新打包器的方式有误
+
+% 1 1 0 028a4557d562a6470e673d9403605f9d
+
+@ 0 5 0 077be3f129bfcc5211f6354e94c2296b
++         在以下情况抛出：JAR 不是用 Burdock 构建的（_this JAR was not built with Burdock (no META-INF/burdock.deps)_），JAR 是目录而非文件，参数或仓库提示格式错误，以及无法列出提示仓库的发布版本。
++     entry #detail   哪里有误
++   entry .RepackageError   无法重新打包的 JAR
+
+% 1 1 0 1715383ca4c1cb8d0e9fa2561e886ad6
+
+@ 0 12 0 157f2f3b67450e2315685c592df4269a
++         由 `Repackager.repackage` 和 `Repackager.partition` 抛出：没有清单，没有 `Main-Class`，没有 META-INF/burdock.deps 资源，某个依赖既未发布也未缓存，或文件系统、流、归档或并发失败。
++     entry #detail   出了什么问题
++   entry .BurdockMain   `Burdock-Main` 清单属性：应用程序自身的入口点
++   entry .BurdockRequire   `Burdock-Require` 清单属性：外部化的依赖
++   entry .BurdockVerbosity   `Burdock-Verbosity` 清单属性：引导程序打印多少信息
++       取 `silent`、`error`（默认）、`info` 或 `debug` 之一；重新打包器写入 `silent`。
++       其他任何值都会以状态 2 终止启动。
++   entry .burdockMain   将 `Burdock-Main` 写为完全限定类名
++   entry .burdockRequire   将 `Burdock-Require` 写为以空格分隔的 `<sha256>:<url>` 项
++   entry .burdockVerbosity   将 `Burdock-Verbosity` 写为文本
+
+@ 0 1 0 017efeb28fc711ee18dd3b77cc5e33cf
++ entry .Bootstrap   重新打包后 JAR 的运行时入口点：获取、校验并加载其依赖
+
+% 1 1 0 1b2efb5ce38b59a01b91d974e97160ba
+
+@ 0 3 0 10b8d8d9e9437cfd015bb1d44b8a8af3
++       位于 `burdock.boot` 中的 Java 类，也是重新打包后的 JAR 唯一添加的类：它必须在任何依赖就位之前运行，因此只使用 JDK，并编译为单个类文件。
++       `java -jar app.jar` 将它作为清单的 `Main-Class` 启动。
+
+@ 0 7 0 0d8eff739504d6c1003ade7398abfe85
++       它读取 `Burdock-Require`，下载每个尚未在缓存中的依赖需求——若该变量已设置且非空，则为 `$XDG_CACHE_HOME/soundness/jars`，否则为 `~/.cache/soundness/jars`——每次至多八个，带有连接和读取超时，并按清单中的哈希校验每个下载的 SHA-256（缓存文件也同样校验）。
++       然后它按清单顺序在 JAR 和依赖需求之上构建一个类加载器，将其设为线程的上下文类加载器，并调用 `Burdock-Main` 所指定类的 `main`。
+
+@ 0 6 0 15e52b37128aac2f1c01490edb7c4575
++       校验和不匹配时以状态 1 退出；`Burdock-Require` 项格式错误、`Burdock-Verbosity` 无效、缺少清单或入口点，或任何启动失败，都以状态 2 退出。
++       监管启动过程的启动器可以将系统属性 `burdock.progress` 设为一个文件路径：获取期间，引导程序在该文件中保持一行 `<completed> <total> <bytes>`，以原子方式写入，并在完成后删除它。
++   entry .main   获取依赖需求后，启动 `Burdock-Main` 所指定的应用程序
+
+@ 0 1 0 0a1dd24d114dcf4f049b632f34ddc683
++ entry .DepsDev   通过 Google 的 deps.dev 将依赖的 SHA-256 解析为其 Maven Central URL
+
+% 1 1 0 094237d50d6ea78c037a9c5204273668
+
+@ 0 10 0 0606d3b6dc8cc72d004e43c862373cfb
++       deps.dev（“Open Source Insights”）按内容哈希索引已发布的制品。
++       `.mavenUrl` 向其查询 API 询问哪个 Maven 制品具有某个哈希，并在 repo1.maven.org 上构建该制品的 URL；deps.dev 不认为是 Maven 制品的一切都为 `Unset`，此时重新打包器改为从缓存中内联该依赖。
++       这些 case class 为 API 的 JSON 响应中相关的部分建模。
++   entry .mavenUrl   具有给定 SHA-256 的 JAR 的 Maven Central URL，或 `Unset`
++       以十六进制接收哈希，按 API 的要求以 base64 编码发送，并选取第一个系统为 `MAVEN` 的结果。
++       它以 `fine` 级别记录 `DepsEvent.Querying`，以 `info` 级别记录 `DepsEvent.Resolved`，因此作用域中需要 `DepsEvent is Loggable`。
++       每种失败——网络、意外的响应、未知的制品——都给出 `Unset`。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 07da053f9c0b2b5d15bbdce39289346e
+
+% 1 1 0 0d03016d6659f3b713f59404cbd2bc34
+
+@ 0 12 0 14b089f0af61a84e0a6aa897dd9cd1d5
++   entry .Unresolved   不是已知 Maven 制品的哈希
++       _not a known Maven artifact_。
++       在 `.mavenUrl` 内部抛出并捕获，`.mavenUrl` 的结果为 `Unset`。
++   entry .VersionKey   deps.dev 响应中制品的标识
++     entry #system   包系统，如 `MAVEN`
++     entry #name   制品的名称，对 Maven 而言为 `group:artifact`
++     entry #version   制品的版本
++   entry .Version   deps.dev 响应中的一个版本
++     entry #versionKey   该版本的标识
++   entry .Result   deps.dev 响应中的一个匹配
++     entry #version   匹配的版本
++   entry .QueryResult   deps.dev 哈希查询的响应
++     entry #results   具有该哈希的每个制品版本
+
+@ 0 1 0 19be9a02a8c15fbe0f88da33ea825730
++ entry .GitHub   针对提示的 GitHub 仓库的发布资产解析依赖哈希
+
+% 1 1 0 17f9e09ca091045a1e889963e5a216d1
+
+@ 0 5 0 02ad2c4537e855e1066affc77c88fe10
++       GitHub 没有按哈希的全局索引，但它的 REST API 会列出仓库的发布版本，而每个资产都带有 `digest`（`sha256:<hex>`）。
++       因此，用 `--github` 指定的仓库会预先建立索引——每个仓库几个请求，而不是每个依赖一个——并且该索引先于 deps.dev 查询，因为用户指定的仓库应当优先。
+
+% 2 1 0 12cc9fc3fd5a47a30e05c0e877e99d06
+
+% 3 1 0 0bc8a46706f4aefb0293b15d762a9e70
+
+% 0 1 0 04929fe2ec184346089b9ceb60c2cddd
+
+% 0 1 0 1370d09ab79aaed3047b32fdced57f66
+
+% 0 1 0 17a7dadad77c147101f325e4b938634e
+
+% 1 1 0 0dbfe35bd647f2d61156c655c9c7bb60
+
+% 1 1 0 09b5503bf82ce0101b4475ce543429d7
+
+@ 0 27 0 1721ed627c7bf6d51beff5c2ec3585f3
++   entry .Repository   一个 GitHub 仓库，由所有者和名称组成
++     entry .parse   读取 `owner/repo`，其他任何形式都抛出 `Repackager.UserError`
++         恰好一个斜杠，且两部分都非空：`t"owner"`、`t"owner/"`、`t"/repo"` 和 `t"a/b/c"` 都会被拒绝，报错 _`text` is not a GitHub repository of the form owner/repo_。
++     entry .showable   将仓库显示为 `owner/repo`
++     entry #owner   拥有该仓库的用户或组织
++     entry #name   仓库的名称
++     entry #text   以 `owner/repo` 表示的仓库
++   entry .Asset   一个发布资产，如发布 API 所描述
++     entry #name   资产的文件名
++     entry #url   资产的下载 URL，从 JSON 字段 `browser_download_url` 读取
++     entry #digest   资产的摘要 `sha256:<hex>`，对于 GitHub 开始计算摘要之前上传的资产则为 `Unset`
++   entry .Release   仓库的一个发布版本，及其资产
++     entry #assets   该发布版本的资产
++   entry .indexReleases   按 SHA-256 为一组发布版本的 `.jar` 资产建立索引
++       纯函数，因此不需要网络。
++       名称以 .jar 结尾且摘要为 SHA-256 的每个资产以小写十六进制为键；其他资产被跳过。
++       API 首先列出最新的发布版本，因此同一哈希出现在多个发布版本中时，以第一个即最新的 URL 为准。
++   entry .releases   通过 GitHub API 列出仓库的每个发布版本
++       每次一百个发布版本地分页遍历 API，直到某一页为空。
++       可选的令牌作为 bearer 令牌发送。
++       它记录 `DepsEvent.Indexing`，并在 HTTP 错误、连接失败或响应不是预期的 JSON 时抛出 `Repackager.UserError`。
++   entry .index   跨所有提示仓库、从 SHA-256 到下载 URL 的单一索引
++       依次列出每个仓库并为其建立索引，以找到的资产数量记录 `DepsEvent.Indexed`；在多个仓库中找到同一哈希时保留第一个 URL。
+
+@ 0 1 0 04842bb705db60c01f87b5ada4e0042d
++ entry .DepsEvent   Burdock 在解析依赖时记录的内容
+
+% 1 1 0 0763ed18cdc8a14b0d8386e188c00069
+
+@ 0 15 0 18cbd6384e3439bf16decde4337da731
++       每个事件都带有 `Log.Dependency` 标签，发出请求的两个事件还带有 `Log.Network`。
++       `DepsDev.mavenUrl` 以 `fine` 级别记录 `Querying`，以 `info` 级别记录 `Resolved`；`GitHub.releases` 以 `fine` 级别记录 `Indexing`，`GitHub.index` 以 `info` 级别记录 `Indexed`。
++       作用域中必须有 `DepsEvent is Loggable`；`logging.silentLogging` 会丢弃它们。
++   entry .communicable   将每个事件渲染为一条消息
++   entry .Querying   开始一次 deps.dev 查找：_querying deps.dev for the artifact with hash `hash`_
++     entry #hash   依赖的 SHA-256
++   entry .Resolved   一个哈希已被解析：_resolved hash `hash` to `url`_
++     entry #hash   依赖的 SHA-256
++     entry #url   解析得到的 URL
++   entry .Indexing   正在列出某仓库的发布版本：_listing the GitHub releases of `repository`_
++     entry #repository   仓库，以 `owner/repo` 表示
++   entry .Indexed   某仓库已建立索引：_indexed `assets` release assets of `repository`_
++     entry #repository   仓库，以 `owner/repo` 表示
++     entry #assets   建立索引的资产数量
+
+@ 0 1 0 09753f9634f20c980accdb31157b1222
++ entry .ProgressBar   重新打包器的进度条：四十格、余烬配色的仪表
+
+% 1 1 0 080c4cb16041d332079db3be3fccaddf
+
+@ 0 7 0 0a708a6472d2d7ad1e857d6be97faaef
++       绘制采用 ultimatum 的仪表，固定使用平滑的八分之一块进度条、Unicode 字形和余烬调色板；就地重绘由调用方负责。
++   entry .width   进度条的格数宽度：40
++   entry .render   将完成比例渲染为 `Teletype` 进度条
++       比例被限制在 0 到 1 的范围内。
++       空进度条全是空格，满进度条全是满块，介于格之间的比例以一个部分块结尾；进度条始终为四十格宽。
+
+% 2 1 0 12cb43780e486d7c0d6709debba2bb98
+
+% 3 1 0 1c1918cfca42c7ed05bb103b3c17ac4a
+
+% 0 1 0 013da7fb3e51e78f0bd6f66a48e0df8d
+
+% 1 1 0 0b20bd6c3600f261049392c2e2b1b9c9
+
+@ 0 1 0 04485c9a00a1b20217d526b8244d9b98
++ entry .internal   `externalize` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0df719edce35862903cfa6461d90de0a
++       不供直接使用：Burdock 的编译时部分，由于它在编译器的 JVM 中运行，因此只依赖 JDK 编写。
++   entry .ResourcePath   持有依赖哈希的资源：`META-INF/burdock.deps`
++   entry .externalize   该宏：为类路径的 JAR 计算哈希并缓存，写入资源，返回代码块

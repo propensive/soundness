@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0145a9284f5f9640144ef8761eb2a01f
++ # `↯/s.20.1` – Wartość nie jest `Optional` (`mandatable`)
+
+@ 0 2 0 1b1d54641e0f8e65036da4a84d7697d7
++ Zgłaszany w czasie kompilacji przez makro `mandatable` biblioteki Vacuous, gdy typ wartości nie
++ jest `Optional`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 0bbef4a2f8c8a9c202e127ecb0f89f65
++ `Mandatable` to klasa typów, która przekształca `Optional[T]` w obowiązkowe `T` (lub zawodzi).
++ Makro wymaga, by typ zawierał `Unset.type` w swojej unii.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0685adc6db306d840fadf3643ca39b07
+
+% 1 1 0 000d19157f3c66b31877efd9dee04ff7
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 14e2792d4dacf2e10e12c02d77290f7a
++ W miejscu wywołania należy użyć wartości `Optional[T]`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0e30bd981bdeeb0f04ac49f2b9dd5718
++ - Źródło: `lib/vacuous/src/core/vacuous.internal.scala`

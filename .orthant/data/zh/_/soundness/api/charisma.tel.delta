@@ -1,0 +1,534 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 156c0042ea075de716dcd091500586e5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 103629cd6cdabfbe1a2d06180576bdf5
++ info   以带类型的值表示的元素周期表、分子、化学式和化学方程式
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 163bd43c71dd86ee06f3fcdad7e99da5
++     _Charisma_ 将化学记法建模为结构而非文本。
++     118 种元素是 `PeriodicTable` 上的值；元素用 `*` 键合成 `Molecule`，分子可以带电荷和物态；带系数的分子用 `+` 相加成 `Chemical.Formula`；两个化学式通过五种带类型的反应箭头之一连接成 `Chemical.Equation`，它能判断自身是否配平。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a7e25f2ee091fad1e8e94495e464ada
+
+% 0 1 0 114147192ce1f0220ad31cc37492a060
+
+% 0 1 0 0e5cb0ce3a9e5f4d1473d79a002fb3a5
+
+% 0 1 0 1012ba5281a966e01246e89a8478e66e
+
+% 0 1 0 1faab479dc315f50055bdd6e3dc14f38
+
+% 0 1 0 059d8d04765b34801b9939b3fc9f84ef
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 03316eaea154698c0a4825b2ba7ff5a9
++     这些运算符定义在两个特质上：元素和分子扩展的 `Molecular` 具有键合 `*`、系数 `*` 和电荷运算符；每个分子值和每个化学式都扩展的 `Formulable` 具有 `+` 和反应箭头。
++     因此，元素、分子和化学式都可以位于方程式的任意一侧。
+
+@ 0 4 0 0b02f2ec81907e990a81ff3de5f350ee
++     每个值都用 `show` 以惯用记法渲染——下标表示数量，上标表示电荷，按碳、氢在前的 Hill 顺序排列——并且检视结果各不相同，因此在测试失败中，元素、分子和单项化学式绝不会混淆。
+
+@ 0 2 0 1a15cd6622cbd41609137a3e65e7a9f8
++     该库只有一个源集 `charisma.core`，它与平台无关，所有内容都导出到 `soundness` 总括包。
++     它没有需要导入的 given。
+
+% 0 1 0 0eec00f5382711ff1472fbe828f8ef2f
+
+% 0 1 0 098fa0d92269751b19c86629687019d4
+
+% 0 1 0 01a59ab4267dbf1404f2279078ad0f74
+
+% 0 1 0 13ba45690287a76b111f880282b5d119
+
+% 0 1 0 12ac5f266e89c3e819f797ab2885a785
+
+@ 0 1 0 01378691848364bd0c1742170214fc0a
++ entry .Chemical   化学词汇的命名空间：元素、化学式和方程式
+
+% 1 1 0 04297b7914bf33d91dd7afaac6083ff2
+
+@ 0 3 0 04a30196041a52d20363a4761b23bab3
++       不存在 `Chemical` 类型：该对象持有 `Element`、`Formula` 和 `Equation`，这三类化学事物的名称若放在总括包中会过于泛泛。
++       分子是 `Molecule`，位于包的顶层。
+
+% 1 1 0 089dce62e63601a7054c213f69120113
+
+% 1 1 0 0816248f4e0f5a6a17684c30f30b6387
+
+@ 0 1 0 15280788efa6e7fe01d962a7f4219bf2
++   entry .Element   一种化学元素：其原子序数、符号和名称
+
+% 1 1 0 1e9f63d226eacbb900203f3f8c73ce69
+
+@ 0 2 0 1cb708e16a6d6c500ab5eb339dfb569e
++         元素是一个值，通常取自 `PeriodicTable`，并且是 `Molecular`：它本身就是由一个原子构成的分子，可以用 `*` 键合，类型参数则使其重复。
+
+% 2 1 0 11699786aed31c42129bd572020eac4b
+
+% 3 1 0 03cad26679fb0123177a651a87f203ac
+
+% 0 1 0 0096caa091644153111ed891aed90540
+
+% 0 1 0 0adc88edff1ea2960c26e1e718ef8d41
+
+% 0 1 0 02afd1e76f78712a184b6496ab3b2b8c
+
+% 0 1 0 19df082991b2d1c316c8b1e3533d013f
+
+% 0 1 0 1f85c15cd92f731f05f58a5332c6b463
+
+% 1 1 0 15c294af6ab7f216055d63c7883a9833
+
+@ 0 12 0 075d3928f014d4471d2719d0d1d023c3
++         元素显示为其裸符号，检视时带有原子符号和原子序数，从而与任何其他短文本区分开。
++     entry .showable   将元素显示为其符号，`Fe`
++     entry .inspectable   以原子符号和原子序数检视元素，`⚛Fe(26)`
++     entry #number   原子序数
++     entry #symbol   化学符号，`Fe`
++     entry #name   英文名称，`Iron`
++     entry #apply   该元素重复构成的分子，数量作为类型参数给出，`O[2]`
++         `O[2]` 是由两个氧原子构成的分子：数量是字面自然数类型，因此必须在代码编译时已知。
++         对于仅在运行时才知道的数量，使用 `O ** n`。
++     entry #molecule   该元素作为由一个原子构成的分子
+
+@ 0 1 0 0077ef00fcb0f3680ffcfc506fc0a4f1
++   entry .Formula   分子之和，每个分子带有系数：`2H₂ + O₂`
+
+% 1 1 0 1272e01e968dc3dd07f2db09511e03c8
+
+@ 0 3 0 042704868b197ab71e4e71dd3b9ad73b
++         化学式是从每个 `Molecule` 到其系数的 `Ledger`。
++         它由带系数的分子值（`H[2]*2`）或通过 `.apply` 构造，并用 `+` 扩展，若某分子同时出现在两项中，其系数相加。
+
+% 2 1 0 1769c7c84d8bedf4189f8bb584e34a10
+
+% 3 1 0 12ca4fb91296658b18c9199f8c0c139c
+
+% 4 1 0 13f1e469ce15e1c40b26c549ff2023b0
+
+% 0 1 0 19ad8c51345cc3450a0ce64afef48876
+
+% 0 1 0 07e382595117bb4910c2106daa7e8255
+
+% 0 1 0 06fa04dfcbe9bcbd0b38b5982ec53f2d
+
+% 0 1 0 0a493f9b96054150086122d8a0ac74dd
+
+% 1 1 0 0f841ca3789a71fa142d772e265bd38e
+
+@ 0 10 0 19ab90aeb0c93bb31f3a0866d6f14e5b
++         系数 1 在 `show` 中省略，而在 `inspect` 中写出，因此单项化学式的检视结果绝不会与其所含分子的相同。
++     entry .apply   由单个分子构成、系数为 1 的化学式
++     entry .showable   将化学式显示为以 ` + ` 连接的各项，省略为 1 的系数
++     entry .inspectable   检视化学式时写出每个系数，为空时为 `∅`
++     entry #molecules   化学式中的每个分子及其系数
++     entry #formula   化学式本身，满足 `Formulable` 的要求
++     entry #atoms   各项中每种元素的原子数，计入系数
++         方程式一侧原子的多重集：每个分子的原子乘以其系数后求和。
++         两侧的 `atoms` 相等时即配平。
+
+@ 0 1 0 194a8438e2a9c3b70a4461cd53f44389
++   entry .Equation   由反应箭头连接的两个化学式：`2H₂ + O₂ → 2H₂O`
+
+% 1 1 0 182deb5e124895120ac60687384d4422
+
+@ 0 2 0 07fd50d897fb637c0a8c4e995c72be4d
++         方程式由两个可构成化学式的值通过 `Formulable` 的箭头之一构造：`-->`、`<->`、`<=>`、`<~>` 或 `===`，每个箭头给出不同的 `Reaction`。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 0b6a79d6518c7cd31c35d380a8d87779
+
+% 1 1 0 0ac0f6686f027f880a8532a051d5d81c
+
+% 2 1 0 1124775b40b143831f70f2e8107f006b
+
+% 3 1 0 16fe0e1d451b3f270c74906a0ab4bd97
+
+% 0 1 0 0feaff12a952ea2d1d4e380a15a55960
+
+% 0 1 0 1b3ffd6b576a53be15442b32343077f0
+
+% 1 1 0 08a6c54cf8b769771d0e7d7c2c64f884
+
+% 2 1 0 04cc48c803e42c4d1505a33be8fc5353
+
+% 3 1 0 1178f24c8c38c4cf08ef75352cfa29b9
+
+% 0 1 0 0afe359ff97567560a618265bb732998
+
+% 0 1 0 1a30953c37a0de5817c11df8a4b4e32e
+
+% 1 1 0 14acf53d0be933de05a998f6bb5672f5
+
+% 2 1 0 1e35bb5c8115c5d70e02b24de0e4f7d0
+
+% 3 1 0 03963f30aca3773e0a2acfc803c08a7e
+
+% 0 1 0 169f763e838c5384154f8d0ae0f2ddcf
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 12 0 04673803ee0dd1c8014fef67403ae88d
++         `#balanced` 比较两侧的原子；除此之外不做任何检查，因此未配平的方程式也是合法的值。
++     entry .showable   将方程式显示为两侧及其间的反应箭头
++     entry .inspectable   检视方程式时列出各部分并写出反应名称，而不画出箭头
++         `Equation(2H₂ + 1O₂ ╱ NetForward ╱ 2H₂O)`，因此其检视结果绝不会是 `show` 产生的记法。
++     entry #lhs   箭头左侧的化学式
++     entry #reaction   箭头所表示的反应类型
++     entry #rhs   箭头右侧的化学式
++     entry #balanced   两侧每种元素的原子数是否相同
++         比较 `lhs.atoms` 与 `rhs.atoms`。
++         不比较电荷，因此两侧仅电荷不同的方程式也算配平。
+
+% 2 1 0 0c094415c82b92411d3a819b9ddc5f06
+
+% 3 1 0 065730463cdf797402532ddecd4e0576
+
+% 4 1 0 1084f693e06ddf6b06c900d0b94e789b
+
+% 0 1 0 093947e4d98b46460b97a37c5a91a5c7
+
+% 0 1 0 08434e7dd6145fb203157befad794b98
+
+% 1 1 0 0c29dda3e34fde8b08ab075db97195ef
+
+@ 0 1 0 061c2f7b6bdae24f0977b7658719df52
++ entry .Molecule   键合在一起的原子，带有电荷和可选的物态
+
+% 1 1 0 1171cca64a2a4a561fa02602f2dc48dc
+
+@ 0 3 0 057f831ccb9ad2281310ce59b76b50cc
++       分子是从每种元素到其数量的 `Map`、一个电荷和一个可选的 `PhysicalState`。
++       它通常用 `Molecular` 的运算符由元素构建，而不是直接构造。
+
+% 2 1 0 1efaedfebf415a400482e5e7844b615e
+
+% 3 1 0 17bf00c6e47c25e41573d4c87717fcff
+
+% 0 1 0 1be9af58c81138fa0f9c01122e57d8da
+
+% 0 1 0 0e6f22dab54a5e1e019a6cc08a161f43
+
+% 0 1 0 17a2f104107ba83106e7e8431c34a9f4
+
+% 0 1 0 026740018ae032c3143abff95f1e2e6f
+
+% 1 1 0 0184b3434265f1fa1f4ce6d73983582c
+
+@ 0 6 0 1eaad6d717391a1e1331d3b754b964d4
++       它按 Hill 顺序显示：分子含碳时，碳在最前，其次是氢，其余每种元素（在不含碳的分子中也包括氢）按符号的字母顺序排列。
++       数量为下标，电荷是上标的数值（为 ±1 时省略）后跟 `⁺` 或 `⁻`，物态随后写在括号中。
++       键合两个分子会将其原子和电荷相加，并使物态未设置，因此物态必须施加到最终完成的分子上。
+
+% 0 1 0 1a750f59616e982b154c42bc6dbeebe9
+
+% 1 1 0 1b31ebf85c8a86cc0f31d46c7adbb38f
+
+@ 0 7 0 09c5da15e3ef67420c4d1b305fb14a4d
++   entry .apply   空的不带电分子，或由某元素的单个原子构成的分子
++   entry .showable   按 Hill 顺序显示分子，带下标数量、电荷和物态：`O₄S²⁻(aq)`
++   entry .inspectable   将分子检视为 `show` 给出的化学式，`H₂O`
++   entry #elements   分子中的每种元素及其原子数
++   entry #charge   电荷，以元电荷为单位
++   entry #state   物态，未给出时为 `Unset`
++   entry #molecule   分子本身，满足 `Molecular` 的要求
+
+@ 0 1 0 0da2972d9e5737d804a9a556c3da284b
++ entry .Molecular   任何作为分子的事物：用 `*` 键合、可缩放，并带有电荷和物态
+
+% 1 1 0 083fba2ddb236a651e2df312d2fd217e
+
+@ 0 2 0 17bfc81dc38a48c31be174f46e093700
++       由 `Chemical.Element` 和 `Molecule` 扩展的特质。
++       每个运算符都作用于该值的 `#molecule`。
+
+% 2 1 0 098f7220f814690211fc5f4b2bd37913
+
+% 3 1 0 0b70cc632c2fa46b136753117011eda9
+
+% 0 1 0 0b38a06ea3a181070caecea128802ddb
+
+% 0 1 0 099cc170dddeb36316411e71b74b4f37
+
+% 0 1 0 01b054fdcb6b58fa10b1f7253648005e
+
+% 0 1 0 0681b0d6ddccc517094d98b7013c9453
+
+% 0 1 0 1d11e3bc931e973417f148daf0336f3c
+
+% 0 1 0 1dd67adc018989370874e069516867b2
+
+% 1 1 0 0bc9d1ab28b6c5380494699ee1e197a8
+
+@ 0 3 0 130621a1f012e7a6185c1335c4da7a7b
++       有两种乘法，都写作 `*`：乘以另一个分子值时将两者键合成一个 `Molecule`，乘以 `Int` 时给出带该系数的 `Chemical.Formula`。
++       `**` 则是将分子内的原子相乘。
+
+% 1 1 0 1a4965b24bdfa4d0175fb4f55c921636
+
+% 0 1 0 14ced0bdf8a0ff7901b77a2603ca4bc0
+
+@ 0 12 0 097182029a6ec3760fd03df2ff9bd53a
++   entry #molecule   该值作为 `Molecule`
++   entry #formula   该值作为由一个分子构成、系数为 1 的化学式
++   entry #*   与另一个分子键合，或以 `Int` 系数给出化学式
++       `H[2]*O` 是一个具有两者原子和电荷的分子；`water*2` 是化学式 `2H₂O`。
++       键合会使物态未设置。
++   entry #**   每个原子数及电荷都相乘后的分子
++       `(H[2]*O) ** 3` 是 `H₆O₃`，一个单独的分子；与之对比，`*` 乘以 `Int` 给出的是系数。
++   entry #unary_-   电荷减一的分子：`-Cl` 是氯离子
++   entry #unary_+   电荷加一的分子：`+Na` 是钠离子
++   entry #ion   电荷被替换后的分子：`Fe.ion(3)`
++   entry #inState   物态被替换的分子，或用 `Unset` 移除物态
+
+% 1 1 0 15bd0166f7899cee0cf9f9879770e211
+
+% 2 1 0 1106c3b1fc862df21e28b03fbb570482
+
+% 0 1 0 0973230b615ea8b1139d782f38e5c8b7
+
+% 0 1 0 17618ec681b98a25189d4cf481196a35
+
+% 1 1 0 1ee8e69699eabe34179a2e0977eab669
+
+@ 0 2 0 022b063e6d4ed1df10b776d0d7313221
++       注意优先级：`Na*Cl.inState(…)` 只为氯设置物态，随后的键合会将其丢弃。
+
+@ 0 1 0 0eac964146e5769010bb15a4eafbe3fc
++ entry .Formulable   任何可作为方程式一侧的事物：用 `+` 相加，并接受反应箭头
+
+% 1 1 0 129c56c341f42db404fd69753e9e2344
+
+@ 0 2 0 1096f692aaa2f356076ca5d215ca1bf2
++       由 `Molecular` 值和 `Chemical.Formula` 扩展的特质。
++       它的运算符作用于该值的 `#formula`，因此元素、分子和化学式可以自由混用。
+
+% 2 1 0 1fc93bec26c6983f19bbd1bebae9ec51
+
+% 3 1 0 17a36e365651b0e10d40d3a8df386ab6
+
+% 0 1 0 10786b38141cebb218e31b1534ee1ed1
+
+% 0 1 0 1eb5b0ac1072c0be1e28f48133c9e8a8
+
+% 0 1 0 08a39b1c2298ea2518f1fcd895c28ad3
+
+% 0 1 0 0d812ea3a471517b036599f4bdb7d5f7
+
+% 1 1 0 03e681f2f7db20fc05f65c8e9f13cac3
+
+@ 0 3 0 1f0e81482fe61fa41a3e58d426dc7ae9
++       `-->` 以 `-` 开头，因此它的结合紧密程度与 `+` 完全相同，并且左结合：其右侧的和必须加括号，否则 `+` 会作用于方程式，这一行将无法编译。
++       其他箭头的结合比 `+` 松。
+
+@ 0 3 0 14b6406d7847411d07f45bf9ea21743f
++       每个箭头构造一个带有不同 `Reaction` 的 `Chemical.Equation`：`-->` 是净正向反应，`<=>` 是双向进行的反应，`<~>` 是处于平衡的反应，`<->` 是共振，`===` 是化学计量关系。
+
+% 0 1 0 0dc1772b1c87e5df122940ec0a3c85cb
+
+% 0 1 0 144a5504c36ee2bd1eca19311c5501f6
+
+@ 0 10 0 0f91c64fcf78c2f1062e5df9f199f093
++   entry #formula   该值作为 `Chemical.Formula`
++   entry #+   两个化学式之和，同时出现在两者中的分子系数相加
++   entry #-->   净正向反应的方程式，`→`
++       `lhs --> rhs`。
++       它的结合紧密程度与 `+` 相同，并且左结合，因此右侧的和需要括号：`CH₄ + 2O₂ → CO₂ + 2H₂O` 写作 `C*H[4] + O[2]*2 --> (C*O[2] + H[2]*O*2)`。
++   entry #<->   共振的方程式，`Reaction.Resonance`
++   entry #<=>   双向进行的方程式，`⇄`
++   entry #<~>   处于平衡的方程式，`⇋`
++   entry #===   化学计量关系的方程式，`Reaction.Stoichiometric`
+
+@ 0 1 0 0996117b8cd57ad900cb4f7c5be984e1
++ entry .PhysicalState   分子的物态：固态、液态、气态或水溶液
+
+% 1 1 0 1408c0187a5d0c701b1c8d12aca4154e
+
+@ 0 5 0 0dc504a4604e3a73040659a61d8fd4dd
++       由 `Solid`、`Liquid`、`Gas` 和 `Aqueous` 组成的枚举，在分子之后显示为 `(s)`、`(l)`、`(g)` 和 `(aq)`。
++       物态通过 `Molecular#inState` 施加，它是一种注记，而不是键合时物质标识的一部分：键合两个分子后，结果的物态未设置。
++   entry .showable   将物态显示为 `(s)`、`(l)`、`(g)` 或 `(aq)`
+
+@ 0 1 0 06a978e891636c0409d10cae95bb2061
++ entry .Reaction   化学方程式在其两侧之间断言的关系
+
+% 1 1 0 0ac93b4b92993c9f0738d8c3e70d5330
+
+@ 0 5 0 1873ab0c7ba5917117a8dfb71699998a
++       由 `NetForward`（显示为 `→`，来自 `-->`）、`BothDirections`（`⇄`，来自 `<=>`）、`Equilibrium`（`⇋`，来自 `<~>`）、`Stoichiometric`（`↔`，来自 `===`）和 `Resonance`（`=`，来自 `<->`）组成的枚举。
++       化学家写下哪个箭头是有含义的，方程式会保留它。
++   entry .showable   将反应显示为其箭头
+
+@ 0 1 0 1b744dbb3f1c51c20d2f00aac13d326c
++ entry .PeriodicTable   118 种化学元素，可按符号、原子序数或名称查找
+
+% 1 1 0 021c67b693c55e71180fda499144d818
+
+@ 0 2 0 113a849ad24c43e71b0247c764ee1587
++       每种元素都是以其符号命名的 `val`，因此可以逐个导入或一次全部导入；也可以在运行时按原子序数或符号查找元素。
+
+% 2 1 0 035098e25528a19613fe44df9d7d1d90
+
+% 3 1 0 104694ccee4e9d6b1d9dfcd8ba909f38
+
+% 0 1 0 05ad2a909b4f448c1fddacb0931dcb41
+
+% 0 1 0 0ff1d406afbb5dab0852f3745a0c7d11
+
+% 0 1 0 05ec797a958ea4890258076c8c822f67
+
+% 0 1 0 151de6032a494c7118a0c15c2c1f6755
+
+% 0 1 0 18c268f064998c6c1f9b9fe008babfc9
+
+% 0 1 0 0aab1fdad10e5b5e027e4495f8151c07
+
+% 1 1 0 10344f8ee16d43900585870247520a2e
+
+@ 0 1 0 04b7971097e31a3b1441b3df4bd2a19f
++       在 oganesson 之后，`.element` 为任何原子序数给出 IUPAC 系统命名的元素。
+
+% 0 1 0 07ff5912b246d3cf14720c8e16c084b0
+
+@ 0 129 0 10f3e29466f9954d1a3d0d0eefd3eece
++   entry .apply   具有某原子序数或符号的元素，不存在时为 `Unset`
++       `PeriodicTable(26)` 和 `PeriodicTable(t"Fe")` 都是铁；1 到 118 之外的数或未知符号为 `Unset`。
++       符号查找区分大小写。
++   entry .elements   每种元素，按原子序数排序
++   entry .symbols   每种元素，以其符号为键
++   entry .element   具有某原子序数的元素，带有其 IUPAC 系统名称和符号
++       根据数字的各位构造占位名称——`nil`、`un`、`bi`、`tri`、`quad`、`pent`、`hex`、`sept`、`oct`、`enn`——再加上 `ium`，重复的 `i` 省略一个：119 是 `Ununennium`（`Uue`），120 是 `Unbinilium`（`Ubn`），122 是 `Unbibium`（`Ubb`）。
++       它为每个数都给出系统命名的元素，包括在表中有正式名称的元素。
++   entry .H   氢，第 1 号元素
++   entry .He   氦，第 2 号元素
++   entry .Li   锂，第 3 号元素
++   entry .Be   铍，第 4 号元素
++   entry .B   硼，第 5 号元素
++   entry .C   碳，第 6 号元素
++   entry .N   氮，第 7 号元素
++   entry .O   氧，第 8 号元素
++   entry .F   氟，第 9 号元素
++   entry .Ne   氖，第 10 号元素
++   entry .Na   钠，第 11 号元素
++   entry .Mg   镁，第 12 号元素
++   entry .Al   铝，第 13 号元素
++   entry .Si   硅，第 14 号元素
++   entry .P   磷，第 15 号元素
++   entry .S   硫，第 16 号元素
++   entry .Cl   氯，第 17 号元素
++   entry .Ar   氩，第 18 号元素
++   entry .K   钾，第 19 号元素
++   entry .Ca   钙，第 20 号元素
++   entry .Sc   钪，第 21 号元素
++   entry .Ti   钛，第 22 号元素
++   entry .V   钒，第 23 号元素
++   entry .Cr   铬，第 24 号元素
++   entry .Mn   锰，第 25 号元素
++   entry .Fe   铁，第 26 号元素
++   entry .Co   钴，第 27 号元素
++   entry .Ni   镍，第 28 号元素
++   entry .Cu   铜，第 29 号元素
++   entry .Zn   锌，第 30 号元素
++   entry .Ga   镓，第 31 号元素
++   entry .Ge   锗，第 32 号元素
++   entry .As   砷，第 33 号元素
++   entry .Se   硒，第 34 号元素
++   entry .Br   溴，第 35 号元素
++   entry .Kr   氪，第 36 号元素
++   entry .Rb   铷，第 37 号元素
++   entry .Sr   锶，第 38 号元素
++   entry .Y   钇，第 39 号元素
++   entry .Zr   锆，第 40 号元素
++   entry .Nb   铌，第 41 号元素
++   entry .Mo   钼，第 42 号元素
++   entry .Tc   锝，第 43 号元素
++   entry .Ru   钌，第 44 号元素
++   entry .Rh   铑，第 45 号元素
++   entry .Pd   钯，第 46 号元素
++   entry .Ag   银，第 47 号元素
++   entry .Cd   镉，第 48 号元素
++   entry .In   铟，第 49 号元素
++   entry .Sn   锡，第 50 号元素
++   entry .Sb   锑，第 51 号元素
++   entry .Te   碲，第 52 号元素
++   entry .I   碘，第 53 号元素
++   entry .Xe   氙，第 54 号元素
++   entry .Cs   铯，第 55 号元素
++   entry .Ba   钡，第 56 号元素
++   entry .La   镧，第 57 号元素
++   entry .Ce   铈，第 58 号元素
++   entry .Pr   镨，第 59 号元素
++   entry .Nd   钕，第 60 号元素
++   entry .Pm   钷，第 61 号元素
++   entry .Sm   钐，第 62 号元素
++   entry .Eu   铕，第 63 号元素
++   entry .Gd   钆，第 64 号元素
++   entry .Tb   铽，第 65 号元素
++   entry .Dy   镝，第 66 号元素
++   entry .Ho   钬，第 67 号元素
++   entry .Er   铒，第 68 号元素
++   entry .Tm   铥，第 69 号元素
++   entry .Yb   镱，第 70 号元素
++   entry .Lu   镥，第 71 号元素
++   entry .Hf   铪，第 72 号元素
++   entry .Ta   钽，第 73 号元素
++   entry .W   钨，第 74 号元素
++   entry .Re   铼，第 75 号元素
++   entry .Os   锇，第 76 号元素
++   entry .Ir   铱，第 77 号元素
++   entry .Pt   铂，第 78 号元素
++   entry .Au   金，第 79 号元素
++   entry .Hg   汞，第 80 号元素
++   entry .Tl   铊，第 81 号元素
++   entry .Pb   铅，第 82 号元素
++   entry .Bi   铋，第 83 号元素
++   entry .Po   钋，第 84 号元素
++   entry .At   砹，第 85 号元素
++   entry .Rn   氡，第 86 号元素
++   entry .Fr   钫，第 87 号元素
++   entry .Ra   镭，第 88 号元素
++   entry .Ac   锕，第 89 号元素
++   entry .Th   钍，第 90 号元素
++   entry .Pa   镤，第 91 号元素
++   entry .U   铀，第 92 号元素
++   entry .Np   镎，第 93 号元素
++   entry .Pu   钚，第 94 号元素
++   entry .Am   镅，第 95 号元素
++   entry .Cm   锔，第 96 号元素
++   entry .Bk   锫，第 97 号元素
++   entry .Cf   锎，第 98 号元素
++   entry .Es   锿，第 99 号元素
++   entry .Fm   镄，第 100 号元素
++   entry .Md   钔，第 101 号元素
++   entry .No   锘，第 102 号元素
++   entry .Lr   铹，第 103 号元素
++   entry .Rf   𬬻，第 104 号元素
++   entry .Db   𬭊，第 105 号元素
++   entry .Sg   𬭳，第 106 号元素
++   entry .Bh   𬭛，第 107 号元素
++   entry .Hs   𬭶，第 108 号元素
++   entry .Mt   鿏，第 109 号元素
++   entry .Ds   𫟼，第 110 号元素
++   entry .Rg   𬬭，第 111 号元素
++   entry .Cn   鿔，第 112 号元素
++   entry .Nh   鿭，第 113 号元素
++   entry .Fl   𫓧，第 114 号元素
++   entry .Mc   镆，第 115 号元素
++   entry .Lv   𫟷，第 116 号元素
++   entry .Ts   鿬，第 117 号元素
++   entry .Og   鿫，第 118 号元素

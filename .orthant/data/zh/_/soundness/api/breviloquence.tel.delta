@@ -1,0 +1,1454 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 02c24cf3cbd2ab1013330955e06463ab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0fcab838a3d347b2092b795eeed69c9f
++ info   作为有类型的树的 CBOR（RFC 8949）、派生的和生成的编解码器、流式解析器以及 HTTP 正文
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0adff90548faa2e4076748f2bd3feef1
++     _Breviloquence_ 读写 [CBOR](https://datatracker.ietf.org/doc/html/rfc8949)，即 JSON 的二进制近亲，所用的接口与 Soundness 为其文本格式同胞提供的相同：字节解析为 `Cbor` 值，case class 借助根据其定义派生的编解码器与它相互转换，导航、更新和透镜的工作方式与 JSON 和 YAML 相同。
++     在线上的数据无人阅读的地方，例如设备协议、缓存条目或消息队列，CBOR 以紧凑的二进制形式保留了 JSON 的数据模型（映射、数组、整数、浮点数、文本、字节串、布尔值、`null` 和 `undefined`），并增加了**标签**，用以为值注明它的含义。
+
+@ 0 5 0 143f4a48dec0eec91e048ed9cb90acbb
++     `Cbor` 是基于 `Cbor.Ast` 的一棵不可变的树，`Cbor.Ast` 是不透明的存储类型，它的访问器（`isMap`、`entries`、`key`、`value`、`long`、`string`……）对单个节点进行归类和读取。
++     值用 `in[Cbor]` 编码，树用 `as[T]` 解码；字节来自 `Cbor.Ast.encodable`，并通过 `Cbor.Ast.parse` 回到树，或者每个方向一步完成，即 `in[Data over Cbor]` 和 `read[T in Cbor]`：
+
+% 2 1 0 16f9d7bb9f391dfc001459c038ad2b4e
+
+% 3 1 0 09222fa0ca691d7c148aae13e7fbc4f1
+
+% 4 1 0 0a3ceaf396bc5a311497b117a33a68d5
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 08c152d49378e447160881afb557962c
+
+% 0 1 0 0cddcd20ae4510510d59c996ec38484a
+
+% 0 1 0 06e677f66cf68c750a59dbf253c2920b
+
+% 0 1 0 0f9519b6891e1cea0790a47a669ec1ef
+
+% 0 1 0 1862989715c9132b09720cdce049177d
+
+% 1 1 0 1e54dd97a5b4f50c056650b06273ba75
+
+@ 0 5 0 04be20b186db4f1a0d92830fb9ebd528
++     读取是流式的：作用于 `Chain[Data]` 或 `Stream[Data]` 的 `read[Cbor]`、`read[Cbor.Ast]` 和 `read[T in Cbor]` 驱动 `CborParser`，它是基于 `zephyrine.Cursor` 的有状态能力，在每个数据块被拉取时读取它，从不先把输入拼装起来。
++     跨数据块的值与整体到达的值读取结果完全相同，每个 `Cbor.Error` 都报告一个绝对字节偏移量。
+
+@ 0 10 0 1c3b05b0d27866c20419de7ff2f77c41
++     从字节到值有三条路径。
++     **派生**路径解析整棵树，并通过 `Decodable in Cbor` 解码它，后者可为任何 case class 或密封层次结构派生。
++     **直接**路径，即 `Cbor.Parsable` 和 `Cbor.Printable`，通过 `Cbor.Reader` 直接从解析器的边界上消费数据项，或直接把它们写入字节生产者，不构建任何树；`Inlinable.parsable[T]` 和 `Inlinable.printable[T]` 在编译时生成这样的实例，`derives Cbor.Direct` 把两者生成到伴生对象中，而 `import codecs.direct` 为作用域内的每个记录选择生成的编解码器。
++     第三个选项 `import codecs.strict` 使没有直接编解码器的记录成为编译错误。
++     不导入任何模式时，一个类型恰好在它拥有自己的 `Cbor.Parsable` 或 `Cbor.Printable` 时走直接路径，否则走派生路径。
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     这个库有三个组件：
+
+@ 0 11 0 16da09a4fd54b93913bdf6fcfff58e56
++     - `breviloquence.core`：`Cbor`、`Cbor.Ast`、`CborParser`、`Cbor.Reader`、派生的和直接的编解码器、光学器件、`Inlinable`，以及 `optionalityOptions`、`dynamicAccess` 和 `conversions` 包。可编译到 JVM、Scala.js 和 Scala Native。
++     - `breviloquence.staged`：一个宏内的分阶段编译器（`InlinableStager`），它让 `Inlinable.parsable` 在代码编译时对手写的 `Inlinable` 实例以及密封和类型的 `Discriminable in Cbor` 求值。它把 Scala 编译器带到宏的类路径上，因此是一个独立的、需选择启用的组件；没有它时，类型只有手写实例的字段会走运行时接缝，和类型也不会被生成。仅限 JVM。
++     - `breviloquence.http`：`postables`、`servables` 和 `construables` given，它们借助 telekinesis 使 `Cbor` 成为 `application/cbor` 请求体或响应体。仅限 JVM。
+
+@ 0 5 0 1632f61ace5a95e714c14dce4bdfb3ea
++     `Cbor` 和 `Cbor2` 连同 `parse` 扩展一起导出到 `soundness` 总括包，每个选择包都与总括包自己的同名包合并：用户写下 `import soundness.*`，然后按名称导入方针，因为 `import soundness.*` 不会导入 given（`import optionalityOptions.strictCborNulls`、`import dynamicAccess.dynamicCbor`、`import codecs.direct`）。
+
+% 0 1 0 063a0ed12c64fddc156d5a4ce74f2b6f
+
+% 0 1 0 104f3eca87bb771a1a6413181fe20d3f
+
+% 0 1 0 1b64f3bf1f2ee61400bf726b7dee47e6
+
+% 0 1 0 1e435648e360435108e156e414c77194
+
+% 0 1 0 052926ec0b94db1d0396cd9bd23caebc
+
+@ 0 1 0 1eb90146bf2d815d1c3ce88650f18476
++ entry .Cbor   一个 CBOR 文档：一棵不可变的树，带有它的编解码器、解析器钩子和光学器件
+
+% 1 1 0 090209f3f6cf0efd0e85a1c48694b7ae
+
+@ 0 7 0 0b9ad31eac8aa2d01477eebe9793e604
++       `Cbor` 包装一个 `Cbor.Ast` 节点，即文档的根，它是每次编码产生、每次解码消费的类型。
++       它是 `Dynamic`，因此当 `dynamicAccess.dynamicCbor` 在作用域内时，映射的字段可以作为成员读取，数组可以按索引访问，赋值会产生一个更新后的副本；它用 `==` 进行结构比较，映射条目逐个位置比较（规范 CBOR 以确定的顺序排列键，因此往返后的文档比较结果相等，但条目相同而顺序不同的两个映射不相等）。
+
+% 2 1 0 0825354a57666aba02f6a273c29abfee
+
+% 3 1 0 0eff69ed7ccaebf2100e7c5dbfdcc625
+
+% 4 1 0 04e625dc3fc62b9019170ea80cb8ad83
+
+% 5 1 0 0c5c35100da37a0d0db8b3d841b7b3bf
+
+% 7 1 0 0e4e97936058e0c5072ae4cc7c332aef
+
+% 2 1 0 1c61a718f9beb3c81b2ef691cfae48e5
+
+% 0 1 0 05f9857e3f22b7e9017a12a8d5741423
+
+% 0 1 0 0c64d7eabf92d3591d8b6f0e29a1185c
+
+% 0 1 0 1b9ea3524b6aaeb209c7a5dad3c1ac76
+
+% 1 1 0 0e9b8b8e554f1a0f1fa2d8081d9a19f7
+
+@ 0 12 0 001fd450aa230730152764e14399317b
++       伴生对象包含 `Cbor` 能做的一切：针对基本类型、集合、`Optional`、`Option` 和 `Map` 的 `Encodable in Cbor` 和 `Decodable in Cbor` given（`Cbor.decodable` 和 `Cbor.encodable` 为任何 case class 或密封层次结构派生它们），把分块的字节变成树或值的读取路径 `.aggregable`、`Cbor.aggregableIn` 和 `Cbor.aggregableParsed`，`in[Data over Cbor]` 背后的写出路径 `Cbor.encodableOver` 和 `Cbor.encodableOverPrinted`，`.lens` 和数组光学器件，一次序列化一个块的 `.emit`，以及直接编解码器接口 `.Parsable`、`.Printable`、`.Reader` 和 `.Direct`。
++       所有这些都在隐式作用域内：只有 `optionalityOptions`、`dynamicAccess`、`conversions` 和 `codecs` 中的方针需要按名称导入。
++       这里写作 `Cbor.…` 的那些是继承的，而不是声明的：较低优先级的特质 `Cbor1` 和 `Cbor2` 声明了它们，并为它们提供文档。
+
+@ 0 5 0 137922e17a8cbdae177152c5325c2428
++       解码需要作用域内有 `Tactic[Cbor.Error]`（`strategies.throwUnsafely`、`safely` 或 `unsafely` 块，或 `raises Cbor.Error` 子句）。
++       读取失败会抛出带有 `Cbor.Error.Reason` 的 `Cbor.Error`：格式错误的输入会指明一个字节偏移量，转换失败则说明发现的是哪种类型、期望的是哪种类型，或说明某个字段缺失。
+
+% 1 1 0 0113e06e5eac465b1b04f12ad34217b5
+
+% 2 1 0 0dbd2326a7735c6602dc633bd2e3987b
+
+% 1 1 0 1019ae734818d93e0fe2368caf08a2e4
+
+% 2 1 0 118acb3bf6e0c22216a429d64579f486
+
+% 0 1 0 0126836c20f0effa13fbab59e6c0638f
+
+% 0 1 0 08ee871eef7d3ca8035821ade2a179b7
+
+@ 0 22 0 1ed0ef709c9a4872000d198aaaa08585
++   entry #apply   按名称取得的映射字段，或按索引取得的数组元素
++       `cbor(t"name")` 是键 `name` 下的值，作为一个 `Cbor`；如果映射没有这个键，则是一个根为 `undefined` 的 `Cbor`（因此对缺失字段的一串查找得到 `undefined`，而不会失败）；在非映射上查找字段会抛出带有 `NotType(found, Map)` 的 `Cbor.Error`。
++       `cbor(2)` 是数组的第三个元素，对其他任何东西都会抛出 `NotType`。
++   entry #selectDynamic   `cbor.field`：按名称取得的映射条目，需 `dynamicAccess.dynamicCbor`
++       以文本为键的 `#apply` 的 `Dynamic` 形式，只在作用域内有 `(? >: Cbor) is Dynamical` 的地方可用（对整个作用域用 `import dynamicAccess.dynamicCbor`，对单个表达式用 `dynamically[Cbor]:` 块），这样在无意使用动态访问的地方，拼错的字段名就不会被误认为方法。
++       接收者不是映射时抛出 `Cbor.Error`。
++   entry #applyDynamic   `cbor.field(index)`：以数组为值的字段中的一个元素
++       在 `dynamicAccess.dynamicCbor` 下，`cbor.values(1)` 是键 `values` 下的数组的第二个元素。
++       接收者不是映射或字段不是数组时抛出 `Cbor.Error`。
++   entry #updateDynamic   `cbor.field = value`：替换、添加或删除了条目的副本
++       在 `dynamicAccess.dynamicCbor` 下，`person.age = 40` 是一个新的 `Cbor`，其 `age` 条目持有 `40` 的编码（任何 `Encodable in Cbor` 值；`conversions.encodableToCbor` 也让透镜赋值能接受这样的值），如果原先没有这个键，则作为新条目追加到末尾。
++       `person.age = Unset` 删除该条目。
++       如果接收者不是映射，两者都会抛出带有 `NotType(found, Map)` 的 `Cbor.Error`。
+
+% 2 1 0 0debbdafa1f6685a18159b9682175ee4
+
+% 3 1 0 023928d166a8de760aaf1187bedb183b
+
+% 4 1 0 12ec4ab81ba41a97139139fbe4b5c64b
+
+% 5 1 0 1df36cc553a628fc1d0adabed8186510
+
+% 7 1 0 1e30defe796c086c17d08ba5f121e682
+
+% 0 1 0 17538327139d1f0e0a29d47cd67e914e
+
+% 2 1 0 0dd14cd9fa6e84c50531db75fe7d5e71
+
+% 0 1 0 17ce32ef177251850c83b8233cbf2c4f
+
+% 0 1 0 124f70c9144a1a210c8f4be8e27ed9b6
+
+% 1 1 0 076fbb4ee92a747f0520e367db7c9b1f
+
+@ 0 13 0 165c6961eca9c1fb0526cb0bc46dc047
++   entry #as   通过类型的 `Decodable in Cbor` 把文档解码为该类型
++       `cbor.as[Person]` 在树上运行该类型的解码器，需要 `Tactic[Cbor.Error]`。
++       case class 从映射按字段名解码（可用 `@name[Cbor]` 注解重命名），密封层次结构通过它的 `Discriminable in Cbor` 解码，集合从数组解码，基本类型从相应的叶子解码；`Optional` 或 `Option` 字段按 `optionalityOptions` 的规定读取缺失的键、`null` 或类型错误的值。
++       在 `Validate` 作用域下，每个类型错误或缺失的字段都会累积自己的错误，并带有指向它的 `Pointer`，只有当每个字段都没有问题时才构造 case class。
++   entry .ast   把 AST 节点包装为 `Cbor` 文档
++       `Cbor.ast(node)` 是 `.unseal` 的逆操作：把一个 `Cbor.Ast`（`Cbor.Ast.parse` 的结果，或通过访问器触及的节点）作为可以解码、导航和更新的文档。
+
+% 2 1 0 1da374f7ccec1f0a1aabe809094860be
+
+% 3 1 0 190b2e12d7a265651ba2075b65fc4fec
+
+% 4 1 0 033f3f9a4d342bdc041b28c1e6b0636b
+
+% 0 1 0 15dc158b77ccd8c406a4605fb45f17c9
+
+% 1 1 0 1d29210ed99cf8a91c63a170bc0c0b70
+
+@ 0 17 0 0e50fa3c4e7ced4f04a0c03397ee8f3b
++   entry .unseal   文档根部的 AST 节点
++       `Cbor.unseal(cbor)` 把树作为 `Cbor.Ast` 暴露出来，供访问器（`isTag`、`entries`、`key`……）使用，供以诊断记法 `show`，也供给出文档字节的 `Cbor.Ast.encodable.encoded` 使用。
++   entry .applyDynamicNamed   `Cbor.make(key = value, …)`：由具名参数构建的映射
++       伴生对象是 `Dynamic`，唯一的方法名是 `make`，因此 `Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor])` 是按此顺序带有这些条目的映射，每个参数都已经是 `Cbor`。
++       在没有合适的 case class 时，映射就是这样组装的。
++   entry .emit   一次一个块地给出文档的字节，以迭代器的形式拉取，或推送给一个函数
++       两种形式基于同一次深度优先遍历，各自都需要作用域内有一个决定块大小的 `Buffering`。
++       `Cbor.emit(cbor)` 是一个 `Iterator[Data]^`，只在被拉取时才序列化下一个块，不使用纤程：块在超过缓冲容量后的第一个节点边界处结束，因此一个很长的字符串可能超出容量。
++       `Cbor.emit(cbor, deliver)` 在调用方的线程上序列化，并在每个块填满时把它交给 `deliver`，这正适合写入文件、套接字或 `OutputStream`。
++       字节与 `Cbor.Ast.encodable` 写出的完全相同，`.streamable` 则把拉取形式包装为 `Stream`。
+
+% 2 1 0 007d3be9bfa1775302490979e46c1694
+
+% 3 1 0 0b7f7090773ad529063aa809c0927341
+
+% 2 1 0 1e835696c9ebfcf4009bc88477d3044c
+
+% 0 1 0 024902c67eb3f2481356eb44773a021e
+
+% 0 1 0 1f7d38aaff0cfd3c0cb7fd0dfa909bf7
+
+% 0 1 0 17b05650567989c60dc6102662e099af
+
+% 0 1 0 1ac0f620c1a3a79606ac085ac7c1e7e9
+
+% 0 1 0 03e3504ec26462471783254e2bd6d5c6
+
+% 0 1 0 152e1583280cafe80cda1d5b89ff6fc5
+
+% 1 1 0 0790b4cb62e650b41689cd0cf3b948c3
+
+@ 0 93 0 0a1f6b206552155e177be1436a5cc353
++   entry .streamable   通过 `.emit` 得到的、由 `Credit` 计量的 `Stream[Data]` 形式的 `Cbor`
++       需要 `Buffering`。
++       正是它让文档能用 `stream.transfer` 写出，或发送到任何接受 `Streamable by Data` 的地方，而无需把整个编码保存在内存中。
++   entry .aggregable   把分块的字节读入 `Cbor`：`read[Cbor]` 背后的 given
++       `Chain(bytes).read[Cbor]` 和 `stream.read[Cbor]` 解析一个数据项，在每个数据块被拉取时读取它，并以 `Cbor.Error(Trailing(offset))` 拒绝尾随字节。
++       需要 `Tactic[Cbor.Error]`；整棵树都会被构建，因此所占用的内存受输入大小限制。
++   entry .aggregableDerived   在 `codecs.derived` 下，即使作用域内有 `Cbor.Parsable`，也走树路径
++       `import codecs.derived` 为每个类型选择派生的编解码器：这个 given 优先于 `Cbor.aggregableParsed`，并恰好在后者适用的地方适用，因此即使作用域内有直接解析器，`read[T in Cbor]` 也会解析树，并通过该类型的 `Decodable in Cbor` 解码它。
++   entry .readableDerived   在 `codecs.derived` 下，`data.read[T in Cbor]` 经由树进行
++       `.aggregableDerived` 针对整个 `Data` 的对应物，优先于 `Cbor.readableParsed`。
++   entry .encodableOverDerived   在 `codecs.derived` 下，`in[Data over Cbor]` 经由树进行
++       在作用域内有 `Cbor.Printable` 的任何地方都优先于 `Cbor.encodableOverPrinted`，因此值会通过它的 `Encodable in Cbor` 编码为树，再被序列化。
++   entry .aggregableStrict   在 `codecs.strict` 下，具有 `Cbor.Parsable` 的类型的直接读取路径
++       `import codecs.strict` 就是没有回退的 `codecs.direct`：具有直接解析器的类型通过它读取，而没有的类型会遇到 `Cbor.aggregableStrictFailure`，即一个指明该类型的编译错误，而不是走树路径。
++   entry .encodableOverStrict   在 `codecs.strict` 下，`in[Data over Cbor]` 通过 `Cbor.Printable` 进行
++       严格配对中负责写出的一半；没有 `Cbor.Printable` 的类型会遇到 `Cbor.encodableOverStrictFailure`。
++   entry .option   解码 `Option[T]` 字段，遵从与 `Cbor.optional` 相同的三项 `optionalityOptions` 方针
++       缺失、`null` 和有问题的值在宽松方针下得到 `None`，在严格方针下抛出 `Cbor.Error`；存在的值解码为 `Some`。
++   entry .optionEncodable   编码 `Option[T]`：值的编码，对于 `None` 则为 `undefined`
++   entry .unit   把 CBOR `null` 解码为 `()`
++       除 `null` 外的任何东西都会抛出 `Cbor.Error`：对于 `undefined` 是 `Absent`，否则是 `NotType(found, Null)`。
++   entry .boolean   把 CBOR 布尔值解码为 `Boolean`
++       其他任何节点抛出 `Cbor.Error(NotType(found, Boolean))`。
++   entry .double   把 CBOR 浮点数解码为 `Double`，或把整数拓宽为 `Double`
++       半精度、单精度和双精度浮点数都解析为 `Double`；整数节点会被转换。
++       其他任何节点抛出 `Cbor.Error(NotType(found, Float))`。
++   entry .float   把 CBOR 浮点数或整数解码为 `Float`
++   entry .long   把 CBOR 整数解码为 `Long`，或把浮点数截断为 `Long`
++       超出 `Long` 范围的整数在解析时就以 `Overflow(offset)` 失败；浮点数节点会被截断。
++       其他任何节点抛出 `Cbor.Error(NotType(found, Integer))`。
++   entry .int   把 CBOR 整数解码为 `Int`
++       经由 `.long`，再用 `toInt` 收窄：超出 `Int` 范围的值会回绕，而不是失败。
++   entry .text   把 CBOR 文本串解码为 `Text`
++       其他任何节点抛出 `Cbor.Error(NotType(found, TextString))`。
++   entry .string   把 CBOR 文本串解码为 `String`
++   entry .byteString   把 CBOR 字节串解码为冻结的 `Array[Byte]`，即 `Data`
++       其他任何节点抛出 `Cbor.Error(NotType(found, ByteString))`。
++   entry .cbor   把 `Cbor` 解码为它自身，使字段可以把它的子树保留为文档
++   entry .integralEncodable   通过 `toLong` 把任何 `Integral` 数字编码为 CBOR 整数
++   entry .textEncodable   把 `Text` 编码为 CBOR 文本串
++   entry .stringEncodable   把 `String` 编码为 CBOR 文本串
++   entry .doubleEncodable   把 `Double` 编码为 64 位 CBOR 浮点数
++       浮点数总是以 64 位写出；较短的编码可以解析，但从不产生。
++   entry .floatEncodable   把 `Float` 编码为 64 位 CBOR 浮点数
++   entry .intEncodable   把 `Int` 编码为 CBOR 整数，采用最短的头部编码
++   entry .longEncodable   把 `Long` 编码为 CBOR 整数，采用最短的头部编码
++       负值以主类型 1 写出；头部根据数值大小占 1、2、3、5 或 9 个字节。
++   entry .booleanEncodable   把 `Boolean` 编码为 CBOR `true` 或 `false`
++   entry .unitEncodable   把 `()` 编码为 CBOR `null`
++   entry .bytesEncodable   把冻结的 `Array[Byte]`（`Data`）编码为 CBOR 字节串
++   entry .cborEncodable   把 `Cbor` 编码为它自身
++   entry .listEncodable   通过元素的 `Encodable in Cbor` 把 `List[T]` 编码为 CBOR 数组
++       捕获元素编解码器，它按名称传入，使递归类型（带有 `children: List[Tree]` 的 `Tree`）能够派生。
++   entry .setEncodable   把 `Set[T]` 编码为由其元素组成的 CBOR 数组，按集合的顺序排列
++   entry .seriesEncodable   把 `Sequence[T]` 编码为 CBOR 数组
++   entry .collectionDecodable   把 CBOR 数组解码为任何具有 `Factory` 的 `Iterable` 集合
++       针对标准库集合类型的通用实例；`.listDecodable`、`.setDecodable` 和 `.seriesDecodable` 是它针对 Soundness 自己的 `List`、`Set` 和 `Sequence` 的对应物，这些类型是不透明的，因而不匹配 `Iterable`。
++       非数组节点抛出 `Cbor.Error(NotType(found, Array))`。
++       捕获战术和元素解码器。
++   entry .listDecodable   把 CBOR 数组解码为 `List[T]`
++       元素解码器按名称传入，因此通过 `List` 递归的类型（带有 `children: List[Tree]` 的 `Tree`）无需手写实例即可派生。
++   entry .setDecodable   把 CBOR 数组解码为 `Set[T]`
++   entry .seriesDecodable   把 CBOR 数组解码为 `Sequence[T]`
++   entry .mapDecodable   把带文本键的 CBOR 映射解码为 `Map[K, V]`
++       每个键通过 `K` 的 `Decodable in Text` 解码，每个值通过 `V` 的 `Decodable in Cbor` 解码；不是文本串的键会抛出 `Cbor.Error(NonStringKey)`。
++       非映射节点解码为空映射。
++   entry .mapEncodable   把 `Map[K, V]` 编码为带文本键的 CBOR 映射
++       键通过 `K` 的 `Encodable in Text` 写出，按映射的迭代顺序排列。
++   entry .lens   `cbor.lens(_.field = value)`：从文档指向其某个映射条目的 `Lens`
++       每个名称都成为一个 `name is Lens from Cbor onto Cbor`，它用 `#selectDynamic` 读取条目，并用不可变更新写入条目，因此 `play.lens(_.hero.name = t"Kent")` 会从根开始重建这条路径。
++       它需要 `(? >: Cbor) is Dynamical`（`dynamicAccess.dynamicCbor`）和 `Tactic[Cbor.Error]`；导入 `conversions.encodableToCbor` 后，所赋的值可以是任何 `Encodable in Cbor`，而不必是 `Cbor`。
+
+% 2 1 0 11ced4a36058486b1359e36ec76fac45
+
+% 3 1 0 041b5dca307c30c40a921467463408b3
+
+% 4 1 0 0abff5d4053bf1fd0751d8e5bc63c7ca
+
+% 5 1 0 034538189c5b902d06b5c3636da09c3f
+
+% 6 1 0 0650882d4893f2a11c8359a1d5c3679c
+
+% 2 1 0 13b6353bc9dd48db0686b02802951178
+
+% 3 1 0 076de571ba6d83f0167a37f3985b5d44
+
+% 0 1 0 130b27c72aad91a716f7851983e1d9be
+
+% 0 1 0 00857ffaaab2c60c1681696147ba0e30
+
+% 0 1 0 1f198abd6d7721bb168ea9ec57f7158e
+
+% 0 1 0 093ab500d79f10c90044f55dadaae518
+
+% 1 1 0 0d910f5b2964e70d1f742ffa456a1da1
+
+@ 0 8 0 14987a389565bee108a04c5925c39d05
++   entry .ordinalOptical   `cbor.lens(_.values(Sec) = x)`：按序数指向数组中一个元素的光学器件
++       在透镜路径中应用的 `Ordinal`（`Prim`、`Sec`、`Ter`……）选取以数组为值的条目中的一个元素；越过末尾的序数，或非数组，都让文档保持不变。
++   entry .eachOptical   `cbor.lens(_.values(Each) = x)`：作用于数组每个元素的光学器件
++       把更新应用到每个元素；非数组保持不变。
++   entry .filterOptical   `cbor.lens(_.values(Filter[Cbor](p)) = x)`：作用于谓词所选元素的光学器件
++       把更新应用到谓词成立的每个元素，其余保持不变。
+
+% 2 1 0 0174c9b150f7506315207879be49f192
+
+% 3 1 0 129166c86f28bd021f317e2675f587de
+
+% 4 1 0 09eb99f350149cc21198a72c161c275f
+
+% 5 1 0 0e84bc44111a159503fc2f7a18507bbe
+
+% 6 1 0 1f77e874e2bbb64f09dd39b6bef21bfe
+
+% 2 1 0 11a18eca10c3c894018b4baa8decf77b
+
+% 0 1 0 0e91b96fdfc0cf4c050f6e2d009c45ad
+
+% 0 1 0 01bb103938969ccb1c7e46cba9de2c87
+
+% 0 1 0 03fcb8d9ef96b32807975634d70532c7
+
+% 0 1 0 059c0519022bb53404528aaf97f98871
+
+% 1 1 0 18bd140fe38f95be15eac9a644dee5da
+
+@ 0 13 0 1aedf81d8ed717ce13727055a66c59b9
++   entry .abstractable   作为 HTTP 正文的 `Cbor`：`application/cbor` 和编码后的字节
++       telekinesis 据以派生请求体或响应体的 `Abstractable across HttpStreams` given：`cbor.generic` 是媒体类型与字节组成的对。
++       `breviloquence.http` 组件的 `postables.cborPostable` 和 `servables.cborServable` 是供客户端的 `post` 和服务器的响应使用的具名形式，正文则通过 `.aggregable` 解析回来。
++   entry .discriminatedUnion   按指定的映射键为密封层次结构提供的 `Discriminable in Cbor`
++       `given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")` 一次性地声明：`Status` 编码为其变体的映射，外加一个持有变体名称的 `kind` 条目（可用分支上的 `@name[Cbor]` 重命名），并通过读回同一条目来解码。
++       结果是一个 `.DiscriminantKey`，这是直接编解码器生成器唯一能识别的形状，因此当 `breviloquence.staged` 在编译类路径上时，带有这个实例的和类型也可以由 `Inlinable.parsable` 生成。
+
+% 2 1 0 1d0c6bb88af9f98d0b043ad7a787c266
+
+% 3 1 0 15e07262289e383315db4cd95bba54fe
+
+% 4 1 0 1c3c5e0a2f8e02aa1286f68fedcbd327
+
+% 0 1 0 0e8b9ce63e8b41fb088398a055553f4a
+
+% 0 1 0 05cac0ee6d70eeec1fafff0c1ee1d089
+
+% 0 1 0 1f000fe81ac728e60a459e11b7e91cc2
+
+% 0 1 0 1fee4682de9f1aa517b5ceb10b935bab
+
+% 0 1 0 1df9463995fa27af0b8518ca5787c3bb
+
+% 1 1 0 08bce1d2e4fd6b0f14264745635d36fa
+
+@ 0 1 0 129ff61a1e517bb5010d2aced7d0b2c6
++   entry .DiscriminantKey   以映射键判别的 `Discriminable in Cbor`，作为生成器能识别的类
+
+% 1 1 0 01753abb31bce7690729e89bd3f60266
+
+@ 0 12 0 1533abe985c4d4cd06a4dec3940d4d02
++         `Cbor.discriminatedUnion` 返回的类：一个 `Form = Cbor` 的 `Discriminable`，它把变体名称写在 `#key` 下，从同一条目读回它，并在变体作为积类型解码之前剥离该条目。
++         它是一个具名类，而不是匿名实例，因为生成的直接解析器以单态方式按判别值分派，必须在展开时提取出键。
++     entry #key   持有变体名称的映射键
++     entry #rewrite   把判别条目添加到变体编码后的映射中
++     entry #discriminate   文档在该键下携带的变体名称，或 `Unset`
++         当文档不是映射、没有这个键，或键的值不是文本时为 `Unset`；随后派生的解码器会抛出 `Cbor.Error(Absent)`。
++     entry #variant   去掉了判别条目的文档，可以作为积类型解码
++   entry .Ast   一个 CBOR 节点：文档背后的不透明存储类型，带有它的访问器和编解码器
+
+% 1 1 0 0ab1283a6faa9ba71fded67a5b40a331
+
+@ 0 12 0 0cb342b9083119b817b9ee81223e6541
++         `Cbor.Ast` 是 CBOR 数据项的表示：一个不透明的联合类型，涵盖存储各个主类型的 JVM 值，即整数为 `Long`，浮点数为 `Double`，文本串为 `String`，字节串为冻结的 `Array[Byte]`，`Boolean`，`null` 为 `.CborNull`，`undefined` 为 `Unset`，带标签的值为 `.Tag`，数组或映射为冻结的 `Array[Any]`（数组的底层数组长度为奇数，用一个哨兵值填充，映射的底层数组长度为偶数，键和值交替排列，两者正是这样区分的）。
++         节点从不进行模式匹配：伴生对象中的访问器对它归类（`unset`、`nullary`、`isInteger`、`isFloat`、`isTextString`、`isByteString`、`isBoolean`、`isTag`、`isArray`、`isMap`、`primitive`）并读取它（`long`、`double`、`string`、`byteString`、`boolean`、`tag`、`array`、`elements`、`element`、`entries`、`key`、`value`、`index`），只需 `import soundness.*`，在使用 `Cbor.Ast` 的任何地方，它们都在隐式作用域内。
+
+% 2 1 0 00f473ce2f5becf70f506297ca0dccd5
+
+% 3 1 0 04e328420a4eb14002be63647b910839
+
+% 4 1 0 1985394b682b1e5c00d287e83752d8a0
+
+% 0 1 0 1d630fbfa6f5d748166349f26e75fc3e
+
+% 0 1 0 15147f46283bdd590d72af05f7cde88d
+
+% 0 1 0 0cbe2f3047ee97f90b69875d7ec99cf8
+
+% 0 1 0 00e42d9bb0c2aba9118564691b883767
+
+% 0 1 0 1d161dfca017c9461cb924326b0c879d
+
+% 0 1 0 0cb6afc89e794acc12ff4700909fcb49
+
+% 1 1 0 046178f6962e0e77146f013c4a647734
+
+@ 0 5 0 0eab1aa427e98a5f0f1a5aba814eca06
++         节点用 `parse`（伴生对象上的一个扩展，来自 `breviloquence.parse`）从字节解析，用 `read[Cbor.Ast]` 通过 `.aggregable` 从分块的字节读取，通过 `.encodable` 序列化，并通过 `.showable` 以 RFC 8949 诊断记法渲染。
++         `Cbor.ast` 把节点包装为文档，`Cbor.unseal` 则把根节点取回。
+
+% 0 1 0 19196bdc1fcf19ed04c80e61f5429dbc
+
+% 0 1 0 0f42cc8aa8a26fad0c51a4ca9bf2cbec
+
+% 1 1 0 033d518832110ef1189399948dcddd65
+
+@ 0 38 0 05d174994d6da57f1a9313a7c86f85ea
++     entry .apply   把一个存储值（`Long`、`String`、`Tag`、`Unset`……）包装为节点
++         `Cbor.Ast(42L)`、`Cbor.Ast("text")`、表示 `undefined` 的 `Cbor.Ast(Unset)`、表示 `null` 的 `Cbor.Ast(Cbor.CborNull)`，或 `Cbor.Ast(Cbor.Tag(1L, 1363896240L))`。
++         参数必须是 `.CborTypes` 的成员之一；数组或映射则改用 `.array` 或 `.map` 构建，它们会正确地排列底层数组。
++     entry .map   由平行的键数组和值数组构成的映射节点
++         `Cbor.Ast.map(keys, values)` 把两个由节点组成的冻结 `Array[Any]` 交错成映射节点所用的偶数长度底层数组；两个数组的长度必须相同。
++     entry .array   节点的元素构成的数组，或由元素数组构成的数组节点
++         作为伴生对象方法，`Cbor.Ast.array(elements)` 由节点组成的冻结 `Array[Any]` 构造数组节点，长度为偶数时用一个哨兵值填充，使它能与映射区分开来。
++         作为访问器，`ast.array` 是数组节点的元素，作为冻结的 `Array[Cbor.Ast]`（不含填充），对其他任何节点都抛出 `Cbor.Error(NotType(found, Array))`。
++     entry .length   数组节点持有的元素数，不计填充
++         访问器 `elements` 是同一个计数；`.size` 是映射节点的条目数。
++     entry .size   映射节点持有的条目数
++         访问器 `entries` 是同一个计数。
++     entry .Sentinel   位于元素数为偶数的数组的底层数组末尾的填充对象
++         存储布局的实现细节，之所以公开，是因为访问器是内联的：它从来不是节点的值，`elements` 也从不计入它。
++     entry .encodable   把节点序列化为它的 CBOR 字节：`Cbor.Ast.encodable.encoded(ast)`
++         `Encodable in Data` given，因而也是 `ast.encode`：树以深度优先的顺序写出，整数采用最短的头部编码，浮点数总是 64 位，文本为 UTF-8，数组和映射带长度前缀（从不使用不定长编码，它可以解析，但不会产生）。
++         这些字节与生成的 `Cbor.Printable` 写出的、以及 `Cbor.emit` 逐块交出的完全相同。
++     entry .aggregable   把分块的字节读入节点：`read[Cbor.Ast]` 背后的 given
++         `Chain(bytes).read[Cbor.Ast]` 和 `stream.read[Cbor.Ast]` 通过 `CborParser` 解析一个数据项，在解析器需要时拉取每个数据块，并以 `Cbor.Error(Trailing(offset))` 拒绝尾随字节。
++         需要 `Tactic[Cbor.Error]`。
++     entry .showable   以 RFC 8949 诊断记法渲染节点：`ast.show`
++         规范所定义的人类可读的渲染形式，相当于这种格式的可读十六进制转储：整数和浮点数写作数字（`NaN`、`Infinity`、`-Infinity` 写出全称），文本串加引号并使用 `\"`、`\\`、`\n`、`\r`、`\t` 和 `\uXXXX` 转义，字节串写作 `h'0102'`，布尔值、`null` 和 `undefined` 写出名称，标签写作 `1(1363896240)`，数组写作 `[1, 2, 3]`，映射写作 `{"a": 1}`。
++         当消息不是它应有的样子时，就应该求助于它。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 10bc42a246cc95e81adccaf6e5d90d4c
++           label 一个记录，已编码
+
+% 1 1 0 14006b1dae29689116c3698aa64c21fa
+
+% 0 1 0 19300448114fc7e810c6bf10a88a596e
+
+% 0 1 0 18f6fe48cb7dc1e41de3d51f99255dc2
+
+% 0 1 0 14baa297b21aefd106a438be3cbc0748
+
+% 0 1 0 03a08728a3b5aa6b11fd40d9eea628f6
+
+% 0 1 0 126447142f3b28c302c59e4a60876857
+
+% 1 1 0 16dd2ce4df65e66a18b11de2926e5f80
+
+@ 0 1 0 166a914e6725b6811920e3dbf5f7bd0e
++           label 这些字节，以诊断记法表示
+
+% 1 1 0 11d5dfe18490d23f12a2dc06646ea68a
+
+% 0 1 0 1d5e83dbfdd8d4150275e9c3dce95887
+
+% 1 1 0 05b084462bc5150112d00bfd9146781b
+
+@ 0 1 0 06bcc9928a1d8c20156687df9a7b3a5a
++           label 再解码回来
+
+% 1 1 0 0595f4d8ff8a00a503010ffe13ce1dd4
+
+% 0 1 0 004ab0872bf773eb032901694a3572ce
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 40 0 0b086012ed96c42b0012b2f7ea914083
++     entry .unset   节点是否为 `undefined`（或缺失）：它是 `Unset`
++     entry .nullary   节点是否为 CBOR `null`
++         `null` 和 `undefined` 在线上是不同的（0xF6 和 0xF7），在这里也是不同的：`null` 是 `.CborNull` 哨兵值，因此它不会与以 null 为底层表示、代表 `undefined` 和缺失键的 `Unset` 相冲突。
++     entry .isInteger   节点是否为整数（主类型 0 和 1），以 `Long` 存储
++     entry .isFloat   节点是否为浮点数，无论线上宽度如何都以 `Double` 存储
++     entry .isTextString   节点是否为文本串（主类型 3），以 `String` 存储
++     entry .isByteString   节点是否为字节串（主类型 2），以冻结的 `Array[Byte]` 存储
++     entry .isBoolean   节点是否为 `true` 或 `false`
++     entry .isTag   节点是否为带标签的值，即 `Cbor.Tag`
++     entry .isArray   节点是否为数组（主类型 4）
++     entry .isMap   节点是否为映射（主类型 5）
++     entry .primitive   这是哪种节点，作为 `Cbor.Error.Primitive`
++         错误所报告的归类：`Integer`、`Float`、`TextString`、`ByteString`、`Boolean`、`Map`、`Array`、`Tag`、`Undefined` 或 `Null`。
++     entry .elements   数组节点的元素数
++         对数组而言没有开销；对其他任何节点，结果都没有意义，因此请先检查 `isArray`。
++     entry .element   按索引取得的数组节点元素，不做检查
++         `ast.element(i)` 直接读取底层数组：索引必须小于 `elements`，节点必须是数组。
++     entry .entries   映射节点的条目数
++     entry .key   按条目索引取得的映射节点的键，不做检查
++         `ast.key(i)`，其中 `i` 小于 `entries`。
++         键可以是任何节点，但派生的编解码器只使用文本键，并忽略其他键下的条目。
++     entry .value   按条目索引取得的映射节点的值，不做检查
++     entry .index   映射节点中某个文本键的条目索引，缺失时为 `-1`
++         逐个把键与 `String` 比较的线性扫描；第一个匹配者胜出，这就是重复的键读作它第一次出现的原因。
++     entry .long   整数节点的值，或截断后的浮点数值；否则抛出 `NotType`
++         其他任何节点抛出 `Cbor.Error(NotType(found, Integer))`，对于 `undefined` 则是 `Absent`。
++         在累积式的 `Validate` 作用域下，错误会被登记并返回 `0L`，使同级字段能继续累积；派生的解码器从不用它来构造。
++     entry .double   浮点数节点的值，或拓宽后的整数值；否则抛出 `NotType`
++     entry .string   文本串节点的值，作为 `String`；否则抛出 `NotType`
++     entry .byteString   字节串节点的字节，作为冻结的 `Array[Byte]`；否则抛出 `NotType`
++     entry .boolean   布尔节点的值；否则抛出 `NotType`
++     entry .tag   带标签的节点，作为 `Cbor.Tag`；否则抛出 `NotType`
+
+% 1 1 0 1e03289a2c53cc2801a1e458f38e1240
+
+% 2 1 0 19c87c5498aa050e03e53657ccfa0b2f
+
+% 3 1 0 189b01c93156ac75108512d1a7d0940b
+
+% 0 1 0 134bf453fc3d50200e251b264b4ff614
+
+% 0 1 0 05191e66d77fdd75115fc0a7a2769a7d
+
+% 0 1 0 02d648d214972f1a0dd7f41853a12d6f
+
+% 1 1 0 128c43708b93f33f149a57121577dfa4
+
+@ 0 1 0 013aac4ce6e3f6ba02fe40e2ae25d80b
++   entry .Tag   带标签的值：标签号以及它所注明的节点
+
+% 1 1 0 1b0bc7802b5cad170df98633e05a11cb
+
+@ 0 25 0 061933420fdaa1cc188f8edfd4dab5fc
++         CBOR 的标签（主类型 6）为值注明它的含义：标签 1 是纪元时间，标签 2 是大整数，注册表中的标签多达数百个。
++         解析得到的标签同时保留它的编号和内容，因此带有标签的文档可以往返而不丢失标签；这个库中没有任何部分解释标签的含义。
++         两个标签在编号和值都相等时相等。
++         派生的编解码器不产生标签，把带标签的节点作为基本类型解码会抛出 `Cbor.Error(NotType(Tag, …))`；请用 `ast.tag` 读取标签，再解码它的 `#value`。
++     entry #tag   标签号
++     entry #value   带标签的节点，作为 `Any`；把它转换为 `Cbor.Ast` 后再读取
++   entry .CborNull   存储 CBOR `null` 的哨兵值，与 `Unset` 不同
++       一个对象以及该对象的类型。
++       `undefined`（0xF7）和缺失的键是以 null 为底层表示的 `Unset`；`null`（0xF6）本会是同一个 JVM `null`，所以改用这个哨兵值，`nullary` 检测的就是它。
++   entry .CborInteger   整数节点的存储类型：`Long`
++   entry .CborFloat   浮点数节点的存储类型：`Double`
++   entry .CborText   文本串节点的存储类型：`String`
++   entry .CborBytes   字节串节点的存储类型：冻结的 `Array[Byte]`
++   entry .CborArray   数组节点的存储类型：长度为奇数的冻结 `Array[Any]`
++   entry .CborMap   映射节点的存储类型：长度为偶数、键和值交替排列的冻结 `Array[Any]`
++   entry .CborBoolean   布尔节点的存储类型：`Boolean`
++   entry .CborUndefined   `undefined` 的存储类型：`Unset`
++   entry .CborTypes   `Cbor.Ast` 可能具有的所有存储类型的并集
++       `CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull | CborUndefined | Tag`：即 `Cbor.Ast.apply` 所接受的。
++   entry .Error   当 CBOR 无法解析，或节点无法解码为所要求的类型时抛出
+
+% 1 1 0 09cfa78a4db6343611a485e9571b5da9
+
+@ 0 8 0 04f1532060a882461f75e3852b205ee0
++         错误 `↯/s.104.1`：_could not process the CBOR value because `reason`_，以 `.Reason` 自己的编号作为错误编号的第二部分。
++         对于格式错误的输入，由 `Cbor.Ast.parse` 和每个 `read[…]` 抛出，并带有遇到问题时的绝对字节偏移量：在值的中途结束的输入指明本应随后出现的字节的偏移量，尾随字节指明多余部分开始的位置，保留的头部字节则指明它的偏移量和值；对于种类错误的节点、缺失的字段或非文本的映射键，由每个解码器抛出。
++         像每个 `fulminate.Error` 一样，构造它需要作用域内有 `Diagnostics`。
+
+% 2 1 0 0419aa60d83fbddb03c5bb5fcae77cfe
+
+% 3 1 0 011220c8497dffca086b3e597c5ca170
+
+% 0 1 0 13f99d288ed84d931e192d804dc36085
+
+% 0 1 0 0ca0e49a18245efd109102bb9532d74e
+
+% 0 1 0 135ed7d83d68a9fe03dfd2deeea87e42
+
+% 0 1 0 141f40e3a639d67411d9678ba872ef90
+
+% 1 1 0 111bb33879f13de0147eba5bcf18fc68
+
+@ 0 4 0 1c23f5a0b4b92f87166c547840687d2b
++         在 `Validate` 作用域下，解码会为每个有问题的字段累积一个错误，每个错误都带有一个指明该字段的 `Pointer`（对于嵌套记录则如 `lead.name`）。
++     entry #reason   值无法处理的原因，作为 `Cbor.Error.Reason`
++     entry .Reason   具体的问题：输入在何处出错，或什么不匹配
+
+% 1 1 0 0b3435f3f19df4380468ee2e9444edd5
+
+@ 0 3 0 14cea7c339bc2e340d3c14f6064a346a
++           一个 `Clarification` 枚举，每个分支都有编号。
++           分支 1 到 7 是解析问题，带有输入中的绝对字节偏移量，无论如何分块，都从输入的开头计数；分支 8 到 11 是解码问题，与树有关：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 11 0 0c7d439d874685cf03aa3e8e63beb8b6
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_  数据项需要一个并不存在的字节
++           row  `Reserved(offset, byte)`  2  _a reserved CBOR head byte `byte` was found at byte `offset`_  附加信息为 28 到 30
++           row  `BadSimpleValue(offset, value)`  3  _an invalid simple value `value` was found at byte `offset`_  小于 32 的双字节简单值
++           row  `InvalidUtf8(offset)`  4  _invalid UTF-8 was found at byte `offset`_  位于文本串中
++           row  `Overflow(offset)`  5  _an integer too large for Long was found at byte `offset`_  超出 `Long` 范围的 64 位无符号整数或负整数
++           row  `UnexpectedBreak(offset)`  6  _an unexpected break stop code was found at byte `offset`_  不定长数据项之外的 0xFF
++           row  `Trailing(offset)`  7  _unexpected trailing bytes were found from byte `offset`_  数据项已结束，但输入没有结束
+
+% 0 1 0 07b9d16aae1960950db3edc4cfbe1327
+
+@ 0 3 0 1671c71bf976cfe20a1aed075dc21a87
++           row  `NotType(found, expected)`  9  _the CBOR value had type `found` instead of `expected`_  二者都是 `.Primitive`
++           row  `NonStringKey`  10  _the map key was not a string_  解码 `Map` 时
++           row  `Absent`  11  _the CBOR value was not present_  缺少必需字段的键或密封层次结构的判别字段，或者在 `optionalityOptions.strictCborAbsence` 下 `Optional` 缺失
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 3 0 000aa72b3f3e6967118deee0d22022f6
++       entry #number   原因的编号，1 到 11，错误把它报告为编号的第二部分
++       entry .communicable   把每个原因渲染为它的消息
++     entry .Primitive   错误所指明的 CBOR 节点种类：发现了什么，期望的是什么
+
+% 1 1 0 1b3a9ffa99dd2b2c1d5d26cf1fe9c11d
+
+@ 0 5 0 0d70d2d8e57c374501131421d5be2a40
++           `Integer`、`Float`、`ByteString`、`TextString`、`Array`、`Map`、`Tag`、`Boolean`、`Null` 和 `Undefined`：`Cbor.Ast` 的 `primitive` 访问器给出的归类，由 `Reason.NotType` 使用。
++       entry .communicable   把每个种类渲染为消息：`integer`、`byte string`、`text string`……
++   entry .Reader   `Cbor.Parsable` 进行读取时所经由的、解析器的受限边界：每次调用一个数据项
+
+% 1 1 0 0c1ae3274648ebfb11bcf40d9b0c8ce4
+
+@ 0 8 0 13e8b5d1600593031dff489539a94175
++         `Cbor.Reader` 包装一个 `CborParser` 以及创建它的那次读取的 `Tactic[Cbor.Error]`，并被交给 `Cbor.Parsable` 的 `parse`，使实例能够直接从输入中消费数据项，而不构建 `Cbor.Ast`。
++         每个方法恰好消费一个数据项，或一个结构步骤；失败通过所携带的战术中止，因此 `parse` 的主体不需要自己的错误词汇。
++         值和失败与 `Cbor.Ast` 访问器完全一致（整数可强制转换为浮点数，浮点数也可转换为整数，就像 `long` 和 `double` 对节点所做的那样），因此直接读取和树读取得到相等的值。
+
+@ 0 5 0 0a91ea89ab29b7b20ef5added20d3a79
++         它是一个独占的、有状态的能力（`caps.ExclusiveCapability, caps.Stateful`），在一次 `parse` 调用的持续期间归该调用所有：每个读取方法都是 `update def`，只能通过 `Cbor.Reader^` 调用，调用之后不得保留它的任何部分。
++         只有这个库的读取路径会构造它；手写的实例会接收到它。
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 4 1 0 001537aa3fe5860801decf914f479f46
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 16caed482e36362310778fb8482fab92
+
+% 0 1 0 1ec8133b1f1646f5110f68ad78b1446c
+
+% 0 1 0 0548ec5534d2783717fd0ed39af4102d
+
+% 0 1 0 067f8dd4458373a603c77efbaa4df968
+
+% 0 1 0 17463def8ce5f1451b9250be410a848b
+
+% 0 1 0 0f98fdce4001230118642cbef4af3534
+
+% 0 1 0 12f28584ba75af490b0ebaac59e3fa7a
+
+% 0 1 0 1cad2506ad40bebf120d5bcefc632520
+
+% 0 1 0 11778ce21bdadd9e12804704b65bf5b6
+
+% 0 1 0 15b4e74dfd7f7ea812b19fe2af91d2d0
+
+% 0 1 0 1cae175a287e0d85124c70870e5392f7
+
+% 0 1 0 0c44a19c3abd1c8b09cba141e17fb783
+
+% 0 1 0 152bdd8d0ff90cba04af792424f83d5b
+
+% 1 1 0 045c1dd457f4af6513f5ed647284f528
+
+% 2 1 0 0a66a57f63ea265e1c165cf0f71c12f9
+
+% 1 1 0 1ad2802ab39adb881ac6093292dadf36
+
+@ 0 54 0 1ae6d137a263c9c218785dd4b0763901
++     entry .KeyOpaque   `#keyWord` 对无法打包的键返回的值：`-2L`
++         它不可能是打包后的键，因为打包后的键的字节都是 7 位 ASCII。
++         看到它的调用方改走 `#keyName` 这一步。
++     entry .of   为生成的解析器重新断言一个以 `AnyRef` 载体形式传递的读取器
++         `Cbor.Reader.of(carrier)` 把一个中性引用转换回 `Cbor.Reader^`。
++         它是 `Inlinable.parsable` 拼接进用户模块的解析器的入口，在那里生成的主体接收到的读取器已被擦除捕获；手写代码用不到它。
++     entry #long   把整数数据项作为 `Long` 消费，或把浮点数截断为 `Long`
++     entry #int   把整数数据项作为 `Int` 消费
++     entry #double   把浮点数数据项作为 `Double` 消费，或把整数拓宽为 `Double`
++     entry #boolean   消费一个 `true` 或 `false` 数据项
++     entry #text   把文本串数据项作为 `Text` 消费
++     entry #string   把文本串数据项作为 `String` 消费
++     entry #byteString   把字节串数据项作为冻结的 `Array[Byte]` 消费
++     entry #hasUndefined   下一个数据项是否为 `undefined`，不消费它
++         可选包装器为把线上的 `undefined`（0xF7）映射为缺失值而进行的预读，与树路径的 `Cbor.optional` 所做的完全相同。
++     entry #undefined   消费一个 `undefined` 数据项
++     entry #openMap   开启一个映射：它的条目数，对于不定长映射则为 `-1`
++         不定长映射以中断停止码结束，由 `#breakEnd` 消费。
++         其他任何数据项都会被整个消费，并读作空映射（每个字段都缺失），这正是树路径的记录解码器对非映射所做的。
++     entry #openArray   开启一个数组：它的元素数，对于不定长数组则为 `-1`
++         非数组数据项以 `Cbor.Error(NotType(found, Array))` 失败，与树访问器 `array` 相同。
++     entry #breakEnd   如果下一个是中断停止码，就消费它：不定长数据项的结尾
++         中断码在那里并被消费时为 `true`；下一个数据项是另一个元素或条目时为 `false`（不消费任何东西）。
++     entry #keyWord   打包进 `Long` 的下一个映射键，用于与字面量比较
++         生成的解析器把字段名编译为立即数：一个定长的、1 到 16 字节的、7 位纯净的文本键打包成两个字，返回低位字，把高位字留在 `#keyHigh` 中，并消费该键。
++         无法打包的键得到 `.KeyOpaque`，不消费任何东西，于是调用方改走 `#keyName`。
++         跨数据块边界的键会先被完整缓冲，因此它的打包结果与整体到达的键相同。
++     entry #keyHigh   `#keyWord` 最近一次打包的键的高位字
++     entry #keyName   消费下一个映射键：文本键的内容，对于非文本键则为 `null`
++         记录解码器会忽略非文本键的条目，因此看到 `null` 的调用方用 `#skipValue` 跳过该条目的值，然后继续。
++     entry #value   把一个完整的数据项作为 `Cbor` 文档消费
++         回到树世界的接缝：类型只有 `Decodable in Cbor` 的字段通过它读取并解码，只具体化该字段的子树。
++     entry #skipValue   消费一个完整的数据项，不构建任何东西
++         用于未知的键：字符串的内容被跳过而不被缓冲，因此无论数据项多大，跳过所用的内存都是有界的，而格式错误的数据项会像被解析时那样失败。
++     entry #discriminant   即将到来的映射中某个键下的文本值，读取器保持在原处
++         密封层次结构的分派原语：判别条目可能出现在映射中的任何位置，因此映射会被预先扫描，并在所选变体解析它之前把读取器倒回映射的开头。
++         当数据项不是映射、没有这个键，或键的值不是文本时为 `Unset`。
++         扫描期间映射保存在缓冲区中，这是直接读取持有多于单个数据项的唯一地方。
++   entry .Parsable   直接解析的类型类：从 `Cbor.Reader` 上消费 CBOR 数据项的类型
+
+% 1 1 0 14ed13171c2791370597bf482d87691f
+
+@ 0 10 0 022c19c2f46bb53f0b9b236dc060daad
++         `Cbor.Parsable` 是 `Decodable in Cbor` 的直接解析对应物：解码器遍历已具体化的树，而实例的 `parse(reader)` 通过 `Cbor.Reader` 直接从输入中消费数据项，因此 `read[T in Cbor]` 不构建树就能实例化值，并且只持有正在读取的数据项。
++         它是直接路径的选择启用接口：显式实例（`Cbor.Parsable(reader => …)`），由 `Inlinable.parsable[T]` 在编译时生成的实例，由 `derives Cbor.Direct` 生成到伴生对象中的实例，或为作用域内每个记录提供的 `import codecs.direct`。
++         没有这些时，任何读取的行为都不会改变。
++         没有实例的字段类型通过 `.fromDecodable` 桥接，它解析该字段的子树并对其解码。
+
+% 2 1 0 18e1b442313eb642026f1fede2c1b0be
+
+% 3 1 0 1a26e9af6089fb5c150708ce2101e507
+
+% 4 1 0 1810ed95ac97cfb70e855a75aa3d99a4
+
+% 2 1 0 1920e53fb20042c81fd7bca6efbe1239
+
+% 0 1 0 02ccba7a8e551b5f17b8873ed89af308
+
+% 0 1 0 057cf2a251af79100f23f8e1a0cdd003
+
+% 0 1 0 1bf937536571e09c007fb2f77be5161a
+
+% 0 1 0 037b2a7acaaee92906ba0cb6115e7dc9
+
+% 1 1 0 1b1d969bc8eca3aa1a30122921013828
+
+@ 0 4 0 0ae9ad948dcf10c0089a8b240c413841
++         实例是一个 `Transport = Cbor`、`Reader = Cbor.Reader` 的 `distillate.Parsable`；`#absent` 说明当映射中缺少该类型字段的键时，该字段得到什么。
++         伴生对象的 `generated` given（继承自 `Cbor.Parsable2`）是 `codecs.direct` 实例，`.declared` 是 `derives Cbor.Direct` 实例。
+
+% 0 1 0 175eec23c8252c07063d30bd0fc84742
+
+% 1 1 0 1d1355b25300a442156f85444190875c
+
+% 1 1 0 13c4584dc22b18881f2d76c3c25a546d
+
+% 0 1 0 0ad4e69a403365f900b0a3da6d681c01
+
+@ 0 24 0 1f12f987d49ac0331590fbffe4232aac
++     entry #Transport   这个解析器读取的格式：`Cbor`
++     entry #Reader   它读取时所经由的读取器：`Cbor.Reader`
++     entry #absent   当映射中缺少该类型字段的键时，该字段得到什么
++         除非被覆盖，否则抛出 `Cbor.Error(Absent)`；`.fromDecodable` 覆盖了它，通过所桥接的解码器解码 `undefined`，`Optional` 字段正是这样桥接到 `Unset` 的。
++     entry .apply   由作用于读取器的函数得到的实例：`Cbor.Parsable(reader => …)`
++         函数接收一个 `Cbor.Reader^`，必须恰好消费一个数据项。
++         实例捕获该函数。
++     entry .fromDecodable   一个实例，它把一个数据项解析为树，并用 `Decodable in Cbor` 解码
++         来自树世界的通用桥接，也是自定义解码器必须胜过生成的直接解析器时的一行逃生舱口：`Cbor.Parsable.fromDecodable(decoder)`。
++         它的 `#absent` 通过解码器解码 `undefined`。
++     entry .declared   类型用 `derives Cbor.Direct` 生成到其伴生对象中的解析器
++         一个通过 `Cbor.Direct[T]` 解析的 given，因此用 `derives` 子句声明的记录无需任何导入就能被直接解析。
++     entry .missing   对键不在映射中的必需字段抛出 `Cbor.Error(Absent)`
++         之所以公开，是因为拼接进用户模块的生成解析器会调用它。
++     entry .parseField   从生成的解析器中调用一个名义上的 `Cbor.Parsable`，读取器以载体形式传递
++         生成代码中字段位置上手写或递归实例的调用点，生成代码已被擦除捕获；两个参数都以 `AnyRef` 传递，能力在这里重新断言。
++         不供手写代码使用。
++     entry .absentField   从生成的解析器中调用名义上的 `Cbor.Parsable` 的 `absent`
++     entry .Direct   生成的解析器的基类，以载体形式接收读取器
+
+% 1 1 0 1bc3e9cbec2169a50d1921325477cb08
+
+@ 0 5 0 0a3aa0a4f151469e1eac621c909078ef
++           一个抽象的 `Cbor.Parsable`，它的 `parse` 把读取器作为 `AnyRef` 转发给 `#parseCarrier`：生成的代码已被擦除捕获，因此能力在这个边界上断言，而不是在生成的主体中。
++           `Inlinable.parsable` 扩展它；手写代码使用 `Cbor.Parsable.apply`。
++   entry .Printable   直接打印的类型类：把自己的 CBOR 字节直接写入生产者的类型
+
+% 1 1 0 16d880e45abecf4a06d8056866285c4f
+
+@ 0 7 0 1eefc02977afe6710da128289ac8528d
++         `Cbor.Printable` 是 `Cbor.Parsable` 负责写出的对应物，也是 `Encodable in Cbor` 的直接对应物：`write(value, out)` 把值的字节放入 `Producer.Bytes`，不构建树，`in[Data over Cbor]` 在存在实例的任何地方都使用它。
++         这些字节与派生的编码写出的完全相同。
++         它的接口包括显式实例、`Inlinable.printable[T]`、`derives Cbor.Direct` 和 `import codecs.direct`；没有实例的字段类型通过 `.fromEncodable` 桥接。
+
+% 2 1 0 0e8c6613deeb27661fa8cd44fd7c675a
+
+% 3 1 0 198945676f735dd917e5e8aadf65653b
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 17d211bf184fe7910f34ca9f87ad7d87
+
+% 0 1 0 0c9f7f5af900aaf509adc309b84c9300
+
+% 0 1 0 0332ae4a7a3c20531c2a5e0c826c35e9
+
+% 1 1 0 0ed275ab51f2be910f5b49b77c92c338
+
+@ 0 3 0 1037c48b418a675f0990dcce300e652d
++         `.print` 一次给出全部字节，`.emit` 则一次一个块地交出它们，因此发送一个值时，从不需要持有它的整个编码。
++         `write…` 方法是生成的打印器调用的叶子写入器。
+
+% 1 1 0 07dc6cc2670ee2d500f3ac44001fed33
+
+% 1 1 0 04db787be7a30ebb19c8817c6c5d3434
+
+@ 0 29 0 1c2c3b4c99ddff7b111ce804918ecf57
++     entry #write   把值的 CBOR 字节写入字节生产者
++     entry .print   通过值的 `Cbor.Printable` 得到它的全部 CBOR 字节
++         `Cbor.Printable.print(value)` 把 `#write` 产生的内容收集到一个 `Data` 中。
++     entry .emit   以 `Buffering` 容量为块给出值的字节，每个块填满时交给一个函数
++         `Cbor.Printable.emit(value, deliver)` 在调用方的线程上序列化，从不构建整个值的数组：这正适合把大记录写入文件或套接字。
++         需要该类型的 `Cbor.Printable` 和 `Buffering`。
++     entry .fromEncodable   一个实例，它把值编码为树，再写出这棵树
++         来自树世界的桥接，用于只有 `Encodable in Cbor` 的字段类型，或用于强制让自定义编码器胜过生成的打印器。
++     entry .declared   类型用 `derives Cbor.Direct` 生成到其伴生对象中的打印器
++     entry .present   字段编码后的树是否会被写出：对于 `undefined` 为 `false`
++         派生的编码会略去编码为 `undefined` 的字段，例如未设置的 `Optional`；生成的打印器在写出桥接字段之前会询问这一点。
++     entry .writeHead   写出带计数的主类型头部：数组或映射头部的叶子写入器
++         `writeHead(out, 5, entries)` 开启一个有这么多条目的映射；`4` 则开启一个数组。
++         与每个 `write…` 方法一样，生产者以 `AnyRef` 载体形式传递，因为生成的代码已被擦除捕获；手写代码使用 `Cbor.Ast.encodable` 或 `Cbor.emit`。
++     entry .writeLong   以最短的头部编码写出整数，负数为主类型 1
++     entry .writeDouble   写出 64 位浮点数
++     entry .writeText   以 UTF-8 写出文本串，带有长度头部
++     entry .writeBytes   写出字节串，带有长度头部
++     entry .writeBoolean   写出 `true` 或 `false`
++     entry .writeAst   写出一个完整的 `Cbor.Ast` 节点：供保留为文档的字段使用的接缝
++     entry .writeField   从生成的打印器中调用一个名义上的 `Cbor.Printable`，生产者以载体形式传递
++         字段位置上手写或递归实例的调用点。
++         不供手写代码使用。
++     entry .Direct   生成的打印器的基类，以载体形式接收生产者
+
+% 1 1 0 10303acb56773a9e0735568b6ced8543
+
+@ 0 4 0 1a6bfeea769976d906fc5a8f749c24a2
++           一个抽象的 `Cbor.Printable`，它的 `write` 把生产者作为 `AnyRef` 转发给 `#writeCarrier`，就像 `Cbor.Parsable.Direct` 对解析器所做的那样。
++           `Inlinable.printable` 扩展它。
++   entry .Parsable2   持有 `codecs.direct` 解析器 given 的特质
+
+% 1 1 0 1d0c3eeb500bbda005cd843a70e19242
+
+% 2 1 0 0600d98314bcc2d30d7a329f2455bf3e
+
+@ 0 9 0 0f4a346f653fb0081a09e3cb8e6def41
++         混入 `Cbor.Parsable` 的伴生对象，使其唯一的 given 位于伴生对象的 `declared` 实例之下；不供直接使用。
++     entry #generated   在 `codecs.direct` 下，为任何记录生成的 `Cbor.Parsable`
++         一个以 `Codecs.Direct` 和 `Inlinable.Generates[T]` 为条件的内联 given，后者是生成器把该类型作为记录按结构构建的证据：不是记录的类型（泛型 case class、密封层次结构）无法满足该证据，除非有自己的实例，否则保持派生路径。
++         在需要的地方展开 `Inlinable.parsable[T]`。
++   entry .Printable2   持有 `codecs.direct` 打印器 given 的特质
+
+% 1 1 0 1b8c7884f9d538ae0d42436bcf4f5cd7
+
+% 2 1 0 06d2c93378384d3a09694090f9d45996
+
+@ 0 5 0 1fb23c3813493ac61edc4abed7f619d5
++         混入 `Cbor.Printable` 的伴生对象；不供直接使用。
++     entry #generated   在 `codecs.direct` 下，为任何记录生成的 `Cbor.Printable`
++         `Cbor.Parsable.generated` 负责写出的对应物：为任何具有 `Inlinable.Generates[T]` 证据的类型展开 `Inlinable.printable[T]`。
++   entry .Direct   `derives Cbor.Direct`：记录生成的解析器和打印器，一次性生成到其伴生对象中
+
+% 1 1 0 1bebd89cc805d582161b74767ce2018e
+
+@ 0 6 0 1922c22c4e906c01079e5b22c05c9523
++         以 `Self` 为类型的类型类没有类型参数，因此 `Cbor.Parsable` 和 `Cbor.Printable` 都不能出现在 `derives` 子句中；`Cbor.Direct[T]` 是可以出现的载体。
++         `case class Play(…) derives Cbor.Direct` 把 `Play` 的解析器和打印器一次性生成到它的伴生对象中，`Cbor.Parsable` 和 `Cbor.Printable` 的 `declared` given 在那里找到它们，因此 `Play` 无需导入、也无需每次使用时展开，就能直接读写。
+
+% 2 1 0 195620877bab2f7d0384b2dd5d6d4501
+
+% 3 1 0 057b6eedb113fdbb0e97b1b0eb206065
+
+% 4 1 0 086cf28352dee8ac0b6edbb3ced08a3a
+
+% 0 1 0 1d2307c2f2ac19990226392804540d59
+
+% 0 1 0 145758cf7cc2344e174d469633148cbd
+
+% 1 1 0 036e96bbb1feb2cd198b015e1c947c17
+
+% 2 1 0 1c46eef67e9ec6bc17807d5571f8f910
+
+% 1 1 0 1bba3f8e79d12227160640984672b31f
+
+% 1 1 0 1400ae07b98a9161141bc5c01c0d4b2a
+
+@ 0 3 0 0aef5cac8c7ea24e183e37439e6ec07d
++     entry .derived   `derives` 钩子：成对的 `Inlinable.parsable[T]` 和 `Inlinable.printable[T]`
++     entry #parsable   生成的 `Cbor.Parsable`
++     entry #printable   生成的 `Cbor.Printable`
+
+@ 0 1 0 03b8124fe44b59c2120a5f799b05b994
++ entry .Cbor1   容纳 `object Cbor` 的直接路径 given 的特质，优先级高于派生路径
+
+% 1 1 0 0645f92d4ca9a6320349385f10f52344
+
+% 2 1 0 1acc6865ce59e92108b78dd703e2d0c0
+
+@ 0 28 0 02316cc0e04f148809dbe0cfcf864c20
++       混入 `object Cbor` 中，位于 `Cbor2` 与该对象自身的成员之间，使其 given 的优先级高于派生路径，又低于 `codecs.derived` 和 `codecs.strict` 这两对 given；不供直接使用。
++       它的成员——`aggregableParsed`、`readableParsed`、`encodableOverPrinted`、`aggregableStrictFailure` 和 `encodableOverStrictFailure`——在此说明；`object Cbor` 继承它们。
++   entry #aggregableParsed   直接读取路径：由 `Cbor.Parsable` 驱动解析器，不构建树
++       对任何具有 `(value is Cbor.Parsable)^` 的类型都处于作用域中，优先级高于 `Cbor.aggregableIn`：此时对 `Chain[Data]` 或 `Stream[Data]` 的 `read[T in Cbor]` 通过 `Cbor.Reader` 直接从 `CborParser` 消费数据项，至多只保留正在读取的那一个数据项（和类型的判别值扫描会保留其映射），因此大型文档以有界内存流式读取。
++       尾随字节的拒绝方式与树路径完全相同。
++       该 given 捕获 parsable 及其使用的 `Tactic[Cbor.Error]`；写出其类型的召唤必须允许该捕获（`summon[((T in Cbor) is Aggregable by Data)^]`），而通过 `read` 解析则无需任何东西。
++   entry #readableParsed   对整个 `Data` 的 `data.read[T in Cbor]`，通过 `Cbor.Parsable` 就地解析
++       `#aggregableParsed` 的内存内对应物：当整个内容已经是 `Data` 时，就在原处解析，而不是包装成单元素的链。
++       与 `#aggregableParsed` 一样，捕获 parsable 和战术。
++   entry #encodableOverPrinted   通过 `Cbor.Printable` 直接写出的 `in[Data over Cbor]`
++       对任何具有 `(value is Cbor.Printable)^` 的类型都处于作用域中，优先级高于 `Cbor.encodableOver`：值的字节被直接写入字节生产者，不构建树，且与派生编码写出的字节完全相同。
++   entry #aggregableStrictFailure   在 `codecs.strict` 下，为没有直接解析器的类型给出的编译错误
++       一个 inline given，为严格的那对 given 不接收的每个类型选中，并在使用处报告 _breviloquence: `T` has no direct codec_。
++       它的存在使 `read[T in Cbor]` 在 `codecs.strict` 下绝不会静默地回退到树。
++   entry #encodableOverStrictFailure   在 `codecs.strict` 下，为没有直接打印器的类型给出的编译错误
++       `#aggregableStrictFailure` 在写入方面的对应物，用于 `in[Data over Cbor]`。
+
+@ 0 1 0 0f894a2f928fdc1014de04d5963a710e
++ entry .Cbor2   容纳 `object Cbor` 的派生路径 given 的特质，优先级最低
+
+% 1 1 0 02a1519bd9d9af4b0909cbeecdd4f5a9
+
+% 2 1 0 1a01d9360676232202eb3054c714b2a9
+
+@ 0 14 0 1bcc4c7f114147c806dac869385f47b6
++       混入 `object Cbor` 中，位于其他一切之下，并与 `Cbor` 一同导出到 `soundness` 总括包，使其 given 在那里仍可访问；不供直接使用。
++       它的成员——`decodable`、`encodable`、`optional`、`optionalEncodable`、`aggregableIn`、`encodableOver`、`DecodableDerivation` 和 `EncodableDerivation`——在此说明；`object Cbor` 继承它们。
++   entry #aggregableIn   对分块字节的 `read[T in Cbor]`：先解析树，再解码
++       对任何 `Decodable in Cbor` 的类型，`source.read[Person in Cbor]` 是 `source.read[Cbor].as[Person]` 的简写。
++       它是派生读取路径；只要类型具有 `Cbor.Parsable`，`Cbor.aggregableParsed` 的优先级就高于它，因此一旦作用域中有直接解析器，同一表达式就会直接读取，不构建树。
++       需要 `Tactic[Cbor.Error]`。
++   entry #encodableOver   `in[Data over Cbor]`：经由树得到值的 CBOR 字节
++       `read[T in Cbor]` 在写入方面的镜像：`person.in[Data over Cbor]` 将值编码为 `Cbor` 并将其序列化。
++       只要类型具有 `Cbor.Printable`，`Cbor.encodableOverPrinted` 的优先级就高于它，不构建树而写出相同的字节。
+
+% 2 1 0 1bd9f3fb8a5fab7f1796320a2398a875
+
+% 3 1 0 0441d03e83a811c31c9f756933603f66
+
+% 4 1 0 077e6accc0c89fb31b15ba04b7754e25
+
+% 6 1 0 018122a2fb54b6e50c3ad7d0a31885cf
+
+% 0 1 0 1b775328b78ae6b4150524c9a2296346
+
+% 1 1 0 1e65b05ec1045c811a7e90b219430117
+
+@ 0 22 0 1d4ab9ab8d66aee117b885da63fd5e45
++   entry #decodable   为任何 case class、密封层次结构或可从文本解码的类型派生 `Decodable in Cbor`
++       一个优先级最低的 inline given，采用两条路线中的第一条可行者：`Decodable in Text` 的类型通过该解码器从 CBOR 文本字符串解码，而具有 `Reflection` 的类型则被派生——case class 按字段名从映射中解码，密封层次结构通过其 `Discriminable in Cbor`（用 `Cbor.discriminatedUnion` 声明一次）解码。
++       `@name[Cbor]` 注解（或不带参数的 `@name`）重命名字段的键或变体的判别值；有默认值的字段在键缺失时取默认值；嵌套记录的错误指向 `outer.inner`。
++       该派生是 `#DecodableDerivation`。
++   entry #encodable   为任何 case class、密封层次结构或可编码为文本的类型派生 `Encodable in Cbor`
++       `#decodable` 在写入方面的对应物：`Encodable in Text` 的类型编码为文本字符串，而具有 `Reflection` 的类型则被派生——case class 编码为其字段的映射（编码为 `undefined` 的字段，例如未设置的 `Optional`，会被省略），密封层次结构编码为变体的映射，并由其 `Discriminable in Cbor` 添加判别条目。
++       该派生是 `#EncodableDerivation`。
++   entry #optional   解码 `Optional[T]` 字段，按 `optionalityOptions` 的方针读取缺失、`null` 和错误值
++       缺失的键以及线上的 `undefined`（0xF7）读作 `Unset`，除非作用域中有 `strictCborAbsence`，此时抛出 `Cbor.Error(Absent)`；线上的 `null`（0xF6）读作 `Unset`，除非作用域中有 `strictCborNulls`，此时将其交给内层解码器；内层解码器拒绝的值是错误，除非作用域中有 `lenientCborFaults`，此时将其读作 `Unset`。
++       该 given 捕获 `Tactic[Cbor.Error]` 和内层解码器。
+
+% 2 1 0 0aac66f2c4e5793111121e1fec2e611c
+
+% 3 1 0 198b9c833168660e12b12a202bcc6fe4
+
+% 4 1 0 1d05044bf85812b016d038fc89c7cb3c
+
+% 5 1 0 03864beb60017cc70dab5648dd0bbef0
+
+% 6 1 0 05bd9a060b663b110694ae35aa7e13ab
+
+% 8 1 0 1aa8830d845b978c1fcc9c973114bac1
+
+% 4 1 0 054c174c60863132008d21e77d7f931f
+
+% 5 1 0 155d4439536cb5001e4eb1d131159b20
+
+% 1 1 0 134ad0f88cd72fe416068e2a854682fd
+
+% 2 1 0 0bc1bdbb8cc8c9991cc36bcedd8f5b3c
+
+% 1 1 0 0837e9e131b78ffa1fcd084283cfd403
+
+% 0 1 0 141e0f9184d89fa91e54ff55680333d3
+
+% 1 1 0 061ec2dcaab5dc8e1ff758f23371fc9e
+
+% 2 1 0 1b2d956832fbe0ae02b50fc45e6c56b6
+
+% 3 1 0 02b2b7dc5c33d6350b58b548780476b4
+
+% 4 1 0 1c9262d6171162e70cf14eb9078d2333
+
+% 5 1 0 1a1766bd5581f5f60e9ec8dd3faaf01c
+
+% 7 1 0 15f89e6a6861607d0bd0d403b964ec11
+
+% 4 1 0 0fa114da51b6dcbf02ba2a7f7da4f38d
+
+% 5 1 0 00fd45de8ee917d7012a0cbe66eff381
+
+% 2 1 0 1b7e86fe2490c10a0e027a155c70fe3f
+
+% 3 1 0 0c937b503d3f0a430d53fe080ddbc978
+
+% 4 1 0 0bf6ab205ea1ea9b0c37079dc40fd0f1
+
+% 5 1 0 09403ba083559f0f13dc6045e7d84174
+
+% 6 1 0 15c8a5923ce4b7b50e4759aa805b6f6f
+
+% 7 1 0 03f6b75eab7155061f77f54fa609e15c
+
+% 9 1 0 0c9bc6c32cd816fa0c0c144cb3abf361
+
+% 1 1 0 1ea6b49814da2cdf00eb277a40d3612d
+
+% 2 1 0 13d87050d925466b0cd1127efd88a93a
+
+% 2 1 0 058284b21e6cd63404144327f02bb680
+
+% 3 1 0 1dfa410a1e80af3f18a02f3abce958b8
+
+% 4 1 0 1a828d6a285e098e071118ac0c3161c8
+
+@ 0 4 0 0cd5f600f319469f006b5990504a6cb1
++   entry #optionalEncodable   编码 `Optional[T]`：值的编码，未设置时为 `undefined`
++       未设置的字段编码为 `undefined`，派生的记录编码随后会将其从映射中省略，因此 `Optional` 字段缺失时在线上不占任何空间。
++   entry #DecodableDerivation   `Cbor.decodable` 背后的 wisteria 派生
+
+% 1 1 0 18f50daadec1a0ab011ef5776fbba6e4
+
+@ 0 16 0 06635e07f6dbbfa815587fa9718240d3
++         一个 `Derivable[Decodable in Cbor]`：`.conjunction` 从映射解码 case class，`.disjunction` 通过其 `Discriminable in Cbor` 解码密封层次结构。
++         通过 `Cbor.decodable` 使用，也可以直接指名以显式派生实例（`given (Person is Decodable in Cbor) = Cbor.DecodableDerivation.derived`）。
++     entry .conjunction   解码积类型：每个字段取自以其（重命名后的）名称为键的映射条目
++         字段名通过 `@name[Cbor]`（或不带参数的 `@name`）重新标注映射到键；缺失的键在字段有默认值时取默认值，否则解码 `undefined`（`Optional` 读作 `Unset`，必需类型抛出 `Cbor.Error(Absent)`）。
++         在累积式的 `Validate` 作用域下，每个出错的字段都会以 `Pointer` 登记自己的错误，只有所有字段都无误时才运行构造器。
++         非映射的数据项按没有条目的映射解码。
++     entry .disjunction   解码和类型：由判别值选出变体，再由该变体解码同一映射
++         需要该类型的 `Discriminable in Cbor`，例如 `Cbor.discriminatedUnion(t"kind")`；缺少判别值时抛出 `Cbor.Error(Absent)`。
++         分支上的 `@name[Cbor]` 重命名其判别值。
++   entry #EncodableDerivation   `Cbor.encodable` 背后的 wisteria 派生
+
+% 1 1 0 15a176e258718e481c831470b3f19aeb
+
+@ 0 8 0 0a25a284f76892091914d47f414af3f7
++         一个 `Derivable[Encodable in Cbor]`：`.conjunction` 将 case class 编码为映射，`.disjunction` 将密封层次结构编码为带有判别条目的变体映射。
++     entry .conjunction   将积类型编码为其字段的映射，省略编码为 `undefined` 的字段
++         键是字段名，由 `@name[Cbor]` 重新标注；编码为 `undefined` 的字段——未设置的 `Optional`、`None`——会从映射中省略。
++     entry .disjunction   将和类型编码为添加了判别条目的变体映射
++         通过该类型的 `Discriminable in Cbor`，变体名由分支上的 `@name[Cbor]` 重新标注。
+
+@ 0 1 0 09dfcb4c146e0953194762d66fe3ba69
++ entry .CborParser   流式 CBOR 解析器：每次从字节 `Cursor` 读取一个数据项
+
+% 1 1 0 067d32b888d79dfc171337fb4b66184a
+
+@ 0 8 0 00935b67a890f7ff1b350d8a0765af34
++       `CborParser` 从 `zephyrine.Cursor[Data]` 读取 CBOR 数据项，因此分块到达的文档随到随读，缓冲区只保存正在读取的数据项——字节串或文本字符串会整个保存，因为结果是一个数组，但容器的元素一经消费便不再保存。
++       每条读取路径都使用它：对 `Data` 或 `Chain[Data]` 的 `Cbor.Ast.parse`，对链或 `Stream[Data]` 的 `read[Cbor.Ast]`、`read[Cbor]` 和 `read[T in Cbor]`，以及通过包装它的 `Cbor.Reader` 使用的 `Cbor.Parsable`。
++       它抛出的每个 `Cbor.Error` 都携带错误所在的绝对字节偏移量，无论如何分块，都从输入的开头计数。
+
+@ 0 6 0 1da655183ad67bb101d9b9ef172c722f
++       它作为类型是公开的——生成的解析器被拼接到用户模块中，每条记录绑定一个解析器并通过其直接边界读取——但只有库的读取路径能够构造它。
++       它是有状态的能力（`caps.ExclusiveCapability, caps.Stateful`，一个 `Cursor.Snapshot[Data, Byte]`）：每个读取方法都是 `update def`，只能通过 `CborParser^` 调用。
++       手写代码通过 `Cbor.Reader` 读取，其方法会带着读取所用的战术转发到这里的 `direct…` 方法。
+
+@ 0 8 0 0db01dc8365d11a002e1ada28400a99d
++       方法分为两组：`#value` 是树路径，将一个完整的数据项解析为 `Cbor.Ast`；`direct…` 方法是直接解析所用的字节级边界，每个方法消费一个完整的数据项，对常见的头部形状有快速路径，遇到任何特殊情况——标签、类型不符的数据项、缺失——则回退到 `#value`，使值和失败都与树访问器完全一致。
++       不定长的字符串、数组和映射都可以读取；半精度和单精度浮点数拓宽为 `Double`；超出 `Long` 的整数以 `Overflow` 失败；布尔值、`null` 和 `undefined` 以外的简单值以 `BadSimpleValue` 失败。
+
+% 0 1 0 0e7c792dd4da13741883d258313d6305
+
+% 1 1 0 1e998905cd13235d1365505e579fb3ce
+
+% 2 1 0 11242652656878c20ae1b18bf6d5196b
+
+@ 0 48 0 10edad4833075cf81dded679ebe64f01
++   entry .of   为生成的解析器重新断言以 `AnyRef` 载体传递的解析器
++       `CborParser.of(carrier)` 将中性引用强制转换回 `CborParser^`：这是 `Inlinable.parsable` 拼接到用户模块中的解析器的重新断言点。
++       手写代码用不到它。
++   entry #directKeyHigh   `#directKeyWord` 上次打包的键的高位字
++   entry #value   将一个完整的数据项解析为 `Cbor.Ast`
++       树路径：对头部内的小整数、短文本字符串和字节串有快速路径，然后按主类型进行一般解码。
++       容器的元素递归解析；标签将其解析后的内容包装在 `Cbor.Tag` 中。
++       需要 `Tactic[Cbor.Error]`，并带着错误所在的偏移量抛出 `Truncated`、`Reserved`、`BadSimpleValue`、`InvalidUtf8`、`Overflow` 或 `UnexpectedBreak`。
++   entry #directLong   将整数数据项消费为 `Long`，或将浮点数截断为 `Long`
++   entry #directDouble   将浮点数据项消费为 `Double`，或将整数拓宽为 `Double`
++   entry #directBoolean   消费一个 `true` 或 `false` 数据项
++   entry #directString   将文本字符串数据项消费为 `String`，就地读取
++       定长字符串直接从缓冲区解码；不定长字符串的各块会被拼接。
++       无效的 UTF-8 抛出 `InvalidUtf8(offset)`。
++   entry #directBytes   将字节串数据项消费为冻结的 `Array[Byte]`
++   entry #directIsUndefined   下一个数据项是否为 `undefined`（0xF7），不消费它
++   entry #directUndefined   消费一个 `undefined` 数据项
++   entry #directOpenMap   打开一个映射：返回其条目数，不定长时为 `-1`
++       其他任何数据项都会被整个消费并读作空映射，正如树路径的记录解码器对待非映射数据项那样。
++   entry #directOpenArray   打开一个数组：返回其元素数，不定长时为 `-1`
++       其他任何数据项都以 `Cbor.Error(NotType(found, Array))` 失败，与树访问器 `array` 一样。
++   entry #directBreak   若下一个是中断停止码（0xFF），则消费它
++       消费时为 `true`：不定长映射或数组的结束步骤。
++   entry #directKeyWord   打包进 `Long` 的下一个映射键，或 `Cbor.Reader.KeyOpaque`
++       定长、一到十六字节、纯 7 位的文本键打包成两个字——返回低位字，高位字留在 `#directKeyHigh` 中——并被消费；其他任何情况都产生 `KeyOpaque` 且不消费任何内容，调用者随后改用 `#directKeyName`。
++       跨越块边界的键会先被完整缓冲；此处只有被截断的键才是不透明的，随后由一般步骤报告截断。
++   entry #directKeyName   消费下一个映射键：文本键的内容，非文本键则为 `null`
++       记录解码器会忽略非文本键下的条目，因此调用者用 `#directSkipValue` 跳过其值并继续。
++   entry #directSkipValue   消费一个完整的数据项，不构建任何东西
++       用于未知的键和不具映射形状的记录：恰好拒绝 `#value` 所拒绝的头部形状，因此被跳过的畸形数据项会像在树路径上一样失败；字符串的内容被跳过而不是缓冲，因此无论数据项多大，跳过都只占用有界内存。
++   entry #directDiscriminant   即将到来的映射中某个键下的文本，解析器位置保持不变
++       密封层次结构判别条目的分派原语，该条目可能出现在映射中的任何位置：扫描映射，回退位置，结果是该键的文本值；当数据项不是映射、没有该键或值不是文本时为 `null`。
++       扫描期间映射保存在缓冲区中——这是缓冲区增长到超过单个数据项的唯一情形——并在变体自身的解析开始之前释放。
+
+@ 0 1 0 04132812775e3c4a0312d2fdc1c48e4e
++ entry .Inlinable   直接编解码器的编译时代码生成器：`Inlinable.parsable[T]` 和 `Inlinable.printable[T]`
+
+% 1 1 0 1f0b04deb1b7dc92159cbdf6ed6ddc25
+
+@ 0 9 0 12eaa0b308e5716813129ad846cbdfc4
++       `Inlinable` 是 `Cbor.Parsable` 和 `Cbor.Printable` 在 `Expr` 层面的对应物：一个方法均为宏时代码生成器的类型类。
++       实例接收读取器的 `Expr` 并返回解析所得值的 `Expr`（或者接收值和生产者并返回写入代码），生成宏将其直接拼接成一个扁平的、单态的解析器或打印器——嵌套记录、集合循环、变体分派和自定义叶子解析器全部内联，没有运行时分派，也没有适配器跳转。
++       面向用户的入口是 `.parsable` 和 `.printable`，它们为 case class，或为其 `Discriminable in Cbor` 是 `Cbor.discriminatedUnion` 的密封层次结构，生成 `Cbor.Parsable` 或 `Cbor.Printable`：
+
+% 2 1 0 185e64622047259017fbebba0241ca04
+
+% 3 1 0 00b46f0da421e8ea113d5f9a48e7161b
+
+% 4 1 0 07093079af93a7eb0c8aa242a1f1d351
+
+% 6 1 0 1686318b6f1bfbd50bdfc2158b6eb5ac
+
+% 3 1 0 196d6e506060ded71a6ed2a252c54872
+
+% 0 1 0 1d9f1aa1b2c0474a164bbe1d36750865
+
+% 0 1 0 048c5c61d72583770310ed8ccd67cfd0
+
+% 0 1 0 099867edae2ec05f01cecf5145ec9d62
+
+% 1 1 0 0a37fe805d7e07cb156ffa1f5e0308fb
+
+@ 0 6 0 1c66ceb94245ebe503f24a9044af092e
++       生成的解析器将映射键与编译为立即数的字段名进行比较（`Cbor.Reader#keyWord`），在字段的键缺失时取其声明的默认值，将 `Optional` 字段桥接到 `Unset`，整个跳过未知的键，忽略非文本键，对重复的键以第一个为准，并像树访问器那样将浮点数强制转换到整数字段中——因此对同一字节的直接读取和树读取结果一致，而生成的打印器写出的字节与派生编码完全相同。
+
+@ 0 8 0 183488e3a8e29b130e5c5b74e6c251e0
++       生成器沿着一个阶梯解析每个字段的类型：先是内置叶子（given `.int`、`.long`、`.double`、`.float`、`.boolean`、`.text`、`.string`、`.byteString`、`.cbor`），然后是通过分阶段执行召唤找到的 `Inlinable` 实例，然后是针对集合（`.iterable`）、case class（`.derived`）或和类型的结构化生成器，最后是运行时接缝：类型自身具有 `Cbor.Parsable` 的字段调用它，其他任何字段都通过其 `Decodable in Cbor` 桥接，只物化该字段的子树。
++       递归出现（`children: List[Tree]` 的 `Tree`）会走接缝，而不是无限展开。
+
+@ 0 8 0 09af09a0d2b458e51b21707833c3baeb
++       实例是普通的运行时值，因此手写的实例以及和类型的 `Discriminable in Cbor` 只能通过在代码编译期间对其求值来查询——这需要宏内的分阶段执行编译器，进而需要编译器的 jar。
++       这就是 `breviloquence.staged`：它在编译类路径上时，`.Stager` 对它们求值；不在时，类型只有手写实例的字段走运行时接缝，而对和类型的 `Inlinable.parsable` 会报告该和类型不可内联。
++       无论哪种情况，实例（及其类型）都必须在早于展开的一次编译运行中编译：同一次运行中的实例会降级为接缝。
+
+@ 0 2 0 06cf7ba5415be13f15cc98957ddd80f5
++       派生编解码器的两种替代方式 `derives Cbor.Direct` 和 `import codecs.direct` 都通过此生成器展开。
+
+% 1 1 0 0d55c626bce25dc51b0e4ea2b2908519
+
+% 2 1 0 05380eb9aa9fc7c309542d69456c61ee
+
+% 0 1 0 01f273a44ce84d6612f745758edd37c4
+
+% 0 1 0 0d41467978a67a13021f1221bcce568e
+
+@ 0 15 0 077e93d0ea1564870fc4b0f020f3e005
++   entry .parsable   为 case class 或按键判别的和类型生成单态的 `Cbor.Parsable`
++       `Inlinable.parsable[T]` 是一个宏：在编译时通过 `Inlinable` 实例组合而成的解析器，嵌套记录、集合循环、变体分派和自定义叶子解析器全部内联为一体。
++       生成器无法构建的类型——没有 `breviloquence.staged` 时的和类型、没有可读取字段的类型——会产生指明该类型的编译错误。
++   entry .printable   为 case class 或按键判别的和类型生成单态的 `Cbor.Printable`
++       `.parsable` 在写入方面的对应物，通过相同的实例组合：一个将值直接写入字节生产者的打印器，产生的字节与派生编码完全相同。
++       其实例不打印（`#prints` 为 `false`）的字段通过其 `Encodable in Cbor` 接缝写出。
++   entry .derived   case class 的结构化实例，在生成其代码时通过反射得到
++       `Inlinable.derived[T]` 不需要自己的宏：`Type[T]` 随 `parse` 或 `write` 调用一同到来。
++       它就是 `derives Inlinable.ForCbor` 放入伴生对象中的东西。
++   entry .Generates   生成器以记录的方式结构化地构建某类型编解码器的证据
+
+% 1 1 0 0dceaffab42805571cd2a5fcddd57b3d
+
+@ 0 9 0 0a70aa0d238a4e54171422d9de07bc3c
++         `codecs.direct` 的 given（`Cbor.Parsable.generated` 和 `Cbor.Printable.generated`）的条件：`Inlinable.Generates[T]` 对生成器能够展开的 case class 可以解析，而它的 given 对其他任何类型——泛型 case class、密封层次结构——都会失败，因此对生成实例的搜索也会失败，转而解析派生路径。
++         这是一个廉价的形状测试，因此该模式下的搜索仍然廉价；和类型的判别值只有分阶段执行编译器才知道，因此在 `codecs.direct` 下，和类型除非有自己的实例，否则仍走派生路径。
++     entry .generates   提供该证据（或无法提供）的 transparent inline given
++   entry .Stager   `breviloquence.staged` 在代码编译期间借以对实例求值的钩子
+
+% 1 1 0 0e42fffa5a69fa2a1542b4ccd7f0a58c
+
+@ 0 12 0 1992e36eb353ac13091cc58bd6a74abd
++         一个具有两个宏时操作的特质——`#summon` 对字段类型的 `Inlinable` 实例求值，`#discriminantKey` 对和类型的 `Discriminable in Cbor` 求值，若其为 `Cbor.DiscriminantKey` 则返回其键——以及一个伴生对象：当 `breviloquence.staged` 在编译类路径上时，它从宏自身的类加载器按名称加载实现 `InlinableStager.Implementation`，不在时对一切都回答 `None`。
++         核心生成器调用该伴生对象；用户代码从不调用。
++     entry .summon   由分阶段执行编译器求值得到的类型的 `Inlinable`，或 `None`
++     entry .discriminantKey   和类型的判别值映射键，前提是其 `Discriminable in Cbor` 为 `Cbor.DiscriminantKey`
++     entry #summon   分阶段执行召唤的实现
++     entry #discriminantKey   判别键求值的实现
++   entry .ForCbor   `derives Inlinable.ForCbor`：case class 的结构化 `Inlinable`，放在其伴生对象中
+
+% 1 1 0 1b047e398d93a00d1cfc2a62d3b59860
+
+@ 0 39 0 0a56a63a24ce7e611750384c19e049c7
++         `Self` 类型的类型类不能出现在 `derives` 子句中，因此 `case class Play(…) derives Inlinable.ForCbor` 将这个参数化的子特质——它*就是*一个 `Play is Inlinable`——合成到 `Play` 的伴生对象中；当 `Play` 是在之后某次编译运行中被生成的类型的字段时，分阶段执行召唤会在那里找到它。
++         它将每个操作委托给所包装的结构化实例。
++     entry .derived   `derives` 钩子：包装 `Inlinable.derived[T]`
++     entry #parse   委托给所包装实例的生成器
++     entry #absent   委托给所包装实例的缺失字段生成器
++     entry #prints   所包装的实例是否生成打印器
++     entry #write   委托给所包装实例的写入器生成器
++   entry #parse   生成从读取器表达式解析一个 `Self` 数据项的代码
++       接收 `Expr[Cbor.Reader]`、`Quotes` 和 `Type[Self]`，返回生成宏所拼接的 `Expr[Self]`。
++       手写实例的主体是基于读取器方法的普通引用代码（`'{$reader.int()}`），只有在 `breviloquence.staged` 位于编译类路径上时才会在展开时被查询。
++   entry #prints   此实例是否也生成打印器：除非被覆盖，否则为 `false`
++       仅用于解析的实例保持诚实：其类型的字段通过其 `Encodable in Cbor` 接缝写出，而不是失败。
++   entry #write   生成将 `Self` 的值写入生产者表达式的代码
++       生产者以 `Expr[AnyRef]` 传递，因为生成的代码已擦除捕获；`Cbor.Printable` 的 `write…` 方法会重新断言它。
++       默认实现报告编译错误 _breviloquence: the Inlinable for `T` generates no printer_；覆盖它的实例也要覆盖 `#prints`。
++   entry #absent   生成 `Self` 类型字段的键在映射中缺失时所产生的东西
++       除非被覆盖，否则通过 `Cbor.Parsable.missing` 以 `Cbor.Error(Absent)` 中止，与运行时实例一致。
++   entry .int   `Int` 的叶子生成器：`reader.int()`
++   entry .long   `Long` 的叶子生成器：`reader.long()`
++   entry .double   `Double` 的叶子生成器：`reader.double()`
++   entry .float   `Float` 的叶子生成器：`reader.double().toFloat`
++   entry .boolean   `Boolean` 的叶子生成器：`reader.boolean()`
++   entry .text   `Text` 的叶子生成器：`reader.text()`
++   entry .string   `String` 的叶子生成器：`reader.string()`
++   entry .byteString   `Data` 的叶子生成器：`reader.byteString()`
++   entry .cbor   `Cbor` 字段的叶子生成器：将一个完整的数据项保留为文档
++   entry .iterable   元素可内联的任何 `Iterable` 集合的生成器
++       通过元素的实例和集合的 `Factory`，组合出一个遍历定长或不定长数组的循环；Soundness 自己的 `List`、`Set` 和 `Sequence` 按符号识别，并以其底层类型构建。
+
+@ 0 1 0 08fcd3036c2fd03d17e18c33610a5199
++ entry .InlinableStager   `Inlinable.parsable` 背后的宏内分阶段执行编译器，来自 `breviloquence.staged`
+
+% 1 1 0 0489a6ee4ef8757a17089c129a416e23
+
+% 2 1 0 0f69d2139e1211041302e235df7f80b4
+
+@ 0 13 0 1389287b393e8581152508ec6d46eab7
++       不供直接使用。
++       `breviloquence.staged` 组件对 `Inlinable.Stager` 的实现：对每个字段类型，它在宏类加载器的类路径上运行一个新的分阶段执行编译器（排除当前输出目录，因为在进行中的编译里定义的类型没有可信的类文件），并实时召唤 `Inlinable` 实例或和类型的 `Discriminable in Cbor`，供生成器查询。
++       类型以类的树的形式传入内部编译器，这将求值限制在类形状的类型上；不透明类型和结构类型降级为运行时接缝。
++       每次召唤都以编译器信息消息报告其耗时。
++       仅限 JVM：该组件依赖 Scala 编译器和分阶段执行的 jar，这就是它被排除在 `breviloquence.core` 之外的原因。
++   entry .evaluate   在新的分阶段执行编译器中召唤的字段类型的 `Inlinable`，或 `None`
++   entry .discriminantKey   和类型的判别键，前提是其 `Discriminable in Cbor` 求值为 `Cbor.DiscriminantKey`
++   entry .Implementation   `Inlinable.Stager` 按名称加载的 `Inlinable.Stager`
+
+% 1 1 0 09211261f363640e0031af5b16f55ce4
+
+@ 0 2 0 1c0f7a5509d69fca16ec51b16014548a
++         当该组件位于宏类路径上时，`Inlinable.Stager` 通过 `Class.forName` 找到的对象。
+
+% 0 1 0 0f572bb7a736555b161a4d9d2c9a3e1d
+
+% 0 1 0 04fe5e628e6f525900cc53370a3357fa
+
+@ 0 1 0 16a38d3835af591e00265c000299a28d
++ entry .inlining   `Inlinable` 背后的机制：解析阶梯、结构化生成器和入口宏
+
+% 1 1 0 1f36cb84cd561b3a08bc32ef2e09d0ea
+
+% 2 1 0 0f9d2dd07df285d202c052c5c422221a
+
+@ 0 14 0 08607e6c8f57a5e20916cf4aa43b5f39
++       不供直接使用。
++       展开时的实例解析（内置叶子、分阶段执行召唤、结构化的集合、积类型或和类型、运行时接缝），生成记录的按键分派循环、集合的循环和和类型的判别值分派的生成器，以及 `Inlinable.parsable`、`Inlinable.printable` 和 `Inlinable.Generates` 展开成的宏实现。
++       它的公开成员之所以存在，是因为生成的代码会被拼接到用户模块中。
++   entry .fieldSeam   没有 `Inlinable` 的字段的运行时接缝：其 `Cbor.Parsable`，或桥接的 `Decodable in Cbor`
++       一个在生成的解析器被拼接之处展开的 inline 方法：名义上的 `Cbor.Parsable` 被直接调用，其他任何情况则解析字段的子树并通过 `Cbor.Parsable.fromDecodable` 解码。
++   entry .fieldSeamAbsent   接缝在缺失时的对应物：桥接字段的键缺失时所产生的东西
++   entry .generates   `Inlinable.Generates` 背后的宏：为记录提供证据，否则产生编译错误
++   entry .inlinableParsable   `Inlinable.parsable` 背后的宏
++   entry .inlinablePrintable   `Inlinable.printable` 背后的宏
+
+@ 0 7 0 00a23f8589943dae1a3addab50cbdf6d
++ entry .parse   `Cbor.Ast.parse(bytes)`：恰好解析一个数据项，拒绝尾随字节
++     `Cbor.Ast` 伴生对象上的扩展方法，以 `soundness.parse` 导出到总括包。
++     `Cbor.Ast.parse(data)` 从 `Data` 中就地读取数据项；`Cbor.Ast.parse(chain)` 在拉取各块的同时从 `Chain[Data]` 中读取。
++     两者都需要 `Tactic[Cbor.Error]`，并带着任何错误的绝对偏移量抛出 `Cbor.Error`，包括数据项之后还有字节时的 `Trailing(offset)`。
++     流则改用 `stream.read[Cbor.Ast]` 读取，同样是流式的。
+
+% 2 1 0 14b80e74c0bc1f4f1d84b1a982c7d099
+
+% 3 1 0 12d4567134d87c010c63fa3a5e89e2cd
+
+% 4 1 0 0845ff9979a9ec1c1601bcb6b6bbf3dc
+
+% 0 1 0 196aeaeb290c642317211e733b5bb3b6
+
+% 0 1 0 179b903bca1f161c129e860c04e21881
+
+% 1 1 0 16a3637228986c250a545a5acaa438e5
+
+@ 0 1 0 0ce909dd38c8a38b09b0e4b0b9fbfe67
++ entry .optionalityOptions   `Optional` 或 `Option` 字段如何读取缺失、`null` 和错误值：六个按名称导入的 given
+
+% 1 1 0 1010aac353629ce60398a801134c50cf
+
+@ 0 8 0 0ec84c065216a9fc1e674918e5087ead
++       三个相互独立的方针，各有一个严格的和一个宽松的 given，决定 `Optional[T]` 或 `Option[T]` 字段在其键从映射中缺失（或线上为 `undefined`）时、线上为 `null` 时，以及内层解码器拒绝该值时产生什么。
++       不导入任何东西时的默认值是宽松的缺失、宽松的 null 和严格的错误值：缺失或为 `null` 的字段读作 `Unset` 或 `None`，类型不符的字段则是 `Cbor.Error`。
++       每个方针都通过按名称导入一个 given 单独改变——`import soundness.*` 不会导入任何一个——且该选择的作用域限于该导入。
+
+% 2 1 0 1faa101180bca5ef0892028058586941
+
+% 3 1 0 1ce14ac8f0b5bfa714f53a034f8edc5f
+
+% 4 1 0 009f3506983f380c102b8c7553ab40b4
+
+% 5 1 0 052d1f9106bef7b0094f2e1134dcb72d
+
+% 6 1 0 15d6cd1e62cf007f18a299882670f06f
+
+% 8 1 0 19e96ce045f6dbd509208721958fc267
+
+% 4 1 0 0f4a0fc4ee40f47819682e77f7c662b3
+
+% 1 1 0 0ad1d278df0a1b040bead9d5bd65907c
+
+% 1 1 0 08654eb1912df4b81356fede659fc844
+
+% 0 1 0 027bda8a9b2a1a1e1dfb965a552864ce
+
+% 1 1 0 014121e35f9609b913d2bf8659a39b27
+
+% 0 1 0 1b9f2b9c174a8da01a742b4869ca8d64
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 019a9214c38098661b299f736cf36098
+
+% 2 1 0 145ab1c2059e0c0c12a5b36e9153bcec
+
+% 4 1 0 0fbe6072156a8f940d510eda95fb42d3
+
+% 0 1 0 0ff6584c3445bee51765d319f9f4bf95
+
+% 1 1 0 11ba217ff2b91ea014bb352983fe82c7
+
+% 2 1 0 177574bd912cc54e067b80cf4a2d75a0
+
+% 3 1 0 1e9c20172935178b1cc3b2f2d6f6ef2b
+
+% 4 1 0 068590272cdf4d4507197228e1a0973d
+
+% 5 1 0 0056ff15fb962be209576f5c4bbe78d1
+
+% 7 1 0 0db40bcebe8857c70dd479251b22eb42
+
+% 1 1 0 1fb773f421a3469b07b949d3cd2b3077
+
+% 2 1 0 1cea0d3702671a1611d94985a0f815e1
+
+% 3 1 0 0d06d579479ad4821b8f5bdf13501e64
+
+% 4 1 0 1ccc1ab9e4d156ff042a7e18a9b80cb5
+
+% 5 1 0 0b8507a703a4f2d701b5a2394e85d803
+
+% 6 1 0 1280307ec08fa9371756597b9f12f5d9
+
+% 7 1 0 0b5b871585242d7e160c0067ac4144bd
+
+% 9 1 0 0cc01c1e65fb2bbd12169dfa44f12288
+
+% 1 1 0 0d911de47a8e304516c80bddc93347cd
+
+% 2 1 0 174fd4fb3a40945f08a0517e0bf9a43e
+
+% 3 1 0 15812174477d959d033ce44a23e20fa3
+
+% 4 1 0 1fc4bf17605138e305ff0655a4e6472d
+
+@ 0 13 0 0eca42477074008d0861746973119079
++       这些 given 是 `distillate.Decodable.Absence in Cbor`、`Nullity in Cbor` 和 `Fault in Cbor`，即每种 Soundness 格式都使用的同一组方针类型，因此读取多种格式的程序可以分别设置每种格式的方针。
++       它们适用于树路径（`Cbor.optional` 和 `Cbor.option`），并通过接缝适用于生成的直接解析器中的 `Optional` 字段。
++   entry .strictCborAbsence   缺失的键或线上的 `undefined` 抛出 `Cbor.Error(Absent)`
++   entry .lenientCborAbsence   缺失的键或线上的 `undefined` 读作 `Unset` 或 `None`：默认值
++   entry .strictCborNulls   线上的 `null` 被交给内层解码器，对大多数类型而言它会拒绝该值
++   entry .lenientCborNulls   线上的 `null` 读作 `Unset` 或 `None`：默认值
++   entry .strictCborFaults   内层解码器拒绝的值抛出其 `Cbor.Error`：默认值
++   entry .lenientCborFaults   内层解码器拒绝的值读作 `Unset` 或 `None`
++       内层解码器在 `tolerate` 下运行，因此在累积式的 `Validate` 作用域下，其错误仍会记录在该字段上。
+
+@ 0 1 0 14466d8d91167e3e0c08f5661a31b771
++ entry .dynamicAccess   启用 `cbor.field`、`cbor.field(i)` 和 `cbor.field = value` 的 given
+
+% 1 1 0 1418babed992f3b01eba0bac6617e1a7
+
+@ 0 5 0 140f8af4ae68429e04848aeaf36844dc
++       对 `Cbor` 的动态成员访问由 `(? >: Cbor) is Dynamical` 门控，使拼错的方法名不会在无意之处静默地变成映射查找。
++       `import dynamicAccess.dynamicCbor` 将其授予作用域的其余部分；`dynamically[Cbor]:` 代码块将其授予单个表达式。
++       `Cbor.lens` given 需要同样的证据。
+
+% 2 1 0 115e593578041b9f192a633b79be6665
+
+% 3 1 0 156980a30cc718aa158e27f1b12d4f52
+
+% 4 1 0 14d27717555f70ab0d9b71d4c6e3efe4
+
+% 5 1 0 0380b099f86fba6010a9a076ee1c4e7f
+
+% 7 1 0 1865cc2757f7ad8b102ef6778aa78f14
+
+% 1 1 0 041a143e7ed07b5d1eef65243318f594
+
+% 0 1 0 0755fb3786ee2edd14b68e3123ba28f0
+
+% 0 1 0 1be14409bc02f2cf0b7f9d1f7e92d8f7
+
+% 1 1 0 14a559c4eb2023490512eeec51592158
+
+@ 0 1 0 18deab71faaa188d1a304d737b3f7d5b
++   entry .dynamicCbor   `Cbor is Dynamical`：解锁 `selectDynamic`、`applyDynamic` 和 `updateDynamic` 的 erased given
+
+@ 0 1 0 0b496cf61669ea10069692939192ca38
++ entry .conversions   让任何 `Encodable in Cbor` 的值可以出现在需要 `Cbor` 之处的 `Conversion`
+
+% 1 1 0 1e9a77294af115c50511189f0d319ce6
+
+@ 0 4 0 0e433093c2e879c31a70e8a5edf849d7
++       为通过透镜赋值的作用域按名称导入：`import conversions.encodableToCbor` 让 `play.lens(_.year = 1608)` 直接接收 `Int`，否则赋值需要写 `5.in[Cbor]`。
++   entry .encodableToCbor   对任何 `Encodable in Cbor` 的 `T` 的 `Conversion[T, Cbor]`：`_.encode`
+
+@ 0 1 0 1a9b38bc762af62b1a9380dd4ef68627
++ entry .postables   将 `Cbor` 作为 `application/cbor` 请求正文发送的 given
+
+% 1 1 0 1bc78b717e14d4371bd0ef3795ab81b5
+
+@ 0 4 0 0a86820bae4cd8ea0e3649b0b70e03ce
++       来自 `breviloquence.http`（仅限 JVM）。
++       按名称导入——`import postables.cborPostable`——使 telekinesis 客户端可以 `post` 一个 `Cbor` 值：正文是文档编码后的字节，不带字符集，媒体类型为 `application/cbor`。
++   entry .cborPostable   `Cbor is Postable`：`application/cbor`，以编码后的字节作为正文
+
+@ 0 1 0 0627eeb5ca7d932b1fb3b9c15e104423
++ entry .servables   将 `Cbor` 作为 `application/cbor` 响应正文提供的 given
+
+% 1 1 0 090946111647a80804e066edc05ac6d2
+
+@ 0 4 0 197e55d5318dcce50d0ddc6be5772455
++       来自 `breviloquence.http`（仅限 JVM）。
++       按名称导入——`import servables.cborServable`——使 scintillate 或 telekinesis 的处理函数可以用 `Cbor` 值响应：一个由文档编码后的字节构成的固定正文，类型为 `application/cbor`。
++   entry .cborServable   `Cbor is Servable`：`application/cbor`，以编码后的字节作为固定正文
+
+@ 0 1 0 03f5d2be9ee0440601a97e607b14a163
++ entry .construables   将 `application/cbor` 正文读回为 `Cbor` 的 given
+
+% 1 1 0 03af7528a954f3a90f0dd2d0762e6d65
+
+@ 0 5 0 006afdfdc1a9f88819f85176cecccf8a
++       来自 `breviloquence.http`（仅限 JVM）。
++       按名称导入——`import construables.cborConstruable`——使媒体类型为 `application/cbor` 的请求或响应正文通过 `Cbor.aggregable` 解释为 `Cbor`；这样，二进制 API 的使用和提供就与 JSON API 使用相同的代码，只有格式的类型不同。
+
+% 0 1 0 1635e134d0d77ef017c026c34e1f6b50

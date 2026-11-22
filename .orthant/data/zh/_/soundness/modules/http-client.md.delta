@@ -1,0 +1,420 @@
+orthant 2 language
+
+@ 0 1 0 177458f2ce3336591e1c667bc92820e7
++ ## HTTP 客户端
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 5 0 0c8303365fe5eeb00abf7436d89f3002
++ 一个 [HTTP](https://en.wikipedia.org/wiki/HTTP) 请求就是一个表达式：一个 [URL](network-addresses.md#urls)、一个诸如 `fetch` 的方法，以及响应应被读取成的类型。
++ 每一部分都有类型。
++ URL 在[编译时]检查，头部的值必须适合它所设置的头部，请求正文携带自己的媒体类型，响应正文则按所请求的任意类型读取。
+
+@ 0 4 0 07a4731109eb28cc16bb41876f85bc06
++ 失败同样有类型。
++ 成功范围之外的状态和无法建立的连接是两种不同的错误，发出请求的方法会声明这两者。
++ 请求还需要作用域中有[能力] `Online`，因此访问网络的方法会在其签名中说明这一点，而不应访问网络的方法则无法访问。
+
+@ 0 1 0 0de2ab4839a9a1ea1bbb59f0cacdd5b0
++ ### 关于 HTTP 请求
+
+@ 0 4 0 1a2fdc82e7be4dd3168665a400821816
++ 典型的 HTTP 客户端以字符串接收 URL，以字符串到字符串的映射接收头部，以字节接收正文。
++ 它返回的响应，其状态必须手工检查，其正文必须手工解码。
++ URL 可能格式错误，头部名称可能拼错，正文的媒体类型可能与其字节不符。
++ 这些问题都要到请求运行时才会被发现，甚至那时也未必。
+
+@ 0 1 0 0b5955bb8bddd9840f10d616d5a54fc0
++ 在这里，每一个这样的错误都由编译器发现：
+
+% 2 1 0 00e312e7f3a0481708a4a5d74554fe9e
+
+@ 0 9 0 197928002f9059101a9f1994d612de79
++ column  请求的部分
++ column  如何检查
++ row  URL  `url"…"` [插值器]在书写之处验证它
++ row  头部  一个具名参数，其值具有该头部所接受的类型
++ row  请求正文  一个自带 `Content-Type` 的有类型值
++ row  响应正文  用 `receive` 按指定的类型读取
++ row  失败的状态  一个 `Http.Error`，由可能抛出它的方法声明
++ row  失败的连接  一个 `Connect.Error`，同样需要声明
++ row  网络访问  `Online` 能力，必须在作用域中
+
+% 1 1 0 01969b71a1970bee1a9c1d5defba4ba1
+
+@ 0 2 0 0276b6b8f8f8f1431c8882e77a759bea
++ 通过类型报告失败，并让调用者决定失败时做什么，这就是[错误处理](../../philosophy/error-handling.md)，与在其他所有地方的做法一样。
+
+@ 0 1 0 102645620c93fd8c16e13e78c8a2c16e
++ ### 请求在作用域中需要什么
+
+@ 0 2 0 071c7638108b061415935284659048eb
++ 一切都来自 `soundness` 包。
++ 请求还依赖于若干决定，这些决定通过从[选择包]导入 [given] 来做出，因此没有一个是默默做出的：
+
+% 2 1 0 141547dfc4b7fa230205c829a7e40203
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 1c3a697c9e7022af1b7495d90d387257
+
+@ 0 8 0 102277ec41be4ba9122c52f58fad51d1
++ column  导入
++ column  决定
++ row  `charsets.utf8Charset`、`codepages.utf8Codepage`  字节如何变为文本，文本如何变为字节
++ row  `errorDiagnostics.stackTracesDiagnostics`  错误会记录堆栈跟踪
++ row  `httpBackends.javaNetHttp`  由哪个实现发送请求：此处为 JVM 的 `java.net.http`
++ row  `internetAccess.online`  这段代码可以使用网络
++ row  `logging.silentLogging`  请求不记录日志；其他选择见[日志](logging.md)
++ row  `strategies.throwUnsafely`  错误作为异常抛出；其他策略见[错误](errors.md#choosing-a-strategy)
+
+% 1 1 0 1bf3649d0ef7eed418bc3b0f5602a32b
+
+@ 0 1 0 0e8e7d95a92774d308f11b1ecf14da5e
++ ### GET 请求
+
+@ 0 2 0 0d28083dcb8763fd0a89f575c122d3aa
++ `fetch` 向一个 URL 发送 GET 请求。
++ 它给出响应，而 `receive` 把响应正文按指定的类型读取：
+
+% 2 1 0 01ff5b06e0b23b89120ee4fba75d7b5a
+
+% 3 1 0 1378acda9615b7ff0f096d31b8327076
+
+% 4 1 0 0767df0deb722369197ae77f489f0c0d
+
+% 0 1 0 0ac54a62185ac3031581513c689f3c38
+
+% 1 1 0 024022b20b5b5ecc1bb2ae5fef6216b4
+
+@ 0 4 0 1f5395b55f750f670c68572b97d3809a
++ 传给 `receive` 的类型决定正文如何读取。
++ `Text` 用作用域中的字符集对其解码，`Data` 给出其字节，而[流](streams.md)则逐部分地交付它，无需把整个正文保存在内存中。
++ 具有某种格式解码器的类型也以同样的方式读取，因此 [JSON](json.md#json-over-http) 响应可以作为 `Json` 接收。
+
+@ 0 1 0 0edae2bc6c595fbd19aa9bbeb533388a
++ 响应无需读取正文就能报告其状态：
+
+% 2 1 0 1524771d0d6363eb0e3aa3525917b18c
+
+% 3 1 0 0126d378a2ed70720c7eff6eba873420
+
+% 4 1 0 113f2b65724b344005229bf17acc2545
+
+% 0 1 0 1b580d99f7aef7fb0978d3487c6f9604
+
+% 1 1 0 16e90b4fa6b2e5f012f13aa7f908bc94
+
+@ 0 1 0 00975b59226dfd8c15102d02192027dc
++ 对于存在的页面，这是 `Http.Ok`。
+
+@ 0 2 0 11024b0ea29ef58d0f9b474d269b9d8e
++ URL 是一个有类型的值，而不是字符串，因此格式错误的 URL 永远不会到达网络。
++ 插值器会拒绝它：
+
+% 2 1 0 0aa82769c8195d1f08fcb6c984af937b
+
+% 3 1 0 01ae78c6ace150ce14a14a9106c02b2a
+
+% 4 1 0 0a68bc751c216eb80c11bfb845c929ff
+
+% 5 1 0 1ac563f153a3aa4e15cf98e69376a58e
+
+% 0 1 0 019fc721bde1fe0b0ce3493479a9a680
+
+% 1 1 0 1530e898fea5af3611bd168ee08fb691
+
+@ 0 3 0 1669918cfe3bc4d81cdb95b44e2a551a
++ 直到程序运行时才知道的 URL 则改为[在运行时解析](network-addresses.md#parsing-at-runtime)，错误的 URL 在解析时报告。
+
+@ 0 1 0 0325d804222f183917eb978379da2555
++ ### 头部
+
+@ 0 3 0 156976df19c704a802a083ead7eed4c6
++ 请求头部是 `fetch` 的一个具名参数。
++ 它的名称是头部名称的驼峰形式，它的类型是该头部所承载的东西：`accept` 接受一个[媒体类型](media-types.md)，而不是任意文本。
+
+% 2 1 0 1c328dcdeafd6e6201c77cb13d1318d7
+
+% 3 1 0 161aa2eb684c128b081817107d33ca85
+
+% 4 1 0 1f7df0bd5505e99f0126a857cfe280c9
+
+% 0 1 0 115eab087e856d4617a739eccb480752
+
+% 1 1 0 182e24e9237ad54e1aa0e5facf59e569
+
+@ 0 1 0 0c1a057014379e401473b8a737588b47
++ 类型与其头部不符的值无法编译：
+
+% 2 1 0 102ab4d0e803042506536e4050efd3d7
+
+% 3 1 0 0174be6608bebe1f1cc6e2860bb7ac3e
+
+% 4 1 0 11a948623cc909920c36a60c7023ec5a
+
+% 5 1 0 17380113b983c44e0b7ea46bbf1cb719
+
+% 0 1 0 19c1f06dd93cdd760f72537cd2c4b5d3
+
+% 1 1 0 1e3fe035307ba3960b69e0bfc2be09ae
+
+@ 0 1 0 0c286de51ab9841d0060f1123bbdb695
++ 名称拼错的头部也无法编译，因为没有该名称的头部接受任何值：
+
+% 2 1 0 06e12d4bc2b45368115aa2e68baaccdd
+
+% 3 1 0 0d2cb0e2451e3b231ebc283dff498f29
+
+% 4 1 0 0c02b858004e53df196baec2de0c11e1
+
+% 5 1 0 14390f5545070cf9019387bdf689e2f2
+
+% 0 1 0 0a8cd15c476434d11464438e2bfe0e5f
+
+% 1 1 0 147c7906eaec752f0aa5c26df2f059a3
+
+@ 0 1 0 0e6a0b77a323e96a1c7e99eb0995afdb
++ ### 提交正文
+
+@ 0 2 0 1b5756f8dd47045f1adf8117217420f5
++ `submit` 发送一个带正文的请求。
++ 它的第一个参数列表接受方法和任意头部，第二个参数列表接受正文：
+
+% 2 1 0 0ef6ceae9ccb11f70f16aed33cd11d64
+
+% 3 1 0 19acc351587efa7114c11790c5b547a8
+
+% 4 1 0 1a3a85417deb13981658d3634155d850
+
+% 0 1 0 15afbe4b757b78340142b188d5ed58c8
+
+% 1 1 0 08dd4b8c12787cd211d4fa8860abd10f
+
+@ 0 1 0 01a456a66f4fc11a19ef747685ee1944
++ `Http.Put`、`Http.Delete` 等表示其余的方法。
+
+@ 0 5 0 166e02ec3e91d39908fd129676973c89
++ 正文是一个有类型的值，它的类型决定请求的 `Content-Type`，因此该头部永远不会与其后的字节不一致。
++ 文本作为 `text/plain` 发送，`Query` 作为[表单提交](forms.md#submissions)发送，`Json` 值作为 `application/json` 发送。
++ [知道自身媒体类型的类型](media-types.md#types-that-know-their-media-type)介绍了自定义类型如何参与其中。
+
+@ 0 1 0 1b3452ef3120ae531a7b61762244949a
++ ### 读取响应
+
+@ 0 3 0 13c090be72d2ec9f14455fa9607eccfa
++ `receive` 把正文读取为任何可以从响应中读取的类型：`Text`、`Data`、流，或从正文解析出的值。
++ 状态是一个普通的值，可以检视或返回，因此由程序决定某个状态意味着什么。
+
+@ 0 2 0 1aa4b954362616f019d61c981bd80290
++ 默认情况下，成功范围之外的响应根本不会被读取：`receive` 会抛出一个 `Http.Error`，详见[错误](#errors)。
+
+@ 0 1 0 11b47e421d6c37bb1452912897d06265
++ ### 会话
+
+@ 0 3 0 0469a0931d0aeb5d070bb4da94a804b6
++ 单个 `fetch` 打开一个连接，然后关闭它。
++ 当多个请求发往同一个源时，[会话]会打开一个连接并把它借出给一个代码块，块中发出的每个请求都共享它：
+
+% 2 1 0 18fc8022978e2ac40344c8f2a0a5af47
+
+% 3 1 0 0f44df48bcacf14a027d2ac1ad0a1e25
+
+% 4 1 0 0d49725ca069de4917e00c114ad89e5e
+
+% 0 1 0 006400da816652821b3a2103b753ed7f
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 13099d463e9d84230816a8a9c9189fc0
+
+% 0 1 0 1fe10b3bec06f3ab10f2eac7c34f57dd
+
+% 0 1 0 1b6f3fe6d8d786a70f0fe85ab875b51a
+
+% 0 1 0 196ff31d783e94650d081e5aee506a0a
+
+% 0 1 0 065472f82c61827f1f8f0f57b74e71a2
+
+% 1 1 0 05d21b51c1727ed8148a5f2e241a793c
+
+% 1 1 0 03f3f4ca8b40c8fd1f314d8feebded70
+
+% 1 1 0 177860d025618a6f0a92ca24424517eb
+
+@ 0 3 0 169ac5e2e5cff00819ebbfbd0268cf88
++ 协议在会话持续期间是固定的。
++ 对于 `https`，服务器和客户端在 TLS 握手期间通过 [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) 商定协议：
+
+% 2 1 0 025ade35453b346e11a5366389633616
+
+@ 0 6 0 10143ceafb50294e04fc7f122a23dda8
++ column  方案
++ column  协商结果
++ column  会话
++ row  `https`  `h2`  *多路复用*的 HTTP/2：多个获取在一个连接上交错进行
++ row  `https`  `http/1.1`  *顺序*的 HTTP/1.1
++ row  `http`  无  *顺序*的 HTTP/1.1，keep-alive 固定使用一个连接
+
+% 1 1 0 14b0214707b6c0971fb5e66e6f8b7b74
+
+@ 0 3 0 0ea077e0ab59510f0463ac9c198328f0
++ 代码块的边界由编译器强制执行。
++ 仍在从活动连接流式读取的响应正文不能从代码块中返回，因为它所读取的连接会在代码块结束时关闭。
++ 已读入内存的值则可以自由返回。
+
+@ 0 2 0 1bf5128cba450646068f02e248eff821
++ 未读取的响应不会造成任何危害。
++ 下一次获取会先丢弃上一个正文剩余的部分，从而从下一个响应开始。
+
+@ 0 1 0 1565dd528212ef92119dcdccd19305ea
++ ### 选择传输方式
+
+@ 0 1 0 155bc50672b0a901025a777d20ea7c78
++ 发送请求的实现是一个 [given]，通过导入来选择：
+
+% 2 1 0 07da89ea37d106a019f86b25dcffe892
+
+@ 0 4 0 01a9b9ddbe41a9ab1425649011b8b066
++ column  导入
++ column  发送请求所用
++ row  `httpBackends.javaNetHttp`  JVM 自带的 `java.net.http` 客户端
++ row  `httpBackends.soundnessHttp`  Soundness 自己的 HTTP 编解码器，直接基于[套接字](sockets.md)
+
+% 1 1 0 0551fb88f5b2a3c20090e28df6b9d959
+
+@ 0 1 0 198a5a6f1bca33e30ad6643f77e46e43
++ `locally` 代码块可以把另一种选择限定在几行之内：
+
+% 2 1 0 1f9264f586eea9611d89df0c938592cb
+
+% 3 1 0 101116dc8d57541000252bffa5e543b7
+
+% 4 1 0 085ff9202dab5acd0e0c26c6942d2f32
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 1753cafcfd900c610c42d24cb8bb42b6
+
+% 0 1 0 1beea1c654d1fa600a24ef273895638e
+
+% 1 1 0 16e2c8a10c82ac391e411ace03755063
+
+@ 0 4 0 0ad19ea850c38e710202d12cce5d1f0d
++ `soundnessHttp` 后端保持 HTTP/1.1 连接存活，并为之后发往同一源的请求复用它们。
++ 在 TLS 上，它通过 ALPN 协商 HTTP/2 或 HTTP/1.1，并使用服务器所选的那一个。
++ 如果某个保留的连接被发现已被服务器关闭，请求会在新连接上重试一次。
++ 其他平台以同样的方式提供自己的后端。
+
+@ 0 1 0 13b60bd18b0bffa218b83f320fc60bae
++ ### 重定向
+
+@ 0 2 0 07fa9fa1d086e99c1253d9af343483a1
++ 默认会跟随重定向，直到一个上限。
++ 导入更严格的方针会阻止这一点，此时重定向响应就是一个携带重定向状态的 `Http.Error`：
+
+% 2 1 0 136c201ad9a6b442090c12584d4dded2
+
+% 0 1 0 0f2632bcab06af620bb624ef44cf3f1c
+
+% 1 1 0 11a370981460abd20c8dfad2086cdb16
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### 错误
+
+@ 0 1 0 117f5e42f21d2bc3098b5951c51eaf4f
++ 请求有两种失败方式，每种都是一个独立类型的错误：
+
+% 2 1 0 0f6a6bb55691658004039e751dc10b6f
+
+@ 0 5 0 0c35ab7b410a22fd10b953fb86668e2b
++ column  错误
++ column  抛出时机
++ column  携带
++ row  `Http.Error`  响应在成功范围之外  状态和头部
++ row  `Connect.Error`  无法建立连接：主机无法解析、连接被拒绝、TLS 失败  原因
+
+% 1 1 0 0dcbe097f9186b1503dd158e0031fd70
+
+@ 0 3 0 1f9b17a6ee213ad5135ad733f067c768
++ 在上面导入的 `throwUnsafely` [策略]下，两者都会作为异常抛出。
++ 不应抛出异常的方法则用 [`raises`][raises] 声明这些错误，由其调用者选择如何处理它们；[错误](errors.md)介绍了各种选择。
+
+@ 0 2 0 1ae4e3d5e06004e210c34ab2739e964f
++ `capture` 运行一个预期会失败的表达式，并给出错误。
++ `Http.Error` 带有状态，因此调用者可以针对出了什么问题作出反应：
+
+% 2 1 0 05391f537a61ab57032f1bae7fc7cbb2
+
+% 3 1 0 0193712dc9d2d29617f1f469eb806833
+
+% 4 1 0 05ad7c0034914d3c01d95c66f9c1b03a
+
+% 0 1 0 17d08a4c1316545917ca775bc926edcf
+
+% 1 1 0 1879e6068ae78f1111305f303255ce5c
+
+@ 0 1 0 0303868004bd2a0d1aef54344fe6dc20
++ 对于不存在的页面，这是 `Http.NotFound`。
+
+@ 0 1 0 0ddb38ef227217fa1fe5460381b7655d
++ `Connect.Error` 有一个 `reason`，说明为何没有建立连接：
+
+% 2 1 0 06a19d7f3c41244a07be3f0bdfdb988c
+
+% 3 1 0 14b638e971aa95cf08a1cc8a4f0c5bdb
+
+% 4 1 0 1660bec22ec7614000153fa1c9bf0166
+
+% 0 1 0 07ab171481e503c410be862e7e1bd504
+
+% 1 1 0 1bc6f18118ab991911fdcee0ac427677
+
+% 3 1 0 1113d04ebc7625a01b5173d4b5471b34
+
+@ 0 7 0 04cd7849adf0f56314fbbdf414c67830
++ column  原因
++ column  含义
++ row  `Dns`  无法解析主机名
++ row  `Refused`  主机拒绝了连接
++ row  `Ssl(reason)`  无法建立 TLS 层；它自己的原因是 `Handshake`、`Key`、`Peer` 或 `Protocol`
++ row  `Timeout`  服务器未在时限内响应
++ row  `Unknown`  该失败未被识别为其他任何一种
+
+% 1 1 0 08e5c8898c17c80c17db2c2c4c7cfd07
+
+@ 0 5 0 1ff6e80c2a25c8320d6aa11c3ed19920
++ 因此 TLS 失败可以与网络失败区分开来，而它的原因说明了失败发生在哪个阶段。
++ 过期的证书、主机不符的证书、已吊销的证书、有缺陷的密码套件以及过小的 Diffie–Hellman 组，都会在握手期间被拒绝。
++ 客户端针对 [badssl.com](https://badssl.com/) 那组故意损坏的端点进行了测试，因此每一种拒绝都经过验证。
+
+@ 0 4 0 1abea0b24f045bfe0f3bfc4d4b6a5e31
++ 有时必须连接到一个证书无法验证的主机，例如使用自签名证书的开发服务器。
++ 作用域中一个放宽的 `TlsAcceptance` 允许这样做。
++ 于是，接受未经验证的证书就成了一个可以通过在代码中搜索该导入而找到的决定。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 5 0 0dc92be166b0e14c0d11d50a6bf75920
++ - [HTTP 服务器](http-server.md)使用同一套 `Http` 方法、状态和头部词汇来应答请求。
++ - [基于 HTTP 的 JSON](json.md#json-over-http) 提交一个 `Json` 值并接收一个。
++ - [OAuth](oauth.md#credentials-for-a-typed-client) 获取经授权的请求所发送的令牌。
++ - [网络地址](network-addresses.md)介绍 URL、主机名和端口。

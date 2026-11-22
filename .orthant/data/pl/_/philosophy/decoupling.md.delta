@@ -1,0 +1,118 @@
+orthant 2 language
+
+@ 0 1 0 14d4c2c921e3da6e1f0c7d7e7bd995a2
++ # Rozprzęgnięcie
+
+@ 0 6 0 143ea76d1855e0ac17cbd8c8cfffb4bb
++ Moduły Soundness są rozprzęgnięte: niezwiązane ze sobą biblioteki nie zależą od siebie
++ bezpośrednio, nawet gdy muszą współpracować. Małe współdzielone abstrakcje – klasy typów
++ opisujące tylko to, co potrzebne – pozwalają dwóm modułom współdziałać bez wiedzy jednego o
++ drugim, więc każdy można przyjąć à la carte i każdy może ewoluować samodzielnie. Płynna
++ integracja, której doświadczają użytkownicy, bierze się z tych wspólnych interfejsów, a nie
++ z sieci twardych zależności między komponentami, które powinny pozostać oddzielne.
+
+@ 0 1 0 0f5eb0012c34d0d61204d22c48b542b3
++ ## Problem przedstawiony konkretnie
+
+@ 0 3 0 18f5e3c1cc9d9aa20898568ddfa25257
++ Biblioteka czasu i biblioteka HTTP muszą obie mówić o chwilach: jedna je wytwarza, druga
++ umieszcza je w nagłówkach `Date`. Są trzy konwencjonalne sposoby, by to zorganizować, i
++ wszystkie trzy są złe.
+
+@ 0 4 0 03b4f92376456fee0cff7269ea457b6b
++ Biblioteka HTTP może zależeć od biblioteki czasu – narzucając ją każdemu użytkownikowi, który
++ chciał tylko HTTP. Biblioteka czasu może zależeć od biblioteki HTTP – absurd, ale to się
++ zdarza. Albo każda może zdefiniować własny typ chwili, zostawiając użytkownikom konwersję na
++ każdej granicy i pozwalając obu definicjom się rozchodzić.
+
+@ 0 1 0 127bb35d79a426760cd0c587e83ba2e6
++ ## Układ, którego używa Soundness
+
+@ 0 2 0 096fce701c29626e090f37610e134976
++ Trzeci moduł definiuje *znacznik* i parę klas typów mówiących, jak dowolny typ przekształca
++ się do wspólnej reprezentacji i z niej:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0a8fd027f633887d0882c7e438546cf9
+
+% 0 1 0 0cad7b252d2a92491473765dc6a0d8a8
+
+% 0 1 0 15840b139a4f05950f0b5301c0ad4ced
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 039f1a94257dacaa048323a5a50c58ab
++ Biblioteka czasu deklaruje, że *jej* typ chwili jest abstrahowalny przez `Instants`.
++ Biblioteka HTTP deklaruje, że przyjmuje wszystko, co jest abstrahowalne przez `Instants`.
++ Żadna nie wspomina o drugiej i żadna nie jest ładowana, chyba że program jej używa.
+
+@ 0 3 0 12175ba52cc8a1020395bf142976511d
++ Te znaczniki są małe i nie ma ich wiele: `Instants`, `Durations`, `Dates`, `Paths`, `Urls`,
++ `HttpStreams`, `Text` i garść innych. Każdy nazywa jedno pojęcie, co do którego kilka
++ bibliotek musi się zgodzić, i nie definiuje niczego poza tą zgodą.
+
+@ 0 1 0 1856c817f4f0ebd80fe9aa1c325d6756
++ ## Co to daje
+
+@ 0 3 0 1e28ab4da8ef97b01d4a51c6d69431c8
++ **Przyjmowanie à la carte.** Program, który chce tylko parsowania JSON, dostaje graf
++ zależności zawierający parsowanie JSON. Integracji, których nie używa, nie ma w kompilacji,
++ ponieważ nikt nie zależy od modułów, które je dostarczają.
+
+@ 0 4 0 0e6a7a39e5b5e9c1091f27ad954539f0
++ **Obce typy uczestniczą.** Klasa typów nie ma uprzywilejowanych implementacji, więc
++ `java.time.Instant` albo typ z niezwiązanej biblioteki staje się użyteczny wszędzie tam,
++ gdzie oczekiwana jest chwila, po dostarczeniu instancji. Nic nie trzeba opakowywać, a
++ integracja żyje w programie, zamiast wymagać zmiany którejkolwiek z bibliotek.
+
+@ 0 3 0 160d9ee4f5b57aa81caabdb1ca3cde66
++ **Niezależna ewolucja.** Biblioteka czasu może zmienić swoją wewnętrzną reprezentację bez
++ ponownej kompilacji biblioteki HTTP, ponieważ to, co dzielą, to znacznik i kształt
++ konwersji, a nie typ.
+
+@ 0 1 0 00fc4aca294fc5280d9897a1b684b37c
++ ## Ta sama zasada wewnątrz modułu
+
+@ 0 3 0 051a4655d945bcf109cafdac2e03a677
++ Rozprzęgnięcie działa także poniżej granicy modułu, jako *spoina backendu*: operacje, których
++ potrzebuje zdolność, są zebrane w jednym traicie, a implementacje specyficzne dla platform
++ są dostarczane osobno.
+
+@ 0 7 0 1757a738b628648e0f1fc3d8d54f01ab
++ `FilesystemBackend` zbiera stat, open, read, write, list, link i delete; wszystko w API
++ [systemu plików](../en/modules/filesystem.md) jest zdefiniowane w ich kategoriach.
++ Implementacja `java.nio`, implementacja WASI nad `wasi:filesystem` i każda przyszła są
++ wymienne, a API widoczne dla użytkownika nie wspomina o żadnej platformie. Ten sam kształt daje
++ [gniazdom](../en/modules/sockets.md) `SocketBackend`, [kompresji](../en/modules/compression.md)
++ jej silniki DEFLATE dla poszczególnych platform, a [obrazom](../en/modules/images.md) ich
++ kodeki.
+
+@ 0 3 0 133995449cc82c4f130a298c2204f2ad
++ To właśnie sprawia, że ten sam kod działa na JVM, w przeglądarce, w natywnym pliku binarnym i
++ wewnątrz komponentu WebAssembly: nie kompilacja warunkowa, lecz spoina na tyle wąska, że
++ kilka implementacji może uczciwie za nią stać.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 4 0 0701500932dba1781c55e7085e68475f
++ Pośredniość nie jest darmowa w czytaniu. Prześledzenie, jak wartość `Yaml` staje się treścią
++ HTTP, oznacza odnalezienie instancji `Abstractable across HttpStreams`, która nie znajduje się
++ ani tam, gdzie kod YAML, ani tam, gdzie kod HTTP – a czytelnik, który nie zna konwencji, nie
++ zgadnie, gdzie szukać.
+
+@ 0 4 0 07177ace6f66ec990c9bdbbc11326067
++ Łagodzi to fakt, że istnieje *jedna* konwencja, a nie osobny mechanizm dla każdej integracji,
++ więc koszt płaci się raz, przy nauce, a nie raz na każdą granicę. Jest to jednak koszt
++ rzeczywisty i to on jest powodem, dla którego zbiór znaczników jest mały: każdy z nich jest
++ elementem słownictwa, który każdy czytelnik musi w końcu przyswoić.
+
+@ 0 2 0 0f653ca96e30b4fa1b305615b38b529f
++ Zobacz [uczciwe sygnatury](honest-signatures.md), by dowiedzieć się, dlaczego klasy typów
++ pozostają minimalne, oraz [składalność](composability.md), by poznać to, co umożliwiają
++ współdzielone interfejsy.

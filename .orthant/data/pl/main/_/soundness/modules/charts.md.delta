@@ -1,0 +1,99 @@
+orthant 2 language
+
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  Rodzaj
++ column  Rysuje
++ column  Odcięta
++ column  Rzędna
++ column  Styl
++ row  `Bars()`  serię lub kolekcję serii  kategoryczna  ciągła  `Bars.Style`
++ row  `StackedBars()`  kolekcję serii  kategoryczna  ciągła  `StackedBars.Style`
++ row  `Lines()`  serię lub kolekcję serii  ciągła  ciągła  `Lines.Style`
++ row  `Scatter()`  serię lub kolekcję serii  ciągła  ciągła  `Scatter.Style`
++ row  `Pie()`  dokładnie jedną serię  kategoryczna  ciągła  `Pie.Style`
++ row  `Histogram()`  `Samples` lub ich kolekcję  ciągła  liczności  `Histogram.Style`
++ row  `Boxes()`  `Samples` lub ich kolekcję  jedno pudełko na zbiór  ciągła  `Boxes.Style`
++ row  `Annulus()`  `Dag` węzłów `Weighted`, `Progressive`  brak  brak  `Annulus.Style`
+
+@ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
++ column  Metoda
++ column  Rysuje
++ column  Zdefiniowana w
++ row  `fontStyle`, `lettering`  rozmiar i kolor tekstu; każdy fragment tekstu  `Chart.Style`
++ row  `backdrop`  płótno za wykresem  `Chart.Style`
++ row  `swatch`, `legendLabel`  wpis legendy  `Chart.Style`
++ row  `leader`  linię od przesuniętej etykiety z powrotem do jej punktu  `Chart.Style`
++ row  `axisLine`  kreskę każdej osi  `Chart.Cartesian`
++ row  `axisBreak`  znak przerwania, gdzie oś liniowa zaczyna się z dala od zera  `Chart.Cartesian`
++ row  `arrowhead`  koniec osi  `Chart.Cartesian`
++ row  `tick`, `gridLine`  podziałkę i jej linię siatki  `Chart.Cartesian`
++ row  `tickLabel`  etykietę znacznika osi, jej położenie i to, czy jest obrócona  `Chart.Cartesian`
++ row  `axisTitle`  tytuł osi  `Chart.Cartesian`
++ row  `marker`, `errorBar`  punkt i jego przedział  `Chart.Cartesian`
++ row  `pointLabel`  notatkę punktu `Noted`  `Chart.Cartesian`
++ row  `bar`  słupek  `Bars.Style`
++ row  `line`, `band`  linię serii i pas oszacowania  `Lines.Style`
++ row  `box`, `whisker`, `median`  części wykresu pudełkowego  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  wycinek i jego procent  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  kolor sektora i jego dwie części  `Annulus.Style`
+
+@ 0 10 0 1c600122182c2eb2189e07b099bd189d
++ column  Identyfikator
++ column  Zawiera
++ column  W
++ row  `backdrop`  płótno, w kolorze tła palety  każdym wykresie
++ row  `grid`  linie siatki  wykresach kartezjańskich
++ row  `abscissa`, `ordinate`  każdą oś, jej podziałki i tytuł  wykresach kartezjańskich
++ row  `legend`  legendę  wykresach z legendą
++ row  `series-0`, `series-1`, …  każdą serię  wykresach kartezjańskich
++ row  `wedges`  każdy wycinek i jego etykietę  `Pie`
++ row  `rank-0`, `rank-1`, …  każdy pas  `Annulus`
+
+@ 0 1 0 09524893beb0e5fc110f8d8b22a39a27
++ ### Wykresy pierścieniowe
+
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ `Annulus` rysuje graf zależności, [`Dag`](graphs.md), jako koncentryczne pasy. Węzły, które od
++ niczego nie zależą, są w najbardziej wewnętrznym pasie, a każdy kolejny pas zawiera węzły o
++ jeden poziom dalej, więc kompilacja wypełnia się od środka na zewnątrz. Każdy węzeł jest
++ sektorem swojego pasa, zakreślającym kąt proporcjonalny do jego rozmiaru w obrębie poziomu, a
++ pas jest tak gruby, jak udział jego poziomu w całkowitym rozmiarze.
+
+@ 0 7 0 11568818c01018f40832037731e60764
++ Rozmiar węzła i jego postęp, od `0.0` do `1.0`, pochodzą z dwóch klas typów dla typu węzła:
++ `Weighted` i `Progressive`. Sektor wypełnia się zgodnie z ruchem wskazówek zegara w takim
++ stopniu, w jakim węzeł jest ukończony, a reszta ma przygaszony odcień koloru sektora. Tym kolorem
++ jest pierwszy kolor palety, cieniowany według położenia sektora: jego barwa obraca się o
++ trzydzieści stopni od lewej do prawej, a poniżej środka jest ciemniejszy, powyżej zaś jaśniejszy.
++ Wykres pierścieniowy nie ma etykiet ani legendy. Każdy pas to grupa `rank-0`, `rank-1`, …, każdy
++ sektor to ścieżka `sector-0`, `sector-1`, …, a nieukończona część sektora to `sector-0-rest`.
+
+@ 0 3 0 0fbbeed84c453a461e364d4fa195aed8
++ Węzeł niesie swój postęp, więc wykres pierścieniowy aktualizuje się jak każdy wykres, nowymi
++ danymi. Dopasowanie przetrwa każdy graf o tym samym kształcie i rozmiarach, a zastępowane są
++ tylko pasy, których sektory wypełniły się dalej:
+
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` wydrąża środek. `sectorGap` i `bandGap` to szerokości fugi między
++ sektorami i między pasami. `Annulus.Style` ma `shade` dla koloru sektora wynikającego z jego
++ położenia oraz `sector` i `remainder` dla jego dwóch części. Poziomowanie jest tym, które opisują
++ [grafy](graphs.md#layering): `import rankings.balancedRanking` rysuje każdy węzeł tak blisko
++ węzłów od niego zależnych, jak to możliwe, a nie tak blisko środka.
+
+@ 0 8 0 16557cb6cd42445b1d8d52e13d86e255
++ - [SVG](svg.md) opisuje rysunek, jako który przedstawia się wykres.
++ - [Rozmieszczanie etykiet](label-placement.md) opisuje, jak etykiety wykresu unikają siebie
++   nawzajem.
++ - [Czcionki](fonts.md) opisują kroje pisma, którymi można złożyć wykres.
++ - [Wielkości](quantities.md) opisują jednostki tytułujące oś.
++ - [Grafy](graphs.md) opisują `Dag`, który rysuje wykres pierścieniowy.
++ - [Kolory](colors.md) opisują kolory palety.
++ - [Czas](time.md) opisuje czasy trwania i chwile, które może zawierać oś ciągła.
++ - [Wskaźniki](gauges.md) i [tabele](tables.md) przedstawiają wartości w terminalu, a
++   [testowanie](testing.md) przedstawia wyniki benchmarków na wykresach.

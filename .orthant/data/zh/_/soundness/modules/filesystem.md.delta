@@ -1,0 +1,1005 @@
+orthant 2 language
+
+@ 0 1 0 107a54599e94545c0f0fc9caf941e101
++ ## 文件系统
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 16ba86d8262ceb9f043709b3ae2c527e
++ 磁盘上的文件通过已经描述了它们的带类型[路径](paths.md)来读写。
++ `Path on Linux` 具有触及磁盘的操作：打开以读取或写入，将其创建为文件或目录，列出其子项，复制、移动和删除。
++ 每个操作都声明了它可能抛出的错误。
+
+@ 0 3 0 1b8336d5f1310ff60c5f106f856a3707
++ 操作在棘手情形下如何表现，由作用域中选定的方针决定。
++ 例如，它们规定复制是否覆盖已存在的文件，以及删除是否深入目录内部。
+
+@ 0 4 0 171b443660e191241d5309d181341b67
++ 除单个文件之外，系统的标准目录（例如主目录、缓存目录和 `/usr/share`）都是具名的值。
++ 目录可以被监视以获知变化。
++ 文件可以被加锁、映射到内存、打上扩展属性，或沿着一组目录进行查找。
+
+@ 0 1 0 16bd5223a217010d0702346fda07cfac
++ ### 关于文件系统
+
+@ 0 5 0 17f39d71b11217a918acc65ded4088ff
++ JVM 的文件系统 API 充满了无类型的边缘。
++ 路径是一个字符串，或一个无类型的对象。
++ 缺失的文件在这里是 `null`，在那里是一个异常。
++ 关键的方针问题被埋在标志参数中，或由所选的方法固定下来，在类型中不可见：这次复制会替换已有的内容吗？这次删除会清空整棵树吗？
++ 答错其中一个问题的程序会毁掉数据。
+
+@ 0 1 0 132f4a4afe4a91c714e83c067f84d8b8
++ 在这里，这些都被提升到类型之中：
+
+@ 0 5 0 0e324b3e64584c1f144b70b2b2996ba0
++ - 路径携带其平台，因此其规则是已知的。
++ - 操作声明 `raises Io.Error`，且错误有具体的原因：文件缺失、权限被拒绝、目录不为空。
++ - 每项方针都是一个显式的[上下文值]，因此覆盖或递归删除是代码明确表述的决定，而不是它继承来的默认行为。
+
+@ 0 2 0 02ebf91e48de62881c3a56793d54fe88
++ 一切都来自 `soundness` 包。
++ 系统的能力以及操作所需的方针被引入作用域：
+
+% 2 1 0 155243e372c6dca21fef70f144ec1923
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 0f5baf407fd4fe460823dbe8a72b08d0
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 0e29fdb93f7639341f79f55d2ccb9309
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 185507d5c88995961b13dd553740b513
+
+% 1 1 0 158821a44078620408f260ca789543b2
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 9 0 14c71c6721dd8e79025b752242f8fe8c
++ column  导入
++ column  决定
++ row  `filesystemBackends.javaBaseFilesystem`  由哪种实现触及磁盘：这里是 `java.nio`
++ row  `pathInterfaces.pathOnLinux`  标准目录以哪种路径类型给出
++ row  来自 `filesystemOptions` 的五个  方针问题的答案，在[复制、移动和删除](#copying-moving-and-deleting)中说明
++ row  `charsets`、`codepages`、`textSanitizers`  字节如何变成文本、文本如何变成字节；[字符](characters.md)对它们有说明
++ row  `environments`、`systems`、`temporaryDirectories`  [环境](environment.md)、系统属性和临时目录从何而来
++ row  `strategies.throwUnsafely`  错误作为异常抛出；[错误](errors.md#choosing-a-strategy)介绍了其他策略
++ row  `stdios`、`termcapDefinitions`  示例在哪里打印结果
+
+% 1 1 0 010f87bdd4bca34e06c2ce38bdb9b9dd
+
+@ 0 1 0 09588ee4321effc6064fee07f3e3a880
++ 示例在系统临时目录之下属于它们自己的目录中工作：
+
+% 2 1 0 1fe92cbe96f01d1006cb96b3ae650474
+
+% 0 1 0 00e51681c5cdc9da101de8239861f825
+
+% 0 1 0 018cfc741c90bbee1241caf45f625e72
+
+% 1 1 0 022b4bfcfe363f940876d10c5d424e48
+
+@ 0 1 0 15a8e50419f71c4c162aa513d8c7bc92
++ ### 文件和目录
+
+@ 0 2 0 1f1bf37b6cacbf4f0efb7507f13335e6
++ 路径指名一个位置。
++ 它是文件还是目录，取决于在那里创建了什么。
++ `create[Directory]` 和 `create[File]` 使一个条目得以存在：
+
+% 2 1 0 0819aff275496d480aa63a34e8194b82
+
+% 3 1 0 17aeb4abab6ffa670d2ea9d6991fbdd7
+
+% 4 1 0 0cc87f16d41faa260400780536054992
+
+% 0 1 0 1d66446f3f3d8d9503f403b1bde0146e
+
+% 0 1 0 13153155407167361247e38e150c33e1
+
+% 1 1 0 0a9631fd2720487e19a16d751eb4ade9
+
+@ 0 3 0 0dec220c4c7e35d411b66003d6100cfa
++ 默认情况下，创建操作拒绝毁掉任何东西。
++ 在已存在的东西上创建，或在不存在的父目录下创建，都是 `Io.Error`。
++ 如果确实有意如此，就用一个标志在发生之处说明，而不是用一个导入为整个文件说明：
+
+% 2 1 0 02c29d81240d495717efcf0bce7e7d3e
+
+% 3 1 0 0b208763126b42fe153ddc145da067b9
+
+% 4 1 0 0efa4be4d7c922a90844197ea787366b
+
+% 0 1 0 00015d0db2dc5a6d166e1c1aa1aa5068
+
+% 0 1 0 1ad9e9b143f1476d0e7974db946b36d9
+
+% 0 1 0 107f536d17cfe71010e5f1cf7f252b5e
+
+% 2 1 0 1ef27c2081b7b8dd055b1ae37c4ee597
+
+% 0 1 0 1ac9de578a6a082f167cc22d8b1cd490
+
+% 1 1 0 18ba9e3d0e3f45210c94d64da2e3d871
+
+@ 0 1 0 1a1fb34b744921e8106b096086e87854
++ `Fifo` 和 `Sock` 也是条目，以同样的方式创建。
+
+@ 0 1 0 099d8ce7b7422e080d27b5267cc3c56e
++ ### 读取和写入
+
+@ 0 1 0 0793dea3703f59561e5dbbe1ab3546b4
++ 需要整个小文件时，`read` 和 `write` 直接作用于路径：
+
+% 2 1 0 0d3fa71d81c8d7e80f245d5d0aba7898
+
+% 3 1 0 0534d3b92929e4781baf4ca5e9922c43
+
+% 4 1 0 02606b8612dd3a4e03bf8ae0e2f16a2a
+
+% 5 1 0 119df1d417738b5713b10e3741e61c30
+
+% 1 1 0 18e478fc066e10451852af589c0abcaa
+
+% 2 1 0 04ce15d3b8ec3e5105e8c89284c50bfc
+
+@ 0 3 0 1e8d90859924733d17790a771316d8b0
++ `read` 接受用来读取文件的类型。
++ `Text` 用作用域中的字符集解码，具有某种格式解码器的类型也以同样方式读取，因此 `file.read[Json]` 解析一个 [JSON](json.md#parsing) 文件。
+
+@ 0 3 0 1b9c9aaae0f6599c0c064c15d53aa5b0
++ 较大的文件通过*打开*它来读写。
++ `open` 指明把路径作为哪种形式打开以及以哪种模式打开，并以一个句柄运行一个代码块。
++ 在代码块内部，`file` 是打开的句柄：
+
+% 2 1 0 1ae8c557c909a45a198bb21caad679dd
+
+% 3 1 0 161157260566b5c90da6569d215a5004
+
+% 4 1 0 0a6c82351b04e7c70cbe87f209e86f38
+
+% 0 1 0 08a636603522eaca1a9ebd56799b406b
+
+% 1 1 0 1c62b73cb609ed871cc43071ef9f05b3
+
+% 0 1 0 0f047750df8a5c511174f1111af5c2cc
+
+% 1 1 0 0d853a23472781151012733437e43c5d
+
+@ 0 4 0 0ba732a794ca6e5406e0aeefcb5be605
++ 句柄只在代码块执行期间存在，因此文件的描述符不能比拥有它的作用域活得更久。
++ 这就是[限定作用域](../../philosophy/delimited-scopes.md)中所描述的形状，由[捕获检查](../../philosophy/capture-checking.md)强制执行。
+
+@ 0 4 0 09e61ee9e1e77fcc02533875778570fb
++ 模式不仅仅是运行时的一个标志。
++ 它作为一组*授权*携带在句柄的类型中。
++ 以默认模式 `Read` 打开，得到的句柄只授权读取，而 `Read & Write` 授权两者。
++ 通过只为读取而打开的句柄写入，无法通过编译：
+
+% 2 1 0 0060c063ef913d5908b1bc56855b894f
+
+% 3 1 0 1059f0a89bfc5fc0189d4b8354fe6276
+
+% 4 1 0 0983cf144ac5f5bb0fe793270f46a5e8
+
+% 5 1 0 190c05c99bd036a2004dc1445e537684
+
+% 0 1 0 125ff7d028140bdb0054193896ed304b
+
+% 1 1 0 15dbf37f5e3a56571ff023b39d6d93f6
+
+% 1 1 0 19b1da898df6e1601937a13b126c744a
+
+@ 0 2 0 01e27183f9ebc37a028c6d8a9e469250
++ 一整类错误由此变成编译错误：通过只读句柄写入，以及在作用域之外持有描述符。
+
+@ 0 3 0 07e65451c301968e0a84848841132187
++ 打开一个指名目录的路径，会限制通过它所能到达的范围。
++ 从句柄派生出的路径位于它们自己的*全新平面*上。
++ `..` 在这样的路径上无法通过编译，从一个打开的目录得到的路径也不能写到另一个目录之下：
+
+% 2 1 0 0ad9cf5db43a5ffc094c98c79f238c8b
+
+% 3 1 0 1d5c5baf28595bf3179cc6ea34b73f7f
+
+% 4 1 0 13fcbead5c2151b1020943d4944b0999
+
+% 0 1 0 1537be846289719006c281a2a4af3e0f
+
+% 0 1 0 0ebd7060a305dbbb03b61023dafaf55f
+
+% 0 1 0 04a90863466cd478199ec410a137c78a
+
+% 0 1 0 04a78212446d813f05ad71a970bf67f4
+
+% 1 1 0 17a162343d2d0ac11b3f857c772501e4
+
+@ 0 1 0 1b29e799828bd4cd086005ef9a52be21
++ ### 独占访问和共享访问
+
+@ 0 4 0 0b485e6e8eb213ce180de6550ed7ee3f
++ `Exclusive` 是与 `Read` 和 `Write` 并列的第三种授权，其含义如其名。
++ 在它存续期间，程序中任何其他作用域都不能打开与之重叠的路径。
++ 重叠按包含关系而非相等关系判定：目录与其下的东西重叠，两个兄弟项则不重叠。
+
+% 2 1 0 01b1052fa02b80071faaad0aa20cd938
+
+% 3 1 0 00d8da55a086b5ba1ea14f4484e712c1
+
+% 4 1 0 121537bd2b6d5e0212c82e10699a0961
+
+% 0 1 0 07eca7b479606ca41c99d12490956cc6
+
+% 0 1 0 1747c774c9d5adf31a2f731c46f97dfa
+
+% 1 1 0 0cfadefa5a7e8046123b1bba5244e45c
+
+@ 0 4 0 198168aa54d3f54c1734c8c55f9cdda6
++ 两次普通读取可以共存。
++ 独占打开与任一方向上的重叠打开都相冲突，无论独占作用域是外层还是内层。
++ 冲突是一个原因为 `Busy` 的 `Io.Error`。
++ 它在第二次打开时抛出，而不是在之后作为数据损坏被发现。
++ 无论作用域以何种方式结束，结束时都会释放这一占用。
+
+@ 0 6 0 168bf1fe2aaf109b0a204b6a8df2787c
++ 对*文件*（相对于目录）而言，`Exclusive` 还会向操作系统获取一把锁，因此独占性对其他进程也成立，而不仅仅在本进程之内。
++ `Shared` 是读取方的对应物。
++ 任意多个共享持有者可以共存，而独占打开会等待它们，或者在以不阻塞的方式请求锁时立即失败。
++ 锁也可以只覆盖一段字节范围而非整个文件，用于数据库所使用的面向记录的布局。
+
+@ 0 1 0 103df564bbf22fab12184d16352faca7
++ 四种授权并列如下：
+
+% 2 1 0 0e326fa62ad68625039a0a76a0038317
+
+@ 0 7 0 1905cf0e16a6e7050459bf347e4b2727
++ column  授权
++ column  允许
++ column  冲突对象
++ row  `Read`  读取，也是默认模式  重叠的 `Exclusive` 打开
++ row  `Write`  写入  重叠的 `Exclusive` 打开
++ row  `Exclusive`  程序中没有其他重叠的打开，对文件而言还有操作系统锁  任何重叠的打开，作为 `Busy`
++ row  `Shared`  对文件而言，一把共享的操作系统锁，可与任意多把其他锁同时持有  `Exclusive` 打开，它会等待这把锁
+
+% 1 1 0 129829dea30812391cd218017a7bb920
+
+@ 0 1 0 1999fc929da108e4122abcb2724a0344
++ ### 作为作用域的创建
+
+@ 0 4 0 006681d847a91e16100d565471d67b04
++ `create` 是 `open` 的对应物。
++ 打开作用于已存在的东西，创建则使它得以存在，并在同样的作用域内给出它的句柄。
++ 在作用域内写入的内容在代码块完成时提交，失败的作用域不会留下任何东西：
+
+% 2 1 0 1df2c497320212c312b4235c2f1a6c36
+
+% 3 1 0 0e5b1c1f70a52e551f6c2e8a1ea531fc
+
+% 4 1 0 02c489edee6989c30eab2e92e1ca9899
+
+% 0 1 0 1bad568157b3051211b14e48877eb350
+
+% 0 1 0 087c1edc83a2a3111732fc261938c2f7
+
+% 0 1 0 006924ab7c02737802b6d04cdfa289dd
+
+% 0 1 0 0df3616b1683ccf306a3260893c2732e
+
+% 0 1 0 0942dbaa88699f7111a18034ce48d9be
+
+% 1 1 0 00e39ef8820566ae07c4b251f6240875
+
+@ 0 3 0 1bec28590da0734d17cf3d9e3797ec94
++ *临时*目录由其作用域创建和删除，无论作用域成功还是失败。
++ 临时*文件*也是如此，用于一次性的索引或测试夹具。
++ 它的句柄还知道自己的 `path`，供需要被告知文件位置的东西使用：
+
+% 2 1 0 15cb60547c7ed1b61ca62acfbeb534eb
+
+% 3 1 0 089ddd36714716451ad7c5fa8abdc482
+
+% 4 1 0 034e2529cd55bafc17a0461fbe92f85a
+
+% 0 1 0 188735f10e3883d718658fd559155a6a
+
+% 0 1 0 053bfb1cf64cb31a158a06bf8a1b18ba
+
+% 0 1 0 1c107e116a7fdd3513b6283c3e4e99bc
+
+% 0 1 0 08038fb03d3d4b491d6bc2260c8b21a1
+
+% 0 1 0 1dc248928e9057fa0d31965169f00031
+
+% 0 1 0 05ba3f5ce1cce79b1c9eab8ba66a5274
+
+% 1 1 0 0010dba12da50d2002831156b797db2e
+
+@ 0 1 0 06e84234673e2a280e6b85dfae05b01f
++ ### 创建掩码
+
+@ 0 4 0 072b535b04b213b41fc2ec4156752b92
++ 进程在其 *umask* 之下创建文件：umask 是操作系统对它所创建的一切都扣留的权限位。
++ 通常事情到此为止。
++ 但同时服务多个调用者的进程，例如一个[守护进程](daemons.md)，只有一个 umask，却有许多次调用，每次调用都有自己的 umask。
+
+@ 0 4 0 0d4c091071a644f503db45910cdd5340
++ 因此掩码可以是一个上下文值。
++ 作用域中的 `Umask` 被应用于在其生效期间创建的每个文件和目录。
++ 它在创建时就被请求，因此条目从不会以比所请求的更宽的权限存在。
++ 作用域中没有 `Umask` 时，适用 `Umask.process`，即操作系统自身的掩码，与以前完全一样：
+
+% 2 1 0 09e44a63abc8c5441a99b1bb058e5864
+
+% 0 1 0 19b62c58cce3082809a2dceee2a42f2b
+
+% 0 1 0 02aaa3e4dbc836b41056445cb8d35407
+
+% 0 1 0 09d7f0626ee6529907e5d2d07273a08b
+
+% 0 1 0 0d62db0605ae72e506114570768d4c16
+
+% 1 1 0 0ca5157507172fbb1f3f942c3c0c3e4d
+
+@ 0 5 0 13c3d547047c29c216afea79ca06db6d
++ `0x3f` 是八进制写作 `077` 的掩码，它使文件只能由其所有者读写。
++ 掩码用 `Umask.parse(t"022")` 从 `umask` 打印的八进制形式解析，`octal` 则以同样形式把它写回。
++ 守护进程的服务句柄是一个 `Umask.Provider`，因此在 `cli` 代码块内，调用的掩码已经在作用域中，无需再作声明。
+
+@ 0 1 0 1e32e56bdad11e1206224f09b5c47937
++ ### 一般意义上的打开模式
+
+@ 0 4 0 11ba36f6a45f2c28135317e9b7f9a7b0
++ `open` 并非文件所特有。
++ 许多东西都具有同样的形状。
++ 一个值说明某物*在哪里*，无论是路径、内存中的缓冲区还是 URL，而获取其内容是一个独立的、有作用域的行为。
++ 对这一模式命名一次，意味着它在适用的任何地方读起来都一样。
+
+@ 0 5 0 0d6f46fae17df0d70e905616766de3dd
++ `Openable` 实例把一个目标与一种*形式*联系起来。
++ 这就是形式作为类型参数、而不由目标隐含的原因。
++ 同一个路径可以作为 `File`、`Directory`、`Zip` [归档](archives.md)、[PDF](pdf.md) 或[图像](images.md)打开，每种都是具有不同操作的不同句柄。
++ 目标只有一个实例时，形式可以省略。
++ 有多个实例时，会报告歧义，并列出各个备选项。
+
+@ 0 3 0 0d54548c16f86865129c00042952b841
++ 这一模式背后是[类型类] `Openable`、`Creatable` 和 `Sessional`，分别对应 `open`、`create` 和 `session`。
++ 前两者所接受的模式是若干 `Grant` 的组合。
+
+@ 0 1 0 15d481bfc7a72c2206d5bdd3f337e83e
++ 本页描述的形式有：
+
+% 2 1 0 08b9de4ee39561af10cd7c1f1777d240
+
+@ 0 8 0 19fb446add1aab681ce45e4775c11578
++ column  形式
++ column  句柄提供
++ row  `File`  文件的内容，在授权允许的范围内读或写
++ row  `Directory`  限制在该目录之下的路径，位于全新平面上
++ row  `Scratch`  作用域结束时被删除的目录
++ row  `Scratch.File`  作用域结束时被删除的文件，及其 `path`
++ row  `Ram`  对内存映射文件的按位置读写，文件大小不限
++ row  `Watch`  目录之下变化的流
+
+% 1 1 0 08e558da0c94c3c70073b0e0ac497c74
+
+@ 0 1 0 18b021c04c45e1a415c048d726d00346
++ 以下三点统一成立：
+
+@ 0 7 0 14c3529c192b2421046de5b463be8655
++ - *模式*，即 `Read`、`Write`、`Exclusive`、`Shared` 或它们的组合，携带在句柄的类型中，因此所请求的授权就是所允许的操作。
++ - 模式之后的标志属于实例。它们特定于所打开的那类东西，无关的标志无法通过类型检查。
++ - 句柄是限制在代码块内的[能力]，因此它以及从它派生的任何东西都无法逃逸。
+
+@ 0 5 0 1a3942651f5cb5ca1f5453f9fc13f117
++ `create` 是同一模式，用于尚不存在的东西。
++ `session` 也是同一模式，用于其访问是与某个正在运行之物的对话、而非对已存储字节的句柄的目标，例如[浏览器](web-automation.md)或[正在调试的程序](debugging.md)。
++ 每种情形下，作用域就是生命周期，代码块的结束就是访问的结束。
+
+@ 0 1 0 1dbadcb1c8bfbd421255124f26363cc1
++ ### 按位置访问
+
+@ 0 3 0 0ca97a47791546d009debe3e5fc962e9
++ 作为 `Ram` 打开的文件被映射到内存中，可在任何位置提供读写，而无需流式遍历它。
++ 与其他地方一样，写入需要 `Write` 授权：
+
+% 2 1 0 15bf34678af3b1011485a79c9a4c1ca5
+
+% 3 1 0 11780bc6eedc63b41c2f2d1b90dd301c
+
+% 4 1 0 1421ef2fb68fcaaa045d5383c778ecb4
+
+% 5 1 0 0d6543448297d6ed0ff9532a7c525cfa
+
+% 0 1 0 0d73d78456f97c030df300d3dc1f8400
+
+% 0 1 0 15a61f08869533890441913017bd506f
+
+% 0 1 0 106b4c6f25a3fc410f75ae3afd487fad
+
+% 0 1 0 0d5bfcf7bcd890f81752b3b72de17ca2
+
+% 0 1 0 05d5bfc4e02275e518f30132ab600d9e
+
+% 1 1 0 104d0d0ff424d34509b905ee6c168f87
+
+% 2 1 0 1e699f1cf022d73d1a8fc8257d7ecd6e
+
+@ 0 6 0 19fdb42ff2361a581817a3fafdd69fdd
++ `mapped` 映射整个文件以供读取，并在一个代码块的时长内借出它的 `Terrain` 视图。
++ `Terrain` 是一个 `Expanse`，具有 `size` 和执行复制的 `read`，其字节位于内存中。
++ 没有任何东西被复制：整数直接从映射的内存中就地加载，采用小端序，可位于任意偏移，而 `slice` 是同一块内存的更窄视图。
++ 映射同一文件的多个进程在操作系统的页缓存中共享它的单一副本，这使映射文件成为在程序之间共享大型索引的一种方式：
+
+% 2 1 0 17f44a4212157ec50dd9350241f3a657
+
+% 3 1 0 1bd272b61b50f60d094cf01a8c25841e
+
+% 4 1 0 19e2d123660b102909690a4c87e983a5
+
+% 0 1 0 0544cc4cf91707ef05783c64e2fef233
+
+% 0 1 0 039fbb41581884070a8821e08d8daf69
+
+% 0 1 0 12762121d23730de0c428c8a5e091446
+
+% 0 1 0 0e5e559749e0559916656a6c23538be0
+
+% 0 1 0 16e7122c8ad7d8ff0910be2b736a1605
+
+% 0 1 0 03b0af489a50a19211b1072ecf03c993
+
+% 0 1 0 12dd7d107b6c307e127ee0b07a8fa709
+
+% 1 1 0 1e65d1619c3a34be15a903a9f80a2627
+
+@ 0 1 0 04c506650649166a0fcb5ac8519d82fb
++ 加载方法如下：
+
+% 2 1 0 0acb8d67d81895c6034e2b570072a82c
+
+@ 0 10 0 14f68d695e3656e2055aae8cd51002ab
++ column  方法
++ column  给出
++ row  `u8`、`u16`  无符号字节或 16 位整数，作为 `Int`
++ row  `u32`  无符号 32 位整数，作为 `Long`
++ row  `i32`  同样的 32 位，作为有符号 `Int`
++ row  `u64`  64 位整数，作为 `Long`
++ row  `slice`  内存中一部分的视图，不做复制
++ row  `read`  部分字节，作为 `Data`，用于必须比视图活得更久的值
++ row  `same`  某个偏移处的字节是否与某个 `Data` 的字节相同，就地比较
++ row  `compare`  某些字节相对于某个 `Data` 的顺序，就地比较
+
+% 1 1 0 161bdd6fc6e4b5ac138538385f8d589a
+
+@ 0 5 0 1761fee7219394bf16381c6934889a0f
++ 代码块结束时文件被取消映射。
++ 视图及其每个切片都是限制在代码块内的[能力]，因此无法写出从已不再映射的内存进行的加载。
++ 接收视图的方法把它声明为 `Terrain^`。
++ 同样的加载方法在 `Data` 上也可用，旁边还有大端序的 `u16be`、`i32be`、`u32be` 和 `u64be`，因此解析器可以用同样方式从任一者读取格式。
+
+@ 0 4 0 07c40a5ef0aae572053e9fb457ca9e07
++ 映射的文件应通过把新文件移动到其名称上来替换，而不应就地重写：只要视图被持有，它就会一直看到它所映射的那个文件，保持不变。
++ 映射在 JVM 和 Scala Native 上可用；WASI 没有内存映射，会报告 `Unsupported`。
+
+@ 0 6 0 0d1cba4107da607713e0ac9fbaf641a1
++ `Terrain(data)` 是已在内存中的字节的视图，用于改从 `Data` 读取为映射文件设计的格式。
++ 路径是 `Viewable` 的，这是能借出其字节视图的值的类型类，因此就地读取的格式可以直接从其文件打开。
++ [RaTEL](tel.md#ratel) 就是这样一种格式，它是一种经过布局、无需读取其余部分即可找到单条记录的 TEL 文档，`file.open[Ratel]()` 在其代码块的时长内映射该文件。
+
+@ 0 1 0 1fe4b585f3d17acd001e373bf111851b
++ ### 发布版本
+
+@ 0 4 0 031ddec28e7f9b4e1e5cbac91b547e29
++ 映射文件是一个程序与其他程序共享大型值、而无需各持一份副本的方式。
++ 产生该值的程序*拥有*它的名称，并在该名称下发布一个又一个版本。
++ 使用它的程序映射当前的版本，并在它们选择时转到下一个版本。
++ 它们之间没有任何仲裁，因为遵守着两条规则：
+
+@ 0 4 0 15920986ad5ca37d1215a9efb09a74c9
++ - 已发布的文件永不改变。每个版本都写在该名称旁边，并一步移动到名称上，因此已映射某个版本的读取方会一直完整地看到它。
++ - 一个名称只有一个所有者。`claim` 在其代码块运行期间持有 `<name>.lock` 上的操作系统锁，第二个所有者（无论在本进程还是其他进程中）会以 `Busy` 被拒绝。
+
+@ 0 2 0 173624c02e3bdf9815b2f47381d4239f
++ `claim` 给出一个 `Owner`，其 `publish` 以值的 `Encodable in Data` 实例所给出的形式写出该值，并返回它所发布的 `Edition`：
+
+% 2 1 0 1759d5a2dd068c4e03119f348a08f734
+
+% 3 1 0 0c572833d775f80811a4b4e8f154df61
+
+% 4 1 0 19e56ccd40be246f16fcba7c4d37f1f4
+
+% 0 1 0 06697ac96f96ed471783c5a0b41543ab
+
+% 0 1 0 0ad783375861ef45154867ee6336ecd9
+
+% 1 1 0 01a1e54fad49df5308d4757b368dd3b3
+
+% 2 1 0 092b7d49cacf080f09ea818d1db3a684
+
+@ 0 3 0 0a5728f70160bd2812968d0e7cc9eb45
++ `published` 给出一个读取方，即 `Published`。
++ 它的 `map` 借出其所持版本的 `Terrain` 视图，它的 `refresh` 把它移到该名称现在所指向的版本，并说明是否有这样的版本：
+
+% 2 1 0 01e2ee18d23ea9d8195078bcc4ea26c1
+
+% 3 1 0 1601f6dae5cca73712006cc201b15977
+
+% 4 1 0 04fdc73f105f33031f075af35ba796b7
+
+% 0 1 0 1d03052d36507c8519260aa8c05d60e1
+
+% 0 1 0 110d73eda73d14ff1d7e803be0de569c
+
+% 0 1 0 1af210fdd09fb0901097f8864cb7ab2e
+
+% 0 1 0 1eb11ee390361773100f61b19ce02fc3
+
+% 0 1 0 0a8ab4c7e6dcd9e60fa6c5dff2cefca1
+
+% 0 1 0 1760ce088de6c44917ad1be63cf39bb8
+
+% 0 1 0 1829b4a7cc779102199176c139f4a45f
+
+% 1 1 0 1bdbda924ec5fc091a153c5e60fc7087
+
+@ 0 4 0 02bee554d8b85a30167a955e53a29444
++ 读取方不加锁，因此它从不延迟所有者，所有者也从不延迟它。
++ 发生 `refresh` 时正在使用的视图，无论在本线程还是其他线程上，都在其代码块结束之前保持有效。
++ 两个版次恰好在它们是文件的同一版本时相等；它们之间没有顺序。
+
+@ 0 5 0 175511a3a5db551a0a0554091375b486
++ 读取方会使它已映射的版本保持存在，即使该名称下已有更新的版本替换了它，因此长期存在的读取方在得知有新东西时应调用 `refresh`，无论是从消息还是通过[监视](#watching-for-changes)该名称得知。
++ 这把锁是建议锁，在同一台机器自身的文件系统上相互协作的程序之间是可靠的，但在网络文件系统上则不然。
+
+@ 0 3 0 03d4543c0c4e808e1b3766ef618f8032
++ `Slice` 是文件一部分的窗口，带有偏移和长度。
++ 它像一个独立的文件一样被打开以供读取或写入。
++ 因此可以流式读写大文件的某个区域而不触及其余部分，写入也不会越出它的窗口。
+
+@ 0 1 0 0d87f66a3b5d6628059867ec9487eb4b
++ ### 复制、移动和删除
+
+@ 0 2 0 11f3c5bb89418d01000ff32715e96fad
++ 路径通过指明目的地或就地执行的操作来复制、移动、链接或删除：
+
+% 2 1 0 1458b7d801765cba0ca7ec85082623a7
+
+% 3 1 0 166ef637b28d2d1d1453b4cd9cb8d2a6
+
+% 4 1 0 0ddbdeb9e538291d1e440466f126c66b
+
+% 5 1 0 17e36aad0f2f1c011208775349ea3398
+
+% 0 1 0 1bcd392b1b302fc509ee9b90350faa9c
+
+% 0 1 0 1d581f33aec82ac5168a5367d362630e
+
+% 0 1 0 0abb1ccddaf143771a930a633dc9f91a
+
+% 2 1 0 0875e45fd1abe1f41ebf16d4e66dbe23
+
+% 1 1 0 060f72a2f3a8db010d881eb74d899934
+
+% 0 1 0 00a313ad5c1010a6067a71efc96bd180
+
+% 1 1 0 1a15f4426a20b185110e1e8741b3db62
+
+@ 0 1 0 0d3bffed9cc9e9481c24f5a41258075d
++ 每个操作在棘手情形下都会参考作用域中的方针，每个操作都可能抛出 `Io.Error`。
+
+@ 0 6 0 01af3f52be6ad1ea0b1503d818cc6c11
++ 这些方针不是可以置之不理的默认值。
++ 把文件移动到已有东西存在的路径上，要么毁掉那个东西，要么拒绝这样做。
++ 两个答案都不是普遍正确的，悄悄地选择其一会让错误的程序通过编译。
++ 因此 `moveTo` 要求作用域中有 `overwritePreexisting` 或 `failOnPreexisting`，两者都没有时调用它是编译错误。
++ 这既是谨慎，也有启发作用：没有意识到这个问题需要回答的读者会被告知它需要回答。
+
+@ 0 3 0 18b5b7b107322f0c00180172142d1916
++ 这一选择也改变了必须处理的内容。
++ 作用域中有 `failOnPreexisting` 时，冲突是一个需要处理的失败。
++ 有 `overwritePreexisting` 时，冲突不会发生，相应的处理义务也随之消失。
+
+@ 0 3 0 0efa01bea0dafc8214ef67b37a454fd6
++ 方针是上下文值，因此可以为整个文件导入，也可以收窄到单个代码块。
++ 每项方针回答一个问题，并作为一对中的一个来自 `filesystemOptions` 包：
+
+% 2 1 0 02b674577112ad4519bbeca76d342708
+
+@ 0 8 0 13bbb775b3fd2fd210b04261c73a1fe1
++ column  问题
++ column  是
++ column  否
++ row  替换目的地已有的东西？  `overwritePreexisting`  `failOnPreexisting`
++ row  删除目录之前先清空它？  `deleteRecursively`  `deleteOnlyEmpty`
++ row  创建缺失的父目录？  `createNonexistentParents`  `requireParents`
++ row  跟随符号链接？  `dereferenceSymlinks`  `preserveSymlinks`
++ row  原子地移动？  `moveAtomically`  `moveNonAtomically`
+
+% 1 1 0 1fc98b4d95c3a31d05ec9ef4f6d25148
+
+@ 0 2 0 058d8eec7e7e7d370212e45ba7c7b190
++ 替换已存在的条目会先删除它，因此 `overwritePreexisting` 还需要作用域中有一项删除方针。
+
+@ 0 1 0 06f975a13f0d6dd6187c4a3c71271a67
++ 每个操作都参考与之相关的方针：
+
+% 2 1 0 07e296f6d47b93c40128b0fafdff2925
+
+@ 0 10 0 02268e3b2c59d32d0377da0d3e9108e4
++ column  操作
++ column  作用于
++ column  参考的方针
++ row  `copyTo(path)`  给定的路径  替换、父目录、符号链接
++ row  `copyInto(directory)`  该目录的一个子项，保留名称  替换、符号链接
++ row  `moveTo(path)`  给定的路径  替换、父目录、符号链接、原子性
++ row  `moveInto(directory)`  该目录的一个子项，保留名称  替换、符号链接、原子性
++ row  `symlinkTo(path)`  给定路径上一个指向此处的新链接  替换、父目录
++ row  `symlinkInto(directory)`  该目录中一个新链接，保留名称  替换
++ row  `delete()`、`wipe()`  路径本身  删除
+
+% 1 1 0 1604b534b635338a088a65cfa65ec533
+
+@ 0 3 0 0d0d1f42af9e59bb0eaeaf88df69550e
++ `…Into` 形式会自行创建任何缺失的父目录。
++ 删除有子项的目录是一个原因为 `DirectoryNotEmpty` 的 `Io.Error`，除非作用域中有 `deleteRecursively`。
++ 因此递归删除是一项必须刻意启用的方针。
+
+@ 0 1 0 1bc8c23a7dbe2eac1a071d14b53e4837
++ ### 列出和检视
+
+@ 0 4 0 1bab6ea393d401d21b8b88e49416de59
++ `children` 给出目录的直接子项，`descendants` 给出它的整棵子树。
++ 路径会报告它是否存在、它的大小以及它是哪种条目。
++ `glob` 按模式选择子项，其中 `*` 在名称内匹配，而一整段 `**` 跨越目录：
+
+% 2 1 0 09e28a4d23d585c811d6d51f456eabbf
+
+% 3 1 0 1abeb2396ecae92801a85f2ec49a848f
+
+% 4 1 0 081e5993718f1cf603a95470f20005b1
+
+% 0 1 0 119c5c4bcce297810e2ddabef3c832e8
+
+% 1 1 0 032f113a83afb4ac074a39597f4e047a
+
+% 0 1 0 0fa93af7a6be6e791550c2bf365f2851
+
+% 0 1 0 079996f8b363fa8a05027155b0a519e6
+
+% 0 1 0 12db853da6d6e8ae1c805e9c9e679d72
+
+% 1 1 0 0285e100e457c57100dcf171a7b75457
+
+@ 0 3 0 1a65369f6cbbdbbe07433e4ae803bf49
++ 两个路径可以指名同一个条目，通过符号链接，或者在 macOS 上通过 `/tmp` 和 `/private/tmp`。
++ `canonical` 是文件系统自身所知的条目路径，其中每个链接都已解析。
++ 以路径为键的注册表应当存储的就是这个路径：
+
+% 2 1 0 0ce08adb9b55095e0816d1e9eadda81a
+
+% 3 1 0 041d763014544f550fcfe20afb99569f
+
+% 4 1 0 12a756ca88f4286806bdf0a41eb80c28
+
+% 0 1 0 09b2885734d92360142bd0e795b2f0aa
+
+% 1 1 0 0daad12a38d7adc004924099688d5f06
+
+@ 0 1 0 0c4be6803c93ff0c1b7afdadebddb5db
++ [模式](patterns.md)介绍了 glob。
+
+@ 0 1 0 1ce39191c0d84eb813524c2ef833b7fd
++ ### 内容寻址存储
+
+@ 0 4 0 0ba7c36fdb79e51708f7b18fb6c983ef
++ 一个由 blob 组成的目录，其中每个 blob 都以其自身字节的摘要命名，就是一个*内容寻址存储*。
++ blob 只写入一次，在写入时得到验证，并可由任何知道其摘要的东西找到。
++ `Cas` 就是这样的存储。
++ [哈希算法](hashing.md)位于它的类型中，也位于它所接受的每个摘要的类型中，因此不能向 SHA-256 存储索要 BLAKE3 摘要：
+
+% 2 1 0 026b22b66bd6bc7d008a5fc96bad27b5
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e04bcf5a0cd705912c9c8e8a7b1b78b
+
+% 1 1 0 1acc47f474d1bf3d1a380d93d6104c74
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 08ae94fb12bacf46004ff9eb9163af24
+
+% 0 1 0 07fbb7aa51ab5cbf02657f07ff6c6a5b
+
+% 0 1 0 1611c86b3ac5f6730ca13020f82e24c6
+
+% 0 1 0 0f9a76c8999dfca0134524422bc3f3d9
+
+% 1 1 0 15faea8960fcb83401a8479935e61484
+
+@ 0 1 0 0771d4542fbf5a8c0c42fdb3a52a1f0c
++ 存储具有以下操作：
+
+% 2 1 0 0f13bb9271e3a4be153e85d142a5afc2
+
+@ 0 9 0 1ddb73204d2d54741963197c0d4f840a
++ column  表达式
++ column  作用
++ row  `store() = data`  以数据自身的摘要存储数据并返回该摘要；如果 blob 已存在，则什么也不做
++ row  `store(digest) = data`  同上，但先检查数据是否具有该摘要，若否则抛出 `Cas.Error`
++ row  `store(digest)`  字节，或 `Unset`
++ row  `store.has(digest)`  该 blob 是否已存储
++ row  `store.missing(digests)`  一组摘要中尚未存储的那些
++ row  `store.digests`  已存储的每个摘要
++ row  `store.prune(digests)`  删除不在该集合中的每个 blob，并返回删除的数量
+
+% 1 1 0 0c813c3ec26dfcd2121253d22503b486
+
+@ 0 1 0 1e58f0a68d846cb30107919a7e1756c9
++ `prune` 是把缓存修剪到仍被引用的内容的方式。
+
+@ 0 5 0 0d846e31118512491fa88bfc6d7d6af7
++ blob 先写入一个名称唯一的同级文件，再原子地移动到位，因此读取方永远不会看到不完整的 blob。
++ 这里存储的根是一个 `Path`，但存储的类型就是该根的类型，针对另一种根的 `Cas.Storage` 实例会在其上构成一个接口相同的存储。
++ 作为[集合](collections.md)，存储就是它的摘要：`store.size`、`store.has(digest)`、`store.at(digest)` 以及遍历都适用于它。
+
+@ 0 1 0 1488ab1cbc7f5cb70255ba665462b295
++ ### 扩展属性和卷
+
+@ 0 3 0 06cb1de56e0429a2122389be5fabaca0
++ 路径所在的文件系统是关于它的一个带类型的事实。
++ `Ext4`、`Btrfs`、`Apfs`、`Ntfs` 和 `Dos` 是路径可以与之匹配的*轴*。
++ 支持扩展属性的文件系统允许路径在其内容之外携带具名的元数据：
+
+% 2 1 0 0abb37d5696a6170140f85c718716403
+
+% 3 1 0 1c8495b674fc63dc1b586372cc3179a3
+
+% 4 1 0 100dcdd5caa60da105828d1ad40f15ba
+
+% 0 1 0 1b6c2226608bb38507c1d14449d766c6
+
+% 0 1 0 11ed84d5fe4e328f17314b9d64202eee
+
+% 0 1 0 004a20244568178208cef5a708664091
+
+% 0 1 0 0d7bfc9f3df4b14d14f9e98507597d3f
+
+% 1 1 0 01521e984c74ed231525b25667555bb3
+
+@ 0 2 0 056e3691bb210447100e2d31c6679ac4
++ 在 btrfs 上，`subvolume` 报告路径所属的子卷，`subvolumeRoot` 报告它是否为某个子卷的顶层。
+
+@ 0 1 0 0c79b0e645bd89551392f4a70e1320bf
++ ### 标准目录
+
+@ 0 3 0 047e8bf23837abe715b018d96c1d6876
++ 系统的约定位置是具名的值，根据[环境](environment.md)解析。
++ 主目录及其下的路径，以及根目录下的系统目录，都通过导航和应用来访问：
+
+% 2 1 0 0d642b8d76d0a18e089d0388811fa0a4
+
+% 3 1 0 14e57f3a99e385e6023697e00a47ab70
+
+% 4 1 0 0e0264ad69a882dc1d487ddd1f6eabc5
+
+% 0 1 0 0df6927d912ded4a0b375700b44c291d
+
+% 0 1 0 0d48d9cb6c7a65e71cf48bb53977f8b0
+
+% 0 1 0 0ded134ade44d80d10752104828f01f8
+
+% 0 1 0 1b0ada2659bfd2cf1c50dadbe18629bc
+
+% 1 1 0 0fc16b24133b8d121d64257ec02147aa
+
+@ 0 4 0 0434475602a1e89109a4bffbab19df0b
++ 每个对象都以它所代表的目录命名，首字母大写，并去掉任何开头的 `.`，因为 `.` 是成员之间的分隔符。
++ 因此 `$HOME/.local/bin` 是 `Home.Local.Bin`，`/var/lib` 是 `Base.Var.Lib`。
++ 以这种方式而非文本来书写标准位置，意味着拼错的目录无法通过编译：
+
+% 2 1 0 050c172cfa5cbdf1131db8aaf2a39a81
+
+% 3 1 0 19dc5279e93d36dc1e8e0438d2f3e066
+
+% 4 1 0 116471f18d9f7f260c75bb8c929fe300
+
+% 5 1 0 0e93110b08d7981a0184ae3da4575503
+
+% 0 1 0 15002ee939105aa917f53b09533850b1
+
+% 1 1 0 0b6cd6f14cece3dd1652bfa6754aedea
+
+@ 0 1 0 148bb1c45c16c73e07e10cc675cbee63
++ 以下是这些布局，以及 `readOnly` 是否把每个标记为不应写入：
+
+% 2 1 0 1744c24ba328f4ba0b522af0f19e5912
+
+@ 0 43 0 1ad2f377fa82ea530ab60ef830bbde49
++ column  布局
++ column  目录
++ column  只读
++ row  `Home`  `~`  否
++ row  `Home.Cache`  `~/.cache`  否
++ row  `Home.Config`  `~/.config`  否
++ row  `Home.Local`  `~/.local`  否
++ row  `Home.Local.Bin`  `~/.local/bin`  否
++ row  `Home.Local.Lib`  `~/.local/lib`  否
++ row  `Home.Local.Share`  `~/.local/share`  否
++ row  `Home.Local.State`  `~/.local/state`  否
++ row  `Base`  `/`  否
++ row  `Base.Boot`  `/boot`  是
++ row  `Base.Dev`  `/dev`  否
++ row  `Base.Dev.Shm`  `/dev/shm`  否
++ row  `Base.Efi`  `/efi`  是
++ row  `Base.Etc`  `/etc`  否
++ row  `Base.Home`  `/home`  否
++ row  `Base.Proc`  `/proc`  否
++ row  `Base.Proc(pid)`  `/proc/<pid>`  是
++ row  `Base.Proc.Sys`  `/proc/sys`  是
++ row  `Base.Root`  `/root`  否
++ row  `Base.Run`  `/run`  否
++ row  `Base.Run.Log`  `/run/log`  否
++ row  `Base.Run.User`  `/run/user`  否
++ row  `Base.Srv`  `/srv`  否
++ row  `Base.Sys`  `/sys`  是
++ row  `Base.Tmp`  `/tmp`  否
++ row  `Base.Usr`  `/usr`  是
++ row  `Base.Usr.Bin`  `/usr/bin`  是
++ row  `Base.Usr.Include`  `/usr/include`  是
++ row  `Base.Usr.Lib`  `/usr/lib`  是
++ row  `Base.Usr.Share`  `/usr/share`  是
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  是
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  是
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  是
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  是
++ row  `Base.Var`  `/var`  否
++ row  `Base.Var.Cache`  `/var/cache`  否
++ row  `Base.Var.Lib`  `/var/lib`  否
++ row  `Base.Var.Log`  `/var/log`  否
++ row  `Base.Var.Spool`  `/var/spool`  否
++ row  `Base.Var.Tmp`  `/var/tmp`  否
+
+% 1 1 0 0ad97e4a9e1823901dcdf3d3e0bd427a
+
+@ 0 6 0 0aa8b6ed35ad404b12222e62dc916832
++ 布局是一个固定的位置。
++ `Home.Config` 总是 `$HOME/.config`，只有 `$HOME` 是从环境中读取的。
++ [XDG 规范](environment.md#standard-directories)允许用户移动的位置，例如 `$XDG_CONFIG_HOME`，改由 `Xdg` 给出。
++ 应用一个布局会构造所要求的任何目录类型的值，因此同样的名称既适用于 `Path on Linux`，也适用于任何其他表示。
+
+@ 0 1 0 06f7e4b65fc1fe7a15c1330ddec6fdd6
++ ### 搜索路径
+
+@ 0 5 0 1406a0e20420f6951b64396fcdc6c049
++ 许多文件不是在一个位置，而是沿着一组位置查找的：图标位于 XDG 数据目录中存放它的那一个，配置文件位于若干位置中的第一个。
++ `Searchpaths.Stems` 实例按顺序指名要尝试的目录。
++ 对应平面上的相对路径用 `search` 解析为其中第一个包含它的目录，或解析为 `Unset`：
+
+% 2 1 0 0962ee6a08aa0adb13d2e4810f575047
+
+% 3 1 0 06a6f77762438aa40888e80974fd11da
+
+% 4 1 0 0bbbd280c02e3b410e86c9898c28d487
+
+% 0 1 0 063e73fab05e6567189cd57bdb16da70
+
+% 0 1 0 1c96b468e4e6a34017526a156fe8b96a
+
+% 0 1 0 0d0d0aaf80ba69d7024657279d3f35dd
+
+% 0 1 0 0f2e3d299f8c337b0f09d132a7b65496
+
+% 0 1 0 18154ca5ed46bd370605212e90897b86
+
+% 0 1 0 0fe5c79dc0620bae0560ecb0735d91d1
+
+% 1 1 0 1e1a6dfc7d84e72a0d2d07c372fe0889
+
+@ 0 2 0 191d5d49db9a12230470ec9e4c6d0778
++ `dataSearch` 和 `configSearch` 从环境中提供数据和配置的 XDG 搜索路径，因此无论用户的系统把程序的资源放在哪里，都能找到它们。
+
+@ 0 1 0 1c8222528a12abf719262fe8ce446313
++ ### 监视变化
+
+@ 0 3 0 1462e0528d99b34900b554bce0002fbf
++ 通过把目录作为 `Watch` 打开来监视它，这会给出一个由 `Watch.Event` 组成的[流](streams.md)：文件被创建、修改或删除，或目录被创建。
++ 注册恰好持续与代码块一样长的时间：
+
+% 2 1 0 19d161bdb15f2ab4040f0b7a4b26508e
+
+% 0 1 0 0a71c18ec97e7a4a1a2787ce5c10b274
+
+% 1 1 0 1a8f9e5a263f04720f14e9da582a43c4
+
+% 0 1 0 0e2e36ec4d12885b092276730675bf2e
+
+% 0 1 0 1e9997e92109f13018d778d0a1d7375b
+
+% 0 1 0 04c1d62c55bbdd880a6b5c1fa7ddf7c7
+
+% 0 1 0 0edc0d9f2110feec1ec81979517637e6
+
+% 0 1 0 181d70b3d9c3aaad1c02e73f747e1453
+
+% 1 1 0 0f3aa9f7e2c3c2940012ece5ebede700
+
+@ 0 2 0 0d2b07e729d9e2a81fcdf631ff229031
++ 把一组路径一起打开即可同时监视它们，这会给出覆盖所有路径的单一事件流。
+
+@ 0 3 0 0c313d32153a41351826e1aa6c30c233
++ 编辑器成批保存，而重新构建希望每批得到一次通知，而不是每个事件一次。
++ 每当在给定的静默期内没有事件到达时，`batches` 就给出一个 `Watch.Batch`，其 `paths` 把每个发生变化的路径列出一次：
+
+% 2 1 0 00fb6dfaccd1796912dce64a2b7e6c22
+
+% 0 1 0 1126dbfc5f3af8df1e8ae3314de64858
+
+% 0 1 0 1fb582ddd5c7d5ec19dfd6ac79521eb9
+
+% 1 1 0 03d765348db66d161389623dab07335b
+
+% 0 1 0 1b4c7e5466cbe64806ad6d3edf76624f
+
+% 0 1 0 18e1437c7a5dc6b70c91a19cabb80718
+
+% 1 1 0 050f5e04c1fca6070f53c556f8140e9b
+
+@ 0 2 0 0a78b26afc65909f0b933898cb91787a
++ 默认的监视器使用操作系统自身的文件变化通知。
++ 在这类通知不可用的地方，`watchers.polling` 改为按间隔检查。
+
+@ 0 1 0 0f4ef2945e9b28a90956cbc6da521484
++ ### 选择后端
+
+@ 0 3 0 0eaee3bf4629216808daf8fae9644b08
++ 上述内容都没有指名某个平台的 API。
++ 文件系统必须提供的原语操作，即 stat、打开、读取、写入、列出、链接和删除，被汇集到针对某个平面的 `FilesystemBackend` 中，其他一切都以它们来定义。
+
+@ 0 6 0 137d62d979cb824f02819a21fe23d501
++ `java.nio` 实现是 `filesystemBackends.javaBaseFilesystem`。
++ 为 WebAssembly 组件提供了基于 `wasi:filesystem` 的 WASI 实现，因此同样的代码可以在 JVM 上和组件内部读写文件。
++ 后端无法支持的操作会抛出原因为 `Unsupported` 的 `Io.Error`。
++ 它从不会被近似处理。
++ 把平台的接口面收窄为这样小的一个接缝，就是在一个库内部应用的[解耦](../../philosophy/decoupling.md)。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 5 0 081048ec19f6f1c40972f21e54c07ca3
++ - [路径](paths.md)介绍了这些操作所作用的路径。
++ - [流](streams.md)每次读写文件的一部分。
++ - [归档](archives.md)把路径作为 ZIP 或 tar 归档打开。
++ - [压缩](compression.md#compressing-a-stream)写出压缩文件。
++ - [哈希](hashing.md#hashing-a-stream)计算文件或目录的校验和。

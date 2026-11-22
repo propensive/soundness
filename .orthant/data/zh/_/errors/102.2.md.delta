@@ -1,0 +1,45 @@
+orthant 2 language
+
+% 0 1 0 06ba4d3f4903a6e105e907f88cbf94a1
+
+@ 0 1 0 0754fdd637c7a80619dbf1455bfec13a
++ 当基于套接字的 mDNS 响应器（`syndesis`）无法启动时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0998dc7089e208571740599e65948b97
++ 响应器会在每个已启用且支持多播的接口上加入 mDNS 多播组（`224.0.0.251:5353`）。
++ 如果没有这样的接口，或者操作系统拒绝加入，就没有可用于通信的途径。
++ 消息为 `the mDNS responder could not start because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 14cab4f5eb3b353c0023fcb9c4d9b374
+
+@ 0 2 0 19075168b3da39c50cf298a633d70642
++ 无法加入多播组：以复用方式绑定端口 5353 失败，或者每个接口都拒绝了加入。
+
+@ 0 1 0 1ee0e0f8701e12770593b89b2100b8b0
++ **示例。** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+@ 0 2 0 11d2990b9522deb90cfd444489aec9c7
++ **解决方法。** 检查端口 5353 是否被另一个程序以非复用方式占用，以及各接口是否有 IPv4 地址。
+
+% 0 1 0 022debaddccf1cf0030687c3ef8d75a5
+
+@ 0 1 0 0e6180d6c2bcabaa19e7c45c895cbecb
++ 没有任何已启用且支持多播的网络接口（回环接口不算）。
+
+@ 0 1 0 0a19999eb228f7471d3cc818882c0d0a
++ **示例。** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+@ 0 1 0 17ba773332c34264121e4f5838b681d1
++ **解决方法。** mDNS 需要一条链路；在没有链路的沙箱中，请使用内存中的 `Mdns.Transport.Bus`。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1a7ae79c01b71180108dd6cdb0df9761
++ - 源代码：`lib/syndesis/src/core/syndesis.Mdns.scala`

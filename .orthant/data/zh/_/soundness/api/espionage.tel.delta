@@ -1,0 +1,1372 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0d6479607fc959af0422e6a548bdf474
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ef3d0cb7743909101b9b359cc1a1de9
++ info   Agent Client Protocol 第 1 版的客户端：通过会话、提示和工具调用驱动编码智能体
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f3125c9af6af85118b543f5268f9ba3
++     _Espionage_ 是 [Agent Client Protocol](https://agentclientprotocol.com/) 第 1 版的客户端一半，即编辑器面对 Claude Code 或 Gemini CLI 等编码智能体时所扮演的角色，这里供程序化使用。
++     程序把智能体作为子进程启动（或通过一对流连接到一个智能体），打开会话，发送提示，并观察智能体的工作以流的形式传回（消息数据块、思考、工具调用、计划），同时回应智能体向它提出的请求：执行操作的许可、文件读写、终端。
+
+@ 0 9 0 12f38558eeb0f7aa0eca168f09d28c2d
++     这个协议是双向同时进行的 JSON-RPC，而一个提示不是一次函数调用，而是一个**回合**：一个长时间存在的请求，它的响应要等到智能体在其中所做的一切完成之后才到达。
++     这个库直接为回合建模。
++     `Acp.connect` 接受两个块：第一个块用组合子 `Acp.updated`、`Acp.permission`、`Acp.readFile`、`Acp.writeFile` 和 `Acp.terminals` 在借出的 `Acp.Registry` 上注册处理函数；第二个块持有活动的 `Acp.Connection`，它的 `prompt` 会阻塞，直到智能体报告一个 `StopReason`，与此同时回合中的更新并发地以流的形式传给已注册的处理函数。
++     客户端在 `initialize` 时声明的能力是根据已注册的内容派生的，因此声明永远不会与实现不一致。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 142fded3cc69fbdf07822f907ed0cb8c
+
+% 0 1 0 0680b90707ed32e51f7219baf03bfebe
+
+% 1 1 0 1924ce9cf648846d00bc445af948f2e2
+
+% 2 1 0 18306e7107175a741b79a254483ed1a3
+
+% 0 1 0 1a13f0e0fb1720000e8474b98e6626cf
+
+% 0 1 0 0058d2a49c2d77d10f71986b36c980af
+
+% 1 1 0 16886e7e61524cf90376ab9680fd06d0
+
+% 2 1 0 1aecd28a53bb95c11f44583724a30733
+
+% 0 1 0 0938ee4cf91e0ed10f4009943ec6de1d
+
+% 0 1 0 102e489e4894e35c1fd519fa1592772c
+
+% 0 1 0 07caccbb67a1d3ce16e9cd997b20dd43
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 10d211eb8496b7990930e213b1aa5c85
++     一个连接需要以下上下文值：一个 `Monitor`（它运行一个读取任务和一个写入任务，因此位于 `supervise` 之内）、一个 `Probate`、`Diagnostics`、用于启动智能体的 `WorkingDirectory` 和 `Environment`，以及一个 `Tactic[Acp.Error]`。
++     每个处理函数都会借得它所涉及的会话 id 及其载荷（用上下文访问器 `Acp.sessionId`、`Acp.update`、`Acp.toolCall`、`Acp.options`、`Acp.path`、`Acp.line`、`Acp.limit` 和 `Acp.content` 读取），以及一个 `Emit[Acp.Error]`，因此处理函数中抛出的故障会成为发给智能体的错误响应，而不是一个挂起的回合。
+
+@ 0 5 0 07340d4cb2b084991b6b18a13199c061
++     每种消息类型都是嵌套在 `Acp` 中的 case class 或枚举，各自的 JSON 编解码器位于其伴生对象中：`SessionUpdate` 及其八个分支、`ToolCall` 和 `ToolCallUpdate`、`PermissionOption`、`StopReason`、各能力记录，以及内容块。
++     内容块是 ACP 从 Model Context Protocol 采纳的，这里从 `synesthesia.Content` 重新导出，因此内容在两个协议之间传递时无需转换。
+
+@ 0 4 0 0aaf1893f157641e09476049c3f93712
++     `Acp` 的若干成员（`update`、`path`、`content`、`options`、`line`、`connection`、`Cancelled`）是其他库也在使用的名称，因此总括包导出的是 `Acp`，而不是它的内容。
++     把它们写成 `Acp.update`，或者像演示程序那样，在使用它们的对象内部 `import Acp.*`。
+
+@ 0 5 0 1f01fce73b85da630b13ac3ef58112c7
++     stdio 的分帧是以换行分隔的 JSON，每行一条紧凑的 UTF-8 消息，在任何解码之前按原始换行字节切分。
++     一条消息在它的换行符到达的那一刻就被交付：分帧器窥视终止符并越过它，而不请求更多输入，因此在活动的管道上，它从不等待智能体的下一条消息才交付当前这条。
++     空行以及 `\r\n` 终止符的残余会被跳过。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     这个库有两个源码集：
+
+@ 0 5 0 1c2436782b5f83fa0b69cfb816ee1f90
++     - `espionage.core`：`Acp` 和 `@rpc` 线上特质（`Acp.Agent`、`Acp.Client` 及其组成部分）。
++       它只为 JVM 构建，因为它依赖 obligatory 的 JSON-RPC 支持，并且需要捕获检查。
++     - `espionage.demo`：`DemoAcpClient`，一个完整的命令行客户端，不作为库发布。
+
+@ 0 4 0 126e489a97add17914dfd49139fb09a2
++     `Acp` 和线上特质导出到 `soundness` 总括包；演示程序则不导出。
++     这个库自身不使用任何选择包中的 given，但连接需要上面那些按名称的导入（`threads`、`probates`、`workingDirectories`、`environments`，以及一个错误策略），因为 `import soundness.*` 不导入 given。
+
+% 0 1 0 121da6c91a640e261d31c41f2646a9ad
+
+% 0 1 0 05b82b1396c1023d0c855879a15bfc24
+
+% 0 1 0 1b73aeff40c4ebb70b95ed1070809103
+
+% 0 1 0 0bdcc9e085b1ad6d10aa40974e781714
+
+% 0 1 0 0953bf4424f2f8ed10894334eb52693c
+
+% 0 1 0 07cee1c7c0a0f40c002ca38ef027536a
+
+@ 0 1 0 01febc2ed4ad46271d9b0f5486b73b3c
++ entry .Acp   Agent Client Protocol：它的消息类型、处理函数注册表、`connect`，以及连接
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 1 0 03f1f6e64b235ad11e1765d93ba53be4
++       `Acp` 包含整个客户端。
++       它的成员分为四组：
+
+@ 0 16 0 14da46507c989f9a0f793d6431896c41
++       - **协议类型**，每个 ACP 结构对应一个 case class 或枚举，各自的 JSON 编解码器位于其伴生对象中：能力记录（`ClientCapabilities`、`AgentCapabilities`、…）、会话（`McpServer`、`SessionMode`、`NewSessionResult`）、回合（`StopReason`、`PromptResult`）、更新（`SessionUpdate` 及其分支）、工具调用（`ToolCall`、`ToolCallUpdate`、`ToolCallContent`）、计划、许可以及文件系统和终端的结果，还有从 `synesthesia.Content` 重新导出的内容块；
++       - **处理函数一侧**：处理函数类型（`UpdateHandler`、`PermissionHandler`、`ReadFileHandler`、`WriteFileHandler`，以及 `Terminals` 组合），处理函数读取的上下文访问器（`sessionId`、`update`、`toolCall`、`options`、`path`、`line`、`limit`、`content`），注册组合子（`updated`、`permission`、`readFile`、`writeFile`、`terminals`、`capabilities`），以及它们写入的 `Registry`；
++       - **连接一侧**：`Endpoint`，说明智能体在哪里；`connect`，打开交换；`Connection`，即它借出的句柄，以 `connection` 访问；以及 `Observer`，它能看到原始流量；
++       - `Error`，由连接抛出、由处理函数发出。
+
+% 2 1 0 100ea36ba70c6d5b1d2cd2777d4c2ca7
+
+% 3 1 0 1486a351219133420b3a3e00f3f44a64
+
+% 4 1 0 16059b83662a300203b37f135af4d63e
+
+% 5 1 0 0420ea186997a0300d1f05fce3877450
+
+% 0 1 0 0af80dd4d55c79380f3e679906a2149b
+
+% 0 1 0 13e4cf1481986f5c1d36fe2dd191ba61
+
+% 2 1 0 19b31930fca2a02703632737d59842c1
+
+% 0 1 0 02977157b1f186c01231c7877911f6b0
+
+% 0 1 0 04b211983a19c67d0fc7e34cfd33ff20
+
+% 0 1 0 1fc9196e43a6f5d515b50073af46be4a
+
+% 0 1 0 13b2a3ca026be0400fa11d7e3066dc65
+
+% 0 1 0 175daeb1596d567c00a3a5be4039df23
+
+% 0 1 0 0c9340e9dfd68c720dd469eb44e57891
+
+% 0 1 0 1b6c254955f3fde206877b266c000c36
+
+% 1 1 0 1ccd9c54e82c7dd21fdf4e9dc02d536a
+
+@ 0 3 0 0f65b9bbcebe33060c71362c47db5cdf
++       只要作用域内有 `Acp.Registry^`，就可以注册：在 `connect` 的第一个块中，或者在像上面的 `register` 这样接受一个注册表的辅助方法中，因此客户端可以把它的处理函数分散到多个方法中。
+
+% 0 1 0 09b5237fa61f239e1414537229b96a3d
+
+% 0 1 0 1c9ac18ad7873fe11dd759324e2371c9
+
+% 0 1 0 1b18465b690c6a4a0ffc5bf15c6d4e5a
+
+% 0 1 0 14bf3cd678fcc6001e639efc2d02fb50
+
+@ 0 4 0 08590577e0e4c02506b239e1c611796c
++   entry .version   这个库实现的协议版本：`1`
++       ACP 版本是一个整数，只在不兼容的变更时递增。
++       客户端在 `initialize` 时发送它，如果智能体回答了任何其他版本，`Connection#initialize` 就以 `Acp.Error.Reason.Incompatible` 中止。
+
+@ 0 34 0 121e124392ec394814dee6e10f42000f
++   entry .Icon   图标的来源、MIME 类型、尺寸和主题；从 `synesthesia.Content` 重新导出
++       `Acp.Icon` 就是 `synesthesia.Content.Icon`，与 MCP 共用，完整说明见其页面。
++   entry .Annotations   内容的受众、优先级和修改提示；从 `synesthesia.Content` 重新导出
++       `Acp.Annotations` 就是 `synesthesia.Content.Annotations`。
++   entry .Role   一段内容面向谁，`User` 或 `Assistant`；从 `synesthesia.Content` 重新导出
++       `Acp.Role` 就是 `synesthesia.Content.Role`。
++   entry .ContentBlock   一个内容块：文本、图像、音频、资源链接或嵌入资源；从 `synesthesia.Content` 重新导出
++       `Acp.ContentBlock` 就是 `synesthesia.Content.ContentBlock`，完整说明见其页面。
++       一个提示是一个 `List[ContentBlock]`，智能体以流发送的每个消息块和思考块都携带一个。
++       在线上，它按其 `type` 成员区分。
++   entry .TextContent   一个文本块，带可选的注解；从 `synesthesia.Content` 重新导出
++       `Acp.TextContent` 就是 `synesthesia.Content.TextContent`。
++       处理流式文本的常用模式是 `case Acp.AgentMessageChunk(Acp.TextContent(text, _))`，而 `Connection#prompt(sessionId, text)` 会把它的文本包装进一个文本块。
++   entry .ImageContent   一张 Base64 图像，带其 MIME 类型和可选的 URI；从 `synesthesia.Content` 重新导出
++       `Acp.ImageContent` 就是 `synesthesia.Content.ImageContent`。
++       它的 `uri` 成员是 ACP 对 MCP 形状的补充，未设置时会从线上消失。
++       只有当智能体的 `PromptCapabilities#image` 表明接受时，它才接受提示中的图像。
++   entry .AudioContent   Base64 音频，带其 MIME 类型；从 `synesthesia.Content` 重新导出
++       `Acp.AudioContent` 就是 `synesthesia.Content.AudioContent`。
++       只有当智能体的 `PromptCapabilities#audio` 表明接受时，它才接受提示中的音频。
++   entry .ResourceLink   按 URI 指向资源的链接，带其名称和可选的元数据；从 `synesthesia.Content` 重新导出
++       `Acp.ResourceLink` 就是 `synesthesia.Content.ResourceLink`。
++   entry .EmbeddedResource   内联携带的资源内容；从 `synesthesia.Content` 重新导出
++       `Acp.EmbeddedResource` 就是 `synesthesia.Content.EmbeddedResource`。
++       只有当智能体的 `PromptCapabilities#embeddedContext` 表明接受时，它才接受提示中的嵌入上下文。
++   entry .Contents   资源的内容，以文本或 blob 的形式；从 `synesthesia.Content` 重新导出
++       `Acp.Contents` 就是 `synesthesia.Content.Contents`。
++   entry .ResourceContents   资源内容的公共形状：URI、MIME 类型和元数据；从 `synesthesia.Content` 重新导出
++       `Acp.ResourceContents` 就是 `synesthesia.Content.ResourceContents`。
++   entry .TextResourceContents   以文本表示的资源内容；从 `synesthesia.Content` 重新导出
++       `Acp.TextResourceContents` 就是 `synesthesia.Content.TextResourceContents`。
++   entry .BlobResourceContents   以 Base64 blob 表示的资源内容；从 `synesthesia.Content` 重新导出
++       `Acp.BlobResourceContents` 就是 `synesthesia.Content.BlobResourceContents`。
+
+@ 0 1 0 040066939c55062e0eaa631afd37e45e
++   entry .Envelope   任何 JSON-RPC 消息中决定其处理方式的两个成员
+
+% 1 1 0 0927678a9e78632a063add3deb6267fb
+
+@ 0 8 0 1794903069c22d021ffb6aba33f4f663
++         只为读取 `method`（响应没有它）和 `id`（通知没有它）而读取的消息。
++         两者都是可选的，因此每条消息都能解码：没有方法表示响应，没有 id 表示通知。
++         交换的读取器用它来路由每条消息，而无需知道消息的形状。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的信封会抛出 `Json.Error`
++     entry #method   消息指定的方法，对于响应则为 `Unset`
++     entry #id   消息用于关联的 id，以原始 JSON 表示，对于通知则为 `Unset`
+
+@ 0 1 0 1051f75c60cc999c19f68c3352d0a8ea
++   entry .FsCapabilities   客户端是否为智能体提供文件读写服务
+
+% 1 1 0 04da0868073f65b11e571477465692fd
+
+@ 0 5 0 03b581b5223e9df7006c1e271d4642ac
++         `ClientCapabilities` 的一部分。
++         `Acp.connect` 恰好在注册了 `readFile` 处理函数时设置 `#readTextFile`，恰好在注册了 `writeFile` 处理函数时设置 `#writeTextFile`，因此符合规范的智能体从不请求客户端无法执行的操作。
++     entry #readTextFile   如果客户端响应 `fs/read_text_file`，则为 `true`
++     entry #writeTextFile   如果客户端响应 `fs/write_text_file`，则为 `true`
+
+@ 0 1 0 0938249c4332b02f07f9fec907725a8e
++   entry .ClientCapabilities   客户端在 `initialize` 时告诉智能体自己能做什么
+
+% 1 1 0 013cdf210598c65a0d02bdef96e31b59
+
+@ 0 4 0 19c3a3622142ae441e3d39da54a5f821
++         由 `Acp.connect` 根据注册情况派生：如果注册了任一文件系统处理函数，`#fs` 就存在；如果注册了 `Terminals` 组合，`#terminal` 就是 `true`。
++         对于必须声明注册情况所不能推出的内容的客户端，`capabilities` 组合子会在最后调整派生出的值。
+
+% 2 1 0 0e631c2eae60ff99058a9339470e4418
+
+% 3 1 0 04c9d381a97aa1d80faf3379a27ebb42
+
+% 4 1 0 14894a4089baa9df1e9bc4a0e1600eb8
+
+% 5 1 0 0ce4ab640fe1ec6f1f98b953395c456e
+
+% 2 1 0 1029943ab916a99905543aa80ef67e78
+
+% 0 1 0 04b1a6fcbeb2d07a03b79061f191f7af
+
+% 0 1 0 1ba7cfdb4ae3e6e50b74636b3761ee11
+
+% 1 1 0 13b6e9b54fc4854904902702cd7b1ad8
+
+@ 0 2 0 0b5791ceba2a6f3a1f56505392acd89a
++     entry #fs   文件系统能力；如果客户端不提供任何文件操作，则为 `Unset`
++     entry #terminal   如果客户端提供终端，则为 `true`，否则为 `Unset`
+
+@ 0 1 0 0cc00e2d6e0a2407193e3069538ace21
++   entry .PromptCapabilities   智能体在提示中接受哪些种类的内容
+
+% 1 1 0 19642ff310e8223504a539c00c19c3bf
+
+@ 0 6 0 17fd3e04dadb7f120d73867cef3d9b80
++         由智能体在 `AgentCapabilities#promptCapabilities` 中报告。
++         文本和资源链接总是被接受；图像、音频和嵌入资源只在智能体表明接受时才被接受。
++     entry #image   `ImageContent` 是否可以出现在提示中
++     entry #audio   `AudioContent` 是否可以出现在提示中
++     entry #embeddedContext   `EmbeddedResource` 内容是否可以出现在提示中
+
+@ 0 3 0 1df59e399000f3f00a6979b3971dcb2f
++   entry .McpCapabilities   除 stdio 之外，智能体能够连接的 MCP 传输方式
++     entry #http   智能体是否通过 HTTP 连接 MCP 服务器
++     entry #sse   智能体是否通过服务器发送事件连接 MCP 服务器
+
+@ 0 1 0 102712925ad986a511562874d7884730
++   entry .AgentCapabilities   智能体在 `initialize` 时告诉客户端自己能做什么
+
+% 1 1 0 1aa4e35a7cf93bae14b29fe23f428e37
+
+@ 0 7 0 11273d96083ffca0121e7032d9053fe9
++         能力协商中智能体的一半，在握手后由连接保存，以 `Connection#agentCapabilities` 读取。
++         客户端在调用 `Connection#loadSession` 之前检查 `#loadSession`，在提示中放入文本和资源链接以外的任何内容之前检查 `#promptCapabilities`。
++     entry #loadSession   智能体能否用 `session/load` 恢复会话
++     entry #promptCapabilities   智能体在提示中接受哪些种类的内容
++     entry #mcpCapabilities   智能体能够连接哪些 MCP 传输方式
+
+@ 0 1 0 045350531dce216e1590bda5f5aa32d9
++   entry .AuthMethod   智能体提供的一种认证客户端的方式
+
+% 1 1 0 0a46de1c4b74aaa71175746fe985917b
+
+@ 0 6 0 09536dcbd0e5bf600b1ebe87e2ef5a0f
++         列在 `InitializeResult#authMethods` 中，因而也在 `Connection#authMethods` 中。
++         当请求以 `Acp.Error.Reason.AuthRequired` 失败时，客户端以 `Connection#authenticate(method.id)` 回应。
++     entry #id   传给 `Connection#authenticate` 的标识符
++     entry #name   该方式的显示名称
++     entry #description   更长的描述，如果智能体提供了的话
+
+@ 0 1 0 12195622abbed96d15a9833f1cbe28e9
++   entry .InitializeResult   智能体对 `initialize` 的回答：它的协议版本、能力和认证方式
+
+% 1 1 0 13d8f757a33c9d461fd02e124bee3105
+
+@ 0 8 0 00e1deffd31ab8010ba942b7381c4a49
++         `Connection#initialize` 返回的值。
++         `Acp.connect` 自己执行握手，因此客户端以 `Connection#agentCapabilities` 和 `Connection#authMethods` 读取智能体的回答，而不直接处理这个值。
++     entry .decodable   派生的 JSON 解码器；格式错误的结果会抛出 `Json.Error`
++     entry #protocolVersion   智能体使用的版本，必须是 `Acp.version`
++     entry #agentCapabilities   智能体能做什么，如果它说明了的话
++     entry #authMethods   智能体提供的认证方式，如果有的话
++     entry #_meta   智能体由实现定义的元数据，以原始 JSON 表示
+
+@ 0 1 0 0ce02eba3e2f636c054524450067442d
++   entry .EnvVariable   一个环境变量，包括名称和值
+
+% 1 1 0 17e66539f9eaf71212c288e7ed36782f
+
+@ 0 4 0 018afab905182c5609efa88c839e3889
++         由智能体启动的 MCP 服务器的 `McpServer#env` 携带，也由智能体要求客户端创建的终端（`Terminals#create`）携带。
++     entry #name   变量的名称
++     entry #value   变量的值
+
+@ 0 1 0 1b71c500bc9014e3023b3e0e43108124
++   entry .McpServer   客户端希望智能体连接的 MCP 服务器，由其启动命令指定
+
+% 1 1 0 16a8f642da999acd0fbe0a93ccbacf67
+
+@ 0 2 0 1da93b5c8d09d728137baea37ffad8c1
++         传给 `Connection#newSession` 或 `Connection#loadSession`：智能体以 stdio 传输方式启动每个服务器，并在会话中提供它的工具。
+
+% 2 1 0 14e683a2335281ea0443bd7197932672
+
+% 3 1 0 0da591c143316fdc15c44ae7fd8dc3f6
+
+% 4 1 0 06370b897b35f44216ac9e63a87e3744
+
+% 5 1 0 195d886c2eb808a31a0542c960bdb2cb
+
+% 0 1 0 00bef855d019a9551d06286d908c590a
+
+% 0 1 0 1005e962ba281dbc0926596285871cae
+
+% 1 1 0 0a245600a1bfe1ca072d4e1af3d22323
+
+@ 0 4 0 1ccd155fa7dcb04a0de94dc34543ba52
++     entry #name   服务器的名称，即智能体引用它时所用的名称
++     entry #command   启动服务器的命令
++     entry #args   命令的参数
++     entry #env   为服务器设置的环境变量
+
+@ 0 4 0 17bc90d3f68be9251a883eb0210d5d95
++   entry .SessionMode   智能体可以工作的一种模式，例如在每次编辑前询问
++     entry #id   传给 `Connection#setMode` 的标识符
++     entry #name   该模式的显示名称
++     entry #description   更长的描述，如果智能体提供了的话
+
+@ 0 1 0 1a459b42c58d129819629a58a2bf4c52
++   entry .SessionModeState   会话提供的模式，以及当前是哪一个
+
+% 1 1 0 1d8e37be1f5554e117ff7d9878cca4fe
+
+@ 0 5 0 0773a3b5404eb14d15868e6d9d4d925b
++         在 `NewSessionResult#modes` 中报告。
++         当前模式随 `Connection#setMode` 改变，或由智能体主动改变，后者以 `CurrentModeUpdate` 报告。
++     entry #currentModeId   会话所处模式的 id
++     entry #availableModes   会话可以切换到的每种模式
+
+@ 0 1 0 09e702248f610b1e06dda8493dc60060
++   entry .NewSessionResult   智能体对 `session/new` 的回答：会话的 id 及其模式
+
+% 1 1 0 041c1b9ea253f7d7048d067314e58518
+
+@ 0 7 0 00295fe4d992dec20191da0830395328
++         由 `Connection#newSession` 返回。
++         `#sessionId` 是之后每个关于该会话的调用（`prompt`、`cancel`、`setMode`、`loadSession`）所接受的值，也是每个处理函数以 `Acp.sessionId` 借得的值。
++     entry .decodable   派生的 JSON 解码器；格式错误的结果会抛出 `Json.Error`
++     entry #sessionId   新会话的标识符
++     entry #modes   会话的模式，如果智能体提供了的话
++     entry #_meta   智能体由实现定义的元数据，以原始 JSON 表示
+
+@ 0 1 0 1f797c8cb0b6b3f11fc1344d34813683
++   entry .StopReason   提示回合结束的原因：`EndTurn`、`MaxTokens`、`MaxTurnRequests`、`Refusal` 或 `Cancelled`
+
+% 1 1 0 1103053592a5e2ac10bc2366c67aee91
+
+@ 0 6 0 1338fbf76aba0e0308e333d451195098
++         `Connection#prompt` 在智能体完成它在回合中所做的一切之后返回的值。
++         `EndTurn` 表示智能体完成了；`MaxTokens` 和 `MaxTurnRequests` 表示它用完了预算，分别是 token 预算或模型请求预算；`Refusal` 表示它拒绝继续；`Cancelled` 表示客户端用 `Connection#cancel` 取消了回合，智能体有义务以这种方式回答。
++         在线上，这些分支是 `end_turn`、`max_tokens`、`max_turn_requests`、`refusal` 和 `cancelled`。
+
+% 2 1 0 0b3ce919e422fbb001ae46a89cf987fc
+
+% 3 1 0 02fda1298c6cf56f13967be4f9f088c9
+
+% 4 1 0 1a29602bfa9757cb02c9c868407a070f
+
+% 5 1 0 06d3572e922523ec1cb0d8dfc28ecb12
+
+% 0 1 0 0dfcc5320c58f2381c8100b3eb707f17
+
+% 0 1 0 193281debcabda010e943c8b16e5ba7f
+
+% 0 1 0 0af47deaf30096731000aa2bfdb75ab1
+
+% 0 1 0 063aced427f25c2d1b7394b439e2e69e
+
+% 1 1 0 0853da2d3fd2bd7f14348ab8813b2ff5
+
+@ 0 4 0 0b51c3e5e85ae20a07d4591ee8ecab9d
++     entry .encodable   把停止原因编码为其线上字符串
++     entry .decodable   从线上字符串解码停止原因，遇到任何其他字符串则抛出 `Json.Error`
++         需要一个 `Tactic[Json.Error]`，未知字符串会通过它以原因 `OutOfRange` 抛出。
+
+@ 0 1 0 0c5f41f9cc8c2d3c10668864df5aadef
++   entry .PromptResult   智能体对 `session/prompt` 的回答：回合为何结束
+
+% 1 1 0 10d385f443d75f570a9fd30ff3c7601a
+
+@ 0 4 0 01610a0876e7f6800ce4c2523f34be4d
++         `Connection#prompt` 只返回它的 `#stopReason`。
++     entry .decodable   派生的 JSON 解码器；格式错误的结果会抛出 `Json.Error`
++     entry #stopReason   回合为何结束
++     entry #_meta   智能体由实现定义的元数据，以原始 JSON 表示
+
+@ 0 1 0 02ccb8e08746ff9a02e4849c66edccaa
++   entry .ToolKind   工具调用的种类：读取、编辑、删除、移动、搜索、执行、思考、获取或其他
+
+% 1 1 0 11a99e3b1472e5d305dcb0897a4b45a9
+
+@ 0 8 0 06ebe8b5506b1b220780369614bac686
++         在 `ToolCall#kind` 中报告，使客户端可以用合适的图标显示工具调用，或决定在许可它时要多谨慎。
++         分支有 `Read`、`Edit`、`Delete`、`Move`、`Search`、`Execute`、`Think`、`Fetch` 和 `Other`；在线上，每个分支是它的小写名称。
++     entry .encodable   把种类编码为其线上字符串
++     entry .decodable   从线上字符串解码种类；未知种类为 `Other`
++         与其他枚举的解码器不同，它从不失败：协议允许智能体添加种类，因此这个库不认识的种类读作 `ToolKind.Other`。
+
+@ 0 1 0 19046f1333c8192f061fd8fb7d3817a5
++   entry .ToolCallStatus   工具调用进行到了哪一步：`Pending`、`InProgress`、`Completed`、`Failed` 或 `Cancelled`
+
+% 1 1 0 13af86e87e8907f600fd734dff410326
+
+@ 0 4 0 08cf69caec804bf81a692dc1e087de1d
++         在 `ToolCall#status` 中报告，由 `ToolCallUpdate#status` 更新。
++         在线上，这些分支是 `pending`、`in_progress`、`completed`、`failed` 和 `cancelled`。
++     entry .encodable   把状态编码为其线上字符串
++     entry .decodable   从线上字符串解码状态，遇到任何其他字符串则抛出 `Json.Error`
+
+@ 0 1 0 0e48de14c7c8a97309d4f7b9ba5a2009
++   entry .ToolCallLocation   工具调用正在处理的文件，以及可选的行
+
+% 1 1 0 0fe3884d10cbf3a20f868576491b31b4
+
+@ 0 4 0 1c307adaa52ffd7b19d20f545854fe4e
++         列在 `ToolCall#locations` 中，使客户端可以跟随智能体浏览它读取和编辑的文件。
++     entry #path   文件的绝对路径
++     entry #line   文件中的行，如果智能体说明了的话
+
+@ 0 1 0 0142910cb11b08670d1a22e8220f6ed4
++   entry .ToolCallContent   工具调用产生的内容：内容、文件差异或终端
+
+% 1 1 0 0903f2e9d9e4da5c116a114b1aea3177
+
+@ 0 4 0 0da9203bddd1c6741ef1a8279f707357
++         一个由三个分支组成的 sealed 层次结构，在线上按 `type` 成员区分：`ToolContent`（`content`）包装一个普通的 `ContentBlock`；`ToolDiff`（`diff`）是对一个文件的结构化编辑；`ToolTerminal`（`terminal`）指向客户端为智能体创建的一个终端，客户端可以显示它的输出。
+
+% 2 1 0 0af993c843f9de540e0d7f1008151983
+
+% 3 1 0 1c741baa44173c270a7f8f01aff9ac1a
+
+% 4 1 0 0effadbb414cd97c044a01a51105cc25
+
+% 5 1 0 026548867f6b26c80f084a1f101397ef
+
+% 0 1 0 0d0b3290fe152d0400727deeb1324c12
+
+% 0 1 0 1772bea7f36ea4f105ba7d1d9bba73f3
+
+% 0 1 0 12d55ba1d7c2cb1f0ff8e74c580278dd
+
+% 0 1 0 14661166fc26c9df03071761404a5699
+
+% 0 1 0 1f43564ca4fbbda40baffbf989ccc3f3
+
+% 1 1 0 05f4667e0b394dc21b215f7d1394b6e7
+
+@ 0 2 0 1c4cf303628456a416e304a3aad54fb4
++     entry .encodable   编码三个分支中的任意一个，带上它的 `type` 判别字段
++     entry .decodable   按 `type` 成员解码，遇到未知类型则抛出 `Json.Error`
+
+@ 0 1 0 16fa4229d2d80dd916f589c727f3eee5
++   entry .ToolContent   作为普通内容块的工具输出
+
+% 1 1 0 12b4895a2f19c6460aec9d352a1abf58
+
+@ 0 4 0 0473fc728570688111c0ee88ea175c2a
++         `ToolCallContent` 的一个分支，在线上 `type` 为 `content`。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的内容会抛出 `Json.Error`
++     entry #content   内容块
+
+@ 0 1 0 07c8ab2161fdc8c91223f99e36249f10
++   entry .ToolDiff   作为对一个文件的结构化编辑的工具输出：它的旧文本和新文本
+
+% 1 1 0 089ce8a9b85c353b1a018707e903c26d
+
+@ 0 7 0 02755fc60a54eb810fb84b5ba03d3eb0
++         `ToolCallContent` 的一个分支，在线上 `type` 为 `diff`。
++         对于工具创建的文件，`#oldText` 为 `Unset`。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器；格式错误的差异会抛出 `Json.Error`
++     entry #path   文件的绝对路径
++     entry #oldText   编辑前文件的文本，对于新文件则为 `Unset`
++     entry #newText   编辑后文件的文本
+
+@ 0 1 0 1989f8aa601b11ca1fa07d848afc452a
++   entry .ToolTerminal   作为对客户端所创建终端的引用的工具输出
+
+% 1 1 0 0d6dd6d37634f61d040ce0ef483bd4c7
+
+@ 0 5 0 19da7678455baeb11d6aba2ebe28564a
++         `ToolCallContent` 的一个分支，在线上 `type` 为 `terminal`。
++         这个 id 是 `Terminals#create` 返回的，因此客户端可以在工具调用旁显示该终端的输出。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #terminalId   终端的 id
+
+@ 0 1 0 14d4358d8c169a261fc615e618a8f7e2
++   entry .ToolCall   智能体首次报告的工具调用：`tool_call` 会话更新
+
+% 1 1 0 1a6a8d552d831a8a12f45ed2e2e78056
+
+@ 0 3 0 01004fadcbbb54de11111fcbbfa46e5e
++         `SessionUpdate` 的一个分支。
++         只有 id 和标题是必需的；其他一切都可以之后由具有相同 `#toolCallId` 的 `ToolCallUpdate` 补充，因此显示工具调用的客户端按 id 保存它们，并把每个更新合并进去。
+
+% 2 1 0 058f482245cb7c721afdb4dac06a4059
+
+% 3 1 0 0a9a49cb0d7a2a8e1baf9f23d96a85de
+
+% 4 1 0 02202e6a36c0c6151bb5aaa540bceb28
+
+% 5 1 0 00519684c4cbb40b0687cdf011ec6d6e
+
+% 7 1 0 142f916913a2dd981e790c671850f011
+
+% 8 1 0 00e160afa3040d440400ee90d0c87cf7
+
+% 0 1 0 03f1d22ad267b5511dd60887f78c4ca2
+
+% 0 1 0 00c3734516694ffb0fc274fd8c2f0423
+
+% 0 1 0 1f7059c164f893c8181f43fdcbdbeac1
+
+% 0 1 0 055725c3a3f76edd06076580d8249cc3
+
+% 0 1 0 038d05ecd365626b0dccf667cfc042e5
+
+% 1 1 0 01f02505f8a4002e1ef1bfbb0fed1f31
+
+@ 0 9 0 08d1b66cb18784fb0e9bd1b045961ca6
++     entry .decodable   派生的 JSON 解码器；格式错误的工具调用会抛出 `Json.Error`
++     entry #toolCallId   之后的更新和许可请求引用它时所用的 id
++     entry #title   对工具正在做什么的人类可读描述
++     entry #kind   工具的种类，如果智能体说明了的话
++     entry #status   调用进行到了哪一步，如果智能体说明了的话
++     entry #content   调用到目前为止产生的内容
++     entry #locations   调用正在处理的文件
++     entry #rawInput   工具的输入，以原始 JSON 表示
++     entry #rawOutput   工具的输出，以原始 JSON 表示
+
+@ 0 1 0 0c8074b313b75c8e079b14e23a91d093
++   entry .ToolCallUpdate   之后关于某个工具调用的报告，或许可请求所涉及的工具调用
+
+% 1 1 0 0bf7ba4f8a213d9317157686921bac37
+
+@ 0 14 0 0d83977d9c880e7c1ebcd4c2208fccc2
++         `SessionUpdate` 的一个分支，在线上为 `tool_call_update`。
++         除 `#toolCallId` 外的每个成员都是可选的，存在的成员会替换之前报告的内容，因此 `#content` 是全部内容，而不是对它的增补。
++         同样的形状也承载许可请求所涉及的工具调用，以 `Acp.toolCall` 借给许可处理函数。
++     entry .decodable   派生的 JSON 解码器；格式错误的更新会抛出 `Json.Error`
++     entry #toolCallId   被更新的工具调用的 id
++     entry #title   新的标题，或用 `Unset` 保留旧的
++     entry #kind   新的种类，或用 `Unset` 保留旧的
++     entry #status   新的状态，或用 `Unset` 保留旧的
++     entry #content   调用的全部内容，替换已报告的内容，或用 `Unset` 保留
++     entry #locations   调用的全部位置列表，或用 `Unset` 保留
++     entry #rawInput   工具的输入，以原始 JSON 表示，或用 `Unset` 保留
++     entry #rawOutput   工具的输出，以原始 JSON 表示，或用 `Unset` 保留
+
+@ 0 3 0 122615f85a8b9dcf1cd7b47029e2cb4c
++   entry .PlanPriority   智能体计划中一个步骤的重要程度：`High`、`Medium` 或 `Low`
++     entry .encodable   把优先级编码为其线上字符串
++     entry .decodable   从线上字符串解码优先级，遇到任何其他字符串则抛出 `Json.Error`
+
+@ 0 3 0 143c0df242ad4d2c162eaffb08079de7
++   entry .PlanStatus   智能体计划中一个步骤进行到了哪一步：`Pending`、`InProgress` 或 `Completed`
++     entry .encodable   把状态编码为其线上字符串
++     entry .decodable   从线上字符串解码状态，遇到任何其他字符串则抛出 `Json.Error`
+
+@ 0 4 0 18127ca98c52863f002a550a76a42812
++   entry .PlanEntry   智能体计划中的一个步骤：它是什么、有多重要、进展如何
++     entry #content   对该步骤的人类可读描述
++     entry #priority   该步骤有多重要
++     entry #status   该步骤进行到了哪一步
+
+@ 0 1 0 05ecb40fc7bd9556118eccb46fb29214
++   entry .AvailableCommand   智能体在会话中提供的斜杠命令，及其描述
+
+% 1 1 0 02e7b0701e3097431f3a4fa11a496ac2
+
+@ 0 5 0 0ad7dad8ffd800190258c66efc337c69
++         列在 `AvailableCommandsUpdate` 中，使客户端可以在用户输入提示时提供命令补全。
++     entry #name   命令的名称，不带斜杠
++     entry #description   命令的作用
++     entry #input   命令的输入规格，以原始 JSON 表示，如果它接受输入的话
+
+@ 0 1 0 130201d6fa30b5850831bdcbf7ea160f
++   entry .SessionUpdate   一条 `session/update` 通知：智能体在工作时报告的关于某个会话的事情
+
+% 1 1 0 0f88c581af2ceea80570697ab6646852
+
+@ 0 3 0 12209805df7d24bd0f1d639bdbbff5aa
++         由智能体在回合中以流发送的八种事物组成的 sealed 层次结构（在 `Connection#loadSession` 期间，也是它从恢复的会话中重放的事物），在线上按 `sessionUpdate` 成员区分：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  分支
+
+% 0 1 0 0f5fa17c93b8f4411f1d753a6211d613
+
+@ 0 9 0 03f57f4d744f6ea9029d311fb63407ac
++         column  更新
++         row  `UserMessageChunk`  `user_message_chunk`  用户自己消息的一部分，出现在重放的会话中
++         row  `AgentMessageChunk`  `agent_message_chunk`  智能体回答的一部分
++         row  `AgentThoughtChunk`  `agent_thought_chunk`  它推理的一部分
++         row  `ToolCall`  `tool_call`  报告的一次工具调用
++         row  `ToolCallUpdate`  `tool_call_update`  对工具调用的后续更改
++         row  `Plan`  `plan`  智能体的完整计划
++         row  `AvailableCommandsUpdate`  `available_commands_update`  当前提供的斜杠命令
++         row  `CurrentModeUpdate`  `current_mode_update`  会话的模式已改变
+
+% 1 1 0 17c57f91da50aace1ddd8760984b0844
+
+@ 0 4 0 17946f04e516c09d0b025cf4842bb56c
++         更新按智能体发送的顺序到达用 `Acp.updated` 注册的处理函数：它们就在连接的读取任务上分派，而不是在派生出的任务上，因为数据块的顺序很重要。
++         因此处理函数应当迅速返回，并且不得阻塞在同一连接的请求上。
+
+% 2 1 0 10b04a5cd8c2fcd31df14ae5e849ca55
+
+% 3 1 0 1c88d4c3b3aed7a4190319a672166c62
+
+% 4 1 0 087d2388200794b00dd107e38dfcb789
+
+% 5 1 0 078d7f1226b63c94040ddc2905901ed6
+
+% 7 1 0 1cc514e9f39742f100b11f0845335956
+
+% 8 1 0 134838a77ca87d940a5f7acbdc4347fa
+
+% 2 1 0 08c08b59bfebf7730a0efa0137dd8ce7
+
+% 0 1 0 188aa1da1aad1f481ddacd1ed308556c
+
+% 0 1 0 0b02d46cf1bb9468182a08e6448afdff
+
+% 0 1 0 0b119f5c26c524f105a6239cfb1e4460
+
+% 0 1 0 1124aa5b615690af0ec6c694a49b654a
+
+% 1 1 0 1746954d0a14c4370270e0c1cc53be42
+
+% 0 1 0 174f9e0c99e7fe470a153effce60bd42
+
+% 0 1 0 1a86525b0575484412904c863fe29f4b
+
+@ 0 2 0 17583566d14a281b0d66f6dc6f13f677
++     entry .encodable   编码任意更新，带上它的 `sessionUpdate` 判别字段
++     entry .decodable   按 `sessionUpdate` 成员解码，遇到未知种类则抛出 `Json.Error`
+
+@ 0 1 0 1b2cde855cdd188604bae9306f26b5d4
++   entry .UserMessageChunk   智能体重放恢复的会话时，用户消息的一部分
+
+% 1 1 0 15546d1b188c0fb91c37b02cf677b734
+
+@ 0 4 0 0811bf8663e4a03e1ce79fcb83df064b
++         `SessionUpdate` 的一个分支，在线上为 `user_message_chunk`。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #content   这部分内容
+
+@ 0 1 0 1a2fb378df0135ea09030391fee7c86f
++   entry .AgentMessageChunk   智能体回答的一部分，在写出时以流发送
+
+% 1 1 0 1d1784f73fc44ea703ef7ad0fc42bdae
+
+@ 0 6 0 109dc0e625fb4f3605f3f67c83d67b73
++         `SessionUpdate` 的一个分支，在线上为 `agent_message_chunk`。
++         一个回合的回答以许多数据块的形式按顺序到达；每个 `TextContent` 一到达就打印，便能在智能体写出回答时显示它。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #content   这部分内容，通常是一个 `TextContent`
+
+@ 0 1 0 1d20d4bcd24d513f0ff9b07d161ca397
++   entry .AgentThoughtChunk   智能体推理的一部分，在它思考时以流发送
+
+% 1 1 0 13fe10d10d6490d2004a12aa1ffdc700
+
+@ 0 5 0 1bb18803b75265970b6855e26f1c77ff
++         `SessionUpdate` 的一个分支，在线上为 `agent_thought_chunk`：客户端可以与回答分开显示，或完全不显示的文本。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #content   这部分内容
+
+@ 0 1 0 11b0e411e06c415b084fd6f8d3986ef2
++   entry .Plan   智能体针对该回合的完整计划
+
+% 1 1 0 053d4162e695ab02117e9f7d49476b69
+
+@ 0 5 0 0175569c2407b17f1fbe6772555b43a0
++         `SessionUpdate` 的一个分支，在线上为 `plan`。
++         每次报告都是完整的计划，替换上一次，而不是对它的更改。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #entries   计划的步骤，按顺序
+
+@ 0 1 0 02198ba93a83e384082738243e2c8a06
++   entry .AvailableCommandsUpdate   智能体当前在会话中提供的斜杠命令
+
+% 1 1 0 0ede3abb7652052b022a2b4eec215cbc
+
+@ 0 5 0 034b4c7c72d4600c1838e581219259dd
++         `SessionUpdate` 的一个分支，在线上为 `available_commands_update`。
++         每次报告都是完整的列表。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #availableCommands   当前提供的命令
+
+@ 0 1 0 07afcb6f87d534e1007d173508e59d12
++   entry .CurrentModeUpdate   会话的模式已改变
+
+% 1 1 0 19459691e6acedbb18e9411373ac90eb
+
+@ 0 5 0 14ca5faf4152028113c9024928889251
++         `SessionUpdate` 的一个分支，在线上为 `current_mode_update`，在模式由智能体主动改变或为回应 `Connection#setMode` 而改变时发送。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #currentModeId   会话当前所处模式的 id
+
+@ 0 1 0 01f4be64834846711eaf150204461f19
++   entry .PermissionOptionKind   选择一个许可选项意味着什么：允许或拒绝，一次或总是
+
+% 1 1 0 14b048dcb2478e940230fb07b4123f80
+
+@ 0 3 0 1485cc35b19c881a03a220d6b73840fb
++         分支有 `AllowOnce`、`AllowAlways`、`RejectOnce` 和 `RejectAlways`（在线上为 `allow_once`、`allow_always`、`reject_once` 和 `reject_always`）。
++         这些种类让客户端可以按方针选择选项，而不是按智能体的措辞：
+
+% 2 1 0 082eafd4194f9b121deb3ed4824de7a1
+
+% 3 1 0 037ddb5efec2559f0c1216ce8a1eb015
+
+% 4 1 0 02200881a143ac3101e21d2ebc91a101
+
+% 5 1 0 1c400e05c5fcda5606f401535f691fb9
+
+% 0 1 0 1fa789ce8a626dee18a884697bdf74a5
+
+% 1 1 0 099499457eef07240a69dd91c5043f19
+
+% 2 1 0 0bd41ae8490f0d8705eb3053e1ab90ad
+
+% 1 1 0 12b2ef4ec23563981c1e8ff43d0f067c
+
+@ 0 2 0 00cd17d2c03c0acb0d8e0f3cd3f7f442
++     entry .encodable   把种类编码为其线上字符串
++     entry .decodable   从线上字符串解码种类，遇到任何其他字符串则抛出 `Json.Error`
+
+@ 0 1 0 078f39355643de591e32778b1846113f
++   entry .PermissionOption   智能体为许可请求提供的一个回答
+
+% 1 1 0 13b539f2bf52e993166b9a4a3a1e56f6
+
+@ 0 7 0 077b1f04601672ba04db3f349216811b
++         许可处理函数以 `Acp.options` 借得所提供的选项，并以 `Acp.Selected(option.optionId)` 回答它选中的那个。
++     entry .encodable   派生的 JSON 编码器
++     entry .decodable   派生的 JSON 解码器
++     entry #optionId   在 `Selected` 中用于回答的 id
++     entry #name   选项的标注，用于显示给用户
++     entry #kind   选择该选项意味着什么
+
+@ 0 1 0 07c0981f04ce2c5013e809f31343c3e3
++   entry .RequestPermissionOutcome   对许可请求的回答：`Selected(optionId)` 或 `Cancelled`
+
+% 1 1 0 18363d80865feadb0357ae33ffb60047
+
+@ 0 9 0 038d91cbb00b2fa4131d3d478aa4348b
++         许可处理函数的结果。
++         `Selected` 指定所提供选项中的一个；`Cancelled` 表示拒绝选择。
++         当回合被取消时，协议也要求对每个待处理的许可请求回答 `Cancelled`，而连接会自己提供这个回答：在 `Connection#cancel` 之后到达的请求会直接回答 `Cancelled`，不调用处理函数；取消到达时已在处理函数中的请求，会在处理函数返回时回答 `Cancelled`，其选择被丢弃。
++         在线上，结果按 `outcome` 成员区分。
++     entry .encodable   编码结果，带上它的 `outcome` 判别字段
++     entry .decodable   按 `outcome` 成员解码，遇到未知结果则抛出 `Json.Error`
+
+@ 0 2 0 090a8fc0cee629b50fd1c61df1930ad8
++   entry .Selected   选择所提供选项之一的许可回答
++     entry #optionId   所选选项的 id，来自 `PermissionOption#optionId`
+
+@ 0 4 0 00304d7cc4ff377417f2622fb867ab20
++   entry .Cancelled   什么也不选的许可回答，被取消的回合必须使用它
++       一个 `RequestPermissionOutcome`。
++       处理函数返回它以表示拒绝，它也是对未注册处理函数的请求的回答。
++       它与 `StopReason.Cancelled` 不同，后者是被取消的回合的结束方式。
+
+@ 0 2 0 0927094bedfd17e709ab1974acee84e8
++   entry .RequestPermissionResult   客户端对 `session/request_permission` 的响应，包装着结果
++     entry #outcome   处理函数的回答，或 `Cancelled`
+
+@ 0 2 0 118a31ab6bafdadd062724196fbb158a
++   entry .ReadTextFileResult   客户端对 `fs/read_text_file` 的响应：文件的内容
++     entry #content   读取的文本
+
+@ 0 2 0 06413d7d760ddc0a07ec6209d8b111ea
++   entry .CreateTerminalResult   客户端对 `terminal/create` 的响应：新终端的 id
++     entry #terminalId   `Terminals#create` 返回的 id
+
+@ 0 3 0 13cf54bbbb4b3e9815d2bdb8a0ca21b5
++   entry .TerminalExitStatus   终端的命令如何结束：它的退出码，或杀死它的信号
++     entry #exitCode   命令的退出码，如果它正常退出的话
++     entry #signal   杀死它的信号的名称，如果是被信号杀死的话
+
+@ 0 4 0 14f6ba34ff02144218818432d11ad565
++   entry .TerminalOutputResult   终端到目前为止的输出，以及它结束时的退出状态
++     entry #output   到目前为止捕获的输出
++     entry #truncated   是否为了不超出字节限制而从开头丢弃了输出
++     entry #exitStatus   命令如何结束，运行期间为 `Unset`
+
+@ 0 1 0 0d0f86f27f4b20b60510a66305fe4fe6
++   entry .Terminals   客户端提供给智能体的五个终端操作，一并提供
+
+% 1 1 0 0256056f7f8976ef1a2efb783c9a8f7e
+
+@ 0 4 0 16d872e854858842052b387734fb3bf3
++         协议把终端支持声明为单一能力，因此这些操作要么全有要么全无：客户端实现这个特质，并用 `Acp.terminals` 注册它，于是 `ClientCapabilities#terminal` 为 `true`。
++         每个方法都在自己的任务上调用，并带有它所涉及的会话 id；终端 id 由客户端生成。
+
+% 2 1 0 1db288a7bacb1417026b3853ff41057a
+
+% 3 1 0 182f73e3ef932a67174dd8290571229a
+
+% 4 1 0 1dac9645d9e5dcc1093fa6801aca744e
+
+% 5 1 0 183a6781d60739841966c3e9d26e2abe
+
+% 0 1 0 0652e938bbee179e078b0cff84080626
+
+% 0 1 0 08cb6ed30233f6760bc8eafb1143ecfa
+
+% 0 1 0 1ab8ecbf160b7a8f1cc727ecd05f65b5
+
+% 0 1 0 0fc7fa15328d1a0c0ffbc20df21b92f7
+
+% 0 1 0 1d4fb2b5cd536fae01bc5d3c4d25bac1
+
+% 0 1 0 04e79789dfb5a9bb04782075bc80c13b
+
+% 0 1 0 0d2adc6d070de00c13186a00fa2b827a
+
+% 0 1 0 059045c1b33f250f0abed23f2920cfa6
+
+% 0 1 0 1078cd6a6a48c15c0bea98111b158af1
+
+% 0 1 0 14d46425b01eb743039395d63ee2ca64
+
+% 0 1 0 0a935af44fac094e19598a203271459e
+
+% 0 1 0 0cbe405b1335109f1757b45c68884e52
+
+% 0 1 0 0dd8060dfbbff7ae144e29996b8a1218
+
+% 0 1 0 12b2b01876070659137c1bbbd927f20f
+
+% 0 1 0 1b5a5eed9f516c720f3401d48c31738d
+
+% 0 1 0 1a60aaee0e368eed0e7b83973cc7fb86
+
+% 0 1 0 1995d08f874309cf1fc25616051bc423
+
+% 1 1 0 1713b1dbc1bd59f0182b0d96a6b82638
+
+@ 0 10 0 085ab197387067f01713f638eaf7917a
++         在没有注册组合时请求终端操作，会得到 `MethodNotFound` 错误回应，因此行为不当的智能体会被告知，而不是一直等待。
++     entry #create   在新终端中启动一个命令，返回终端的 id
++         调用时传入命令、它的参数和环境、可选的工作目录，以及对保留输出的可选字节限制；超出限制的最旧输出会被丢弃，`TerminalOutputResult#truncated` 会报告这一点。
++     entry #output   终端到目前为止的输出，以及它结束时的退出状态
++     entry #waitForExit   阻塞直到终端的命令退出，返回它的结束方式
++     entry #kill   杀死终端的命令，保留终端以便读取其输出
++     entry #release   如果命令仍在运行就杀死它，并释放终端
+
+@ 0 9 0 0a0340acf9a6de6f1f7e4786b48c673d
++   entry .Turned1   处理函数的上下文：会话 id、一个带标签的载荷，以及一个错误发射器
++       `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`。
++       每个载荷都用 `aka` 加上标签，使上下文访问器（`Acp.update` 等）能按名称找到它。
++       借出的一切都是上下文参数，而结果是纯的，因此借给处理函数的任何东西都无法离开它。
++       `UpdateHandler` 就是其中之一。
++   entry .Turned2   处理函数的上下文：会话 id、两个带标签的载荷，以及一个错误发射器
++       与 `Turned1` 相同，但有两个载荷。
++       `PermissionHandler` 和 `WriteFileHandler` 属于此类。
++   entry .Turned3   处理函数的上下文：会话 id、三个带标签的载荷，以及一个错误发射器
++       与 `Turned1` 相同，但有三个载荷。
++       `ReadFileHandler` 属于此类。
+
+@ 0 14 0 0d2d8bb9f7db404e119f7c11f0fd3b67
++   entry .UpdateHandler   `Acp.updated` 接受的处理函数：查看每个 `SessionUpdate`，不返回任何值
++       借得 `Acp.sessionId` 和 `Acp.update`。
++       它在连接的读取任务上运行，按智能体发送更新的顺序。
++   entry .PermissionHandler   `Acp.permission` 接受的处理函数：在提供的选项中做出选择
++       借得 `Acp.sessionId`、`Acp.toolCall`（请求所涉及的 `ToolCallUpdate`）和 `Acp.options`，并返回一个 `RequestPermissionOutcome`。
++       它在自己的任务上运行，因此可以阻塞（等待用户，长达数分钟），而不会使回合的更新停滞。
++   entry .ReadFileHandler   `Acp.readFile` 接受的处理函数：返回文件的文本
++       借得 `Acp.sessionId`、`Acp.path`，以及可选的起始行 `Acp.line`（从 1 开始）和行数限制 `Acp.limit`，并返回文本。
++       它可以提供客户端自己看到的文件视图，例如编辑器中未保存的缓冲区。
++   entry .WriteFileHandler   `Acp.writeFile` 接受的处理函数：写入文件的文本
++       借得 `Acp.sessionId`、`Acp.path` 和 `Acp.content`，不返回任何值。
+
+@ 0 17 0 039d45914889f13d03552f3a3bc76a9d
++   entry .connection   `Acp.connect` 借给其第二个块的活动连接
++       `Acp.connection` 读取 `Acp.Connection` 上下文参数，并带有其单例类型，因此 `Acp.connection.prompt(…)` 正是对作用域内那个连接的调用。
++       它只能在 `connect` 的第二个块中，或在接受 `using Acp.Connection` 的方法中使用。
++   entry .sessionId   在处理函数中，请求或更新所涉及的会话的 id
++       每个处理函数都会借得它。
++   entry .update   在更新处理函数中，正在报告的 `SessionUpdate`
++   entry .toolCall   在许可处理函数中，智能体请求许可的工具调用
++       一个 `ToolCallUpdate`：它的 id，以及智能体对即将进行的调用所说的一切。
++   entry .options   在许可处理函数中，智能体提供的回答，以 `PermissionOption` 表示
++   entry .path   在文件处理函数中，要读取或写入的文件的绝对路径
++   entry .line   在读取处理函数中，开始读取的行（从 1 开始），或用 `Unset` 表示从开头
++   entry .limit   在读取处理函数中，最多返回的行数，或用 `Unset` 表示不限
++   entry .content   在写入处理函数中，要写入的文本
++       不要与携带内容的记录的 `#content` 成员混淆：这是访问器，需要写入处理函数的上下文。
+
+@ 0 3 0 0058e1064f90e877114c1ae2e1bd7a28
++   entry .updated   注册 `session/update` 的处理函数：查看每个会话的每个更新
++       一个 `UpdateHandler`，借得 `Acp.sessionId` 和 `Acp.update`。
++       不注册则丢弃更新。
++       需要作用域内有一个 `Acp.Registry`，如在 `Acp.connect` 的第一个块中。
+
+% 2 1 0 1175f5a773ac8b9704a2e02f1cd4cc63
+
+% 3 1 0 1a4b182156a033601ed3880b994aca96
+
+% 4 1 0 139d862117dbb37a0e2ec517cf813dd6
+
+% 5 1 0 0a1e864f9ef07e400bf478dd1c2fe07e
+
+% 0 1 0 00ed8647433cd4af10b628fade7a7d5e
+
+% 0 1 0 0b449bd156b1576b00a4e89900cacb23
+
+% 0 1 0 1e0c8ffbc046e2c50d4e3ce18cd1ef46
+
+% 0 1 0 1a5db3c3fb7247360a9213492a286c92
+
+% 1 1 0 1ea6dde389c9bbd20b402e1a2ead42f3
+
+@ 0 8 0 04c74c1eae595f070a0cbdbc34e6a9b1
++   entry .permission   注册 `session/request_permission` 的处理函数
++       一个 `PermissionHandler`，借得 `Acp.sessionId`、`Acp.toolCall` 和 `Acp.options`，返回 `Acp.Selected(optionId)` 或 `Acp.Cancelled`。
++       没有注册处理函数时，每个请求都回答 `Cancelled`。
++       被取消的回合中的请求，无论处理函数说什么，都回答 `Cancelled`。
++   entry .readFile   注册 `fs/read_text_file` 的处理函数，并声明该能力
++       一个 `ReadFileHandler`，借得 `Acp.path`、`Acp.line` 和 `Acp.limit`，返回文本。
++       注册它会设置 `FsCapabilities#readTextFile`。
+
+% 2 1 0 1c278dacce320c1d04f12508aafdba80
+
+% 3 1 0 0769e6d05b620dcf0938ebc386afb612
+
+% 4 1 0 19b8a8c045ce6d45020aa3a0ae7f74b9
+
+% 5 1 0 18cdc494f5ac0fe8040003a380533f58
+
+% 0 1 0 17ae010515f1d06d1ae4a0132df07de9
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 0 1 0 13035b428e7af2470e67ef586d8fb9d8
+
+% 0 1 0 17c2270d9c1c8b4d147d46e6ab42c99b
+
+% 1 1 0 15c8914346540011099047ae86299e4b
+
+@ 0 11 0 090b7ab36a0c19bc1afbc7d9e226d54e
++   entry .writeFile   注册 `fs/write_text_file` 的处理函数，并声明该能力
++       一个 `WriteFileHandler`，借得 `Acp.path` 和 `Acp.content`。
++       注册它会设置 `FsCapabilities#writeTextFile`。
++   entry .terminals   注册 `Terminals` 组合，并声明终端能力
++       五个终端操作一并注册，因为协议把它们声明为一项能力。
++       注册它们会设置 `ClientCapabilities#terminal`。
++   entry .capabilities   在初始化时最后调整根据注册情况派生的客户端能力
++       一个逃生舱口：`Acp.capabilities(adjust)` 在发送 `initialize` 之前应用于派生出的 `ClientCapabilities`，因此客户端可以撤回某项能力，或声明一项它通过其他方式提供的能力。
++       派生出的声明对几乎所有客户端都是正确的。
+
+@ 0 1 0 15196bcfee70cd9b0d3480dd113ef1c3
++   entry .connect   在一个块的执行期间连接到智能体：注册处理函数、初始化、借出连接
+
+% 1 1 0 1567089f052016e415563d9027545a06
+
+@ 0 10 0 13e251b8877f0f6516c84a832dcc2c5e
++         `Acp.connect(agent, observer)(register)(lambda)`。
++         第一个块在借出的 `Acp.Registry` 上注册客户端的处理函数；它返回时，注册表被消耗，客户端的能力据此派生，因此交换开始后就不能再注册任何东西。
++         然后交换开启（一个写入任务把发出的消息排入智能体的输入，一个读取任务路由传回的内容），并交换 `initialize`；如果智能体使用的协议版本不是 `Acp.version`，就以原因 `Incompatible` 抛出 `Acp.Error`。
++         接着第二个块带着一个活动的、已初始化的 `Acp.Connection` 运行，以 `Acp.connection` 访问，它的值就是 `connect` 的值。
++         它返回时，交换被拆除，子进程智能体被杀死，因此没有任何东西比它所对话的智能体存活得更久。
+
+% 2 1 0 018b2a71e1693841112be9736605b94c
+
+% 3 1 0 0ebedee2977061c0115c3484c162c7bd
+
+% 4 1 0 0727fa8b0a74da8a149ee6b5b229e4b8
+
+% 5 1 0 0e28c9e838711ec810bd9c2241298637
+
+% 0 1 0 02c7dce2adb70ca00beda9028c3cc0d8
+
+% 1 1 0 11973c61dd3e6a11052339a84bd4b2d2
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 0 1 0 1f98cbc7a3762ff907317e8e4d607571
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 19f27299307b8f4b1459c8ef59ed0cba
+
+% 0 1 0 00c6a0319b1764db01ad0989618ae2b5
+
+% 0 1 0 1cab3bca185b21901ef9bf6be21640a0
+
+% 0 1 0 032f53eb5849eacd098ed729b9b51382
+
+% 0 1 0 1f6c36941cd67c420123dcf7d1bf41f7
+
+% 0 1 0 1a78f555893aecc11e90e0dc8fabee97
+
+% 0 1 0 1d4fd8dbb5d314f70226567772391cad
+
+% 0 1 0 044f5d759553c23316ac6c360cf6bec3
+
+% 0 1 0 1c6209a58167f2d91578e9c0031633f9
+
+% 0 1 0 035576dfa11e60fb043561af6930c189
+
+% 1 1 0 197517955b76075710d531fb75164e59
+
+@ 0 6 0 1e9e1810e31c77760da9e80efb7095f5
++         它需要一个 `Monitor`（因此位于 `supervise` 之内）、一个 `Probate`、`Diagnostics`、一个 `WorkingDirectory` 和一个 `Environment`（用于启动子进程智能体），以及一个 `Tactic[Acp.Error]`。
++         无法启动的子进程会以原因 `Internal` 和启动失败的消息抛出 `Acp.Error`。
++         连接块可以自由捕获监视器（例如一个在某个任务上发出提示、在另一个任务上取消的块），因为监视器是共享的能力。
+
+@ 0 7 0 11946b0bc7a40b8e0da8e7ae8a3ec694
++         来自智能体的消息按种类路由。
++         响应与等待它们的请求相关联，因此可以同时有多个请求在进行中，并以任意顺序得到回答。
++         `session/update` 通知在读取任务上按顺序分派。
++         请求（许可、文件操作、终端）各自在一个派生出的任务上分派，因此等待用户的许可处理函数既不会使更新停滞，也不会使响应停滞。
++         对这个库未建模的方法的请求会得到 `Method not found` 回答，未建模的通知会被忽略。
+
+@ 0 2 0 00fbcd34c5a2d9711444ff7705d5c37b
++         `observer` 如果给出，会在每条消息经过传输层时看到双向的每条消息；默认值是 `Acp.Observer.Silent`。
+
+% 0 1 0 141d6f63e23e6946109c0bf76b478596
+
+% 0 1 0 03bc24f81a00033401d806e1ab0ea059
+
+% 0 1 0 1c3f58e6ffcebe74023dc8133a102f21
+
+% 0 1 0 1eb801dd9650f2b4151a4ec56881b5de
+
+@ 0 1 0 1cbbf0c5cee607671091067883079af4
++   entry .Observer   原始流量上的钩子：每条消息在经过传输层时被看到
+
+% 1 1 0 07e8203d16a2a4a4008158af3c06ed92
+
+@ 0 5 0 1b34d089dd36192b11511208f52a4973
++         智能体的标准输出就是线路，而客户端可能需要它所交换内容的日志或协议跟踪：观察者以 JSON 文本的形式看到每条消息，入站消息在解析之前（因此解码失败的消息也会被观察到），出站消息在分帧之前，因此两个方向读起来一样。
++         它作为 `observer` 传给 `Acp.connect`。
+
+% 2 1 0 17717cb8898c0c6616bc91839072dca1
+
+% 3 1 0 19899e79f865965a16b6d2e6fba5e521
+
+% 4 1 0 1ef53d2c39d6ed66087658901c107ff0
+
+% 5 1 0 1d460ee6f14867f512b36640759e5de0
+
+% 0 1 0 002909ac29b5aa25198527a5b6b0cacd
+
+% 0 1 0 001f52a59efe28331f3ef9e4c27bf08b
+
+% 0 1 0 0d49725af6c7bf6303903d3dba8b882a
+
+% 1 1 0 153502d468670e38121422462a8768c0
+
+@ 0 7 0 1f51a28ab3236df506310210a533c968
++         写入任务调用 `#sent`，读取任务调用 `#received`，两者同时进行，因此实现必须能安全地从两个线程调用。
++         它是一种共享的、持久的能力。
++     entry .Silent   什么也不做的观察者，是一个纯值；`connect` 的默认值
++     entry .silent   以上下文方式提供 `Silent` 的 given；位于隐式作用域中
++     entry #received   以从智能体读取的每条消息调用，在解析之前
++     entry #sent   以发给智能体的每条消息调用，传入其编码后的正文，在分帧之前
+
+@ 0 1 0 03998bf05934723f16a58c934d8da9c6
++   entry .Endpoint   在哪里找到这个进程可以与之对话的智能体：一条要启动的命令，或一对流
+
+% 1 1 0 1a71b3695c83b3921e49a44d273aa982
+
+@ 0 6 0 180c9ec72eab2a1118cf7c3b3de307a2
++         一个说明智能体在哪里的普通值，自身不持有任何通道：通道在 `Acp.connect` 开始时打开，在它结束时关闭。
++         `Endpoint.Process(command)` 是作为子进程启动的智能体，它的标准输入和输出承载协议；`Endpoint.Streams(input, output)` 则是一个已经在一对 `java.io` 流背后运行的智能体，它可能在这个进程中、在套接字背后，或是测试中的一个夹具。
++         `Endpoint(command)` 和 `Endpoint.streams(input, output)` 分别构建它们，并拓宽为 `Endpoint`。
+
+% 2 1 0 168afa9bf72eb45d1846c3031db58668
+
+% 3 1 0 0412d84d8c0070d8152b91d2ebbeff7c
+
+% 4 1 0 1da7bf689ec62e44094fc98e3e3ec529
+
+% 5 1 0 06858ef6c47632570b3585e6b0b00196
+
+% 0 1 0 0287c2f73871229f0633ea83194f7af0
+
+% 0 1 0 165717cbb7dfdee60649376efddaadae
+
+% 1 1 0 11c2f63aa30aadf715b9b3e1cef2e0ae
+
+@ 0 2 0 112960bb2bba68ab1915f33832ad2d08
++         子进程智能体以静默的执行日志启动，因为它的标准输出就是线路；连接结束时它会被杀死，而不是被等待。
+
+% 1 1 0 175b551b4c086b170cadbc8ba085c585
+
+@ 0 7 0 140ee90a526563561b02b4c67e7ece3e
++     entry .apply   作为子进程启动的智能体：`Acp.Endpoint(command)`
++         接受一个 guillotine `Command`，用 `sh"…"` 书写。
++     entry .streams   已经在一个输入流和一个输出流背后运行的智能体
++         哪个流是哪个，是从这个进程的角度来看的：`input` 是智能体写入的内容，`output` 是它读取的内容。
++         智能体写入的每条消息在其终止换行符到达时就被交付，因此向管道写入的夹具只需在每行之后刷新。
+
+@ 0 1 0 1e5748e5beb9c3d60edc3a41e505bd0d
++   entry .Error   ACP 交换中的故障，或智能体报告的故障，按其 JSON-RPC 原因区分
+
+% 1 1 0 12aee50ba20075d7028a1c317a35d85f
+
+@ 0 6 0 042c4a0253607754083388bf633d174e
++         错误 `↯/s.125.1`：_the ACP operation failed because `reason`_，按原因编号（从 `Parse` 的 148.1 到 `Incompatible` 的 148.7）。
++         每个 `Reason` 都带有协议为它分配的 JSON-RPC 线上代码：`Parse` −32700、`InvalidRequest` −32600、`MethodNotFound` −32601、`InvalidParams` −32602、`Internal` −32603 和 `AuthRequired` −32000；`Incompatible` 是这个库自己的，当智能体以另一个协议版本回答 `initialize` 时由 `Acp.connect` 抛出。
+
+@ 0 5 0 0e0737135545fe6c15756ee6400e29a5
++         当智能体返回错误响应时，连接的请求会通过作用域内的 `Tactic[Acp.Error]` 抛出一个这样的错误，其原因由 `.reason` 从线上代码恢复（标准集合之外的代码为 `Internal`），智能体的消息作为 `#details`。
++         需要认证的智能体以 `AuthRequired` 回答；客户端随后调用 `Connection#authenticate`。
+
+@ 0 3 0 0cf61d8ee598b0cf05400134b56c600a
++         处理函数通过它借得的 `Emit[Acp.Error]` 抛出一个这样的错误，客户端则以一个错误响应回答智能体的请求，其中带有原因的代码，并以 `#response` 作为消息：
+
+% 2 1 0 0f65f36689a3d13317b68b0622423405
+
+% 3 1 0 035d6fdb029e8474189f79c434fa7da7
+
+% 4 1 0 0fceccc58104b9841c5cd02f5eab9e47
+
+% 5 1 0 0b011dbf39f3ed8f0fe1b48363bfb952
+
+% 1 1 0 108d7f683c90f3a204a6a908c9094992
+
+% 0 1 0 1c37cfe8ec0ca57100c54e101cdd5352
+
+% 0 1 0 0cd7677dd81ca91e04c7ee90234eeabc
+
+% 0 1 0 0615f693ecb4276f015850281cc816a3
+
+% 0 1 0 11f28b1c4a1f1e5d1467c0efec9d6464
+
+% 1 1 0 0083aa5de5aee63819d283471e4793d1
+
+@ 0 2 0 1864f32c0827fae007954bbd7f3b7d89
++         构造它需要作用域内有 `Diagnostics`，所有 fulminate 错误都是如此。
++     entry .Reason   操作失败的原因，各自带有 JSON-RPC 线上 `code` 和它的 `number`
+
+% 1 1 0 173d6c4f14a840010c5fd358258cac29
+
+@ 0 1 0 0a0cd70d9bd64b8f1f823a0ba9673178
++           每个分支在它的 `number` 之外都有一个 JSON-RPC 线上代码：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 11 0 1ef2fe77896e5abc1c05cbee72b447f3
++           column  分支
++           column  代码
++           column  消息
++           column  备注
++           row  `Parse`  1  _the message could not be parsed as JSON_  线上代码 −32700
++           row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  线上代码 −32600
++           row  `MethodNotFound`  3  _the method name was not recognised_  线上代码 −32601
++           row  `InvalidParams`  4  _the parameters were not valid for the requested method_  线上代码 −32602
++           row  `Internal`  5  _an internal error occurred_  线上代码 −32603
++           row  `AuthRequired`  6  _the agent requires authentication_  线上代码 −32000
++           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  无线上代码
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 9 0 068ffbfaeace9c9515877aa403bc876c
++       entry #number   错误 `↯/s.125.1` 的子编号
++       entry #code   JSON-RPC 线上代码，对于没有线上代码的 `Incompatible` 则为 `0`
++     entry .reason   线上代码所指的原因，对于标准集合之外的代码则为 `Unset`
++         `Reason#code` 的逆运算，用于读取错误响应。
++         `0` 从不是线上代码，因此它从不得出 `Incompatible`。
++     entry .communicable   把原因渲染为它的消息，例如 _the agent requires authentication_
++     entry #reason   操作失败的原因
++     entry #details   智能体的消息，或抛出错误时给出的消息，如果有的话
++     entry #response   在错误响应中发送的消息：详细信息，或原因的描述
+
+@ 0 1 0 174ce464927bcc5e15d58a2f0ef72532
++   entry .Registry   记录客户端处理函数的地方，借给 `connect` 的第一个块
+
+% 1 1 0 1e37a9bac9d00df01013cc51df2d183f
+
+@ 0 5 0 1d0e8bb20603abd117ee2726798ab27d
++         注册组合子的目标：`Acp.connect` 创建一个注册表，把它作为上下文参数借给注册块，并在该块返回时消耗它，因此交换开始后的注册在构造上就不可能。
++         它的构造函数是私有的，它是一种无法逃出该块的能力。
++         自己编写的注册处理函数的方法以 `using Acp.Registry^` 接受它。
+
+@ 0 6 0 150cca190a5c63a50bf86ad8664b4fc3
++         它的槽位（每个组合子一个公有 `var`，以组合子命名并带有结尾的 `0`）之所以公有，只是因为内联组合子要给它们赋值，而每个处理函数槽位的类型都是 `AnyRef | Null`：提及上下文函数类型的联合类型会在每次适配时使其捕获集变得新鲜，因此有类型的边界是组合子的参数，在那里，闭包捕获了注册表的处理函数会被拒绝。
++         请通过组合子注册，而不是通过槽位。
+
+% 1 1 0 03982f530c299eb40cade6ce267187b0
+
+% 0 1 0 17ae4b68a3c33b3618171bbfab9e24ed
+
+@ 0 1 0 08141d298360e799074715f67b9efc01
++     entry .Slot   保存已注册处理函数的盒子
+
+% 1 1 0 0ab9dab1c683023501c59a63f933ef5c
+
+@ 0 11 0 0dd617aa7644aaa908bcbeeffcb16da5
++           上下文函数值会通过被应用来适配任何不是上下文函数的期望类型，因此处理函数不能直接放进 `Optional` 或 `AnyRef` 槽位：`Slot[handler](value)` 完整地保存它，服务在分派时再将其拆箱。
++       entry #value   处理函数
++     entry #updated0   装箱后的 `updated` 处理函数，或 `null`
++     entry #permission0   装箱后的 `permission` 处理函数，或 `null`
++     entry #readFile0   装箱后的 `readFile` 处理函数，或 `null`
++     entry #writeFile0   装箱后的 `writeFile` 处理函数，或 `null`
++     entry #terminal0   装箱后的 `terminals` 组合，或 `null`
++     entry #adjust0   `capabilities` 调整，或 `Unset`
+
+@ 0 1 0 11ed36f36561dcac1eccef863286ebd4
++   entry .Connection   客户端对运行中智能体的句柄，由 `connect` 在一个块的执行期间借出
+
+% 1 1 0 16f3a1fcb2aaa4e5194e533f837e75d6
+
+@ 0 3 0 035550490a9530fe1d1e88e8e7e886db
++         `Acp.connect` 借给其第二个块的值，以 `Acp.connection` 访问。
++         它是一种能力，在块返回时被释放，因此它不能比它所对话的智能体存活得更久。
++         它的构造函数是私有的。
+
+@ 0 3 0 1210bff86426716a0ae53d94ec17ec71
++         请求会阻塞调用者，直到智能体的响应到达，但从不阻塞读取器，因此可以有多个请求同时在不同任务上进行，并乱序得到回答：一个任务可以保持一个提示回合打开，而另一个任务取消它。
+
+% 2 1 0 19f3e7dffd3a77671aafffdec6ace833
+
+% 3 1 0 04f778bff21f882c03558017bc61ea24
+
+% 4 1 0 12d4b907f678dd641716c6470fa0c9b5
+
+% 5 1 0 08a7b95b645c75b51df84970760e9bd1
+
+% 0 1 0 024a4188eaa25213131b0c2c817b1dc5
+
+% 0 1 0 174a5b398d58104910fdf374fe6cc791
+
+% 0 1 0 0850faa70107c091126a03db66dccfdb
+
+% 0 1 0 094510b2541c34900c3e4f8fd927a36f
+
+% 1 1 0 02169463e2db35300023a7969a5dc5f6
+
+@ 0 4 0 0eddd3639d2926d504c56428c1c81db1
++         当收到错误响应时，每个请求都会通过作用域内的 `Tactic[Acp.Error]` 抛出 `Acp.Error`。
++         连接的底层是 obligatory 的 `JsonRpc`，其 `#Origin` 是智能体的接口 `Acp.Agent`，而 `#send` 发送这个库未建模的方法的消息。
+
+% 1 1 0 053e02cf64c7ec2c0e8622d3f4683224
+
+% 0 1 0 00bb40d224fe55ac192df09f745f71ba
+
+@ 0 40 0 1ff88ddd85b4394807557b41c2a50e2d
++     entry #Origin   连接的远端：`Acp.Agent`
++     entry #lifecycle   为 `Acp.Agent.Lifecycle` 生成的客户端：`initialize` 和 `authenticate`
++         直接调用它会绕过连接自身方法所做的错误转换和版本检查。
++     entry #sessions   为 `Acp.Agent.Session` 生成的客户端：`session/*` 方法
++         与 `#lifecycle` 一样，应优先使用连接自身的方法。
++     entry #send   按原样发送一条消息，不生成 id，也不等待回答
++         用于这个库未建模的扩展方法或通知的原始接缝。
++         以这种方式发送的请求，其响应不会被路由到任何地方，因此它用于通知。
++     entry #initialize   握手：发送协议版本和客户端的能力
++         `Acp.connect` 在借出连接之前调用它，因此客户端无需调用。
++         如果智能体以 `Acp.version` 之外的协议版本回答，它会以原因 `Incompatible` 抛出 `Acp.Error`，并为 `#agentCapabilities` 和 `#authMethods` 记录智能体的回答。
++     entry #authenticate   用智能体提供的方式之一进行认证，按其 id 指定
++         用于以 `Acp.Error.Reason.AuthRequired` 回答了请求的智能体：id 是来自 `#authMethods` 的一个 `AuthMethod#id`。
++     entry #newSession   在一个工作目录中打开会话，可选地带有 MCP 服务器
++         `newSession(cwd, mcpServers)` 返回一个 `NewSessionResult`，之后每个关于该会话的调用都接受它的 `sessionId`。
++         `cwd` 应当是绝对路径：智能体相对于它工作。
++     entry #loadSession   按 id 恢复会话，通过更新处理函数重放它的历史
++         在它返回之前，智能体会以 `session/update` 通知重放整个对话，这些通知被路由到用 `Acp.updated` 注册的处理函数，其中包括 `UserMessageChunk`。
++         只有 `AgentCapabilities#loadSession` 为 `true` 的智能体支持它。
++     entry #prompt   一个提示回合：阻塞直到智能体报告回合为何结束
++         `prompt(sessionId, content)` 接受一个 `List[ContentBlock]`，`prompt(sessionId, text)` 接受单个 `TextContent`。
++         它在智能体完成它在回合中所做的一切后返回 `StopReason`，与此同时回合的更新并发地以流的形式传给更新处理函数。
++         打开回合会清除会话的取消状态，因此客户端在取消后可以再次发出提示。
++     entry #cancel   取消会话的当前回合
++         这是一个通知，而不是请求：回合的结果是进行中的 `#prompt`，智能体必须以 `StopReason.Cancelled` 完成它。
++         调用它时待处理的许可请求，以及在下一个回合打开之前到达的许可请求，都按协议要求回答 `Cancelled`。
++     entry #setMode   按 id 把会话切换到它的某个模式
++         这些 id 是 `NewSessionResult#modes` 中的 `SessionMode#id`。
++     entry #agentCapabilities   智能体在初始化时报告的它能做什么
++     entry #authMethods   智能体在初始化时提供的认证方式
+
+@ 0 1 0 1a6609ce28e1f1b61acfdaffddaece80
++   entry .Agent   客户端所调用的智能体完整接口：`Acp.Agent.Lifecycle` 和 `Acp.Agent.Session`
+
+% 1 1 0 1ab24999dc5377ec07fe04a339a02330
+
+@ 0 4 0 188e66ea499d0c961ef4c832a431a1f2
++         客户端→智能体线上特质的并集，也是 `Acp.Connection` 的 `JsonRpc` `Origin`。
++         客户端一侧没有任何东西实现它：它是远端的类型。
++     entry .Lifecycle   `initialize` 和 `authenticate` 的线上特质，即客户端→智能体的握手
+
+% 1 1 0 0881f735effe6d77095054042f94a9b6
+
+@ 0 4 0 1ba7a2eb495fd8dd04e43e708d8e0aeb
++           共同构成智能体接口 `Acp.Agent` 的 `@rpc` 特质之一；之所以拆分出来，是为了让 obligatory 的 `JsonRpc.proxy` 为每个特质生成大小可控的类。
++           `Acp.Connection#lifecycle` 是为它生成的客户端。
++           程序只有在构建自己的连接时才需要它；`Acp.Connection` 包装了它。
+
+% 0 1 0 039e6df5628f025404484515465863b6
+
+@ 0 8 0 17554182da42222f099060d560082652
++       entry #initialize   发送带有协议版本和客户端能力的 `initialize`
++       entry #authenticate   发送带有认证方式 id 的 `authenticate`
++     entry .Session   客户端在智能体上调用的 `session/*` 方法的线上特质
++         `session/new`、`session/load`、`session/prompt`、`session/cancel`（一个通知，因此返回 `Unit`）和 `session/set_mode`，每个都是同名方法，接受协议自身的参数名和类型。
++         `Acp.Connection#sessions` 是为它生成的客户端，`Acp.Connection` 的 `newSession`、`loadSession`、`prompt`、`cancel` 和 `setMode` 包装了它。
+
+@ 0 1 0 1a8bd3e1f056a45c1b71930be9338de9
++   entry .Client   智能体所调用的客户端完整接口：会话、文件系统和终端方法
+
+% 1 1 0 06bda32264e98cec0d3e069e894d29f0
+
+@ 0 16 0 1e3938bbd6b8427814021066f7501891
++         `Acp.Client.Session`、`Acp.Client.Fs` 和 `Acp.Client.Terminal` 的并集。
++         `Acp.connect` 构建的服务实现了它，每个部分各有一个生成的 JSON-RPC 分发器，因此程序只有在通过 `Acp.connect` 以外的方式提供协议服务时，才需要自己实现它。
++     entry .Session   智能体在客户端上调用的、关于会话的方法的线上特质
++         `session/update`，即这个方向上协议唯一的通知，以及 `session/request_permission`，即智能体会阻塞等待的请求。
++         由 `Acp.connect` 构建的服务实现，它把这些路由到用 `Acp.updated` 和 `Acp.permission` 注册的处理函数。
++     entry .Fs   智能体文件系统请求的线上特质：`fs/read_text_file` 和 `fs/write_text_file`
++         由 `Acp.connect` 构建的服务实现，它把这些路由到用 `Acp.readFile` 和 `Acp.writeFile` 注册的处理函数，对未注册的则回答 `MethodNotFound`。
++     entry .Terminal   智能体终端请求的线上特质：`terminal/create`、`output`、`wait_for_exit`、`kill`、`release`
++         由 `Acp.connect` 构建的服务实现，它把这些路由到用 `Acp.terminals` 注册的 `Acp.Terminals` 组合，如果没有注册则回答 `MethodNotFound`。

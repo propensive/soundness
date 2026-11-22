@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 6 0 1889c953ce024d7f0440aab3316da853
++       *平面*是值所在的空间：路径的文件系统（`Path on Linux`、`Path on Classpath`）、类加载器的搜索空间，或绘制图所依据的节点。
++       类型类或值类型扩展 `Planar`，以便 `on` 可以指明平面；galilei 的文件系统方针（`CreateParents`、`DeleteRecursively`）也是 `Planar`，以便为每个文件系统选择一种方针。
++   entry #Plane   值所在的空间，例如文件系统或类路径

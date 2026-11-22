@@ -1,0 +1,775 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a81193df7d39ba70195f212044dabe8
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1aa35c85d608716d1e9e41e76f8b6361
++ info   名称的有效性规则是其类型的一部分，在代码编译时和文本到达时进行检查
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 11c5ecbcabd3ef900252cc01cc95cf12
++     _Nomenclature_ 把名称——文件名、DOM id、CSS 类、Git 分支、测试 id——表示为 `Name[plane]`：已知满足其所属命名空间（即**平面**）规则的文本。
++     平面是一个标记类型，带有一个 `Nominative` given，该 given 以约束类型的交集陈述平面的规则，如 `MustNotContain["/"] & MustNotEqual[".."]`；只有当文本满足其中每一条规则时，该平面的 `Name` 才存在。
++     用 `n"…"` 插值器写出的字面量在代码编译时就受到检查；运行时到达的文本则通过 `Name[plane](text)` 或 `text.as[Name[plane]]` 成为 `Name`，二者会抛出 `Name.Error`，指明文本违反的那一条规则。
++     因此，持有一个 `Name[plane]`，就证明了它在该平面中有效。
+
+% 2 1 0 0a126953ff56d1a2186c0cd02ffb8ced
+
+% 3 1 0 0072a091f3033bce0c88bfb38497e8f2
+
+% 4 1 0 196342a37369401d14003bdc18411299
+
+% 5 1 0 197b757df8de8ec410eec4e04b4f02a6
+
+% 2 1 0 142f07214e09e92d0b8142c18e527621
+
+% 0 1 0 0ba4425c353af124141a12adddaebe4a
+
+% 2 1 0 0e94c575118146b61588b4e9b14dfeee
+
+% 0 1 0 0ee9344f94f99bef00ecb0da117630d3
+
+% 0 1 0 0aaa2c4ab9511f620904ea17afaec2f1
+
+% 0 1 0 16870bca5cae5c1e1635d0c096a4e078
+
+% 1 1 0 07eae694fa15ef760d6e851b424bca6f
+
+@ 0 12 0 14fd707f5dce1be61c2c88ab1591c1f4
++     `Name` 是 `Text` 的子类型，因此凡是传文本的地方都可以传它，它也与所包装的文本相等；它在平面上是协变的，因此 `Name[A & B]` 可以用在要求 `Name[A]` 或 `Name[B]` 的地方，一个 `n"…"` 字面量正是由此取得作用域内所有其规则它满足的平面的类型。
++     规则是与 `Check` 类型配对的 `Rule` 对象——`MustStart`、`MustNotStart`、`MustEnd`、`MustNotEnd`、`MustContain`、`MustNotContain`、`MustNotEqual`、`MustMatch` 和 `MustNotMatch`，各自以一个字面量为参数——以及三条转而以自身描述为参数的谓词规则：`JavaIdentifier`、`CssIdentifier` 和 `DomIdentifier`。
++     规则知道如何描述自己，因此错误字面量的编译错误和错误输入的运行时错误说的是同一件事，用的是同样的措辞。
++     平面 `DomId`、`CssClass` 和 `Required` 是内置的；galilei 的文件系统平面（`Linux`、`Windows`、`MacOs`……）、hellenism 的 `Classpath` 平面以及 probably 的测试 id 所用的 `Probing` 平面，也以同样的方式定义。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     该库有两个源集：
+
+@ 0 6 0 108cfc521037d7230819691a6e0e6464
++     - `nomenclature.core`——`Name`、`n"…"`、`Nominative`、`Rule`、`Check`、`Must…` 规则、标识符规则和三个内置平面。它可编译到 JVM、Scala.js 和 Scala Native。
++     - `nomenclature.lexicon`——`Moniker` 和 `Vocabulary`：为小整数提供形如 `brilliant-leopard` 的易于人类使用的名称，由从任意可流式读取的来源读入的词表构建。
+
+@ 0 6 0 16838e191ab5030218a0038979e52ee8
++     `Nominative` given 声明为 `inline given … = !!`：`n"…"` 和 `Name[plane](…)` 背后的宏只读取它的*类型*，因此从不构造实例，而 `!!` 是被擦除的占位符。
++     由于 `import pkg.*` 不会导入 given，声明在库的伴生对象中的平面可以通过隐式作用域找到，而声明在包顶层的平面则必须按名称导入。
++     所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 01344a9f049a555d0c49ac610582934a
+
+% 0 1 0 0643e424fdc197da0bda9b45a647ed2f
+
+% 0 1 0 1ad89318248b78430a4e47d6df514888
+
+% 0 1 0 11eaff0bc7ac00be13ab93ec3c900aee
+
+@ 0 1 0 182f502880dd33a9078ebcee50e4b150
++ entry .Name   在某个命名平面中经证明有效的文本：`Name[plane]`，`Text` 的子类型
+
+% 1 1 0 00a6fce456d6d9fe06a1f50f85f2a68b
+
+@ 0 9 0 0a1b1f0d3a182c5f0ebb8c3682dd8c14
++       `Name[plane]` 是不透明类型 `nomenclature.internal.Name[plane]`，在此导出。
++       它是通过了 `plane` 每一条规则的 `Text`，其中 `plane` 是一个在隐式作用域中有 `Nominative` given 的类型。
++       名称有三种创建方式：`n"…"` 写出一个字面量，并在代码编译时对照作用域内的每个平面检查它；`Name[plane](text)` 对照一个平面的规则检查运行时文本，若某条规则不满足则抛出 `Name.Error`；`text.as[Name[plane]]` 则是通过 `Decodable` 类型类进行的同一检查。
++       存在的名称就是有效的，因此接收 `Name[Linux]` 的代码从不重新验证它。
++       伴生对象的成员——`Name.apply`、`Name.verify`、它的 given、`Name.Error` 和 `Name.Extractor`——在 `nomenclature.internal.Name` 下记述。
+
+% 2 1 0 0649bf3083c5aa1a1b3b0b120c4b1a64
+
+% 3 1 0 02ccc6c005f31236056bf3e24cca8798
+
+% 4 1 0 0fce983bd1155ef106dcfa0f0f8c4203
+
+% 5 1 0 13cbc429b504a4b802940ed9bf793b62
+
+% 2 1 0 13d4d0e6cce0469c14ba325a5926d0f0
+
+% 0 1 0 0c7de9437090032f037adf6445ae39c2
+
+% 0 1 0 1768d62f1b49c9551637474d70038f83
+
+% 0 1 0 1ab6f8485d99ca471401b55f52cc49d4
+
+% 0 1 0 0b5c7266730a487e09df8ccdb6528de2
+
+% 0 1 0 1a419a2b5ee70d901fa6700a6b7faf1c
+
+% 0 1 0 1d2f7064bf5ee66b18c92ec1ac87da42
+
+% 1 1 0 0ade400695c06c37104610b1f4d1b2d4
+
+@ 0 4 0 0d787a3835d3ce3b1bc0cf8b8810aadd
++       `Name` 在平面上是协变的，因此 `Name[A & B]` 既是 `Name[A]` 也是 `Name[B]`：同时在多个平面中有效的名称，以这些平面的交集为其平面。
++       规则相同的两个平面仍是不同的类型，因此在要求 `Name[Tag]` 的地方不接受 `Name[Branch]`。
+
+@ 0 4 0 098ac5480406e44912137dbd39553947
++       规则按平面的交集中书写的顺序检查，报告的是第一条被违反的规则，因此错误只指明一个具体的缺陷。
++       对字面量在编译时、对文本在运行时，用的是同样的 `Rule.check` 谓词，因此二者从不会有分歧。
+
+% 0 1 0 09e6b35af477e3391b3c66352b9c7211
+
+% 1 1 0 077394122ca21de8081afd2a7a21f653
+
+% 0 1 0 1bda394a07b49d8c072025e177e73cd5
+
+@ 0 7 0 1365b6b6b34cad0d04e4cf3caf6f919e
++ entry .n   `n"…"` 插值器：名称字面量，在代码编译时对照作用域内的平面检查
++     `n"main"` 是一个 `Name`，其平面是作用域内所有带 `Nominative` given 且其规则被该字面量满足的平面的交集，因此一个字面量可以用在要求其中任何一个平面的地方；如果作用域内没有平面接受它，则是编译错误：_the name `.` is not a valid identifier in any namespace in scope_。
++     在期望类型为 `Name[Tag]` 时，违反 `Tag` 某条规则的字面量无法符合该类型，因为 `Tag` 不在它被判定为有效的那些平面之中。
+
+% 2 1 0 064bb4e989d4a34008554a0cb0f7b722
+
+% 3 1 0 0c2b4e383d1a18aa15e1514d18339501
+
+% 2 1 0 0374a95aed8876a3159cb7c8f2501535
+
+% 0 1 0 1b3ef768c8027e6100caf3a40bfe9d0c
+
+% 2 1 0 1944309d44ac0fa81feb08c31581b4c9
+
+% 0 1 0 0b22b168871babdd005557f30be306b7
+
+% 1 1 0 175a24bd0ff8647e1ac62bf8ae2a3469
+
+@ 0 5 0 1ede924ed7b5b7531c473bcec7693ad8
++     该插值器不接受 `$` 替换，因为文本必须在代码编译时已知；只在运行时才知道的文本用 `Name[plane](text)` 检查。
++     字面量的字符按原样取用，不做转义处理。
++     作为模式，`case n"main" =>` 匹配与该字面量相等的 `Name`，并且会先对照被匹配值的平面检查该字面量。
+
+@ 0 4 0 00ad224a54d3e1d50b93f1e428c77575
++     作用域内有哪些平面，决定了 `n"…"` 推断出什么：声明在伴生对象中的平面总能通过隐式作用域看到，而总括包自己的平面——文件系统平面、`Classpath`、`Probing`——也在候选之列，因此未加类型标注的 `n"…"` 具有一个很宽的交集类型。
++     收紧平面的规则，就会缩小它所接受的范围：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 03a59cc2657c83550a806c22dfd6c78b
++       label 一条规则：标签不能为空
+
+% 1 1 0 0443393cb54732a807e5ab87f8f7f313
+
+% 2 1 0 04d52c503b2b09661ff207e587107fa7
+
+% 3 1 0 0274bf13f4b8d18603e381e4c812bf63
+
+% 0 1 0 13050599ca4490a60045e199c58a65a6
+
+% 0 1 0 1f2d618d49526bf20d2405d03db34126
+
+% 1 1 0 1bc3fda2041738f7179a8a46b4a1e2c2
+
+@ 0 1 0 0c34c3e1b27a18c0064085a33defd064
++       label 两条规则：也不能含有点号
+
+% 1 1 0 0f0a0b364f7ec55217ba2ccada971430
+
+% 2 1 0 0d16dc492f2d504305a735dc9aba1688
+
+% 3 1 0 0fd3a3206f667bd01063adcee7ac75f8
+
+% 0 1 0 016b6322202214a11fcea33534565c86
+
+% 1 1 0 0c0dac91dff89b611bddf5890def1235
+
+% 0 1 0 043e50fb48cb5a160375b25e441d19f6
+
+% 1 1 0 189c7b61611f2aef1ec56557f86e2bfd
+
+@ 0 1 0 11486c5272de72ee07b4bd819c7ce968
++       label 三条规则：还必须匹配一个模式
+
+% 1 1 0 0468020480e23a1218b4b7871869a797
+
+% 2 1 0 1fcea5dde2a9cee31a580262eb35b687
+
+% 3 1 0 1f0f7be042cf095b1d2ae185a8a8af67
+
+% 0 1 0 1f86c349a92a6c790cc917f9280d3f3d
+
+% 0 1 0 0a5db3e22d7e53bc1d6b1b5d0414e3d4
+
+% 1 1 0 14f2451839dd32fa0f9a1dd66b368635
+
+% 0 1 0 0fbeaf30998b66e70bb279820d04b049
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 04b75a197104e31b05d2dc8d2d55cae5
++ entry .Nominative   赋予平面规则的类型类：`plane is Nominative under rules`
+
+% 1 1 0 006554dc7bde605a028482d775f4d26c
+
+@ 0 7 0 11916b823d3807600e14daf9ce6cbe8c
++       `Nominative` 是一个 `Typeclass`，其 `Self` 是平面，其 `Limit`（来自 `Limited`，用别名 `under` 书写）是平面的规则：`Check` 类型的交集，每个 `Check` 都是作用于一个字面量的规则，例如 `MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]`。
++       `n"…"`、`Name[plane](text)` 和 `text.as[Name[plane]]` 背后的宏召唤平面的 given，并读取它的 `Limit` 类型，以确定要按书写顺序运行哪些规则。
+
+% 2 1 0 123f7c0a6e6d7c2a042747a370a575f6
+
+% 3 1 0 19d91c6bff362471039db4ac593f3c5f
+
+% 2 1 0 067f04405252bb4d1089cbfb87ae9afe
+
+% 0 1 0 0247abd22b057aec1166dc6929d21a15
+
+% 0 1 0 1806acb40e4d42d3072d7a6203d2e79b
+
+% 0 1 0 0b172320816daf081147f247b69aee55
+
+% 1 1 0 061d0aa6b92a393119270d9c14b91e5a
+
+@ 0 7 0 0db1e88bb3d33cde0da130f56f901566
++       该 given 声明为 `inline given … = !!`：只有它的类型会被读取，因此不会构造实例，`!!` 代替了值。
++       它应放在平面的伴生对象中，隐式作用域无需导入即可在那里找到它；像文件系统平面那样带有 `Rules` 别名的平面，可以让 `Path` 的元素类型复用同样的规则。
++       参数不是字符串字面量类型的规则无法在编译时求值：`n"…"` 会跳过这样的平面，而 `Name[plane](text)` 和 `Name.verify` 会将其报告为错误的类型。
+
+% 0 1 0 0235f0d0e7c37aa6091b8a6b9e188797
+
+% 1 1 0 1775991a0074c67f03089b757197e37b
+
+@ 0 4 0 06aea983922f91df0ba1fa026682d4db
++   entry .apply   `Nominative[plane, rules]()`：运行时实例，供需要一个值的代码使用
++       创建一个 `plane is Nominative under rules` 实例。
++       宏读取 given 的类型而从不读取它的值，因此平面的 given 通常是 `!!`；这个构造器用于必须是真实值的 given，例如在显式传递它时。
+
+@ 0 1 0 05678f5acee592091d1f0f37e10d26a4
++ entry .Rule   约束对象是什么：名称上的谓词，以及描述它的短语
+
+% 1 1 0 11f3ec89c728b75c0c19ae832a1d0370
+
+@ 0 7 0 1a2503367291bdce0e8791044ea6a525
++       每条约束——`MustStart`、`MustNotContain`、`CssIdentifier` 等——都是一个扩展 `Rule` 的对象，带有两样东西：`#check`，名称和规则参数的谓词；以及 `#describe`，它把参数变成错误所用的短语，如 _must start with x-_。
++       与该对象并列的是一个同名的密封特质，它扩展 `Check[parameter]`，是写在平面规则中的类型；宏把该对象作为特质的伴生对象找到并调用它的 `check`，对字面量在编译时调用，对文本在运行时调用。
+
+@ 0 1 0 1e2b8ae8da83a65a0eb6a60bad32e7cd
++       一条新规则就是这样一对：
+
+% 2 1 0 1013915bfc3a6e8b0c43b8ecf9c88f82
+
+% 3 1 0 0efc3b5287da70b8167a66fa98832225
+
+% 0 1 0 0c5d5e7ea210cf94045cf08256727b8e
+
+% 0 1 0 0eb265db8283f3f718966ce3df0858fd
+
+% 0 1 0 1a9ab344a61b79000eefb9d0b2b362eb
+
+% 0 1 0 130e254d6ed06a8c08074e46274aacb5
+
+% 1 1 0 1aec9c31192efd5112ec03fba999ce6b
+
+@ 0 5 0 05e914f7e5db138f13ef270814359297
++       描述是规则的一部分，而不是在每次使用时书写，因此错误字面量的编译错误和运行时的 `Name.Error` 说的是同一件事。
++       规则的参数总是字符串字面量类型，按文本读取；没有自然参数的规则（例如 `JavaIdentifier` 就没有）则改以错误中要使用的描述作为参数。
+
+% 1 1 0 1e77b294ef1339b612498ec9fc818bcb
+
+% 1 1 0 010702b9e894530e0583925a28b3690b
+
+@ 0 7 0 06ba788de8be83631488d3f8cf41b555
++   entry #describe   报告违规所用的短语，由规则的参数得出
++       一个 `Text => Message` 函数：对于 `MustNotStart` 和参数 `0`，结果是 _must not start with 0_。
++       `Name.Error` 的消息是 _the name … is not valid because it_，后接这个短语。
++   entry #check   名称是否满足该规则：`(name, parameter) => Boolean`
++       该谓词接收候选文本和规则的参数。
++       它在运行时由 `Name[plane](text)` 调用，在编译时由宏针对 `n"…"` 字面量调用。
+
+@ 0 6 0 0eb2f3b37e094ed81e8d918f99070c0c
++ entry .Check   作用于其参数的规则的类型：`MustStart["x-"]` 是一个 `Check["x-"]`
++     规则的密封特质所扩展的特质，以规则的字面量参数为类型参数。
++     平面的规则是 `Check` 的交集，宏把这个交集拆成各个 `Check` 成员，把每个成员的参数读作字符串常量，并找到与之同名的 `Rule` 对象。
++     `Check` 从不被实例化：它只是类型层面的描述。
+
+@ 0 3 0 0d3a9f4f371d12fc0323b5e35a84d272
++ entry .MustStart   名称以给定文本开头的规则：`MustStart["x-"]`
++     _must start with x-_。
++     整个前缀必须位于开头：`x-ray` 和单独的 `x-` 都通过 `MustStart["x-"]`，而 `ray-x-` 不通过。
+
+% 2 1 0 1e4043df10614e1f02b4a12018d1b92c
+
+% 3 1 0 14337f7cc6a81db61314457d75393d42
+
+% 4 1 0 0178bd1b18ef85cc12a4be1779455a84
+
+% 5 1 0 08688194ec5e0da0161859205cfb9862
+
+% 0 1 0 1035460a96b3c1e711bf3b21be85a0eb
+
+% 0 1 0 05d3d8f607196879036df640cc06fc4d
+
+% 0 1 0 17eb14cd24546e7a0ae79932e77480c2
+
+% 0 1 0 04e57081824689851f3319965e90b055
+
+% 0 1 0 1d1705e7257398c21f13232eadcceb29
+
+% 1 1 0 01dbbaa9b134f3c115d3971e6def14b0
+
+@ 0 4 0 1494423d6e22d1560fc44a103f5f9fee
++ entry .MustNotStart   名称不以给定文本开头的规则：`MustNotStart["0"]`
++     _must not start with 0_。
++     它是 `MustStart` 的补：开头几个字符为该参数的名称不通过，其他任何名称都通过，包括在别处含有该文本的名称。
+
+@ 0 3 0 0c46ca0571306a6e16300ac9d7c1b106
++ entry .MustEnd   名称以给定文本结尾的规则：`MustEnd["!"]`
++     _must end with !_。
++     最后几个字符为该参数的名称通过；`hello!9` 不通过 `MustEnd["!"]`。
+
+@ 0 3 0 16fc6c73f76c6cee1712b13e07b4595f
++ entry .MustNotEnd   名称不以给定文本结尾的规则：`MustNotEnd["z"]`
++     _must not end with z_。
++     `quartz` 不通过 `MustNotEnd["z"]`；`zebra` 和 `quartz-a` 通过，因为该文本只在结尾处被禁止。
+
+@ 0 3 0 10154b770e4430cc0af10b5f77f95242
++ entry .MustContain   名称在任意位置含有给定文本的规则：`MustContain["-"]`
++     _must contain -_。
++     该文本可以在开头、中间或结尾：`main-nav`、`-nav` 和 `main-` 都通过 `MustContain["-"]`，而 `mainnav` 不通过。
+
+@ 0 3 0 028f646d3507cc6d007798652c4bed34
++ entry .MustNotContain   名称在任何位置都不含给定文本的规则：`MustNotContain["/"]`
++     _must not contain /_。
++     文件系统平面用这条规则禁止路径元素中出现分隔符，DOM id 用它禁止出现空格。
+
+@ 0 6 0 0aa4c625adb15b7b0f8ddbb0e0d77a8d
++ entry .MustNotEqual   名称不恰好等于给定文本的规则：`MustNotEqual[".."]`
++     _must not equal .._，对于空参数 `MustNotEqual[""]` 则是 _must not be empty_。
++     这是非空规则的常见形式，也是排除命名空间所保留的特殊名称的常见形式：文件系统平面写的是 `MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]`。
++     没有 `MustEqual`，因为只有一个有效名称的平面不是命名空间。
+
+@ 0 6 0 1a729d1d8279268c0e11d886096776f6
++ entry .MustMatch   名称完整匹配一个正则表达式的规则：`MustMatch["[a-z]+"]`
++     _must match [a-z]+_。
++     参数是 Java 正则表达式，匹配在两端都锚定，与 `String.matches` 一样：`MustMatch["a+"]` 接受 `aaa`，拒绝 `baa` 和 `aab`，因为在后两者中，模式只出现在名称内部。
++     空名称不通过一次或多次的模式。
++     当命名空间的字母表是一个字符类时，就该用这条规则：probably 的测试标签是 `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`。
+
+@ 0 5 0 1c237dc2c577061905a24806fbc97f00
++ entry .MustNotMatch   名称不完整匹配一个正则表达式的规则：`MustNotMatch["[0-9]+"]`
++     _must not match [0-9]+_。
++     它是 `MustMatch` 的补，锚定方式相同：`123` 不通过 `MustNotMatch["[0-9]+"]`，而 `1a3` 通过，因为该模式不匹配整个名称。
++     `Classpath` 平面用 `MustNotMatch["[0-9].*"]` 禁止以数字开头。
+
+@ 0 8 0 1d99228f7d54714106a46a9227af5e95
++ entry .JavaIdentifier   名称是 Java 标识符的规则，以其描述为参数
++     对于 `JavaIdentifier["a valid Java identifier"]`，是 _must be a valid Java identifier_。
++     检查采用 `java.lang.Character` 的定义：非空，一个标识符起始字符后接若干标识符组成字符；关键字不被排除。
++     与 `Must…` 规则不同，参数不是用来比较的东西，而是错误应使用的短语；当规则的检查是自身的谓词而不是与字面量比较时，规则就取这种形式。
++     它是 probably 的 `Probing` 平面（测试 id 的平面）的规则。
+
+@ 0 7 0 1e40ec84ae07d1dd11123c7938c2e6f5
++ entry .CssIdentifier   名称是 CSS 标识符的规则，以其描述为参数
++     对于 `CssIdentifier["a valid CSS identifier"]`，是 _must be a valid CSS identifier_。
++     检查采用 CSS Syntax Module Level 3 中不含转义的 `<ident-token>` 语法：可选的前导 `-` 或 `--`，一个标识符起始字符（字母、`_` 或任何非 ASCII 字符），然后是标识符字符，后者还允许数字和 `-`。
++     单独的 `-`、前导数字和转义序列都会被拒绝。
++     它是 `CssClass` 平面的规则。
+
+@ 0 4 0 035dabdf7388252b16f25d96a11a81a6
++ entry .DomIdentifier   名称是 HTML 元素 id 的规则，以其描述为参数
++     对于 `DomIdentifier["a valid DOM id"]`，是 _must be a valid DOM id_。
++     检查采用 HTML Living Standard 的定义：至少一个字符，且不含 ASCII 空白（制表符、换行符、换页符、回车符或空格）。
++     它是 `DomId` 平面的规则。
+
+@ 0 1 0 05d8aa9b763b5e2d12c98218247f7e4b
++ entry .CssClass   CSS 类名的平面：`Name[CssClass]` 是有效的 CSS 标识符
+
+% 1 1 0 17655ddaded8796416244c979a315de5
+
+@ 0 4 0 09938a0ea0316bbf10611eed3940f478
++       一个只有一条规则 `CssIdentifier["a valid CSS identifier"]` 的标记类型，因此 `Name[CssClass]` 是可以跟在选择器中的 `.` 之后的文本。
++       honeycomb 的 HTML 元素以 `Name[CssClass]` 接收它们的类，拼错的类字面量正是因此无法编译。
+
+% 2 1 0 1b3290796740ca260cbf87dd79a4a2b4
+
+% 3 1 0 1125c907f85303a30fb5558ef8ad73f0
+
+% 4 1 0 12434a4d3bb44dc912645fb5f14d078d
+
+% 5 1 0 1ed8b8c2cb0d4fab1aff2f8205c74bed
+
+% 0 1 0 1b51963ea3ee3587030fd62dfd8b5701
+
+% 0 1 0 1d095fbfdb20f12519f11e7618603f7c
+
+% 0 1 0 14099df8c0be2e561cba32e9cb915082
+
+% 1 1 0 1a8051769b5d99d3067325855e1c4ecc
+
+% 0 1 0 1861cd670d733e4a12073f28351b3db6
+
+@ 0 2 0 083f8e1d8a2bb9ce044cd0445b0f7a8e
++   entry .nominative   使 CSS 类名遵守 `CssIdentifier` 的 given
++       位于伴生对象中，因此在提到 `CssClass` 的任何地方都处于隐式作用域中。
+
+@ 0 1 0 180a9d457ad40cbb164dd93c765f4180
++ entry .DomId   DOM 元素 id 的平面：`Name[DomId]` 是有效的 HTML id
+
+% 1 1 0 01821cd1524bbba2132f64bd3781210f
+
+@ 0 3 0 0363072fb4f2f5141578b6a48cb5ada7
++       一个只有一条规则 `DomIdentifier["a valid DOM id"]` 的标记类型：非空，不含 ASCII 空白。
++       honeycomb 的 `id` 属性接收 `Name[DomId]`，并且 DOM id 是 `Focusable`，因此它可以作为 CSS 选择器 `#id` 成为 `focus` 的目标。
+
+% 2 1 0 120ee4532fca0573104e1d94b5253ccc
+
+% 3 1 0 1558c1bcf544878002eb3d751c4aa928
+
+% 4 1 0 166c3a0886d0402a0121546a12fe537b
+
+% 5 1 0 1b04342628e60d1d09113f11e962f5b6
+
+% 0 1 0 0f5a54653dd2dc2f00e78ae70516d152
+
+% 0 1 0 1071e9fb9d6ab2ab07f436d43c631f01
+
+% 0 1 0 0727bcceb3e7140b1fcf2c879ea68a58
+
+% 1 1 0 151f0dcc08c2101216fc4992103c348b
+
+% 0 1 0 1f4c7f3e9eb63afd16405e3f61e635d2
+
+@ 0 6 0 16d33b5b3a84aad818495abd7c8206c5
++   entry .nominative   使 DOM id 遵守 `DomIdentifier` 的 given
++       位于伴生对象中，因此在提到 `DomId` 的任何地方都处于隐式作用域中。
++   entry .focusable   DOM id 作为 CSS 选择器 `#id` 使其元素获得焦点
++       `Name[DomId]` 的 `Focusable` given，策略为 `css selector`，焦点文本为 `#` 后接该 id，供那些通过选择器在页面上定位元素的库使用。
+
+@ 0 4 0 1865d9e919d5eaa80b616a20a8687dd3
++ entry .Required   唯一规则是非空的平面：`Name[Required]` 是任意非空文本
++     一个只有一条规则 `MustNotEqual[""]` 的标记类型，用于“非空”就是字段全部要求的常见情形。
++     它的 `Nominative` given 是匿名的，位于伴生对象中，因此在提到 `Required` 的任何地方都处于隐式作用域中。
+
+% 2 1 0 164f9f2007588a21072fa8619e5b195f
+
+% 3 1 0 0b1419c58816707310de627795983527
+
+% 4 1 0 1de79b91d635c1011b2349822231d26a
+
+% 5 1 0 17dc4c4b32d3fa6709d952e562c0542e
+
+% 0 1 0 04f99f6769ca7eee164c91ca62e9642f
+
+% 0 1 0 14c6a570a445ee5e04742bccb52763b6
+
+% 0 1 0 12df3a40cf0e33f5192c20e291fd9033
+
+% 1 1 0 1e62608f07aa0d140fbef6b047742366
+
+@ 0 6 0 117593de3124057318bdf440ab8128c8
++ entry .disintersect   `disintersect[A & B & C]`：拆成元组类型的交集类型
++     一个 `transparent inline` 方法，对于交集 `A & B & C`，其结果是元组类型 `(A, B, C)` 的值；对于不是交集的类型，结果是 `EmptyTuple`。
++     这是宏遍历平面规则时所用的类型层面操作，公开给需要枚举交集类型成员的代码；值本身是转换为该元组类型的 `null`，不得使用，只能使用它的类型。
+
+@ 0 4 0 0c0cc6cc3f86b9450146d4c32ada9010
++ entry .staticCompanion   `staticCompanion[T]`：类型的伴生对象，作为一个值
++     一个 `transparent inline` 方法，解析为 `T` 的伴生对象，类型为 `Matchable`：`staticCompanion[MustStart[""]]` 就是 `MustStart` 对象。
++     宏正是通过它从 `Check` 类型找到 `Rule`，公开给需要同样操作的代码。
+
+@ 0 1 0 1feb6c398c63d8c115f8852d98b555f7
++ entry .internal   不透明的 `Name` 类型及其伴生对象，由 `nomenclature` 包导出
+
+% 1 1 0 0dce44c4bf917fd312215bb755036889
+
+% 2 1 0 0a7ba4ad3f3c4d26033defbe9012414f
+
+@ 0 5 0 00950f79f66ee7380a5a7b676e9711ed
++       不供直接使用：`Name` 位于此处，是为了让它以 `Text` 表示这一点对包的其余部分隐藏；它导出为 `nomenclature.Name`，完整说明见该页。
++       它的成员是 `Name.apply`、`Name.verify`、given `encodable`、`inspectable` 和 `decodable`、`Name.Error` 以及 `Name.Extractor`。
++   entry .Name   在某个平面中经证明有效的文本；参见 `nomenclature.Name`
+
+% 1 1 0 1ea68e404aeb900b0242866ddd05ddef
+
+@ 0 9 0 047049cec43fb59d17554d4ab8817030
++         不透明类型 `Name[+plane] <: Text` 及其伴生对象。
++         它在 `nomenclature` 包下的页面有完整说明；伴生对象的成员不由导出声明，在此记述。
++     entry .apply   `Name[plane](text)`：对照平面的规则检查文本，抛出 `Name.Error`
++         一个 `transparent inline` 方法，展开为平面的各条规则检查，一条接一条，随后是转换为 `Name[plane]` 的文本。
++         它需要作用域内有 `plane is Nominative` given——缺少时是编译错误 _Couldn't find a `Nominative` instance on `plane`_——以及一个 `Tactic[Name.Error]`，以第一条不满足的规则抛出。
++         每条规则的参数都必须是字符串字面量类型，正如 `Must…` 规则所接受的那样。
+
+% 2 1 0 0356d0824c20d1da0f96a1319f478caf
+
+% 3 1 0 118664a2e22d659d1711c257ec07853a
+
+% 4 1 0 0f52e77b9628a8e207266c5237bf031c
+
+% 5 1 0 12f5dce5e61afa620e589fce36d305f1
+
+% 0 1 0 1743380767d7a0a300f7d60d8c3a71a9
+
+% 0 1 0 0c722910857aa4d41c4869debeaf63a8
+
+% 0 1 0 06bda54b067913300d9aeb5cfa92f4ce
+
+% 1 1 0 1c3f1b3bac6981181c56ed5264723b41
+
+@ 0 23 0 1325ccca400027531789b86c900647e4
++     entry .verify   `Name.verify[literal, plane]`：在代码编译时对照一个平面检查的字面量
++         一个 `inline` 方法，以字面量字符串类型接收名称，以类型接收平面，要么展开为转换为 `Name[plane]` 的字面量，要么以规则自己的措辞使编译失败：_the name is not valid because it must not start with 0_。
++         `n"…"` 插值器是书写受检字面量的常用方式；`verify` 则用于手头已有平面、不想要 `n"…"` 对作用域内每个平面所做推断的代码。
++     entry .encodable   名称编码为它本身的文本
++         任意 `Name[plane]` 的 `Encodable in Text` given：恒等映射，因此名称的序列化结果与其文本完全相同。
++     entry .inspectable   名称检视为 `n"…"`，可与它本身的文本区分开
++         任意 `Name[Any]` 子类型的 `Inspectable` given。
++         `Name` 是 `Text`，因此若没有自己的实例，它会落到 `Text` 的实例上，渲染为 `t"…"`，经过验证的名称就会与未经检查的文本无法区分；这个实例渲染为 `n"puck"`，其中的字符像文本字面量那样转义。
++         它是为 `Name[Any]` 的每个子类型而不是为某一个平面编写的，因为类型类的 `Self` 是不变的，`Name[Linux]` 的实例不能涵盖 `Name[Linux & Posix]`。
++     entry .decodable   `text.as[Name[plane]]`：通过 `Decodable` 类型类进行的经验证解码
++         一个 `inline` given，对任何在作用域内有 `Nominative` given 的 `plane` 都可用，它通过 `Name[plane](text)` 解码文本。
++         它需要作用域内有一个 `Tactic[Name.Error]`，以文本不满足的第一条规则抛出，因此任何通过 `Decodable` 解码其字段的格式——JSON 文档、命令行参数、路径元素——都可以直接读取 `Name[plane]`，并在边界处拒绝无效的名称。
+
+% 2 1 0 1ac15467a06f2f8b1090623286d48123
+
+% 3 1 0 0a5496cf153356110d65379a417f87d0
+
+% 4 1 0 02a4c868e66460bc068b846a958f8cc2
+
+% 5 1 0 1bff1f764c1d391f156fda0700869cb2
+
+% 0 1 0 072c67b39305446916a01b96ef308678
+
+% 1 1 0 1b56cbd170930b201c4904eb54822769
+
+@ 0 1 0 030ceaccdbe1171d08fe0a5c84272962
++     entry .Error   当文本不是其平面中的有效名称时抛出
+
+% 1 1 0 1c4a88f8296ce7c41fc7810998a4f8e3
+
+@ 0 6 0 160d107e4bd99987187d237af1371597
++           错误 `↯/s.68.1`：_the name `name` is not valid because it `must not start with 0`_。
++           后半部分是被违反的规则对其参数的自我描述（`Rule.describe`），因此消息陈述的是文本违反的确切规则，而不仅仅是说它无效。
++           由 `Name[plane](text)` 和 `text.as[Name[plane]]` 针对平面交集中文本不满足的第一条规则抛出，需要作用域内有一个 `Diagnostics`，例如 `errorDiagnostics.stackTracesDiagnostics`。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1012e0401a4235931db671ec67f92f61
+
+% 0 1 0 1cce7224b7fe056907129e25d1266318
+
+% 0 1 0 044ab87093645a1716c7c1ff254ac4d5
+
+% 1 1 0 0111aa621ee0d5a31df6c5fd1674b6a8
+
+@ 0 6 0 16a9fdf09f96525c19fd9a0c667633c1
++       entry #name   被拒绝的文本
++       entry #rule   拒绝它的 `Rule`，如 `MustNotStart` 或 `CssIdentifier`
++       entry #parameter   规则的参数：其 `Check` 类型所作用的字面量
++           对于 `MustNotStart["0"]`，它是 `0`；对于 `CssIdentifier["a valid CSS identifier"]` 这类以描述为参数的规则，它就是描述。
++     entry .Extractor   `n"…"` 字面量展开成的对象：经推断得到的名称，或一个模式
+
+% 1 1 0 130a7308b9ca58e3075aba71906b5927
+
+@ 0 14 0 157bb99d26dce5f80944c760417c872c
++           `n"hello"` 展开为 `Name.Extractor["hello"]()`，因此插值器的两种用法都在这个类中：`#apply` 创建名称，取该字面量有效的最精确平面；`#unapply` 让 `n"hello"` 可以作为模式写出，与 `Name[plane]` 匹配。
++           它不被直接构造。
++       entry #apply   字面量作为作用域内所有其规则它满足的平面的 `Name`
++           一个 `transparent inline` 方法，其结果类型是作用域内所有接受该字面量的 `Nominative` given 的 `Self` 类型的交集，如 `Name[A & B]`。
++           作用域内没有平面接受的字面量是编译错误：_the name `.` is not a valid identifier in any namespace in scope_。
++           规则带有非字面量参数的平面会被跳过，而不是被报告。
++       entry #unapply   `case n"main" =>`：匹配与该字面量相等的 `Name[plane]`
++           一个 `inline` 提取器，它在代码编译时检查该字面量是被匹配值所在平面中的有效名称——永远不可能匹配的模式是一个错误，用的是规则的措辞——然后在运行时比较两段文本。
+
+@ 0 1 0 1264224873e3f8180ae0819b55ad658d
++ entry .protointernal   `n"…"`、`Name[plane](…)` 和 `Name.verify` 背后的宏实现
+
+% 1 1 0 1b49bb50a2179e69010972e2d124c35f
+
+% 2 1 0 02201a01450e59f2117f18e8b8347b6e
+
+@ 0 22 0 1244042948a98e100e460f8b27db7e2f
++       不供直接使用：该对象的存在是为了让宏有一个稳定的位置。
++       它的公共成员是宏主体 `extractor`、`inferName`、`makeName`、`parse`、`parse2` 和 `disintersection`，以及它们共用的辅助方法：`build`、`decompose`、`everyNominative`、`planeAccepts`、`constant` 和 `companion`。
++   entry .extractor   `n"…"` 背后的宏：把字面量的类型包装进 `Name.Extractor`
++   entry .inferName   `Name.Extractor#apply` 背后的宏：作用域内所有接受它的平面的交集
++       收集作用域内的每个 `Nominative` given，保留其规则全都接受该字面量的那些 given 的 `Self`，并把该字面量作为它们交集的 `Name` 拼接进去；若没有接受它的平面，则以 _the name … is not a valid identifier in any namespace in scope_ 中止。
++   entry .makeName   `Name[plane](text)` 背后的宏：依次拼接进平面的各项检查
++   entry .parse   `Name.verify` 背后的宏：对照一个平面检查字面量，以规则的措辞中止
++   entry .parse2   `Name.Extractor#unapply` 背后的宏：先 `parse`，再做相等性测试
++   entry .disintersection   `disintersect` 背后的宏
++   entry .build   由类型列表构成的元组类型
++   entry .decompose   拆成其成员集合的交集类型
++   entry .everyNominative   展开点处作用域内的每个 `Nominative` given，而不仅是最佳的那个
++       反复运行隐式搜索，忽略已经找到的 given，并把歧义的双方都纳入，使 `n"…"` 能看到作用域内的每个平面。
++   entry .planeAccepts   平面 `Limit` 中的每条规则是否都接受某个名称
++   entry .constant   字面量类型所代表的字符串，已去除捕获检查注解
++   entry .companion   符号的伴生对象，通过反射加载，并按调用者的要求确定类型
+
+@ 0 1 0 07021d4c174a13f81347eaf6a2dff942
++ entry .anteprotointernal   `staticCompanion` 背后的宏
+
+% 1 1 0 183863057e49b74914c2252aab94c73a
+
+% 2 1 0 065004a73d1ad6911e7bebbe5e29995e
+
+@ 0 3 0 1ca09fda0211eacf0fd25cb41f60411f
++       不供直接使用：存放 `staticCompanion`，即把类型解析为其伴生对象的宏，`protointernal.makeName` 用它从 `Check` 找到 `Rule`。
++   entry .staticCompanion   `nomenclature.staticCompanion` 背后的宏
+
+@ 0 1 0 0aab8f03ee6007ce046da48f323d4c9c
++ entry .Moniker   一个带有好记的两词名称（如 `brilliant-leopard`）的小整数，名称来自 `Vocabulary`
+
+% 1 1 0 0dd5ef61278f31ff0185b0568ded4616
+
+@ 0 6 0 0c35c51a615f57010f9dcbc0808a1589
++       `Moniker` 是一个 `Int` 序数，通过它的平面与为它命名的 `Vocabulary` 配对：`Moniker over Session` 是一个代号，其单词来自作用域内的 `Vocabulary over Session`。
++       它编码为 `adjective-animal`，也从这种文本解码，因此可以给会话、构建或作业起一个人能通过电话念回来的名称，而程序保留的是数字。
++       它位于 `nomenclature.lexicon` 源集中。
+
+% 2 1 0 0fa5530ad0c95f08176d7e3fe63d62bc
+
+% 3 1 0 0f0b5a66eba6c2fe033e9daa50924d13
+
+% 4 1 0 157887d1a498648d03aa5fde63b3973a
+
+% 5 1 0 057c340da736968301d5df2c9db82a95
+
+% 6 1 0 17cc05979af9e1590b540c5cdd8cd098
+
+% 8 1 0 099f0a654ba6aa041d1d28d1c161450c
+
+% 9 1 0 0e11bd89211d9dfd1af30a54e5bb0af9
+
+% 0 1 0 03f45d838bc20c881d619ff33706c1c8
+
+% 0 1 0 154d57eadd71aaea1aa697e676a99b9e
+
+% 1 1 0 008b1044caa7fc54058c4cfd1ed05148
+
+@ 0 6 0 0cfd40dc3aa3213414b99ae6c6321dcf
++       平面是程序所选的类型，因此两个词汇表可以作为 `Vocabulary over Session` 和 `Vocabulary over Job` 共存，而不写平面的 `Moniker(10351)` 会从作用域内唯一的词汇表推断平面。
++       编码和解码都需要一个 `Tactic[Moniker.Error]`，因为数字可能超出词汇表的范围，文本也可能给出词汇表中没有的单词；代号*检视*为它的序数 `10351ᵐᵏ`，因为调试渲染既不能依赖词汇表，也不能依赖战术。
+
+% 0 1 0 08dd20918dd78eaa154df952240e6ae1
+
+@ 0 25 0 1c128f380b174a3f02b8e9cf56e17492
++   entry .Moniker   不透明类型本身，一个 `Int`，`nomenclature` 将其导出为 `Moniker`
++       `Moniker.Moniker` 声明在伴生对象内部，使它以 `Int` 表示这一点只在那里可见；包将其导出为 `nomenclature.Moniker`，应书写的是这个名称。
++       它的平面通过细化给出：`Moniker over Session`。
++   entry .apply   `Moniker[plane](ordinal)`：位于作用域内 `Vocabulary` 所在平面上的代号
++       需要一个 `Vocabulary over plane` given；当作用域内只有一个时，平面从它推断。
++       序数在此处不做范围检查，而是在代号被编码时检查：对于等于或大于词汇表 `size` 的序数，编码会以 `OutOfRange` 抛出 `Moniker.Error`。
++   entry .ordinal   代号所代表的整数
++       `Moniker` 上的扩展方法：创建它时所用的序数，或它的文本解码得到的序数，即 `adjectiveIndex × animalCount + animalIndex`。
++   entry .inspectable   代号检视为带上标后缀的序数：`10351ᵐᵏ`
++       该后缀把它与它擦除后的 `Int` 区分开。
++       这种渲染既不使用词汇表，也不使用战术，因为调试渲染不能假定它们处于作用域中。
++   entry .encodable   `moniker.encode`：通过作用域内的 `Vocabulary` 得到两词名称
++       `Moniker over plane` 的 `Encodable in Text` given，需要一个 `Vocabulary over plane` 和一个 `Tactic[Moniker.Error]`；当序数不是词汇表能命名的序数时，以 `OutOfRange` 抛出。
++       该 given 捕获了战术，因此它是一种能力，在战术处于作用域的地方解析。
++   entry .decodable   `text.as[Moniker over plane]`：把两词名称读回为代号
++       `Moniker over plane` 的 `Decodable in Text` given，需要一个 `Vocabulary over plane` 和一个 `Tactic[Moniker.Error]`：对于不是由 `-` 连接的两个单词的文本，抛出 `Malformed`；对于不在词汇表中该位置所用列表里的单词，抛出 `UnknownWord`。
+
+% 2 1 0 186fdcd93c2c77720c91c7ec8fc97a12
+
+% 3 1 0 13b9add1aaf25de61a4ca96738f1b504
+
+% 4 1 0 0db01f69c7fdfe36004387a6d85b760e
+
+% 5 1 0 12e5d587fe96428913b3a892c4a5b9c5
+
+% 6 1 0 06bf74e897f510270f125a6aef243670
+
+% 8 1 0 068289910d067f30091c810194a2ffe4
+
+% 9 1 0 03e95f0711ce4cb40250b808c03df051
+
+% 0 1 0 1009b57fbe80ceab0eb6ad270728a295
+
+% 0 1 0 0f02a3454f3d1f760cd398c18ea26595
+
+% 1 1 0 074fd0880c323caa08a4eda4acb903af
+
+@ 0 1 0 0516bc71dc40025b1b7e00c987d78a1c
++   entry .Error   当代号无法命名或其文本无法读取时抛出
+
+% 1 1 0 151a7c968a8671060f0afc71f5fa23e1
+
+@ 0 7 0 0f8fb00b7ac40c041015e415230a2a22
++         错误 `↯/s.68.2`，带有对应其 `#reason` 的子编号：_the moniker is not valid because the number 100000 is outside the representable range_。
++         由 `Moniker.encodable` 针对词汇表无法命名的序数抛出，由 `Moniker.decodable` 针对不是 `adjective-animal` 形式或其单词不在词汇表中的文本抛出。
++         需要作用域内有一个 `Diagnostics`。
++     entry #reason   原因：`Unreadable`、`OutOfRange`、`Malformed` 或 `UnknownWord`
++     entry .Reason   代号无效的四种原因，各有自己的错误子编号
+
+% 1 1 0 114ef66a2807a5a400241d26c6172bec
+
+@ 0 1 0 1e263bfb4748cbbf130d98ab015af37a
++           每个分支都有自己的错误子编号：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 112102a413cc94f61c17c8d712ad0966
+
+@ 0 3 0 067d60e0d45600a91780beb7630d636d
++           row  `OutOfRange(value)`  2  _the number `value` is outside the representable range_  小于零，或等于或大于词汇表 `size` 的序数
++           row  `Malformed(moniker)`  3  _`moniker` is not of the form `<adjective>-<animal>`_  按 `-` 拆分后不恰好是两个单词的文本
++           row  `UnknownWord(word)`  4  _the word `word` does not appear in the vocabulary_  形容词列表或动物列表中没有的单词
+
+% 1 1 0 0a172d00302f601007f2e91a9e506c10
+
+@ 0 2 0 01cb5285a59367fb1b817cfa1cfcb609
++       entry #number   该原因的子编号，`Moniker.Error` 将其与错误 `↯/s.68.2` 一同报告
++     entry .communicable   把 `Moniker.Error` 的每种原因渲染为其消息
+
+@ 0 1 0 1079c9d5c5bb6ec30f6181a074fbecfe
++ entry .Vocabulary   两个词表（形容词和动物），为某个平面的代号命名
+
+% 1 1 0 0e7c016eaf3d9192124c527287484e05
+
+@ 0 7 0 0f7eee5e3d09082100131b02d6d0bf4b
++       `Vocabulary over plane` 由两个单词来源构建，每行一个单词，它把从 `0` 到 `#size - 1` 的每个序数命名为 `adjective-animal`，形容词取位于 `ordinal / animals` 处的那个，动物取位于 `ordinal % animals` 处的那个。
++       来源可以是任何 `Streamable by Data over Credit` 的东西：随 `nomenclature.lexicon` 组件一起提供的词表，即类路径资源 `/nomenclature/adjectives.txt`（400 个单词）和 `/nomenclature/animals.txt`（250 个单词），它们可命名 100,000 个代号；也可以是程序自己的文件。
+
+% 2 1 0 00a2434e7112372204c5f84bbfcc4a67
+
+% 3 1 0 0d2f692c1f16873a064c3c0abd4dfb5f
+
+% 4 1 0 18f5486e3cdd7fff14788d69af2cae56
+
+% 5 1 0 07fd7f2bb0a70cef0132eac1502a6f24
+
+% 6 1 0 0c58ea1c77cffa8905265ecefb4c44fe
+
+% 8 1 0 1f7239483f2edfac144b174f0d645f6b
+
+% 0 1 0 0f9809de4083aa4809a336f2a9edadb4
+
+% 0 1 0 0b33bbe95b9157c105288323c7239f13
+
+% 0 1 0 1087637be6fd90121db54b6765012a84
+
+% 0 1 0 0626594b5bd4a48c0ebdc5c7c4964e7c
+
+% 1 1 0 05d55a7472adb91e17da29c94988c482
+
+@ 0 6 0 068779ce23944ef5069ae356e9663a05
++       词汇表绑定为 given，即 `given (Vocabulary over Session) = …`，供 `Moniker[Session](…)`、`encode` 和 `as[Moniker over Session]` 查找；平面是程序自己的标记类型，同样的两个列表绑定在两个平面上，就得到两个互相独立的命名空间。
++       来源中的空行和首尾空白会被丢弃；各行的顺序就是序数的顺序，因此一旦存储了代号，列表就不能重新排序。
+
+% 0 1 0 1e0f92265c2f2c0f1ed98d475f7a626a
+
+@ 0 14 0 0b3dd3651194fc6b1b867d86c70cb71a
++   entry .apply   `Vocabulary(adjectives, animals)`：从两个可流式读取的来源读取的词汇表
++       把每个来源读作文本，按换行符拆分，修剪每一行并丢弃空行。
++       平面是类型参数 `transport`，从期望类型 `Vocabulary over Session` 推断；读取需要来源的 `Streamable` given 所需的上下文值，例如类路径资源所需的 `Classloader`。
++   entry #Transport   词汇表为其代号命名的平面，写作 `Vocabulary over plane`
++   entry #size   词汇表能命名多少个代号：形容词数 × 动物数
++   entry #name   某个序数的两词名称，超出范围时抛出 `Moniker.Error`
++       对于小于零或等于或大于 `#size` 的序数，抛出 `OutOfRange`。
++       需要一个 `Tactic[Moniker.Error]`。
++   entry #number   某个两词名称的序数，无法读取时抛出 `Moniker.Error`
++       按 `-` 拆分，并在相应列表中查找每个单词：对于不恰好是两个单词的文本，抛出 `Malformed`；对于不在该位置所用列表中的单词，抛出 `UnknownWord`。
++       需要一个 `Tactic[Moniker.Error]`。

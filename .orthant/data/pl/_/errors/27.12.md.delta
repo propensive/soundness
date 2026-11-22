@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 028b2bedad2dc3cc0e0580c76e02daf8
++ # `↯/s.27.12` – Wartość `U16` poniżej 0
+
+@ 0 2 0 101fedcc2682fb90027cf490cd032319
++ Zgłaszany w czasie kompilacji przez makro `u16` biblioteki Hypotenuse, gdy wartość jest
++ mniejsza od 0.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 1 0 03778acae131351b01a2a119bb5a8625
++ `U16` (16-bitowa liczba bez znaku) nie może być ujemna.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0bad9efbf6ca584b0d5337351c58f14f
+
+% 1 1 0 1a863a92f4794c4910a814a256dfc99a
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 08a07e1cce8afeb5041c6ec7e2826c69
++ Należy podać wartość z zakresu 0–65535.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Pozostałe błędy literałów całkowitoliczbowych: [Rodziny](README.md#families)
++ - Źródło: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

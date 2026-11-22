@@ -1,0 +1,665 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14b7ea2cc44022971599f7702adf9185
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e79e4695b1c25aa085ae9689953b275
++ info   rekordy i krotki nazwane, których pola mają typy wzięte ze schematu odczytanego podczas kompilacji kodu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1e8127f8c079d09919e45f48bafacc90
++     _Polyvinyl_ to mechanizm dostawców typów, na którym opierają się sterowane schematem rekordy
++     Soundness. **Specyfikacja** – obiekt rozszerzający `Specification` – odczytuje schemat (JSON
++     Schema, XML Schema, dokument schematu TEL, definicje tabel bazy danych) podczas kompilacji
++     wywołującego ją kodu, a jej metody `record` i `tuple` zamieniają surowe dane w wartość, której
++     pola mają dokładnie te typy, które deklaruje schemat. `record.name` typuje się jako `Text`, a
++     `record.nope` się nie kompiluje, i nie trzeba pisać żadnej klasy Scali odwzorowującej schemat.
+
+@ 0 1 0 0834dd4adcd801ed166db1a53f6f5320
++     Elementy składają się następująco:
+
+@ 0 10 0 0664c3fe8a052e101a4bf2b07848130c
++     - `Specification` dostarcza schemat jako uporządkowaną listę wartości `Specification.Member`
++       oraz garść prymitywów działających na danych źródłowych: `access`, `absent` i `repeated`,
++       a dla bogatszych formatów `entries`, `kind`, `elements` i `pairs`;
++     - każdy `Specification.Member` jest wartością `Specification.Member.Value` (skalarem
++       nazwanym etykietą typu), `Specification.Member.Record` złożonym z dalszych składowych albo
++       `Specification.Member.Union` złożonym z alternatyw, i niesie `Specification.Multiplicity`:
++       `One`, `Optional`, `Many` lub `Keyed`;
++     - instancja `Intensional` dla każdej etykiety typu mówi, jakim typem Scali staje się skalar i
++       jak odczytuje się jedną jego wartość; odczyt `Intensional.Fallible` może się nie powieść;
++     - makra `record` i `tuple` łączą to wszystko w strukturalną rafinację typu `Record`,
++       odczytywaną leniwie, albo w krotkę nazwaną, odczytywaną zachłannie.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0312b5b1490cf40113dea322c192b2c9
+
+% 0 1 0 138e6f155c61d06f1b614e1acbe56630
+
+% 0 1 0 16e2f0b08bc444f40dc50acffb8c9a1a
+
+% 0 1 0 1854204de30aae1f097a5db828bd42ba
+
+% 0 1 0 1b06eaaee677f79211fa8f98f2a2ea36
+
+% 0 1 0 096cd005e507031b151f4a286aabfd00
+
+% 0 1 0 1e5b4ee5df4d29d0134b95df1bdea303
+
+% 0 1 0 0b5cc8f746dd9f3c0fd26f43b2590475
+
+% 0 1 0 1e1efd36401482cc05976ff2fb8d3853
+
+% 0 1 0 0c09b282f14c934105380f2d61776caf
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 0ecc7b9abca2d9ef19bb1a3bfec72653
++     Konkretne specyfikacje znajdują się przy swoich formatach: `Json.Provider` w jacincie,
++     `Xml.Provider` w xylophone, `Tel.Provider` w stratiform, a także `record()` klienta OpenAPI.
++     Samo Polyvinyl nie wie nic o żadnym formacie.
+
+@ 0 5 0 13814946ae99b7081ff36a8c97741498
++     **Kolejność kompilacji.** Makra wartościują obiekt specyfikacji podczas kompilacji miejsca
++     wywołania, ładując jego klasę przez ścieżkę klas kompilatora, więc obiekt musi zostać
++     skompilowany przed kodem, który wywołuje jego `record` lub `tuple`: należy zadeklarować go w
++     osobnym pliku. Kompilator porządkuje w tym celu osobne pliki jednego przebiegu, wstrzymując
++     wywołującą jednostkę, dopóki obiekt nie zostanie wyemitowany; jednego pliku zawierającego oba
++     nie da się uporządkować.
+
+@ 0 7 0 03d6defeebaf71970d29dcf683434708
++     Biblioteka ma jeden publikowany zbiór źródeł, `polyvinyl.core`, który kompiluje się na każdą
++     platformę i jest w całości eksportowany do modułu zbiorczego `soundness`: `Intensional`,
++     `Specification.Member`, `Specification.Multiplicity`, `Record` i `Specification`. Drugi
++     komponent, `polyvinyl.fixtures`, jest wewnętrzny i niepublikowany: zawiera specyfikacje
++     testowe (`TreeProvider` nad małym typem dokumentu `Tree` oraz obiekty takie jak
++     `PersonRecords` i `ShapeRecords`), które testy potrzebują skompilowane przed swoimi miejscami
++     wywołania, i jest zwięzłym, działającym przykładem kompletnej `Specification`.
+
+@ 0 2 0 1f1a10506a35df8b0632f87cc55271e9
++     Rekord jest `Selectable`, więc kod odczytujący rekordy nie powinien podlegać sprawdzaniu
++     przechwytywania: przy sprawdzaniu przechwytywania wybór pola typu `Text` z rafinowanego
++     `Record` jest obecnie odrzucany.
+
+% 0 1 0 0aa68fcad3c751a111ec846d97a35e0a
+
+% 0 1 0 0dca070edc2c86bf1112695f8698ddca
+
+% 0 1 0 16187f063511b01604dea561fe643b12
+
+% 0 1 0 1c71f6f59de9a0780d892be6fd794b68
+
+% 0 1 0 021cb88f010b1f73025cf2443a5423e4
+
+@ 0 1 0 100beaa20e60510717c444d34cb67290
++ entry .Specification   dostawca typów nad jednym formatem dokumentów: schemat jako `#fields` i prymitywy odczytu
+
+% 1 1 0 1fbc5970b762e715016eccc2ebfd7252
+
+@ 0 3 0 1c5fa61f0dee663c0a0aa9d890177dc1
++       `Specification` to obiekt, z którego pochodzi sterowany schematem typ rekordu. Konkretna
++       specyfikacja jest obiektem (`object`, zwykle rozszerzającym klasę dostawcy formatu, taką
++       jak `Json.Provider`), który określa:
+
+@ 0 6 0 011e8977a78be7b000563b4ea5d5da64
++       - `#Origin`, typ surowych danych (`Json`, `Xml`, `Tel`), oraz `#Form`, typ znacznikowy, pod
++         którym znajdują się jej instancje `Intensional`;
++       - `#Failure`, błąd, którym może zakończyć się odczyt dowolnego pola;
++       - `#fields`, schemat, jako uporządkowaną listę nazwanych wartości `Member`;
++       - prymitywy `#access`, `#absent` i `#repeated`, a tam, gdzie format je ma, także
++         `#required`, `#entries`, `#kind`, `#elements`, `#pairs` i `#unoffered`.
+
+@ 0 4 0 007b8cd4c0642f4805e9307f2f7ce837
++       Ma wówczas `#record` i `#tuple` bez żadnych dalszych deklaracji: obie są `transparent
++       inline` i rozwijane w miejscu wywołania z obiektem specyfikacji jako odbiorcą, więc makro
++       znajduje ten obiekt po jego typie, ładuje go i wartościuje jego `#fields`. Obiekt musi
++       więc zostać skompilowany przed wywołującym go kodem, w osobnym pliku.
+
+% 2 1 0 1ba2a1518413244d046144d495162184
+
+% 3 1 0 115a10cc3936fbe71a094491ee1e4fbc
+
+% 0 1 0 060c8756c5bc68ed03ef8b25b8228dda
+
+% 0 1 0 0b1657291b3efd4d0c5ac8aed6ec388b
+
+% 0 1 0 1fca43ca7261d78c05f46113f329e024
+
+% 0 1 0 0bc89da13a281f5d0a9d1813da65509c
+
+% 0 1 0 19cd78cf64ddf0201e9e5979281cca0b
+
+% 0 1 0 144ffbf443339eba1b39755e26d7410b
+
+% 0 1 0 18f5109599ebad670609d5653e74b597
+
+% 0 1 0 0c4026e4f15aef1514c17d49cf3d3754
+
+% 0 1 0 10234c844f7d73da0b755346d7aefc15
+
+% 0 1 0 12057c34d6bf407a097383a6c4098455
+
+% 0 1 0 1c2e2c134f494a6d1bc2d88ff3d7774d
+
+% 0 1 0 07b4b179c928eee30d3a5756aac40de3
+
+% 0 1 0 13d8ae79615cd9e517477034f73bfee9
+
+% 0 1 0 05042ad12966d193132c46df4bffd617
+
+% 0 1 0 047c59d1efb5309b0c5c45ecfd713942
+
+% 0 1 0 0711717e7789638f1ecefd9bd3906c58
+
+% 0 1 0 1eb3f0e0b5f7491d17ea9c45f88a172f
+
+% 0 1 0 064fc1ca2eee24a4068cf5e62c9a03e0
+
+% 0 1 0 028eb5f288598e2c15416a39418d0873
+
+% 0 1 0 1bd02338c9ee809209f8c3e9ce5c32f3
+
+% 0 1 0 09309df4f1d70f38003a2ee87aba12a1
+
+% 0 1 0 15436800a5b04cd91b753b845975dcf0
+
+% 0 1 0 10f0bbaeb36ee2851a58b00a0ae48660
+
+% 0 1 0 1b7e8e262e48d1d719ca96e099015f99
+
+% 1 1 0 02e618c23026e3680fa1de89cdbc137c
+
+@ 0 4 0 0643bd446b3c111e04aca73da73e8bf8
++       Mając to, `object People extends TreeProvider(List(t"name" -> Member.Value(t"text")))` w
++       innym pliku czyni `People.record(tree).name` polem typu `Text`. Instancje `Intensional`
++       znajdują się w obiekcie towarzyszącym typu `#Form`, więc są znajdowane bez importu.
+
+@ 0 3 0 0a234a897cd99b70160f71d983b0ef53
++       Schemat, którego nie da się odczytać, jest zgłaszany z `#fields` jako
++       `Specification.Error`, który makra zgłaszają jako błąd kompilacji w miejscu wywołania,
++       podobnie jak pole, którego etykieta typu nie ma instancji `Intensional`.
+
+% 1 1 0 17be0a99ef75a7420098461be2fa466c
+
+% 0 1 0 006eef61ad47c1da151826df85d6b981
+
+% 0 1 0 14c25f9bf061344b034538f2863046cc
+
+@ 0 1 0 11417341a0d8ec3d0c3a414c426b82f2
++   entry .Error   schemat, którego nie dało się odczytać: zgłaszany jako błąd kompilacji tam, gdzie wywołano `record` lub `tuple`
+
+% 1 1 0 0847baaf210a3918063f4ddc85607ac8
+
+@ 0 94 0 17fdf5fc09e1c1de1b31c1ff3004b6bd
++         _the specification could not be read because `detail`_. Zgłaszany przez `#fields`
++         specyfikacji, gdy jej schematu nie da się sparsować ani złożyć – niepoprawny dokument,
++         referencja, której nie da się rozwiązać. Makra `record` i `tuple` odczytują pola pod
++         taktyką, która zatrzymuje kompilację, więc błąd pojawia się jako błąd kompilacji w
++         miejscu wywołania, a nie w czasie wykonania.
++     entry #detail   co było nie tak ze schematem
++   entry .Raising   specyfikacja odczytująca z `origin` w `form`, której pola kończą się niepowodzeniem `failure`
++       `Specification.Raising[form, origin, failure]` to `(Specification in form from origin) {
++       type Failure = failure }`: typ obiektu specyfikacji, tak jak odwołuje się do niego makro,
++       używany przez `.recordExpansion` i `.tupleExpansion`.
++   entry .record   implementacja makra stojąca za `Specification#record`
++       Nie wywołuje się jej bezpośrednio: `#record` na obiekcie specyfikacji wkleja ją, a ona
++       lokalizuje obiekt na podstawie jego typu singletonowego, wartościuje jego `#fields` i
++       buduje rafinowany typ `Record` oraz transformację, którą odczytywane są jego pola.
++       Zatrzymuje się z komunikatem _record and tuple can only be called on a specification
++       object_, gdy odbiorca nie jest obiektem.
++   entry .tuple   implementacja makra stojąca za `Specification#tuple`
++       Nie wywołuje się jej bezpośrednio: `#tuple` na obiekcie specyfikacji wkleja ją. Buduje typ
++       krotki nazwanej i kod, który odczytuje wszystkie pola naraz, a zatrzymuje się z
++       komunikatem _the tuple's fields may raise `Failure`, but no Tactic for it is in scope_, gdy
++       w miejscu wywołania nie ma `Tactic[Failure]`.
++   entry .recordExpansion   rafinowany typ `Record` i jego transformacja, z jawnej listy pól
++       Dla makra innej biblioteki, które ma już w ręku pola części dokumentu – na przykład schemat
++       odpowiedzi w dokumencie OpenAPI – i obiekt specyfikacji dostarczający tylko prymitywy
++       formatu i instancje `Intensional`. Zwraca rafinowany typ `Record` i transformację, którą
++       należy przekazać do `#build`. Działa w makrze, pod `Quotes`.
++   entry .tupleExpansion   typ krotki nazwanej i funkcja, która ją buduje, z jawnej listy pól
++       Jak `.recordExpansion`, w postaci krotki nazwanej: zwraca typ krotki nazwanej i kod
++       odczytujący do niej wartość typu źródłowego. Działa w makrze, pod `Quotes`.
++   entry #Origin   typ surowych danych, które odczytuje specyfikacja, na przykład `Json` lub `Xml`
++   entry #Form   typ znacznikowy, pod którym znajdują się instancje `Intensional` specyfikacji
++       Instancja dla etykiety typu `"text"` to `"text" is Intensional in Form from Origin
++       to Text`. Zwykle `Form` jest samą klasą dostawcy, więc instancje znajdują się w jej
++       obiekcie towarzyszącym i są znajdowane przez zasięg niejawny.
++   entry #Failure   błąd, którym może zakończyć się odczyt każdego pola
++       Brak wymaganej wartości, wartość niewłaściwego rodzaju, wartość łamiąca ograniczenia
++       schematu. Pole rekordu ma typ `Record.Field[result, Failure]`, więc każdy dostęp wymaga
++       `Tactic[Failure]`, a wywołujący może zebrać wszystkie problemy w dokumencie pod jedną
++       taktyką (za pomocą `validate` i `track`, z jednym `venture` na pole). Każda instancja
++       `Intensional.Fallible`, której używa specyfikacja, musi zgłaszać `Failure` lub jego podtyp.
++   entry #fields   schemat: pola rekordu w kolejności, każde jako nazwa i `Member`
++       Wartościowany przez makra podczas kompilacji miejsca wywołania. Składowe rekordu są
++       nieuporządkowane, ale elementy krotki nazwanej zachowują tę kolejność. Schemat, którego nie
++       da się odczytać, zgłasza `Specification.Error`, który staje się błędem kompilacji.
++   entry #access   wartość nazwanego pola wewnątrz wartości albo wartownik dla brakującego pola
++       Prymityw, którym pobierane jest każde pole `Multiplicity.One` i `Multiplicity.Optional`:
++       właściwość obiektu JSON, element potomny elementu XML z etykietą pola. Brakujące pole nie
++       jest tu błędem; jest wartością, dla której `#absent` jest prawdziwe.
++   entry #absent   czy wartość zwrócona przez `#access` oznacza brakujące pole
++       Pole `Optional` jest `Unset` tam, gdzie to jest prawdziwe.
++   entry #repeated   każda wartość pola, które niesie dowolną ich liczbę, w kolejności dokumentu
++       Prymityw stojący za `Multiplicity.Many`: elementy tablicy JSON albo każdy element siostrzany
++       ze słowem kluczowym pola w formacie, który powtarza pola. Brakujące pole nie ma żadnych.
++   entry #required   wartość pola, które musi być obecne, kończąca się niepowodzeniem tam, gdzie tak mówi format
++       Stosowany do pola odczytywanego z `Multiplicity.One`. Domyślnie zwraca wartość bez zmian, a
++       z brakującą wartością styka się instancja `Intensional` pola; specyfikacja nadpisuje go,
++       aby zgłaszać swój `#Failure` dla brakującego wymaganego pola.
++   entry #entries   wartości pola z kluczami według nazwy, dla `Multiplicity.Keyed`
++       Format ze słownikami nadpisuje tę metodę; domyślnie panikuje z komunikatem _this specification
++       has no keyed fields_, więc składowa z kluczami jest używalna tylko tam, gdzie ją nadpisano.
++   entry #kind   rodzaj wartości, według którego `Member.Union` wybiera swoją alternatywę
++       `t"leaf"`, `t"node"`, `t"string"`, `t"array"`: jakiekolwiek nazwy specyfikacja nadaje
++       kształtom, jakie mogą przyjmować jej wartości, zgodne z rodzajami, według których
++       kluczowane są alternatywy jej unii.
++       Domyślnie panikuje z komunikatem _this specification has no unions_.
++   entry #elements   elementy wartości, która sama jest sekwencją, dla alternatywy `Many` unii
++       Domyślnie panikuje z komunikatem _this specification has no unions_.
++   entry #pairs   nazwane wartości wewnątrz wartości, która sama jest słownikiem, dla alternatywy `Keyed`
++       Domyślnie panikuje z komunikatem _this specification has no unions_.
++   entry #unoffered   kończy się niepowodzeniem dla wartości unii, której rodzaju nie oferuje żadna z jej alternatyw
++       Otrzymuje rodzaj wartości i oferowane rodzaje. Specyfikacja nadpisuje tę metodę, aby
++       zgłaszać swój `#Failure`; domyślnie panikuje z komunikatem _the value's kind, `kind`, is
++       none the union offers_.
++   entry #Context   to, w czym odczytywane są składowe rekordu, dla specyfikacji, której źródło nie leży w jej wartościach
++       Na przykład otwarty plik, o którym rekord mówi tylko, gdzie w nim szukać. Rekord utworzony
++       przez `Specification.recordWith` żąda kontekstu wszędzie tam, gdzie wybierana jest
++       składowa, a także `Tactic`, i przekazuje go do `#accessWith`, `#repeatedWith`,
++       `#entriesWith` i `#series`. Kontekst jest śledzony wszędzie, gdzie jest przekazywany, więc
++       nazwany typ nie musi mówić, że jest zdolnością, i może nią być. Specyfikacja bez kontekstu
++       pozostawia go niezdefiniowanym.
++   entry #accessWith   `#access` w kontekście
++       To, czym rekord utworzony przez `recordWith` pobiera pole. Domyślnie jest to `#access`.
++   entry #repeatedWith   `#repeated` w kontekście
++   entry #entriesWith   `#entries` w kontekście
++   entry #Series   kolekcja, jako którą odczytywana jest składowa o krotności `Series`
++       Typ własny specyfikacji, zależny od kontekstu, z którym utworzono rekord, i od typu
++       elementu.
++   entry #series   tworzy kolekcję składowej `Series` z funkcji, która odczytuje jeden element
++       Funkcja jest stosowana do wartości, kontekstu i taktyki i jest tym, co makro
++       zastosowałoby do każdego elementu składowej `Many`. Kolekcja ją przechowuje i odczytuje
++       element, gdy zostanie o niego poproszona, w kontekście, jaki wtedy otrzyma. Domyślnie
++       panikuje z komunikatem _this specification has no series_.
++   entry #build   opakowuje wartość i transformację pól jako `Record`
++       Wywoływana przez wygenerowany kod dla każdego rekordu i rekordu zagnieżdżonego; domyślnie
++       `Record(data, transform)`. Transformacja jest funkcją czystą, ponieważ rekord ją
++       przechowuje.
++   entry #record   leniwie odczytywany rekord nad wartością, rafinowany jedną typowaną składową na pole
+
+% 1 1 0 007c1cb5af8091181fa8a2dcd1c3bee1
+
+@ 0 2 0 1a27bd262b87d64316a2fb21450ec03c
++         `spec.record(value)` jest zadeklarowane jako zwracające `Record`, ale ponieważ jest
++         `transparent inline`, jego wywołanie ma strukturalną rafinację tego typu: dla schematu
++         o trzech polach
+
+% 0 1 0 149fcd8c21a180b510eccac2249a0e19
+
+@ 0 2 0 16a12e10bc41f1d71fe57f95badf3c66
++         def employed: Record.Field[Boolean, Failure] }`. Pole, którego nie ma w schemacie, się
++         nie kompiluje.
+
+@ 0 4 0 0f0ccf862cb718ca002fa23107baa166
++         Rekord przechowuje surową wartość i odczytuje pole przy każdym jego wybraniu, więc
++         niepoprawne pole zostaje zauważone dopiero przy odczycie, a pole odczytane dwukrotnie jest
++         dwukrotnie konwertowane. Każdy dostęp do pola kończy się niepowodzeniem przez
++         `Tactic[Failure]` w zasięgu tam, gdzie pole zostaje wybrane.
+
+% 2 1 0 00b4976bd926d33f125bbe7a3b261d25
+
+% 3 1 0 121a94869cd2721e1c6bc9283d4d2795
+
+% 4 1 0 1b812c3e122227de031c36ab55c04c88
+
+% 5 1 0 0c049e0247be77a104c3e9a14e6fb743
+
+% 6 1 0 13088df6c7d6fe6612ce9be68d700b80
+
+% 8 1 0 1b7d57d6d97740ba037a948ee7ae747d
+
+% 0 1 0 1cda08154806309318f088b013407e3d
+
+% 0 1 0 115eaaba5cfad25b03899f5c860e1633
+
+% 1 1 0 0b0653c6fead68b00ec26d7ca826325e
+
+@ 0 3 0 090a62edb826260e1766500faf3935ae
++         Zagnieżdżone `Member.Record` stają się zagnieżdżonymi rekordami, składowe `Many` –
++         wartościami `List`, składowe `Optional` – wartościami `Optional`, a składowe `Keyed` –
++         wartościami `Map[Text, _]`.
++   entry #tuple   zachłannie odczytywana krotka nazwana nad wartością, jeden element na pole w kolejności schematu
+
+% 1 1 0 04ff8b7e8e4fffdc103afc65640b8d0f
+
+@ 0 4 0 068792a01a52975b110004e26bbc90ba
++         `spec.tuple(value)` odczytuje wszystkie pola naraz, w chwili budowania krotki: niepoprawne
++         pole powoduje niepowodzenie konstrukcji niezależnie od tego, czy zostanie kiedykolwiek
++         użyte, więc elementy mają swoje zwykłe typy (`Int`, a nie `Record.Field[Int, Failure]`), a
++         w miejscu wywołania musi być w zasięgu `Tactic[Failure]` – bez niego wywołanie się nie
++         kompiluje.
+
+% 2 1 0 144c0768ca524bac028923e839dba54e
+
+% 3 1 0 06ba25ec2e8a8c3217e76e5bc362fdf0
+
+% 4 1 0 13d43eeecb193f8402c6c3c541c6a8ea
+
+% 5 1 0 0955b589a9f2bd2e1190d731f0f31e3a
+
+% 6 1 0 16036521f1651df404cfc8b1dce7ebf0
+
+% 8 1 0 1b9a71e35d0c4ef415b26a2d0454a5ae
+
+% 0 1 0 0acaa67d173345b31443c58194348e1b
+
+% 0 1 0 08b852a2f56771a90983bd9b2cafa156
+
+% 0 1 0 13776354efa1c93a1177916e170d9cc7
+
+% 1 1 0 0e37fdffe4f28a300b8a7f8060880544
+
+@ 0 2 0 01bef1c5f4bc78bf12e2bec4159f883d
++         Zagnieżdżona składowa rekordowa staje się zagnieżdżoną krotką nazwaną, a alternatywa
++         rekordowa unii – także zagnieżdżoną krotką.
+
+@ 0 1 0 18b4a4cafca3ead31a9fea0dfff7f8ec
++   entry .Member   jedno pole schematu specyfikacji: skalar, zagnieżdżony rekord albo unia
+
+% 1 1 0 0b3bf64a5abea3e600d45492aafce34d
+
+@ 0 2 0 1f9074e137c197b3002eca37ca7ca304
++         `#fields` specyfikacji to lista nazwanych wartości `Member`, w kolejności, którą
++         zachowują elementy krotki nazwanej. Są trzy rodzaje:
+
+@ 0 8 0 0dd6d23bbeded09815af083f0e62ce73
++         - `Member.Value(fieldType, params, multiplicity)`: skalar, odczytywany przez instancję
++           `Intensional` dla etykiety `fieldType` (`t"text"`, `t"integer"`), która otrzymuje
++           `params` (ograniczenie, wzorzec) dosłownie;
++         - `Member.Record(fields, multiplicity)`: zagnieżdżony rekord złożony z dalszych
++           składowych, odczytywany z własnej wartości pola przez tę samą specyfikację;
++         - `Member.Union(alternatives, multiplicity)`: alternatywy, każda kluczowana rodzajem
++           wartości (tak jak zgłasza go `Specification#kind`), który ją wybiera, odczytywane jako
++           unia Scali ich typów.
+
+@ 0 1 0 0271699c8e4ff32102b910486dc79e5c
++         Każda niesie `Multiplicity`, domyślnie `One`, ustawianą przez `#optional`, `#many` i
+
+% 0 1 0 1a5b365f06fb2dab00110555e28df512
+
+% 2 1 0 1468f666ba2632571dbec997dde2ab02
+
+% 0 1 0 10c83641e9ec49e30ab13c21bd7364fd
+
+% 1 1 0 0207a0cab5a7499a0bf4506eda1da0fb
+
+% 0 1 0 1e2fb9f2e29dd9980021853d34359368
+
+% 0 1 0 00343613fc5ffbdb100127d9a55f59d4
+
+% 1 1 0 00194a939c0357f71032585ee6ef9920
+
+% 0 1 0 12d529a03583becd0c5333702ab09647
+
+% 0 1 0 1956b32af6bb29250457fd2299849140
+
+% 1 1 0 1a382d4db2b976b11296eccb33aef446
+
+% 0 1 0 1166592741ffe09d0f8f67dffc4d3dff
+
+% 0 1 0 13d778ec4e5f83e40a7591aa293dec73
+
+% 1 1 0 1684f67196560de702b99859d6bef2d4
+
+% 0 1 0 124ba4f248340fc20e682d26dbade710
+
+% 0 1 0 01695ae756265dff093df446e8aa7709
+
+% 1 1 0 153518dd4f7d1c101037f60f366e8f67
+
+% 0 1 0 0845c0ee572c6b540865f9198bb5388f
+
+% 0 1 0 1b3bc51b641e4a581eff98734477948e
+
+% 0 1 0 1dd3a30aa1df9d420cddbf3ca2e46bc4
+
+% 1 1 0 196098c5347c0bac0aa5f2d272740a99
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 3 0 14317d5ff51da6a40af8640b5aa32b96
++         Alternatywa unii może nieść własną krotność, więc unia z jedną alternatywą zagnieżdża
++         jedną krotność w drugiej (`List[List[Text]]`); sam `Member` niesie tylko jedną.
+
+% 0 1 0 0a6c368f0b21219e1265105d86c78017
+
+% 0 1 0 1a199b8b1cd93f121f0f321014da98af
+
+@ 0 4 0 143438ebdb3d5af2035a8f09d13a071c
++     entry .Value   pole skalarne, odczytywane przez instancję `Intensional` dla jego etykiety typu
++       entry #fieldType   etykieta typu, na przykład `t"text"`, po której znajdowana jest instancja `Intensional` pola
++           Instancje są kluczowane dokładną etykietą: `t"Text"` nie znajduje instancji dla
++           `"text"`, a etykieta bez instancji jest błędem kompilacji, _could not find an
+
+% 0 1 0 152e2c7431dd489712f7863bb5d60035
+
+@ 0 7 0 090b64e6a1cd29711961e1e1b3aa89c6
++       entry #params   parametry składowej, przekazywane dosłownie do jej instancji
++           Na przykład ograniczenie lub wzorzec, dla instancji utworzonej przez
++           `Intensional.parametric`.
++       entry #multiplicity   ile wartości niesie pole
++     entry .Record   zagnieżdżony rekord złożony z dalszych składowych
++       entry #fields   pola zagnieżdżonego rekordu, w kolejności
++       entry #multiplicity   ile zagnieżdżonych rekordów niesie pole
++     entry .Union   pole, którego wartość może przyjąć dowolny z kilku kształtów, wybierany według rodzaju
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 20 0 1c273ff4b56e8b440b76f9f0c8d00c9a
++           Każda alternatywa jest kluczowana rodzajem (`Specification#kind`) wartości, który ją
++           wybiera, a pole odczytuje się jako unię typów alternatyw (`Text | List[Text]`).
++           Wartość, której rodzaju nie oferuje żadna alternatywa, jest przekazywana do
++           `Specification#unoffered`. W krotce alternatywa rekordowa staje się zagnieżdżoną
++           krotką nazwaną.
++       entry #alternatives   każda alternatywa, kluczowana rodzajem wartości, który ją wybiera
++       entry #multiplicity   ile wartości niesie pole
++     entry #multiplicity   ile wartości niesie pole
++     entry #of   ta składowa z inną krotnością
++     entry #optional   ta składowa odczytywana jako `Optional`, `Unset` tam, gdzie brak wartości
++     entry #many   ta składowa odczytywana jako `List` dowolnej liczby wartości
++     entry #keyed   ta składowa odczytywana jako `Map[Text, _]` wartości, każdej pod nazwą
++     entry #series   ta składowa odczytywana jako własna kolekcja specyfikacji, element po elemencie
++   entry .Multiplicity   ile wartości niesie pole: jedną, najwyżej jedną, dowolną liczbę albo dowolną liczbę według nazw
++       `One` odczytuje dokładnie jedną wartość, przez `Specification#access` i
++       `Specification#required`; `Optional` odczytuje najwyżej jedną, jako `Optional`, które jest
++       `Unset` tam, gdzie `Specification#absent` jest prawdziwe; `Many` odczytuje dowolną liczbę,
++       jako `List`, przez `Specification#repeated`; a `Keyed` odczytuje dowolną liczbę, każdą pod
++       nazwą, jako `Map[Text, _]`, przez `Specification#entries`. `Series` odczytuje dowolną
++       liczbę jako własną kolekcję specyfikacji, jej `#Series`, tworzoną przez
++       `Specification#series`, która odczytuje element dopiero wtedy, gdy zostanie o niego
++       poproszona; jest przeznaczona dla specyfikacji odczytywanej w `#Context`.
+
+@ 0 3 0 1a386b3bd90c18f41fd2115afe0f2098
++       Makro samo stosuje krotność, więc instancja `Intensional` opisuje tylko pojedynczą wartość,
++       a specyfikacja nie mówi nic więcej o opcjonalności ani powtarzaniu. `Member` przyjmuje ją
++       przez `#of` albo `#optional`, `#many` i `#keyed`.
+
+@ 0 1 0 05b2f7a22824f92f09a5ddf9f99bc5a7
++ entry .Record   wartość, której pola mają typy nadane przez specyfikację, odczytywana leniwie z danych źródłowych
+
+% 1 1 0 01256a4c1a3b8fb30ec5a18b8d6b4a02
+
+@ 0 5 0 101d7d3dbee135b20169b2c5891ec48d
++       `Record` to `Selectable` nad surową wartością (jego `#recordData`) i funkcją z nazwy pola w
++       odczyt tego pola (jego `#recordAccess`). Nie buduje się go ręcznie: metoda `record`
++       specyfikacji zwraca strukturalną rafinację typu `Record from Origin` z jedną składową na
++       każde pole schematu, o typie `Record.Field[result, Failure]`, więc wybrane pole ma typ ze
++       schematu i jest odczytywane przez `Tactic` wywołującego.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 05af3bccaae7232102b763a9c4c9bc67
+
+% 0 1 0 120f060ef5cfca661bd1cdd26d5d66d3
+
+% 0 1 0 180089370c1d10780972ae432a4d7076
+
+% 0 1 0 044278a0f086c25013a038d69169575d
+
+% 1 1 0 1b77df62f0be3244068fb7bba1d8d215
+
+@ 0 5 0 0a45ab6df480da940d311ab7fd0cbace
++       Jego własne składowe mają celowo nietypowe nazwy (`recordData`, `recordAccess`), aby schemat
++       mógł zadeklarować niemal dowolną nazwę pola; do surowych danych dociera się przez
++       rozszerzenie `.data`, przed którym pierwszeństwo ma pole schematu o nazwie `data`. Do pola
++       schematu nazwanego jak metoda `java.lang.Object` (`notify`, `toString`) nie da się dotrzeć
++       przez wybór, a jedynie przez `#selectDynamic`.
+
+% 1 1 0 037f76c84e5ff13018aa5d45cc0e2d8c
+
+@ 0 20 0 01e5c14f3d076e8d0be0ac6a8e307ab5
++   entry .Field   typ pola rekordu: jego wartość, odczytywana pod `Tactic` kodu, który ją odczytuje
++       `Record.Field[result, failure]` to czysta funkcja kontekstowa `Tactic[failure]^ ?->
++       result`, stosowana wszędzie tam, gdzie pole jest wybierane, tak jak byłoby stosowane
++       `result raises failure`. Ponieważ jest czysta, typ, który wspomina rekord – błąd niosący
++       go jako swój ładunek – niczego nie przechwytuje.
++   entry .apply   rekord nad wartością i transformacją pól
++       `Record(data, access)`: sposób, w jaki wygenerowany kod buduje rekord, wywoływany przez
++       `Specification#build`. Akcesor jest funkcją czystą, ponieważ rekord go przechowuje.
++   entry .data   dane źródłowe rekordu, o typie `Origin` specyfikacji
++       Rozszerzenie, a nie składowa, aby schemat mógł zadeklarować pole o nazwie `data`, które ma
++       wtedy pierwszeństwo: składowa rafinacji jest wybierana, zanim zostanie wypróbowane
++       rozszerzenie.
++   entry #recordData   surowa wartość, z której rekord odczytuje swoje pola
++   entry #recordAccess   funkcja z nazwy pola i danych rekordu w odczyt tego pola
++   entry #selectDynamic   odczytuje pole po nazwie, tak jak robią to wybory pól rafinowanego rekordu
++       Nazwa przychodzi zakodowana w konwencji JVM (`street$minusaddress` dla `street-address`) i
++       jest dekodowana przed wyszukaniem. Wynikiem jest odczyt pola, funkcja kontekstowa nad
++       `Tactic[Failure]` specyfikacji, którą rafinowany typ pola stosuje w miejscu wywołania;
++       przy wywołaniu po nazwie wywołujący rzutuje ją i stosuje. Nazwa, która nie jest polem,
++       powoduje panikę z komunikatem _the record has no field named `field`_.
+
+@ 0 1 0 1243bb4a6e9beba718cc43f2bcea7086
++ entry .Intensional   jak odczytywana jest skalarna etykieta typu: typ Scali, którym się staje, i sposób odczytu jednej wartości
+
+% 1 1 0 0da8945ec082949c1cb43f4c0fe55fa2
+
+@ 0 4 0 012b14412e2f378416a0311d64f611e9
++       Specyfikacja deklaruje jedną instancję dla każdej skalarnej etykiety typu, którą mogą
++       nazwać jej schematy. `"text" is Intensional in Form from Origin to Text` odczytuje
++       `Specification.Member.Value(t"text")` jako `Text` z wartości typu `Origin` specyfikacji;
++       `Form` to typ znacznikowy specyfikacji, więc instancje są definiowane w jego obiekcie
++       towarzyszącym i znajdowane bez importu.
+
+% 2 1 0 08652242f78d0b2004f187869f0a2fe5
+
+% 3 1 0 1332dfdad31ea9cd13523fb8223948f1
+
+% 0 1 0 0723387d36447c2802dcda6c5b7f85c2
+
+% 0 1 0 08f2ff5a34b9e4c8003f1c36f4420995
+
+% 0 1 0 040f32c4a66024181a3a2330549eff60
+
+% 0 1 0 0008f08f938ccae116a377729ed135f2
+
+% 0 1 0 1aec714bd69579831df92817866abefd
+
+% 0 1 0 087bd9b09db6efb7060285b6318299f2
+
+% 1 1 0 109ff7d3c0ec9ff41ea2e463ed4a9622
+
+@ 0 4 0 06d7cb2c2e1d06e21c5d01a02d5685bf
++       Instancja odczytuje jedną wartość: `Specification.Multiplicity` składowej stosuje wokół niej
++       makro. Odczyt, który może się nie powieść, jest zamiast tego instancją
++       `Intensional.Fallible`, zwykle tworzoną przez `Intensional.Reading`. Instancja przechowuje
++       swój akcesor, więc przechwytuje to, co przechwytuje akcesor; instancja nad czystą funkcją
++       sama jest czysta.
+
+% 1 1 0 05f258209aa23315014eba4d1806de66
+
+% 1 1 0 11df7d05bc42b12b171a55af59535d79
+
+@ 0 1 0 0e56a3fa84abed50152a2a79f81bb276
++   entry .Fallible   `Intensional`, którego odczyt może się nie powieść, przez `Tactic` dla jego `Error`
+
+% 1 1 0 16b41b321df325520f725efce156c4ea
+
+@ 0 4 0 142977d89304885d158146619359fc09
++         Odczyt, który może się nie powieść – wartość niewłaściwego rodzaju, wartość spoza swoich
++         ograniczeń, napis niepasujący do swojego wzorca – jest instancją `Fallible`, której
++         `#transform` przyjmuje `Tactic[Error]`. W rekordzie pole jest odczytywane pod `Tactic`
++         kodu, który je wybiera; w krotce – pod tym, gdzie krotka jest budowana.
+
+@ 0 9 0 06c8c241ef9c3e770c9892425ef638f5
++         `Error` instancji musi być `Failure` specyfikacji lub jego podtypem, aby każde pole
++         zawodziło w jeden sposób; instancja zgłaszająca cokolwiek innego jest błędem kompilacji,
++         _the instance for `label` raises `error`, not the specification's `failure`_. Zawodność
++         deklaruje się tutaj, a nie jako wynik `raises`, ponieważ przy sprawdzaniu przechwytywania
++         wynik `raises` nie może implementować metody abstrakcyjnej.
++     entry #Self   etykieta typu, którą odczytuje ta instancja
++     entry #Error   błąd, który może zgłosić odczyt
++     entry #transform   odczytuje jedną wartość, z parametrami składowej, zgłaszając błędy przez `Tactic`
++   entry .Reading   instancja `Fallible` nad czystą funkcją wartości, jej parametrów i `Tactic`
+
+% 1 1 0 17a83e990dde0bc512536346a59c4571
+
+@ 0 4 0 063b0222be71aecd0321528cd7712737
++         `Intensional.Reading[label, form, origin, result, error]` jest klasą, więc format może
++         zadeklarować każdy ze swoich zawodnych czytników jako given typu klasowego: given o typie
++         rafinowanego `Fallible` byłby polem przechwytującym `any`, co czyniłoby obiekt, który go
++         zawiera, zdolnością.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 1 1 0 11621829530a7bef0191b6af5796467c
+
+% 0 1 0 0d3e9870591dc63401924cece0565571
+
+% 0 1 0 1a1315823408bce809a79f992364962d
+
+% 0 1 0 07009eedece20825038f65815972471c
+
+% 0 1 0 145b92940fec9a39046bcd6d77bf8f09
+
+% 0 1 0 07412f7cbbe51efb0c85f7c54860b0f1
+
+% 0 1 0 0d68c179663c3aea13a937c1f54493ee
+
+% 0 1 0 0e929d0885f3dc501a4c040152ccaa18
+
+% 1 1 0 123b18ed36c9eafe04c35744221ae67d
+
+@ 0 9 0 07f7b98d2ffbfb6415ef0830da83f30a
++   entry .apply   instancja z funkcji samej wartości
++       `Intensional(accessor)` tworzy instancję, która ignoruje parametry składowej. Jej typy
++       etykiety, formy, źródła i wyniku pochodzą z oczekiwanego typu givena, który definiuje.
++   entry .parametric   instancja z funkcji wartości i parametrów składowej
++       Dla etykiety typu, której odczyt zależy od jej parametrów, na przykład ograniczonej liczby
++       całkowitej lub wzorca: funkcja otrzymuje `params` wartości `Specification.Member.Value`
++       dosłownie.
++   entry #Self   etykieta typu, którą odczytuje ta instancja, literałowy typ `String`, taki jak `"text"`
++   entry #transform   odczytuje jedną wartość typu źródłowego, z parametrami składowej

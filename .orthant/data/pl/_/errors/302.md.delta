@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 1 0 107c106521992b9e128e7c1541d7be9c
++ # `SN-302` – Reguły importów najwyższego poziomu (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Wtyczka kompilatora Decorum, która zgłaszała ten błąd, została wydzielona z Soundness i jest
++ teraz [Consequent](https://github.com/propensive/consequent), samodzielnym narzędziem
++ sprawdzającym styl Consequent. Reguła przetrwała tam pod nowym identyfikatorem, w którym litera
++ nazywa zasadę, z której reguła się wywodzi:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Było
++ column  Jest
+
+% 0 1 0 0e99c828678469c01a32be764f014e63
+
+% 0 1 0 178ea20792d28d1a1b52e1e8a643e4a6
+
+% 0 1 0 1ead9d1dec0ac66f174f3e850e8bdae1
+
+% 0 1 0 05cc98344542ffc5134b9b2176d3d11c
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

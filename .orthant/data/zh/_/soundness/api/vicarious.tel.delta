@@ -1,0 +1,373 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14c573472161d1591a0ab821784a0dbd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c512d48a8f747e81db84ebb3f7b85c8
++ info   以类型的字段路径为索引的值，通过编译时检查的代理对象寻址
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 155d14c6d575c2930cb9a653992f2865
++     _Vicarious_ 把 case class 的结构——从它可达的每个字段，无论深度，以及整个值本身——视为一组固定的**路径**，是 `opponent.name` 而不是 `name`，并让代码通过一个**代理对象**指明这些路径：它是该类型的一个没有自己字段的替身值，在其上的每次选择都在代码编译时解析为它所指路径的索引。
++     类型中没有的路径是编译错误，因此路径从不以文本形式书写。
+
+@ 0 6 0 0d0f3feabc53640b06c3f7f07eb53459
++     在代理对象之上构建了两种结构。
++     `Catalog[Key, Value]` 为 `Key` 的每条路径保存一个 `Value`，由一个函数从 `Key` 的值计算得出，按路径读取，用 `map` 变换，并用 `braid` 逐项组合。
++     `Specific` 把某个类型的若干路径映射到类型类实例，供派生（`wisteria` 的派生，因而也包括 `jacinta`、`stratiform` 及其他编解码器的派生）恰好在这些路径上使用，以代替字段类型的实例。
+
+% 2 1 0 1630ecd701d1902615b8979173abf571
+
+% 3 1 0 0c533d0ca0adb7e81427ebb98cb3c6db
+
+% 5 1 0 047ba6561d06fc3210c636a9856fb595
+
+% 6 1 0 0a449e935ff23efa0cb0634c4c83f0c4
+
+% 8 1 0 10b102ee5e4686091d0fa183f8334a41
+
+% 9 1 0 02ec097a1894293103015980210e56e7
+
+% 0 1 0 1f98fc376d93d26407b211694cd470ef
+
+% 0 1 0 1cde67ede7001b021ed1a5446cab1794
+
+% 1 1 0 1a308ac5173f5d601eb177d3087611bf
+
+@ 0 4 0 1f597724a09d4f661173e2eee129a9cb
++     路径以深度优先、根在前的方式展平：对于 `Duel`，路径依次是整个 `Duel`、`challenger`、`challenger.name`、`challenger.age`、`opponent`、`opponent.name` 和 `opponent.age`，因此基于 `Duel` 的目录有七个条目，而基于同一键的两个目录逐位置对齐。
+
+@ 0 3 0 0a68eb7b1e05921207e39ce3a09baf88
++     该库只有一个源集 `vicarious.core`。
++     `Catalog`、`catalog`、`Proxy`、`Specific`、`root` 和 `specifically` 导出到 `soundness` 总括包；`Proxy` 的 given 位于其伴生对象中，处于隐式作用域内，因此无需按名称导入任何东西。
+
+% 0 1 0 16736c53b26096c207f0082614094673
+
+% 0 1 0 15cd18d3b7919aa80115166de491bebc
+
+% 0 1 0 16ef5f905f86975c0f40c8ed9c1f6402
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+% 0 1 0 0f8b59d3fb7a104900a03684ad28f8bf
+
+@ 0 7 0 155cd0e998cd35dd142a8e70fd93f635
++ entry .catalog   通过把一个多态函数应用于一个值及其中的每个字段来构建 `Catalog`
++     `catalog(value)(lambda)` 是一个宏，它在代码编译时遍历 `value` 类型的 case class 结构，并把 `lambda`——一个纯多态函数 `[field] => (field: field) -> result`——先应用于整个值，再按声明顺序、深度优先地应用于每个字段。
++     该函数必须接受任何类型的字段，因此它对字段只能做每个值都支持的事情。
++     由于条目保存在数组中，需要结果类型的 `ClassTag`。
+
+% 2 1 0 1d6f55d230d8ef4d0009f57724ac1919
+
+% 3 1 0 00bf0f847813c1a10603df9f8863a003
+
+% 5 1 0 1b28e8913075260f04967776bf2ec2ac
+
+% 6 1 0 16f08b8f114259901d79c58d31358e24
+
+% 8 1 0 11459718a47ea6f618f5b7020f8ca339
+
+% 9 1 0 0e911233e342b37205980a5266957913
+
+% 0 1 0 045154aee157ecd10e8e88020155681d
+
+% 0 1 0 0bda1787e6dfd4d40d817764375dee42
+
+% 1 1 0 08859f5cc6e75c9f1aa6e1c0a30529b7
+
+@ 0 1 0 01331c7d4920278d0e058a0e42ff0e24
++ entry .Catalog   为键类型的每条字段路径保存一个值，按在代码编译时检查的路径读取
+
+% 1 1 0 08f07553092055fd1bb89d74ced64c91
+
+@ 0 6 0 0c24dfecd599c58f18625d55183256df
++       `Catalog[Key, Value]` 在 `Key` 展平结构的每个位置——先是整个值，然后深度优先地是每个字段——保存一个 `Value`，存放在 `#values` 中。
++       它用 `catalog` 构建，用 `#apply` 和通过代理对象写出的路径读取，用 `#map` 变换，用 `.brush` 在指定路径上覆盖，并用 `#braid` 与基于同一键的另一个目录组合。
++       键类型使两个目录可以组合，也检查用于读取目录的每条路径。
+
+% 2 1 0 02514956fb2369b305f17caf77c73c29
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 01f65e0e42f642a612e72164231a5895
++         label 由每个字段的标注组成的目录
+
+% 1 1 0 19749c2033ff89da1a0e3513dfc0fade
+
+% 2 1 0 0af6169059bf084006f7be94d1b94a84
+
+% 4 1 0 1d9c2f63627e4ed6023b2aa8c8463ba4
+
+% 5 1 0 149a8328f5268ee102d4a7f0c2c1f621
+
+% 7 1 0 19364089144447960bf7a51143444db7
+
+% 8 1 0 13d82c5ae2ef7a8f0d9fe21623024396
+
+% 0 1 0 16087901fc7780a11caff7f97772c4dc
+
+% 1 1 0 05d27781c35ce76e04a550841a2a475d
+
+@ 0 1 0 1d2255833216fb750fb13b636f50456c
++         label 映射为宽度的目录，按相同的路径寻址
+
+% 1 1 0 0cf1f647db68b9df1a5727278b75182d
+
+% 2 1 0 18944a177445cae10c3f27f59a925efe
+
+% 4 1 0 1dde0ab126d2c8db0e4d5c942a74a121
+
+% 5 1 0 1af3a7fc27c031c41c0ff56878f590a6
+
+% 7 1 0 14eb899416168e8e1e399b40eedb113f
+
+% 8 1 0 06e08923ff95329f1f103645e783a646
+
+% 9 1 0 13ae7673a36f262017eff493aafa53ab
+
+% 0 1 0 042c74f71a7d57df151dadb04e7d860d
+
+% 1 1 0 101f2f084c6fbf2517e300659acc48ba
+
+@ 0 1 0 1b080daada2ad15d1f06a552a3772b6a
++         label 与标注逐项编织在一起
+
+% 1 1 0 18b50400be569d0d1df5fa33c0257fa5
+
+% 2 1 0 0240e032b4884c3111d79186ebde3f29
+
+% 4 1 0 12b37d55f6738bbd070ee18cbda3c900
+
+% 5 1 0 1b74d67c513c71801c4c7ec166a46725
+
+% 7 1 0 1b50283bd7682527055d079cae4a5092
+
+% 8 1 0 191d93e739f1476f1b9dcd00bb0459fd
+
+% 9 1 0 0a55b7e6a509d2ab091f478dae893b65
+
+% 0 1 0 1edf6d73f92a6077057be7b0d93a3c6f
+
+% 0 1 0 1a4eeee82407baca06928eeea9720351
+
+% 1 1 0 0750e4fddf46d29d1e7ac716d5ec8b60
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 09b6a9da700cbea610e83d01e07a0ea2
++       按字段的设置表就是这样组装的：标注、宽度以及其他相关内容的目录分别构建，再编织在一起，每个都按相同的路径寻址。
++       `Catalog` 是 `Findable` 的。
+
+% 0 1 0 16cebf059ababff11de6f4787d27b308
+
+% 0 1 0 02dcdff5f415749b17058cab8bd8264f
+
+@ 0 5 0 059a52a2593b13420fff1cdd3e18a343
++   entry .brush   目录的一个副本，其中若干路径上的条目由一个关于路径的偏函数替换
++       任何 `Catalog` 上的扩展方法，需要键类型的派生 `Proxy`。
++       参数是一个从代理对象到关于代理对象的偏函数的上下文函数：每个 `case` 以代理对象上的模式指明一条路径并给出其新值；未匹配的路径保留其条目。
+
+% 2 1 0 1816e5301ac89296087e83d67698707c
+
+% 3 1 0 16889a812e3598660ad60b7a765bb229
+
+% 5 1 0 0198c7b370a12e201da6faa80e5c7f45
+
+% 6 1 0 0886091d12e30edc09bdb937e0f6a3f1
+
+% 8 1 0 1cc36380dc457f95125461057d939016
+
+% 9 1 0 1d65bcffa7b00c400a72088e4b7f3c22
+
+% 0 1 0 194a622562029f0c1f041e159addef5f
+
+% 1 1 0 1506c446973f9402169a4369348fcadf
+
+@ 0 17 0 12561df964cea0530ea160f92272e480
++   entry #values   各条目，每条路径一个，先是整个值，然后深度优先地是每个字段
++   entry #size   条目数：整个值一个，任意深度的每个字段各一个
++   entry #apply   某条路径上的条目，路径写作键类型代理对象上的选择
++       `catalog(proxy ?=> proxy.opponent.name)` 在代码编译时把路径解析为其条目的索引；`proxy ?=> proxy` 是整个值的条目，而类型中没有的字段是编译错误。
++       `challenger.name` 和 `opponent.name` 是不同的条目，因为路径是一个位置，而不是一个名称。
++   entry #map   基于同一键、对每个条目应用了一个函数的目录
++       路径不变，因此在该目录上有效的任何路径在结果上也有效。
++       需要新值类型的 `ClassTag`。
++   entry #braid   用一个关于两个值的函数，逐项组合基于同一键的两个目录
++       `left.braid(right)(lambda)` 不需要匹配名称：基于同一键的目录逐位置对齐。
++       需要结果类型的 `ClassTag`。
++   entry #tie   在上下文中有此目录及其键的代理对象的情况下求值一个代码块，从而让路径读取其条目
++       在代码块中，目录是一个上下文值，因此 `proxy.opponent.name()`——路径后跟 `()`，即 `Proxy#apply`——直接读取该路径的条目；一个表达式中可以读取多条路径。
+
+% 2 1 0 1f8a808e7079e1371b9a995e6d45c567
+
+% 3 1 0 13ddc6a91efaeb301fbcdd56c863a75e
+
+% 5 1 0 13b0a936b9b1eadb1ee3282321dec80a
+
+% 6 1 0 13b29fdec15dcd3613c07b9c407db629
+
+% 8 1 0 0cf513a96ce8d84f018942a901d89466
+
+% 9 1 0 067ec14707ea069d0bf6f24860b9c952
+
+% 0 1 0 1f78210f9cdbb88b01dd795ff6dadf70
+
+% 1 1 0 034bb435c26063d3111d607891a707a6
+
+@ 0 1 0 1b3dcb699e0f413815fca62bb9aa6c8b
++ entry .Proxy   键类型值的替身，其字段选择在代码编译时解析为路径索引
+
+% 1 1 0 0727847a5ff05fdc19af564fb8046362
+
+@ 0 5 0 02a3fbfaf35c7e571598a607e928bf5c
++       `Proxy[Key, Value, Ordinal]` 位于 `Key` 的某条路径上：`Ordinal` 是该路径的索引，作为字面量类型（根为 `0`），而 `#id` 是运行时的同一索引。
++       在代理对象上选择字段（`proxy.opponent.name`）是一个 `selectDynamic` 宏，它在 `Key` 的展平结构中查找扩展后的路径并给出其代理对象，因此类型中没有的字段是编译错误：_vicarious: `opponent.title` is not a valid field path_。
+
+@ 0 5 0 084a9c54e63322d30d71a65562252595
++       键类型的根代理对象是 `.derived`，位于隐式作用域中；`Catalog#apply` 和 `Catalog#tie` 提供它，而 `specifically` 以 `root` 的形式提供一个。
++       代理对象有三种用法：作为地址（`Catalog#apply`），从上下文中的目录读取条目（`#apply`），以及在模式中作为提取器（`#unapply`），`specifically` 和 `.brush` 正是以此在其 `case` 中指明路径。
++       `Proxy` 是 `Findable` 的。
+
+% 0 1 0 177512859589bc0b04c1e630ac9f3ac0
+
+% 1 1 0 172eeb380c8468d01a3e69e3884cb7d5
+
+@ 0 13 0 1bdffb2b6ba9c1ed15403900ced1efac
++   entry .derived   键类型的根代理对象，用其字段的代理对象细化，使选择能通过类型检查
++       一个位于隐式作用域中的 `transparent inline given` 宏：它的类型是 `Proxy[Key, Value, 0]`，递归地为每个字段细化出一个成员，每个成员都是一个代理对象，其 `Ordinal` 是该字段的路径索引。
++   entry #selectDynamic   此代理对象路径上某个字段的代理对象，若没有该字段则为编译错误
++       由 `proxy.opponent` 这样的选择调用；不直接书写。
++   entry #id   此代理对象的路径在其键类型展平结构中的索引，根为 `0`
++   entry #apply   上下文中的 `Catalog` 在此代理对象路径上的条目
++       `proxy.opponent.name()` 需要一个作为上下文值的 `Catalog[Key, Value]`，就像 `Catalog#tie` 所提供的那样。
++   entry #unapply   匹配同一路径的代理对象，使路径可以作为 `case` 模式
++       `case root.opponent.name() =>` 恰好匹配其 `#id` 与 `opponent.name` 的相同的代理对象。
+
+@ 0 1 0 175d0a7a3cc3ba8e0f595aababa4588e
++ entry .Specific   某个类型指定字段路径上的类型类实例，供派生在那里使用
+
+% 1 1 0 1a66212c5b3e7312163686c65125a813
+
+@ 0 6 0 047f1e13fb4c1a1f0fb5aa212d71697a
++       `Key is Specific over Typeclass` 记录对通用派生的例外：对于 `Key` 的某些字段路径，在那条确切的路径上使用的实例，而不是字段类型会解析到的实例。
++       作用域中的 given 会同时改变某个类型的每个字段；`Specific` 只改变一条路径，别处不变。
++       它用 `specifically` 构建，后者在代码编译时检查每条路径和每个实例的类型，并由 `wisteria` 的派生查阅，因而也由通过这些派生得到的编解码器查阅。
+
+% 2 1 0 16dcfe704a624d5d1539c37572924830
+
+% 3 1 0 18ed564fa589e9ea0b349e7d4aed2b1b
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 3 1 0 1911432e92d095001c2d66a70d44489c
+
+% 0 1 0 0fe48aac32b3e04c02475eea17911527
+
+% 0 1 0 1043da8253ec428f0d7a20fdf4e6c4ad
+
+% 0 1 0 180753d80529814408db5e20955928be
+
+% 0 1 0 094437e7d319e44611be777f4c838517
+
+% 0 1 0 0e9de0781ffa769b0ba933873ba65e95
+
+% 0 1 0 17cff6e98f731a190567f40115fa37b6
+
+% 1 1 0 0f48e23c19780e950c09f1c4395a96a7
+
+@ 0 1 0 167532bb7f68b6950969d96373770082
++       `#Transport` 针对另一个类型类的 `Specific` 会被派生忽略。
+
+% 1 1 0 1e89910a68f3cbdd1cca2de0b92519ac
+
+% 0 1 0 1bdfa24802e8a5be0630be87c36ed944
+
+@ 0 7 0 122be1d5a0ac3ff402b643bce7cebcf4
++   entry .Cases   `specifically` 读取的字段路径分支所组成的偏函数：从代理对象模式到实例
++       `Specific.Cases[Key]` 是 `PartialFunction[Proxy[Key, Any, Nat], Any]`。
++       `specifically` 在代码编译时从语法树中读取其 `case`；该函数本身从不运行。
++   entry #Self   其字段路径被覆盖的键类型
++   entry #Transport   覆盖用的实例所针对的类型类，如 `Json.Encodable`
++   entry #instances   每条被覆盖的点分路径（`"opponent.name"`）及其实例，类型已擦除
++       派生从这个映射中读取实例，并在它访问的字段处重新赋予其类型。
+
+% 2 1 0 001562dbab8c3b4a05f31745c3ba28c1
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 0d3e1e96a9a341711c002cb5d6088f65
+
+% 1 1 0 0fd96e306876e4020cea7891021a7aba
+
+@ 0 6 0 15d733745934215c1ae396fd8826623d
++ entry .specifically   通过 `root` 用指明字段路径的 `case` 模式构建 `Specific`
++     `specifically { case root.opponent.name() => instance; … }` 是一个宏，其 `Key` 和 `Typeclass` 来自期望类型（`Duel is Specific over Json.Encodable`）。
++     对于每个 `case`，代理对象模式给出路径，而实例必须是该路径上类型的 `Typeclass`，否则定义无法编译：_vicarious: the instance for this path is not a …_；未知的路径同样是编译错误。
+
+% 2 1 0 189fd1d56a5e0e070306a294b77561b5
+
+% 3 1 0 0612b0405f94b9170c4cded9eb39c851
+
+% 4 1 0 07789afcd770f35a076f31477f8e0362
+
+% 0 1 0 04f32810549cd2d3141ed7609699624c
+
+% 1 1 0 120ab930fd90d071122b8e8a23a38e0d
+
+% 0 1 0 1ef1291d32a376d00522b4014c5dbb9b
+
+% 0 1 0 13e889e5f84f0847194bec61163fc3d4
+
+% 1 1 0 11734e336822b41409c5941a4864298c
+
+@ 0 2 0 1a1c2044b410b8350e56c81d5cef7488
++     以集合结尾的路径接受集合的实例，因此在那里以一个局部 given 重新派生它，就能只在那一处重新编码其元素：
+
+% 2 1 0 0ed6d9df7cec1804016fef740e2e904f
+
+% 3 1 0 0c4326b9bd003c8713ce6bed06a6532e
+
+% 4 1 0 079d2279ce330baf1211d8a891d35512
+
+% 0 1 0 010b4076bdea45d907086e626f0712a1
+
+% 1 1 0 00ed6eda6f6c4d7a063819533c09ab94
+
+% 0 1 0 1e170b060d00f03d18ba58a1bc7f05f4
+
+% 0 1 0 0f93724d09df2c631d72c766449826e4
+
+% 0 1 0 0e6ce2e262378341143b95407ab52c0b
+
+% 1 1 0 099fea93b547e29212041b9bc67e602f
+
+@ 0 4 0 0ee7642deadbc6cd01a26b21b6a99f1c
++ entry .root   `specifically` 各分支中的根代理对象，每条路径都从它开始选择
++     解析为 `specifically` 以标记为 `"root"` 的上下文值形式提供的代理对象，因此 `case root.opponent.name() =>` 不需要绑定者。
++     在 `specifically` 代码块之外没有这样的值，`root` 无法编译。
+
+@ 0 1 0 1b76f4823a87212019fe7505839e6ab9
++ entry .internal   `catalog`、`Proxy` 和 `specifically` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1056004685957b511296ec90e8619e33
++       不供直接使用：`catalog`、`Proxy.derived`、`Proxy#selectDynamic` 和 `specifically` 会拼接它们。
++       路径辅助函数以深度优先方式展平 case class 的字段，根 `""` 位于索引 0。
++   entry .catalog   由一个值和一个多态函数构建 `Catalog`
++   entry .fieldNames   积类型各字段的点分路径，深度优先，位于某个前缀之下
++   entry .paths   积类型的每条展平路径，根路径 `""` 在前
++   entry .fieldReprs   积类型每条展平路径上的类型，与 `.paths` 对齐
++   entry .dereference   把代理对象上的字段选择解析为扩展后路径的代理对象
++   entry .specific   由一个关于路径的偏函数的各 `case` 构建 `Specific`
++   entry .proxy   为键类型构建细化后的根代理对象

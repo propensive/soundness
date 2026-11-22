@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 1992d28bc027cd86144d8211aebbc5e3
+
+@ 0 2 0 0a914f7ca990f7411312c59f95389510
++ 当 Scintillate 无法在请求的端口上启动 HTTP 服务器时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 16d858387f91b9f61d6c27a694355b4f
++ 操作系统拒绝绑定监听器，通常是因为该端口已被占用，或者它是特权端口而进程缺少相应权限。
+
+@ 0 4 0 0d201869c13bd46b0d76dd3129898f34
++ 这**不是** HTTP 5xx 响应。
++ 后者是 telekinesis 中的 `Http.Status.Category.ServerError`，描述的是服务器发出的响应；而本错误描述的是一个从未启动的服务器。
++ 在两者被区分开之前，本错误名为 `ServerError`。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1226dc50bc5618d319fb15e7b9fa3a09
+
+% 1 1 0 1155b4147f71d900099fb1711c5f6595
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 0cae5ffc7e29ed1c10e315cb2f3e0955
++ 选择另一个端口，释放发生冲突的端口，或以足够的权限运行。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1d31e7adc17911a20596ff34e3235ba2
++ - 源码：`lib/scintillate/src/server/scintillate.Httpd.scala`

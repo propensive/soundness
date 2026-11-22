@@ -1,0 +1,534 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1db213c190fed19215fd6243300d601f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1ac7afa3d9bd82550a707a3898a19b3f
++ info   总括包：一个 `import soundness.*` 即可触及每个 Soundness 库
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 008b538b5ff63612125fabab9b2b446c
++     _Soundness_ 是由一百多个库组成的家族，每个库都有自己的包（`gossamer` 处理文本，`galilei` 处理文件系统，`jacinta` 处理 JSON，……），而 `soundness` 是将它们汇集起来的包。
++     程序只需写一个通配符导入，然后就可以使用任何库中所需的任何名称，而无需知道它来自哪个库：
+
+% 2 1 0 1f27894bfa5ee96700974cf2315ab044
+
+% 3 1 0 07d03e053d6dbfa412e64f480fa525ea
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0d23fdfe469a9fb009d07926302e05d2
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 160d215c046410ab0b4670a71dceb6ad
+
+% 1 1 0 1ad70419275fbe121262246c7ad0e029
+
+@ 0 10 0 109e7b7d381ebf8d195aca70c8bdb572
++     这个包本身几乎什么都不包含。
++     每个库在其每个组件中都有一个名为 `soundness_<library>_<component>.scala` 的文件，用 `export` 将该组件的公共名称导出到 `package soundness`，因此总括包随类路径上的组件而增长：依赖 `galilei.jvm` 的程序能在其中看到 galilei 的文件系统后端，不依赖它的程序则看不到。
++     这些转发器在定义它们的地方，即各个库自己的页面上记述——`Classloader` 在 hellenism 的页面上，`Json` 在 jacinta 的页面上——而不在这里。
++     本页只记述总括包自身*声明*的内容：少数无法用 `export` 表达的手写转发器、集合别名、两个注解类型、兜底的 `explainMissingContext`，以及 `repackage` 入口点。
+
+@ 0 10 0 0503dd47d3c1b0171be895e5f5e242e2
++     **选择包。**
++     选择某种实现的 given——错误处理策略、类加载器、代码页、日志格式、文件系统后端——位于以其角色命名的小包中：`strategies`、`classloaders`、`codepages`、`logFormats`、`filesystemBackends`。
++     总括包将每个这样的包镜像为同名的 `package`，来自不同库的同名代码块会合并，因此 `soundness.construables` 包含 jacinta、xylophone、honeycomb、caesura 以及十几个其他库的 `Construable` given，`soundness.wasiApis` 则包含每个具有 WASI 后端的库的相应 given。
++     经由总括包的路径和经由库的路径指向同一个 given：`import soundness.monthFormats.englishMonths` 与 `import aviation.monthFormats.englishMonths` 可以互换。
+
+@ 0 7 0 1eaa53881dd3ea8014c4656499ec1423
++     选择包中的 given 总是**按名称导入**，因为 `import strategies.*` 不导入 given：Scala 的通配符只选择普通成员，given 需要它自己的名称或一个 `given` 选择符。
++     而导入到词法作用域中的 given 优先于伴生对象中的任何 given，这正是选择包能够覆盖库的默认值的原因。
++     因此 `import soundness.*` 本身不会将任何选择引入作用域——只有一个刻意的例外，即 `explainMissingContext`，它是旧式的 `implicit def`，恰恰是为了让通配符包含它。
+
+@ 0 5 0 15d4e9f0dccd02c11e5356472f4f7c41
++     **被排除的名称。**
++     类型和项位于不同的命名空间中，因此类型 `via` 和方法 `via` 可以共存；但两个库将同一个*项*（或同一个*类型*）导出到 `package soundness` 时不会形成重载——编译器保留一个，并悄无声息地丢弃另一个。
++     每一处这样的冲突都已经裁定，落选的一方通过它自己的包访问，并在那里保留其名称：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 15 0 192a359268eec99603e43374202f6470
++     column  名称
++     column  在总括包中
++     column  另一方的访问方式
++     row  `Channel`  perihelion 的 WebSocket  `anticipation.Channel`（像素通道）
++     row  `Completion`, `Completions`  exoskeleton 的  `harlequin.Completion`, `prophesy.Completion`
++     row  `Fragment`  honeycomb 的  `harlequin.Fragment`
++     row  `Descriptor`  embarcadero 的 OCI  `hallucination.Descriptor`
++     row  `Diagnostic`  harlequin 的  `frontier.Diagnostic`
++     row  `Message`  fulminate 的  `perihelion.Websocket.Message`（WebSocket 帧）
++     row  `Tag`  honeycomb 的 HTML 标签  `probably.Tag`, `xylophone.Tag`
++     row  `Attributive`, `Renderable`  honeycomb 的  `xylophone.Attributive`, `xylophone.Renderable`
++     row  `Universe`, `Classfile`  anthology 的、mandible 的  `degustation.Universe`, `degustation.Classfile`
++     row  `as`  distillate 的解码  `scintillate.as`（请求正文）
++     row  `teletype`  escapade 的渲染  `delicious.teletype`
++     row  作为 `apply` 的 `Kelvin(…)`  rudiments 的去索引 `apply`  `import quantitative.*`
+
+% 1 1 0 1fe05398f31a392a1e01412394c85d10
+
+@ 0 8 0 155650acff16a34118650e7be0c1ea5f
++     少数名称缺席则另有原因：`export` 无法忠实地转发它们。
++     rudiments 的 `Scribe`/`scribe` 和 `Surveyor`/`survey`，以及 zephyrine 的 `Region` 和 `Slate`，直接从 `rudiments` 和 `zephyrine` 访问；perihelion 的 `wsClient` 和 `wsSessional` 从 `perihelion` 按名称导入。
++     刻意排除在总括包之外的定义在其源代码中带有 `unexported` 注解，每个库的页面都会说明其哪些名称未被导出。
++     MathML 元素类型位于 `Mathml` 内部而非顶层，因此在手写 MathML 时，`import soundness.Mathml.*` 可以提供不带前缀的元素名称。
+
+@ 0 3 0 052eca2412609c460d0a286f753eaa7d
++     有一处遮蔽值得了解：ambience 的 `System` 被导出了，因此在 `import soundness.*` 下，单独的 `System` 指的是 Soundness 的那个，JDK 的则必须写成 `java.lang.System`（用于 `System.nanoTime`、`System.arraycopy`，……）。
+
+@ 0 3 0 1834630768f344ab010764d96f42bec5
++     **为什么有些转发器是手写的。**
++     合成的 `export` 转发器是一个普通方法，有些定义无法完好地经过这一转换，因此总括包重新声明了它们，每个都委托给其所在库的原始定义：
+
+@ 0 15 0 1d44b880508c497410578124839d3134
++     - *重载*扩展方法的 `export` 只转发一个重载，因此 `thru`、`till`、`tabulate` 和区间的 `each` 在此声明，所有重载位于同一个编译单元中；
++     - 类型类证据为依赖式前导 `using` 子句的扩展方法——去索引组的 `apply`、`at`、`defines`、`confine`、`pick`、`unsafeAttested`，以及 `define`、`omit`、`keep` 和 `skip`——需要该子句，才能在召唤失败时舍弃该候选项，而转发器无法携带它；
++     - 转发器会丢失带捕获注解的细化，因此 zephyrine 的 `via` 和 `accepting`、contingency 的 `throwUnsafely` 以及 scintillate 的四个 `httpServers` given 都连同其捕获集一起写出；
++     - 对象的 `export` 是一个 `def`，即一个不稳定的前缀，不透明类型通过它是透明的，因此集合伴生对象作为稳定的 `val` 转发，旁边配有参数化类型别名（`List`、`Sequence`、`Set`、`Map`、`Chain`）；
++     - case class 的 `export` 会带上其构造器代理，即一个项，因此 `assign` 和 `attribute` 只是类型别名，项名称留给 anamnesis 和 galilei。
+
+@ 0 6 0 053af8d316cfaf4c12acf92ee06ec896
++     **文档如何组织。**
++     每个包都有以其命名的独立页面；通过 `soundness` 访问的名称记述在定义它的包的页面上，每个库的页面说明其哪些组件贡献了什么、它向总括包镜像了哪些选择包，以及哪些 given 需要按名称导入。
++     本页为总括包自身的每个声明设有一个条目，另外还为两个选择包设有条目，它们的 given 在此声明而非导出。
+
+% 0 1 0 1fc842fa91f423f6194eba67aa7a2420
+
+% 0 1 0 13c80a33ef99f3ba0c85db502606332c
+
+% 0 1 0 07e938e88f794de21ee4aef72c4e5da2
+
+% 0 1 0 1dc77c0a102f9b9615298ea68f15e5ec
+
+@ 0 8 0 0d748645130d011b08255a6e39cf8254
++ entry .List   不透明链表 `proscenium.List`，其伴生对象作为稳定值
++     `type List[+element] = proscenium.List[element]` 和 `val List = proscenium.List`：以总括包的名称呈现的 Soundness 列表，记述于 proscenium 的页面。
++     该类型是参数化别名，因为不透明类型构造器的裸别名无法被看穿（`::`、`CanEqual` 和扩展方法会把它当作另一个 `List`）；伴生对象则是 `val` 而不是被 `export` 的 `def`，因为通过 `def` 前缀选择的伴生对象成员会看到不透明类型的右侧，从而暴露标准库的整套 API。
++     `Nil`、`::` 和 `#::` 与它一同转发。
+
+% 2 1 0 1d5458575237339e0b6192668054763e
+
+% 3 1 0 1ba0ccdc08437c4b0602f78537064c92
+
+% 0 1 0 01ed19fed8a88b98057ae194a159bfd5
+
+% 0 1 0 1a2f01312c8454d91137e5ff1bb475d1
+
+% 1 1 0 1c5c4fcaef4011461409f42f2de5e821
+
+@ 0 2 0 0f712a82afe1aaf30255142b969231b3
++     由标准库集合构建列表应使用 `List.from(xs)`，而不是 `xs.to[List]`，后者在标准库接收者上会触及 Scala 自己的 `to`，并因缺少工厂而失败。
+
+@ 0 5 0 078e1935f7885ee811241073ea0350f6
++ entry .Sequence   不透明索引序列 `proscenium.Sequence`，其伴生对象作为稳定值
++     `type Sequence[+element] = proscenium.Sequence[element]` 和 `val Sequence = proscenium.Sequence`：不透明类型背后的不可变 `Vector`，如 proscenium 的页面所述。
++     出于与 `List` 相同的原因，以参数化别名和稳定的 `val` 转发。
+
+% 2 1 0 00b717e417ffaf26110da6700f447778
+
+% 3 1 0 1a7495fb577f9dd91bcf3e6c76edba7a
+
+% 5 1 0 1a6908132ae54f4b04243fac558fdc41
+
+% 0 1 0 1ee0190c84e7cd800c449cbed5d20051
+
+% 1 1 0 1e458d3b85a3cc8e1575b92ebed5826c
+
+@ 0 4 0 0dde3ee6e89b5ca205ca1edc6487460c
++ entry .Set   不透明哈希集合 `proscenium.Set`，其伴生对象作为稳定值
++     `type Set[element] = proscenium.Set[element]` 和 `val Set = proscenium.Set`，出于与 `List` 相同的原因，以别名和稳定的 `val` 转发。
++     `Set` 是 `Reshapable` 的，但没有稳定的顺序，因此不能 `sort`。
+
+@ 0 5 0 0a5ebff2da2aaa770652fd051598ffcd
++ entry .Map   不透明哈希映射 `proscenium.Map`，其伴生对象作为稳定值
++     `type Map[key, +value] = proscenium.Map[key, value]` 和 `val Map = proscenium.Map`，出于与 `List` 相同的原因，以别名和稳定的 `val` 转发。
++     `map.confine(key)`、`map(key)`、`map.define(key, value)` 和 `map.omit(key)` 是总括包的去索引扩展方法。
+
+% 2 1 0 1dd28fc07ae889150132fb540e89861f
+
+% 3 1 0 1c1bed034ffe626203a924908af8295b
+
+% 5 1 0 1f21e0fb0c508d94064fdff9c530322e
+
+% 6 1 0 15529da984c51c1011b8100801ae3ba3
+
+% 7 1 0 0fa034f4c263ac3f006dd7c9d12a0513
+
+@ 0 5 0 1b7dc9a57d807a2e1de50f1a4cb07b2a
++ entry .Chain   不透明惰性序列 `proscenium.Chain`，其伴生对象作为稳定值
++     `type Chain[+element] = proscenium.Chain[element]` 和 `val Chain = proscenium.Chain`：不透明类型背后的 `LazyList`，出于与 `List` 相同的原因，以别名和稳定的 `val` 转发。
++     它的惰性 `keep` 和 `skip` 位于其伴生对象中，而总括包自己的 `keep` 和 `skip` 经过特别设计，使 `Chain` 接收者仍能触及它们。
+
+@ 0 5 0 1facdda4504812290b96edeb704db533
++ entry .infer   `infer[context]`：在内联展开处召唤一个上下文值
++     `transparent inline def infer[context]: context = summonInline[context]`，在总括包中声明，使针对 `import soundness.*` 编写的代码与 proscenium 的写法相同。
++     在内联方法内部，查找发生在方法展开之处，而非定义之处；`summon` 是其非内联形式。
+
+@ 0 7 0 082797ce229aa68a1a18215ef8aeae99
++ entry .explainMissingContext   解释每一次失败的隐式查找，由 `import soundness.*` 引入
++     frontier 的兜底定义 `frontier.context.explainMissingContext` 在总括包中的形式。
++     它是每次隐式查找的候选项；查找失败时，编译器会报告一棵渲染出的树，列出尝试过的候选项、每个候选项要求什么，以及类路径上哪些实例能满足它，以此代替编译器自己简短的消息。
++     如果没有它查找也会成功，它就让到一边，不贡献任何东西，因此它绝不会改变程序使用哪个实例。
+
+% 2 1 0 0d68f2da6f39c8281aea57d204f30184
+
+% 3 1 0 1eb3c5d85c95e3591b3497e278632098
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 1c568bb050982a781591a1f3f59cdab9
++     它是旧式的 `transparent inline implicit def` 而非 `given`，因为通配符导入会排除 given，而这一个必须对所有写下 `import soundness.*` 的人都在作用域中。
++     它带有 `@scala.annotation.internal.diagnostic` 注解，Proscala 编译器会遵从该注解；frontier 的页面解释了它的界限以及那棵树的形状。
+
+@ 0 3 0 11e92bcc2ac0b75c1d150d4d557f3cec
++ entry .repackage   burdock 重新打包器的 `@main` 入口点：`java -cp app.jar soundness.repackage`
++     一个命令行入口点，位于 `soundness` 包中，使其可以通过每个 Soundness 应用都带有的全限定名称启动：
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 131a1acda8fe5890080ba4c51a9b9971
+
+% 1 1 0 08f7cc58abbb6dca1d9632309e2fd5cd
+
+@ 0 3 0 1b370e4a62f24f2c1aaf9295df56de63
++     它将其参数作为 `List[Text]` 传给 `burdock.repackage`，后者就地改写正在运行的应用的 JAR，将其已发布的依赖外部化；burdock 的页面描述了参数和输出。
+
+@ 0 6 0 0d82d376197d09ee04a32dd17d0918d6
++ entry .assign   stratiform 的 `@assign(layer)` 注解，仅作为类型转发
++     `type assign = stratiform.assign`：一个字段注解，将 case class 的字段放入 TEL schema 的某一层，如 stratiform 的页面所述。
++     它是类型别名而非 `export`，因为导出该类还会导出其构造器代理，即项 `assign`，这会遮蔽 anamnesis 的 `assign` 方法；无论哪种方式，注解 `@assign(…)` 的写法都相同。
+
+% 2 1 0 014572436a4986eb154e88c593d9552c
+
+% 3 1 0 11cce612f15effe81e9ff5e6ace44106
+
+% 0 1 0 19bfc4712dbfb1a2148c364ad3079f76
+
+% 0 1 0 1f9ac28a530652d90ffc8d9231c55124
+
+% 1 1 0 1cf7f8ffbe45ff4519ec94c093e0a0b0
+
+@ 0 6 0 1ccbfd64dc4c8501039edc772535c03e
++ entry .attribute   xylophone 的 `@attribute` 注解，作为类型；同名的项属于 galilei
++     `type attribute = xylophone.Xml.attribute`：将 case class 字段标记为 XML 属性而非子元素的注解。
++     它是类型别名而非 `export`，因为 galilei 和 tarantula 已经向总括包导出了名为 `attribute` 的*项*（读取路径的扩展属性，或元素的属性），该 case class 的伴生对象会与之冲突；注解只需要类型。
+
+% 2 1 0 16da3c51bf20479d1f2c8b988d1173c4
+
+% 3 1 0 0f823ecd35b01a7d12b0bc9d96343149
+
+% 0 1 0 045ceb6de96059cf17c04afedd43b60d
+
+% 1 1 0 19acb75380c33efa083d5bad022668bc
+
+@ 0 7 0 0d7bf49eee93caa50570c13229d582c9
++ entry .thru   `start thru end`：两个序数之间的区间，包含终点，若两端均受限则结果也受限
++     `Ter thru Sen` 是由 `Ter`、`Quat`、`Quin` 和 `Sen` 组成的区间。
++     两个重载都在总括包中声明：对普通的 `Ordinal`，结果是普通的 `Interval`；对受限于同一值的两个序数（`Ordinal in form`），结果是 `Interval in form`，其每个序数读取该值时都是全函数式的。
++     它们在此声明而非从 denominative 导出，因为 `export` 只转发一个重载，那样普通的 `Ordinal` 接收者就会被提供受限的那个重载而失败。
+
+% 2 1 0 09adc7dc5bfc1a1a0d062f6a5f03f247
+
+% 3 1 0 1b48bb1f32a3fc5c0b2c407213f78f92
+
+% 0 1 0 0fd6950ebf8822c90139575f9997b12f
+
+% 1 1 0 12ab99a5f4e041c91dca18df18ddee2d
+
+@ 0 4 0 1f9bdf784bbf10ee087ed62d821eb97c
++ entry .till   `start till end`：两个序数之间的区间，不含终点，若两端均受限则结果也受限
++     `Ter till Sen` 是 `Ter`、`Quat` 和 `Quin`；`Sec till Sec` 为空。
++     与 `thru` 一样，两个重载——普通的和受限的——在总括包中一起声明，因为 `export` 只会转发其中一个。
+
+@ 0 6 0 1694799cd12ffffd11363a2c547e845a
++ entry .tabulate   `xs.tabulate { i => … }`：由值或区间的每个序数各生成一个元素组成的 `Sequence`
++     `each` 的收集版本：按顺序为每个位置生成一个元素，构建一个 `Sequence`。
++     三个重载，出于与 `thru` 相同的原因在总括包中一起声明：对 `Countable` 值，lambda 接收 `Ordinal in value.type`，因此它对该值的读取得到裸值；对普通的 `Interval`，它接收普通的 `Ordinal`；对 `Interval in form`，它接收 `Ordinal in form`。
++     每个重载都委托给 `denominative.tabulate`。
+
+% 2 1 0 1880c967d758dd5c1b4f264f577117b0
+
+% 3 1 0 0aa22d41fc34640f03054059b855fa9a
+
+% 5 1 0 136b082868d7a2aa097853d9bf2f0997
+
+% 0 1 0 16ef06ec0a46527c08432d64a386e767
+
+% 1 1 0 0f9ef1d86bc0edfe03e0faa3de45675c
+
+@ 0 9 0 033400a6c2a7cff111e67a5d163477f6
++ entry .each   `interval.each { i => … }`：按顺序访问区间的每个序数
++     总括包在它从 rudiments 导出的集合 `each` 旁边声明了 `each` 的两个区间重载：对普通的 `Interval`，lambda 接收 `Ordinal`；对受限的 `Interval in form`，它接收 `Ordinal in form`，因此其中的读取是全函数式的。
++     它们都必须共处同一个作用域——`package soundness` 中同名的两个顶层定义不会形成重载，其中一个会被悄无声息地丢弃——而且受限重载必须位于普通重载旁边，否则对于受限接收者，普通重载会胜出，并在不报错的情况下剥去其品牌。
++     集合形式 `xs.each { x => … }` 记述于 rudiments 的页面。
+
+% 2 1 0 153b3d3649416408196da30b52bc4f27
+
+% 3 1 0 19bba5ce688cc672029f37f307b43b45
+
+% 0 1 0 161651618b79a789158fce49c3020b76
+
+% 0 1 0 0552678106cff1b81283dcaf10ddd11d
+
+% 1 1 0 0ad4724f5a7c13b40d1558b0f8946e14
+
+@ 0 9 0 1d45363e228532f700af66460a323ed0
++ entry .apply   `xs(index)`：某个索引处的元素，受限索引得到裸值，否则得到 `Optional`
++     适用于任何具有 `Applicable` 实例的值的通用去索引读取——集合按 `Ordinal`，`Map` 按键，`Text` 按 `Ordinal`——在此重新声明而非导出，因为它的证据是转发器无法携带的依赖式前导 `using` 子句。
++     它内联委托给 `rudiments.apply`，因此类型为 `Operand in xs.type` 的索引（来自 `confine`、`pick`、`each`，……）读取到裸元素，而其他任何索引都要经过检查，得到 `Optional`。
++     第二个重载用字面量序数读取类型为 `& Sized[n]` 的冻结数组，在编译时对照 `n` 进行检查。
++     rudiments 的页面有完整说明。
+
+% 2 1 0 112d22a355f79f5c033fb41a8ff74223
+
+% 3 1 0 0393554810a2c50a123a191180104efc
+
+% 5 1 0 14f679673800de550134491034f80566
+
+% 0 1 0 148f7bab0c2baa491d476cf8cc91a95d
+
+% 0 1 0 123c90370b7f934f053a53c5a0039953
+
+% 1 1 0 0149e2b7178398530a10c24f23e59ace
+
+@ 0 4 0 1178d2323c6133bf140fd133c730e7fc
++ entry .at   `xs.at(index)`：与 `xs(index)` 相同的读取，受限索引得到裸值，否则得到 `Optional`
++     与 `apply` 完全相同，与它一起在总括包中重新声明，并委托给 `rudiments.at`；保留它是为了照顾将位置访问写作 `xs.at(Sec)`、将键访问写作 `map.at(key)` 的代码。
+
+@ 0 4 0 152b5822d57a6b740c71fa1adae7f186
++ entry .defines   `xs.defines(index)`：某个索引或键是否对某个值有定义
++     当值的 `Applicable` 实例包含该索引时为真：位于集合范围内的序数，或 `Map` 中存在的键。
++     与去索引组的其余成员一起在总括包中重新声明，其单行方法体是复制过来的，而非委托。
+
+@ 0 5 0 173813604391eafe13ccab6fb6caeaa3
++ entry .confine   `xs.confine(index)`：对照某个值检查索引，并返回带有该值品牌的索引
++     如果索引对该值没有定义则为 `Unset`，否则就是索引本身，类型为 `Operand in xs.type`，因此随后的 `xs(i)` 得到裸值，不再做任何检查。
++     对键和序数都适用。
++     与去索引组的其余成员一起在总括包中重新声明。
+
+% 2 1 0 0a69ac665b168dac0f60c7859eb0aabb
+
+% 3 1 0 19467f19d12a97791cf4ae1fa3af3587
+
+% 5 1 0 0a63bf4f20e90a390ec170ebe81048b6
+
+% 6 1 0 0e9e786f724e62d31b38f7bbed843f38
+
+% 7 1 0 11d3f7a712ac1de5042ab5324ddb80b2
+
+@ 0 4 0 0f9b2944b23b47330eb03233f88a82d6
++ entry .pick   `xs.pick(index) { i => … }`：检查索引并以受限索引运行 lambda，否则给出 `Unset`
++     `confine` 与 `let` 的融合形式：lambda 接收类型为 `Operand in xs.type` 的索引，因此它对 `xs` 的读取得到裸值；结果是 `Optional`，索引未定义时为 `Unset`。
++     与去索引组的其余成员一起在总括包中重新声明。
+
+% 2 1 0 1882bca90340f1271d5d8411fdfcde9b
+
+% 3 1 0 089403dade3bbb32091b5b789207fc3a
+
+% 5 1 0 13c41bfc069f06ca1311ab8bba544ce8
+
+% 0 1 0 071c6ed34526443800e7693becbb5d88
+
+% 1 1 0 12ae67c410a162c302a71da2584a3f2d
+
+@ 0 7 0 166762606bb1a6260b0c1a19ab194671
++ entry .unsafeAttested   凭调用者的担保，将索引或区间标记为对某个值有效
++     `xs.unsafeAttested(index)` 是不做检查的 `confine`，直接生成 `Operand in xs.type`；`xs.unsafeAttested(index) { i => … }` 将该担保限定在一个 lambda 内；`interval.unsafeAttested(xs)` 将 `Interval` 标记为 `Interval in xs.type`。
++     每种形式都接受一个被擦除的 `Unsafe` 令牌，因此调用位于 `unsafely` 之内，并且每次调用都带有一条注释，指明证明该界限的构造。
++     与去索引组的其余成员一起在总括包中重新声明。
+
+% 2 1 0 0e5a676a895e3c8b1169f4cb608a62b6
+
+% 3 1 0 09c8b47f128664fe0b7cbfa99e5856c8
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 5 0 02d835c8cb8d3612059e2466926bff48
++ entry .define   `xs.define(index, value)`：容器的副本，其中一个位置或键被设置
++     通过接收者的 `Definable` 实例：在 `Sequence` 上为 `xs.define(Sec, 9)`，在 `Map` 上为 `map.define(key, value)`。
++     超出范围的序数使容器保持不变，不存在的键会添加一个条目。
++     由于其证据是依赖式前导 `using` 子句，在总括包中重新声明。
+
+% 2 1 0 0cd3d68fce8db45b002f1e228b3f1e1f
+
+% 3 1 0 1395deafe5e342661f281454d25ab356
+
+% 0 1 0 0b6ee581a3070a66071a154659e36e50
+
+% 1 1 0 15197378eb781c3511dad2148f8e13a4
+
+@ 0 4 0 16051de06086b83c0f553d7fd5345114
++ entry .omit   `xs.omit(index)`：容器的副本，去掉了一个键或位置
++     通过接收者的 `Omissible` 实例：`map.omit(key)` 删除一个条目，不存在的键使映射保持原样。
++     由于其证据是依赖式前导 `using` 子句，在总括包中重新声明。
+
+@ 0 7 0 03ac612c6442982f00fe9c2cdc933261
++ entry .keep   前 `count` 个元素（使用 `Bidi.Rtl` 时为后 `count` 个），或匹配谓词的开头连续部分
++     `xs.keep(3)` 取三个元素，`xs.keep(3, Bidi.Rtl)` 取最后三个，`xs.keep(_ < 4)` 取匹配的开头连续部分——是前缀，而非过滤。
++     通过 `Segmentable` 保持形状，因此 `Text` 仍是 `Text`。
++     在总括包中重新声明而非导出，这样没有 `Segmentable` 实例的 `Chain` 接收者会舍弃这个候选项，转而触及 `Chain` 伴生对象中的惰性 `keep`；转发器则会接下这个调用并失败。
+
+% 2 1 0 17b4f6f0f71d13971f720d4fd284c764
+
+% 3 1 0 17e4fa1be447729b076fa0b1fd5558b8
+
+% 0 1 0 1c5b47f448c8732b01e88325ac9eb147
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 1 1 0 0214fbb2069a22511571fccf1abbe021
+
+@ 0 4 0 144b7daa5c4f40601509e367a39e657a
++ entry .skip   除前 `count` 个元素（使用 `Bidi.Rtl` 时为后 `count` 个）以外的全部元素，或匹配的开头连续部分之后的全部元素
++     `keep` 的补集：`xs.skip(2)` 去掉两个元素，`xs.skip(2, Bidi.Rtl)` 去掉最后两个，`xs.skip(_ == ' ')` 去掉开头连续的空格。
++     出于与 `keep` 相同的原因在总括包中重新声明，使 `Chain` 能触及其伴生对象的惰性 `skip`。
+
+@ 0 7 0 0556083e6b9a8bcb03fbc875faf6d68e
++ entry .via   `stream.via(stage)`：经由具有 `Ductile` 实例的阶段拉取的流
++     总括包为 zephyrine 的拉取组合手写的转发器：消耗流和阶段，给出基于阶段的 `Transport`、元素为其 `Result` 类型的流，需要一个 `Buffering`。
++     在捕获检查下，合成的转发器会丢失依赖式的 `ductile.Result` 细化，因此这个转发器被写出，并委托给 `zephyrine.via`；其行为完全相同。
++     *类型* `via`（在某个区域设置中计算出的值）属于 cosmopolite，位于类型命名空间中，不会冲突。
+
+% 2 1 0 0583191f97c4728c024a71a148c11579
+
+% 3 1 0 11edfdc66cfa1bff01c176d2a9e8673e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0fa7d1ff594903310b01de83c23aa37e
+
+% 0 1 0 1fe95cbfb72bd37419a1f42d10c935b2
+
+% 1 1 0 0f2697f1eaf1876e0eff40de9d842df4
+
+@ 0 5 0 14b048d2340666bb055d68765460f79c
++ entry .accepting   `intake.accepting(stage)`：经由具有 `Ductile` 实例的阶段推送的入口
++     总括包为 zephyrine 的推送组合手写的转发器：消耗入口和阶段，给出基于阶段的 `Upstream`、元素为其 `Operand` 类型的入口，需要一个 `Buffering`。
++     出于与 `via` 相同的原因被写出而非导出，并委托给 `zephyrine.accepting`。
+
+@ 0 6 0 0e705eff31b104850a9a5dc4229c23c1
++ entry .dispose   `handle.dispose()`：在编译为 Wasm 的代码中释放 WIT 资源句柄
++     `xenophile.Wasm.Handle` 上的内联扩展方法，仅存在于 xenophile 的 `wasm` 组件中。
++     它展开为 `WasmInvoke.dispose`，后者生成该资源的 `[resource-drop]` Component Model 导入；与 `invoke` 一样，它是普通的 `inline`，因此该导入在下游与 Wasm 链接的调用处物化。
++     程序用完它获得的每个句柄时都应将其释放，通常在 `finally` 中进行。
+
+@ 0 5 0 110cfbfd7ba1761d0023aeafdea35d19
++ entry .threads   parasite 的线程模型，每个都是按名称导入的 `Threading` given
++     一个转发到 `parasite.threads` 的对象：`platformThreads`、`virtualThreads`、`adaptiveThreads`、`pooledThreads` 和 `javascriptThreads`，记述于 parasite 的页面。
++     它与 parasite 自己的一样，是对象而非包：它的 given 是能力，必须位于对象中。
+
+% 2 1 0 040e53f4eb6fc992064f626e9cfd3198
+
+% 3 1 0 1d07e33a8606e3ee03f423aa8a04e042
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 1 1 0 1fbd7da930f7d31d0fab2066905f33c7
+
+@ 0 4 0 08fc25de57db6c121570dfee4ddd34de
++ entry .supervisors   parasite 的全局监管器，作为按名称导入的 given
++     一个转发 `parasite.supervisors.globalSupervisor` 的对象，即作为 `Supervisor` given 的 `PlatformSupervisor`，供直接需要监管器而非 `Threading` 的代码使用。
+
+@ 0 5 0 0ee708c3c0504ce603a16ee9fe99f8b3
++ entry .unsupervised   parasite 的进程生命周期监视器，用于在任何 `supervise` 作用域之外阻塞
++     一个转发 `parasite.unsupervised.orphanMonitor` 的对象，这是一个 `Monitor`，它停驻调用它的平台线程，不监管任何东西：这是为守护进程生命周期和进程生命周期内的等待特意提供的逃生舱口。
++     只要阻塞区域已经有作用域，就应优先使用 `supervise`。
+
+@ 0 1 0 1ad2761431b3688b08d662095e7e8bf6
++ entry .strategies   错误处理策略，由每个库合并而来；`throwUnsafely` 在此声明
+
+% 1 1 0 0878aa0482e67db11b706d924e0bd498
+
+@ 0 6 0 095d21e12446cde8039b2e76f50467b9
++       总括包的 `strategies` 选择包。
++       它的 given 是 `Tactic`，决定错误被抛出时发生什么，每个都按名称导入，因为 `import strategies.*` 不导入 given。
++       大多数是 `contingency.strategies` 的转发器（`fatalErrors`、`mitigation`、`throwSafely`、`uncheckedErrors`），记述于 contingency 的页面；只有 `throwUnsafely` 在此声明。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 19afb8e95c25a4f5044a33e4074e9c21
+
+% 1 1 0 0ef047122ef6aa300ace3e4f0699c88f
+
+% 0 1 0 0e3ef618e488455508792ae085ee09a9
+
+@ 0 7 0 00f18026316b86631c7962cf211dea2e
++   entry .throwUnsafely   将每个错误作为普通异常抛出，不需要任何能力
++       一个纯的 `ThrowTactic[Hazard]^{}`，委托给 `contingency.strategies.throwUnsafely`，因此借助逆变，它同时满足每一个 `Tactic[error]`。
++       它是委托式 given 而非导出转发器：转发器是方法，而值 given 在总括包中的名称会出现在经由它召唤的每个 `^{tactic}` 实例的捕获集中，而方法不是合法的捕获引用。
++       适用于脚本和程序的最外层；库则应声明它抛出什么。
+
+@ 0 1 0 008339a2089dfa9c058050e907dde547
++ entry .httpServers   scintillate 的 HTTP 服务器，每个都是按名称导入的 `Protocolic` given
+
+% 1 1 0 086c62bf7392c7701cfad8130309328a
+
+@ 0 7 0 1b76d5e422e43862142131dc1af0c40e
++       总括包的 `httpServers` 选择包：哪个服务器响应 `tcp"8080".serve[Http]`，通过按名称导入其中之一来选择。
++       四个都在此声明为 `scintillate.httpServers` 的手写转发器，因为合成的导出转发器会丢失这些 given 带捕获注解的细化类型。
++       每个的类型都是 `scintillate.httpServers.HttpdFor[port]`，端口为 80、443、8080 或 8000，捕获传给它的 `Tactic[Httpd.Error]` 和 `Monitor`，并需要作用域中有一个 `Probate`、一个 `Httpd.Event is Loggable` 和一个 `WebserverErrorPage`。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 0 1 0 1e5e0a61e64bc2840669a827caf48567
+
+% 0 1 0 116b1bd0a8b68ab10d6b03f914f29df8
+
+% 0 1 0 0a2c389b0309ea7915422e5e13a19957
+
+% 1 1 0 04cf7290391dc935025305928ede3a56
+
+% 0 1 0 1f3234416814a8c9156c65143687a776
+
+% 0 1 0 0a31d44dd24d71231cf170324d917bac
+
+% 0 1 0 0db19d4bf145a35613d9ff6dc6aba3c6
+
+@ 0 12 0 0247a1e7202fb7f61cdd06cde7c1af74
++   entry .jdkHttpserver   在 `localhost` 上由 JDK 的 `Httpd` 提供 `Http` 服务
++       转发 `scintillate.httpServers.jdkHttpserver`：基于 JDK 的 `com.sun.net.httpserver` 构建的服务器，只绑定到回环接口。
++   entry .jdkHttpserverPublic   在每个接口上由 JDK 的 `Httpd` 提供 `Http` 服务
++       转发 `scintillate.httpServers.jdkHttpserverPublic`：与 `jdkHttpserver` 相同，但绑定到每个网络接口，因此可从其他机器访问。
++   entry .soundnessHttpd   在 `localhost` 上由 scintillate 自己的 `SocketServer` 提供 `Http` 服务
++       转发 `scintillate.httpServers.soundnessHttpd`：Soundness 自己的服务器，它还支持基于 TLS 的 HTTP/2，只绑定到回环接口。
++   entry .soundnessHttpdPublic   在每个接口上由 scintillate 自己的 `SocketServer` 提供 `Http` 服务
++       转发 `scintillate.httpServers.soundnessHttpdPublic`：与 `soundnessHttpd` 相同，但绑定到每个网络接口。

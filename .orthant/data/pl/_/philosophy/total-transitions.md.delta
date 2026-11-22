@@ -1,0 +1,196 @@
+orthant 2 language
+
+@ 0 1 0 051c393d42566eba119e5b64aae230ef
++ # Przejścia totalne
+
+@ 0 8 0 0380acc2c1c669c409574d5022c7634e
++ Druga złota reguła, towarzysząca czynieniu
++ [stanów niemożliwych niereprezentowalnymi](impossible-states.md): każda operacja, która przenosi
++ wartość z jednego stanu do drugiego, powinna być totalna – zdefiniowana dla każdego wejścia,
++ jakie może otrzymać. Gdy wszystkie stany początkowe są poprawne, a każde przejście między nimi
++ jest totalne, program rozpoczynający się w poprawnym stanie nigdy go nie opuści. Częściowość –
++ operacja niezdefiniowana dla niektórych swoich wejść – to szczelina, przez którą niepoprawne
++ stany wkradają się z powrotem, dlatego Soundness eliminuje ją już na etapie projektu, zwykle
++ nadając operacji typ zwracany na tyle bogaty, by wyrażał przypadki, których inaczej nie potrafi
++ obsłużyć.
+
+@ 0 10 0 17b6a214eb78b1121d83281f08d87667
++ Kompilator pilnuje totalności wszędzie, gdzie mu się na to pozwala, i powinno mu się pozwalać.
++ Dopasowanie do wzorca pomijające przypadek to częściowość w najprostszej postaci i Scala ją
++ zgłasza – dlatego ostrzeżenia wymagające wyczerpujących dopasowań powinny być włączone i
++ traktowane jako błędy, a nigdy tłumione jako szum. W takim reżimie dodanie przypadku do
++ wyliczenia powoduje błąd kompilacji w każdym dopasowaniu, które go nie uwzględniło: kompilator
++ przeprowadza konsekwencje zmiany przez całą bazę kodu, czyli wykonuje dokładnie tę analizę,
++ którą programista musiałby inaczej przeprowadzić z pamięci. Celowo częściowe dopasowanie wciąż
++ da się wyrazić – `.absolve` oznacza asercję, widocznie i w sposób możliwy do wyszukania – więc
++ ta dyscyplina nie kosztuje niczego poza przypadkową częściowością, czyli tą, która staje się
++ błędem.
+
+@ 0 1 0 186faf91eec86756167ff2234ad6a710
++ ## Jak uczynić operację totalną
+
+@ 0 2 0 0f7c1a813497e6b91921a8778bd6ae18
++ Operacja jest częściowa, gdy dla niektórych wejść nie ma czego zwrócić. Istnieją trzy uczciwe
++ sposoby uczynienia jej totalną i jeden nieuczciwy:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 11cd34bf00dada860d9ffa3b4ec1da02
++ column  Technika
++ column  Niezdefiniowane wejście staje się
++ row  poszerzenie typu zwracanego o brak  `Optional`, który jest `Unset`
++ row  poszerzenie go o niepowodzenie  typowanym błędem obsługiwanym w miejscu wywołania
++ row  zawężenie typu wejściowego  niemożliwe do przekazania
++ row  zwrócenie wiarygodnie wyglądającej wartości (nieuczciwe)  błędną odpowiedzią, która się propaguje
+
+% 1 1 0 04ebc07666a7d03b1e4e8030f5006fde
+
+@ 0 2 0 0a7cc2ca1f937e5b1074f693cfade978
++ **Poszerzenie typu zwracanego o brak.** Wyszukiwanie, które może nic nie znaleźć, zwraca
++ `Optional`, więc „nie znaleziono” jest wartością, a nie wyjątkiem ani `null`:
+
+% 2 1 0 1e27a3ad23b450a70d81455f0902d3d5
+
+% 3 1 0 136eeee06391e94e12124bd2eb8ef163
+
+% 4 1 0 1eb1be12215045940fcda55cb020b4dc
+
+% 0 1 0 13cadbf6701c1381057c99c4597df9f2
+
+% 0 1 0 1041d81669629afb19bb312d88368372
+
+% 1 1 0 053d737a756613dd089df0355f3b9721
+
+@ 0 2 0 094467dcacc3351001fd37b460f5a1e5
++ **Poszerzenie go o niepowodzenie.** Tam, gdzie wywołujący powinien wiedzieć *dlaczego*, operacja
++ zgłasza typowany błąd, a reakcję wybiera się w miejscu wywołania:
+
+% 2 1 0 149addf7893fb50616946595535e0105
+
+% 3 1 0 1a49b0f846ace2590d31f4cbdc308030
+
+% 4 1 0 0e1b30dbf9d8615b1dae164149c5e9b4
+
+% 0 1 0 0ff2b3869304cefd13b88a89eb9fe0b9
+
+% 1 1 0 1f38698bdca933121d90644d046bac97
+
+@ 0 3 0 02fd346296fe672b0d8854089ae69d7a
++ **Zawężenie typu wejściowego.** Najlepsze ze wszystkich, gdy jest dostępne: jeśli operacja jest
++ niezdefiniowana dla niektórych wejść, należy przyjąć typ wejściowy, który je wyklucza. `Port`
++ istnieje właśnie po to, by `connect` nie musiało być częściowe.
+
+@ 0 3 0 0c3bf664d8bc3615033821d673880749
++ Sposobem nieuczciwym jest zwrócenie wiarygodnie wyglądającej wartości dla niezdefiniowanych
++ przypadków – zera, pustki, pierwszego elementu – co zamienia wykrywalne niepowodzenie w błędną
++ odpowiedź, która się propaguje.
+
+@ 0 1 0 0716201a1bf874d10e84359af437c926
++ ## Wyczerpujące dopasowanie jako narzędzie propagacji zmian
+
+@ 0 2 0 1645cd0a953290680cc933ec113cded0
++ Najcenniejszą konsekwencją traktowania ostrzeżeń o wyczerpującym dopasowaniu jako błędów nie
++ jest to, że dzisiejsze dopasowania są kompletne. Jest nią to, co dzieje się jutro, gdy zostaje
++ dodany przypadek:
+
+% 2 1 0 087ced948740690d0f183b286ae69c26
+
+% 3 1 0 1054819e68b5b56e1cfab6f4be9cfd9d
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 144162adf60bb3700126e9667e75e75a
++   label Wczoraj
+
+% 1 1 0 1db238813c8893741523d4496e78e115
+
+% 2 1 0 004f6f8d30db98ea1247d8117561101f
+
+% 3 1 0 181540b3ff133c87049bb162330d846a
+
+% 4 1 0 058dacf6b053bbac10e3c9f6064029b3
+
+% 5 1 0 1399081ad157e076174a865f1c60abba
+
+% 1 1 0 0f013ec79b1a40eb11d8f298b69ee2e1
+
+@ 0 1 0 08c3e991d4ce67670566e27a10373c7e
++   label Dziś
+
+% 1 1 0 053be94268513bd70c46f588298eb381
+
+% 2 1 0 1ce289895036543c0d4665ba07d3fc38
+
+% 3 1 0 00b4108b1257bd860cfa120697949318
+
+% 4 1 0 025eae1bb700b67c04dc83b5044a9c09
+
+% 5 1 0 0d72eb09c042ef7d0261ee30083b3a9c
+
+% 0 1 0 0a3988a6d690a31d06d4156ed49e0ec5
+
+% 1 1 0 170184d4a6fd7d170d5258ed1c64e5d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 036eb75aa121e08d153665434b4a227e
++ Każde dopasowanie na `Connection`, które nie uwzględniło `Draining`, przestaje się teraz
++ kompilować, a kompilator je wylicza. To dokładnie ta analiza, którą staranny programista
++ musiałby inaczej przeprowadzić z pamięci, w bazie kodu, której mógł nie napisać – wykonana
++ wyczerpująco, w kilka sekund, przy każdej kompilacji.
+
+@ 0 3 0 13078e2cfa3a6f0211b88f48a041071f
++ Dlatego ostrzeżenie musi być *błędem*. Jako ostrzeżenie ma charakter doradczy, a doradcze
++ komunikaty diagnostyczne gromadzą się, aż nikt ich nie czyta; jako błąd jest narzędziem, które
++ czyni dodanie przypadku bezpiecznym.
+
+@ 0 1 0 1cb57f5bd90078ae093730dcd833cd57
++ ## Celowa częściowość, oznaczona
+
+@ 0 3 0 0d24177b9eb217831bfa352a93c93db5
++ Niektóre dopasowania naprawdę nie mogą być wyczerpujące, zwykle dlatego, że kompilator nie widzi
++ niezmiennika, który kod już ustalił. Stłumienie ostrzeżenia ukryłoby przypadki przypadkowe razem
++ z celowym, więc zamiast tego oznacza się asercję:
+
+% 2 1 0 17d758177996e19210f1dbf908b4d30d
+
+% 3 1 0 04c84cbef5319ab9055d474e429d73ef
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 08e467dfc24261961ce28df90932e912
+
+% 0 1 0 0f6feb0aa11db938020f77d8a4c8d410
+
+% 1 1 0 086b0f9fb7d0dbc811f203fd42690c7a
+
+@ 0 4 0 0ef90bbf3427df011fdb039237ae6e8c
++ `absolve` to `runtimeChecked` ze Scali pod nazwą, która czyta się tak, jak to, co oznacza.
++ Oznacza jedno wyrażenie, więc nic innego nie zostaje wyciszone; da się je wyszukać grepem, więc
++ każdą taką asercję można znaleźć i przejrzeć; i jest twierdzeniem wysuwanym przez piszącego, a
++ taki właśnie status powinna mieć taka asercja.
+
+@ 0 1 0 0844dd3733d39264191e394839efcefa
++ ## Gdzie totalność jest nieosiągalna
+
+@ 0 1 0 11d85fc892e5c591034216e058970788
++ Dwa ograniczenia, które warto wymienić.
+
+@ 0 4 0 1bf77ec00b45c5171c5bb437cb8f07c1
++ **Świat jest częściowy.** Otwarcie istniejącego pliku wciąż może się nie udać – dysk,
++ uprawnienia, wyścig z innym procesem. Żaden typ zwracany nie czyni tego totalnym; uczciwą
++ odpowiedzią jest typowany błąd, czyli totalność *sygnatury*, a nie operacji.
+
+@ 0 5 0 13b6475dcaf768c70af1931bf991c978
++ **Niektóre niezmienniki wykraczają poza system typów.** To, czy nazwa hosta się rozwiązuje, czy
++ dwie niezależnie zweryfikowane wartości są ze sobą spójne, czy schemat i dokument, które oba się
++ sparsowały, faktycznie się zgadzają – to można sprawdzić, ale nie przez konstrukcję. Dyscyplina
++ polega na tym, by sprawdzenie wytwarzało wartość niosącą jego wynik, tak aby kod dalej w
++ przepływie dziedziczył gwarancję, zamiast powtarzać sprawdzenie.
+
+@ 0 3 0 0f9d9d7ac71c5adc12251665926de193
++ Zobacz [stany niemożliwe](impossible-states.md), by poznać regułę towarzyszącą – osobno obie są
++ bezużyteczne, ponieważ totalne przejścia między bezsensownymi stanami nie zachowują niczego, co
++ warto zachować.

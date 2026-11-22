@@ -1,0 +1,24 @@
+orthant 2 language
+
+@ 0 1 0 0c7c7875e28c69fa09c0db0bf1e0fc3e
++ # 自 0.67.0 以来的变更
+
+@ 0 3 0 01c92304f886cba21c1a676845610aa1
++ 本文件供 LLM 智能体读取，用于把使用 Soundness 库的代码从 0.67.0 升级到下一个版本。
++ 每个条目准确说明了发生的变化；格式见 `AGENTS.md`。
++ 条目按模块分组，在同一模块内，最近添加的条目排在最后。
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 8 0 0bac8da40c227f45069121c85ef59f92
++ - `anticipation.Chroma#red` 的语义已改变：现在是 `inline def red: Int = (chroma >> 16)&255`，以前是 `inline def red: Int = chroma >> 16`。`green` 和 `blue` 早已做了掩码处理，保持不变。凡是通过 `Chroma(value: Int)` 从低二十四位以上有任何位被置位的 `Int`（包括负的 `Int`）构造 `Chroma` 的地方，都必须审查代码，因为 `red` 以前会返回这些位，现在则丢弃它们。来自 `Chroma(red: Int, green: Int, blue: Int)`、`rgb"…"` 插值器、`iridescence.Pixel#chroma`、`iridescence.Rgb12#chroma` 或 `iridescence.Rgb32#chroma` 的 `Chroma` 值不受影响，因为它们都已做了掩码处理。(#2036)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 8 0 196b1a234b1bfd060ae2eaf9bc663625
++ - `iridescence.Channel` 以及通道特质 `iridescence.Red`、`iridescence.Green`、`iridescence.Blue`、`iridescence.Alpha`、`iridescence.Cyan`、`iridescence.Magenta`、`iridescence.Yellow`、`iridescence.Key` 和 `iridescence.Grey` 已移至 `anticipation`：`anticipation.Channel`、`anticipation.Red`，依此类推。所有定义、类型参数和匹配类型均不变。`soundness` 总括包导出相同的名称，现在来自 `anticipation`，因此通过总括包导入它们的代码无需更改；为它们导入 `iridescence.*` 的代码必须改为导入 `anticipation.*`。`Channel` 仍为 `@unexported`，通过 `anticipation.Channel` 访问。(#2037)
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 4 0 0b379a3e08a6af431507a325338cac8b
++ - 已移除 `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in iridescence.Srgb`。把 `hue(c)` 替换为 `c.color`，即在 `iridescence` 中声明、并由 `soundness` 总括包以 `color` 导出的扩展方法 `extension (chroma: anticipation.Chroma) def color: Color in Srgb`。结果完全相同。(#2036)

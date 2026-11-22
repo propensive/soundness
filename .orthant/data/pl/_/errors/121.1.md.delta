@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 152a3268725bfdb5131eaa03ad8b46c7
++ # `↯/s.121.1` – `Rig.Error`
+
+@ 0 2 0 108bf99c39afc7e40f5643e13fb906c3
++ Zgłaszany, gdy Superlunary nie może przenieść wartości przez granicę do
++ lub z `Rig` – classloadera, w którym kompiluje się i uruchamia kod etapowany.
+
+@ 0 4 0 13b841432bd976a70a83a480e1074d1f
++ Jest to niepowodzenie *marshallingu*, a nie samego kodu etapowanego:
++ wartości nie dało się zapisać w `Transport` środowiska (`Json` lub `Pojo`)
++ albo nie dało się jej z niego odczytać. Niepowodzenie kompilacji etapowanego drzewa
++ to `Compiler.Error`, który `Rig.dispatch` deklaruje obok tego błędu.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 198fde3d70aa42411c96ae1068d62184
++ Superlunary przekazuje wywołanie do zdalnego procesu i odczytuje wynik
++ z powrotem. Każde niepowodzenie przy serializacji wywołania, deserializacji wyniku
++ lub innym jego przesyłaniu wytwarza ten błąd. Komunikat to
+
+% 0 1 0 122635e2b4492f5d087d159fc503eec6
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 01f89e7369c89ec61f48f74f524c1885
++ ### `↯/s.121.1.1` – `Serialization`
+
+@ 0 2 0 0efdb549a573c3120c5e84ab11a5a6b6
++ Wyjścia (wywołania lub jego argumentów) nie dało się zserializować do
++ przesłania.
+
+@ 0 1 0 0bf25fa09f7e354e1ee74e762cf2d748
++ **Przykład.** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
+
+@ 0 2 0 0942437eff87d59d0bf6efef8e5c8c33
++ **Rozwiązanie.** Należy upewnić się, że wszystkie typy argumentów mają w zasięgu
++ potrzebne kodery/dekodery i wytwarzają poprawnie zbudowane bajty.
+
+@ 0 1 0 10f1f306c2f11d0803287bf8a5c906f5
++ ### `↯/s.121.1.2` – `Deserialization`
+
+@ 0 1 0 089ef0968e514ac8152902ce82a0fd4b
++ Odpowiedzi od zdalnej strony nie dało się zdeserializować.
+
+@ 0 1 0 1215bb8b8f8b918d18fdff241fe5b640
++ **Przykład.** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
+
+@ 0 3 0 0861a241b432ed4403e6334928849b8a
++ **Rozwiązanie.** Należy sprawdzić, czy zdalna strona wytwarza oczekiwany kształt
++ ładunku; typową przyczyną są niezgodne schematy klienta i serwera.
+
+@ 0 1 0 05c1d219e9397353126ec513210fe0e1
++ ### `↯/s.121.1.3` – `Unknown`
+
+@ 0 1 0 0d4f60eff7892e150c475ee50742dd95
++ Przyczyna nie pasuje do żadnego z bardziej szczegółowych wariantów.
+
+@ 0 1 0 145e4215d51a3f0807cbfdbc858a4a56
++ **Przykład.** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
+
+@ 0 1 0 100bfd3d5cc6c54d13f45d4740eccd8b
++ **Rozwiązanie.** Należy przejrzeć logi i cały łańcuch przyczyn.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 152db8336cdf7fa0073130a8e139874f
++ - Źródło: `lib/superlunary/src/core/superlunary.Rig.scala`

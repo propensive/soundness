@@ -1,0 +1,496 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10efbdd20e3809211af2be742c6914bb
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f40d2d7170c79531cce01d07ecd11b0
++ info   透镜与光学组件：对不可变值的深层更新，写作一条路径加一次赋值
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1ae4f85ca1837062081c1ebc348dc9f5
++     _Panopticon_ 可以更新不可变结构深处的值，而无需嵌套的 `copy` 调用来重建其上方的每一层。
++     `lens` 方法接受写成普通路径赋值形式的更新——`_.troupe.name = t"Athenians"`——并返回新值，只重建它所触及的路径上的结构。
++     括号中的一步会遍历一个集合：`Ordinal` 选取一个元素，`Each` 触及每个元素，键用于索引 `Map`，`Filter` 按谓词进行选择。
+
+% 2 1 0 159753f29161479713f4d5b56d9a241a
+
+% 3 1 0 157c2e34d1e6bc920ee14aa955230ff6
+
+% 5 1 0 1ca2fcfa937b7b4b1f0e742dacd8cbfd
+
+% 6 1 0 1036f4e2a5c21bf91441c6bdb3699516
+
+% 7 1 0 006fa8b3a62668c41e09911ca2188fd8
+
+% 9 1 0 0df7836e33baa44008a3374586693243
+
+% 10 1 0 025c619a058ed0130b524c17e07c20b9
+
+% 0 1 0 0804d9f51e11dae90a38b9fa0785e566
+
+% 0 1 0 08544f31381734b71dec5d6bf088ad95
+
+% 0 1 0 136a92ecbb3f777f011df0260d11cc78
+
+% 1 1 0 046ba66d482540581cbbcf74a5b592f5
+
+@ 0 6 0 05a24b116a27022b01bdc5a80cfc7014
++     在语法之下是普通的值。
++     `Lens` 是一个 getter 加一个 setter，而 `Optic` 是更一般的形式，只能修改——一个元素、多个元素或零个元素。
++     任何 case class 字段上的透镜都以 `"field" is Lens from Type` 的形式召唤，由编译器根据类型的结构生成（`Optic.deref`）；`Optical` 把 `Each` 或序数这样的遍历值变成作用于特定集合的光学组件；两个透镜或两个光学组件可以 `compose` 成一个一直贯穿到底的组合。
+
+@ 0 6 0 0ec360cc8a0577091153b053790644cd
++     同样的语法也可以更新动态数据格式。
++     每种格式在其 `optics` 包中为自己的值类型提供一个透镜和若干 Optical 实例——JSON 的 `jsonLens` 和 `jsonEachOptical`，XML 的 `xmlLens`，TEL 的 `telLens`，CSV 和 DSV 的 `dsvCellLens` 和 `dsvRowOptical`——这些 given 需要按名称导入，因为 `import soundness.*` 不会导入 given。
++     格式的 `conversions` 包（`encodableToJson`、`encodableToTel`……）通过 `Coercible` 让一个裸的可编码值出现在 `=` 的右边。
+
+% 2 1 0 0dc8be526a9c50a515916ee76c6693f1
+
+% 3 1 0 0aa5862386e97b59001658fd0f6220f1
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0037aac004db6d471410c533b397137f
+
+% 0 1 0 104f9f1971d042480354a38aead165d8
+
+% 0 1 0 0467d098d584f57108ca2b20d0ab3c42
+
+% 1 1 0 0cc4e0e8f225d1e5134a73c25a653ea5
+
+% 0 1 0 0f8a03eda2655cdb135e393c02d7854b
+
+% 0 1 0 1723ed2741446b5f09046bc9f9c87708
+
+% 0 1 0 03aa343011ffcbf512832a7d1bd53e8a
+
+% 1 1 0 1de2b1d23efb407d1dc795fef3d1bced
+
+@ 0 5 0 06f8f78359b075220cd2c9ff1217f44e
++     共享前缀的更新会被 `lens` 宏融合，因此共享的结构只重建一次；宏无法分析的路径（`Filter` 遍历，其操作数不是单例）会回退为逐个应用这些更新，结果相同。
++     一次调用中后面的更新能看到前面更新的结果：对同一字段的两次写入，后者生效；在写入整个字段之后再写入该字段内部，则是对它的细化。
+
+@ 0 2 0 1bd281366295277d0752e2debc7f7fbc
++     该库只有一个源集 `panopticon.core`，所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 04c386209ed80fd008997d80fa8d8d3f
+
+% 0 1 0 06f01d1ed72f5ab20143f1571973d4c8
+
+% 0 1 0 06f872f02d5aa3a5195660342741d7dd
+
+% 0 1 0 00ccb63578bf38ad0738ecf1c4a4d0a3
+
+% 0 1 0 113c48392b88fe7b171752c0b73c780c
+
+@ 0 3 0 120a88f8695361260a9a418f21abdd4a
++ entry .lens   把写成路径赋值形式的更新应用到一个值上，返回新值
++     `value.lens(update, …)` 接受一个或多个 lambda，每个都是一条从该值出发、以赋值结尾的路径，并按顺序应用它们：
+
+% 2 1 0 16e00a05d70217521325af7f31f0217f
+
+% 3 1 0 1e11c2a36025b99814d42a91497d18c1
+
+% 5 1 0 17896adb2ccf31230f3ffbc19833952e
+
+% 6 1 0 0e5e981e918d727e01239fbab6051971
+
+% 7 1 0 1c3dc7a5fc3acd5b0cfd703b1a0f854f
+
+% 9 1 0 040f242502a5384105e5c152a4aa1d94
+
+% 10 1 0 1651029ff2d96e971a4235634bf430e9
+
+% 0 1 0 02e317ff5ba5a66c1ed351d41c176ee5
+
+% 0 1 0 01e4cedf7052b1080f963f273ca19b40
+
+% 0 1 0 1a2ffbc235b139711b3212ec5d452844
+
+% 0 1 0 17ce339509d36937086ca61bd02e536e
+
+% 0 1 0 12ceb033656c76b719bc6cbd390fa021
+
+% 1 1 0 1a35596c434bd54b0ecc237d479dd89c
+
+@ 0 7 0 199e41e7200dab7e15a90c544f36ba59
++     字段步骤需要该名称和类型的 `Lens`：对于 case class，由 `Optic.deref` 生成，而格式会在其 `optics` 包中提供一个。
++     括号中的步骤需要该遍历和该集合的 `Optical`：作用于 `List` 和 `Sequence` 的 `Ordinal`，作用于 `Map` 的键或键 `Filter`，作用于 `List` 的 `Each` 和元素 `Filter`，以及格式定义的任何遍历。
++     在赋值中，`prior` 是被替换的值。
++     右边可以是任何能 `Coercible` 到目标类型的类型：目标类型本身或其子类型，或者作用域中有 `Conversion` 的类型。
+
+@ 0 4 0 029debebed4c376a1d0ec58fc5c7d33d
++     宏会把共享路径前缀的更新归为一组，因此无论前缀下有多少字段发生变化，沿该前缀的结构都只重建一次；如果某一步既不是字段也不是单例遍历（`Filter`），它就转而逐个应用每个更新。
++     路径中命名了类型所没有的字段，会产生编译错误：_`Type` has no field called `name`_。
+
+@ 0 6 0 038c506e4e8e0350132ed982c206add3
++ entry .compose   把两个透镜或两个光学组件组合成一个贯穿两者的组合
++     `left.compose(right)` 把从 `A` 到 `B` 的透镜与从 `B` 到 `C` 的透镜连接起来，得到从 `A` 到 `C` 的透镜，它通过读取两者来读取，通过重建两者来写入；两个光学组件同样组合成一个光学组件。
++     它需要这一对的 `Composable`，`Composable` 伴生对象为透镜和光学组件提供了它。
++     结果会捕获两个部分所捕获的一切，因此组合一个可能失败的透镜，得到的也是可能失败的透镜。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1cc04b117558347a12e3d9b0ed63b6ea
++       label 剧目主角上的透镜
+
+% 1 1 0 0d583492fdecc46317c15a4b0f08dabd
+
+% 2 1 0 1c03cb7ee26f707f19947645586c8e73
+
+% 4 1 0 011b31b5f12046c0036c181e19c48dc3
+
+% 5 1 0 0fa715ec868d60a91bdea006ce24b111
+
+% 7 1 0 04b98e1c917c71671987fab91e698f43
+
+% 8 1 0 0379ef6cd2f14ae909614148db032b5d
+
+% 0 1 0 1aca6f1b2d6d193816da1616a2c0c595
+
+% 1 1 0 0ffacd5dfeb601d70d4b0086f0ad034c
+
+@ 0 1 0 08aea89d5d125c410c088446151d994c
++       label 与人名上的透镜组合
+
+% 1 1 0 1fd18e8cfd91699117b6400d3f6d1400
+
+% 2 1 0 05ff6428b6166ad507cd11da9dce8d69
+
+% 4 1 0 0c1ae2f42c67d78017bcf78bd51cfde3
+
+% 5 1 0 1cc7a453dfb8e76d1a80f74e8dce6809
+
+% 7 1 0 0f6e48d08f4e5a791ff0b955794820f4
+
+% 8 1 0 1357ea4a9650e90205210aecfb0132dd
+
+% 9 1 0 1548f12eb14d1df21e75b3590fb1d0c2
+
+% 10 1 0 06efde621dd6321709d5b5ca175d54d8
+
+% 0 1 0 0314bc0e5e8b63f41a7e0ad886c06cd6
+
+% 1 1 0 16fabd09fbb2e7aa1c4b0c894e6a11b1
+
+@ 0 1 0 07e4509cf95bafb6153476e1b15efd16
++       label 用于写入主角的名字
+
+% 1 1 0 175df34cd6315e650cf596c0e6ac5968
+
+% 2 1 0 01632377551b731d157a5e15d482f3af
+
+% 4 1 0 0d059e09029fcdf71e9ab1aa6512c3e1
+
+% 5 1 0 0934044ec0e6ba21166203a60123ce00
+
+% 7 1 0 10ad9922d37a4f6c025937416edbe247
+
+% 8 1 0 194b440572f4be941053884616164b64
+
+% 9 1 0 16f053b0296fdd6211138841ce1e71c9
+
+% 10 1 0 1d1530facb163b110e2b41aeaff630c0
+
+% 0 1 0 17c0af4c733bc8c908cac2b6533add3a
+
+% 1 1 0 08b2ca7672eab45206e5c66c59ef8953
+
+@ 0 1 0 0f1069e544cddb33004b81cd6ce4f6ed
++       label 用于修改它
+
+% 1 1 0 1eff2c19ff1bae051e69e4ebd4630b0e
+
+% 2 1 0 115a6c59688a7846102b72c26bf8a4c9
+
+% 4 1 0 18919065dd3e7a1a00159d3304b6b2bb
+
+% 5 1 0 14663e4646cc5cd00748194389f6f559
+
+% 7 1 0 1f0680e9e55d2397021acd2d08bd0ef0
+
+% 8 1 0 1e41f4e80887aab10b6e383f780dd6ad
+
+% 9 1 0 00b9d0892f8deb640fc2713bcefc7eb5
+
+% 10 1 0 14c8ddf7aae790b707904ee5ecf9f3d9
+
+% 0 1 0 0e126c14797129c3148eeb490cebe85d
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 2 0 140a50d011ecb46301500ae71b91f52a
++     当整条路径在一处已知时，`lens` 表达得更直接；组合适用于由分别持有的部件拼装而成的路径。
+
+@ 0 1 0 09f29d42cef59b0b1d25be0dfcc25b3a
++ entry .Optic   修改值中其所聚焦的一个或多个部分的方式：透镜的一般形式
+
+% 1 1 0 09718f88eb66fb0c141e7b0dee871c9e
+
+@ 0 4 0 1005d1077e5ffd461aa17dba264f4245
++       `Optic from Origin onto Target` 可以通过 `#modify` 变换其聚焦的 `Target`，从而重建一个 `Origin`。
++       与 `Lens` 不同，它不必恰好聚焦于一个目标：作用于列表元素的光学组件聚焦于所有元素，作用于缺失键的光学组件则一个都不聚焦，所以它可以修改但不能读取。
++       每个 `Lens` 都是一个 `Optic`。
+
+% 2 1 0 0ebc4c50b71881d20f20fb9783d1143c
+
+% 3 1 0 02d466da3af871260f0ce706b85d0042
+
+% 0 1 0 0c0919d6fec0590f19752e87c52559ab
+
+% 0 1 0 07dced4c495da3761e079aa9da7e101c
+
+% 1 1 0 11869d858d4ae3ca189ae935b037c790
+
+@ 0 5 0 0d93f15a92e617e91cb24a0f7625e2d1
++       光学组件会动态地扩展自身，`lens` 路径正是这样获得类型的：`optic.name` 通过 `name` 的字段透镜继续，`optic(traversal)` 通过该遍历的 `Optical` 继续，而 `optic.name = value` 或 `optic(traversal) = value` 以一次赋值结束路径，给出执行该赋值的从 `Origin` 到 `Origin` 的函数。
++       `lens` 方法从 `Optic.identity` 开始每条路径。
+
+@ 0 3 0 1ff6843c854908b81d17da675b4dd78f
++       `Optic` 受捕获跟踪（`Findable`）：基于可能失败的变换构建的光学组件，例如需要 `Tactic` 的格式透镜，会捕获它，由它组合而成的任何光学组件也是如此。
+
+% 0 1 0 12dd9d846bbe37f00908b515092c9715
+
+% 1 1 0 168f4773cb5786800c6afdaa8ffcce7f
+
+% 1 1 0 0c44643257a8514d198b85dda66337fa
+
+@ 0 32 0 03d30c3a91a323eb00db3dcd7c1d7f88
++   entry .deref   按名称生成的 case class 字段上的透镜：`"name" is Lens from Type`
++       这是一个 transparent inline given，因此 `summon["name" is Lens from Person]` 是一个其 `Target` 为该字段精确类型的透镜。
++       它读取该字段，并通过伴生对象的 `apply` 写入它，其他字段保持不变。
++       它适用于任何 `Product` 类型；类型中没有对应字段的名称会产生编译错误：_`Person` has no field called `nmae`_。
++       该 given 无法在 quote 表达式内部展开：应把这样的召唤放在普通方法中。
++   entry .identity   聚焦于整个值的光学组件：每条 `lens` 路径的起点
++   entry .apply   由修改函数构造的光学组件：如何根据目标变换重建原值
++       `Optic[Self, Origin, Target]((origin, transform) => …)` 构建一个其 `modify` 调用该函数的光学组件。
++       结果会捕获函数所捕获的一切，因此基于需要 `Tactic` 的变换的光学组件，会把这一需求带到使用它的地方。
++       `Optical` given 正是这样构造其光学组件的。
++   entry .prim   列表第一个元素上的光学组件，用于遍历 `Prim`
++       修改列表的头部，其余部分保持不变；空列表不变。
++   entry #Self     光学组件以之为键的类型：字段名的字面量类型，或遍历的类型
++   entry #Origin   光学组件所修改的值的类型
++   entry #Target   光学组件所聚焦的一个或多个部分的类型
++   entry #modify   通过变换光学组件所聚焦的一个或多个目标来重建一个值
++       `optic.modify(origin)(transform)` 对每个被聚焦的目标应用变换，并返回重建后的原值；不存在的目标（缺失的键、超出末尾的序数）会使原值保持不变。
++   entry #selectDynamic   `optic.name`：通过字段 `name` 的透镜继续的光学组件
++   entry #updateDynamic   `optic.name = value`：在光学组件的焦点处设置字段 `name` 的函数
++       值可以引用 `prior`，即它所替换的值，并由一个 `Coercible` given 强制转换为字段的类型。
++       这就是 `lens` 调用中每次赋值所采用的形式。
++   entry #update   `optic(traversal) = value`：设置遍历所触及的每个目标的函数
++       需要一个作用于光学组件 `Target` 的该遍历的 `Optical`，并且值必须能 `Coercible` 到遍历的目标类型。
++   entry #applyDynamic   `optic.name(traversal)`：先通过一个字段、再通过对它的遍历继续的光学组件
++   entry #apply   `optic(traversal)`：通过一个遍历（例如 `Each` 或序数）继续的光学组件
++       需要一个作用于光学组件 `Target` 的该遍历类型的 `Optical`。
+
+@ 0 1 0 0f0bada81576db6017e089e3d22a49a9
++ entry .Lens   值中某一部分的 getter 和 setter：一个也能读取的光学组件
+
+% 1 1 0 1c027f3a16c6a1f80f1d8a1a971ecab3
+
+@ 0 4 0 10b9dabe77f7910b16956bf64e4b40e0
++       `Lens from Origin onto Target` 用 `#apply` 从原值中读出目标，用 `#update` 写回一个目标，返回新的原值。
++       case class 字段上的透镜按名称生成（`Optic.deref`），格式会为自己的字段提供透镜；其他透镜则用 `Lens(get, set)` 由两个函数构建。
+
+% 2 1 0 13a2871fb64122ef0945bdfdfbeb5eed
+
+% 3 1 0 01dab87694d9d2ab0f88ca12474f8deb
+
+% 5 1 0 154e018a6e794e6a1b691fea67b9448e
+
+% 0 1 0 1a38f3cdea664b321f6bcbead332d797
+
+% 0 1 0 01f7a216fc32c0c81e82539f11d75186
+
+% 0 1 0 0a6d3ff23e19c94c1cdcef73a79391b4
+
+% 0 1 0 0ece9e3a1d328d7712caebee37384fbe
+
+% 0 1 0 079123dc1810379f04fba9f1445da005
+
+% 1 1 0 1b588a00a411a23e11c2ccbb25613994
+
+@ 0 1 0 1c69f9a5abd3d04003334d9ce49e3136
++       两个透镜可以 `compose` 成一个贯穿两者的透镜。
+
+% 0 1 0 0df0cb7d418f51310b892fc726d940df
+
+% 1 1 0 0421ab9ead5ce9300bb24756c9ee5e14
+
+@ 0 8 0 048051de85c1a3051dd10d1bc35b973f
++   entry .apply   由 getter 和 setter 构造的透镜
++       `Lens[Self, Origin, Target](get, set)`：`get` 从原值中读取目标，`set` 接受一个原值和一个新目标，返回重建后的原值。
++       透镜会捕获两个函数所捕获的一切，因此访问器闭包捕获了 `Tactic` 的透镜是一个捕获型透镜，这一要求会传递到其使用处。
++   entry #apply    从值中读出目标
++   entry #update   替换了目标的值的副本：`lens(origin) = target`
++   entry #modify   变换了目标的值的副本：读取，应用函数，写回
+
+@ 0 1 0 0f4eb116d00967fd12d6205943b6681f
++ entry .Optical   把遍历值（例如 `Each` 或序数）变成作用于集合的光学组件
+
+% 1 1 0 1f8b4d0891494f411d55b0ddbde630fc
+
+@ 0 4 0 14d3cc7321d512e91f85ee5b0b53f672
++       `Traversal is Optical from Origin onto Target` 根据遍历类型的值构造一个 `Optic from Origin onto Target`。
++       它赋予 `lens` 路径中括号步骤以含义：`_.players(Each)` 使用作用于 `players` 类型的 `Each.type` 的 `Optical`。
++       伴生对象提供：
+
+@ 0 5 0 09a0b341ba611bec1390b1e5136e7706
++       - `ordinalList` 和 `ordinalSeries`：`Ordinal` 选取 `List` 或 `Sequence` 中的一个元素，若序数超出末尾则保持不变；
++       - `at`：键选取 `Map` 中的一个值，若该键不存在则保持不变；
++       - `filter`：作用于键的 `Filter` 选取 `Map` 中键匹配的每个值；
++       - `filter2`：作用于元素的 `Filter` 选取 `List` 中匹配的每个元素。
+
+@ 0 2 0 0a915a3fdc8a985e02ccbc5def26f305
++       `Each` 在其伴生对象中有自己的 Optical 实例，而格式在其 `optics` 包中提供自己的 Optical 实例，需按名称导入。
+
+% 2 1 0 1fbd6f04378b927005cca6fd19a6bcb7
+
+% 3 1 0 0311f8e1955dbe0b156a799d2151d34d
+
+% 5 1 0 00a7fc6d09cb71ea02ea8f801ace1812
+
+% 0 1 0 1137ab43ee34eec01d873987e0bb0c2c
+
+% 0 1 0 1cfa727a515930b716be02be9dd73c1f
+
+% 0 1 0 05c5d32365c23b98024f85cfca7adb0a
+
+% 0 1 0 1ead02ec3deb64cc10b47830339cbbaf
+
+% 0 1 0 1577b5b0fd6e92d70a74fa3900b079c2
+
+% 1 1 0 05c489fea6c9db6908350015b736c79d
+
+% 0 1 0 17c8bcb46789b7c916b12a6b99e138d9
+
+% 0 1 0 0c538d6c46a068211969a65f1df4ce4a
+
+@ 0 9 0 006110241fd87ff814fd990907a38e0f
++   entry .ordinalList     把 `Ordinal` 作为 `List` 中一个元素上的光学组件
++   entry .ordinalSeries   把 `Ordinal` 作为 `Sequence` 中一个元素上的光学组件
++   entry .at              把键作为 `Map` 中其值上的光学组件；不存在的键使映射保持不变
++   entry .filter          把作用于键的 `Filter` 作为 `Map` 中键匹配的每个值上的光学组件
++   entry .filter2         把作用于元素的 `Filter` 作为 `List` 中匹配的每个元素上的光学组件
++   entry #Self     遍历类型
++   entry #Target   光学组件所聚焦的部分的类型
++   entry #Origin   光学组件所修改的集合的类型
++   entry #optic    遍历类型的值对应的光学组件
+
+@ 0 1 0 0bc059a216c24c840fb05a77af27a1db
++ entry .Each   触及集合中每个元素的遍历
+
+% 1 1 0 14d380e4e53393681b8a8d66eb1b958e
+
+@ 0 4 0 0f06255fc675d97a08780e728500e15e
++       `lens` 路径中的 `_.players(Each)` 聚焦于 `players` 的每个元素，因此一次赋值就能更新所有元素：`play.lens(_.troupe.players(Each).age = 0)`。
++       伴生对象的 given 覆盖 `List`；格式为自己的数组提供各自的 given（`jsonEachOptical`、`xmlEachOptical`、`telEachOptical`、`dsvRowEachOptical`）。
+
+% 1 1 0 174be2064228c1a1195015b0c22798d0
+
+@ 0 1 0 1917770d7db295b31e62f26dde90a4ed
++   entry .optical   把 `Each` 作为 `List` 中每个元素上的光学组件
+
+@ 0 1 0 101823071de5b8f415bce4854ff981f5
++ entry .Filter   触及元素或键满足谓词的那些元素或映射值的遍历
+
+% 1 1 0 1080b5124bf86abf0a95206d8074a78e
+
+@ 0 4 0 1137dcf78377ce9d07198abd5adfa492
++       `lens` 路径中的 `Filter[Person](_.age > 25)` 聚焦于列表中满足谓词的元素；作用于 `Map` 的 `Filter[Text](_ == t"villain")` 聚焦于键满足谓词的值。
++       谓词是纯函数：过滤器是光学组件的一部分，而光学组件是纯值，因此谓词不得捕获能力或可变状态。
+
+% 2 1 0 026bd1660639ed5a17ff6e86374bfe8e
+
+% 3 1 0 040288c0986d97111f94f298c504cd5b
+
+% 5 1 0 0b0a3553e82b7f78151f99bcae870f96
+
+% 0 1 0 05f1ff44f75b82f5079e1ec4a3bdceca
+
+% 0 1 0 00c9321f158eb02d1c74203f5b7e2c33
+
+% 0 1 0 09cacfc0200253b302a970b80ecc0fd6
+
+% 0 1 0 0a49f0c6efd4cb620c0c26af4c90fe1a
+
+% 0 1 0 03752679f4279bf611227b325d7daf14
+
+% 0 1 0 0b49c62a943fb7b317dd1034114dd711
+
+% 1 1 0 0c8fb5f4ed3f43ba0e2d116edb0e9c14
+
+@ 0 2 0 0cc781843ed4d83c07b887371096c4bc
++       带有 `Filter` 步骤的 `lens` 调用无法融合，因为其操作数不是单例，所以其更新会逐个应用；结果相同。
+
+% 1 1 0 1d7849f3833d713902b308c3822dc56f
+
+@ 0 1 0 1fb04eaa9c25de1f17816c85df23dbda
++   entry #predicate   元素或映射键要被聚焦所必须通过的测试
+
+@ 0 1 0 1390bf743c9a666701c1be414a823a14
++ entry .Coercible   一个值可以赋给期望透镜目标类型之处的证据
+
+% 1 1 0 198cf77162558a7714b6cc73542236bf
+
+@ 0 8 0 1338b7620f6ff57a15b8803d2b89369e
++       `Source is Coercible to Target` 把 `lens` 路径中赋值的右边转换为它所替换之物的类型。
++       目标类型或其子类型的值无需强制转换（`identity`，位于 `Coercible2` 中，优先级较低）；作用域中存在到目标类型的 `Conversion` 的值会被转换（`conversion`）。
++       格式的 `conversions` 包——`encodableToJson`、`encodableToYaml`……——正是借此让裸的 `Text` 或 case class 可以赋值到文档中，gossamer 的转换也借此让字符串字面量可以赋给 `Text` 字段。
++       没有 `Coercible` 的赋值会产生编译错误：_cannot coerce `Source` to `Target` in this assignment_。
+
+% 1 1 0 187360d2d4f206b808bfece275a44190
+
+@ 0 4 0 1ed6016c867958af15c4abc15f53b417
++   entry .conversion   强制转换作用域中存在到目标类型的 `Conversion` 的任何值
++   entry #Self     被赋值的值的类型
++   entry #Result   被赋予的目标类型
++   entry #coerce   把被赋的值转换为目标类型
+
+@ 0 1 0 19f072dd961190b7152d860542ae6750
++ entry .Coercible2   优先级较低的 `Coercible` given，用于已是目标类型的值
+
+% 1 1 0 171b7919e2b29a131c50a0c5deede63a
+
+@ 0 3 0 080e1b7fd4cabb951ac8597a648de6c6
++       混入 `Coercible` 伴生对象，以便在存在 `Conversion` 时先尝试它。
++   entry #identity   目标类型或其子类型的值，按原样赋值
+
+@ 0 1 0 0e3b088d3f1568220aa4195c4990ad09
++ entry .Composable   两个透镜或光学组件如何组合成一个贯穿两者的组合
+
+% 1 1 0 1b72456bf501e29618c71f1561242802
+
+@ 0 3 0 15eee343e2a8dbf11c39623d1c7747f9
++       `Left is Composable by Right to Result` 是 `compose` 所需的类型类。
++       伴生对象为两个透镜提供一个，得到透镜；为两个光学组件提供一个，得到光学组件；组合结果会捕获其各部分所捕获的一切。
+
+% 1 1 0 1db1513adef9ccca1bc3eb938368f50e
+
+@ 0 6 0 19d74cd840a612991849101169f67787
++   entry .optics   把从 `A` 到 `B` 的光学组件与从 `B` 到 `C` 的光学组件组合
++   entry .lenses   把从 `A` 到 `B` 的透镜与从 `B` 到 `C` 的透镜组合，得到一个可读可写的透镜
++   entry #Self          左侧类型
++   entry #Operand       右侧类型
++   entry #Result        组合结果的类型
++   entry #composition   左值与右值的组合结果，捕获两者
+
+@ 0 1 0 05cf5cea1428a41a1a1507d7665897db
++ entry .internal   `lens` 和 `Optic.deref` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 1a2905295a2bd75b1bd946052de065f3
++       不供直接使用：该对象的存在是为了让宏有一个稳定的归属。
++   entry .lens   `Optic.deref` 背后的宏：按名称生成 case class 字段上的透镜
++   entry .fuse   `lens` 背后的宏：按共享前缀对更新分组，并对每个前缀只重建一次

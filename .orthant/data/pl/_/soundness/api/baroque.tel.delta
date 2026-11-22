@@ -1,0 +1,336 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0acd985fca7d839c13845c8c9a4936f2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1015a776fc6b793b06a9a32c9c806981
++ info   liczby zespolone nad dowolnym typem składowych liczbowych, w tym wielkościami, z nieopakowanymi liczbami double
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 08c85e3aae820eda0fed53c726d6b53b
++     _Baroque_ dostarcza `Complex`, liczbę zespoloną, której część rzeczywista i urojona mogą
++     być dowolnego typu z arytmetyką potrzebną do danej operacji: `Int`, `Double`, wymierną
++     `Q64` albo wielkością, dzięki czemu zespolona impedancja lub prędkość zachowuje jednostki
++     przez każdą sumę i iloczyn. `i` to jednostka urojona, jako `Complex[Double]`.
+
+% 2 1 0 16d3af3012851a871a34ddcf0563aac1
+
+% 3 1 0 105d725a584aea14130cac19b7ff1f1b
+
+% 0 1 0 0b76cac599b366c61f87578fd49502ff
+
+% 0 1 0 0edcd0fe5fb031d21d36bf4b03dc2b44
+
+% 0 1 0 1eedcb1fb8a95eff0501e1721f96116a
+
+% 0 1 0 1c50227687bcd83f0df938ba3167f7a2
+
+% 1 1 0 056fd88217c5d65b1d7cff18466d0006
+
+@ 0 7 0 11be897b92902a4a001e0cc9aa4aded3
++     Arytmetyka nie jest zdefiniowana w samym `Complex`, lecz przez klasy typów z symbolism:
++     obiekt towarzyszący `Complex` zawiera giveny `Addable`, `Subtractable`, `Multiplicable`,
++     `Divisible` i `Negatable`, które istnieją dokładnie wtedy, gdy składowe mają odpowiednie
++     operacje, i których wynikami są liczby zespolone o typach wynikowych składowych. Iloczyn
++     dwóch zespolonych długości to zespolone pole powierzchni; suma cali i stóp to zespolona
++     długość w metrach. Każdy given jest w zasięgu niejawnym, więc poza `soundness.*` niczego
++     nie trzeba importować.
+
+@ 0 6 0 0f54cab076181aba086386d1220e9c2b
++     Konstruktor, akcesory i arytmetyka są `inline` i rozwiązują operacje składowych
++     w miejscu wywołania: `Complex`, którego składowa jest pod spodem `Double` – sam `Double`,
++     wielkość, `F64` – jest przechowywany jako dwie prymitywne liczby double
++     (`Complex.Doubles`), a każdy inny jako dwie referencje (`Complex.Boxed`). Tak więc `c*d`
++     dla dwóch `Complex[Double]` kompiluje się do czterech mnożeń, dodawania, odejmowania
++     i jednej alokacji, bez boxingu.
+
+@ 0 2 0 117252b61533f9821dc5d28c6ec96f54
++     Biblioteka ma jeden zbiór źródeł, `baroque.core`, kompilowany dla każdej platformy, a obie
++     jej nazwy są eksportowane do modułu zbiorczego `soundness`.
+
+% 0 1 0 07f6671b83868ae906ae120ec739bb85
+
+% 0 1 0 18531ac1d3356e520b6001814c7ff7d0
+
+% 0 1 0 1746e6085ecbcd3601cd60f091689818
+
+@ 0 1 0 0d76a5a26a77de7408e64bee4e737bb2
++ entry .Complex   liczba zespolona o dwóch składowych dowolnego typu, z arytmetyką, na jaką pozwalają składowe
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 6 0 070f0707a86cf63c0885f06ba92b7f41
++       `Complex[component]` przechowuje część rzeczywistą i urojoną tego samego typu. Jest to
++       zapieczętowana klasa abstrakcyjna z dwiema reprezentacjami, wybieranymi według klasy
++       składowej w czasie wykonania: `Complex.Doubles`, dwa prymitywne pola `Double`, dla każdej
++       składowej, która pod spodem jest `Double`, oraz `Complex.Boxed`, dwie referencje, dla
++       wszystkiego innego. Wyboru dokonuje `.apply`, a odczytują go `.real` i `.imaginary`, więc
++       kod generyczny i kod specyficzny dla double zawsze się co do niego zgadzają; użytkownik
++       nigdy nie musi nazywać żadnej z podklas.
+
+% 2 1 0 11fdd9f6956df17f07326eb3383c21ee
+
+% 3 1 0 1819d1f5106c764a189b87a48430ff7f
+
+% 0 1 0 1cea18ad8d6d0dd60b93ba374fe3662b
+
+% 0 1 0 1eb8986fdeb704541c9b430509e80426
+
+% 0 1 0 1f71786e104a9dd40a909c5d498ed39e
+
+% 0 1 0 0fe01996149186f809f78441f47cd474
+
+% 0 1 0 068b6a6033d53c8501626866aef16478
+
+% 0 1 0 01ab83c04a624bc00932b90204f3f864
+
+% 0 1 0 0417aa0789429c4c18fe718b047a5e2a
+
+% 0 1 0 1702c648f0b6465702da700b84847b6d
+
+% 1 1 0 17c15b31b2d9fbd70e2ba8c82c52419d
+
+@ 0 5 0 10b88bcb096469b30ddf315ec6c1bd5c
++       Arytmetyka działa przez operatory z symbolism, których giveny znajdują się w tym obiekcie
++       towarzyszącym: `.addable`, `.subtractable`, `.multiplicable`, `.divisible`
++       i `.negatable`, a także `.multiplicableByDouble` i `.doubleMultiplicable` do skalowania
++       liczbą rzeczywistą z dowolnej strony. Każdy wymaga od składowych tylko tego, czego
++       potrzebuje jego wzór, a typy składowych mogą się różnić, o ile ich operacje są
++       zdefiniowane:
+
+% 2 1 0 0edf486869404d6c1186301e6be7e5e4
+
+% 3 1 0 1e02ed92f35e3ee60b860a7ca6f12095
+
+% 0 1 0 1f762de9e3afd13c1ea327c2ae57f6f2
+
+% 0 1 0 0b9646b8535197551d667cf73ed71d37
+
+% 1 1 0 08fd9d3d8195189b144e483fc6017c01
+
+@ 0 3 0 0c531911405132341ca10b86050d84d0
++       Liczba zespolona jest pokazywana jako `1 + 3ℐ` (`.showable`) i inspekcjonowana jako
++       `1+3i` (`.inspectable`); postać biegunowa to `.modulus` i `.argument`, a liczbę buduje
++       się z niej dwuargumentowym `.apply` przyjmującym `Angle`.
+
+% 0 1 0 0657aefa113a029318e7a46ec62091aa
+
+% 0 1 0 19bc8308e6c6c1820f6e37a338b37b2c
+
+% 0 1 0 041b0ec338ca52a10a6e38c6ab592acd
+
+% 0 1 0 1e3f3e9573007ac21400308391000119
+
+@ 0 1 0 053621ce4251d95a19d78e8d0d625105
++   entry .Doubles   reprezentacja liczby zespolonej, której składowa jest pod spodem `Double`
+
+% 1 1 0 1221134b643219f51b8c91aacb52da03
+
+@ 0 8 0 19f0cf458704afa705876d319e60fb2f
++         Dwa prymitywne pola `Double`, używane dla `Complex[Double]`, dla zespolonej wielkości
++         oraz dla każdego innego typu składowej z dowodem `Underlying[component, Double]` lub
++         którego wartości w czasie wykonania są liczbami double. Typ składowej jest tu
++         fantomowy: `.real` i `.imaginary` rzutują pola z powrotem na niego. Równość
++         i haszowanie porównują dwie liczby double. Budowana przez `Complex.apply`, nigdy
++         bezpośrednio.
++     entry #real        część rzeczywista, jako prymitywny `Double`
++     entry #imaginary   część urojona, jako prymitywny `Double`
++   entry .Boxed   reprezentacja liczby zespolonej, której składowa nie jest pod spodem `Double`
+
+% 1 1 0 0ed8aaf4431570d81254989d6da5a72a
+
+@ 0 10 0 09901bc89681b2ca16816fd0b1c62521
++         Dwie referencje do wartości składowych, używane dla `Int`, `Q64` i każdego innego typu
++         składowej. Równość i haszowanie porównują obie składowe. Budowana przez
++         `Complex.apply`, nigdy bezpośrednio.
++     entry #real        część rzeczywista
++     entry #imaginary   część urojona
++   entry .apply   liczba zespolona z części rzeczywistej i urojonej albo z modułu i `Angle`
++       `Complex(real, imaginary)` przyjmuje dwie składowe tego samego typu i wybiera
++       reprezentację: `Complex.Doubles`, gdy wiadomo, że składowa jest pod spodem `Double`
++       (z dowodu `Underlying` albo dlatego, że jest `Double`), w przeciwnym razie według testu
++       typu na wartości, z `Complex.Boxed` jako ścieżką rezerwową.
+
+@ 0 3 0 096dd5ae4b1d5a961645fa4306b69c60
++       `Complex(modulus, argument)` to postać biegunowa: moduł to dowolna składowa, którą można
++       pomnożyć przez `Double`, a argument to `Angle` z `hypotenuse`. Wynikiem jest liczba
++       zespolona o typie iloczynu, `modulus*cos(argument)` plus `modulus*sin(argument)ℐ`.
+
+% 2 1 0 0a2a3636dfe415311dbb6acb6f4bd83a
+
+% 3 1 0 156d37751c94aba6052db4368ad0d10d
+
+% 0 1 0 158f83fb3eea4eee1e840468310626a5
+
+% 0 1 0 126dfade298138ad090b137a125a24cf
+
+% 1 1 0 1f1c7f47229441f0190d77784eea6e9e
+
+@ 0 14 0 0192dad667a20c42047a84d8e141e185
++   entry .unapply   rozkłada liczbę zespoloną na część rzeczywistą i urojoną
++       Zawsze pasuje, więc `val Complex(re, im) = z` i `case Complex(re, im) =>` działają dla
++       obu reprezentacji.
++   entry .real   część rzeczywista liczby zespolonej, jako jej typ składowej
++       Rozszerzenie inline dla `Complex[component]`. Gdy składowa jest statycznie pod spodem
++       `Double`, jest to pojedynczy odczyt pola bez testu typu; w przeciwnym razie dopasowuje
++       reprezentację.
++   entry .imaginary   część urojona liczby zespolonej, jako jej typ składowej
++       Rozszerzenie inline dla `Complex[component]`, odczytywane tak jak `.real`: odczyt pola,
++       gdy składowa jest statycznie pod spodem `Double`, w przeciwnym razie dopasowanie
++       reprezentacji.
++   entry .modulus   wartość bezwzględna liczby zespolonej, √(re² + im²), w jednostkach składowych
++       Rozszerzenie inline. Wymaga, by składowa była `Multiplicable` przez samą siebie, iloczyn
++       `Addable` do samego siebie, a suma `Rootable[2]`, a jego typem jest wynik pierwiastka
++       kwadratowego: moduł zespolonej długości jest długością.
+
+% 2 1 0 0d4c0a23d99d5da507cfc61e3b62f839
+
+% 3 1 0 1d95ab62d2c9f05b1d29f0009ab6ba47
+
+% 0 1 0 0be8bb25a8f03a43023c7b5679d4596b
+
+% 0 1 0 09506d337ca3809a17ba7f60f0ef1203
+
+% 1 1 0 00c2eccb3e9d4fbc0727c0fdf2ba6d8e
+
+@ 0 5 0 121bb0ef6e704e3c1206038a2704d600
++   entry .argument   kąt liczby zespolonej mierzony od dodatniej półosi rzeczywistej, jako `Angle`
++       Rozszerzenie inline, obliczane jako `atan2` z części podzielonych każda przez `.modulus`,
++       więc wymaga wszystkiego, czego wymaga `.modulus`, a ponadto tego, by składowa podzielona
++       przez moduł była zwykłym `Double` – co zachodzi zarówno dla liczb, jak i dla wielkości,
++       ponieważ jednostki się skracają.
+
+% 2 1 0 13ec3799d2197ff500faf3ba4581dcbb
+
+% 3 1 0 0723635f84817932167e2201c7118816
+
+% 0 1 0 0c680d44a7d4c64a0e0c943459cfc764
+
+% 1 1 0 0b8a953a0cc4b26b0a77ed0a5a498b37
+
+@ 0 9 0 13e7cff8f4ace1cd15453b91f74c2d04
++   entry .sqrt   główny pierwiastek kwadratowy liczby zespolonej, z jej postaci biegunowej
++       Rozszerzenie inline: pierwiastek kwadratowy z `.modulus` przy połowie `.argument`,
++       zbudowany biegunowym `Complex.apply`. Wymaga wszystkiego, czego wymaga `.argument`,
++       a ponadto tego, by sam moduł miał pierwiastek kwadratowy, który można pomnożyć przez
++       `Double`; pierwiastek zespolonego pola powierzchni to zespolona długość.
++   entry .unary_~   sprzężenie zespolone, `~z`: ta sama część rzeczywista z zanegowaną częścią urojoną
++       Operator prefiksowy, kompilowany pod nazwą `conjugate`. Wymaga, by składowa była
++       `Negatable`, a typ składowej wyniku to suma typu składowej i wyniku negacji, która dla
++       liczb i wielkości jest samą składową.
+
+% 2 1 0 0b92b9a0aee3ed7d09747a7a85ef47f6
+
+% 3 1 0 0c829afa5e8adcee08ccf60b2be1d60c
+
+% 0 1 0 03e0b0e6549b161f1801c60b467be897
+
+% 1 1 0 102e5e5353faa42c11b67f254da6a024
+
+@ 0 4 0 0cb6f6436989bad9186380063c3f53e5
++   entry .showable   pokazuje liczbę zespoloną jako `1 + 3ℐ`, pomijając część zerową
++       Given inline dla każdej składowej, która jest `Showable`, `Zeroic`, `Commensurable` z samą
++       sobą i `Negatable`. Przy zerowej części urojonej pokazywana jest sama część
++       rzeczywista, przy zerowej części rzeczywistej – `3ℐ`, a ujemna część urojona jest
++       zapisywana z minusem: `1 - 3ℐ`.
+
+@ 0 4 0 09a969d5a8c1a28e073707a389f276a3
++       Składowa, która jest `Distributive` – wielkość, której jednostki następują po liczbie,
++       albo `Quanta` o mieszanych jednostkach, takie jak stopy i cale – ma części pokazywane
++       razem wewnątrz jednostek: `(1.00 + 9.00ℐ) m·s¯¹` albo `(1 + 2ℐ) yd, 2 ft, (6ℐ) in`.
++       Pokazanie składowej `Double` wymaga `Decimalizer` w zasięgu.
+
+% 2 1 0 1228bb424c9f0f4f19772215a3b29f81
+
+% 3 1 0 1dcee0f62f76cfd8102d22764962bc51
+
+% 0 1 0 12c5bd5ff86b4f601c8977cee6888885
+
+% 0 1 0 0ca15c10ee71f5b80cc147c7aa82fb1e
+
+% 0 1 0 0f8ae8a286f7074c0d5ec7d5915a6fd5
+
+% 1 1 0 1e2030e260958d2a04843c208b6b2fa7
+
+@ 0 9 0 0dc7b4f912e2e49d1d7c0345739e9e7e
++   entry .inspectable   inspekcjonuje liczbę zespoloną jako `1+3i`, każdą część tak, jak sama jest inspekcjonowana
++       Dla każdej składowej, która jest `Inspectable`. Części są łączone przez `+` albo przez
++       `-`, gdy inspekcja części urojonej się od niego zaczyna, a na końcu następuje `i`:
++       `1.0-3.0i`.
++   entry .addable   dodaje dwie liczby zespolone część po części, gdy ich składowe można dodawać
++       Given inline: `Complex[a] + Complex[b]` to `Complex[r]`, ilekroć `a is Addable by b
++       to r`, więc zespolone długości w różnych jednostkach sumują się do zespolonej długości.
++       Generowany makrem `AddOp` składowej (taki, jaki mają wielkości) ma pierwszeństwo przed
++       jej `Addable`.
++   entry .subtractable   odejmuje dwie liczby zespolone część po części, gdy ich składowe można odejmować
++       Given inline: `Complex[a] - Complex[b]` to `Complex[r]`, ilekroć `a is Subtractable
+
+% 0 1 0 0f3f341470a9e8760611c415b1d804f6
+
+@ 0 5 0 0a930de2aee1355e00ee70e0607b9583
++   entry .multiplicable   mnoży dwie liczby zespolone, (a + bℐ)(c + dℐ) = (ac − bd) + (ad + bc)ℐ
++       Given inline. Wymaga, by składowe były `Multiplicable` do typu iloczynu, a ten iloczyn
++       `Addable` i `Subtractable` do samego siebie; wynikiem jest liczba zespolona o typach
++       sumy i różnicy iloczynu, więc zespolone metry razy zespolone sekundy dają zespolone
++       metrosekundy.
+
+% 2 1 0 0db57c121874efcf153a0bac86d94a42
+
+% 3 1 0 193c4b7c71d07d0902b705381d0f2ea7
+
+% 0 1 0 1b09df9b0dd5debc02ffb2143b854f31
+
+% 1 1 0 11a02d285840030905e0ddb48b0a6d0e
+
+@ 0 6 0 0fc42a7ddad679ce0a3827c3fa4c76c6
++   entry .multiplicableByDouble   skaluje liczbę zespoloną rzeczywistym `Double` z prawej strony, jak w `i*1.8`
++       Given inline dla każdej składowej `Multiplicable` przez `Double`; każda część jest
++       mnożona przez skalar.
++   entry .doubleMultiplicable   skaluje liczbę zespoloną rzeczywistym `Double` z lewej strony, jak w `2.0*z`
++       Given inline dla każdej składowej, przez którą `Double` jest `Multiplicable`; każda
++       część jest mnożona przez skalar.
+
+% 2 1 0 008a168bbeaef25d0291cf648562c474
+
+% 3 1 0 1650ce7195b7a4fd11229b467fb39832
+
+% 0 1 0 1c297b0dc414cb4c1e7c31369a9505bd
+
+% 1 1 0 1ccde5a10636e6140b076f660edcb26f
+
+@ 0 5 0 05a9e121b8cf48e41ffa83193c71702c
++   entry .divisible   dzieli dwie liczby zespolone, mnożąc licznik i mianownik przez sprzężenie dzielnika
++       Given inline. Iloraz to `(ac + bd)/(c² + d²) + (bc − ad)/(c² + d²)ℐ`, więc wymaga, by
++       oba typy składowych dawały się mnożyć, składowa dzielnej była `Negatable`, iloczyny
++       dawały się dodawać, a suma dzielnej dawała się podzielić przez sumę dzielnika.
++       Podzielenie zespolonych metrów przez zespolone stopy daje bezwymiarową liczbę zespoloną.
+
+% 2 1 0 06917ea097a5c4631a7516e8c71c5f46
+
+% 3 1 0 0ca5844fcb05dcea020fb26862949c3d
+
+% 0 1 0 17b284f5531f46a7061cc6c077cb913a
+
+% 1 1 0 1fc8eb7338ff346315d29049b487a84b
+
+@ 0 3 0 1f00bda28ac86dbd1238f6b889ea38b0
++   entry .negatable   neguje obie części liczby zespolonej, `-z`
++       Given inline dla każdej składowej `Negatable`; wynikiem jest liczba zespolona o typie
++       wyniku negacji.
+
+@ 0 3 0 0042a4f5c986401a0f3e1a60a0c54830
++ entry .i   jednostka urojona, `Complex(0.0, 1.0)`, do zapisywania liczb zespolonych jako `a + b*i`
++     `Complex[Double]`, więc `i*1.8` to `Complex(0.0, 1.8)` dzięki
++     `Complex.multiplicableByDouble`, a liczbę można zapisać jako sumę:
+
+% 2 1 0 07829b18cd73abd81a7ec140c833c160
+
+% 3 1 0 0684733f51d8bc1e1d162c2a41971fcd
+
+% 0 1 0 00cc1e258790df0c19d7cd7b7aa4d837
+
+% 1 1 0 076500bad941afb7160a8195bb5dcd91

@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 106359fb80206db407f6e53312ea7e46
++ # `↯/s.42.2` – Niepoprawny literał znaku ASCII
+
+@ 0 2 0 0027d29bcb732088108cc9a446f7e773
++ Zgłaszany w czasie kompilacji przez makro literałów ASCII z Gossamer, gdy znak jest spoza zakresu
++ ASCII.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 14aa3693de631ff71ddf378489625d85
++ Gossamer ogranicza pewne postacie literałów (np. napisy ASCII) do 7-bitowego podzbioru ASCII.
++ Znaki spoza ASCII są odrzucane.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1ef3d3b18bb82d370998bd10080a85bd
+
+% 1 1 0 022da1eb7ba2b17917840cae7f1b8e13
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 127ea56ea54749831d80c98e347fbe4f
++ Używać w literale wyłącznie znaków ASCII albo zamiast tego użyć odpowiedniego typu, który
++ obsługuje znaki spoza ASCII.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1302574476bec57e157f14d9b1007e20
++ - Źródło: `lib/gossamer/src/core/gossamer.internal.scala`

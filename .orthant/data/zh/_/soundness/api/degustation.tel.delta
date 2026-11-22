@@ -1,0 +1,953 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c512ee62b2c07ea0579443876a48cad
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18f88a3d7ad30bb7114fd37577713766
++ info   已编译 Scala 的读取器：TASTy 文件作为普通数据，针对类路径解析，并进行擦除
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 0fb9e8a84b4fbb9c1319300336127a6a
++     _Degustation_ 读取 Scala 编译器留下的东西。
++     每个 Scala 3 类文件都伴随着一个 **TASTy** 文件（`Option.class` 旁边的 `Option.tasty`），即编译器的有类型语法树被序列化成的紧凑二进制形式：每个定义、它的修饰符和注解、它的参数类型和结果类型、每个类的父类，以及内联定义和宏定义的主体。
++     它是模块 API 的完整记录，也是任何必须理解已编译 Scala 的工具（API 遍历器、文档渲染器、兼容性检查器）需要读取的内容。
++     Degustation 无需运行编译器就能读取它：唯一的依赖是 `tasty-core`，一个了解该格式字节布局的小型库，因此读取可以在 JVM 上、浏览器中和原生二进制程序中运行。
+
+@ 0 10 0 12a18f350387740217fba6da1b06bfe7
++     读取器产生的是**值**。
++     `Unpickler(data)` 把一个文件的字节转换为由 `Pickled.Tree`、`Pickled.Type` 和 `Pickled.Name` 组成的 `Unpickler.File`，与格式中的布局完全一致，背后没有符号表：对局部定义的引用是其定义节点的地址，对其他任何东西的引用都是相对于某个前缀类型的名称，与文件中的写法一致。
++     `Universe` 回答仅凭字节无法回答的问题（一个名称指向什么、哪个类声明了被选择的成员、一个类如何线性化），它从 `Universe.Source` 惰性地加载更多文件；`Universe.Source` 是一个被归结为两种操作（读取条目和列出目录）的类路径。
++     在 universe 之上，`Erasure` 计算 Scala 3 的类型擦除，使成员擦除后的签名（`(scala.Function1)scala.Option`）的写法与编译器的写法一致。
+
+% 2 1 0 1bd4cfe18ee09db0081ac6af1640fb2d
+
+% 3 1 0 1d9bd8d5a0996c0217de1bc69d502fad
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1a5a01e2ed24ba24127e1a03d9eca9e6
+
+% 0 1 0 09ef15007528a849019ca624db24343f
+
+% 0 1 0 05ddc344de11437f14fb4e564eab942f
+
+% 1 1 0 015c9d592928cc9f116b1fe802d31234
+
+@ 0 7 0 119736f76edc793207cca4c4cd0737cf
++     读取器之上是**原子化器**，也是这个库存在的原因：`Degustation. atomize` 把 LIRA 的 Scala 规程（`tasty/2`）应用于一个模块的文件，把它的 API 切分为 `ScalaAtom`，每个原子有一个稳定的键，例如 `fixture.Overloads.f(scala. Int)scala.Int`，一个规范的二进制编码，其哈希就是原子的值，对于内联主体，还有它产生的 `ScalaReference`，这样就可以用集合运算比较一个库的两个版本。
++     `Inspection.atomize` 做同样的事，作用于磁盘上的文件和类路径。
+
+@ 0 1 0 1b6ad1cac25e4f71104ce07a549b507d
++     这个库的各部分，按每个平台能做什么划分：
+
+@ 0 10 0 1356bb03823a0cf31720f22007bdcc77
++     - `degustation.tasty`：数据模型（`Pickled`）、读取器（`Unpickler`）、类文件读取器（`Classfile`）、类路径 universe（`Universe.Source`、`Scope`、`Universe.ClassInfo`、`Member`、`Kind`、`Resolution`、`Universe`）、擦除（`Erasure`）、原子化器（`Degustation`）及其输出（`ScalaAtom`、`ScalaReference`）。
++       它为 JVM、Scala.js 和 Scala Native 编译；其中没有任何东西接触文件系统。
++     - `degustation.core`：`Inspection`，面向文件系统的部分：`.tasty` 文件和类路径目录通过 galilei 的文件系统后端读取，jar 通过 zeppelin 读取。
++       支持 JVM 和 Scala Native。
++       在 JVM 上，JDK 自身的类从正在运行的 JVM 的类加载器中读取；在 Native 上没有可供读取的 JVM，因此类路径上必须有一个包含 JDK 类文件的 jar。
+
+@ 0 4 0 01036fc2cec08d9d1311d98b37ea0c2b
++     除 `Universe` 和 `Classfile` 之外的所有内容都导出到 `soundness` 总括包；这两者在总括包中把它们的简单名称留给 anthology 和 mandible，通过 `degustation.Universe` 和 `degustation.Classfile` 访问。
++     这个库没有选择包，只有一个 given `Inspection.Error.communicable`，它位于隐式作用域中。
+
+% 0 1 0 12db27cc995f512d068d6c1d92268fa4
+
+% 0 1 0 1173679ca8fefb361812d0ed10891951
+
+% 0 1 0 1bf564bb53c55b5c1b969c458b1622d4
+
+% 0 1 0 1ec079fc65d090e10e6ad2878f5c2407
+
+% 0 1 0 067ef04878655b4106f5304349ed0fe5
+
+% 0 1 0 14ac662483455c0a1191b972e14431f1
+
+@ 0 1 0 0a1c35441a98317e11d24f2efbfe4098
++ entry .Unpickler   把 `.tasty` 文件的字节读入 `Pickled` 模型：树，以及按地址索引的定义和绑定者
+
+% 1 1 0 11d1b6663af5b36f02978c8d421a76a9
+
+@ 0 8 0 1139fcb509127ead1a96ff5eee2efc9c
++       `Unpickler(data)` 检查文件头，解码名称表，并把 ASTs 段反序列化为 `Pickled.Tree`；位置、注释和属性段被跳过，因为其中没有任何内容属于 API。
++       每个共享子树（`SHAREDtype`、`SHAREDterm`）都被解析为它所共享的树，按地址记忆，因此结果是一棵普通的树，其中只有带同一性的节点（定义、绑定者、递归类型）保留它们的地址。
++       所遵循的语法是 `TastyFormat` 记录的语法；在编译器自己的反序列化器为了构建符号或重新确定节点类型而偏离它的地方，这个读取器保留文件中的写法。
+
+% 2 1 0 0b07d18533cd80d00a7e8735294fe4b1
+
+% 3 1 0 0e89ebbf7b79a67300511191f1acd900
+
+% 4 1 0 1284d37ccdf0d737133c88aecc030336
+
+% 5 1 0 1ae1da2072fb829a0207d55ee01aa39a
+
+% 0 1 0 0ed83039c096e93f0f8a371292915522
+
+% 0 1 0 0e66d7f641914bab146fa4a18d8ded50
+
+% 1 1 0 02294cc8a4e8fa78095bf8dbc0eabc8f
+
+@ 0 5 0 168662190e81dfba080141e77d7194d4
++       文件头不是 TASTy 文件头，或者其版本是内嵌的 `tasty-core` 无法读取的文件，会抛出 `dotty.tools.tasty.UnpickleException`；没有读到其记录的结尾的节点也会如此，这意味着语法已经与文件的语法产生偏差，这种情况会被报告，而不是被悄无声息地误读。
++       读取前，字节会被复制一次到一个 JVM 数组中。
+
+% 1 1 0 1b89d85f1e41d0ce19e47d6ad1161920
+
+% 1 1 0 13b55e423b3b3b56173ff1dc176f63b6
+
+@ 0 4 0 0708af00f584b73b1afd6287f16bc60f
++   entry .apply   把一个文件的字节反序列化为它的 `File`
++       读取 `data` 的文件头、名称和 ASTs。
++       没有 ASTs 段的文件（有效的文件绝不会缺少它）得到一个空的 `File`。
++   entry .File   一个文件的 ASTs：顶层语句、按地址索引的每个定义和每个绑定者
+
+% 1 1 0 149a71ab42deb57d0c21ef5ad03c8c4a
+
+@ 0 9 0 1ebd7405383e3f771a97c364c9a539da
++         `File` 是 `Unpickler(data)` 的返回值，也是 `Universe.index` 索引到 `Scope` 中的内容。
++         `#statements` 是文件的顶层树，每一个都是 `Pickled.Tree.Package`；`#definitions` 把每个定义节点的地址映射到该节点，因此局部引用（`Type.TermRefDirect` 及其同类）可以追踪到它所指的定义；`#binders` 把每个方法类型、lambda 类型或递归类型的地址映射到它，供 `Type.Param` 和 `Type.RecursiveThis` 引用解析。
++     entry #statements   顶层树，按文件顺序
++     entry #definitions   每个定义节点（`TypeDef`、`ValDef`、`DefDef`、`TypeParam`、`Param`、`Bind`），按其地址
++     entry #binders   每个 `Type.Method`、`Type.Poly`、`Type.Lambda` 和 `Type.Recursive`，按其地址
+
+@ 0 1 0 0fcd8a3fc00683d01c6f43d8b7f0613f
++ entry .Pickled   TASTy 数据模型：按格式布局的名称、类型、树和修饰符
+
+% 1 1 0 0138059ac946cd1f1127db9bf5a8d9c8
+
+@ 0 7 0 0576114b5f243c40160d2133c7b79555
++       `Pickled` 包含把 `.tasty` 文件建模为数据的类型，背后没有符号表：来自名称表的 `Name`、`Type`、`Tree`、定义的 `Modifiers`，以及构成它们的较小的枚举。
++       对局部定义的引用是其定义节点的地址；对其他任何东西的引用都是一个名称和一个前缀类型，与文件中的写法一致。
++       语义问题所需的一切（一个名称指向什么、一个类型擦除为什么、哪个类声明了被选择的成员）都由别处的 `Universe` 和 `Erasure` 回答。
+
+@ 0 3 0 1cdd056294214e7a12eaf9b33ab32b10
++       有少数形式根本不是被序列化的，而是由读取器或 universe 为自身用途构造的，并且会注明这一点：`Type.AppliedTerms`、`Type.Opaque`、`Type.Abstraction`、`Type.Foreign`、`Flag.ParamAccessor` 和 `Tree.Path`。
+
+% 2 1 0 1695f529137870a50fde3f3081c5994d
+
+% 3 1 0 059015469707ce0213f56d0f93858c3a
+
+% 0 1 0 129c1f47bf84a32001250908aa737fd8
+
+% 0 1 0 029f1d4fbf61c5261397f1e30ffc2648
+
+% 0 1 0 0c363c0585b58b3c13d264b426a95cf4
+
+% 0 1 0 07fad97a566885071347693917901e42
+
+% 0 1 0 1bfdb582e889d22215525138d4f63116
+
+% 1 1 0 109066aedd987921054b99ad2d8ed12b
+
+% 1 1 0 10fe1a2623fb85d709fc5772a8b5a6ab
+
+% 1 1 0 082e02ecea17dddf005de11924268322
+
+@ 0 1 0 05006b283afe13061f21d6816c3bd707
++   entry .Name   来自名称表的名称，按编译器的名称种类来组织结构
+
+% 1 1 0 00be6fbc6c67dee51e4974a81feadab7
+
+@ 0 8 0 11decabf7270884b1c59ad2f818456f9
++         `Name` 对于普通名称是 `Simple(value)`，或者是编译器在另一个名称之上的派生种类之一：`Qualified(prefix, selector)` 表示 `a.b`，`Expanded` 和 `ExpandPrefix` 表示私有名称或局部名称以 `$$` 和 `$` 分隔的展开形式，`Unique(separator, number, original)` 表示新生成的名称，`DefaultGetter(method, index)` 表示默认参数的 getter，还有 `SuperAccessor`、`InlineAccessor`、`ObjectClass`（模块类的 `X$`）和 `BodyRetainer` 包装器，以及 `Signed(original, target, result, params)`：一个携带其所指成员擦除后签名的项名称，对重载方法的引用正是借此说明它指的是哪一个备选。
+
+@ 0 23 0 1c39fb64c8469c250ec57ec11339ef43
++         `#text` 按编译器的 `Name#toString` 的方式渲染名称，因此可以用它匹配栈帧或类文件中显示的内容；`#spelled` 是 `fullName` 的写法，只在构造器的默认 getter 上有所不同；`#unsigned` 去掉签名，`#signature` 是带签名名称所携带的签名，写作 `(paramSigs)resultSig`，与 `ScalaAtom` 的键中的写法完全相同。
++     entry #text   按编译器的 `Name#toString` 渲染的名称
++         `Simple` 是它的值；`Qualified` 用 `.` 连接；`Expanded` 用 `$$`，`ExpandPrefix` 用 `$`；`Unique` 名称是 `original`、分隔符、编号（对于没有可派生来源的新名称为 `$3$`）；`DefaultGetter` 是 `method$default$N`，其中构造器的 `<init>` 被改写为 `$lessinit$greater`；`SuperAccessor`、`InlineAccessor` 和 `BodyRetainer` 在限定名称的最后一段上加上 `super$`、`inline$` 和 `$retainedBody`；`ObjectClass` 追加 `$`；`Signed` 名称渲染为其原始名称。
++     entry #spelled   按编译器的 `fullName` 书写的名称
++         与 `#text` 相同，只是构造器的默认 getter 保留未改写的 `<init>`：`<init>$default$1`。
++         这是 `Scope#names` 和 `ScalaAtom` 键所使用的写法。
++     entry #unsigned   去掉签名（如果有）后的名称
++     entry #signature   带签名名称所携带的擦除后签名，或 `Unset`
++         写作 `(paramSigs)resultSig`，每个参数签名是一个完全限定的擦除后类名，或一个类型参数的数量；这是 `Erasure` 为声明生成的写法，因此引用的两侧在构造上就一致。
++   entry .ParamSig   带签名名称的擦除后签名的一个组成部分
+
+% 1 1 0 1ccc89525f0cca2718b296c29f103ef2
+
+@ 0 5 0 188f625f3ee36a1504e7c572769f116e
++         `Erased(name)` 是一个完全限定的擦除后类型名称；`TypeParams(count)` 是一个类型参数段的长度。
++         `#text` 按签名的写法渲染两者之一：名称，或以数字表示的数量。
++     entry #text   该组成部分在已写出的签名中的形式
++   entry .Constant   字面量常量：unit、布尔值、null、数值和字符原始类型、字符串或类
+
+% 1 1 0 0724c30c8f4c94030dcdc49d69d2db41
+
+@ 0 10 0 151289a00da95a3a0d6931c9410283fb
++         分支有 `UnitValue`、`FalseValue`、`TrueValue`、`NullValue`、`ByteValue`、`ShortValue`、`CharValue`、`IntValue`、`LongValue`、`FloatValue`、`DoubleValue`、`StringValue(value: Text)` 和 `ClassValue(tpe: Type)`，最后一个是 `classOf[T]` 字面量序列化后的形式。
++     entry #className   该常量的类型所引用的完全限定类
++         `scala.Unit`、`scala.Boolean`、`scala.Null`、`scala.Int` 以及其他原始类型，字符串为 `java.lang.String`，类字面量为 `java.lang.Class`。
++   entry .Variance   `Invariant`、`Covariant` 或 `Contravariant`，即类型 lambda 的参数所带有的型变
++   entry .Clause   方法类型的参数子句的种类：`Plain`、`Implicit` 或 `Contextual`
++   entry .Type   序列化形式的类型：按地址或按相对于前缀的名称的引用，以及类型构造器
+
+% 1 1 0 1c1f5c1c78e5f3031c2174c9a756caf8
+
+@ 0 8 0 0168d8719aca12ba14a2a27d5b259bf6
++         引用分为三个家族。
++         **局部**引用通过节点地址指向同一文件中的定义：`TermRefDirect(address)` 和 `TypeRefDirect(address)`，或者在还记录了前缀时为 `TermRefLocal(address, prefix)` 和 `TypeRefLocal(address, prefix)`。
++         **包成员**直接命名：`TermRefPkg(name)` 和 `TypeRefPkg(name)` 携带一个完全限定名称。
++         其他任何引用都是相对于前缀类型的名称：带有可能带签名的 `Name` 的 `TermRef(name, prefix)`、`TypeRef(name, prefix)`，以及还记录了成员是在哪个类中被选择的 `TermRefIn` 和 `TypeRefIn` 形式。
+
+@ 0 10 0 10f5e49ef2edafec15f9dec5fcb9ada9
++         构造器就是该格式的构造器：`This(cls)` 和 `Super(thisType, underlying)`；用于递归细化的 `Recursive(address, parent)` 和 `RecursiveThis(address)`；`Refined(parent, name, info)`；`Applied(constructor, arguments)`；`Bounds(low, high, variances)`，其中缺少 `high` 表示 `low` 的别名；`Annotated(underlying, annotation)`；`And` 和 `Or`；`Match(bound, scrutinee, cases)` 和 `MatchCase(pattern, rhs)`；用于 Java 的 null 灵活类型的 `Flexible(underlying)`；`ByName(underlying)`；`Literal(constant)`；以及 `Bind(address, name, bounds)`。
++         绑定者 `Method(address, names, params, result, clause)`、`Poly(address, names, bounds, result)` 和 `Lambda(address, names, bounds, result)` 携带一个地址，其内部的 `Param(binder, number)` 通过它回指，`Unpickler.File#binders` 也凭它找到它们。
+
+@ 0 8 0 0ec6733f625eefbe00bddb898a234bdb
++         有四种形式不是被序列化的，而是由读取器或 universe 构造的：`AppliedTerms (function, arguments)`，即函数类型尚未解析的项应用的类型；`Opaque(alias, bounds)`，不透明类型的右侧，以及从外部看它时所用的界限；`Abstraction(params, names, bounds, result)`，按 lambda 类型*树*的写法表示的类型 lambda，把它的参数按地址绑定为定义；以及 `Foreign(path, tpe)`，一个固定到其读取来源文件的类型，因此当它被带入另一个文件的类型中时（例如作为代入别名的类型参数），它的局部引用仍然能够解析。
+
+@ 0 3 0 1194f4d0d8091c0406c3488f226900a0
++         `Universe.resolve` 说明一个类型指向什么；`Universe.transform` 和 `Universe.mapChildren` 重写一个类型；`Erasure#erase` 擦除一个类型。
++   entry .Flag   修饰符标志，按该格式的标签命名
+
+% 1 1 0 13b32b36c5fa9a7603195660250c3425
+
+@ 0 12 0 08bb78af281106c319b20d9cd59b7fff
++         `Private`、`Protected`、`Abstract`、`Final`、`Sealed`、`Case`、`Implicit`、`Given`、`Erased`、`Lazy`、`Override`、`Opaque`、`Inline`、`Macro`、`InlineProxy`、`Static`、`Object`、`Trait`、`Enum`、`Local`、`Synthetic`、`Artifact`、`Mutable`、`FieldAccessor`、`CaseAccessor`、`Covariant`、`Contravariant`、`HasDefault`、`Stable`、`Extension`、`ParamSetter`、`ParamAlias`、`Exported`、`Open`、`Invisible`、`Transparent`、`Infix`、`Tracked`、`Into` 和 `AbsOverride` 是该格式自身的标志。
++         `ParamAccessor` 不是 TASTy 修饰符：universe 添加它，用来在类的成员中标记类参数，与编译器中同名标志的作用相同。
++   entry .Annotation   定义上的注解：它的类型和构造它的树
++     entry #tpe   注解的类类型
++     entry #tree   构造器调用，以序列化形式
++   entry .Modifiers   定义的标志、它的 `private[X]` 限定符和它的注解
+
+% 1 1 0 1359c6a0a9f3696e1ecd8b43e9bc2f93
+
+@ 0 11 0 02b315e10fba9b48086354677109e83c
++         每个 `Tree.TypeDef`、`ValDef`、`DefDef`、`TypeParam`、`Param` 和 `Bind` 都携带一个。
++         `#has(flag)` 检测一个标志；`#privateWithin` 是 `private[X]` 或 `protected[X]` 限定符所指的类型，或 `Unset`；`.empty` 没有标志、没有限定符，也没有注解。
++     entry .empty   没有标志，没有限定符，没有注解
++     entry #flags   定义的标志，作为集合
++     entry #privateWithin   `private[X]` 或 `protected[X]` 中的 `X`，作为类型，或 `Unset`
++     entry #annotations   定义的注解，按顺序
++     entry #has   是否设置了某个标志
++   entry .Selector   `import` 或 `export` 的一个选择器：`Imported(name)`、`Renamed(to)` 或 `Bounded(tpe)`
++   entry .Tree   序列化形式的树：定义、模板、项、模式和类型树
+
+% 1 1 0 0d08ffd3f83a29f7069d53bc590a1492
+
+@ 0 7 0 003c5b3b4614a7bd0b909b69df0b21d9
++         文件的顶层树是 `Package(path, statements)`。
++         定义有：`TypeDef(address, name, rhs, modifiers)`，当 `rhs` 是 `Template (typeParams, params, parents, self, body)` 时为类，否则为类型别名、界限或不透明类型；`ValDef(address, name, tpt, rhs, modifiers)`；`DefDef(address, name, clauses, returns, rhs, modifiers)`，其子句是由 `TypeParam` 或 `Param` 树组成的列表；以及带有其 `Selector` 的 `Import` 和 `Export`。
++         每个定义都携带局部引用用来指向它的地址。
+
+@ 0 6 0 0f56f2a6458231ce1c21daead7bcf901
++         项是常见的 Scala 形式：`Ident`、`Select`、`SelectIn`、`QualifiedThis`、`New`、`Apply`、`TypeApply`、`ApplySigPoly`、`Typed`、`Assign`、`Block`、`Inlined`、`Lambda`、`If`、`Match`、`Try`、`Return`、`While`、`Repeated`、`Throw`、`NamedArg`、`SuperRef`、`SelectOuter`、`Elided`，还有引用形式 `Quote`、`Splice`、`SplicePattern`、`QuotePattern` 和 `Hole`，以及模式形式 `Bind`、`Alternative`、`Unapply` 和 `CaseDef`。
++         `Match` 携带一个 `Tree.MatchKind`。
+
+@ 0 4 0 03a96ff50468bc8a19d17b1e6cbddde5
++         类型树有 `IdentTpt`、`SelectTpt`、`SingletonTpt`、`RefinedTpt`、`AppliedTpt`、`LambdaTpt`、`BoundsTpt`、`AnnotatedTpt`、`MatchTpt`、`ByNameTpt` 和 `ExplicitTpt`；`#isTypeTree` 表示一棵树是否属于其中之一。
++         `Path(tpe)` 不是序列化形式：它是位于树位置上的路径或常量，其全部内容就是一个类型。
+
+@ 0 4 0 1b727a266f2671011187f566ffedfa57
++         `Universe.typeOf` 是类型树所表示的类型，`Universe.termType` 是用作前缀的项的类型，`Universe.children` 是一棵树的直接子树。
++     entry .MatchKind   `Match` 的写法：`Plain`、`Inline`、`Implicit` 或 `Sub`
++     entry #isTypeTree   这是否是一棵类型树，即编译器会用 `readTpt` 读取的树
+
+@ 0 1 0 1a74ddbc18d3520a0fee899c87b36221
++ entry .Scope   已加载并建立索引的 `.tasty` 文件：按地址索引的每个定义的全名、局部性和所有者
+
+% 1 1 0 164cabc0bafdbc1816f28ff2d4ec3ad8
+
+@ 0 7 0 087f783a391732cc034ee2b4fdce6416
++       `Universe.index(path, file)` 从一个 `Unpickler.File` 创建 `Scope`，`Universe#scope(path)` 从一个 `Universe.Source` 加载并索引一个 `Scope`。
++       它持有读取该文件的 `#path`、`#file` 本身、`#names`（项主体之外的引用能够到达的每个定义的完全限定名称，按地址索引，按编译器的 `fullName` 书写，方法的参数写作 `pkg.Class._$param`）、`#locals`（项主体内部的定义），以及 `#owners`，即每个定义的所有者：包围它的定义的地址，或者在顶层时为它的包名。
+
+% 2 1 0 1d7fce92c3911568198391cf3018ff34
+
+% 3 1 0 1b110a84ec5e92b10e5929e02b3102e0
+
+% 4 1 0 12bed6982d04af2805e2244762705008
+
+% 5 1 0 08368f954612f80a15b38eb04d90b635
+
+% 0 1 0 0dcc600c34e43384037177094d3ce3f9
+
+% 0 1 0 1df9b591de1cdba2110cdf91ac38e0f0
+
+% 0 1 0 13c1ca5a3c03d4c801b55c23e2c2ed97
+
+% 1 1 0 0b8ebd2c676e5baf170e6b8ccb35bb5e
+
+@ 0 2 0 1a9cd476ed65668e0f9396d54fe6c9fb
++       `Universe#resolve` 接收一个作用域，作为追踪类型的局部引用时所处的上下文；被带入另一个文件的类型以 `Type.Foreign` 的形式保留它自己的作用域。
+
+% 1 1 0 002d3214ea100a7917e39e8c2490e8e1
+
+% 1 1 0 00abd9b3528dd01e1fd2877ac8404e9a
+
+@ 0 9 0 0754a071d813f71b043e0545a1a8ef07
++   entry #path   读取该文件时所用的相对于类路径的路径
++   entry #file   反序列化后的文件
++   entry #names   每个可到达定义的完全限定名称，按地址索引
++   entry #locals   项主体内部的定义的地址
++   entry #owners   每个定义的所有者：包围它的定义的地址，或在顶层时为包名
++   entry #definition   某个地址处的定义节点，或 `Unset`
++   entry #binder   某个地址处的方法类型、lambda 类型或递归类型，或 `Unset`
++   entry #within   一个地址处的定义是否在任意深度上被另一个地址处的定义所包围
++   entry #enclosingClass   一个定义最近的外围类的地址，或在顶层时为 `Unset`
+
+@ 0 3 0 1f3741916eecd46c12af5258b110b0ec
++ entry .Kind   类成员的种类：`Val`、`Def`、`Type` 或 `Class`
++     `Universe#memberIn` 和 `Universe#packageObjectMember` 接收一组要搜索的种类，因此同名的类型成员和项成员可以区分开来。
+
+@ 0 1 0 12a4ce33f673f07c192b714da615637c
++ entry .Member   类的一个成员，按其声明：名称、种类、声明类型、标志和地址
+
+% 1 1 0 023c17ad61a2850b127d57830b7b9cf6
+
+@ 0 11 0 0d3063e546d4f4c717aa67c4ec05d683
++       `Universe.ClassInfo#members` 中的一个条目。
++       `#tpe` 是成员的声明类型（对于方法，是由 `Universe.methodType` 构建的、其子句所表示的方法类型），`#address` 可在类的 `Scope` 中找到声明它的树。
++       对于从 Java 类文件读取的成员，`#erased` 是其描述符本身就是的擦除后签名，`#address` 是 `-1`；`Erasure#signature(owner, member)` 使用存在的那一个。
++   entry #name   成员的名称，按 `Name#spelled` 的写法
++   entry #kind   `Val`、`Def`、`Type` 或 `Class`
++   entry #tpe   声明类型：对于方法是方法类型，对于类型成员是别名或界限
++   entry #flags   成员的修饰符标志
++   entry #address   类作用域中声明它的树的地址，对于 Java 成员为 `-1`
++   entry #erased   Java 成员的擦除后签名，从其描述符读出；对于 Scala 成员为 `Unset`
+
+@ 0 1 0 0e74b22ba7a440540f65daac7b632484
++ entry .Resolution   类型引用最终所指的东西：类、别名、抽象类型、项、包
+
+% 1 1 0 0ff225f13184cfe20559176d021d9582
+
+@ 0 10 0 1f096ef508b394cb0540519948d805a0
++       `Universe#resolve` 返回它。
++       `Class(info, arguments, scope)` 是一个类，以及它被应用的类型参数（如果有）。
++       `Alias(arity, apply, scope, body, opaque)` 是一个类型别名，无论是否不透明：`apply` 把参数代入它的右侧，`body` 是声明时的右侧（带参数时是一个 lambda），`opaque` 说明它是否是不透明类型，擦除会看穿不透明类型，而解析不会。
++       `Abstract(high, scope)` 是抽象类型或类型参数，只通过其上界可知；`Term(tpe, scope)` 是一个项，通过其声明类型可知；`Package(path)` 是一个包；`Unknown(reason)` 是 universe 无法追踪的引用，附带文字说明的原因。
++       每一种都携带其结果书写时所在的作用域，以便进一步追踪。
+
+@ 0 1 0 0866135f180d4c10021554dd1341fec0
++ entry .Universe   一个模块的 TASTy 能够到达的类，惰性加载，以及针对它们的语义问题
+
+% 1 1 0 14fcb8c1bf16817b146e30bd3059438c
+
+@ 0 8 0 12fe429ddd5963b108af74c14f00156f
++       `Universe` 建立在一个 `Source` 之上，按需从中加载：第一次请求某个路径时加载文件的 `Scope`，第一次指名某个类时加载 `ClassInfo`，取自它的 TASTy 或类文件中最先存在的那一个。
++       基于这些，它回答一个文件的字节无法回答的问题：一个名称指向什么（`#resolve`），哪个类声明了被选择的成员、一个重载引用指的是哪一个备选（`#memberIn`、`#termsIn`、`#choose`），一个类如何线性化（`#linearization`、`#derivesFrom`），以及一个类把哪些类型参数交给它的基类（`#baseArguments`）。
++       除了代入别名的参数之外，这里不做任何子类型判断、推断或代入：擦除和成员查找不需要更多。
+
+@ 0 4 0 1c825262ed9b0df9060c11e207976c65
++       它以 `Universe` 的名称导出到总括包，因为 anthology 的编译器 universe 现在是 `Toolchain.Universe`；它持有它读取的 `Source` 和它构建的 `ClassInfo`。
++       伴生对象持有基于 `Pickled` 模型、不需要类路径的纯函数：`typeOf`、`termType`、`methodType`、`substitute`、`transform`、`index`、`encode`、`classRef`、`className` 等。
+
+@ 0 1 0 136b3077147fa18c059bb9429c6dc731
++       打开一个类文件的 TASTy，列出它的定义，并擦除一个成员的类型：
+
+% 2 1 0 13552761e55762b9106162695ada2d8a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 00fe80f73680e7641d8fd0582fd9fda8
++         label 打开一个文件并反序列化
+
+% 1 1 0 0b7235b2829ff32c1f61bc9aa488673a
+
+% 2 1 0 0653fbd2cf1fe73c166ecfaaa003882c
+
+% 3 1 0 06ad98e44bfc6fd800ab68bfd35c4e80
+
+% 4 1 0 144c5db268722717194edd18af3ba517
+
+% 6 1 0 01611198d76928af06172d5c1893b833
+
+% 0 1 0 107750e37eaa78f3053827f15bfa16d3
+
+% 1 1 0 1d633b5d9b41af9010bd6a03e83d108e
+
+@ 0 1 0 001dc069ed247aee1e37348078e151fa
++         label 把它索引为作用域并列出其定义
+
+% 1 1 0 1937c997e1aae26f1a694a6904988583
+
+% 2 1 0 1abbee9a30776c5411bac1320f601221
+
+% 3 1 0 1c2f4ac28b920e1a069f4ac53e349de4
+
+% 4 1 0 1976bdeb4dcb09c81bc7933e89a5226b
+
+% 6 1 0 0cc9642ccd104364129bbceaeb193fc4
+
+% 0 1 0 0da542ba6012e16f1b5fce8c0a170301
+
+% 0 1 0 16bc81f8dabb2dbe1b8ddf354ab9a31b
+
+% 1 1 0 05b4ee3aa999cb0e10184c776b0cb9ad
+
+@ 0 1 0 0b41ec83db43ebe5083a167ed9cde5f0
++         label 在类路径之上构建一个 universe
+
+% 1 1 0 154447e4ef67daee1fb1b36c755e21e6
+
+% 2 1 0 138a4e3dffff82631ffc547c75c8b489
+
+% 3 1 0 1daafb0129fa244f17fd7ade506c367d
+
+% 4 1 0 03b069c7a5b87c571bdfc23c8865f6fd
+
+% 6 1 0 1c6492c41a2d01d904ea56f54a28af41
+
+% 7 1 0 0fc15f3c424014a31e91f9642fcaf34f
+
+% 8 1 0 076c9ff23cc37300058fec38fded550e
+
+% 10 1 0 1d955cd6eaea277203e7750d2101dd73
+
+% 0 1 0 0d88321f36bae3161f1aae8a1205f91b
+
+% 0 1 0 09187230dcefad0c0ba21ec32c062f8b
+
+% 1 1 0 0b5e2377f46b85d71d51d40c41cac4e8
+
+@ 0 1 0 1279141e770b3a030a601b6d7fe33704
++         label 查找一个成员并擦除其签名
+
+% 1 1 0 1e28a2bbaa2d000811eb9b0784a48ff5
+
+% 2 1 0 1714827a3253e976067a8602f6f251b6
+
+% 3 1 0 1946dc9c2029c28b183bd0ab2d549cff
+
+% 4 1 0 15b145089a0a7e7d03036986958baec0
+
+% 6 1 0 0d78ed708cd33dff19d0314ec3f52de4
+
+% 7 1 0 0fce6e1b6c2939bb0cf5b725545e4433
+
+% 8 1 0 0b209dd7c82b6f2e047cabc0ad53e910
+
+% 10 1 0 14b955c4de62c75d1c9e05ef0abc2e42
+
+% 0 1 0 029ad34bc3a4c5a20284872a58ee9087
+
+% 0 1 0 04bfc6bc4d5adb8d01c06f28e2872d21
+
+% 0 1 0 1c34b173ada5cd7c18072bdee4eec19e
+
+% 1 1 0 058525c9535542f5125633786086a432
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 19b333f68fc6bb1f12247ef363181d4e
++       universe 缓存它加载的一切，并且不是线程安全的：每次读取构建一个。
++       没有任何来源提供的名称会使 `#classOf` 返回 `Unset`，而不是错误；只有在没有它就无法写出签名的地方，`Erasure` 才把它变成 `Erasure.Unresolved`。
+
+% 0 1 0 00bd8d74798b700a100d042405765707
+
+% 1 1 0 09bf747c4e0c2b6313b96655534551ce
+
+% 0 1 0 08167c239baa6b020cfc798d8f88c642
+
+% 0 1 0 08765ebde290b9261ec33467cf58a3e2
+
+% 0 1 0 00e2eb93efe7cc73162ab5026aa0c841
+
+@ 0 141 0 116492030910c1a61ddbdd73c90fe1d5
++   entry .marker   `scala.annotation.internal` 中的标记注解，作为树
++       `Universe.marker(t"Repeated")` 是 `scala.annotation.internal` 中所指名类的 `New`，编译器把它附加到参数的类型上，以表示方法类型无法用其他方式表达的修饰符。
++   entry .synthetic   编译器定义的、背后没有类文件或 TASTy 的类
++       `scala.Any`（带有编译器赋予它的成员）、`scala.AnyKind`、`scala.Matchable`、`scala.Nothing`、`scala.Null`、`scala.Singleton`、重复参数标记 `scala.<repeated>`、`scala.&` 和 `scala.|`，以及编译器按元数构造的函数类（超过 22 的 `FunctionN` 和每个 `ContextFunctionN`），每一个都作为 `ClassInfo`；对其他任何名称为 `Unset`。
++       `Universe#classOf` 在查询类路径之前先查询它。
++   entry .impureFunction   作为别名的 `scala.ImpureFunctionN` 和 `scala.ImpureContextFunctionN`
++       编译器自己的别名，不在任何文件中：`[-T1, …, -TN, +R] =>> FunctionN[T1, …, TN, R]^`，以一个主体为该 lambda 的 `Resolution.Alias` 给出；对其他任何名称为 `Unset`。
++   entry .anyMembers   编译器赋予 `Any` 的成员，及其签名
++       `==`、`!=`、`equals`、`##`、`hashCode`、`toString`、`getClass`、`isInstanceOf`、`asInstanceOf` 及其用 `$` 包装的形式，每一个都是一个 `Member`，其 `erased` 签名是编译器所指定的签名（`getClass` 和 `isInstanceOf` 接收一个类型参数）。
++   entry .objectMembers   编译器在 `java.lang.Object` 的成员之外赋予 `AnyRef` 的成员
++       `eq`、`ne`、`synchronized` 和 `getClass`，在加载 `java.lang.Object` 时添加到它上面。
++   entry .functionArity   编译器合成的函数类的元数，或 `-1`
++       超过已实现的 22 的 `scala.FunctionN`，以及任何 `scala.ContextFunctionN`、`scala.ImpureFunctionN` 或 `scala.ImpureContextFunctionN`。
++   entry .encode   类名在类文件或 `.tasty` 文件名中的写法
++       运算符字符变为它们的 `NameTransformer` 名称（`*:` 为 `$times$colon`），点号（顶层定义载体的名称中可能包含）变为 `$u002E`。
++   entry .decode   `.encode` 的逆操作，用于从文件名读取的类名
++   entry .qualify   包成员的全名：`pkg.name`，在空包或根包中则只有 `name`
++   entry .nth   列表中某个索引处的元素，索引超出范围时为 `Unset`
++   entry .pin   离开其读取来源文件的类型，以 `Type.Foreign` 的形式固定到该文件
++       代入另一个文件的别名或值类中的参数，会继续在它们自己的作用域中解析其局部引用；没有可固定的作用域时，类型按原样返回。
++   entry .primitives   九个原始值类，从 `scala.Unit` 到 `scala.Double`，按全名
++   entry .classRef   按完全限定名称对一个类的引用，作为 `Type`
++       `Universe.classRef(t"scala.Option")` 是 `TypeRef(t"Option", TermRefPkg(t"scala"))`；没有包的名称指向 `<empty>`。
++       Java 嵌套类的二进制 `$` 在其名称中读作 `.`。
++   entry .className   类类型所指的完全限定名称，在仅凭类型就能读出时
++       穿过包前缀、`this` 前缀和稳定项前缀追踪 `TypeRefPkg`、`TypeRef` 和 `TypeRefIn`，并把 `Applied` 和 `Annotated` 追踪到其底层类型；对于名称需要解析的类型（局部引用、类型参数、别名）为 `Unset`。
++   entry .upper   界限类型所施加的上界，不是界限时为类型本身
++   entry .typeOf   类型树所表示的类型
++       `IdentTpt` 和 `Path` 携带自己的类型；`SelectTpt` 变为相对于其限定符的 `termType` 的 `TypeRef`；`SingletonTpt` 变为其引用的类型；`AppliedTpt` 变为 `Applied`（当构造器是写成类型树的 `scala.&` 或 `scala.|` 时，变为 `And`/`Or`）；`RefinedTpt`、`LambdaTpt`、`BoundsTpt`、`AnnotatedTpt`、`MatchTpt` 和 `ByNameTpt` 变为它们对应的类型，lambda 的参数按地址绑定，作为 `Type.Abstraction`。
++   entry .termType   用作类型前缀的项树的类型，或父构造器调用的类型
++       `Ident` 携带自己的类型；`Select` 和 `SelectIn` 变为相对于其限定符的项引用；`QualifiedThis` 变为 `This`；`New` 变为它的类型；`Apply` 变为应用其函数类型的结果，或者在该类型尚不可得时变为稍后解析的 `AppliedTerms`；`Block` 变为其表达式的类型；其他任何东西变为 `scala.Nothing`。
++   entry .memberInfo   编译器所保存的类型成员信息：别名是上下界重合的界限
++   entry .annotationType   注解树所构造的类类型
++       穿过注解构造器调用中的 `Apply`、`TypeApply`、`<init>` 的 `Select` 和 `New`，找到被注解的类，并应用任何显式的类型参数。
++   entry .parentType   父类子句所指的类类型：其构造器调用（如果有）之下的类型
++   entry .methodType   定义的子句和结果所表示的方法类型
++       `Universe.methodType(address, clauses, returns)` 把 `DefDef` 的子句折叠为嵌套的 `Type.Poly` 和 `Type.Method` 类型，以定义自身的地址作为每个子句的绑定者，因此其中的 `Type.Param` 引用通过 `Universe#clauseAddresses` 解析。
++       方法的 `Member#tpe` 就是这样构建的。
++   entry .substitute   在整个类型中，把某个绑定者处的 lambda 的参数替换为实参
++   entry .replace   在整个类型中，把按地址的局部引用替换为类型
++       替换指向给定地址的 `TypeRefDirect`、`TypeRefLocal`、`TermRefDirect` 和 `TermRefLocal` 引用：类型中的类型参数，或依赖方法类型提到其单例类型的项参数。
++   entry .transform   自底向上重写偏函数有定义的每个子类型
++   entry .mapChildren   对类型的每个直接组成类型应用一个函数，重新构建该类型
++   entry .index   把反序列化后的文件索引为 `Scope`
++       遍历文件的树，按地址登记每个定义，名称为编译器的 `fullName` 会给出的完全限定名称：类或包的成员以其限定，方法的参数和局部类型则为每个外围项加上编译器的 `_$` 填充（`pkg.Class._$param`）。
++       项主体内部的定义被记录为局部的；局部类型也保留它的限定名称，因为内联主体通过它来引用该类型。
++       `Universe#scope` 对在类路径上找到的文件执行这一操作。
++   entry .children   一棵树的直接子树
++   entry #erasure   基于此 universe 的 `Erasure`，只创建一次
++   entry #scope   某个路径处的 `.tasty` 文件的作用域，只加载和索引一次，或 `Unset`
++   entry #enter   直接提供而非在类路径上找到的文件，以某个路径登记
++       例如被原子化的模块：它的类变得和其他类一样可以解析。
++       返回为它创建的 `Scope`。
++   entry #classOf   全名所指的类，或类型所引用的类
++       `classOf(fullName)` 从该类的合成定义、TASTy 或类文件中最先存在的那一个给出 `ClassInfo`，并加以缓存。
++       嵌套类位于其顶层类的 TASTy 中，而类的简单名称本身可能包含点号（顶层定义载体以其源文件命名），因此会尝试在包段、顶层类和嵌套类之间拆分名称的每一种方式，最长的包优先；模块类 `X$` 在 `X.tasty` 中找到。
++       `classOf(tpe, scope)` 是类型穿过别名、界限和单例所引用的类；两者对于找不到的东西都给出 `Unset`。
++   entry #resolve   类型指向什么，在一个作用域中追踪局部引用
++       这是核心问题。
++       包引用解析为类或 `Package`；命名引用解析为其前缀的成员，沿其类的线性化以及交集类型的各部分搜索；局部引用解析为其地址处的定义；应用的别名解析为其展开所解析到的东西，实参固定到书写它们的作用域；`Param` 解析为其绑定者的界限或参数；方法类型解析为其结果；字面量解析为其常量的类。
++       无法追踪的东西是一个附带文字说明原因的 `Resolution.Unknown`，绝不会是异常。
++   entry #parts   作为交集或并集的前缀的两个部分，或 `Unset`
++       写作 `And`/`Or`，或写作 `scala.&` 或 `scala.|`（或它们之一的别名）的应用，其成员就是各部分的成员，由第一个具有该成员的部分提供。
++   entry #clauseAddresses   定义的某个子句的参数地址，按子句的名称
++       `methodType` 的 `Type.Param(binder, number)` 正是借此与它所代表的参数定义关联起来。
++       当绑定者不属于某个定义时（例如属于合成成员），它为空。
++   entry #applicationType   方法引用的应用的类型，已代入实参
++       多态方法的类型应用，或方法的项应用，给出方法的结果，其中参数被实参取代（对于定义的参数按地址，对于合成成员的参数按位置），依赖结果正是在这里开始指向实参。
++       不是应用的引用解析为其声明类型。
++       返回该类型及其书写时所在的作用域。
++   entry #expansionOf   别名引用或应用的展开，以及其书写时所在的作用域，或 `Unset`
++   entry #choose   在沿类的线性化找到的某个名称的成员中，引用所表示的那一个
++       如果引用带签名，就是其签名与引用的 `Name#signature` 所携带的签名相同的那一个；对重载名称的不带签名引用表示无参数的备选，因为序列化器会为其他每种方法加上签名。
++       具体成员优先于抽象的重新声明，与编译器的 `findMember` 合并它们的方式相同。
++   entry #baseArguments   应用于实参的类在实例化某个基类时所用的类型参数
++       对于该类本身，就是实参本身；否则是通向该基类的父类子句的类型参数，其中代入了该类自己的参数；当该类不派生自该基类时为 `Unset`。
++   entry #packageObjectMember   包的包对象或其某个顶层定义载体的成员
++       相对于包前缀序列化的引用在这里找到包级别的类型别名或定义：首先是 `package$` 对象，然后是 `Source` 在该包目录中列出的每个 `<file>$package` 载体。
++   entry #owner   前缀所表示的类或包：包路径、类的 `this`、项的类
++   entry #selfType   类声明的自身类型（如果有）
++   entry #memberIn   具有某个名称和种类的成员，位于一个类中，或位于其线性化中第一个声明了它的类中
++       返回该成员及其声明类。
++       首先搜索该类自己的声明，然后按顺序搜索它的线性化。
++   entry #termsIn   沿类的线性化找到的某个名称的所有项成员，声明类在前
++   entry #linearization   按全名表示的类的线性化：它自己，然后是它的父类的线性化，从最后一个到第一个
++       `L(C) = C, L(Pn) +: … +: L(P1)`，对出现不止一次的类保留最后一次出现，因此超类的线性化是一个后缀。
++       在其自身线性化正在计算时被请求的类只贡献它自己。
++   entry #derivesFrom   一个类的线性化中是否有给定全名的基类
+
+@ 0 1 0 1b7f2d30becc687b0c5b4628197da01d
++   entry .Source   universe 查找其类的地方：按路径读取条目，列出目录
+
+% 1 1 0 0751e5a04d71f0d40437a1df4f04555c
+
+@ 0 8 0 09079fe43a5ce50814bece87c414e95a
++         一个被归结为两个问题的类路径，因此同一个语义层可以在任何能取得字节的地方运行：JVM 上的目录和 jar，浏览器中的打包资源，原生二进制程序中链接进来的归档。
++         路径以斜杠分隔并且是相对路径，与类文件和 `.tasty` 文件的命名方式一致：`scala/collection/immutable/List.tasty`。
++         `#read` 给出一个条目的字节或 `Unset`；`#list` 给出一个目录中的简单名称，`Universe` 用它来找到包的顶层定义载体（`<file>$package.tasty` 文件），在无法列出目录的地方它可以为空，代价是包级别的定义只能通过包对象解析。
+
+@ 0 3 0 1d883330f90060be04364a1faafe41b2
++         `Source(first, second, …)` 组合多个来源，由第一个拥有该条目的来源作答。
++         `Degustation.atomize` 以一个来源的形式接收依赖类路径，`Inspection` 在目录、jar 和 JDK 的类之上构建一个来源。
+
+% 2 1 0 0e103675337a10be02d104f31276fc42
+
+% 3 1 0 049231c271eaa74916cd3ae8fb882c74
+
+% 4 1 0 00a54044369ba83f182f3ac9eb653572
+
+% 6 1 0 0a0f5e2d1fd924d30573226929f7c34d
+
+% 7 1 0 107408cf8b430cfa08f2a035031fdf89
+
+% 8 1 0 17187b1c10ebe9c119cebb869f80ede1
+
+% 0 1 0 1bbc4e0f98668eaf17b0af773af9e22b
+
+% 1 1 0 01969691d7a2ebff164a753b09c09ead
+
+% 2 1 0 1619e42356792ce80a4d853742316848
+
+% 0 1 0 171bb667ecc2b8fa14f765de81e8173f
+
+@ 0 6 0 16a16e4fac6a021a177e166c3fc2a129
++     entry .apply   组合多个来源：由第一个拥有该条目的来源作答
++         `read` 返回第一个存在的来源答案；`list` 是每个来源列表的并集，没有重复项。
++     entry #read   某个以斜杠分隔的相对路径处的条目字节，或 `Unset`
++     entry #list   直接位于某个目录中的条目的简单名称（根目录为 `t""`）
++   entry .ClassInfo   universe 所了解的类，来自其 TASTy 或类文件
+
+% 1 1 0 1454fce663cd263c1e69b472f7fd899f
+
+@ 0 6 0 1b5a3731f5081e731111190ea80afaa9
++         `Universe#classOf(fullName)` 给出它。
++         它携带类的 `#fullName`、`#flags`、`#typeParams`（名称和界限）以及类自身的类型用来指向它们的 `#typeParamAddresses`、作为类型的 `#parents`、`#members`、扩展 `AnyVal` 的类的底层类型 `#valueParam`、读取它的文件的 `#scope`（对于 Java 类或合成类为 `Unset`）、它是否是 `#java`，以及它的定义在其作用域中的 `#address`（没有 TASTy 时为 `-1`）。
+
+@ 0 5 0 044dd544d4c6fd9f177479bdc11794c3
++         Java 类的成员来自其类文件的描述符，并在 `java.lang.Object` 上添加编译器赋予 `Any` 和 `AnyRef` 的成员，在 `java.lang.String` 上添加编译器赋予它的 `+`；它的接口就是它的父类，没有超类的 Java 接口以 `scala.Any` 为父类，因此 Java 的通用特质会像编译器那样被对待。
+
+% 2 1 0 0020b6b2bdec58aa19c25a6540446963
+
+% 3 1 0 145eaf54088e4070115a7f124372a61c
+
+% 4 1 0 14f8e3a187692bef023bce022cfff24d
+
+% 6 1 0 1eca722281b5241b189a2083f4c27c26
+
+% 7 1 0 048f3e7a0d7fb89f1fe61ead8ec35ae3
+
+% 8 1 0 13243128db2445dc147f3948c9c8067d
+
+% 0 1 0 0930e26d537776fa02e908ad9cad22c9
+
+% 0 1 0 065854090bf7a1dd0e6ffac951061b79
+
+% 0 1 0 16ce1c8b92261a5d0c3986cbfe3e887f
+
+% 1 1 0 15114cb8840388d8098e66d99f8510c8
+
+% 2 1 0 0b8613f3a9ad0d2d0da5ddb0de70c759
+
+% 0 1 0 14096790de275dac117c4e8e726c7b27
+
+@ 0 17 0 03d9355613d531130dd84031569235eb
++     entry #fullName   类的完全限定名称，嵌套类的名称用 `.` 连接到其所有者的名称
++     entry #flags   类的修饰符标志：`Trait`、`Object`、`Abstract`、`Final`、`Sealed`、`Case`……
++     entry #typeParams   每个类型参数的名称和界限，按顺序
++     entry #typeParamAddresses   类型参数定义的地址，类自身的类型用它们来指向类型参数
++     entry #parents   父类型，与模板的父类子句所指的一致
++     entry #members   类自己的声明，作为 `Member`；不包括继承来的声明
++     entry #valueParam   扩展 `AnyVal` 的类的底层类型，或 `Unset`
++     entry #scope   读取该类的文件的作用域；对于 Java 类或合成类为 `Unset`
++     entry #java   该类是否是从类文件而不是 TASTy 读取的
++     entry #address   类的定义在其作用域中的地址；没有 TASTy 的类为 `-1`
++     entry #pkg   类所在的包：其顶层类的所有者
++     entry #isTrait   是否设置了 `Trait` 标志；Java 接口也算
++     entry #isObject   是否设置了 `Object` 标志：模块类
++     entry #isValueClass   编译器是否把该类视为值类
++         扩展 `AnyVal` 且不是原始类型之一（也不是 `AnyVal` 或 `Null` 本身）的类，这是编译器所应用的规则，它决定了该类型的参数是否擦除为其底层类型。
+
+@ 0 1 0 0bb1120c488d7edc115e5707f2221064
++ entry .Erasure   基于 `Pickled` 模型的 Scala 3 类型擦除，以写出擦除后签名所需的程度为限
+
+% 1 1 0 1cba254ff218a29613963acecf9d6975
+
+@ 0 8 0 186a0985b2d64d180216e44b08716499
++       `Erasure` 建立在一个 `Universe` 之上（`universe.erasure` 就是为它创建的那一个），重现编译器的 `TypeErasure` 和 `Signature` 的规则，针对 Scala 3 源码，值类半擦除，采用签名名称模式：编译器写出它存储在 `SIGNED` 名称中的签名时所用的设置。
++       成员的签名是 `(paramSigs)resultSig`，每个部分是一个完全限定的擦除后类名或一个类型参数数量：`Option#map` 的签名是 `(1,scala.Function1)scala.Option`。
++       它们是 `ScalaAtom` 键和 `Name#signature` 中的消歧部分，因此引用的两侧在构造上就一致。
+
+% 2 1 0 10d5fa8357d862d00fd83b9875ed80ba
+
+% 3 1 0 031f75617de418c71140da30cb5ffcc8
+
+% 4 1 0 08082c66113e59a502dcc15481132484
+
+% 0 1 0 01c5618b7c52c475167e972337689c75
+
+% 1 1 0 0f961b8146a87a7803bfe14da812b366
+
+% 2 1 0 10b145180739e93509c388ce160fd80e
+
+% 0 1 0 09fce63d72da8f020a9cff38e0f91029
+
+% 0 1 0 090179fbcd599bc41f30cd1c35a30857
+
+% 0 1 0 1d4f3f30f3d01370024c25bd69478dae
+
+% 0 1 0 02811e70195e7e6f19117edfbe56df60
+
+% 0 1 0 0798e619bcd4fc0d01e2b9e9b5a9e011
+
+% 1 1 0 0e7a236bbdff92d3077aefc5f6c3cd5b
+
+@ 0 10 0 05a986227c781e1d154794eec81c12fc
++       规则简述如下：`Any`、`AnyVal`、`Matchable`、`Singleton` 和 `caps.Pure` 擦除为 `java.lang.Object`；`Tuple` 和 `NonEmptyTuple` 擦除为 `scala.Product`；`Unit` 作为参数时擦除为 `scala.runtime.BoxedUnit`，作为结果时为 `scala.Unit`；值类作为参数时擦除为其底层类型，作为数组元素时为其自身；别名或不透明类型擦除为其右侧；抽象类型或类型参数擦除为其上界；传名参数擦除为 `scala.Function0`；多态函数类型擦除为对应元数的 `FunctionN`；`*:` 元组擦除为 `TupleN` 或 `TupleXXL`；`Array[T]` 擦除为 `T` 的擦除结果的数组，当 `T` 是泛型时擦除为 `Object`；交集擦除为其各部分擦除后的最大下界（丢弃纯的能力部分）；并集擦除为擦除后的最小上界；匹配类型擦除为其归约结果或其界限。
+
+@ 0 3 0 1932fa5f290f0be107f3637e1b236de2
++       擦除需要 universe 找不到的类的类型会抛出 `Erasure.Unresolved`，`Inspection.atomize` 把它报告为带有 `Reason.Unencodable` 的 `Inspection.Error`。
+
+% 1 1 0 05b1b14ab36a5d2f160be51ccfe81a48
+
+% 1 1 0 1d6992aedce694561188d3cc998a0e69
+
+@ 0 3 0 1bbf7080cdc3a87619da4a3ea685e3a9
++   entry .Erased   擦除后的类型：按全名对类的引用，或这种引用的数组
++       `Ref(name)` 或 `Array(element)`；`Erasure#render` 把它们写成 `name` 和 `name[]`。
++   entry .Unresolved   当类型的擦除需要 universe 找不到的类时抛出
+
+% 1 1 0 1edcb5395d4ad70c0d84c6ca286678e8
+
+@ 0 31 0 1519d647e186384912d250d81d94de65
++         一个携带 `#detail` 的 `RuntimeException`：universe 给出的原因，或被当作类型使用的包。
++         只有在类路径缺少模块所引用的某些东西时擦除才会失败，因此交给 `Degustation.atomize` 或 `Inspection.atomize` 的依赖类路径必须包含文件所引用的一切，包括 Scala 库和 JDK 的类。
++     entry #detail   该类型无法解析的原因
++   entry #signature   定义的擦除后签名，或通过查找找到的成员的擦除后签名
++       `signature(tree, scope, owner)` 是一个 `DefDef` 的签名：每个类型子句为其参数数量，每个项参数为其擦除后名称（`erased` 参数或类型为 `erased class` 的参数不出现在其中），以及结果的擦除后名称；构造器的结果是它自己的类，按该类的方式擦除。
++       任何不是方法的东西（值、无参数方法）具有编译器赋予非方法的签名 `()`。
++       `signature(owner, member)` 是通过查找得到的成员签名：Java 成员的签名从其描述符读出，Scala 成员的签名从其类所在文件中的声明得出。
++   entry #signatureOf   序列化的方法类型（例如某个细化的方法）的签名，按声明签名的方式书写
++   entry #javaSignature   Java 成员根据其描述符类型得到的签名，这些类型已经是擦除后的
++   entry #sigName   类型作为参数时的擦除后名称：`render(erase(tpe, scope, vc = true))`
++   entry #resultSigName   类型作为结果时的擦除后名称：与作为参数时相同，只是 `Unit` 保持为 `scala.Unit`
++   entry #render   按签名的写法写出的 `Erased`：类的全名，每一层数组加一个 `[]`
++   entry #erase   类型在某个作用域中的擦除结果 |T|，值类可以半擦除也可以不半擦除
++       `vc` 是编译器的 `semiEraseVCs`：`true` 把值类擦除为其底层类型，与参数的擦除方式相同；`false` 保持其自身，与数组元素或另一个值类的底层类型的处理方式相同。
++       对于 universe 无法追踪的类型，抛出 `Erasure.Unresolved`。
++   entry #erasedGlb   擦除后的最大下界：按编译器的全序选出其两个参数之一
++       数组先于非数组，原始类型先于其他类型，类先于特质，子类先于超类，然后按名称。
++       交集就是这样擦除的。
++   entry #erasedLub   擦除后的最小上界，即并集的擦除方式
++       `Nothing` 在任何类型面前都会消失，`Null` 在派生自 `Object` 的类型面前会消失（通用特质不派生自它）；数组按元素合并；两个类在最后一个最小公共基类处合并，类优先于特质，否则在 `java.lang.Object` 处合并。
+
+@ 0 1 0 1caa6432ec4f87a910841d9ceeed7cf6
++ entry .Classfile   Java 类文件中擦除和成员查找所需要的那一小部分
+
+% 1 1 0 0d4b245dcdd71ff21bd8253758b21788
+
+@ 0 6 0 03178961d861173e0fb5c178b2e4ee0f
++       读取类的名称、种类和超类型，以及其成员的名称和描述符；对于 Java 成员，描述符本身*就是*它擦除后的签名。
++       不读取任何泛型信息：Java 类型参数擦除为它的上界，而描述符会写出这个上界；Scala 对 Java 类的引用擦除后就是该类本身。
++       对于找到了 `.class` 文件却没有 `.tasty` 文件的每个类，`Universe` 都会读取一个 `Classfile`，JDK 的类和任何 Java 库的类正是这样加入 universe 的。
+
+@ 0 2 0 1de48ebb14adc6d019b066fd7f869ac7
++       它在总括包中被标为 `@unexported`，因为在那里 `Classfile` 是 mandible 的名称，所以它写作 `degustation.Classfile`。
+
+% 2 1 0 0ed96fb8d57bf33919dbabb3c19541b3
+
+% 3 1 0 1b772ab0f899001b07ce5cf415afa544
+
+% 4 1 0 03aaf60eed83b6df1576d689b9deacf4
+
+% 5 1 0 03c2fc3ee7370d8a06f502d281f91e84
+
+% 0 1 0 01048e74ce18961e162e8ea09a213ba3
+
+% 0 1 0 08fc9cca8ee86bdf0e6f1333e2fcea72
+
+% 0 1 0 09f0072768ed79311e1346bb467d0915
+
+% 1 1 0 07d67b3eba06ed370b97474c90acadaa
+
+% 1 1 0 023ff1c3638699f702a485fd3c32233f
+
+@ 0 6 0 17c3d71fc52ba33f03cdd12a47ed5266
++   entry .apply   读取类文件的常量池、文件头和成员表；属性被跳过
++       在类自身的属性中，只读取 `InnerClasses`，而且只读取描述该类自身的那一条：它的外围类，以及它在其中是否是静态的。
++       不以类文件魔数开头的字节，或者未知的常量池标签，会抛出 `Classfile.Malformed`。
++   entry .Class   读取到的类：名称、标志、超类型、成员，以及嵌套时的外围类
+
+% 1 1 0 102f71ce0b4c6e8a024a83bc39552026
+
+@ 0 22 0 0b16ec3659cc507a0f77de35b8746705
++         `#name` 是以点分隔的二进制名称；`#superclass` 仅对 `java.lang. Object` 为 `Unset`；`#outer` 和 `#static` 来自 `InnerClasses` 属性，它们告诉 `Universe` 把嵌套类命名在其外部类之下（`Outer.Inner`，静态嵌套类则为 `Outer$.Inner`，Scala 把它视为伴生对象的成员）。
++     entry #name   类的名称，包的各段之间以 `.` 分隔
++     entry #flags   类的访问标志，与类文件中的存储形式一致
++     entry #superclass   超类的名称，对 `java.lang.Object` 则为 `Unset`
++     entry #interfaces   该类实现的接口的名称
++     entry #fields   类的字段
++     entry #methods   类的方法，包括构造器和静态方法
++     entry #outer   外围类的二进制名称，来自 `InnerClasses`，或者为 `Unset`
++     entry #static   嵌套类在其外部类中是否是静态的
++     entry #isInterface   是否设置了 `ACC_INTERFACE` 标志
++   entry .Method   方法的名称、描述符和访问标志
++     entry #name   方法的名称；构造器为 `<init>`
++     entry #descriptor   JVM 描述符，`charAt` 的为 `(I)C`
++     entry #flags   方法的访问标志
++   entry .Field   字段的名称、描述符和访问标志
++     entry #name   字段的名称
++     entry #descriptor   字段类型的 JVM 描述符
++     entry #flags   字段的访问标志
++   entry .Descriptor   以 `Pickled.Type` 表示的描述符中的类型
+
+% 1 1 0 19ff9986c928e7b61aaf926f168bc683
+
+@ 0 8 0 03e727bb381b612c14dfcd9018a93559
++         即对所指定的类的引用，其中基本类型表示为与之对应的 Scala 值类（`I` 是 `scala.Int`，`V` 是 `scala.Unit`），数组表示为 `scala.Array` 的应用。
++     entry .parameters   方法描述符的参数类型
++     entry .result   方法描述符的结果类型
++     entry .field   字段描述符的类型
++   entry .Malformed   对不是类文件的字节，或无法解析的描述符抛出
++     entry #detail   出了什么问题：_not a classfile_、_unknown constant pool tag N_、_bad descriptor …_
+
+@ 0 1 0 1effbf0e9308538f191d9df60f58351e
++ entry .Degustation   原子化器：把一个模块的 TASTy 文件切分为 LIRA 的 Scala 规程中的 `ScalaAtom`
+
+% 1 1 0 19afe32dfc35b3930dc518b6cf43e6e4
+
+@ 0 10 0 1ef61b81f852a9a10bf09d0bc980ce5e
++       `Degustation.atomize` 在一个模块的文件的 `Pickled` 模型上应用 Scala 规程（`tasty/2`）的原子化规则，由一个 `Universe` 回答字节无法回答的两个问题：一个引用指向什么，以及一个声明的参数擦除成什么。
++       折叠原则支配每一个决定：添加后不会破坏使用者的声明（类、方法、值、类型成员）单独成为一个原子，以其完全限定名和擦除后的签名为键；添加后*可能*破坏使用者的片段（开放特质的抽象成员、密封类型的子类型、参数）则折叠进其外围原子的值中，因此一个库的两个版本之间的整个兼容性检查始终是对键和值的集合运算。
+
+@ 0 8 0 065da37fbddab03d19e1471babac7f4b
++       规范化是结构性的，从不经过打印：符号表示为完全限定名，类型表示为对类型构造器的标签-长度-值折叠，类型 lambda 的参数表示为 de Bruijn 索引，成员按键的排序顺序排列。
++       位置、工具版本和共享从不进入编码，因此重新编译一个模块，或者重新排列它的声明，产生的原子逐字节相同；添加一个具体方法不会改变其他任何原子；更改一个内联主体只改变该主体的原子。
++       编码器词汇之外的构造是一个硬错误 `Degustation.Unencodable`，因此工具链中的词汇漂移会被检测出来，而不是被悄无声息地吸收。
+
+% 2 1 0 1089759524816ff60770357b2ebce4a4
+
+% 3 1 0 00f77480ffa220ec191037d461f721b4
+
+% 4 1 0 09c20fef396b84730b35cc478a770160
+
+% 5 1 0 15ad87fb9325a53f1ba0dd68443732b0
+
+% 0 1 0 19aadc43dc01e42f06e2d79b7940e9bf
+
+% 1 1 0 131e0df9b2059ad11926e28747eadac7
+
+% 2 1 0 1f90b3105b022c3c1104bfd06897c6bb
+
+% 0 1 0 0a590d29fd28a7821975dde1f98d3e29
+
+% 0 1 0 18e10f7efcc5863c16a443e5dcc11dc7
+
+% 0 1 0 0de27056d0766494118d89ae1864e54c
+
+% 0 1 0 0e658e4b43486cd40af39cfbf77baada
+
+% 1 1 0 161a5218e657f4f51495d68f02af2ab1
+
+@ 0 5 0 1b514dae08ca7c9b139fcbdf63cf0bb9
++       私有成员不属于 API，不产生原子；`private[pkg]` 成员保守地视为 API；导出转发器的原子化方式与其手写的等价物完全相同；内联定义或宏定义产生一个*可替换*原子，其键带有 `[inline]` 后缀，其引用指向其主体所拼接的东西。
++       `Inspection.atomize` 就是作用于文件和磁盘上类路径的这一操作。
+
+% 1 1 0 054348f4e06316c60aef77c1a1c17e02
+
+% 0 1 0 15f4a3dc560064d002b5f9bca4453679
+
+% 1 1 0 120b8d22f90cd8ae1126a748ba99d829
+
+@ 0 10 0 09348d82b1716edf0f4031ad91f88c32
++   entry .atomize   针对依赖类路径原子化一个模块的 `.tasty` 文件，每个文件以其相对于类路径的路径命名
++       文件是 `(path, bytes)` 对，路径相对于类路径，与 `.tasty` 文件的命名方式一致（`fixture/Overloads.tasty`），它们在依赖之前进入 universe，因此模块自身的类优先解析。
++       `dependencies` 必须包含文件所引用的一切，包括 Scala 库和 JDK 的类；无法解析的引用会在某个签名需要它的地方抛出 `Erasure.Unresolved`。
++       从内联主体中收集的引用在最后分类：与模块中某个原子匹配的是 `ScalaReference.Own`，其余的是 `ScalaReference.Foreign`，留待组装时针对依赖解析。
++   entry .Unencodable   对编码器词汇之外的构造抛出
+
+% 1 1 0 05fd104f3f63e201113cbd7ebb1cf059
+
+@ 0 6 0 00d25997f4db1a380b0a7aebb5b846ad
++         一个 `RuntimeException`，携带无法编码的 `#construct`。
++         它意味着遇到了一种规程没有为其定义规范编码的 TASTy 形式，也是词汇需要扩展的信号；`Inspection.atomize` 把它报告为带有 `Reason.Unencodable` 的 `Inspection.Error`，当该构造是被产生了两次的键时，则报告为带有 `Reason.DuplicateKey` 的 `Inspection.Error`。
++     entry #construct   以文字描述的该构造
+
+@ 0 1 0 187e2b6a97b5fc770dc50f9c8bf9ae59
++ entry .ScalaAtom   Scala 规程中的一个原子，在哈希之前：键、类别、规范编码和引用
+
+% 1 1 0 18655f405cb024dc08e8c9a3e2bfce37
+
+@ 0 8 0 10c73db264261f6d1a3c1351fb81a035
++       LIRA 兼容性检查的单位。
++       `#key` 是稳定的键：定义的完全限定名，对于方法还有它擦除后的签名（`fixture.Overloads. f(scala.Int)scala.Int`），对于可替换原子还有 `[inline]` 后缀。
++       `#replaceable` 表示该原子是否是内联主体或宏主体，使用者会复制这样的主体，因此按值依赖它，而不是链接到一个刚性的声明。
++       `#encoding` 是规范编码，其哈希就是原子的值；`#references` 是从可替换主体中收集的符号引用，对于刚性原子为空。
+
+% 2 1 0 05b3015c2f2609881a1e201257026b56
+
+% 3 1 0 10067fa03e6991cb01dd99b0665e3695
+
+% 0 1 0 12b67dba1554ec480041613270691c2f
+
+% 0 1 0 192de90507f432d113fb3768796871f6
+
+% 0 1 0 02fb4c254b5334cd0b5b4ea50ac25807
+
+% 1 1 0 064d7c6716da0b8a07958eb817a6babe
+
+% 1 1 0 0388175931341b320def7515aa17aace
+
+% 0 1 0 0abdba9a3c59efc31c328197fcfe85a1
+
+@ 0 4 0 1ce776ca3d0ef93c1c68db0777f148cb
++   entry #key   稳定的键：完全限定名，方法还有擦除后的签名，可替换原子还有 `[inline]`
++   entry #replaceable   该原子是否是内联主体或宏主体，而不是刚性的声明
++   entry #encoding   规范编码，其哈希就是原子的值
++   entry #references   可替换主体所做的引用；对于刚性原子为空
+
+@ 0 5 0 0acebc325ac9cf0b16ebf36d764f66b7
++ entry .ScalaReference   来自内联主体的符号引用：指向同一模块的原子，或依赖中的原子
++     `Own(key)` 以键指向同一模块中的一个原子；`Foreign(key)` 指向依赖中的一个原子，在组装时、依赖的原子可用时解析为一个值哈希。
++     `Degustation.atomize` 按键是否属于模块自身的原子，对它收集的每个引用进行分类。
+
+% 2 1 0 13c0fb9a1042deff0e5c6affc48148bf
+
+% 3 1 0 0a46ee34cf00065f174daeb052301c41
+
+% 0 1 0 1d35d8713d0d80d81d8832c8ff9a5f14
+
+% 0 1 0 0689bc266db374d90abb78949b5f0e56
+
+% 0 1 0 0552808d5c9a31661287d9450f38d5f0
+
+% 0 1 0 0307b2adcc7e52770abbfd523629bc22
+
+% 1 1 0 06bc6f0e94d0be18127a066730da6115
+
+@ 0 1 0 006d0ab41503b66e12600d4e2ad9f81b
++ entry .Inspection   针对由目录和 jar 组成的类路径，原子化磁盘上的 `.tasty` 文件
+
+% 1 1 0 1e94c9af6d6da6891cb36a87d040a135
+
+@ 0 5 0 104dc9aac4b6a29805c55748dde4d1af
++       `Degustation.atomize` 面向文件系统的一面，位于 `degustation.core` 中。
++       `Inspection. atomize(tastyFiles, classpath)` 通过作用域中的 galilei `FilesystemBackend on Linux` 读取每个文件和每个类路径目录，通过 zeppelin 读取每个 jar，在它们之上构建一个 `Universe.Source`，然后进行原子化。
++       其中不涉及编译器，因此调用它时，`scala3-compiler` 和 `scala3-tasty-inspector` 都不必在类路径上。
+
+% 2 1 0 045293dea73e47cb1fe293524a754dca
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 0 1 0 12ab46e446da00570ac1c1c46235b922
+
+% 0 1 0 12423dd4e8da88e71515a55a8f008bfc
+
+% 0 1 0 1e6d65891d7fb8ab11ff24123db369d0
+
+% 0 1 0 062a23ff319e2ca1132e469758689f68
+
+% 0 1 0 04b205f46cc25a9711bc3d1b6d1bb444
+
+% 1 1 0 15ae35a219d440e3068564f2e8409e25
+
+@ 0 7 0 0a01a1228b5717211eecaae7d1141caa
++       每个 `Text` 都必须能解析为一个 Linux 绝对路径。
++       每个类路径条目根据磁盘上的实际内容，要么是目录，要么是 jar；类路径必须包含文件所引用的一切，包括 Scala 库。
++       在 JVM 上，JDK 自身的类从正在运行的 JVM 的类加载器中读取；在 Scala Native 上没有可供读取的 JVM，因此类路径上必须有一个包含 JDK 类文件的 jar。
++       位于某个类路径目录中的文件以其相对于该目录的路径命名；不在任何类路径目录中的文件，则按它所声明的包放置，包从文件本身读取。
+
+@ 0 5 0 040c17c8fa31ae5601e2b8b19d7d9641
++       格式错误的路径、无法读取的文件或格式错误的 jar 会抛出带有 `Reason.InspectionFailed` 的 `Inspection.Error`；编码器无法编码的构造会抛出带有 `Reason.Unencodable` 的该错误，被产生两次的键则带有 `Reason.DuplicateKey`。
++       原子就是 `Degustation.atomize` 所产生的那些：重新编译或重新排列声明时逐字节相同，它们实现的规程是 `tasty/2`。
+
+% 1 1 0 0018c4f23cc1a26502f93bd129e0078f
+
+% 1 1 0 00b9a448700e678b150470ebb000db2c
+
+@ 0 6 0 0fb632d13ef7b0d01a7613608253cfb7
++   entry .atomize   针对所指定的类路径条目原子化所指定的 `.tasty` 文件
++       需要一个 `FilesystemBackend on Linux`（在 JVM 上是 `import filesystemBackends.javaBaseFilesystem`，在 Native 上是 `filesystemBackends.scalaNativeFilesystem`）和一个 `Tactic[Inspection.Error]`。
++       jar 是惰性读取的：jar 的中央目录只解析一次，每个条目的字节在其中某个类首次被请求时读取。
++   entry .Error   当 Scala 规程无法应用于这些文件时抛出
+
+% 1 1 0 1c7765a0a3fa69e516bc7caf8044bf31
+
+@ 0 15 0 13988e373a8d60e60ac781f357da2c8b
++         错误 `↯/s.139.1`：_the Scala discipline failed because `reason`_，其中原因是 `Inspection.Error.Reason` 的分支之一：`InspectionFailed(detail)`（原因 1），_the TASTy could not be read: `detail`_，用于格式错误的路径、无法读取的文件、格式错误的 jar 或格式错误的类文件；`Unencodable(construct)`（原因 2），_no canonical encoding is defined for `construct`_，用于编码器没有相应词汇的形式，或其擦除需要类路径中缺少的类的类型；以及 `DuplicateKey(key)`（原因 3），_the key `key` was produced twice_。
++         只由 `Inspection.atomize` 抛出；库的较低层抛出的是 `Degustation.Unencodable`、`Erasure.Unresolved` 和 `Classfile.Malformed`，由 `Inspection` 加以转换。
++     entry .Reason   规程失败的原因：`InspectionFailed`、`Unencodable` 或 `DuplicateKey`
++         每个分支都携带其细节（无法读取的内容的文本、构造或键）以及原因的编号 1 到 3，该编号成为错误的子编号。
++     entry .communicable   把每个 `Reason` 呈现为一条消息
++         通过伴生对象位于隐式作用域中；无需导入任何东西。
++     entry #reason   错误所携带的 `Reason`

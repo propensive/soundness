@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 1b246355a8128b7e045abd8d6c854057
++     entry .BrightWhite   SGR 97
++   entry .background   十六种背景色，SGR 40–47 和 100–107，各自由 SGR 49 重置

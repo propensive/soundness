@@ -1,0 +1,21 @@
+orthant 2 language
+
+% 0 1 0 18dbc0a87686682d084dc7c3b11c14b3
+
+% 4 1 0 15e6a895458bd2d6147acefbbfe52eef
+
+% 0 1 0 01aabb79454b2ebf179843b6a47dda85
+
+% 4 1 0 01433c0f4787890615aaec8a85cd9611
+
+% 0 1 0 1980477a222bcca00bc614d09bd753ae
+
+% 4 1 0 0122d02c7f95aad1136f263bc9575658
+
+@ 0 6 0 1c74390e481d23371a212d68849cc0ca
++     Wymaga polityk `CreateParents` i `OverwritePreexisting` dla danej
++     płaszczyzny (importowanych z `filesystemOptions` po nazwie), `Tactic[Io.Error]`
++     i `Tactic[Tar.Error]`. Tryby są ustawiane przez atrybut `unix:mode` i po cichu
++     pozostawiane jako domyślne dla systemu plików tam, gdzie nie jest on obsługiwany. Aby
++     rozpakować archiwum zbyt duże, by trzymać je jako `Tarfile`, należy iterować
++     `Tarfile.read` lub blok `open[Tar]` i budować `Tarfile` z jednego wpisu naraz.

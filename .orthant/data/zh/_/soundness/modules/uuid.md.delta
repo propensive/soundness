@@ -1,0 +1,212 @@
+orthant 2 language
+
+@ 0 1 0 1ca2aa4a69ea5c811cdb43d6c312cdcb
++ ## UUID
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 0361c650e8e048730e21a0fcbcf68b28
++ [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) 是一种 128 位的标识符，足够唯一，无需协调即可分配。
++ 它以 `Uuid` 值表示。
++ 新的 UUID 可以生成，已知的 UUID 可以写成由编译器检查的字面量，也可以从文本解析，失败时给出带类型的错误。
++ 需要时，它的字节和位都可以获取。
+
+@ 0 1 0 0bf75eecdf0941960674259b18a0686d
++ ### 关于 UUID
+
+@ 0 4 0 1686ec0048fd708f0f5545a346ae6ff8
++ UUID 几乎总是以字符串的形式传递，而字符串并不是它可靠的容身之所。
++ 一个数字写错的字面量，或一个根本不是 UUID 的值，在某处解析它并失败之前，无法与有效的 UUID 区分开来。
++ 类型中没有任何东西把某个特定字符串标记为格式正确的标识符。
+
+@ 0 4 0 0f9446a40ad6ba251be091a59fd31bac
++ `Uuid` 是一个已知格式正确的值。
++ 字面量在[编译时]验证。
++ [运行时]的解析会报告带类型的 `Uuid.Error`，从不返回损坏的值。
++ 无法构造出格式错误的 UUID，是最简单形式的[构造即安全](../../philosophy/safety-by-construction.md)。
+
+@ 0 2 0 0dab7bfd8ab0ef2001c3e80a89f0c88d
++ 一切都来自 `soundness` 包。
++ 第二个导入让示例能打印结果：
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1353f137610bddec0f806bc903166d61
++ 以下各项操作，下文逐一介绍：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 10 0 07e786bb68fed6b81e1e9d339c47717e
++ column  操作
++ column  给出
++ row  `Uuid()`  一个新的随机标识符
++ row  `uuid"…"`  一个字面量标识符，在代码编译时检查
++ row  `Uuid.parse(text)`  该标识符，或抛出的 `Uuid.Error`
++ row  `Uuid.extract(text)`  一个 `Optional` 标识符；`Uuid(id)` 是其模式形式
++ row  `id.text`  规范文本
++ row  `id.in[Data]`  十六个字节，高位半部在前
++ row  `id.msb`, `id.lsb`  最高和最低有效的 64 位
++ row  `a ^ b`, `~a`  两个标识符的异或，以及一个标识符的取反
+
+% 1 1 0 1c787982f4e04b2b074825fde8357a24
+
+@ 0 1 0 0f8db4e11cc07a061404fd2f9603f98a
++ ### 生成
+
+@ 0 1 0 194df59fae3448d20d2a13bf7f773b62
++ `Uuid()` 产生一个新的随机标识符，每次都不同：
+
+% 2 1 0 06c25f6a28a1ec07004078b9b81316b9
+
+% 0 1 0 113f7a54b0908329198c04c8de3c15fc
+
+% 1 1 0 1e14a4dcfbd28d901e6fc50038a09e81
+
+@ 0 1 0 037e1aac6557139f12ad9e7b4e2588fc
++ ### 字面量
+
+@ 0 1 0 002ad8150ceb7f5d11617cb187506fd7
++ `uuid"…"` [插值器]写出一个已知的标识符，并在编译时检查它：
+
+% 2 1 0 0fd35630dbf2b2671783d7e76559ba14
+
+% 0 1 0 03577244cb219eca1ea971aad6ed3ccc
+
+% 1 1 0 1a9dab4e2220925c07007dadf6601088
+
+@ 0 1 0 11bae98385b70012154f659171ab8de6
++ 格式错误的字面量无法编译：
+
+% 2 1 0 0abd01f219589885189fde94c26f9ac9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 03e66bdadd3aa623020411bb8102b64b
+
+% 1 1 0 00cae8a2340791d00acb904383bc2ee5
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### 解析
+
+@ 0 2 0 1c82cde8c9e8c5e615cf2d0ee8d5b87f
++ 运行时到达的文本可能不是 UUID，因此 `Uuid.parse` 在失败时抛出 `Uuid.Error`，由作用域内的[策略]处理：
+
+% 2 1 0 12649924952f98561eba830bda750666
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 14127deeaa2b310609d83c168a57ed78
+
+% 1 1 0 008777c352b95942081d475a5b06bbaf
+
+% 3 1 0 19e04bfd3328682811e8d082605665a7
+
+% 4 1 0 0bb7f35259e4768e032d138d68d0a04b
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0c06cc5e946841490219e070b540bd6d
+
+% 1 1 0 1312eb5c2832149900f7bea160f581d1
+
+@ 0 2 0 1cb3ef36456b87af0a0461c7e2150458
++ `Uuid.extract` 则给出一个[可选](optional-values.md)值，同一个提取器也可用于模式中：
+
+% 2 1 0 1d5640210d0f0e350a94ee8c2eec4cf7
+
+% 0 1 0 0b84fa381db920de1ed9bdc54a22ef97
+
+% 0 1 0 18563c5bfcc0b1371a5a5540485bbf8a
+
+% 0 1 0 048fbcb9d6cd413e0bc8afadacbaae9b
+
+% 1 1 0 1abba4f153cba2f716563a644562d957
+
+% 3 1 0 04e83c880bedbfed125056d6c8bb13f4
+
+% 4 1 0 06dae8eed4a587f80d235b68c34d9cb5
+
+% 5 1 0 1a122f2f325eb599050a8812f42131b7
+
+% 0 1 0 1b1d49b953dfaa87172350d54f3a5657
+
+% 0 1 0 0e25ec27f4e5d3021500922a8735d80e
+
+% 0 1 0 1352447760ad0b4b0a8e53421ef6e7da
+
+% 1 1 0 12cfeefbd058a0db0452d6f0c698a681
+
+@ 0 3 0 0002dc90792e5af31126c2d09ab0113e
++ `as[Uuid]` 以同样的方式[解码](decoding.md#decoding-a-value)文本，因此 case class 中的 `Uuid` 字段无需更多代码即可从 [JSON](json.md) 或[命令行参数](cli.md)读取。
+
+@ 0 1 0 04664ceaea24118813e376f6e7be3751
++ ### 呈现与字节
+
+@ 0 2 0 0894892c8d2a2d9e0bcc4f9aa2827cb8
++ `text` 给出 UUID 的规范文本。
++ 它的十六个字节和两个 64 位半部也可以获取：
+
+% 2 1 0 04d5e8bf022f7c3414b49641aa753361
+
+% 3 1 0 09e80e61f63de58011986beca3bcdccc
+
+% 4 1 0 00ab9c90b79785d109a745484d63a40a
+
+% 0 1 0 161c9229850da6b11808285754db3d0e
+
+% 0 1 0 0b0f69fe01c7b9ef1ac04acc180576c6
+
+% 0 1 0 0a725a171cbedffc1669c637da80a46d
+
+% 0 1 0 048d643db80e9d6d14e72a282470a233
+
+% 1 1 0 005f98131fa1c757168dba87cfc99599
+
+@ 0 1 0 1f541ff99b1bdf5c1affc799c992696d
++ ### 组合
+
+@ 0 3 0 1b071ecf0380df820a89d9f8366fb8bf
++ 两个标识符可以用异或组合，一个标识符可以用 `~` 取反。
++ 这些操作用于把 UUID 当作其本来的位模式来处理的场合，例如从另外两个标识符派生出一个稳定的标识符：
+
+% 2 1 0 004c027b15ede2f8071e0d199f204e35
+
+% 0 1 0 03e6c22a1e253895122ddcb9ac22245e
+
+% 1 1 0 1b67859fd542cac90bb2a035ffafb1b9
+
+% 3 1 0 10161119cca35c1d0d81f3fd3b832911
+
+% 4 1 0 118d7d800139c72619ea4e05ebff2119
+
+% 5 1 0 0b62f8894488d927092f798e8850e17b
+
+% 0 1 0 074b76f3c82cba6e1caecaf448012daa
+
+% 0 1 0 12cdc1f710e07bdd1c13eb79d80ec710
+
+% 1 1 0 14383155ef76779f06fb9944e0887eeb
+
+@ 0 2 0 07b99617e1a73d651c863a07c5062acc
++ [哈希](hashing.md)从内容派生标识符，[随机性](randomness.md)控制 `Uuid()` 所取自的来源。

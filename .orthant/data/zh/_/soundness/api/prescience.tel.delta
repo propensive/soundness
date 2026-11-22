@@ -1,0 +1,250 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0974b95d2450cfe20d1272f99940498e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4f0c4707ac858807a73212a5ad6c39
++ info   概念验证：在宏展开时生成代码的类型类实例，由派生宏实时求值
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0fb427f410ef764401d67e37e0431de3
++     _Prescience_ 演示了一种技术：一个类型类 `Inlinable`，其主要方法是代码生成器，接受其输入的 `Expr` 并返回解码值的 `Expr`，从而派生宏可以把手写实例的代码直接拼接到它所生成的代码中，而不是在运行时调用该实例。
++     它是格式库的分阶段读取器和写入器（`jacinta`、`breviloquence`、`locomotion`、`stratiform` 的 BinTEL）中 `Inlinable` 类型类背后的机制，在这里基于一种玩具线上格式单独加以验证。
+
+@ 0 3 0 0840d1651b162d6f0023bc9a8e169ab3
++     难点在于，宏对它召唤的实例只持有一个 `Expr`，而它需要活的实例才能调用 `read`。
++     派生宏 `Prescience.read` 针对每个字段，最多通过三个层级获得实例：
+
+@ 0 9 0 17c37cf21a2cabf810d6a16e843326de
++     - **层级 A**：如果实例是对预编译静态对象的引用，或者是这种对象的无参成员，就通过宏类加载器加载并直接使用，就像编译器自己的拼接解释器加载宏实现一样。
++     - **层级 B**（仅限 `Prescience.readStaging`）：隐式搜索能从全局作用域（类路径上的伴生对象和包级 given）找到的实例，包括条件 given，会在宏内部一个全新的 `staging.Compiler` 中被召唤并运行，代价是每个实例一次完整的编译器运行，并作为 info 诊断信息报告。
++     - **运行时**：其他任何情况，即词法作用域中的 given，或与使用处在同一次运行中编译的 given，则改为得到一个对其 `Inlinable#readRuntime` 的拼接调用。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 04c2e69897d904dd1e83ea747e99b812
+
+% 0 1 0 173b371c6ae83ec10827dc674c30b6dd
+
+% 0 1 0 19493503eabc5b741ddccd1715fc9fa2
+
+% 0 1 0 0e83a5c1e90a1cd00119a8ec3b21cd7c
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 15eb71e4790c5b350c94fe3b296017aa
++     在展开该宏的同一次编译运行中定义的实例，在任何层级都不会被求值：它的类文件要么还不存在，要么是之前增量编译遗留的过期文件，因此它总是走运行时层级，干净构建与增量构建的结果一致。
++     每个层级的输出都相同；不同的只是代码在哪里生成。
+
+@ 0 6 0 0929e69c0aae64211391a169d440ee42
++     该库有两个源集，都仅限 JVM，因为这项技术需要宏类加载器以及 `scala3-compiler` 和 `scala3-staging` 制品：`prescience.core`（`Inlinable`、`Prescience` 和宏）和 `prescience.leaves`（示例实例，比任何使用处早一个阶段编译，以便层级 A 能够加载它们）。
++     没有任何内容导出到 `soundness` 总括包：导入 `prescience.*`，并从 `prescience.inlinables` 按名称导入示例 given，因为 `import pkg.*` 不会导入 given。
+
+% 0 1 0 1a67559e9e07e67f0dce9c0c6a32e912
+
+% 0 1 0 1fd7359c9fa719e70b2b9f02d1be5899
+
+% 0 1 0 0196848d0eed20fb08b086fca09c82dc
+
+@ 0 1 0 1b1071fafecc5d561cac547c9bada258
++ entry .Inlinable   一个类型类，其实例生成读取其类型的代码，供派生宏内联
+
+% 1 1 0 1d46a0cfe8aa3680013b71b8a95e4a8e
+
+@ 0 4 0 1f2ce2afa473adc606ddc0ed61ba4c51
++       `T is Inlinable` 有两个必须一致的方法：`#read` 在宏展开时运行，返回从 `String` 表达式读取 `T` 的*代码*；`#readRuntime` 在运行时完成同样的读取，派生宏在展开时无法获得活的实例时调用它。
+
+% 2 1 0 095203c8dbba59d4082c63972749e0b8
+
+% 3 1 0 1a366b674b86ef980489b8aa0fb62dff
+
+% 4 1 0 18c688412a460c48074f83210d8c92bf
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 0 1 0 08d384165f98242111e3f7eab610dd74
+
+% 0 1 0 109ccb9784661b880a56804c15cea582
+
+% 0 1 0 088eb31ef854748302ff33db79a2bbcd
+
+% 0 1 0 112fe295da9c383a104581ff7c6d97d0
+
+% 0 1 0 1054f55a7d8350bc18d85b66a33a2ede
+
+% 0 1 0 071fd481869f08ab18f9fa835cc4666c
+
+% 0 1 0 0f84a150133923bc0cfecd719b1ae86c
+
+% 0 1 0 190e6f83abb95de411dfd519a16995e3
+
+% 1 1 0 0bd3c325f98acad7048b0c6fdb98e0df
+
+@ 0 4 0 14dda2abd6bb683c169a2c18a5beecc6
++       是否使用 `#read` 取决于实例所在的位置：比使用处更早编译的静态对象或其成员由 `Prescience.read` 求值；伴生对象中的条件 given 只能由 `Prescience.readStaging` 求值；在同一次运行中编译的或词法作用域中的任何实例，只能通过 `#readRuntime` 使用。
+
+% 0 1 0 03d42e08af053b4912ba99fb5a1bc6b2
+
+@ 0 6 0 14709989c86454200c59e4cdd44bc744
++   entry #read   从 `String` 表达式读取此类型值的代码，在宏展开时生成
++       由派生宏以字段文本的 `Expr[String]` 和一个 `Quotes` 调用；返回的 `Expr[Self]` 被拼接到生成的读取器中，取代任何调用。
++   entry #readRuntime   在展开时无法对实例求值时，于运行时从文本读取此类型的值
++       必须给出与 `#read` 生成的代码相同的结果，因为使用两者中的哪一个，取决于实例在哪里定义以及程序如何编译。
+
+@ 0 1 0 19a15888f844ee301facf0396a9c154b
++ entry .Prescience   派生宏：由字段的 `Inlinable` 实例组装而成的 case class 读取器
+
+% 1 1 0 1f740202326cce341ad16d49366a0fd3
+
+@ 0 4 0 064adca98bd5345205b72e572e8555eb
++       每个方法都为非泛型的 case class 派生一个读取器，读取一行逗号分隔的字段（玩具格式：重点在于机制）：输入只拆分一次，每个字段的代码来自其类型的 `Inlinable` 实例，实例能在展开时求值时内联，否则调用 `Inlinable#readRuntime`。
+
+% 2 1 0 00f9092c8379ecfb14a280a8da0046f4
+
+% 3 1 0 0fa94a383f99adcc0e42769ea304acac
+
+% 4 1 0 00381d6811bca08b0f8435c30a740e9a
+
+% 0 1 0 01bb0085309bc0240b6190f59a428dc9
+
+% 0 1 0 1ce8fc6aa42b16f91fa2d5b2f0cdba65
+
+% 0 1 0 14e1a5006e7d33bb06cc0c4040ef0c24
+
+% 1 1 0 1d2c0ffec023f335189efa46ea33e9bb
+
+@ 0 2 0 16e1c8af2c191bc71f00126424353192
++       不是 case class 的类型、泛型 case class，或作用域中没有 `Inlinable` 的字段类型，都是编译错误。
+
+% 0 1 0 068be8b9328b11d118fc95678d1d408e
+
+@ 0 12 0 06a698862589c95c15ac7a85cfbfde5c
++   entry .read   从逗号分隔的文本读取 case class，内联每个可静态求值的字段实例
++       仅限层级 A：解析为预编译静态对象或其无参成员的实例贡献其 `Inlinable#read` 代码；其他任何实例都在运行时通过 `Inlinable#readRuntime` 调用。
++   entry .readStaging   与 `Prescience.read` 相同，但还会在宏内编译器下对条件 given 和派生的 given 求值
++       对于层级 A 无法对其实例求值的每个字段，在一个基于宏类路径（去掉当前输出目录）的全新 `scala.quoted.staging.Compiler` 中运行隐式搜索，并使用它得到的实例。
++       它只能看到从全局作用域（类路径上的伴生对象和包级 given）可达的 given，看不到词法作用域中的 given，只适用于非泛型的类类型，而且每个实例都要付出一次完整的内存中编译器运行的代价，每次都作为附带耗时的 info 诊断信息报告。
++       它无法处理的字段走运行时层级。
+
+@ 0 1 0 1db33178c1de050d1ab135d485d02139
++ entry .internal   `Prescience.read` 和 `Prescience.readStaging` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 1e83d31bcaaeb99b1e5b79f73fe7d67f
++       不供直接使用。
++       它公开的 `readStaged` 是 `Prescience.read` 和 `Prescience.readStaging` 所拼接的宏，用一个标志选择是否运行层级 B。
++   entry .readStaged   派生宏：case class 的读取器，带或不带分阶段执行层级
++       不供直接使用；从 `Prescience.read` 和 `Prescience.readStaging` 的拼接中调用。
+
+@ 0 1 0 1984419fa3436385010e3783f3a46b4b
++ entry .inlinables   `Int`、`String` 和 `Boolean` 的示例 `Inlinable` given，作为某个静态对象的成员
+
+% 1 1 0 10553208af05cbc11e17e3ad0a7a7af3
+
+@ 0 4 0 14fad333ce2813af10f6402d8856423d
++       在 `prescience.leaves` 中定义的 given 别名，因此它们在任何使用处之前编译，层级 A 可以通过成员访问路径（加载对象，调用无参访问器）对它们求值。
++       按名称导入它们，因为 `import prescience.inlinables.*` 不会导入 given：
+
+% 2 1 0 04b06c9f3d7f9a4d0cbd40c58130c01c
+
+% 3 1 0 05c472be778e1d890ebf1558ede12891
+
+% 4 1 0 1aab5c5520c365cf0e1ee109a49955d8
+
+% 0 1 0 03413ea95b05279f1482dad625d5d201
+
+% 0 1 0 18b340a875490bb917eb6b6e3ac05d4a
+
+% 0 1 0 1ff745f3fd6952b21e59823b60b34687
+
+% 1 1 0 11ee144e41c131030e3cecc0d988f535
+
+@ 0 3 0 147cdde9185d09fc19638f3fadff793c
++       这些实例的 `Inlinable#readRuntime` 方法按设计抛出 `AssertionError`，因此悄悄回退到运行时层级的读取器会明显地失败：它们是层级 A 的演示，而不是通用实例。
+
+% 0 1 0 1b8b991cf49716ff1f5b1930d8dcce3f
+
+@ 0 3 0 16a680dbfd8873c100152631e8bd7600
++   entry .int   `Int is Inlinable`，即 `IntInlinable`
++   entry .string   `String is Inlinable`，即 `StringInlinable`
++   entry .boolean   `Boolean is Inlinable`，即 `BooleanInlinable`
+
+@ 0 1 0 0436df64d9fba49f11371fd1508549c1
++ entry .IntInlinable   静态的 `Int is Inlinable`，把修剪后的字段文本解析为整数
+
+% 1 1 0 06d926a6ded0b89f0b47b759438e2bcd
+
+@ 0 2 0 03bf066ac27bf3fa111dc2eaff54cf3c
++       生成的代码是对修剪后文本的 `Integer.parseInt`。
++       它的 `#readRuntime` 抛出 `AssertionError`，因为它的存在是为了证明层级 A 在展开时对它求值了。
+
+% 0 1 0 056396b5d54db03e09df2c666f917b86
+
+@ 0 2 0 00f581e7d6816a0a006e97a9bf714003
++   entry .read   把修剪后的 `String` 表达式解析为 `Int` 的代码
++   entry .readRuntime   总是抛出异常：此实例只用于内联
+
+@ 0 1 0 085a69a1aeba5bc713f9869e4c866c79
++ entry .StringInlinable   静态的 `String is Inlinable`，其生成的代码就是字段文本本身
+
+% 1 1 0 155c806e7d6f52bd0dcdfdb9c7742269
+
+@ 0 2 0 1e2ce5d8c1df3ad80e3bde8c372197b9
++       它的 `#readRuntime` 抛出 `AssertionError`，因为它的存在是为了证明层级 A 在展开时对它求值了。
+
+% 0 1 0 0980e4945ae84d3a02904437166c3952
+
+@ 0 2 0 09b87004474815041b716e7409999fc7
++   entry .read   字段的 `String` 表达式，保持不变
++   entry .readRuntime   总是抛出异常：此实例只用于内联
+
+@ 0 1 0 03dfb86fb32a8262134fcd8106c906b8
++ entry .BooleanInlinable   静态的 `Boolean is Inlinable`，把修剪后的字段文本解析为布尔值
+
+% 1 1 0 0ca61694c96f671306ff6e1614905760
+
+@ 0 2 0 16b68372d3b61753195471c2d0259d6b
++       生成的代码是对修剪后文本的 `java.lang.Boolean.parseBoolean`，因此除 `true`（不区分大小写）以外的任何内容都是 `false`。
++       它的 `#readRuntime` 抛出 `AssertionError`。
+
+% 0 1 0 1f42a50a957a27551b469bbf09a9c776
+
+@ 0 2 0 102635ead65d96c212d263aba7c234ba
++   entry .read   把修剪后的 `String` 表达式解析为 `Boolean` 的代码
++   entry .readRuntime   总是抛出异常：此实例只用于内联
+
+@ 0 1 0 0090d3e87faf2de8151ec30ce47c1a63
++ entry .Celsius   一个示例类型，其伴生对象中的条件 given 只有分阶段执行层级能够求值
+
+% 1 1 0 1a0614fc93c69102140f8abe5b05461e
+
+@ 0 5 0 1aa73955d00fc62901e4244301d8fc33
++       `Celsius(degrees)` 的伴生对象中有一个带 `DummyImplicit` 参数的 `Inlinable` given，因此召唤到的实例是一次应用而不是静态路径，层级 A 无法加载它；`Prescience.readStaging` 在宏内编译器下解析并运行它，并内联其代码。
++       它的 `Inlinable#readRuntime` 会抛出异常，因此读取成功就证明是分阶段执行层级完成了工作。
+
+% 2 1 0 0b6c8a7b25d710f90b81de52b92a6366
+
+% 3 1 0 1e97f48484f0d46915baba71209a4bf4
+
+% 4 1 0 04a1b66b4097f02210a16be5a8ea7aaa
+
+% 0 1 0 1f685b1abac5b42908124fb30dedce35
+
+% 0 1 0 102c382bc17710831630c57a5fe79c16
+
+% 0 1 0 0b0cdafbd9a04d5d18948d997894d858
+
+% 1 1 0 06a69edb1de1191905b9e5f778574c78
+
+@ 0 2 0 00d3766b0f1c713018184e07bfa1c6f3
++   entry .inlinable   条件 given `Celsius is Inlinable`，只有 `Prescience.readStaging` 能够求值
++   entry #degrees   温度，以摄氏整度表示

@@ -1,0 +1,1478 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 133cbee0bf1ef9f70c2b0a19af47fdb5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 10a834c9e90162ec089ce9104ecdd0e9
++ info   Model Context Protocol 服务器，其工具、资源和提示词都是带注解的 Scala 方法
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 1bc2dc1b91c1e6bd042e0badf7f65d96
++     _Synesthesia_ 实现了 [Model Context Protocol](https://modelcontextprotocol.io/)，AI 助手的执行框架正是通过这一协议访问服务器，获取它可以调用的**工具**、可以读取的**资源**和可以使用的**提示词**。
++     服务器是一个扩展 `Mcp.Server` 的对象，它的能力就是用注解标记的普通方法：`@tool` 方法是可调用的工具，其输入和输出 schema 由参数类型和结果类型派生；`@resource("uri")` 方法在某个 URI 上提供内容；`@prompt` 方法返回用 `human"…"` 和 `agent"…"` 插值器写成的对话。
++     协议本身（基于可流式 HTTP 传输的 JSON-RPC、会话、客户端发现的各种列表）由 `Mcp.Specification` 宏根据这些定义生成，因此模型读到的描述永远不会与它调用的代码不一致。
+
+% 2 1 0 0a9377bdcd3bd7ea199d5901eb8a5fa5
+
+% 3 1 0 0d2402be2c82fcbc001131b7c59a9312
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1a9bdcbbbc188cc81380fdfcd489236a
+
+% 0 1 0 018ef09784aaa5ab109384de30d3546a
+
+% 1 1 0 17955793454babf402addde3ce56c3f9
+
+% 2 1 0 12e496c0bd51f38003db450acd40e678
+
+% 0 1 0 1369d4d7f969105201626bbb0aafffdb
+
+% 0 1 0 0893cd07603670261422c1c82a8693b5
+
+% 1 1 0 13a1ee3ea9beb97610c1c49d2bd3b797
+
+% 2 1 0 1a89ce06384390cf07d99c86acbcf23a
+
+% 4 1 0 059b8206373fee9718e301f9a4ae4071
+
+% 0 1 0 14147aa1fabe01e319e4ea33217f0b8d
+
+% 0 1 0 185853b07828eaea1b10efe98223a665
+
+% 1 1 0 1df454ec4a6650eb09caf3f7acab888b
+
+@ 0 5 0 1fb39faf7237009b1d7d22166145917a
++     通过调用 `AssistantTools.serve` 把服务器挂载到 HTTP 处理函数中，它应答 `POST` 来的 JSON-RPC 请求，向 `GET` 推送服务器发送事件流，并在 `DELETE` 时结束会话。
++     接受 `using Mcp.Client` 的工具可以在运行时与客户端通信：`log` 推送进度，`elicit` 向用户请求结构化输入，其表单是由 case class 派生的 schema。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     这个库有两个源码集：
+
+@ 0 7 0 1d281bb20461153b044c9c3f36ddabf0
++     - `synesthesia.content`：与 Agent Client Protocol 共享的内容块词汇：`Content`（文本、图像、音频、资源链接和嵌入资源块、资源内容、`Icon`、`Annotations`、`Role`）以及 `@about` 注解。它只依赖 JSON，因此 ACP 客户端无需 HTTP 服务器就能使用它。
++     - `synesthesia.core`：仅限 JVM：`Mcp` 及其协议记录、`Mcp.Server`、`Mcp.Client`、`Mcp.Interface`、`Mcp.Specification`；`@tool`、`@resource`、`@prompt`、`@title` 和 `@ui` 注解；`Discourse` 以及 `human`/`agent` 插值器。
+
+@ 0 6 0 0b61a1f73504b46709511cd960bc7ea2
++     一切都导出到 `soundness` 总括包，在那里 `Content` 写作 `McpContent`（总括包中的 `Content` 是 gesticulate 中带媒体类型的载荷）；由于 `Mcp` 重新导出了它的成员，这些成员也可以通过 `Mcp.TextContent` 等访问。
++     `Mcp.Server#serve` 需要 HTTP 处理函数所具有的上下文值：`Monitor`、`Probate`、`Online` 和 `Http.Request`；派生 schema 规范需要 `Tactic[Json.Error]` 和 `Tactic[Mcp.Error]`，由 `strategies.throwUnsafely` 提供。
+
+% 0 1 0 1d8436a8941e75d80d3a5fde3aa97a72
+
+% 0 1 0 07cee1c7c0a0f40c002ca38ef027536a
+
+% 0 1 0 005f812ca19619611ea178a19e3d2326
+
+% 0 1 0 13b5955c648fb0441802965a97a7341e
+
+% 0 1 0 1fb20612115503f10776e8698e9b3658
+
+@ 0 1 0 1140ca31cf58b4dc05fdc3e8ec36f1f8
++ entry .Mcp   Model Context Protocol：其记录、JSON-RPC 接口、服务器、客户端和会话
+
+% 1 1 0 0724f3a8d422f4f4184d7a3284d7f777
+
+@ 0 7 0 061064daef692f571c2e3386faf45b7b
++       `Mcp` 是协议所定义的一切的归属。
++       它的记录（`Tool`、`Resource`、`Prompt`、`CallTool`、`Initialize`、`ServerCapabilities` 等）是逐字段对应协议 JSON 对象的 case class，每个都可以通过派生编码为 `Json` 或从 `Json` 解码，`Optional` 字段为 `Unset` 时不出现在线上。
++       它的枚举（`LoggingLevel`、`TaskStatus`、`Role`……）带有手写的编解码器，对应协议的小写拼写；它的和类型（`ContentBlock`、`Reference`）用 `type` 判别字段编码。
+
+@ 0 6 0 03172103078abaca0cf5f028ea6f70b8
++       服务器端由四部分组成。
++       程序自己的服务器扩展 `.Server`，并把它的方法标记为 `@tool`、`@resource` 或 `@prompt`；`.Specification` 宏把这些注解读入列表和分派逻辑；`.Interface` 是基于该规范为单个会话构建的 `.Api` 的 JSON-RPC 实现；`.send` 把一个 HTTP 请求映射到它上面。
++       接受 `using Mcp.Client` 的工具通过 `.Client` 访问客户端。
+
+% 2 1 0 16326e603109e27102041ff4768eb070
+
+% 3 1 0 1332f6d932c2995f1b2864bd8a0dcafa
+
+% 4 1 0 197dfac578cb4095088145593499705c
+
+% 0 1 0 0c57500ebbbac08c0a2a37b9c9941650
+
+% 0 1 0 03eb187255151006155c0c244b750574
+
+% 0 1 0 035232eb3f87c27e04954d49e7ece15e
+
+% 0 1 0 106d0d3ca95fe5d50aeda012c75418c2
+
+% 0 1 0 179935d56ee8d5771d46e731f601754d
+
+% 0 1 0 139b7fd883540a070a88921f78a46335
+
+% 0 1 0 13ba9ca3bea4d2da00179d9568c7dfb3
+
+% 0 1 0 09e15b9b84a2047812fec87184661053
+
+% 0 1 0 09556d69eb2ccec4056c4e90688aa046
+
+% 0 1 0 0f56b62a78095c7916cf6ad19e1da0b1
+
+% 0 1 0 1b29db89623cdd980dff4c7efd565a26
+
+% 1 1 0 128e69aae9f6297110ab1e07c6d111db
+
+@ 0 4 0 12e7dfe7b3c7204402e8952f2bd22442
++       内容块词汇（`TextContent`、`ImageContent`、`AudioContent`、`ResourceLink`、`EmbeddedResource`、资源内容、`Icon`、`Annotations` 和 `Role`）在 `Content` 中定义并在这里重新导出，因此 MCP 代码写 `Mcp.TextContent`。
++       所使用的协议版本是 `.version`，即 `2025-11-25`。
+
+% 0 1 0 10cb076d34d1a8850e9e0648c891fbde
+
+% 0 1 0 1883ee7948b4403713cfe254f1a871e6
+
+% 0 1 0 1347bbaf6c7569b11945b3bf8b7660d6
+
+% 0 1 0 09f1535f4ab82f9d07ec8609cb6bf7a4
+
+@ 0 8 0 0b8d0424678d03881178a1cc49d0e5f2
++   entry .version   本实现所使用的协议版本：`2025-11-25`
++       作为每个响应的 `Mcp-Protocol-Version` 头部，以及 `Initialize` 结果的 `protocolVersion` 发送。
++   entry .Cursor   分页游标，类型为 `Text`
++       列表（`ListTools`、`ListResources`、`ListPrompts`、`ListTasks`）作为 `nextCursor` 返回、客户端传回以继续的不透明令牌。
++       服务器自己的列表从不分页，因此它总是 `Unset`。
++   entry .send   针对一个接口应答可流式 HTTP 传输的一个 HTTP 请求
+
+% 1 1 0 1635a19e2bef2db31818410ecf3c5523
+
+@ 0 8 0 00b8ea5f02e720370e87adbf98a5a4c4
++         `Mcp.send(sessionId, server, interface)(dispatch)` 把请求映射到协议的传输层：`OPTIONS` 应答 `204 No Content`；`GET` 应答 `200 OK`，以服务器发送事件的形式给出接口的事件流，保持连接且不缓存；`POST` 把正文读为 JSON，传给 `dispatch`（通常是 `JsonRpc.serve(interface)`），并以 JSON 应答结果，分派未产生任何结果时（通知）应答 `202 Accepted`。
++         其他任何方法，包括 `DELETE`，都应答 `405 Method Not Allowed`；`Mcp.Server#serve` 在到达这里之前自行处理 `DELETE`。
++         每个响应都带有 `Mcp-Protocol-Version` 和 `Mcp-Session-Id` 头部。
+
+@ 0 5 0 12c7c5b3c7d53c401746e31993609209
++         失败是 `200 OK` 正文中的 JSON-RPC 错误，带有请求的 `id`，以便客户端匹配：无法解析的正文为 `-32700`，不是有效请求的为 `-32600`，`Mcp.Error`（未知工具、缺少参数）为 `-32602`，未知方法为 `-32601`，其他任何异常为 `-32603`。
++         工具自身的异常在这里不算失败：`Mcp.Interface` 把它作为标记了 `isError` 的结果来应答。
+
+@ 0 11 0 0417e68eb8bd00621d47c8831d0be18c
++         它需要作用域中有 `Monitor`、`Probate`、`Online` 和 `Http.Request`，就像 HTTP 处理函数的主体那样。
++         `Mcp.Server#serve` 会调用它；程序只有在要把自己的分派放在接口前面时才直接调用它。
++   entry .ParseError   JSON-RPC 错误代码 `-32700`：请求正文无法解析
++   entry .InvalidRequest   JSON-RPC 错误代码 `-32600`：正文不是有效的请求
++   entry .MethodNotFound   JSON-RPC 错误代码 `-32601`：没有该方法
++   entry .InvalidParams   JSON-RPC 错误代码 `-32602`：未知工具或缺少参数
++       `Mcp.send` 应答 `Mcp.Error` 时使用的代码。
++   entry .InternalError   JSON-RPC 错误代码 `-32603`：服务器中出现意外异常
++   entry .UrlElicitationRequired   JSON-RPC 错误代码 `-32042`：请求需要先进行 URL 征询
++   entry .TextInt   可以是字符串或整数的 JSON-RPC 标识符
+
+% 1 1 0 1537e66b9f08f69f1202f8e52df0655e
+
+@ 0 19 0 013eae3e9fed46b71bb210b1a3b50474
++         协议中的请求 id 和进度令牌既可以是字符串，也可以是数字。
++         `TextInt(id: Text | Int)` 可以持有二者之一，按所持有的那一种编码，并把 JSON 数字解码为 `Int`，其他一切解码为 `Text`。
++         它是 `Mcp` 中唯一一个有自己的 `Inspectable`（`.inspectable`）的类型，因为派生无法渲染 `Text | Int` 字段；`Mcp.TextInt(42).inspect` 为 `TextInt(id:42)`。
++     entry .encodable   按所持有的值把 id 写为 JSON 字符串或数字
++     entry .decodable   把 JSON 数字读为 `Int`，其他任何值读为 `Text`
++     entry .inspectable   渲染 id，并显示它来自联合类型的哪一边
++         整数为 `TextInt(id:42)`，文本为 `TextInt(id:t"abc")`。
++         之所以需要它，是因为结构化派生没有 `Text | Int` 字段的实例，会回退到 `toString`。
++     entry #id   标识符，类型为 `Text` 或 `Int`
++   entry .TaskAugmented   请求的可选 `task` 元数据，要求它作为任务运行
++     entry #task   请求要作为任务运行时的 `TaskMetadata`
++   entry .TaskMetadata   请求为作为任务运行而携带的元数据：存活时间
++     entry #ttl   任务结果保留多长时间，以毫秒计，如果给出
++   entry .RelatedTaskMetadata   消息所关联的任务的 id
++     entry #taskId   所关联任务的 id
++   entry .BaseMetadata   名称和可选的人类可读标题，每个具名记录的基础
+
+% 1 1 0 1b910fa92a047f1708b471b147eb6fa1
+
+@ 0 6 0 19b66d95d97b12a40b93ddeac1236939
++         每个工具、提示词、资源和实现共有的两个字段。
++         它的伴生对象持有派生的 JSON 编解码器（一个 `Encodable`，以及一个需要 `Tactic[Json.Error]` 的 `Decodable`），只锚定一次，这样嵌入它的每个记录都能复用它们。
++     entry #name   程序化名称
++     entry #title   人类可读的标题，如果给出
++   entry .Implementation   客户端或服务器程序的名称、版本和描述
+
+% 1 1 0 1f7a56b68cdde5090a8461fc93a0c790
+
+@ 0 24 0 00cb949166a008b21742eb3e269f39fd
++         会话初始化时双方各自发送的关于自己的信息：客户端在 `initialize` 中发送，服务器在其 `Initialize` 应答中发送，`Mcp.Interface` 根据服务器的 `name` 和 `version` 构建它。
++         伴生对象持有锚定的派生 JSON 编解码器；解码需要 `Tactic[Json.Error]`。
++     entry #name   程序的名称
++     entry #title   人类可读的标题，如果给出
++     entry #icons   代表该程序的图标，如果给出
++     entry #version   程序的版本，类型为文本
++     entry #description   程序的描述，如果给出
++     entry #websiteUrl   程序的网站，如果给出
++   entry .ClientInfo   客户端的名称、标题、版本、描述和图标
++     entry #name   客户端的名称
++     entry #title   客户端的标题
++     entry #version   客户端的版本
++     entry #description   客户端的描述
++     entry #icons   代表该客户端的图标，如果给出
++   entry .ServerInfo   服务器的名称、标题、版本、描述、图标和网站
++     entry #name   服务器的名称
++     entry #title   服务器的标题
++     entry #version   服务器的版本
++     entry #description   服务器的描述
++     entry #icons   代表该服务器的图标，如果给出
++     entry #websiteUrl   服务器的网站，类型为 `HttpUrl`
++   entry .Initialize   服务器对 `initialize` 的应答：版本、能力、身份和说明
+
+% 1 1 0 04fc1b6ec3caec2c06f7e2477884eea2
+
+@ 0 37 0 1d7bcd02a5469708031f2d9bd01fbbc5
++         `Mcp.Interface#initialize` 的应答包括 `Mcp.version`、默认的 `ServerCapabilities()`（工具、提示词和资源，各自带列表变更通知）、由服务器名称和版本构成的 `Implementation`，以及作为说明的服务器 `description`。
++     entry #protocolVersion   服务器使用的协议版本
++     entry #capabilities   服务器能做什么，类型为 `ServerCapabilities`
++     entry #serverInfo   服务器的身份，类型为 `Implementation`
++     entry #instructions   告诉模型如何使用该服务器的文本，如果给出
++   entry .ListChanged   一个能力标志：是否发送列表变更通知
++     entry #listChanged   列表变化时服务器是否通知，如果说明了
++   entry .Resources   资源能力：订阅与列表变更支持
++     entry #subscribe   客户端是否可以订阅资源，默认为 `true`
++     entry #listChanged   资源列表变化时服务器是否通知，默认为 `true`
++   entry .Sampling   客户端的采样能力：包含上下文和使用工具
++     entry #context   客户端对包含上下文的支持，如果说明了
++     entry #tools   客户端在采样期间对工具的支持，如果说明了
++   entry .Elicitation   客户端的征询能力：表单模式和 URL 模式
++     entry #form   客户端能否显示表单，如果说明了
++     entry #url   客户端能否打开 URL，如果说明了
++   entry .RequestsElicitation   任务可以发出的征询请求
++     entry #create   `elicitation/create` 能否作为任务运行，如果说明了
++   entry .Call   `tools/call` 能否作为任务运行
++     entry #call   该能力的值，如果说明了
++   entry .RequestsSampling   任务可以发出的采样请求
++     entry #createMessage   `sampling/createMessage` 能否作为任务运行，如果说明了
++   entry .Tasks   任务能力：列出、取消，以及哪些请求可以作为任务
++     entry #list   任务能否被列出，如果说明了
++     entry #cancel   任务能否被取消，如果说明了
++     entry #requests   哪些请求可以作为任务运行，类型为 `Requests`，如果说明了
++   entry .ListTasks   对 `tasks/list` 的应答：任务和后续游标
++     entry #nextCursor   下一页的游标，如果有
++     entry #tasks   任务，类型为 `Task` 的列表
++   entry .Requests   哪些请求可以作为任务运行：采样、征询和工具调用
++     entry #sampling   采样请求，类型为 `RequestsSampling`，如果说明了
++     entry #elicitation   征询请求，类型为 `RequestsElicitation`，如果说明了
++     entry #tools   工具调用，类型为 `Call`，如果说明了
++   entry .ServerCapabilities   服务器提供什么：工具、提示词、资源、日志、补全、任务
+
+% 1 1 0 1dea0e6acf4bfe6e0eb2bc0e38ed0502
+
+@ 0 25 0 0309dcecb175bef10033d99af4ce43a9
++         默认值描述了 `Mcp.Interface` 所实现的内容：带列表变更通知的 `prompts` 和 `tools`，带订阅的 `resources`，没有实验性、日志、补全或任务能力。
++     entry #experimental   实验性能力，按名称索引，如果有
++     entry #logging   日志能力，如果提供
++     entry #completions   参数补全能力，如果提供
++     entry #prompts   提示词能力，默认带列表变更通知
++     entry #resources   资源能力，类型为 `Resources`，使用其默认值
++     entry #tools   工具能力，默认带列表变更通知
++     entry #tasks   任务能力，如果提供
++   entry .ClientCapabilities   客户端提供什么：根目录、采样、征询和任务
++     entry #experimental   实验性能力，按名称索引，如果有
++     entry #roots   客户端是否公开文件系统根目录，如果说明了
++     entry #sampling   客户端的采样能力，如果提供
++     entry #elicitation   客户端的征询能力，如果提供
++     entry #tasks   客户端的任务能力，如果提供
++   entry .Context   已给出的参数，用于补全另一个参数
++     entry #arguments   按名称索引的参数，如果有
++   entry .ListResources   对 `resources/list` 的应答：资源和后续游标
++     entry #nextCursor   下一页的游标，如果有
++     entry #resources   资源，类型为 `Resource` 的列表
++   entry .ListResourceTemplates   对 `resources/templates/list` 的应答
++     entry #nextCursor   下一页的游标，如果有
++     entry #resourceTemplates   模板，类型为 `ResourceTemplate` 的列表
++   entry .ReadResource   对 `resources/read` 的应答：资源的内容
+
+% 1 1 0 1f517703aca98770106cfe724b5f8faf
+
+@ 0 4 0 1e002d24b5fd82510fb1b182f5f6cfb3
++         `Mcp.Interface#resources/read` 应答单个 `Contents`，是文本还是二进制取决于 `@resource` 方法的结果类型如何流式输出。
++     entry #contents   内容，每项是文本或 Base64 数据块
++   entry .Resource   列表中的资源：名称、URI、描述、MIME 类型和元数据
+
+% 1 1 0 08a1fc1161669a5a0671fa9cc33105ef
+
+@ 0 15 0 078d0de60dc044d8139d64d198050f73
++         `Mcp.Specification` 宏为每个 `@resource` 方法构建一个：`name` 是方法的名称，`uri` 是注解中的 URI，`title` 和 `description` 来自 `@title` 和 `@about`，`mimeType` 是注解中给出的类型；当某个工具的 `@ui` 指名该 URI 时为 `text/html;profile=mcp-app`；否则文本结果为 `text/plain`，二进制结果为 `application/octet-stream`。
++     entry #name   资源的名称
++     entry #uri   读取资源的位置
++     entry #title   人类可读的标题，如果给出
++     entry #description   描述，如果给出
++     entry #icons   代表该资源的图标，如果给出
++     entry #mimeType   资源的 MIME 类型，如果已知
++     entry #annotations   受众和优先级提示，类型为 `Annotations`
++     entry #size   资源的大小，以字节计，如果已知
++     entry #_meta   协议元数据，如果有
++   entry .ResourceTemplate   由 URI 模板描述的一族资源
+
+% 1 1 0 0fff6bb3cc59456300f1d8c65d5518f9
+
+@ 0 19 0 0334d3da9a885a991643b5b1c1d38acd
++         由 `resources/templates/list` 列出，`Mcp.Interface` 尚未实现它。
++     entry #name   模板的名称
++     entry #title   人类可读的标题，如果给出
++     entry #icons   图标，如果给出
++     entry #uriTemplate   其资源的 URI 所匹配的 RFC 6570 模板
++     entry #description   描述，如果给出
++     entry #mimeType   其资源的 MIME 类型，如果它们共用一个
++     entry #annotations   受众和优先级提示，类型为 `Annotations`
++     entry #_meta   协议元数据，如果有
++   entry .ListPrompts   对 `prompts/list` 的应答：提示词和后续游标
++     entry #nextCursor   下一页的游标，如果有
++     entry #prompts   提示词，类型为 `Prompt` 的列表
++   entry .Complete   对 `completion/complete` 的应答
++     entry #completion   补全值，类型为 `Completion`
++   entry .Completion   为某个参数建议的值，附总数以及是否还有更多
++     entry #values   建议的值
++     entry #total   总共有多少个，如果已知
++     entry #hasMore   是否存在比返回的更多的值，如果已知
++   entry .TaskSupport   工具可以、必须还是不得作为任务运行
+
+% 1 1 0 096fefa74a9003f00f3e36a0ad14498f
+
+@ 0 5 0 125b5485a39419380c1573e56ecab279
++         `Forbidden`、`Optional` 和 `Required`，编码为 `forbidden`、`optional` 和 `required`；其他任何文本都会解码失败并抛出 `Json.Error`。
++     entry .encodable   把分支写为其小写名称
++     entry .decodable   读取 `forbidden`、`optional` 或 `required`，对其他任何内容抛出 `Json.Error`
++   entry .LoggingLevel   日志消息可携带的 syslog 严重级别
+
+% 1 1 0 0cfc175f0ea7f3d812710e38dee665c4
+
+@ 0 10 0 01b7858137d6468616578664884e4387
++         `Debug`、`Info`、`Notice`、`Warning`、`Error`、`Critical`、`Alert` 和 `Emergency`，编码为其小写名称。
++         `Mcp.Client#log` 以 `Info` 级别发送，`logging/setLevel` 设置 `Mcp.Interface` 所持有的级别。
++     entry .encodable   把分支写为其小写名称
++     entry .decodable   读取小写的级别名称，对其他任何内容抛出 `Json.Error`
++   entry .LoggingMessage   日志通知：级别、日志记录器名称和数据
++     entry #level   严重级别，类型为 `LoggingLevel`
++     entry #logger   日志记录器的名称，如果给出
++     entry #data   消息，类型为 JSON
++   entry .TaskStatus   任务的状态：进行中、等待输入、已完成、已失败或已取消
+
+% 1 1 0 1ba4a75b48b4fca2141656836781cb28
+
+@ 0 5 0 10bbe7542b8707ca182e05e3fb4cdd08
++         `Working`、`InputRequired`、`Completed`、`Failed` 和 `Cancelled`，编码为 `working`、`input_required`、`completed`、`failed` 和 `cancelled`。
++     entry .encodable   把分支写为其传输形式的拼写
++     entry .decodable   读取传输形式的拼写，对其他任何内容抛出 `Json.Error`
++   entry .PromptArgument   提示词接受的参数：名称、标题、描述以及是否必需
+
+% 1 1 0 0794bf82295950b509291bb7f45e3bab
+
+@ 0 7 0 07e57fb029987cf705aeb33c2a34e223
++         由 `Mcp.Specification` 宏根据 `@prompt` 方法的每个参数构建，其 `title` 和 `description` 来自参数自己的 `@title` 和 `@about`。
++     entry #name   参数的名称
++     entry #title   人类可读的标题，如果给出
++     entry #description   描述，如果给出
++     entry #required   该参数是否必须提供，如果说明了
++   entry .Prompt   列表中的提示词：名称、标题、描述和参数
+
+% 1 1 0 01aa4d47fcb2442a1cbe30af50cd4c35
+
+@ 0 14 0 1ec973e398744f1202d8b55c75c34cd6
++         `Mcp.Specification` 宏为每个 `@prompt` 方法构建一个，以方法命名，`title` 和 `description` 来自 `@title` 和 `@about`，每个参数对应一个参数项；没有参数的方法的 `arguments` 为 `Unset`。
++         抽象的 `Mcp.Server#prompts` 就是由它们组成的列表。
++     entry #name   提示词的名称
++     entry #title   人类可读的标题，如果给出
++     entry #icons   图标，如果给出
++     entry #description   描述，如果给出
++     entry #arguments   提示词接受的参数，如果有
++     entry #_meta   协议元数据，如果有
++   entry .Argument   名称和值，作为提供给 `completion/complete` 的参数
++     entry #name   参数的名称
++     entry #value   目前已输入的值
++   entry .Reference   补全针对的对象：提示词或资源模板
+
+% 1 1 0 062e38878e889223168c889731bf9feb
+
+@ 0 10 0 061c2d9fc8894da0170165ced3d44453
++         `PromptReference` 和 `ResourceTemplateReference` 的密封和类型，用值为 `ref/prompt` 或 `ref/resource` 的 `type` 判别字段编码。
++     entry .encodable   连同其 `type` 判别字段写出引用
++     entry .decodable   按 `type` 读取引用，对未知的 `type` 抛出 `Json.Error`
++   entry .PromptReference   按名称对提示词的引用
++     entry #name   提示词的名称
++     entry #title   提示词的标题，如果给出
++   entry .ResourceTemplateReference   按 URI 对资源模板的引用
++     entry #uri   模板的 URI
++   entry .PromptMessage   提示词中的一条消息：角色和内容块
+
+% 1 1 0 14a7e5931ea224961e401eca170763e8
+
+@ 0 8 0 072afa686d1b785f07f1618edaa70044
++         `Mcp.Interface#prompts/get` 把 `Discourse.Human` 消息变为 `User` 的 `TextContent`，把 `Discourse.Agent` 消息变为 `Assistant` 的 `TextContent`。
++     entry #role   谁在说话，类型为 `Role`
++     entry #content   说了什么，类型为 `ContentBlock`
++   entry .GetPrompt   对 `prompts/get` 的应答：描述和消息
++     entry #description   提示词的描述，如果给出
++     entry #messages   消息，类型为 `PromptMessage` 的列表
++   entry .CallTool   对 `tools/call` 的应答：内容、结构化内容以及是否出错
+
+% 1 1 0 1a5c475bd6d5e2211089100b9fd62410
+
+@ 0 4 0 0fafab4f5d81869c1ba46f4349cb3285
++         `Mcp.Interface#tools/call` 把工具的结果既作为 `structuredContent`（由结果的编码构成的 JSON 对象 `{"result": …}`）应答，也作为该 JSON 的 `TextContent` 应答。
++         抛出异常的工具应答 `CallTool(List(TextContent(message)), isError = true)`，这是模型可以读取并据以行动的结果，而不是协议层面的失败。
+
+% 2 1 0 1da9d1d4daec03a81d6bc2eeaab8100a
+
+% 3 1 0 08cf2345c6910b13177a39e16119b215
+
+% 0 1 0 15a3366135fcf9e008bf77a2b0db945a
+
+% 1 1 0 19f9ff6e376bb27e0033596ea4ab6bce
+
+@ 0 13 0 1227a012db62fecb035a589302dad123
++     entry #content   以内容块表示的结果，供模型读取
++     entry #structuredContent   与工具输出 schema 相符的 JSON 结果，如果给出
++     entry #isError   工具本身是否失败，如果说明了
++   entry .ListTools   对 `tools/list` 的应答：工具和后续游标
++     entry #nextCursor   下一页的游标，如果有
++     entry #tools   工具，类型为 `Tool` 的列表
++   entry .ListRoots   对 `roots/list` 的应答：客户端的文件系统根目录
++     entry #roots   根目录，类型为 `Root` 的列表
++   entry .Root   客户端公开的文件系统根目录：URI 和名称
++     entry #uri   根目录的 URI
++     entry #name   根目录的名称，如果给出
++     entry #_meta   协议元数据，如果有
++   entry .Tool   列表中的工具：名称、schema、标题、描述、执行方式和注解
+
+% 1 1 0 0e16943abd6553660b0cac2d74682a62
+
+@ 0 28 0 1730e6a47a190ee60da0d6409fa0ce13
++         `Mcp.Specification` 宏为每个 `@tool` 方法构建一个。
++         `name` 是方法的名称；`inputSchema` 是一个 `JsonSchema.Object`，每个参数对应一个属性（每个 schema 由参数的类型派生，其 `description` 来自参数的 `@about`），其 `required` 列表省略了所有类型为 `Optional` 或带默认参数的参数；`outputSchema` 是只有一个必需属性 `result` 的对象，即结果类型的 schema；`title` 和 `description` 来自 `@title` 和 `@about`；`_meta` 以 `{"ui": {"visibility": ["model", "app"], "resourceUri": "…"}}` 的形式指名 `@ui` 注解所指向的资源。
++     entry #name   工具的名称
++     entry #inputSchema   工具参数的 JSON schema
++     entry #outputSchema   工具结构化结果的 JSON schema，如果给出
++     entry #title   人类可读的标题，如果给出
++     entry #icons   图标，如果给出
++     entry #description   描述，供模型决定何时调用它，如果给出
++     entry #execution   工具能否作为任务运行，如果说明了
++     entry #annotations   行为提示，类型为 `ToolAnnotations`，如果给出
++     entry #_meta   协议元数据，如果有；`@ui` 工具的用户界面资源在这里指名
++   entry .ToolExecution   工具如何执行：其任务支持
++     entry #taskSupport   工具能否作为任务运行，如果说明了
++   entry .ToolAnnotations   关于工具行为的提示：只读、破坏性、幂等、开放世界
++     entry #title   人类可读的标题，如果给出
++     entry #readOnlyHint   工具是否不改变任何东西，如果说明了
++     entry #destructiveHint   工具是否可能做出破坏性的更改，如果说明了
++     entry #idempotentHint   以相同参数重复调用是否不再产生额外效果，如果说明了
++     entry #openWorldHint   工具是否会触及其自身封闭世界之外，如果说明了
++   entry .ToolChoice   采样请求如何让模型选择工具
++     entry #mode   模式，类型为 `Mode`，如果说明了
++   entry .Mode   采样模型可以、必须还是不得使用工具
+
+% 1 1 0 1b440ce31b41773003409e592404ff6f
+
+@ 0 8 0 1907ee42210e03b111327464116002ac
++         `Auto`、`Required` 和 `None`，编码为 `auto`、`required` 和 `none`。
++     entry .encodable   把分支写为其小写名称
++     entry .decodable   读取 `auto`、`required` 或 `none`，对其他任何内容抛出 `Json.Error`
++   entry .SamplingMessage   采样请求中的消息：角色和内容块
++     entry #role   谁在说话，类型为 `Role`
++     entry #content   消息的块，每个都是 `SamplingMessageContentBlock`
++     entry #_meta   协议元数据，如果有
++   entry .SamplingMessageContentBlock   采样消息可以包含的块，表示为联合类型
+
+% 1 1 0 1e663c8d4ec623c901922d0b90f844f1
+
+@ 0 7 0 13485ef0ccc1920b1424c5e1415c7949
++         `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent`。
++         它是类型别名而不是密封 trait，因为它的成员中有三个属于 `Content`，位于这个组件所依赖的组件中；它的 JSON 编解码器位于 `ToolUseContent` 的伴生对象中，后者是这里定义的第一个成员，处于该联合类型的隐式作用域中。
++         它们用值为 `text`、`image`、`audio`、`tool_use` 或 `tool_result` 的 `type` 判别字段编码。
++   entry .ToolUseContent   采样消息中，模型调用工具的请求
+
+% 1 1 0 1613a4de4030c2b6059d682cf9fd2ead
+
+@ 0 35 0 04189fdfa8ff527d193042bde01fc05e
++         由于类型别名没有自己的伴生对象，这个伴生对象也锚定了它所属的联合类型 `SamplingMessageContentBlock` 的 JSON 编解码器。
++     entry .encodable   连同其 `type` 判别字段写出任意 `SamplingMessageContentBlock`
++     entry .decodable   按 `type` 读取 `SamplingMessageContentBlock`，对未知的 `type` 抛出 `Json.Error`
++     entry #id   用于匹配结果的 id
++     entry #name   要调用的工具
++     entry #input   参数，类型为 JSON
++   entry .ToolResultContent   采样消息中，工具调用的结果
++     entry #toolUseId   此结果所应答的 `ToolUseContent` 的 id
++     entry #content   以内容块表示的结果
++     entry #structuredContent   JSON 形式的结果，如果给出
++     entry #isError   工具是否失败，如果说明了
++   entry .ModelPreferences   服务器对由哪个模型采样的偏好：提示和优先级
++     entry #hints   优先选用的模型名称，按顺序，如果给出
++     entry #costPriority   对成本的重视程度，从 0 到 1，如果给出
++     entry #speedPriority   对速度的重视程度，从 0 到 1，如果给出
++     entry #intelligencePriority   对能力的重视程度，从 0 到 1，如果给出
++   entry .ModelHint   指名优先选用的模型或模型系列的提示
++     entry #name   模型的名称或其名称的子串，如果给出
++   entry .CreateMessage   对 `sampling/createMessage` 的应答：模型的消息
++     entry #role   谁在说话，类型为 `Role`
++     entry #content   消息的块，每个都是 `SamplingMessageContentBlock`
++     entry #model   作答的模型的名称
++     entry #stopReason   生成停止的原因，如果给出
++   entry .Task   长时间运行的请求：其 id、状态、时间戳和轮询间隔
++     entry #taskId   任务的 id
++     entry #status   任务的状态，类型为 `TaskStatus`
++     entry #statusMessage   对状态的人类可读说明，如果给出
++     entry #createdAt   任务的创建时间，ISO 8601 时间戳
++     entry #lastUpdatedAt   任务最后一次变化的时间，ISO 8601 时间戳
++     entry #ttl   结果保留多长时间，以毫秒计，如果给出
++     entry #pollInterval   建议的轮询频率，以毫秒计，如果有
++   entry .CreateTaskResult   对变成任务的请求的应答
++     entry #task   创建的任务，类型为 `Task`
++   entry .ElicitAction   用户如何处理一次征询：接受、拒绝或取消
+
+% 1 1 0 1f26c3c28a0bae7116179e199e846976
+
+@ 0 20 0 11dd2de2782d83cf0d48154d8ef652c0
++         `Accept`、`Decline` 和 `Cancel`，编码为 `accept`、`decline` 和 `cancel`。
++     entry .encodable   把分支写为其小写名称
++     entry .decodable   读取 `accept`、`decline` 或 `cancel`，对其他任何内容抛出 `Json.Error`
++   entry .ElicitResult   客户端对 `elicitation/create` 的应答：动作以及可能的内容
++     entry #action   用户做了什么，类型为 `ElicitAction`
++     entry #content   提交的值，类型为 JSON，如果已接受
++   entry .ElicitRequest   请求用户输入：表单或 URL
++       `ElicitRequestForm` 和 `ElicitRequestUrl` 的密封和类型。
++   entry .ElicitRequestForm   要求用户填写由 schema 描述的表单的征询
++     entry #message   要问用户的内容
++     entry #requestedSchema   所需值的 JSON schema
++     entry #mode   征询模式，如果给出
++   entry .ElicitRequestUrl   要求用户访问某个 URL 的征询
++     entry #mode   征询模式
++     entry #message   要问用户的内容
++     entry #elicitationId   报告完成时所用的 id
++     entry #url   要打开的 URL
++   entry .ElicitationComplete   URL 征询已完成的通知
++     entry #elicitationId   已完成的征询的 id
++   entry .Api   MCP 服务器的 JSON-RPC 接口：客户端可以调用的每个方法，以 `@rpc` 方法表示
+
+% 1 1 0 11a6175792413fff160a4c94d17a03d0
+
+@ 0 14 0 1a9a10e82d9942a81aca32fbe268264d
++         声明协议服务器端方法的 `JsonRpc` trait，每个方法都标记为 `@rpc`，并按协议的拼写命名：`ping`、`initialize`、`completion/complete`、`logging/setLevel`、`prompts/get`、`prompts/list`、`resources/list`、`resources/templates/list`、`resources/read`、`resources/subscribe`、`resources/unsubscribe`、`tools/call`、`tools/list`、`tasks/get`、`tasks/result`、`tasks/list`、`tasks/cancel`，以及通知 `notifications/cancelled`、`notifications/progress`、`notifications/initialized`、`notifications/roots/list_changed`、`notifications/tasks/status`、`notifications/resources/list_changed`、`notifications/resources/updated`、`notifications/prompts/list_changed`、`notifications/tools/list_changed` 和 `notifications/message`。
++         每个方法都按名称接受请求的参数，末尾还有一个 `_meta: Optional[Json]`，并返回协议的结果记录（`Initialize`、`ListTools`、`CallTool`、`GetPrompt`……），对于通知则返回 `Unit`。
++         它的 `Origin` 是 `Mcp.Client`。
+
+@ 0 7 0 043bc104ed958c1c0939be53f30e92cf
++         `Mcp.Interface` 是其实现；`JsonRpc.serve(interface)` 把 JSON 请求分派到同名的方法，未知的方法是 `JsonRpc.Error`，`Mcp.send` 将其应答为 `-32601`。
++     entry #Origin   接口的另一方：`Mcp.Client`
++     entry #ping   以空结果应答存活检查
++     entry #initialize   开始一个会话：接受客户端的版本、能力和身份，应答 `Initialize`
++   entry .Interface   针对服务器规范、为单个会话实现的 `Mcp.Api`
+
+% 1 1 0 1521ec78134b74ae142d66bac7c644fd
+
+@ 0 5 0 1eb5ed2a514f31e8025c3a850c1815b1
++         `Mcp.Interface(sessionId, server)` 是应答一个会话的 JSON-RPC 调用的对象。
++         它按每个会话 id 构建一次并缓存，因此以相同 id 再次调用会返回同一个接口；`Mcp.Server#terminate` 会将其逐出，这也会结束它的事件流，使打开的 `GET` 结束。
++         它需要一个 `server.type is Mcp.Specification`，由 `Mcp.Specification.mcpSpecification` 宏派生。
+
+@ 0 13 0 0a5db9eb487f753e1af6e3cf138f9b88
++         各种列表根据规范应答：`tools/list` 为 `spec.tools()`，`resources/list` 为 `spec.resources()`，`prompts/list` 为 `spec.prompts()`，都不分页。
++         `tools/call` 在其自身的监管下运行 `spec.invokeTool`，并以 `CallTool` 应答，结果既作为 `structuredContent` 又作为文本给出；抛出异常的工具应答一个标记了 `isError`、携带异常消息的结果，而 `Mcp.Error`（未知工具、缺少必需参数）会被重新抛出，由 `Mcp.send` 应答为 JSON-RPC 错误。
++         `prompts/get` 运行 `spec.invokePrompt`，把每个 `Discourse.Human` 变为 `User` 消息，把每个 `Discourse.Agent` 变为 `Assistant` 消息。
++         `resources/read` 以 `spec.invokeResource` 应答。
++         `initialize` 以服务器的名称、版本和描述以及默认的 `ServerCapabilities` 应答，`logging/setLevel` 记录级别。
++         `ping`、`notifications/initialized`、`notifications/cancelled` 和 `notifications/progress` 接受请求但什么也不做；`tasks/list` 总是为空。
+
+@ 0 3 0 123749fe72cdc8420538b8266a827ee0
++         补全、资源模板、订阅、任务以及其余的通知都未实现，调用其中任何一个都会抛出 `NotImplementedError`，`Mcp.send` 将其应答为 `-32603`。
+
+% 2 1 0 06bb2a01c5bea25b13d91f712113edec
+
+% 3 1 0 0e5fc06467240cb5194841b9a95da04a
+
+% 4 1 0 12bc496276eb35991d5f75b3bf53f073
+
+% 6 1 0 1681b5f6cac7660a0203c8e4b02cafe0
+
+% 7 1 0 0b4265a93f3c946913b6e1376b726755
+
+% 8 1 0 00cc61320e96fc8b09da78e5cfa2f70c
+
+% 9 1 0 04af0560973378620fb3a103ff3e85c5
+
+% 10 1 0 1b7b997f53f5cf36132ab59e73b37181
+
+% 11 1 0 06a2989f5c1260081fb244b518153f97
+
+% 12 1 0 19b5e3b46ed84e6a173feb3dd374b990
+
+% 14 1 0 1c2f1cd29e9753420029b9bf84d123af
+
+% 0 1 0 1a665e4d3d5b8ae5076be13b00351e8d
+
+% 0 1 0 02de147fab5592da1375c94a673ca633
+
+% 0 1 0 1248d199a91018ef0ea2d9263210b154
+
+% 0 1 0 02c5e971220dac441f4c368e4b07d307
+
+% 1 1 0 02844bd2f6eafd3e004f212e155968d5
+
+@ 0 2 0 1ed863890759e4c11304bbb46cc1d760
++         该接口作为服务器发送事件是 `Streamable` 的（`.streamable`），`Mcp.send` 正是以此应答 `GET`。
+
+% 0 1 0 1d1d9e7dcab6d0f1168f76ccf539312f
+
+% 1 1 0 197bf473a11515041ab7e421f4e41f34
+
+% 0 1 0 1763e5d3ceb30eb40a3612572d6bec8c
+
+@ 0 12 0 08d79b25218b061b14dc05431b69269f
++     entry .apply   某个会话 id 的接口，基于服务器构建或从缓存中找到
++         `Mcp.Interface(sessionId, server)` 需要作用域中有一个 `server.type is Mcp.Specification`，由 `Mcp.Specification` 中的宏 given 派生；接口按 id 被记住，直到 `Mcp.Server#terminate` 将其遗忘。
++     entry .streamable   以服务器发送事件的形式流式输出接口发出的消息
++         `Mcp.send` 用来以会话的事件流应答 `GET` 的 `Streamable by Array[Sse]` given，需要一个 `Credit` 来计量。
++     entry #server   接口分派到的服务器
++     entry #spec   该服务器派生出的 `Mcp.Specification`
++     entry #ping   以空结果应答存活检查
++     entry #initialize   以协议版本、默认能力和服务器的身份应答 `Initialize`
++   entry .Client   从工具看到的客户端：向其发送日志、征询和采样
+
+% 1 1 0 0287638f1f6ddbb808640858ccbca62b
+
+@ 0 5 0 1aee403b05e770ac0acd4ec1c79a5096
++         声明了第二个参数列表 `(using client: Mcp.Client)` 的工具或提示词方法会收到调用它的会话的客户端，并能在调用运行期间与之通信。
++         `#log` 发送一条客户端显示为进度的 `notifications/message`；`#elicit[Form](message)` 请用户填写一个字段与某个 case class 的字段相同的表单，并以 JSON 返回用户提交的内容。
+
+% 2 1 0 06cb46c9bc77b80c1252cc326f75effc
+
+% 3 1 0 003dec4377418d8c132085a94b61104e
+
+% 0 1 0 08aa2496b497b109012ff2113585e0b0
+
+% 1 1 0 1657468296f572b906007b4466ce50d0
+
+% 2 1 0 003b970b6135d6d81115b917cf2b7aca
+
+% 0 1 0 15ca0df54a67180600c49cd183091517
+
+% 0 1 0 0c6531753a471e2f05b806df24fa697d
+
+% 1 1 0 070e02f2245a284a0ce4671e868377d2
+
+% 2 1 0 0b8a97f5868c804f1dac001d956ccd62
+
+% 4 1 0 1d114b24f8ad35811df5a62af108842c
+
+% 0 1 0 14c15faaa22a234f100f758bcafa5cf8
+
+% 0 1 0 041f8bbfd2b626ca16c49d3d6e623f58
+
+% 0 1 0 0dd68ace3d3abc2e01ee805402d30685
+
+% 0 1 0 1814028b61b63b3b122f11acd303ee72
+
+% 0 1 0 190bcee33336f8ab06ffc6b4e4d28fb3
+
+% 1 1 0 0172a8c3a60f88450f12866b8c73b6b7
+
+@ 0 13 0 143b6ea289251cf810b6766cc98f7887
++         它所基于的客户端 `@rpc` 方法（`ping`、`notifications/message`、`elicitation/create`）是受保护的；工具使用的是三个公开方法。
++     entry #log   以 `Info` 级别向客户端发送消息，形式为 `notifications/message`
++         消息以日志记录器名称 `updates`、以 `{"message": …}` 的形式发送，因此客户端在工具运行期间把它显示为进度。
++     entry #elicit   以由某个类型的 schema 描述的表单，向用户请求结构化输入
++         `client.elicit[Form](message)` 以 `form` 模式发送一个 `elicitation/create`，附带由 `Form`（任何 `Schematic over JsonSchema` 的类型，例如 case class）派生的 JSON schema，并以 `Json` 返回客户端的应答。
++     entry #sample   请客户端的模型进行生成；尚未实现
++         调用它会抛出 `NotImplementedError`。
++   entry .Specification   宏从服务器派生出的内容：其列表和分派
+
+% 1 1 0 023fddfbb874ab211e379a37ad4e489f
+
+@ 0 9 0 095e3056f6545b8c03ae930ae4ffc554
++         `server.type is Mcp.Specification` 是服务器注解的编译形式。
++         `#tools()`、`#resources()` 和 `#prompts()` 是客户端发现的列表，`#invokeTool`、`#invokeResource` 和 `#invokePrompt` 按名称把调用分派到带注解的方法，从 JSON 解码其参数并编码其结果。
++         它由内联 given `.mcpSpecification` 派生，该 given 对每个 `Mcp.Server` 子类型都处于隐式作用域中，并在召唤处需要 `Tactic[Json.Error]` 和 `Tactic[Mcp.Error]`：`Mcp.Server#serve` 以 `using` 参数接受它，因此调用 `serve` 的处理函数需要这些战术，由 `strategies.throwUnsafely` 提供。
+
+% 2 1 0 09504022b04d7ff005ecec35d43f20ff
+
+% 3 1 0 1ac2ff44cf3d693e0cbfa0ba875b999d
+
+% 4 1 0 067246e8f40c5e30193bf885a621acd3
+
+% 6 1 0 03dd964bba5ebb881b14eda344815e47
+
+% 7 1 0 0eda0021c09b6e7b15b66da6ce5ee3ab
+
+% 8 1 0 0f7e61584cb6fa5319ca66166d75f36a
+
+% 9 1 0 0cb01c46db02ac761229ae5cb7fdd68a
+
+% 10 1 0 064050774e956ec91fd16811a919616f
+
+% 11 1 0 023dc5403d45642f1d59bdc249b56631
+
+% 12 1 0 09d2329185f7c65e0491c2b128a1293b
+
+% 14 1 0 0f0c2f8cf525b40615627349b31892f6
+
+% 0 1 0 10e4c40964b649880f6d1b55c4f80a8f
+
+% 0 1 0 132190cde0193deb08b1d6696ca0190d
+
+% 0 1 0 1f1e21ce73f6ace70ba9a7fa75011ea2
+
+% 0 1 0 0ce8e7b630757972037a50e342f7e339
+
+% 0 1 0 1bca0a781d30cc6b12831f90aa1dd023
+
+% 0 1 0 0b827d74707f77b1038d5bf21665ab12
+
+% 1 1 0 153b161faa7f8d440e69496288062ae4
+
+@ 0 8 0 1b8b58d113782a7713f3ef0bcab211f8
++         宏对方法的要求如下，缺少任何一项都会导致编译错误：`@tool` 的参数类型和结果类型都必须是 `Schematic over JsonSchema` 的（_There was no JSON schema for `name`_），且参数可从 JSON 解码；`@resource` 方法不接受参数（_MCP resource methods cannot have any parameters_），其结果必须是 `Streamable by Text` 或 `Streamable by Data`；`@prompt` 方法必须返回 `List[Discourse]`。
++         方法可以有一个参数列表，或者有两个，其中第二个是 `(using Mcp.Client)`。
++         被重写的方法上的注解透过重写仍可见。
+
+@ 0 2 0 000b49a142f9cb7f1b1caf1b8e21a884
++         这一派生是捕获洁净的，因此服务器对象可以位于启用了捕获检查编译的模块中。
+
+% 0 1 0 11f219f8cb93fcaf00df726aa634dca5
+
+% 0 1 0 0fb30c27609ac6761542ff2834dbe8eb
+
+@ 0 21 0 1524bbc559992bb814a66e2fd73fbca7
++     entry .mcpSpecification   为任何 `Mcp.Server` 子类型派生规范的内联 given
++         它通过 `Specification` 伴生对象处于隐式作用域中，因此无需导入。
++         它是一个宏，在被召唤处展开，并在那里需要 `Tactic[Json.Error]` 和 `Tactic[Mcp.Error]`；缺少其一时，它以 _could not find a contextual `Tactic[Mcp.Error]` instance_ 中止。
++     entry #tools   服务器的工具，每个 `@tool` 方法对应一个 `Mcp.Tool`
++     entry #resources   服务器的资源，每个 `@resource` 方法对应一个 `Mcp.Resource`
++     entry #prompts   服务器的提示词，每个 `@prompt` 方法对应一个 `Mcp.Prompt`
++     entry #invokeTool   按名称以 JSON 参数调用工具，以 `{"result": …}` 的形式返回其结果
++         对没有 `@tool` 方法具有的名称抛出 `Mcp.Error(UnknownMethod)`，对 JSON 中缺少的必需参数抛出 `Mcp.Error(MissingParameter)`；类型为 `Optional` 的参数缺失时为 `Unset`，带默认值的参数取其默认值。
++         工具自身的异常会向外传播。
++     entry #invokeResource   按 URI 读取资源，结果为文本或 Base64 数据块
++         对没有 `@resource` 方法声明的 URI 抛出 `Mcp.Error(UnknownResource)`。
++         以文本流式输出的结果是 `TextResourceContents`；以字节流式输出的结果是 Base64 编码的 `BlobResourceContents`。
++     entry #invokePrompt   按名称以文本参数运行提示词，返回其 `Discourse` 消息
++         对未知的名称抛出 `Mcp.Error(UnknownMethod)`，对未给出的必需参数抛出 `Mcp.Error(MissingParameter)`。
++   entry .Server   MCP 服务器的基类：身份、会话，以及作为其能力的带注解方法
+
+% 1 1 0 1288dc777274e6c5164b240671cffcde
+
+@ 0 5 0 1b89af65c6b8282c1802ff2effbd2352
++         服务器是一个扩展 `Mcp.Server()` 的对象（或类），它给出自己的 `#name`、`#description`、`#version` 和 `#prompts`，定义其 `#Session` 类型和用于创建会话的 `#initialize()`，并用 `@tool`、`@resource` 和 `@prompt` 标记方法。
++         `Mcp.Specification` 宏把这些变成协议，`#serve` 用它来应答 HTTP 请求。
++         看一个服务器逐步成形：
+
+% 2 1 0 0e4a8b9e2fd0b3af1340804b78cceb93
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 0913c1b9a3825776164521add2f7e306
++           label 一个什么都不提供的服务器
+
+% 1 1 0 1f4857a65ca791fb11c98c08ba06cbf2
+
+% 2 1 0 19ddcf27bb9c039304193c0361b809d5
+
+% 3 1 0 137e3b1fdcb392fc0805fb23bbf49943
+
+% 5 1 0 087f267ad31edaec0ef9dab24c164547
+
+% 6 1 0 0d8fd27b7a5bf849198477cb4fd20934
+
+% 7 1 0 0685fda503c582c90cb8cdb943043c2d
+
+% 8 1 0 0113770651a76b530192a09b1c0effc2
+
+% 9 1 0 128fcd09b89c5f14151f895e410bf7ce
+
+% 10 1 0 09931ffdba9b71e30b5cc41dbf739b1e
+
+% 11 1 0 0a20bd67c97a7d8405b3d3e0c7da8520
+
+% 1 1 0 17a79eaf7ad8b56411d66c15a602381d
+
+@ 0 1 0 11a6d64f78ab2af80888702093635980
++           label 一个工具：其名称、参数 schema 和结果 schema 都来自签名
+
+% 1 1 0 1c440faa9e498a48152ac7cf3ee3fbb4
+
+% 2 1 0 01eb42462f84acea1b03711889bef8d3
+
+% 3 1 0 08ea2665d5d73385181c0afce6b5ca32
+
+% 5 1 0 02bb5758467eb05316fa3081396eb866
+
+% 6 1 0 1a24a7cc34b76681044dffbd3c044eae
+
+% 7 1 0 0913446054bcd41605928f347fe90c65
+
+% 8 1 0 175eb89f88fe8fe21ed8e99248e90d44
+
+% 9 1 0 10b2b89012fe0faa16af112ce3a6c46c
+
+% 10 1 0 0e971452b7e0189a19d9d467bebbfdf1
+
+% 11 1 0 1d1bf0082db22360187e8aedc610d0cd
+
+% 13 1 0 07b5e2987541e0d41fc735fc4d2b2f6d
+
+% 14 1 0 06ffbbfc21a332010d9c177827b94e19
+
+% 0 1 0 1a69ba6182d5180c18e3a78b8e2e5d30
+
+% 1 1 0 1b24fa5dc4cfc3b11580a92709993394
+
+@ 0 1 0 129c67ddf410970605a5eca9485406cf
++           label 可选参数和带默认值的参数不是必需的
+
+% 1 1 0 15a0de272974cd2d068c4a3d044e47c3
+
+% 2 1 0 1214e65ebb73a3bd1f016ad3e5a0ca65
+
+% 3 1 0 140028acb61f6d4b1e2a447de0a5e47f
+
+% 5 1 0 17dbb1d74fe9eaa811c9819e194f25eb
+
+% 6 1 0 1bd0fe84baed2311156ed09a617210fa
+
+% 7 1 0 017593efaca640b80115268cda2322bb
+
+% 8 1 0 0d15bf0b442531731e4985ab98b8c234
+
+% 9 1 0 1acb1347af613d230e18377e69e2d83f
+
+% 10 1 0 0179684a4043b737169f83fe61aef2e5
+
+% 11 1 0 007320875988013408f716cc1c00bc4f
+
+% 13 1 0 12e143defb8568640008ef62e5e28a44
+
+% 14 1 0 1e439eb76b5c06661b22e14f0d9019bc
+
+% 15 1 0 11ab391be46efc7b0914d4b9427af071
+
+% 16 1 0 12e119376ea09fad1c6ed07ccada2851
+
+% 17 1 0 1c0016a8fc5a25a21a004d666a26042f
+
+% 1 1 0 187ff218c7c8c10d17c5a71826042ee8
+
+@ 0 1 0 157a59eb65cb98091b7f225f0b6341fc
++           label 一个资源，以某种 MIME 类型在某个 URI 上提供
+
+% 1 1 0 1b610e42b196e6080827a57a5ae0be78
+
+% 2 1 0 07bc2831d18f726209f4f56befac0634
+
+% 3 1 0 1b88b1d05253c4441d70a3765c2e2266
+
+% 5 1 0 1c319ed51f006bb30fcd954505bce23a
+
+% 6 1 0 0ef2e3e095aec6e1157603d9c0fd1c34
+
+% 7 1 0 1e3a2e331a5bbf540fe4c04e6db86a80
+
+% 8 1 0 17b7009758ae62010731b1fe1bc4c1dc
+
+% 9 1 0 0bd39a10052b11b6080fbc023647c086
+
+% 10 1 0 14f403660cc52fbb02889b79e64c070c
+
+% 11 1 0 006e0b8bbd34559b1950cf0e197337fa
+
+% 13 1 0 163d208b6e6c493d1f7515fa0cb8981d
+
+% 14 1 0 0b8d0c5d56c715770bcbc499c24f3235
+
+% 15 1 0 10d2f0acd783ebc30beb9e0d252ae8dc
+
+% 16 1 0 1dca920970a6309917e1177da3c1c40e
+
+% 17 1 0 1cb1cc98f533a39604bb2f1532bb518d
+
+% 19 1 0 1f27a84772c4611b1d2d9113b24c3a21
+
+% 20 1 0 0d962b63fab1caca071a6284a1d94d88
+
+% 21 1 0 1154163ac815d49407d7d55ea961486c
+
+% 1 1 0 1b1ce1ba70863da80626770214312d31
+
+@ 0 1 0 1ee3b849e58f037e0a8a9d81dc869899
++           label 一个提示词，以及一个与客户端通信的工具
+
+% 1 1 0 1ef8378f2e7e6d970e1841aeb0d3d2d1
+
+% 2 1 0 04da39ba421e4d120c82c6cc8249af10
+
+% 3 1 0 05b950eea8e43c1b1ef2c088e08daba4
+
+% 5 1 0 1b5201888958af650a58e61cb2f69536
+
+% 6 1 0 0d4c56395da9c98a00766c4f1b8ab3d5
+
+% 7 1 0 169c83f060be213e0e1ed01694ce9a23
+
+% 8 1 0 019aa7ba625840eb0c78519305e343e2
+
+% 9 1 0 1fdb31cc7cdd827d08e5e0ed1b093973
+
+% 10 1 0 004885ff479049bd1ced86720fb0c234
+
+% 11 1 0 15ce07b59158225c04bce2cf028cc28a
+
+% 13 1 0 07f2a7df914e636d02302df93bd23628
+
+% 14 1 0 166e894de87222e211419dcd27ad3844
+
+% 15 1 0 1b7ae0bdd6c46f6b108fd2ed97d17341
+
+% 16 1 0 043f0b1ac4b52b111d8335e1b2b3f1e7
+
+% 17 1 0 1a80ce33ad9ebc33149368978e74ecb8
+
+% 19 1 0 05430db6634900581f55edc133aa062c
+
+% 20 1 0 0502e6812705471e1168373efbee3d49
+
+% 21 1 0 00dc9c43d87457110af174da5aa95335
+
+% 0 1 0 1d39f690df0bc6a51ebea959e6174d36
+
+% 0 1 0 06e6dea0ab66573a161dbd092354bbad
+
+% 0 1 0 0cb14f4fbbe058090bd9b26d204e32e3
+
+% 2 1 0 0f247dffc7fce34e09b9f1b4fedb99ed
+
+% 0 1 0 16af03e9f22f15a01bb1647bbfb97274
+
+% 0 1 0 0c07ee60955afdbd02a1e3fb811717eb
+
+% 0 1 0 1fc339ccb82b0c4f173a6599350c3d03
+
+% 0 1 0 101004312a12bc810145c0f7f16278b9
+
+% 0 1 0 17403ffdee596bba175d89079059a888
+
+% 1 1 0 0cc20c60b8007c1b09c1d31383a6f592
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 1ab1bbcf6cb7c15f0554e63d25e5c66c
++         会话在首次见到某个会话 id 时由 `#initialize()` 创建，并保存在 `#session` 中；服务器在那里保存每个客户端的状态。
++         `#terminate` 遗忘一个会话及其 `Mcp.Interface`，`#serve` 在收到 `DELETE` 时就这样做。
++         服务器挂载在 HTTP 处理函数中：
+
+% 2 1 0 181ca9d7a10fc10a01364a17213f97b6
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 1 1 0 1c42636a507cbf0f1903c90f073389c7
+
+% 0 1 0 006da0b214c0fa0b0773205ac9376eb8
+
+% 0 1 0 1feb701b5aff3c930b6d511d6d5de85e
+
+% 0 1 0 00be5946a13a08d60b704eeb33684012
+
+% 0 1 0 16f3e0d180aa28c40f1277916da247e8
+
+% 0 1 0 18c4596639b680e3003c3a7eebec1545
+
+% 1 1 0 09fd11a7e54e373909787b0251eff962
+
+@ 0 2 0 1fd0e4bc5c829ddb1a6c1b1c2810ef6e
++         子类自己的成员中，若有名为 `terminate`、接受一个 `Text` 的成员，会与 `#terminate` 冲突，必须改名或标记为 `override`。
+
+% 1 1 0 013c27d825f7b420197f1f76623e56d1
+
+% 0 1 0 146ece3b0337bddb0b871fe16919419d
+
+% 0 1 0 17c6a19fb175a9d504e9f4f038b1c0dc
+
+% 0 1 0 0e12a3aa14b1b7ad150102ee88dda6f8
+
+% 0 1 0 0122662ecbcde45c1454cfff7d929022
+
+% 0 1 0 1291631d04bf200316d19c7e9c8ea8a4
+
+@ 0 31 0 1689ad2b443951051c0b3b39ee9ef964
++     entry #Session   这个服务器每个客户端状态的类型，`Mcp.Session` 的子类型
++         每个服务器声明自己的类型，通常是 `class Session() extends Mcp.Session`，带有服务器为一个客户端保存的任何字段。
++     entry #Origin   协议的另一方：`Mcp.Client`
++     entry #session   某个 id 的会话，第一次请求时用 `initialize()` 创建
++         会话保存在以 `Mcp-Session-Id` 头部的值为键的表中，直到 `#terminate` 将其移除。
++     entry #terminate   结束一个会话：遗忘其状态和 `Mcp.Interface`，并回答该会话是否已知
++         逐出接口会结束其事件流，因此客户端打开的 `GET` 会结束。
++         `#serve` 对 `DELETE` 请求调用它。
++     entry #initialize   为新客户端创建一个全新的 `Session`；抽象方法
++     entry #serve   应答可流式 HTTP 传输的一个 HTTP 请求
++         需要 `this.type is Mcp.Specification`（在给定 `Tactic[Json.Error]` 和 `Tactic[Mcp.Error]` 时由宏派生）、`Monitor`、`Probate`、`Online` 和 `Http.Request`，就像处理函数的主体那样。
++         `Mcp-Session-Id` 指名已知会话的 `DELETE` 会终止该会话并应答 `204 No Content`；未知的 id 应答 `404 Not Found`，没有 id 则应答 `400 Bad Request`。
++         其他每个请求都从头部（或一个新的 UUID）取得会话，查找或构建该会话的 `Mcp.Interface`，并以 `JsonRpc.serve(interface)` 作为分派交给 `Mcp.send`。
++         逃逸出传输层的 `JsonRpc.Error` 被应答为带有该错误消息的未完成响应。
++     entry #name   服务器的名称，在 `initialize` 时作为其 `Implementation` 发送；抽象方法
++     entry #description   服务器的用途，在 `initialize` 时作为 `instructions` 发送；抽象方法
++     entry #version   服务器的版本，类型为 `Semver`；抽象方法
++     entry #prompts   服务器的提示词列表，类型为 `Mcp.Prompt`；抽象方法
++         派生出的规范自行列出 `@prompt` 方法，因此没有提示词的服务器给出 `Nil`。
++   entry .Session   服务器每个客户端状态所扩展的标记 trait
++       服务器的 `Session` 类型是它的子类型，由 `Mcp.Server#initialize()` 为每个新会话 id 创建，并由 `Mcp.Server#session` 保存，直到会话被终止。
++   entry .Error   当调用指名的工具、提示词或资源不存在，或遗漏必需参数时抛出
+
+% 1 1 0 17b444360b2646880a14fdd21978c730
+
+@ 0 37 0 1871d835a619e8ea11d77f3368ba531c
++         错误 `↯/s.124.1`：_the MCP operation failed because `reason`_。
++         由派生的 `Mcp.Specification` 的分派抛出，并由 `Mcp.send` 以请求的 id 应答为 JSON-RPC 错误 `-32602`，因此协议错误有别于工具自身的失败（后者是标记了 `isError` 的 `CallTool`）。
++         派生规范需要作用域中有 `Tactic[Mcp.Error]`，`Mcp.Interface` 会不加作用域限制地重新抛出该错误。
++     entry .Reason   操作失败的原因
++         `UnknownMethod`（1）：_the method name does not match any registered tool or prompt_；`UnknownResource`（2）：_the URI does not match any registered resource_；`MissingParameter`（3）：_a required parameter was not present in the input_。
++     entry .communicable   把每个原因渲染为其消息
++     entry #reason   这是三种失败中的哪一种
++   entry .Icon   图标的来源、MIME 类型、尺寸和主题；从 `Content` 重新导出
++       `Mcp.Icon` 就是 `synesthesia.Content.Icon`，完整说明见其页面。
++   entry .Contents   资源的内容，文本或数据块；从 `Content` 重新导出
++       `Mcp.Contents` 就是 `synesthesia.Content.Contents`，完整说明见其页面。
++   entry .ResourceContents   资源内容的基类：URI、MIME 类型和元数据；从 `Content` 重新导出
++       `Mcp.ResourceContents` 就是 `synesthesia.Content.ResourceContents`。
++   entry .TextResourceContents   文本形式的资源内容；从 `Content` 重新导出
++       `Mcp.TextResourceContents` 就是 `synesthesia.Content.TextResourceContents`。
++   entry .BlobResourceContents   Base64 数据块形式的资源内容；从 `Content` 重新导出
++       `Mcp.BlobResourceContents` 就是 `synesthesia.Content.BlobResourceContents`。
++   entry .Annotations   受众、优先级和修改提示；从 `Content` 重新导出
++       `Mcp.Annotations` 就是 `synesthesia.Content.Annotations`。
++   entry .Role   谁在说话，`User` 或 `Assistant`；从 `Content` 重新导出
++       `Mcp.Role` 就是 `synesthesia.Content.Role`，完整说明见其页面。
++   entry .ContentBlock   内容块：文本、图像、音频、资源链接或嵌入资源；从 `Content` 重新导出
++       `Mcp.ContentBlock` 就是 `synesthesia.Content.ContentBlock`，完整说明见其页面。
++   entry .TextContent   文本块；从 `Content` 重新导出
++       `Mcp.TextContent` 就是 `synesthesia.Content.TextContent`。
++   entry .ImageContent   带 MIME 类型的 Base64 图像；从 `Content` 重新导出
++       `Mcp.ImageContent` 就是 `synesthesia.Content.ImageContent`。
++   entry .AudioContent   带 MIME 类型的 Base64 音频；从 `Content` 重新导出
++       `Mcp.AudioContent` 就是 `synesthesia.Content.AudioContent`。
++   entry .ResourceLink   按 URI 指向资源的链接；从 `Content` 重新导出
++       `Mcp.ResourceLink` 就是 `synesthesia.Content.ResourceLink`。
++   entry .EmbeddedResource   以内联方式携带的资源内容；从 `Content` 重新导出
++       `Mcp.EmbeddedResource` 就是 `synesthesia.Content.EmbeddedResource`。
+
+@ 0 1 0 095d162e32850b68107c452a04d3ad56
++ entry .Content   MCP 与 Agent Client Protocol 共享的内容块词汇
+
+% 1 1 0 1f11145115d6ed6102aa2d0f1a53ab9b
+
+@ 0 7 0 10369866764f0d950afba340f0d3d333
++       两种协议交换的内容的 JSON 表示：`ContentBlock` 是文本、图像、音频、指向资源的链接或嵌入的资源，每种都是以 `type` 判别字段编码的 case class；资源的内容是 `TextResourceContents` 或 `BlobResourceContents`，包装为 `Contents`；而 `Icon`、`Annotations` 和 `Role` 是它们共享的记录。
++       它位于 `synesthesia.content` 源集中，该源集只依赖 JSON，因此 ACP 客户端（它把智能体作为子进程启动，用不着 HTTP 服务器）可以与 MCP 服务器共享这些类型。
+
+% 2 1 0 10e2080a45e77c330ed9e76165b56649
+
+% 3 1 0 1a7b19553dc0b0e41e32cce2b33a8267
+
+% 4 1 0 0efd9847291309050654deda4f5b29c5
+
+% 0 1 0 02b309a8834413030e24f8d330e947f4
+
+% 0 1 0 1726e6151597ebe21d213b5d5991bf67
+
+% 0 1 0 1191d0dc5d9511570e238e683b4e8cf7
+
+% 1 1 0 0f4fbdb5cc35d2db00a80643ccbc982f
+
+@ 0 4 0 09ac4b234689f48f18d05a96de6a6da4
++       每个成员都从 `Mcp` 重新导出，因此 MCP 代码写作 `Mcp.TextContent`；在 `soundness` 总括包中，该对象本身拼写为 `McpContent`，因为那里的 `Content` 是 gesticulate 的带媒体类型的载荷。
++       这些记录的 JSON 编解码器在其伴生对象中派生一次，位于隐式作用域中；解码需要一个 `Tactic[Json.Error]`。
+
+% 0 1 0 0971b70e28ad531714ff239c2a623cbf
+
+@ 0 1 0 1071a61551f65b45101c7869648d7a45
++   entry .Icon   图标：其来源、MIME 类型、尺寸和主题
+
+% 1 1 0 0f648d3225f4a3f80980f5dc5d5fa8f0
+
+@ 0 7 0 0352c232f6e6c21f18e158b888f0b3ce
++         由实现、工具、资源和提示词携带，与它们一同显示。
++         伴生对象持有派生的 JSON 编解码器。
++     entry #src   图标的 URI 或 data URI
++     entry #mimeType   图标的 MIME 类型（若给出）
++     entry #sizes   可用的尺寸，以 `WxH` 文本表示（若给出）
++     entry #theme   图标适合的主题，`light` 或 `dark`（若给出）
++   entry .Contents   资源的内容，以文本或 blob 形式
+
+% 1 1 0 1cca5b4c141f07671531ff36d549a216
+
+@ 0 11 0 1535e9f29896886b099b63645a92ed61
++         包装一个 `TextResourceContents | BlobResourceContents`，使 `ReadResource` 可以列出其中任一种。
++         它按所持有的那种编码（`.encodable`），解码时先尝试文本（`.decodable`）。
++     entry .encodable   写出它持有的文本或 blob 内容
++     entry .decodable   读取文本内容；如果 JSON 中没有 `text`，则读取 blob 内容
++     entry #contents   内容，`TextResourceContents` 或 `BlobResourceContents`
++   entry .ResourceContents   资源内容的基础：URI、MIME 类型和元数据
++     entry #uri   资源的 URI
++     entry #mimeType   资源的 MIME 类型（若已知）
++     entry #_meta   协议元数据（若有）
++   entry .TextResourceContents   以文本形式表示的资源内容
+
+% 1 1 0 017d50196324b616021107562a2a84db
+
+@ 0 8 0 004102300dcaf5a717c8ee53c500627d
++         派生的 `Mcp.Specification` 对结果以 `Text` 形式流式传输的 `@resource` 方法给出的应答；其 `mimeType` 取自注解，否则为 `text/plain`。
++         伴生对象持有派生的 JSON 编解码器。
++     entry #uri   资源的 URI
++     entry #mimeType   资源的 MIME 类型（若已知）
++     entry #text   内容
++     entry #_meta   协议元数据（若有）
++   entry .BlobResourceContents   以 Base64 blob 形式表示的资源内容
+
+% 1 1 0 19214c7595aec6e41981c6f21a57760f
+
+@ 0 8 0 1b9612662fc86dfe1192203e9a2b807f
++         派生的 `Mcp.Specification` 对结果以 `Data` 形式流式传输的 `@resource` 方法给出的应答；其 `mimeType` 取自注解，否则为 `application/octet-stream`。
++         伴生对象持有派生的 JSON 编解码器。
++     entry #uri   资源的 URI
++     entry #mimeType   资源的 MIME 类型（若已知）
++     entry #blob   内容，经 Base64 编码
++     entry #_meta   协议元数据（若有）
++   entry .Annotations   关于内容的提示：其受众、优先级和最后修改时间
+
+% 1 1 0 1d28f5db9f8fada10763cf8350950e30
+
+@ 0 5 0 1bc6816185c2262209f3db8aa2331970
++         伴生对象持有派生的 JSON 编解码器。
++     entry #audience   内容面向谁，以 `Role` 表示（若给出）
++     entry #priority   其重要程度，从 0 到 1（若给出）
++     entry #lastModified   最后修改时间，以 ISO 8601 时间戳表示（若给出）
++   entry .Role   消息来自谁：用户或助手
+
+% 1 1 0 0f6367ce930211af1a2fb0c17676af86
+
+@ 0 5 0 1280a90f0b4cdcc409ae5ff52e79b1d0
++         `User` 和 `Assistant`，编码为 `user` 和 `assistant`；`Mcp.Interface` 把 `Discourse.Human` 提示词消息变为 `User` 消息，把 `Discourse.Agent` 消息变为 `Assistant` 消息。
++     entry .encodable   写出 `user` 或 `assistant`
++     entry .decodable   读取 `user` 或 `assistant`，对其他任何值抛出 `Json.Error`
++   entry .ContentBlock   内容块：文本、图像、音频、资源链接或嵌入的资源
+
+% 1 1 0 14656d3fbc071f061dcaa1f88e1787e3
+
+@ 0 4 0 112abd8d94a8df670d1464a8c95e0458
++         `TextContent`、`ImageContent`、`AudioContent`、`ResourceLink` 和 `EmbeddedResource` 构成的密封和类型，以值为 `text`、`image`、`audio`、`resource_link` 或 `resource` 的 `type` 判别字段编码。
++         工具的结果和提示词的消息都是由它们构成的列表。
+
+% 2 1 0 10d961810b4dea540e65a33f63dba6df
+
+% 3 1 0 0b8a12e31fdc674407f6852ac86e7937
+
+% 0 1 0 11d2f437201c476f108f6da93a7e745e
+
+% 0 1 0 077ceb38517fbc6d1a9e19aa1bb01fcb
+
+% 0 1 0 025adcdf45a9e60019a87eeeef4306f6
+
+% 0 1 0 14bc49114768f54b065df216caa6aa57
+
+% 0 1 0 0ae10b25ce227322164ec8a9d3ba1663
+
+% 0 1 0 14f13022d453f8bc1cde5ad469ffe4b9
+
+% 0 1 0 12875baaf769f1c7011fe00df7beb8f6
+
+% 0 1 0 01c4a8e2864400231f3ec7612f681aae
+
+% 1 1 0 04e4f6be586c088b1024236a6778de98
+
+@ 0 3 0 08a93a9550802e4017f7a69242c72532
++     entry .encodable   写出带有 `type` 判别字段的内容块
++     entry .decodable   按 `type` 读取内容块，对未知的类型抛出 `Json.Error`
++   entry .TextContent   一个文本块，带有可选的注解
+
+% 1 1 0 1466eb6bfe0dcd890097a82e0a2365a8
+
+@ 0 4 0 0d50aadf6814ac201ba0a6bd2c9f752c
++         伴生对象持有派生的 JSON 编解码器。
++     entry #text   文本
++     entry #annotations   受众和优先级提示（若给出）
++   entry .ImageContent   以 Base64 数据表示的图像及其 MIME 类型
+
+% 1 1 0 0f26a8b36b59248c0135fb28d7675e7b
+
+@ 0 8 0 120ad8df7b888e501754549715b45a98
++         `uri` 字段由 Agent Client Protocol 而非 MCP 定义；由于它是 `Optional`，为 `Unset` 时它不出现在 MCP 的线上数据中。
++         伴生对象持有派生的 JSON 编解码器。
++     entry #data   图像，经 Base64 编码
++     entry #mimeType   图像的 MIME 类型
++     entry #uri   图像的来源（若给出；ACP 字段）
++     entry #annotations   受众和优先级提示（若给出）
++   entry .AudioContent   以 Base64 数据表示的音频及其 MIME 类型
+
+% 1 1 0 02feccdfe7bb7a1b1ecd63b761316136
+
+@ 0 5 0 0f6ab18815c6fc5a12682d8fb4f0faec
++         伴生对象持有派生的 JSON 编解码器。
++     entry #data   音频，经 Base64 编码
++     entry #mimeType   音频的 MIME 类型
++     entry #annotations   受众和优先级提示（若给出）
++   entry .ResourceLink   指向客户端可按 URI 读取的资源的链接
+
+% 1 1 0 10828b55c3002dac08c47c5496a24d24
+
+@ 0 11 0 1ac82ac0275727370e9d9f5e9c6a0a02
++         伴生对象持有派生的 JSON 编解码器。
++     entry #name   资源的名称
++     entry #uri   资源的 URI
++     entry #title   人类可读的标题（若给出）
++     entry #description   描述（若给出）
++     entry #icons   图标（若给出）
++     entry #mimeType   资源的 MIME 类型（若已知）
++     entry #annotations   受众和优先级提示（若给出）
++     entry #size   资源的字节大小（若已知）
++     entry #_meta   协议元数据（若有）
++   entry .EmbeddedResource   内联在消息中携带的资源内容
+
+% 1 1 0 1845da0f76d055440549a1dbaaa01e99
+
+@ 0 4 0 11e180c442ffcc101e7d20e519ebc3e3
++         伴生对象持有派生的 JSON 编解码器。
++     entry #resource   内容，以 `Contents` 表示
++     entry #annotations   受众和优先级提示（若给出）
++     entry #_meta   协议元数据（若有）
+
+@ 0 6 0 1c8a72c2d26afa4411b88eb37aedbfe3
++ entry .about   `@about("…")` 注解：工具、资源、提示词或参数的描述
++     在 `@tool`、`@resource` 或 `@prompt` 方法上，`@about` 提供模型在决定是否使用它时阅读的 `description`。
++     在工具的参数上，它成为输入 schema 中该属性的 `description`；在提示词的参数上，它成为 `PromptArgument` 的描述。
++     它定义在 `synesthesia.content` 源集中，因此 Agent Client Protocol 的类型也可以使用它。
+
+% 2 1 0 19caad7458abe6771c74d907f2e4d70f
+
+% 3 1 0 14ee34565222fa6e1c1f5aacb0fddfdf
+
+% 0 1 0 16b90cd924d3e966155d7f477780b5f8
+
+% 1 1 0 0528355dc120cf5c0298c79187a6122a
+
+% 2 1 0 13a7198ad48199721b2611fda18218dc
+
+% 0 1 0 122fbe1670aefe111cd9e7eec2f84949
+
+% 0 1 0 0af789cb1997c54518ef8229eaedb18b
+
+% 1 1 0 15fdbbcb6502e12e1cb094188e6aa072
+
+% 2 1 0 1960a7fe21d546dd1c11346ec5e55ba2
+
+% 4 1 0 0fe8c067720ae84a1fb6fa41034c1252
+
+% 0 1 0 089c4e108b7b320c192b01848a69fb39
+
+% 0 1 0 0519a68dc8b766bb1accc122da2fd1cc
+
+% 1 1 0 1f2da8372160b0310c4313e2400c2331
+
+@ 0 10 0 1111c4d487cf4b191d085bd05904761e
++ entry .tool   `@tool` 注解：方法是客户端可以调用的工具
++     `Mcp.Server` 的 `@tool` 方法由 `tools/list` 列出，由 `tools/call` 调用。
++     其名称就是方法的名称；其输入 schema 为每个参数设一个属性，由参数的类型派生（该类型必须是 `Schematic over JsonSchema`，且可从 JSON 解码），并要求每个既非 `Optional` 也没有默认值的参数；其输出 schema 是一个只有 `result` 这一个属性的对象，即结果类型的 schema。
++     结果以 `{"result": …}` 的形式在 `CallTool` 的 `structuredContent` 中应答，同时也以文本形式应答。
++     方法可以接受第二个参数列表 `(using client: Mcp.Client)`，以便在运行时向客户端记录日志，或向客户端征询输入。
++     抛出异常的工具会以标记了 `isError` 的 `CallTool` 应答，附带异常的消息。
+
+% 2 1 0 0e5a3307a8ef61bb193b6d72a4975d77
+
+% 3 1 0 00557b12d5a0db831c72ca19f2aae67e
+
+% 0 1 0 0f801bf4419bd8241f60d93c983819fd
+
+% 1 1 0 04c7a3c1660ada2b13362c531eb732fd
+
+% 2 1 0 054c4fa19706b34e1e85c3a37d55a172
+
+% 0 1 0 0e8ca15148cdb23e0f8ee68c48c6e1c0
+
+% 0 1 0 12eadee85fbbfb8916720e4d83582bcc
+
+% 1 1 0 027aa53dd3e339bd17ae3c6190999ff9
+
+% 2 1 0 1d1e10cacacc1939177cabf100162093
+
+% 4 1 0 1a6c9d8e66bc996803a0493487bf41b6
+
+% 0 1 0 1d1b4711890d02191dc2faab0c5e76bf
+
+% 0 1 0 1d944432550aa17816451265fca55db5
+
+% 0 1 0 191ebffa945fe693116e62c4fe2b18a0
+
+% 0 1 0 0f8e5678e87cac1e07830b83744da2b1
+
+% 1 1 0 1bf56444e2f782aa049effd119d1a72b
+
+@ 0 3 0 11c0392cb80075e20c04e804af3ce7fe
++     这里 `workspace` 和 `limit` 都不是必需的：客户端可以省略它们，方法会看到 `Unset` 和 `20`。
++     `@title` 为工具提供标题，`@ui` 指名作为其用户界面的资源。
+
+@ 0 8 0 061b3fcb311e45cb15b420fb6cde10d7
++ entry .resource   `@resource("uri")` 注解：方法的结果在一个 URI 上提供
++     `Mcp.Server` 的 `@resource(uri)` 方法不接受参数，返回任何 `Streamable by Text` 或 `Streamable by Data` 的东西：它由 `resources/list` 列为以方法命名的 `Mcp.Resource`，由 `resources/read` 以该 URI 读取，结果为 `TextResourceContents`，或经 Base64 编码的 `BlobResourceContents`。
++     第二个参数 `mimeType` 给出所报告的类型；没有它时，URI 被某个工具的 `@ui` 指名的资源为 `text/html;profile=mcp-app`，文本资源为 `text/plain`，二进制资源为 `application/octet-stream`。
+
+% 2 1 0 1d27687ede3633ee1a0614dd46a48d44
+
+% 3 1 0 1deb28ea411e39350ef54db41e8b05fe
+
+% 0 1 0 16873c0e97b520431fcdbfd4f1fc68b0
+
+% 1 1 0 1cf890593eb40c9c11a18de55be6b325
+
+% 2 1 0 04dfc66b679c8a631c40c974602fefca
+
+% 0 1 0 01c977c062dd1e6b1b4a7b0f9c71c258
+
+% 0 1 0 01353848b929dbec138bbe89f0cf1487
+
+% 1 1 0 02157efd203f1b5e0ed6fafce413b3e8
+
+% 2 1 0 1fd32b80100dc3c0039e9ebf7929d4f7
+
+% 0 1 0 154cc31d607bc18f1513e41a0c727032
+
+% 0 1 0 0637c6b2044462a3054ce772bd0905a2
+
+% 0 1 0 1e89a5dbf4113f620343ea153e0ceec1
+
+% 1 1 0 16f100bd95d7355816ca347d95c21f8b
+
+@ 0 2 0 005910dd68b04ec80b6baa33d48a1be6
++     带参数的方法是编译错误，_MCP resource methods cannot have any parameters_，不能流式传输的结果类型也是如此。
+
+@ 0 6 0 1edc0f2c33431a75094600161a654ab6
++ entry .prompt   `@prompt` 注解：方法返回一个对话模板
++     `Mcp.Server` 的 `@prompt` 方法返回一个 `List[Discourse]`，用 `human"…"` 和 `agent"…"` 插值器编写；它由 `prompts/list` 列为以其命名的 `Mcp.Prompt`，每个参数对应一个 `PromptArgument`，并由 `prompts/get` 以文本形式的参数运行。
++     每条 `Discourse.Human` 消息成为 `User` `PromptMessage`，每条 `Discourse.Agent` 消息成为 `Assistant` 消息。
+
+% 2 1 0 0c66a7a6169696521f9799e749c79a5d
+
+% 3 1 0 138273c51860a34a0d6bbd08da53dcda
+
+% 0 1 0 1ab0356293bfeb3005cdc045ad94112a
+
+% 1 1 0 11319a7edae89a6602f351d41cb604ad
+
+% 2 1 0 122668b4990f006b1f8f58333713eae4
+
+% 0 1 0 0d921e02ad3d2d9e0c8ab1a6ce739270
+
+% 0 1 0 18ccee1b5ace5f060a1e84b96b33c356
+
+% 1 1 0 1c472579afab2b501391f97a57835a3e
+
+% 2 1 0 0e0479b12f58aee20716467a00d79183
+
+% 0 1 0 18c478f3e78962d71c3a27ced84f95f7
+
+% 0 1 0 13deb9589975bc010703a2741001e6b6
+
+% 0 1 0 0c6924c9db5e1f710a63c216caac14f4
+
+% 1 1 0 171864dbff57289d14d9ec335b6173f5
+
+@ 0 3 0 071ee07bc58bc75e01ba9b537708f0f4
++ entry .title   `@title("…")` 注解：工具、资源、提示词或参数的人类可读标题
++     成为所列出的 `Mcp.Tool`、`Mcp.Resource` 或 `Mcp.Prompt` 的 `title`，或提示词参数的 `PromptArgument` 的 `title`，而 `@about` 给出描述。
+
+@ 0 5 0 1bb307ff11fbb9630631d946b19a9de7
++ entry .ui   `@ui("uri")` 注解：指名作为工具用户界面的资源
++     在 `@tool` 方法上，`@ui(uri)` 向工具的 `_meta` 添加 `{"ui": {"visibility": ["model", "app"], "resourceUri": uri}}`，告诉 MCP-apps 客户端为它显示哪个资源，并使具有该 URI 的 `@resource` 默认采用 MIME 类型 `text/html;profile=mcp-app`。
+
+% 2 1 0 11daf6f6796beb5515959658596a4252
+
+% 3 1 0 1cabe3b53b47d9bf11c407d7770b40de
+
+% 0 1 0 05f5dc434f74ff2115756999dccc00b4
+
+% 0 1 0 191cbfb78d46a62217529dcb01c2bc42
+
+% 0 1 0 1c00cdeeccdd2583168c4fcb89ec260a
+
+% 1 1 0 17d6e5eb403fdf3e1c9c4d719a80656d
+
+% 2 1 0 098653aa1db65de01acc322b4370d229
+
+% 0 1 0 184811212ee5279b1903b75c9cfadcc0
+
+% 0 1 0 0f2ec27b5804f1060c54b988e37e850e
+
+% 1 1 0 1e8eee6635b0f53f1828d64fbe0327f9
+
+% 2 1 0 18cce5810445a2730010c1903124dc1b
+
+% 4 1 0 1f10292ec0f2b22415584ae47283336c
+
+% 0 1 0 1b396ae07115492d19ee1ce89f0529ca
+
+% 0 1 0 04b64b9b1aac1fdc0911663282f917c4
+
+% 0 1 0 1b24f7e632fa5d1200c89eca8fb498ff
+
+% 0 1 0 0ab1432c124e76151db11910f35b0c66
+
+% 0 1 0 15b837cf836e1372056cc0b4f6f518a8
+
+% 1 1 0 0b1e0fb0afa3994c1f24a7c506919d5c
+
+@ 0 1 0 0c62d1be4f6026bd16089c4f287363ad
++ entry .Discourse   提示词对话中的一条消息：来自人类或来自智能体
+
+% 1 1 0 0d33e20b1548c59b15a30659c8eec9a6
+
+@ 0 4 0 1b24c4ca7a907e3c10a742ea5467e63d
++       `Human` 和 `Agent` 构成的密封和类型，每个都携带一条 `Text` 消息。
++       `@prompt` 方法返回一个 `List[Discourse]`，用 `human"…"` 和 `agent"…"` 插值器编写最为简便；`Mcp.Interface` 把每条消息变为带有 `User` 或 `Assistant` 角色和一个 `TextContent` 的 `PromptMessage`。
+
+% 2 1 0 068f0e9e270eaea80ddcf0daaea32d89
+
+% 3 1 0 0d48d0ebdd956981000392afb1c1ef0e
+
+% 0 1 0 1201dc817b504e6e1c159024057d0de0
+
+% 0 1 0 1650d19fba143a690e6bb8676e30a45e
+
+% 1 1 0 10e7343ba386933b1555075ccb845d76
+
+@ 0 5 0 1f32b5a9069dde630490510796db7ad2
++   entry .Human   来自用户的提示词消息
++       `Human(message)`，由 `human"…"` 生成。
++       它按结构检视，显示为 `Human(message:t"hello")`。
++   entry .Agent   来自助手的提示词消息
++       `Agent(message)`，由 `agent"…"` 生成。
+
+@ 0 4 0 05d829f18daa6a2a184ece644741f945
++ entry .human   `human"…"` 插值器：一条 `Human` 消息，替换内容显示为文本
++     每个 `$substitution` 都必须是 `Showable`，并以其 `Showable` 渲染；没有 `Showable` 的值是编译错误，_could not find a contextual `T is Showable` instance_。
++     结果是一个 `Discourse`。
+
+% 2 1 0 19406a8f8cbcd9f419b304625da66cc2
+
+% 3 1 0 1fdd5b562ba432ae193cdefb909669cc
+
+% 0 1 0 0e7fc1d4bb9f817d0ac93e2ef2abd8b6
+
+% 0 1 0 1c92b2e4b2a505640a2d919357407307
+
+% 1 1 0 198199cf843384b20040aab064776c38
+
+@ 0 2 0 071244b213781e66132c4faaca370778
++ entry .agent   `agent"…"` 插值器：一条 `Agent` 消息，替换内容显示为文本
++     与 `human"…"` 相同，但生成 `Discourse.Agent`：提示词对话中助手的一方。
+
+% 2 1 0 0438ed8fbc29715b14a30fc93eb61f0d
+
+% 3 1 0 1913525154bf23ed0ef319ef5c1dbe11
+
+% 0 1 0 0fc4895181bd3bf610672098da68ef01
+
+% 1 1 0 1575e06225077768079b18474d0c1140
+
+@ 0 1 0 07e539f2f78861991dfc18716642564d
++ entry .internal   `human"…"`、`agent"…"` 和 `Mcp.Specification` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 8 0 11541b2458ad193e015c1d4cf441c151
++       不供直接使用：该对象的存在是为了让宏有一个稳定的归属。
++   entry .prompt   `human"…"` 和 `agent"…"` 背后的宏
++       把字面量部分与每个替换值的 `Showable` 渲染连接起来，并拼接出一个 `Discourse.Human` 或 `Discourse.Agent`。
++   entry .spec   `Mcp.Specification.mcpSpecification` 背后的宏
++       读取服务器类型的 `@tool`、`@resource` 和 `@prompt` 方法（包括被重写方法上的注解），派生它们的 schema，并拼接出带有列表和分派逻辑的 `Mcp.Specification`。

@@ -1,0 +1,3000 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12e037388b61695c0954660348391519
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1dd057f9c6d794211794c2b00db6df30
++ info   作为有类型、不可变值的 HTML：由标签构建，从文本解析，可匹配，可渲染
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 163173ad77468f5215efeb477c5ed856
++     _Honeycomb_ 将 HTML 表示为由不可变值组成的树，这些值的类型携带了 HTML 规范对它们的规定。
++     元素通过将标签应用于其属性和子项来构建，而构建过程在代码编译时就受到检查：给 `<br>` 子项、给 `<p>` 一个 `src` 属性，或把 `<li>` 放进 `<div>`，都是编译错误，而不是格式错误的输出。
++     同样的值可以用 `read[Html]` 和 `load[Html]` 从文本读回，用 `h"…"` 插值器作为模式进行匹配，用 `+`、`^+`、`+^` 和属性赋值来连接和变换，用 `show` 渲染，或从 `Document[Html]` 流式输出。
+
+@ 0 8 0 0ad0db574e57ba2e0163ce9ec451892d
++     核心类型是 `Html`：一个节点或一个节点序列。
++     它的伴生对象包含各种节点——`Html.Element`、`Html.Text`、`Html.Comment`、`Html.Doctype`，以及表示序列的 `Html.Fragment`——还有所有解析、渲染和转换 HTML 的 given、解析器的 `Html.Issue` 和 `Html.Position`，以及在 `parsing.trackPositions` 下加载的文档中定位元素的 `Html.Path`。
++     值的静态类型可以表达远比 `Html` 更多的信息：`Html of "br"` 记录标签，`Html of Flow` 记录内容类别，`Html.Element of "ul" over "li"` 记录元素可以包含什么，`Html in Whatwg` 记录它符合哪个规范。
+
+@ 0 9 0 0326f45a7e6b23ba096ce64ecca6cd7f
++     词汇来自一个 **DOM**，即通过按名称导入某个 `htmlDoms` given 选定的 `Dom` 值。
++     `Whatwg` 是 WHATWG HTML Living Standard——其伴生对象中约有 110 个标签对象（`Div`、`P`、`Img`、…），每个都按其接受的子项和属性定型，还有属性类型（`Whatwg.Url`、`Whatwg.PositiveInt`、…）、内容类别（`Flow`、`Phrasing`、`Metadata`、…）和命名字符引用——而 `Html4Transitional` 是 HTML 4.01 Transitional 方言，带有其已弃用的表现性标签和属性。
++     每个标签对象都是 `Tag` 类的实例；`Attribute`、`Attributive` 和 `Unattributive` 为每个属性的值定型；`Renderable` 让任何类型的值都能出现在需要 HTML 的地方。
+
+% 2 1 0 020274bbe74cf0501a3c3ea9448e9cf3
+
+% 3 1 0 0fda17131daadf5a0f98eea318d4f4b0
+
+% 4 1 0 1fea3d5ab7bea855149219f5ee3bf485
+
+% 5 1 0 1f1b0bcb167108f81a8fe92a6d50b57a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 1 1 0 1b412743e86fa15405cb7478fb345f5d
+
+% 0 1 0 024be1b29dab3ba70e328e6e976383cf
+
+% 0 1 0 1db74e55d003daeb1d3d1c61b9faf6e6
+
+% 0 1 0 11d4467abe08ffa21ecbcd4723e8cbe5
+
+% 0 1 0 0af354932a2edb5e000040e127d0bf3f
+
+% 0 1 0 01ed4c0c52de92d10374d1b0d79e4dc8
+
+% 1 1 0 0ac1a16e2387238806125d4c51fcedd4
+
+@ 0 3 0 0cdac9a4252baca70ce3c084fad2f488
++     读取需要一个 `Dom`，并且除非作用域中有 `recoveries.permissiveRecovery`，还需要一个 `Tactic[Parse.Error]`；解析失败是 `Parse.Error`（错误 `↯/s.60.2`），其位置是一个 `Html.Position`，其问题是一个 `Html.Issue`。
++     `strategies.throwUnsafely` 会将其抛出。
+
+@ 0 2 0 1e0e95d916d7c3471b90a0d81bf6cccd
++     该库是一个源集 `honeycomb.core`，没有平台特定的组件。
++     选择包需要按名称导入，因为 `import soundness.*` 不会导入 given：
+
+@ 0 10 0 1c9ea3b39a68521604d31d0490389c63
++     - `htmlDoms`——`whatwg` 和 `html4Transitional`，即解析和标签应用所用的词汇。
++     - `formatting`——`indentedHtmlFormatting`（默认）和 `compactHtmlFormatting`，决定 `Document[Html]` 在流式输出时如何排版。
++     - `attributives`——`textAttributive`，它使 `Text` 可用于每个属性，无论其声明的类型是什么。
++     - `stylesheets`——`uncheckedClasses`，它让 `P.info(…)` 可以使用任何 CSS 类名。
++     - `recoveries`——`permissiveRecovery`，它选择具有恢复能力的解析器。
++     - `construables`——`htmlConstruable`，它将 `text/html` 正文解释为 `Document[Html]`。
+
+@ 0 4 0 0ec36a1f4b18f41f1adf54005ea31bfe
++     所有内容都导出到 `soundness` 总括包，而每个选择包都会与总括包中同名的包合并。
++     节点类型以 `Html.Element`、`Html.Fragment` 等形式访问：不建议使用 `import Html.*`，因为它会用 `Html.Text` 遮蔽 `anticipation.Text`。
+
+% 0 1 0 1ae9f53f6b35845b14a57023ba6bd887
+
+% 0 1 0 1f0c77d553c179e20c91b37919f0b0f1
+
+% 0 1 0 08c8e3783dc340f90396a256b0d57eee
+
+% 0 1 0 1b178bc35d45cb471351009f6ae50046
+
+% 0 1 0 0659d4cb18f5ceef0ec9cc31f3902795
+
+@ 0 1 0 11966e815acd09291207396c8af9fe22
++ entry .Html   一个 HTML 值：一个节点或一个节点序列，按标签、内容和规范定型
+
+% 1 1 0 1e8ec42c7a6420e80bb7596e71f1e970
+
+@ 0 6 0 0e956811f22986220aefe777637d6728
++       `Html` 是每个 HTML 值都符合的密封特质。
++       一个值要么是 `Html.Node`——恰好一个 `Html.Element`、`Html.Text`、`Html.Comment` 或 `Html.Doctype`——要么是 `Html.Fragment`，即没有单一父节点的节点序列。
++       由于 HTML 是文本格式，单个节点很少是必要的约束，因此 `Html` 处处都接受序列，而 `Html.Node` 标出少数需要单个节点的地方。
++       片段作为子项提供时会被展开，只含一个节点的片段等于该节点。
+
+@ 0 5 0 131d57f4c3922208068bb8c7e4c3e2ee
++       三个类型成员细化一个值：`Topic`，即标签名（`Html of "br"`）、名称的并集，或来自当前 DOM 的内容类别，如 `Flow` 或 `Phrasing`；`Transport`，即该值可以包含什么（`Html.Element of "ul" over "li"`）；以及 `Form`，即它所符合的 `Dom`（`Html in Whatwg`）。
++       库在内部使用这种精度；应用程序很少需要比 `Html of Flow` 更多的信息。
+
+@ 0 7 0 01163b5fb5426b810d8ea3ec27da9b13
++       对象 `Html` 本身就是 `<html>` 标签——一个接受 `head` 和 `body` 的 `Tag.Container`——因此整个页面是 `Html(Head(…), Body(…))`，而 `Html.doctype` 是 `<!DOCTYPE html>` 头。
++       它的伴生对象还包含所有解析、渲染和转换 HTML 的 given：文本和字符串转换为 `Html.Text` 子项，`Renderable` 值转换为它所渲染的 HTML，而 `Aggregable`、`Loadable`、`Streamable`、`Showable` 和 `Inspectable` 实例就是 `read[Html]`、`load[Html]`、`document.stream[Text]`、`show` 和 `inspect` 所解析到的实例。
+
+% 2 1 0 1209182f19b00643188a653646dae417
+
+% 3 1 0 146cbed67ed7c189123749edcda0c09c
+
+@ 0 1 0 135d787e28357e931b54d31d281d9e05
++         label 单独的元素
+
+% 1 1 0 0988b9192d9e8e0502c350d656e3b68c
+
+% 2 1 0 12ffad208d0ac9141de465b2eff6c91d
+
+% 3 1 0 14dddfefcaba865101b0fcb4a962a26a
+
+% 4 1 0 178295ec88915adb085162b58508ff4e
+
+% 5 1 0 0bd46b8c9e0154fd0a745e5bb393a5d4
+
+% 0 1 0 160cab87c6cf0a9102ff41442d85a47e
+
+% 1 1 0 04a52acd53c50a280ebf0585ac605814
+
+@ 0 1 0 1b5cbb135b43fcb7177a1d3be6c45ade
++         label 赋值一个属性，得到新值
+
+% 1 1 0 185040392a60c911188a75696f7de587
+
+% 0 1 0 1dc9498d168a3666062a1bdfe451d05d
+
+% 1 1 0 0f1f4b4fb7fe973603d0ce16b0746e11
+
+@ 0 1 0 1a049db928cedc850f01793aa0a07edc
++         label 将子项应用于容器
+
+% 1 1 0 19796ced94959bd201128b71d49f0f8f
+
+% 0 1 0 05bcbc32c5ff550f01727f941c5e9cb3
+
+% 1 1 0 1d0b6f3a1e88e07919978c8f00bdb344
+
+@ 0 1 0 169798f67f22488c16c781a28930fba1
++         label 在开头和末尾各添加一个子项
+
+% 1 1 0 0f6e8a10cacffc9914ac52d435d8a16a
+
+% 0 1 0 1be1e4d43ff8fdef1cd564b54029d29a
+
+% 1 1 0 139b8d020de201fd1914e9116a42fe4e
+
+@ 0 1 0 007c88093e65c0eb0689dd4fef878ec5
++         label 两个值连接成一个片段
+
+% 1 1 0 0651fd33b3b95edb06f2cc5277910ede
+
+% 0 1 0 057f81947db9f8711afda03964b5ea1b
+
+% 1 1 0 1222edec9dd178a80c84136e4202d18d
+
+@ 0 1 0 0c33feb523386925165d347a0b24d7f9
++         label 渲染后的页面
+
+% 1 1 0 11cd822225e61934125fef50649a9b80
+
+% 0 1 0 0b7ac22baad06b5503cf24790039ca4d
+
+% 1 1 0 122d62c26e49e2090aa71b8027c62968
+
+% 2 1 0 0f34ee42cbd2bcf80711f2a988198e24
+
+@ 0 4 0 14c814032b1e757b0e95dfa5714e03e7
++       每个节点都是不可变的：赋值不会改变 `image`，`described` 是一个新元素。
++       相等性是结构性的：两个元素在标注、属性（任意顺序）、子项和外来性都相等时相等，而注释、文本或文档类型声明等于只包含它的片段。
+
+@ 0 8 0 1f6544d7bd53e921090c743c06d38a4d
++       读取 HTML 需要作用域中有一个 `Dom`（`htmlDoms.whatwg`）和一个 `Tactic[Parse.Error]`，除非 `recoveries.permissiveRecovery` 选择了具有恢复能力的解析器，后者不需要战术。
++       `read[Html]` 接受由任何节点组成的片段；`read[Html of "ul"]` 只接受其类型所指名的标签，这也引导解析器推断被省略的标签；`load[Html]` 将整个文档连同其文档类型声明读取为 `Document[Html]`，其 `metadata` 是一个 `Html.Provenance`。
++       `show` 依照 WHATWG DOM 紧凑地渲染任何节点；`Document[Html]` 则通过它自己的 DOM 流式输出，按作用域中的 `Html.Formatting` 排版。
+
+% 1 1 0 027be51a1a696b430af4bab1a5a9591c
+
+% 1 1 0 063bcf9c80085d7516f215e3123263f0
+
+% 0 1 0 073c1eddf1c8f6991e7ef9fa8dcf57c2
+
+% 0 1 0 034af467350816a1104d15d2b5417014
+
+% 0 1 0 09d1e33a5289bddd1a674ff93fa17783
+
+@ 0 1 0 1a835aa11cb8d4510539964572346ac4
++   entry .Formatting   流式输出的 `Document[Html]` 如何排版：每行一个元素并缩进，或紧凑
+
+% 1 1 0 12a1e590341cdde00254f26dd6cc5b2d
+
+@ 0 8 0 15f977a1c1d674c71d1418f04c0a8162
++         `Html.Formatting` 是 honeycomb 的 `zephyrine.Formatting`，只有一个参数：`indented`。
++         当它为 `true`（伴生对象的 `default`，以及 `formatting.indentedHtmlFormatting`）时，DOM 模式为 `Html.Mode.Whitespace` 的元素——`html`、`head`、`body`、`ul`、`table` 等，其子项之间的文本无关紧要——每行写一个，每层缩进两个空格，最深 32 层；当它为 `false`（`formatting.compactHtmlFormatting`）时，整个文档写在一行上。
++         它只适用于 `Html.streamable`，即 `Document[Html]` 流：对单个节点的 `show` 总是紧凑的。
+
+% 2 1 0 10c9861db6f5236d14a323fbd60701e9
+
+% 3 1 0 1108415f21d935a011e506b79c7dfa39
+
+% 0 1 0 04de2b64b050deb40ce863dab0726323
+
+% 1 1 0 1110745f5bed9d790f19b19b7fcf849b
+
+@ 0 45 0 1e752f93145d9de817bc122f06d909d1
++     entry .apply   具有给定缩进设置的排版
++     entry .default   伴生对象的 given：缩进
++         位于隐式作用域中，因此 `Document[Html]` 会缩进输出，除非导入了 `formatting.compactHtmlFormatting`，它是词法作用域的，因而优先于此 given。
++     entry #indented   空白模式的元素是否每行一个并缩进排版
++   entry .Integral   整数值属性类型的标记特质
++       伴生对象中三个标记特质（`Integral`、`Decimal`、`Id`）之一，与 `Whatwg` 为其属性值类型声明的那种相同；WHATWG 属性使用的是 `Whatwg.Integral`、`Whatwg.Decimal` 和 `Whatwg.Id`，而不是这些。
++   entry .Decimal   十进制数值属性类型的标记特质
++       参见 `Html.Integral`；WHATWG 属性使用 `Whatwg.Decimal`。
++   entry .Id   标识符值属性类型的标记特质
++       参见 `Html.Integral`；WHATWG 属性使用 `Whatwg.Id`。
++   entry .media   `Document[Html]` 的媒体类型是 `text/html; charset=UTF-8`
++       这个 `Media` given 让 `Document[Html]` 能以正确的 `Content-Type` 作为 HTTP 响应正文提供，或作为请求正文发送。
++       它位于隐式作用域中。
++   entry .doctype   `<!DOCTYPE html>` 头，即 `Html.Doctype(t"html")`
++   entry .nodes   将 `List[Html]` 展平为 `Array[Html.Node]`，并展开片段
++       `List[Html]` 上的扩展方法：每个 `Html.Fragment` 贡献其节点，每个节点贡献其自身，因此结果就是父节点的子项数组所保存的扁平序列。
++       标签的 `apply` 和 `Html.Fragment.apply` 使用它，这就是作为子项提供的片段从不嵌套的原因。
++   entry .interpolator   `h"…"` 背后的 given：在代码编译时解析字面量并拼接节点
++       `h` 插值器所解析到的 `Interpolable` 实例。
++       它的 `interpolate` 是一个宏 `internal.interpolator`，它依照 WHATWG DOM 解析各部分，在字面量处报告任何 `Html.Issue`，并在运行时直接实例化节点，因此结果没有任何解析开销。
++       参见 `honeycomb.h`。
++   entry .extrapolator   作为模式的 `h"…"` 背后的 given：将被匹配值与字面量进行匹配
++       使 `case h"<li>$value</li>"` 成为模式的 `Extrapolable` 实例。
++       它的 `extrapolate` 是一个宏 `internal.extractor`，它依照 DOM 将模式作为真正的 HTML 解析——因此带闭合标签书写的模式能匹配不带闭合标签书写的输入——并将每个空位绑定到该位置上的文本、属性值、属性映射、元素或子内容。
++       参见 `honeycomb.h`。
++   entry .addable   `left + right`：将两个 HTML 值连接成一个片段，按两者的主题定型
++       `Addable` given：`H1("title") + P("Hello")` 是一个 `Html.Fragment of "h1" | "p" in Whatwg`，按展平后的顺序包含两边的节点。
++       两边必须属于同一个 `Dom`。
++   entry .strictAggregable   `read[Html of content]`：将文本解析为类型所指名的标签，遇到任何错误即失败
++       用于 `read[Html of "ul"]`、`read[Html of "ul" | "ol"]`、`read[Html of Flow]` 以及任何其他标签名并集的 `Aggregable` given：解析器在顶层只接受所指名的标签，这也引导它推断被省略的标签，因此以 `Html of "html"` 读取的 `<p>Hello</p>` 会补上缺失的 `<html>` 和 `<body>`。
++       当源文本产生一个节点时，结果是单个 `Html.Element`、`Html.Text` 或 `Html.Comment`，否则是一个 `Html.Fragment`（对于空文本则为空片段）。
+
+@ 0 5 0 1fb0fdf3ea215ce910899cc35ff9c097
++       它需要作用域中有一个 `Dom` 和一个 `Tactic[Parse.Error]`，并且只在作用域中没有 `Html.Recovery.Permissive` 时才会被解析：`recoveries.permissiveRecovery` 会切换到 `Html.permissiveAggregable`。
++       每个 `Html.Issue` 都通过战术抛出——解析器在 `raise` 之后能从其中一些问题中恢复，例如不被接受的标签，而遇到其他问题则会中止。
+
+% 2 1 0 094cf9da76319ee51794cffcdf753544
+
+% 3 1 0 126f03f9d0b65bd01d5058ef6a22848d
+
+% 4 1 0 1f9732f003226a481fb7a9953aaf3bf8
+
+% 5 1 0 1be6a44fb3ce06940225466b841340a4
+
+% 6 1 0 1651a4dd262509d110d70810e528c53b
+
+% 0 1 0 015ad2fdbbae6d8319f883e0eeb5c9b0
+
+% 0 1 0 11d72264d3561eaf1b691b7ef1f77053
+
+% 1 1 0 0189ed03640f5ab11ff12b582c02f606
+
+@ 0 10 0 14bf48da2c05b6e91d49cfe237a9867e
++   entry .strictAggregable2   `read[Html]`：将文本解析为 DOM 所定义的任何节点，遇到任何错误即失败
++       与 `Html.strictAggregable` 相同，只是顶层接受 `Dom` 的每种元素，且不接受文档类型声明。
++       需要一个 `Dom` 和一个 `Tactic[Parse.Error]`，当作用域中有 `Html.Recovery.Permissive` 时让位于 `Html.permissiveAggregable2`。
++   entry .strictLoadable   `load[Html]`：将整个文档读取为 `Document[Html]`，遇到任何错误即失败
++       `Loadable` given：源文本作为文档解析——接受文档类型声明，根是 `<html>`，被省略的 `<html>`、`<head>` 和 `<body>` 会被推断出来——结果是一个 `Document[Html]`，其 `root` 是 `<html>` 元素，其 `metadata` 是一个持有 `Dom` 的 `Html.Provenance`。
++       没有单一根的源文本会抛出带有 `Html.Issue.BadDocument` 的 `Parse.Error`。
+
+@ 0 4 0 04535754fbacebd609e8ef483613a37b
++       它需要一个 `Dom`、一个 `Tactic[Parse.Error]` 和一个 `PositionTracking`（默认是 `Off`；`import parsing.trackPositions` 会将其开启，此时文档会记录每个元素和属性在源文本中的位置，供使用 `Html.Path` 的 `document.locate(path)` 使用）。
++       它只在作用域中没有 `Html.Recovery.Permissive` 时才会被解析。
+
+% 2 1 0 117a2e02bf4cd91b0d44bca3855efa75
+
+% 3 1 0 06276baec4ec77860d9021830db6dc08
+
+% 4 1 0 0ade7235894e407f1bd5c2f6ac3e2475
+
+% 5 1 0 019220eb0261e8dd1ab23ec516c5ac7f
+
+% 6 1 0 06eef97efc795d46027a18b47971a2e2
+
+% 0 1 0 086f9e81bceaf12706ab4b7cfdfed5c9
+
+% 0 1 0 0c1892a911a69c5a0b85ac8cbc2e9fcb
+
+% 0 1 0 02d832c5c28c1b36029ff80dd18795e8
+
+% 1 1 0 0851e3811f8f32ab0fb3a10e5d590ce1
+
+@ 0 8 0 1b984ce52aa7635c03ffea7989f6d004
++   entry .permissiveAggregable   `recoveries.permissiveRecovery` 下的 `read[Html of content]`：恢复错误，从不抛出
++       `Html.strictAggregable` 的恢复式对应物，通过将一个 `Html.Recovery.Permissive` 引入作用域（`import recoveries.permissiveRecovery`）来选择，这也会禁用严格的 given，即使存在 `Tactic[Parse.Error]` 也是如此。
++       它只需要一个 `Dom`。
++       解析器能从一组确定的格式错误输入中恢复——未知属性、未闭合标签、多余的闭合标签、位置错误的标签——它的警告会被丢弃，而无法恢复的情况会产生一个空的 `Html.Fragment`，而不是错误。
+
+% 2 1 0 14f42ef12bef992809ee9548ae0d185e
+
+% 3 1 0 1376f44ad568bd1d07488436e2c2fa41
+
+% 4 1 0 1bec815872383f6f0db10507e62fe0a5
+
+% 5 1 0 034f46aa3fe7c60811e309034f9620f5
+
+% 6 1 0 1c74c53d9463cfb10a072e3a09f66a86
+
+% 8 1 0 13f392db8217fb2c1c0dd39ecd761a41
+
+% 0 1 0 070bff5187c536b406a685677d7b6681
+
+% 1 1 0 09835feeafe6762e0dad144ce27c86cb
+
+@ 0 17 0 19611587f44cf1141b750a524d86bdda
++   entry .permissiveAggregable2   `recoveries.permissiveRecovery` 下的 `read[Html]`：恢复错误，从不抛出
++       与 `Html.permissiveAggregable` 相同，只是顶层接受 `Dom` 的每种元素。
++       只需要一个 `Dom`。
++   entry .permissiveLoadable   `recoveries.permissiveRecovery` 下的 `load[Html]`：恢复错误，从不抛出
++       与 `Html.strictLoadable` 相同，但不需要 `Tactic[Parse.Error]`：可恢复的错误会被修复，没有单一根的源文本按原样包装，无法恢复的源文本则得到一个以空片段为根的文档。
++       位置跟踪的工作方式与严格加载相同。
++   entry .streamable   `document.stream[Text]`：将 `Document[Html]` 作为其 HTML 源码的分块流
++       `Document[Html]` 的 `Streamable` given。
++       文档类型声明和根通过文档自己的 `Dom`（`metadata.dom`）写出，按作用域中的 `Html.Formatting` 排版——默认缩进，使用 `formatting.compactHtmlFormatting` 时写在一行上——并在单独的纤程上产生，因此它需要一个 `Monitor` 和一个 `Probate`：即一个环境并发上下文，例如 `supervisors.globalSupervisor` 配合 `threads.virtualThreads` 和 `probates.cancelProbate`。
++       序列化器与 `show` 所用的相同：空元素省略闭合标签，`script` 和 `style` 的内容逐字写出，文本会被转义。
+
+% 2 1 0 0129c359a98ef4bd0d2697984df189f3
+
+% 3 1 0 1e5cd59295f3a7de150c555bf9a193a2
+
+% 4 1 0 1c2f62f071ce1eab0300b9e8b8547d2a
+
+% 5 1 0 000c9e5ba08eef6003d4827d5c3c758b
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 0cee0142c243a0af1e9c17a78b0871b5
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 13a90bd9807757220147cb6f5b014f66
+
+% 0 1 0 057c2814bee630c313d6f72e284acc07
+
+% 1 1 0 00ee7184fb2400e10255a164f9cde70f
+
+@ 0 5 0 02a8bdcf22ea29b119a47269572a642b
++   entry .showable   `html.show`：依照 WHATWG DOM，将任何节点或片段渲染为紧凑的 HTML 源码
++       每个 `Html` 值的 `Showable` given，无论其类型细化到什么程度。
++       渲染结果为一行，没有缩进，无论值是在哪个 DOM 中构建的，都通过标准的 WHATWG DOM 渲染，因此单个节点在任何 `Document` 之外也能正确渲染——空元素不闭合，文本被转义。
++       每个节点的 `toString` 就是它的 `show`。
+
+% 2 1 0 03a85fed1b5a3e4e0b94fc3dabbbe13d
+
+% 3 1 0 0d828b0291bb9e7315b6750c5087372d
+
+% 4 1 0 0e09d85154a504fe10749ae1fa5870ac
+
+% 5 1 0 0393d12dbc8768ca118112c6b2e007a7
+
+% 0 1 0 16d81f55cafae60c17e4ba48ebc362be
+
+% 0 1 0 1a6df42beeb58c6719ef89df45df3509
+
+% 0 1 0 0bfe06b0a9a17c6c144908f96997c9a3
+
+% 1 1 0 14ae11c9ecf966671289de822d2b5c07
+
+@ 0 10 0 11e0a71a61236ba40f66bb2c8a69ac90
++       文本内容会转义 `&`、`<` 和 `>`；双引号括起的属性值会转义 `&` 和 `"`。
++       原始文本元素（`Html.Mode.Raw`：`script`、`style`）的内容按原样写出。
++   entry .inspectable   `html.inspect`：节点的紧凑源码，转义后放在 `html"…"` 字面量中
++       每个 `Html` 值的 `Inspectable` given：与 `show` 产生的标记相同，其中的引号和反斜杠被转义，放在 `html"…"` 中，因此 `Div(style = t"color: red")("hello")` 检视为 `html"<div style=\"color: red\">hello</div>"`——可以与持有相同标记的 `Text` 区分开，也可以与 xylophone 的 `xml"…"` 区分开。
++   entry .Vacuiscible   由容器标签构造的元素上的混入：`apply(children*)` 添加其子项
+
+% 1 1 0 1293ffbfc495bd871d50e7c5a82177ee
+
+@ 0 7 0 17f8a7e3905141e413036519156b3fee
++         只应用于属性的 `Tag.Container`，如 `Div(style = t"color: red")`，会产生一个 `Html.Element & Html.Vacuiscible`，其 `apply` 在第二个参数列表中接受子项：`Div(style = t"color: red")("hello")`。
++         每个子项必须是元素的 `Transport`（即标签所接受的内容）的 `Html`，或者是会被丢弃的 `Unset`。
++         结果是具有相同主题和形式的元素。
++     entry #apply   带有给定子项的元素，每个子项都按标签所接受的内容进行检查
++   entry .Transparent   由透明标签构造的元素上的混入：由其子项决定其主题
+
+% 1 1 0 14aa3b13e4a27b0310924d473160aca1
+
+@ 0 33 0 11852f047749cbf10d44cc972613e8cd
++         透明元素——`<a>`、`<ins>`、`<del>`、`<map>`、`<object>` 等——从其父元素获取内容模型，因此 `A(Li("x"))` 不能放在不能放 `<li>` 的 `<div>` 中。
++         `Html.Transparent#apply` 将子项的标注记录为结果的 `Topic`，因此 `A(Li("x"))` 是一个 `Html.Element of "li"`，恰好在接受 `<li>` 的地方被接受。
++     entry #apply   带有给定子项的元素，其主题变为子项的标注
++   entry .name   格式的名称 `HTML`，即 `Parse.Error` 所报告的名称
++       `Html` 是一个 `zephyrine.Format`，因此解析失败的信息是 _the HTML was not valid at line 1, column 23 because the content ended while the tag `<ul>` was left open_。
++   entry .text   在接受文本内容的任何地方，将 `Text` 转换为 `Html of "#text"`
++       这个 `Conversion` 让 `P(t"Hello")` 和 `h"<p>$name</p>"` 在需要短语内容元素的子项的地方接受 `Text`：结果是一个 `Html.Text`，其主题 `"#text"` 是 `Phrasing` 的成员。
++       内容不包括 `"#text"` 的 `<ul>` 会拒绝它。
++   entry .string   在接受文本内容的任何地方，将 `String` 转换为 `Html of "#text"`
++       与 `Html.text` 相同，用于字符串字面量：`P("Hello world")`。
++   entry .conversion3   当 `content` 包含标注时，将 `Html of label` 拓宽为 `Html of content`
++       这个 `Conversion` 让 `Html of "li"` 能出现在需要 `Html of "li" | "#text"` 或 `Html of Flow` 的地方：标注必须是更宽并集的成员。
++   entry .comment   将 `Html.Comment` 转换为任何内容类型的 HTML
++       注释可以出现在任何地方，因此它对每种内容类型都能转换为 `Html of content`。
++   entry .string2   将 `String` 转换为外来文本 `Html of "#foreign"`
++       外来内容（SVG、MathML）中的字符数据，由 `Html.Element.foreign` 构建：`Html.Element.foreign(t"mi", attributes, "π")`。
++   entry .renderable   将任何 `Renderable in content` 的值转换为它所渲染的 HTML
++       当作用域中有 `List[Text] is Renderable in "li"` 时，`List[Text]` 在任何接受 `Html of "li"` 的地方都会转换为它——`Ul(items)`、`h"<ol>$items</ol>"`——在不接受的地方则不会。
++   entry .sequences   将到 HTML 的转换提升到 `List` 上：`List[nodal]` 转为 `List[html]`
++       给定一个 `Conversion[nodal, html]`，它转换 `List[nodal]` 的每个元素，因此在需要 HTML 列表的地方，文本列表或可渲染值的列表就是 HTML 列表。
++   entry .Issue   解析器发现了什么错误：来自 HTML 的 `Parse.Error` 中的原因
+
+% 1 1 0 130868d2e1e6044607fd588fa7586c63
+
+@ 0 16 0 0302ba71eaba4e1a1602065363339a1e
++         由 `zephyrine.Format.Issue` 组成的枚举，每个都有一条 `describe` 消息，与一个 `Html.Position` 一起携带在严格读取所抛出的 `Parse.Error(Html, position, issue)` 中。
++         各分支为：`BadInsertion`（_a value cannot be inserted into HTML at this point_，`h"…"` 的替换处于没有任何值适合的位置）；`ExpectedMore`（_the content ended prematurely_）；`UnexpectedDoctype`；`BadDocument`（_the document did not contain a single root tag_，来自 `load[Html]`）；`InvalidCdata`（_CDATA content is only permitted in foreign namespaces_）；`InvalidTag(name)`（_`<name>` is not a valid tag_）；`InvalidTagStart(prefix)`；`DuplicateAttribute(name)`；`InadmissibleTag(name, parent)`（_`<name>` cannot be a child of `<parent>`_）；`OnlyWhitespace(char)`（空白模式元素只接受空白的地方出现了字符）；`Unexpected(char)`；`UnknownEntity(name)`（_the entity `&name` is not defined_）；`ForbiddenUnquoted(char)`（未加引号的属性值中禁止出现的字符）；`MismatchedTag(open, close)`；`UnopenedTag(close)`；`Incomplete(tag)`（_the content ended while the tag `<tag>` was left open_）；`UnknownAttribute(name)`；`UnknownAttributeStart(name)`；以及 `InvalidAttributeUse(attribute, element)`（_the attribute `name` cannot be used on the tag `<tag>`_）。
+
+% 2 1 0 1687bd00d3bc178417510406685acf55
+
+% 3 1 0 041af08eb699f1d70009101354b37374
+
+% 4 1 0 1fa036bd3481ba140988c8a1d2aa02f0
+
+% 5 1 0 1dbf5e2b6a23e3691e7328254a9a2d02
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 14b11a0b83330a0e1cfddd5bc55d2e1c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1ae7fd36758db37d059e155fd72bd785
+
+% 0 1 0 135ad6e58653f03403fc174ed4e23b59
+
+% 0 1 0 178d2d6d8df9600a0500d456d47bffd3
+
+% 0 1 0 0bb83a7501ba065b03bf979e2afb0ded
+
+% 1 1 0 09ab40493367dff202833680c3282aee
+
+@ 0 5 0 1a81edaedcdc067d1135692db1ebb785
++         当解析器读取了完整的名称时，未知属性是 `UnknownAttribute`；当没有属性以这种方式开头时，则是 `UnknownAttributeStart`；匹配时应当同时处理两者。
++         在 `recoveries.permissiveRecovery` 下，可恢复的问题会被静默修复。
++     entry #describe   作为 `Message` 的问题
++   entry .Position   解析器在源文本中的位置：行和列，以及偏移量和长度
+
+% 1 1 0 0c63a376d61fc1230599d97431cda7cf
+
+@ 0 22 0 1533221eb0d037d20f633d66fc78418e
++         HTML 解析的 `zephyrine.Format.Position`：`line` 和 `column` 是 `Ordinal`（因此 `line.n1` 是从 1 开始的编号），而 `offset` 和 `length`——在范围已知的错误上存在，在 `document.locate` 返回的每个位置上也存在——从源文本开头计算 char 数。
++         行和列按码点计数，因此一个非 ASCII 字符占一列；长度按 char 计数。
++         错误所报告的列是下一个待读取字符的列。
++     entry #line   行，作为 `Ordinal`
++     entry #column   行内的列，作为 `Ordinal`，按码点计数
++     entry #offset   从源文本开头起的 char 偏移量（如果已知）
++     entry #length   以 char 计的范围（如果已知）
++     entry #describe   `line 2, column 8`，即 `Parse.Error` 报告它的方式
++     entry #span   作为行模式 `Span` 的位置
++   entry .PositionIndex   跟踪式 `load[Html]` 保存在文档上的源位置记录
++       基于描述符冻结数组的不透明类型，每个元素和属性一个描述符，在解析之后通过遍历完成的树来构建——HTML 树构建会通过推断祖先、寄养放错位置的表格内容以及重建格式化元素来重新排列节点，因此位置无法按源文本顺序产出。
++       它只在 `parsing.trackPositions` 下产生，保存在 `Html.Provenance#positionIndex` 中，并由 `document.locate(path)` 通过 `Html.positionable` 读取；它本身没有公开成员。
++       解析器推断出的元素从促成它的词法单元处开始，且不携带属性位置。
++   entry .Provenance   `Document[Html]` 的元数据：解析它所依照的 DOM，以及它的位置索引
+
+% 1 1 0 07f974d410e12b4f0fadfcbe08cffa97
+
+@ 0 6 0 1375e52c7c96b77a1c346698e7b385c1
++         每个 `Html` 值的 `Metadata` 类型，因此 `Document(root, Html.Provenance(dom))` 构造一个文档，而 `document.metadata.dom` 是流式输出时序列化所通过的 `Dom`。
++         `positionIndex` 只由 `parsing.trackPositions` 下的 `load[Html]` 设置。
++         该索引是解析来源信息，而不是身份：它不参与相等性比较或哈希，因此对同一源文本进行跟踪加载和非跟踪加载的结果比较时相等。
+
+% 2 1 0 12ef8d4367701eb30cf6a7c3c15b17fd
+
+% 3 1 0 1600a40de6b5bcd613285cbc63ae7add
+
+% 4 1 0 15a2575cff901bf41afcf2fe2bae2b6b
+
+% 5 1 0 0f6c4460055d83a30e408eff5700e7c9
+
+% 0 1 0 09d94db0098e294706a5596333818596
+
+% 0 1 0 04aae8b8c489724a0daa0a8e33716bd3
+
+% 1 1 0 1e28f22725159ffe163f37201e29c7ad
+
+@ 0 5 0 08998fa9d3d354ef0f3cf28b6b2080a9
++         它被命名为 `Provenance` 而不是 `Metadata`，因为对象 `Html` 本身就是一个元素，其 `Metadata` 类型成员会与同名的嵌套类冲突。
++     entry #dom   解析文档所依照的、序列化时所通过的 `Dom`
++     entry #positionIndex   `Html.PositionIndex`，对于未开启跟踪加载的文档则为 `Unset`
++   entry .Path   从根开始、指向文档中某个元素或属性的路径，供 `document.locate` 使用
+
+% 1 1 0 08a5ef565c5f95e31033763962f0557d
+
+@ 0 5 0 1e98a5068b82ef4311c0c582c06560bc
++         路径通过向 `Html.Path()` 追加步骤来构建：`element(label, ordinal)` 按标签以及它在父节点中同标注的子元素中从 1 开始的排名来指定一个子元素——文本和注释不计入——而 `attribute(name)` 指定最后一个元素的属性。
++         第一步指定的是文档的根元素本身，因此指向普通文档的路径以 `element(t"html")` 开始。
+
+% 2 1 0 1258e5cb5b060ae71fb9dc13465270e1
+
+% 3 1 0 0b53a3a729cee17413ef38aff1058c6b
+
+% 4 1 0 017cc6c3453921821f42afea2a136c8c
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0c5e7da21545287f0200475c5c26fe72
+
+% 0 1 0 0c19256ec35d05c204eef2ded64bad01
+
+% 0 1 0 1e040e8e9599601c012ce7e597929271
+
+% 0 1 0 1bcc4fd152543bcb1731cb16e5fb9b89
+
+% 0 1 0 0279453f06141101188b984564460ef9
+
+% 0 1 0 04135fb0b22a46681dbb58a92a0f5e88
+
+% 0 1 0 14c465df4f6d08ba1695e5354f815bf7
+
+% 1 1 0 021c066dbc97f9e00c38c5928c9e3c9d
+
+@ 0 24 0 0949414ba7085ad109be0fd66ddb8f37
++         位置覆盖整个元素，从它的开始标签到它的结束标签末尾；由父元素的结束标签闭合的元素在那里结束。
++         无法解析的路径——错误的根标注、缺失的子项、解析器没有读到的属性——给出 `Unset`，在未使用 `parsing.trackPositions` 加载的文档上进行任何查找也是如此。
++     entry .Step   路径的一步：按标注和排名指定的子元素，或按名称指定的属性
++         一个枚举：`Element(label, rank)`，即具有该标注的第 `rank` 个（从 1 开始）子元素；以及 `Attribute(name)`，它只能是最后一步。
++     entry #steps   各步骤，从根开始
++     entry #element   扩展了一个子元素的路径：`element(t"p")`，或用 `element(t"p", 2)` 表示第二个
++     entry #attribute   扩展了其最后一个元素的某个属性的路径
++   entry .positionable   `document.locate(path)`：将 `Html.Path` 解析为跟踪式加载所记录的 `Html.Position`
++       `Document[Html]` 的 `Positionable` given，位于隐式作用域中。
++       `locate` 遍历文档的 `Html.PositionIndex`；`locateKey` 总是 `Unset`，因为 HTML 没有独立的键位置。
++       对于未使用 `parsing.trackPositions` 加载的文档，两者都是 `Unset`。
++   entry .Mode   元素内容如何分词和排版：原始、RCDATA、空白或普通
++       每个 `Tag` 都携带一个 `Mode`，解析器和序列化器按名称在 DOM 中查找它。
++       `Raw` 内容（`script`、`style`）没有标签也没有实体，逐字写出；`Rcdata` 内容（`textarea`、`title`）有实体但没有标签；`Whitespace` 元素（`html`、`head`、`ul`、`table`、…）在其子项之间只接受空白作为文本——其他任何内容都是 `Html.Issue.OnlyWhitespace`——并且当文档在 `formatting.indentedHtmlFormatting` 下流式输出时，每行一个子项并缩进排版；`Normal` 是其余所有情况。
++   entry .Recovery   一个标记，它在作用域中的存在会选择具有恢复能力的解析器
+
+% 1 1 0 134fd310eff86c990c7c51be1d06fd40
+
+@ 0 14 0 11f64c4cc0e8eb051c415c5ea7540049
++         `Html.Recovery.Permissive` 是一个没有成员的类：作用域中有它的 given 时，`read[Html]`、`read[Html of …]` 和 `load[Html]` 会从严格的 given（需要 `Tactic[Parse.Error]`，并抛出每个 `Html.Issue`）切换到宽容的 given（不需要战术，并尽可能修复问题）。
++         要导入的 given 是 `recoveries.permissiveRecovery`；即使作用域中也有战术，它也会胜出，因为严格的 given 要求不存在 `Permissive`。
++     entry .Permissive   标记类；`recoveries.permissiveRecovery` 是它的 given
++   entry .Hole   `h"…"` 替换可以占据的位置种类
++       `h` 插值器的宏用来按每个替换所处位置为其定型的枚举：`Text`（字符数据）、`Tagbody`（开始标签的属性，`h"<img $attributes>"`）、`Comment`（`h"<!--$text-->"`）、`Element(tag)`（整个元素，`h"<$element>"`）、`Attribute(tag, attribute)`（属性的值，`h"<img src=$url>"`）以及 `Node(parent)`（指定父元素的子内容）。
++       普通代码中不需要它。
++   entry .Node   恰好一个节点：元素、文本、注释或文档类型声明，但绝不是片段
+
+% 1 1 0 191a115492f608790c80f1878974a5b1
+
+@ 0 8 0 198e49d61c69834f0195181d3009fbca
++         单节点种类——`Html.Element`、`Html.Text`、`Html.Comment` 和 `Html.Doctype`——的密封特质，与作为序列的 `Html.Fragment` 相对。
++         `Html` 值要么是前者要么是后者，因此对两者的匹配是穷尽的。
++         `Html.Node` 标出少数真正需要单个节点的地方，例如元素所持有的子项数组，以及 `h"<$element>"` 的结果；在序列同样适用的地方，类型是 `Html`。
++         节点是纯粹的、不可变的值。
++     entry #body   节点的子项，作为片段：对于文本、注释或文档类型声明为空
++   entry .Comment   注释节点 `<!--text-->`
+
+% 1 1 0 041ef31149da2b1b0e5fe8b460c88dbb
+
+@ 0 6 0 1c584157252c2ffb1150134036aa8500
++         `Html.Comment(t"note")` 渲染为 `<!--note-->`，从源文本中的注释读回时，其文本与书写时完全一致，包括两侧的空格。
++         注释通过 `Html.comment` 在任何内容中都被接受，并等于只包含它的片段。
++     entry #text   注释的文本，位于分隔符之间
++   entry .Text   文本节点：字符数据，主题为 `"#text"`
+
+% 1 1 0 0728d2818cf9b4871b78982ef37507e3
+
+@ 0 7 0 07efce602b151de404cbd2a1ccfc973b
++         `Html.Text(t"Hello")` 是 `Text` 或字符串字面量通过 `Html.text` 和 `Html.string` 作为子项时所变成的东西，也是解析器为字符数据产生的东西，其中的实体已被解码：`t"to &amp; fro".read[Html of Flow] == Html.Text("to & fro")`。
++         它的主题是 `"#text"`，是 `Phrasing` 的成员，因此文本恰好在 DOM 接受它的地方被接受。
++         它渲染时会被转义（`&`、`<`、`>`），原始文本元素内部除外；它等于只包含它的片段。
++         在模式中，`case Html.Text("one")` 匹配捕获到的主体的文本。
+
+@ 0 6 0 0066ec8d584ac1e71db600a4c289354a
++         在导入了 `Html.*` 的作用域中，单独的名称 `Text` 指的是这个节点，而不是 `anticipation.Text`；应改写为 `Html.Text`。
++     entry .foreign   外来内容中的字符数据，作为 `Html of "#foreign"`
++         `Html.Text.foreign(t"π")` 是一个在 `Html.Element.foreign`（SVG、MathML）中被接受的文本节点，其内容类型为 `"#foreign"`。
++     entry #text   字符数据
+
+% 0 1 0 11d9fed4914dd9af138a17a2f894671b
+
+@ 0 1 0 00a9e683818cdb1f179585aead33556c
++   entry .Element   元素：它的标签名、属性、子项，以及它是否是外来元素
+
+% 1 1 0 0e1dcded6e0a4b3e1a60c428c415acf4
+
+@ 0 5 0 1be0f6673637520f0b89a62c0fdd0951
++         `Html.Element(label, attributes, children, foreign)` 是每次标签应用所构建的东西——`Div(id = t"x")("hi")` 是 `Html.Element("div", Attributes(t"id" -> t"x"), Array(Html.Text("hi")), false)`——也是 `case Html.Element(label, attributes, children, _)` 所拆解的东西。
++         它的静态类型通常表达更多信息：`Html.Element of "img" in Whatwg`，或 `Html.Element of "ul" over "li" in Whatwg`。
+
+@ 0 4 0 1e0040a0b8e7e8a003f17be236f5d2a6
++         静态已知为元素的值有三种变换，每种都给出一个新元素：`^+` 在开头添加子项，`+^` 在末尾添加——插入符标出那一端，且子项必须属于元素的 `Transport`——而属性则通过 `Dynamic` 按名称设置、替换或读取：
+
+% 2 1 0 00a7b8739e9cf1a5081303a56ab41dfa
+
+% 3 1 0 19fd1daf09bfdc3009e2f0415115b1d1
+
+% 4 1 0 009cf375baad76e716d966bf0e251383
+
+% 5 1 0 1def407a31feddeb161cc6a0a8a8f008
+
+% 0 1 0 00b67e552ec60d391393bd60a21f8888
+
+% 0 1 0 0183136e944561a4002037f4d6186813
+
+% 0 1 0 1fd2b218384ae1881eb9c0d17fa74939
+
+% 0 1 0 1b4aff9a99a7a66d1c37237a6c5e4b01
+
+% 0 1 0 116df61036867f881d4143c89eaa43ca
+
+% 1 1 0 0c0e3a74ffc38bb61bfcb179cb459d45
+
+@ 0 41 0 18b86cf09b2e74351cf6bf1ec210179e
++         `/` 按标签选择子元素：`table / Tbody / Tr / Th` 是以这种方式到达的每个 `<th>` 组成的片段，若它只包含一个节点，则等于该节点。
++         相等性是结构性的，属性以任意顺序比较；元素等于只包含其自身的片段。
++         `toString` 是元素的 `show`。
++     entry .foreign   外来命名空间（SVG、MathML）中的元素，带有其属性和子项
++         `Html.Element.foreign(label, attributes, children*)` 从一个 `Attributes` 或一个 `Map[Text, Optional[Text]]` 构建一个 DOM 未描述的元素，类型为 `Html.Element of "#foreign"`，且 `foreign = true`。
++         它的子项是 `Html of "#foreign"`：更多外来元素，或通过 `Html.string2` 转换的字符串。
++         解析器为 `<svg>` 和 `<math>` 的内容构建这样的元素：`t"<svg><circle r=\"1\"/></svg>".read[Html of Flow]` 是 `Svg(Html.Element.foreign(t"circle", Map[Text, Optional[Text]](t"r" -> t"1")))`。
++     entry #label   标签名，小写
++     entry #attributes   属性，按顺序，作为一个 `Attributes`
++     entry #children   子节点，作为一个冻结的 `Array[Html.Node]`
++     entry #foreign   元素是否位于外来命名空间（SVG、MathML）中
++     entry #/   `element / tag`：具有该标签的子元素，作为按该标签定型的片段
++         `Div(Ul(Li("one"), Li("two"))) / Ul / Li` 是 `Html.Fragment(Li("one"), Li("two"))`：每一步保留标注与该标签相同的子项，并从它们继续。
++         结果是一个 `Html.Fragment of tag.Topic in tag.Form`，因此下一步只能是上一步所接受的标签。
++     entry #body   元素的子项，作为具有其自身主题、可容纳内容和形式的片段
++     entry #^+   `element ^+ child`：在最前面插入一个子项的元素
++         子项是属于元素 `Transport` 的节点或片段，放在现有子项之前：`Div(P("body")) ^+ H1("title")` 是 `<div><h1>title</h1><p>body</p></div>`。
++     entry #+^   `element +^ child`：在最后面追加一个子项的元素
++         子项是属于元素 `Transport` 的节点或片段，放在现有子项之后：`Div(H1("title")) +^ P("body")`。
++     entry #selectDynamic   `element.attribute`：读取属性，用其 `Unattributive` 解码
++         `image.alt` 将该名称解析为元素主题在其 DOM 中的 `Attribute`（或全局属性），并用属性类型的 `Unattributive` 解码其文本；不是该元素属性的名称，或其类型没有解码器，都是编译错误。
++     entry #updateDynamic   `element.attribute = value`：设置或移除了该属性的新元素
++         `image.alt = t"…"` 将该名称解析为元素主题在其 DOM 中的 `Attribute`，通过一个 `value is Attributive to` 属性类型来编码该值，并给出设置了该键值对的新元素，或者当 `Attributive` 产生 `Unset` 时（存在性属性为 `false`，或类列表为空），给出移除了该属性的新元素。
++         原元素不变。
++         当作用域中有 `attributives.textAttributive` 时，`Text` 满足每种属性类型。
++   entry .Fragment   没有单一父节点的节点序列
+
+% 1 1 0 11a9326cf2ee33ce066ba277ff7c0073
+
+@ 0 5 0 015f9dd8a23c3df3123e90338b44507a
++         `Html.Fragment(nodes*)` 持有零个或多个 `Html.Node`：它是读取含有多个顶层节点的文本、`+`、`/` 以及产生多个元素的 `Renderable` 的结果。
++         作为子项提供的片段会被展开到其父元素的子项中，且只含一个节点的片段等于该节点，因此 `Html.Fragment(P("x")) == P("x")`；空文本读取为 `Html.Fragment()`。
+
+% 2 1 0 0d4661c9e7b81f091d9aa354028824d2
+
+% 3 1 0 09425924635dd35416e34962dde73aa5
+
+% 4 1 0 15ae36fdbabf1f1f1d20c5904e07762c
+
+% 5 1 0 0f22d796c6812b221fb1a34d68d45a23
+
+% 0 1 0 03a3fcd5dc37fc1400050d55258454a5
+
+% 0 1 0 1766c5e9263506910d7421b1355451a4
+
+% 1 1 0 02e92b3fd3d72fd01436e1626125abae
+
+@ 0 8 0 143932f6e9f9ea1a03fa83efb7e09eee
++     entry .apply   `Html.Fragment[topic](nodes*)`：由给定节点组成的片段，按其主题定型
++         每个参数都是主题在 `topic` 之内的任意 `Html`；其中的片段会被展平。
++         伴生对象的 `apply` 就是 `Html.Fragment(Li("one"), Li("two"))` 所调用的方法；case class 构造器只接受 `Html.Node`。
++     entry #nodes   各节点，按顺序
++     entry #/   `fragment / tag`：每个节点中具有该标签的子元素，连接在一起
++     entry #body   片段本身
++   entry .Doctype   文档类型声明 `<!DOCTYPE text>`
+
+% 1 1 0 023a5d643dcd43350aea878c51c0bc8c
+
+@ 0 20 0 1cdca5387515cebc1326ae8aca08ae99
++         `Html.Doctype(t"html")` 是 HTML5 头，由 `Html.doctype` 和 `Whatwg#doctype` 提供，流式输出的 `Document[Html]` 会首先写出它；`Html4Transitional#doctype` 则是 HTML 4.01 Transitional 的文档类型声明。
++         源文本中的文档类型声明会被 `load[Html]` 不区分大小写地接受，而被 `read[Html]` 报告为 `Html.Issue.UnexpectedDoctype`。
++     entry #text   声明中 `DOCTYPE` 之后的文本
++   entry #Topic   值的标签名、名称的并集或内容类别，作为字面量类型
++       一个 `Label` 子类型：`<br>` 为 `"br"`，两种列表之一为 `"ul" | "ol"`，任何流内容为 `Flow`，文本节点为 `"#text"`，外来内容为 `"#foreign"`。
++   entry #Transport   值可以包含什么，作为标签名的并集
++       `<ul>` 为 `"li"`，`<p>` 为 `Phrasing`，`<html>` 为 `"head" | "body"`。
++   entry #Form   值所符合的 `Dom`：`Whatwg` 或 `Html4Transitional`
++   entry #Metadata   `Html.Provenance`，即 `Document[Html]` 在其根之外携带的东西
++   entry #Chunks   `Text`：HTML 文档以文本形式流式输出
++   entry #/   `html / tag`：具有该标签的子元素，作为按该标签定型的片段
++       在元素上，是标注为该标签的子项；在片段上，是每个节点的这些子项；在任何其他节点上，为空。
++       结果是一个 `Html.Fragment of tag.Topic in tag.Form`。
++   entry #body   值的子项，作为具有其自身主题、可容纳内容和形式的片段
++       元素的子项，片段自身，对于文本、注释或文档类型声明则是空片段。
+
+@ 0 5 0 16872837bc1725d316e6543fd22304b3
++ entry .html   `value.html`：任何 `Renderable` 值，作为它所渲染的 HTML
++     每个具有 `Renderable` 实例的类型上的扩展方法：对于 `Message`，`message.html` 是一个 `Html of Phrasing`；对于 `StackTrace`，`stackTrace.html` 是一个 `Html of Flow`；`Math` 或 `Mathml` 通过它自己的实例渲染。
++     结果类型是实例的 `Form`，因此它恰好在接受该内容的地方被接受。
+
+% 2 1 0 0134246673c159ac0b20f544b89279b0
+
+% 3 1 0 18e87071813de5b61f4dc7c94b872851
+
+% 4 1 0 078baec028f963ac1b824d8807830fd2
+
+% 5 1 0 17e366c1b304b60d112c0a15a4c5c389
+
+% 0 1 0 13bc8f6df187b57e12177d1be326ade2
+
+% 0 1 0 0a27b1b4ec7f36e700e9c1afa0636cbf
+
+% 1 1 0 1505eb5cca64c64d1ca046ca2be1403a
+
+@ 0 7 0 06727b07a22da773059a5c3c66648800
++ entry .h   `h"…"` 插值器：在代码编译时解析的 HTML 字面量，也可作为模式
++     `h"<ol><li>Alpha</li><li>Beta</li></ol>"` 在代码编译时依照 WHATWG DOM 解析其标记，在字面量处报告任何 `Html.Issue`，并在运行时直接实例化节点，因此既没有解析开销，也不损失检查。
++     标准的解析规则适用，因此可选的闭合标签可以省略：`h"<ol><li>Alpha<li>Beta</ol>"` 是同一个值。
++     结果按其顶层标签定型，位于 `Whatwg` 中。
+
+@ 0 5 0 17ab8c586fa201f415a059822f5abefd
++     替换在任何适合周围标记的地方都被允许，并在其位置上受到检查：主体内容必须是外层元素所接受的 HTML（或者可以通过 `Html.text`、`Html.renderable` 及其他转换转换为它），属性值必须通过 `Attributive` 满足属性的类型，而注释的内容必须是 `Showable`。
+
+% 2 1 0 147555afa69d4b4a193e00c87b199e72
+
+% 3 1 0 04f7a835f3d507f90fc9a4c54ea5f4cb
+
+% 4 1 0 1c5b55d2c957812e0e9bf5d3a9b020fd
+
+% 5 1 0 16fcb2d3163d22801567a200f3ec62d9
+
+% 1 1 0 1413d16ad0d32a510c5ebe62c56a8197
+
+% 0 1 0 15e72dc7affd3cc60a7eb5a2296170f4
+
+% 0 1 0 1b5e3e92f2b79b72190db6c85c97aa92
+
+% 0 1 0 1eaa2cacde6a5db20673ce80a1bb4dfd
+
+% 0 1 0 174867ee8b75963803778201af50bdd1
+
+% 0 1 0 0bf8044cd49d43c615a87b933936af6c
+
+% 1 1 0 057e22a790c17be81649c3b72e8df063
+
+@ 0 6 0 19843639656cac7c03d9f1faefeba686
++     作为模式时，字面量匹配与之相等的节点，无论被匹配值是该节点，还是只包含它的片段；它作为 HTML 依照 DOM 进行检查，而不是作为文本，因此带闭合标签书写的模式能匹配不带闭合标签书写的输入。
++     空位绑定它所代表的东西：`h"<li>$value</li>"` 将主体绑定为 `Html`，`h"<img src=$source>"` 绑定属性的值，`h"<img $attributes>"` 绑定属性映射，`h"<$element>"` 绑定任何元素，但不绑定其他种类的节点。
+
+% 2 1 0 0d9807b7ec5fffc504687c7b4697a6cc
+
+% 3 1 0 1a57a36d30821ce90b9c57adbe451471
+
+% 4 1 0 0426dcf000920c6709b5e86c9d7fb873
+
+% 5 1 0 04632d08c0310e17171f1b3e370f3c5c
+
+% 0 1 0 0ead2f25fc050c5018ec5317034fdffd
+
+% 0 1 0 111f11d003011f6e052c0893bb642593
+
+% 0 1 0 0e8e6e164850741600b08ce17ad4ab5b
+
+% 0 1 0 0466f89aa292f0c10e2ea9298f127426
+
+% 0 1 0 02b915bcfcb1b72a132b4783a927c859
+
+% 0 1 0 0284ba07bd535f760627545abc4a8ece
+
+% 1 1 0 0b334fb0833a54b412d77d1383791b52
+
+@ 0 2 0 18a55f0bbef75ac00da7bc9d66860c03
++     该插值器是 `transparent inline` 的，解析到 `Html.interpolator` 和 `Html.extrapolator`，它们的宏位于 `honeycomb.internal` 中。
+
+@ 0 1 0 1eee16148de7352800f453ccb89bbfd2
++ entry .Attributes   元素的属性：从名称到可选值的有序不可变映射
+
+% 1 1 0 113573ba57fca8cb1b8d26371aba5177
+
+@ 0 7 0 0e71b6a329a624ca1eab32133129d753
++       `Html.Element` 的属性，按文档顺序，作为基于由交错的键和值组成的冻结数组的不透明类型，而不是 `Map`。
++       值是 `Optional[Text]`：诸如 `disabled` 或 `checked` 的存在性属性以 `Unset` 为值，渲染为单独的名称。
++       解析在读取开始标签时构建它，每次标签应用都从其预设值和参数构建它，每次更新（`updated`、`removed`、`++`）都返回一个新值。
++       它声明于 `honeycomb.internal`，并导出到 `honeycomb` 包。
+
+% 2 1 0 09401e04a8dd479a028560968e32ee9d
+
+% 3 1 0 144ad17380a8551e093ae5738a6eecc7
+
+% 4 1 0 18eaa7d341a8c66001fc8ebb6ecd46bc
+
+% 5 1 0 153a73ad77c76c4b0356f8cd2a4a4b1c
+
+% 0 1 0 10ae0f1a82c4d97c1e7c357493bcb164
+
+% 0 1 0 0373655f4e5d6c731e36b49c82ec13f3
+
+% 0 1 0 02e67ca885abbca11134d18f01a21421
+
+% 0 1 0 1d258e6473955cbd19ba1df856a3bc84
+
+% 0 1 0 137d1f9638b7cdb51bcc6779bf28d82c
+
+% 0 1 0 0b625c567bc715311dbc9ec16cb1d1d0
+
+% 1 1 0 0080b0950db8c0681053eba8488b584c
+
+@ 0 4 0 0feb426f7ddaabda1b33c8a9f6d0e457
++       两个 `Attributes` 的相等性与顺序无关（`equalsAttributes`），`Html.Element` 自身的相等性使用的就是它；迭代（`keys`、`iterator`、`each`、`to[List]`、`toMap`）按文档顺序进行。
++       它检视为 `html{class="a", hidden}`，与这些属性在开始标签中的样子相同。
+
+% 1 1 0 17cd292c4ad3d7cf0a4b4daf1137a2f6
+
+@ 0 1 0 09dd42a3b28fd1bb189c24e804eeeb8b
++ entry .htmlDoms   解析和标签应用所用的 HTML 规范，每个都是按名称导入的 given
+
+% 1 1 0 1fff9b41aecbe32904a0ce476fd56b5d
+
+@ 0 5 0 0645c23d49594bbb07e87f4d77e5a80b
++       哪些标签存在、每个标签接受哪些子项和属性、其内容如何分词、定义了哪些命名字符引用，这些都来自一个 `Dom`，而这一选择从不是隐式的：`import soundness.*` 不会引入任何 DOM，需要按名称导入一个。
++       标签对象本身是 DOM 伴生对象的成员，因此通常的一对导入先是 given，然后是它的词汇：
+
+% 2 1 0 13adf749e06fea4616a5d619225b36b4
+
+% 3 1 0 1a7190a56eadfda90e2412e0530348c3
+
+% 4 1 0 1568b4821067bda10471db335d0b98a4
+
+% 5 1 0 0c0c03013d34375c15d9a8b8d593577b
+
+% 0 1 0 0d993ecc5591ff26147d00ecdf48cdad
+
+% 1 1 0 138a2db03b688b710086c5538e83bcc0
+
+@ 0 5 0 0b5f61ca70c5dd7d12847c881e43a8be
++       `Whatwg` 是 HTML Living Standard，即今天“HTML”所指的东西，适合几乎所有用途；`Html4Transitional` 是 HTML 4.01 Transitional，用于必须输出或读取该方言的表现性标签和属性的程序。
++       读取（`read[Html]`、`load[Html]`）需要作用域中有一个 `Dom`；用 `show` 渲染总是使用 WHATWG DOM，而流式输出的 `Document[Html]` 使用记录在其 `Html.Provenance` 中的 DOM。
+
+% 1 1 0 090632db37c790fb16b485e191df80c0
+
+% 2 1 0 057cd73e0807048a157f07788a7ab782
+
+@ 0 9 0 05b41872de398b900fcb1a7f468770be
++   entry .whatwg   WHATWG HTML Living Standard，作为一个 `Whatwg` 实例
++       `import htmlDoms.whatwg` 将该 `Dom` 引入作用域，而 `import htmlDoms.whatwg.*`——或在其后使用 `import whatwg.*`——引入标签对象 `A` 到 `Wbr`，以及内容类别 `Flow`、`Phrasing`、`Metadata`、`Heading`、`Sectioning`、`Embedded` 和 `Interactive`。
++   entry .html4Transitional   HTML 4.01 Transitional，作为一个 `Html4Transitional` 实例
++       先 `import htmlDoms.html4Transitional`，再用 `import html4Transitional.*` 引入它的标签，其中包括 `Font`、`Center` 以及 Living Standard 已删除的其他表现性元素，其 `doctype` 是 HTML 4.01 Transitional 的文档类型声明。
+
+@ 0 1 0 0361a5b36cc7a1b11becc63e1e0abbec
++ entry .formatting   流式输出的 `Document[Html]` 如何排版，每种都是按名称导入的 `Html.Formatting` given
+
+% 1 1 0 15d9d090d0066ff302823c50bb23aa1d
+
+@ 0 7 0 0d62d4be1033831912c1f35f7a8f49ee
++       作用域中的 `Html.Formatting` 决定 `document.stream[Text]` 是将 DOM 模式为 `Html.Mode.Whitespace` 的元素（`html`、`head`、`body`、`ul`、`ol`、`table`、`tr` 等，其子项之间的空白无关紧要）每行写一个、每层缩进两个空格，还是将整个文档保持在一行上。
++       `Html.Formatting.default` 是缩进的，因此要使用它无需导入任何东西；紧凑布局通过导入 `compactHtmlFormatting` 选择，它作为词法作用域的 given，优先于伴生对象的默认实例。
++       两者都不影响 `show`，后者总是紧凑的。
+
+% 2 1 0 0c693ace002af08500537c601d4f8d33
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 3 1 0 14859fefefdda7e7049dcbd6472a44a2
+
+% 4 1 0 15d672d8872ca8ed03e306fc6ecb49df
+
+% 5 1 0 0e3d99f73e99342213c72b6c4cb46c68
+
+% 6 1 0 09c4c48fc1f36ff8032be0e2c2d2386c
+
+% 7 1 0 011759c9231ba58908e86cd0151ff807
+
+% 0 1 0 02641310f7087de40d74534a1eb83fef
+
+% 2 1 0 1f132271aabce754069e6b907631a07e
+
+% 3 1 0 0a72e5a4409f598709feb21626674199
+
+% 5 1 0 1db8f9e155ee3cfe11af1d28f0cb3ec7
+
+% 0 1 0 18c8ade059fe5569072d446ccca82039
+
+% 0 1 0 001edb7aa623b4c10c1c8f99dc0af299
+
+% 0 1 0 00f3c2d1d341d384172ff93bccce0f59
+
+% 0 1 0 10b92bc995cbbfdf1580f42574665692
+
+% 0 1 0 053dbb5dfa4796101b1d3bff3db7cd9f
+
+% 0 1 0 029444b43f81c778053c10eef5f95e83
+
+% 0 1 0 066c1ec68b9bddcb0e366f4d65deb7d3
+
+% 0 1 0 0147f6f87e12a0aa1056d4c86291ead8
+
+% 0 1 0 1af2cc59ec8bcc9e1a174c80df404fc3
+
+% 0 1 0 1dc034276ad98d7312d9db58e0a108f5
+
+% 0 1 0 06de3d4066878a04092953b266e31cc9
+
+% 0 1 0 1dcf1811c4bee233031e4548a4cbe14f
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 3 1 0 179507e1ecf22964036d6a8737895c74
+
+% 4 1 0 10e90aac3c346bf01c99e184bd5956a7
+
+% 5 1 0 15109fa4dc4f391d1edb685966fa1d34
+
+% 6 1 0 0b59a106e741d1990eb04749103141b3
+
+% 7 1 0 17d741a1f7af6c0f15a66bfc0ce12d57
+
+% 0 1 0 13a87340be077daf1ef1ebe9d40727df
+
+% 2 1 0 1e5e0759357776e4102d4abd00161540
+
+% 3 1 0 164bf7bf89d1be0b0344118c8d4c0e6f
+
+% 5 1 0 0ec6ea3104816d7d0889de41a187dd99
+
+% 0 1 0 06dee0c76bffcf6208a7fe5fb6eb30ff
+
+% 1 1 0 101df65f0deb5c821030639c5fc8d291
+
+% 2 1 0 0b01108cc0e0680f0dbfe337a6479008
+
+@ 0 3 0 0d9ba242f9353f4510d764a0273b09cc
++       无论采用何种格式，`<p>` 或其他文本有意义的元素都不会被断行，因此缩进永远不会改变浏览器显示的内容。
++       该包与总括包的 `formatting` 合并，与其他格式的布局并列。
+
+% 1 1 0 0dc1902babef39fa0894b4e78ceabb59
+
+@ 0 2 0 134702ae14e0281f1a9dc609e89f2ab1
++   entry .indentedHtmlFormatting   空白模式的元素每个占一个缩进行；与默认相同
++   entry .compactHtmlFormatting   整个文档在一行上
+
+@ 0 1 0 1ca6dfed2cfbda81196edb97ecf2b766
++ entry .attributives   放宽属性所接受值的 `Attributive` given，按名称导入
+
+% 1 1 0 1dc1e5834b1a565e1ed7c46eedac6fe0
+
+@ 0 6 0 0fcb1c43ba4c79c91572276b40bc9a96
++       属性的值是有类型的：`width` 接受正整数，`src` 接受 URL，`disabled` 接受存在与否，因此 `Img(width = 64)` 能编译而 `Img(width = 1.5)` 不能。
++       `Attributive` 伴生对象中的 `Attributive` 实例涵盖常见类型；当某属性类型对手头的值没有实例时，`textAttributive` 使 `Text` 可被任何属性接受，因此 `Img(src = t"image.jpg")` 可以用在需要 URL 的地方。
++       它按名称导入，因为它刻意绕过了属性的类型。
+
+% 1 1 0 14f8738788f0dbb611cd42aeb71dbf1b
+
+@ 0 5 0 0477cc6db58c393b0b7bc4e43d085f07
++   entry .textAttributive   `Text` 可作为任何属性的值，按原样写出
++       `[target] => Text is Attributive to target`：无论属性声明的类型是什么，文本都原封不动地成为属性的值。
++       它在作用域中时，`src = t"x.jpg"`、`width = t"64"` 和 `onclick = t"…"` 都能编译；没有它时，每个都需要属性自身类型的值。
+
+% 2 1 0 1f484c142e5ddc78099de295fbacbf3f
+
+% 3 1 0 16006d825483965705ee804388f6e5d7
+
+% 4 1 0 1517503361a09efe176c9f02966102dc
+
+% 5 1 0 09f0046829e8f1330a02640f9f6d84bb
+
+% 6 1 0 0c6e4ff6b62aef7f1653cfe1a737323e
+
+% 0 1 0 046b5b060496208a1c2827689581a8b1
+
+% 1 1 0 1bb971c505100774095a7bb67c311c9e
+
+@ 0 1 0 0473519103d3b3de01a4f66e0b126af0
++ entry .stylesheets   类名语法 `P.info(…)` 可以指名什么，作为按名称导入的 given
+
+% 1 1 0 1d38643b7265289f0cfed50776bdf4b3
+
+@ 0 7 0 19011e922e45307b1a4da98b4bb6e254
++       由于 `class` 是 Scala 关键字，类以标签上的方法来指名：`P.info("body text")` 即 `<p class="info">body text</p>`，每次应用一个名称，`applyDynamic` 通过 `Attribution of name` 解析它。
++       `uncheckedClasses` 为任何名称提供这一证据；改为绑定一个 cataclysm 样式表，则只有它所定义的名称才合法，因此打错的类名是编译错误，而样式表声明为 id 的名称渲染为 `id="…"`。
+
+% 2 1 0 009d97dc2b36d574093625121e17eebc
+
+% 3 1 0 0fca172b242f936108637c311325d84e
+
+% 4 1 0 0c4936cfe48a31a00ebe104c22108ff8
+
+% 5 1 0 057aad1d9ae427f20a6a2ef442e0958c
+
+% 0 1 0 0ae84bbedfe662e2188eefe162fe2bc5
+
+% 0 1 0 11ede364fe0327ee134083566082a4b4
+
+% 1 1 0 0922de513bf9820a02b856476fab8d46
+
+% 2 1 0 0f371b3f6a899173082570f903bda6c7
+
+@ 0 4 0 1b626a8914197e1517c627a083d9ce2c
++   entry .uncheckedClasses   用作 `Tag.name(…)` 的任何名称都是 CSS 类，不加检查
++       为除 `apply`（即普通的 `Tag(…)` 调用）之外的每个标注提供 `Attribution of name`：该名称填入 `class` 属性，追加在标签预设已带有的任何类之后。
+
+@ 0 1 0 1a8f8074c8e0cf920fb9b88f8238e84e
++ entry .recoveries   可恢复的 HTML 解析器，作为按名称导入的 given
+
+% 1 1 0 09098511ad98b36607d0b8f636fec692
+
+@ 0 7 0 18294149d8668bd8166b1e399d0fe8de
++       `read[Html]` 和 `load[Html]` 背后的严格解析器需要 `Tactic[Parse.Error]`，并抛出每个 `Html.Issue`。
++       将 `permissiveRecovery` 引入作用域会改为选择宽容的 given（`Html.permissiveAggregable`、`Html.permissiveAggregable2`、`Html.permissiveLoadable`），它们不需要战术，像浏览器那样修复一组确定的畸形输入（保留未知属性、闭合未闭合的标签、丢弃多余的闭合标签、在外层重试位置错误的标签），对其他任何情况则产生空的片段或文档，而不是失败。
+
+% 2 1 0 0a673e23bfffdc8a0f0e592986012aa8
+
+% 3 1 0 0f0047637b3e83560ee49691a6dd45d5
+
+% 4 1 0 1877a6625a6fbde6105ab86e27ab3455
+
+% 5 1 0 16949b639f16537d1f2ab93c182e3763
+
+% 6 1 0 1c0d431352fcd9180953ecacd56d1fe8
+
+% 8 1 0 1a1597be685aeb721dc77ba9be8aa688
+
+% 0 1 0 07b4abddb3fce7e3101d564499e1d8cb
+
+% 1 1 0 1e9edea8c83cd7b11c14f44057085678
+
+@ 0 3 0 19f7990a054eaaef1014867a76c08038
++       即使作用域中也有战术，宽容的 given 也会胜出，因为严格的 given 要求不存在 `Html.Recovery.Permissive`。
++       位置跟踪（`parsing.trackPositions`）在两种解析器下都有效。
+
+% 1 1 0 1417da485d9636c0142929140072b29b
+
+@ 0 1 0 11c20e65c2e4ab591513cc5c59b2d6e5
++   entry .permissiveRecovery   一个 `Html.Recovery.Permissive`：选择可恢复的解析器
+
+@ 0 1 0 0a098cd8af33e7a91b741a51939b8ac1
++ entry .construables   将 `text/html` 正文解释为 `Document[Html]`，作为按名称导入的 given
+
+% 1 1 0 0189cbbc48c3014311d3b573d753b135
+
+@ 0 5 0 06e6e3e951142af61c23eebe623e77cd
++       `Construable` 将媒体类型绑定到其内容所读成的类型，因此以该 `Content-Type` 接收的正文（HTTP 响应、OpenAPI 媒体绑定）是被有意地解码，而不是默认解码。
++       `htmlConstruable` 将 `text/html` 绑定到 `Document[Html]`；它按名称导入，随后文档通过作用域中的 `Dom` 和 `Html.Loadable` given 解析。
+
+% 0 1 0 16ead114565755a70e930c00ff1395e5
+
+@ 0 1 0 19bbfb84c6c1d99c0a384657e3a68d64
++ entry .internal   `h"…"`、标签应用和 `ClassList` 背后的宏，以及 `Attributes` 的所在之处
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 17 0 0aa0d61580762d981191abfe4104172c
++       不应直接使用：该对象的存在是为了让宏有一个稳定的所在。
++       `Attributes` 从这里导出到 `honeycomb` 包。
++   entry .classList   `ClassList[name]()` 背后的宏：依据 CSS 标识符规则检查每个标注
++       不是 CSS 标识符的标注（`ClassList["1bad"]()`），或不由字符串字面量构成的类型参数，会在展开时成为编译错误。
++   entry .extractor   作为模式的 `h"…"` 背后的宏
++       依据 WHATWG DOM 解析模式的各部分，在每个替换处留一个洞，并拼接出一个提取器，它在结构上匹配被匹配值并绑定每个洞。
++   entry .interpolator   作为表达式的 `h"…"` 背后的宏
++       依据 WHATWG DOM 解析各部分，依据每个替换所在的 `Html.Hole` 检查它，并拼接出节点的构造。
++   entry .attributes   标签命名参数应用 `Img(src = …)` 背后的宏
++       将每个 `name = value` 参数解析为该标签主题在其 DOM 中的 `Attribute`，为属性的类型找到 `value is Attributive to`，并用得到的键值对拼接出元素；不是该标签属性的名称，或没有 `Attributive` 的值，都是编译错误。
++   entry .Attributes   元素的属性；参见 `honeycomb.Attributes`
+
+% 1 1 0 154e26d9685841cb115ec51a84225277
+
+@ 0 31 0 1ed8cdf244eaff3b0327ea296f6f689a
++         基于由交错的键和可选值组成的冻结数组的不透明类型，及其构造器、given 和扩展方法。
++         它在 `honeycomb` 包下的页面有完整说明。
++     entry .empty   没有属性
++     entry .inspectable   将属性渲染为 `html{class="a", hidden}`
++     entry .traversable   按文档顺序排列的键值对，因此 `attributes.to[List]` 无需转换
++     entry .apply   `Attributes(pairs*)` 由键值对构建；`attributes(key)` 是值，或 `Unset`
++         构造器保持键值对的顺序；对于存在型属性，键值对的值为 `Unset`。
++         对于不存在的键和存在但没有值的键，查找都给出 `Unset`；`contains` 可以区分二者。
++     entry .from   由 `Map[Text, Optional[Text]]` 构建，按映射的迭代顺序
++     entry .size   属性的数量
++     entry .isEmpty   是否没有属性
++     entry .nonEmpty   是否至少有一个属性
++     entry .nil   是否没有属性
++     entry .contains   某个键是否存在，无论有无值
++     entry .keys   各个键，按文档顺序，作为 `Iterator`
++     entry .iterator   `(key, value)` 键值对，按文档顺序，作为 `Iterator`
++     entry .toMap   属性作为仍按文档顺序迭代的 `Map[Text, Optional[Text]]`
++     entry .each   按顺序对每个 `(key, value)` 键值对执行一个操作
++     entry .removed   去掉某个键后的属性；如果该键不存在，则为同一个值
++     entry .-   `attributes - key`，与 `removed` 相同
++     entry .--   去掉若干键中每一个之后的属性
++     entry .updated   将某个键设为某值后的属性：存在时就地设置，不存在时追加
++         值是 `Optional`：`updated(t"disabled", Unset)` 设置一个存在型属性。
++     entry .++   与另一个 `Attributes` 或 `Map` 合并后的属性，右侧优先
++         左侧的键保持其位置，两侧都有的键取右侧的值，右侧的新键按其顺序跟在后面。
++     entry .equalsAttributes   两个属性集是否持有相同的键值对，不论顺序
++     entry .hashAttributes   与顺序无关的哈希，与 `equalsAttributes` 一致
++     entry .showAttributes   调试用渲染 `Attributes(class -> a, hidden -> Unset)`，作为 `String`
+
+@ 0 1 0 0bbec27a998c5b6015d1ba3f5aec7fcc
++ entry .Whatwg   WHATWG HTML Living Standard：其标签作为 `Dom` 值，其属性作为 given
+
+% 1 1 0 18d79f960fe20630017f5754529234ea
+
+@ 0 10 0 1b5a62f1eb5a2cbd13f8fb0dc9d4c24b
++       `Whatwg` 是 honeycomb 在未选择其他描述时所使用的 HTML 描述。
++       它是共享同一名称的两样东西。
++       **对象**是属性词汇表：属性可能取的每一种值各有一个标记类型（`Url`、`PositiveInt`、`Presence`、`CssClassList`、…），规范中的每个属性各有一个 `Attribute` given，其类型由属性名、它适用的元素和其值的标记确定（`"src" is Attribute on "img" | "video" | … of Url in Whatwg`）。
++       **类**是 `Dom`：每个标签一个 `val`（`Div`、`P`、`Img`、`Table`、…），作为类型别名的内容类别（`#Flow`、`#Phrasing`、`#Metadata`、…），`<!doctype html>` 文档类型声明，命名字符引用，以及解析器和序列化器读取的 `#elements` 和 `#attributes` 表。
+
+@ 0 2 0 01def9cc86205dd710cbac58975c1ae5
++       程序将 `Whatwg` 实例作为 `Dom` given，即 `htmlDoms.whatwg`，并从中导入其标签：
+
+% 2 1 0 059fe932cf14e767062a957a32b3bcd6
+
+% 3 1 0 1de4609bf72672de1501dd2154f10597
+
+% 4 1 0 0f696be6326f35480f74f25933c6666d
+
+% 5 1 0 17a74c765335123d08900eff0e84fcef
+
+% 6 1 0 01f7d8e461603ad51dea3ac602f5cc21
+
+% 0 1 0 19d50a72b60ca9cd01dcc4ab794a0851
+
+% 0 1 0 1b16c169250d966c043b96e39f9298a1
+
+% 1 1 0 0ecef46303c4c5ab0eee4e1ce594f3dd
+
+@ 0 10 0 1c5990e0ed6d8207166c4da9dbe8d089
++       每个标签都是一个 `Tag`，其类型记录了它的名称、它可以包含什么以及它属于这一方言：`Div` 是 `Tag.Container of "div" over Flow in Whatwg`，`Br` 是 `Tag.Void of "br" in Whatwg`，`A` 是 `Tag.Transparent of "a" over "" in Whatwg`。
++       属性 given 位于伴生对象中，因此无需导入即处于隐式作用域中：`Img(src = …)` 找到 `"src" is Attribute on (? >: "img") in Whatwg`，读取其 `Topic`（`Url`），然后为所提供的值召唤一个 `value is Attributive to Url`；这就是为什么除非导入 `attributives.textAttributive`，否则 `src` 拒绝 `Text`，也是 `Img(width = 1.5)` 无法编译的原因。
++       对元素无效的属性（`P(src = …)`）是编译错误：_the attribute `src` cannot be used on the element `<p>`_。
+
+@ 0 4 0 151d2a1f2dd4f09a1b8209fa9c4eb11b
++       当规范在不同元素上赋予同一个属性名不同的含义时，每种含义各有一个 given，以数字后缀区分（`.href`、`.href2`、`.href3`；`.type` 到 `.type6`；`.value` 到 `.value5`）：后缀只是名称，因为解析是按属性名和元素进行的。
+
+% 2 1 0 1276badfb543f6380619ba7e99a2674e
+
+% 3 1 0 080e58e2a50262f91803f7eb4c1a0eaf
+
+@ 0 1 0 0517794b901720360cc109d101e4f803
++         label 表格的表头
+
+% 1 1 0 10489bec6f58202b0879ba8ceaa431fd
+
+% 2 1 0 0edc9a3989a09e74118c17a90066d956
+
+% 3 1 0 1726f0159bcf28c5171a7224af1b32a3
+
+% 4 1 0 1394d97c681b409102d979bdfa01d3c2
+
+% 5 1 0 003a3f8835fd559e1612b6573d1a5fc4
+
+% 0 1 0 1f92a6b298d0045207920b423c578d97
+
+% 0 1 0 044f82845909be37050528e8074b916e
+
+% 1 1 0 0a15d3d69b700e340cdb6d8de708cd83
+
+@ 0 1 0 00e1b0669a82b0ee1aa2af285ced6005
++         label 由数据生成的表体
+
+% 1 1 0 0779cab01a7151c916fe0cbe6d03a7c3
+
+% 0 1 0 044d64ccc28f6ee01d3cc54cf9cafcba
+
+% 0 1 0 0c0209f7a079b4fb1811598e907549ec
+
+% 0 1 0 0cbb400388bbc603082568c93debba14
+
+% 1 1 0 101cd3fbae0ff4d61e75cfc423338f96
+
+@ 0 1 0 154edd757e0a9693136771caada4ce4a
++         label 标题和类
+
+% 1 1 0 0027759a7057e5c50f69cf0b3604a609
+
+% 0 1 0 1ee50e9ba63c892c12c457168298fde2
+
+% 0 1 0 1ac369b44870e5e81c7f159b58fef6ac
+
+% 0 1 0 003aea746dd1868b1f1cf95e2083fbcc
+
+% 1 1 0 12048ac452ceaf1318e3e44fc1116a6f
+
+% 2 1 0 0746446badafd01007f89e8a10626075
+
+@ 0 7 0 0552b64d26564fcd005fb03b88343662
++       并非规范的每条规则都是类型：当规则依赖于嵌套以外的东西时（子项取决于其 `src` 的 `<audio>`，不得包含交互内容的 `<button>`），类型取较宽容的一方，因此规范允许的构造永远不会被拒绝。
++       词汇表遵循当前的 Living Standard，因此它有 `<search>`、`<selectedcontent>`、`commandfor`、`closedby`、`popover` 和 `headingoffset`，并省略了 HTML 4 弃用的一切；这些由 `Html4Transitional` 方言提供。
+
+% 1 1 0 1f6a33fc993901231f80596ce1bc00e7
+
+% 2 1 0 045dd5213166d2af1a87e9b1afb49e94
+
+% 1 1 0 0bd99c014bbe143b0ca7c1ced443f436
+
+% 1 1 0 1aa26eac027020a11f8897b723451f02
+
+% 1 1 0 063478350bb281e2123fc63dee817a18
+
+@ 0 12 0 1628202ad637c7371b2e4dab0279d158
++   entry .Attribute   `honeycomb.Attribute in Whatwg`：此方言的属性
++       伴生对象中每个 given 的类型所用的别名，因此属性 given 读作 `"alt" is Attribute on "img" of Textual`，并且是 `Form` 为 `Whatwg` 的 `honeycomb.Attribute`。
++       `Html4Transitional` 方言的属性是不同的类型，因此两个词汇表永远不会混用。
++   entry .attribute   为在指定元素上有效的属性生成 given
++       `attribute["src", "img" | "video", Url]()` 构建一个 `"src" is Attribute on "img" | "video" of Url in Whatwg`：名称来自第一个类型参数，元素集合来自第二个（字符串字面量的并集，具体化为 `Set[Text]`），值标记来自第三个。
++       伴生对象自己的 given 都是这样生成的；扩展词汇表的程序（数据属性，或自定义元素的属性）用它定义自己的 given。
+
+% 2 1 0 0987766037bb75c900d4a33fe42a900d
+
+% 3 1 0 1037dd6bc49cb6011cfe0c7ac1e50919
+
+% 0 1 0 10cad747b7d0fe621b136955dea44d30
+
+% 0 1 0 06e3aa52d20a2a6a1c71d7515cac5dad
+
+% 1 1 0 1704d3fb40754fb512fc46f2aa058db8
+
+@ 0 335 0 00ad40fc53a541b41e893fed8884b9d2
++   entry .globalAttribute   为在所有元素上都有效的属性生成 given
++       `globalAttribute["title", Textual]()` 构建一个没有元素集合、`global` 为 true 的 `"title" is Attribute of Textual in Whatwg`，因此它 `targets` 每个元素。
++       规范中的全局属性（`id`、`class`、`style`、`title`、`lang`、`dir`、`hidden`、`tabindex`、`accesskey` 等）都用它定义。
++   entry .AccessKeys   `accesskey` 的值标记：有序的按键标注集合
++   entry .Affirmation   `translate` 的值标记：`yes` 或 `no`
++   entry .Autocapitalization   `autocapitalize` 的值标记：`off`、`none`、`on`、`sentences`、`words` 或 `characters`
++   entry .ButtonType   `<button>` 的 `type` 的值标记：`submit`、`reset` 或 `button`
++   entry .Closedby   `<dialog>` 的 `closedby` 的值标记：`any`、`closerequest` 或 `none`
++   entry .Color   CSS 颜色的值标记，如 `<link color>` 所接受的
++   entry .Colorspace   `<input type="color">` 的 `colorspace` 的值标记
++   entry .Command   `<button>` 的 `command` 的值标记：内置命令名或自定义的 `--name`
++   entry .ContentEditable   `contenteditable` 的值标记：`true`、`false`、`plaintext-only` 或空
++   entry .Coords   `<area>` 的 `coords` 的值标记：逗号分隔的数字列表
++   entry .Crossorigin   `crossorigin` 的值标记：`anonymous` 或 `use-credentials`
++       仅为标记；`honeycomb.Crossorigin` 枚举有这两个值，但没有自己的 `Attributive`，因此要在作用域中有 `attributives.textAttributive` 的情况下以 `.show` 传入。
++   entry .CustomElementName   `is` 的值标记：包含连字符的自定义元素名
++   entry .Css   `style` 的值标记：内联 CSS 声明
++       `Attributive.style` 为它接受 `Text`。
++   entry .CssClassList   `class` 的值标记：空格分隔的 CSS 类名
++       接受 `Name[CssClass]`、`List[Name[CssClass]]` 或 `ClassList`（`Attributive.cssClass`、`.cssClassList` 和 `.classList`）；空列表会完全省略该属性。
++   entry .Datetime   `<del>` 或 `<ins>` 的 `datetime` 的值标记：日期，或日期和时间
++   entry .Decimal   浮点属性的值标记：`step`、`<meter>` 的 `min`、`max` 和 `value`、`high`、`low`、`optimum`
++       `Attributive.double` 为它接受 `Double`。
++   entry .Decoding   `<img>` 的 `decoding` 的值标记：`sync`、`async` 或 `auto`
++   entry .Dir   `dir` 的值标记：`ltr`、`rtl` 或 `auto`
++       `HDir` 是其值的枚举，带有自己的 `Attributive`，因此 `Body(dir = HDir.Rtl)` 无需额外导入即可编译。
++   entry .Enctype   `enctype` 和 `formenctype` 的值标记：表单编码的 MIME 类型
++   entry .EnterKeyHint   `enterkeyhint` 的值标记：`enter`、`done`、`go`、`next`、`previous`、`search` 或 `send`
++   entry .FetchPriority   `fetchpriority` 的值标记：`high`、`low` 或 `auto`
++   entry .HashName   `usemap` 的值标记：以 `#` 为前缀、对 `<map>` 名称的引用
++   entry .Hidden   `hidden` 的值标记：存在，或 `until-found`
++   entry .HttpEquiv   `<meta>` 的 `http-equiv` 的值标记：pragma 指令名
++       `honeycomb.HttpEquiv` 枚举有这四个指令，以 `.show` 传入。
++   entry .Id   `id` 以及按 id 指名某个元素的属性的值标记
++       `for`、`form`、`list`、`commandfor` 和 `popovertarget` 都接受 `Id`。
++       `Attributive.domId` 为它接受 `Name[DomId]`。
++   entry .Ids   空格分隔的 id 列表的值标记：`headers`、`itemref`、`<output>` 的 `for`
++       `Attributive.domIds` 接受 `List[Name[DomId]]`，列表为空时省略该属性。
++   entry .ImageSizes   `<link>` 的 `imagesizes` 的值标记：预加载图像的源尺寸列表
++   entry .ImageSrcSet   `<link>` 的 `imagesrcset` 的值标记：预加载图像的 srcset
++   entry .InputMode   `inputmode` 的值标记：`none`、`text`、`tel`、`url`、`email`、`numeric`、`decimal` 或 `search`
++   entry .InputType   `<input>` 的 `type` 的值标记
++       `#Input` 对象将每种类型作为预设标签提供（`Input.Email`、`Input.Checkbox`、…），因此很少直接写这个属性。
++   entry .InputValue   `<input>` 的 `value` 的值标记，其形式取决于输入的类型
++   entry .Integral   有符号整数属性的值标记：`tabindex`、`start`、`<li>` 的 `value`
++       `Attributive.int` 为它接受 `Int`。
++   entry .ItemProp   `itemprop` 的值标记：微数据属性名
++   entry .Kind   `<track>` 的 `kind` 的值标记：`subtitles`、`captions`、`descriptions`、`chapters` 或 `metadata`
++       `#Track` 对象将每种类型作为预设标签提供；`honeycomb.Kind` 枚举有这些值。
++   entry .Language   `lang`、`hreflang` 和 `srclang` 的值标记：BCP 47 语言标签
++   entry .Laziness   `loading` 的值标记：`lazy` 或 `eager`
++   entry .MediaQueryList   `media` 的值标记：CSS 媒体查询列表
++   entry .Method   `method` 和 `formmethod` 的值标记：`get`、`post` 或 `dialog`
++       `honeycomb.Method` 枚举有这三个值，以 `.show` 传入。
++   entry .Minmax   `<input>` 的 `min` 和 `max` 的值标记，其形式取决于输入的类型
++   entry .MimeList   `accept` 的值标记：逗号分隔的 MIME 类型和扩展名列表
++   entry .Mime   单个 MIME 类型的值标记：`<a>`、`<link>`、`<embed>`、`<object>` 和 `<source>` 上的 `type`
++   entry .Name   `name` 的值标记：表单控件、表单、图像映射、meta 或 slot 的名称
++   entry .OlType   `<ol>` 的 `type` 的值标记：`1`、`a`、`A`、`i` 或 `I`
++   entry .Openness   `<template>` 的 `shadowrootmode` 的值标记：`open` 或 `closed`
++   entry .PermissionsPolicy   `<iframe>` 的 `allow` 的值标记：权限策略
++   entry .Popover   `popover` 的值标记：`auto`、`manual` 或 `hint`
++   entry .PopoverAction   `popovertargetaction` 的值标记：`toggle`、`show` 或 `hide`
++   entry .PositiveInt   非负整数属性的值标记：`width`、`height`、`rows`、`cols`、`colspan`、`span`、`size`、…
++       `Attributive.posInt` 为它接受 `Int`；不检查值的符号。
++   entry .Presence   布尔属性的值标记：存在或不存在，没有值
++       `disabled`、`checked`、`hidden` 的普通形式、`required`、`autofocus`、`controls`、`open`，以及其他所有以存在本身为含义的属性。
++       `Attributive.boolean` 接受 `Boolean`：`true` 写出裸属性（`<input disabled>`），`false` 则省略它。
++   entry .Preload   `preload` 的值标记：`none`、`metadata` 或 `auto`
++       `honeycomb.Preload` 枚举有这些值，以 `.show` 传入。
++   entry .ReferrerPolicy   `referrerpolicy` 的值标记：referrer 策略名
++   entry .Regex   `<input>` 的 `pattern` 的值标记：JavaScript 正则表达式
++   entry .Sandbox   `<iframe>` 的 `sandbox` 的值标记：空格分隔的 `allow-…` 令牌
++       `honeycomb.Sandbox` 枚举有这些令牌，以 `.show` 传入。
++   entry .ScriptType   `<script>` 的 `type` 的值标记：`module`、`importmap`、MIME 类型或数据块类型
++   entry .Scripting   事件处理属性的值标记，它接受脚本而不是文本
++       刻意地不存在针对 `Text` 的 `Attributive`：处理函数以带类型的脚本值提供，例如 querencia 的外部 DOM 表达式，脚本库为其提供 `Attributive to Whatwg.Scripting`。
++       WHATWG 词汇表本身不声明任何 `on…` 属性 given；`Html4Transitional` 声明了。
++   entry .Shape   `<area>` 的 `shape` 的值标记：`circle`、`default`、`poly` 或 `rect`
++   entry .Sizes   `<link rel="icon">` 的 `sizes` 的值标记：`any` 或 `WxH` 令牌
++   entry .Softness   `<textarea>` 的 `wrap` 的值标记：`soft` 或 `hard`
++       `honeycomb.Wrap` 枚举有这两个值，以 `.show` 传入。
++   entry .SourceSizeList   `<img>` 或 `<source>` 的 `sizes` 的值标记
++   entry .Srcdoc   `<iframe>` 的 `srcdoc` 的值标记：作为文本的完整 HTML 文档
++   entry .SrcSet   `srcset` 的值标记：候选图像源及其描述符
++   entry .Switch   `autocomplete` 的值标记：`on` 或 `off`
++       `Attributive.switch` 接受 `Boolean`，写作 `on` 或 `off`；`honeycomb.Autocomplete` 枚举有同样的两个值。
++   entry .Target   `target` 和 `formtarget` 的值标记：浏览上下文名称或关键字
++       `honeycomb.Target` 枚举有 `_self`、`_blank`、`_parent`、`_top` 和命名上下文，以 `.show` 传入。
++   entry .Temporal   `<time>` 的 `datetime` 的值标记：规范中任意一种日期、时间和时长形式
++   entry .Textual   接受任意文本的属性的值标记
++       `alt`、`title`、`placeholder`、`content`、`label`、`slot`、`nonce`、`integrity` 等。
++       `Attributive.textTextual` 和 `.stringTextual` 为它接受 `Text` 或 `String`，无需任何导入；`attributives.textAttributive` 选择 given 将同样的接受范围扩展到其他所有标记。
++   entry .ThScope   `<th>` 的 `scope` 的值标记：`row`、`col`、`rowgroup` 或 `colgroup`
++   entry .Tokens   空格分隔的令牌列表的值标记：`rel`、`blocking`
++       `honeycomb.Rel` 枚举有各种链接类型，以 `.show` 传入。
++   entry .Truth   写作 `true` 或 `false` 的属性的值标记：`draggable`、`spellcheck`、`writingsuggestions`
++       `Attributive.truth` 接受 `Boolean`，写作单词 `true` 或 `false`，不同于写出或省略的 `Presence` 属性。
++   entry .Upto8   `headingoffset` 的值标记：0 到 8 的整数
++   entry .Url   URL 值属性的值标记：`href`、`src`、`action`、`cite`、`poster`、`data`、`itemid`、…
++       `Attributive.url` 接受任何 `Abstractable across Urls to Text` 的值（`HttpUrl` 或任何带类型的 URL），作用域中有 `attributives.textAttributive` 时也接受 `Text`。
++   entry .Urls   空格分隔的 URL 列表的值标记：`ping`、`itemtype`
++   entry .Utf8   `charset` 和 `accept-charset` 的值标记，其唯一有效值是 `utf-8`
++   entry .abbr   `<th>` 上的 `abbr`：缩写的表头，作为 `Textual`
++   entry .accept   `<input>` 上的 `accept`：接受的文件类型，作为 `MimeList`
++   entry .acceptCharset   表单接受的编码，位于 `<form>` 上，作为 `Utf8`
++       该 given 以名称 `acceptCharset` 而不是规范中的 `accept-charset` 注册，因此写法是 `Form(acceptCharset = …)`，而解析器需要看到的是 `accept-charset`；HTML 4 方言的拼写是正确的。
++   entry .accesskey   所有元素上的 `accesskey`：键盘快捷键标注，作为 `AccessKeys`
++   entry .action   `<form>` 上的 `action`：表单提交到的 URL，作为 `Url`
++   entry .allow   `<iframe>` 上的 `allow`：框架的权限策略，作为 `PermissionsPolicy`
++   entry .allowfullscreen   `<iframe>` 上的 `allowfullscreen`：`Presence`
++   entry .alpha   `<input>` 上的 `alpha`：颜色输入是否有 alpha 通道，作为 `Presence`
++   entry .alt   `<area>`、`<img>` 和 `<input>` 上的 `alt`：替代文本，作为 `Textual`
++   entry .as   `<link>` 上的 `as`：预加载的目标类型，作为 `Textual`
++   entry .async   `<script>` 上的 `async`：`Presence`
++   entry .autocapitalize   所有元素上的 `autocapitalize`，作为 `Autocapitalization`
++   entry .autocomplete   `<form>` 上的 `autocomplete`：`on` 或 `off`，作为 `Switch`
++   entry .autocomplete2   `<input>`、`<select>` 和 `<textarea>` 上的 `autocomplete`，作为 `Switch`
++   entry .autocorrect   所有元素上的 `autocorrect`，作为 `Textual`
++   entry .autofocus   所有元素上的 `autofocus`：`Presence`
++   entry .autoplay   `<audio>` 和 `<video>` 上的 `autoplay`：`Presence`
++   entry .blocking   `<link>`、`<script>` 和 `<style>` 上的 `blocking`：阻塞渲染的令牌，作为 `Tokens`
++   entry .charset   `<meta>` 上的 `charset`：文档编码，作为 `Utf8`
++   entry .checked   `<input>` 上的 `checked`：`Presence`
++   entry .cite   `<blockquote>`、`<del>`、`<ins>` 和 `<q>` 上的 `cite`：来源 URL，作为 `Url`
++   entry .class   所有元素上的 `class`：CSS 类名，作为 `CssClassList`
++       由于 `class` 是关键字，写作 `` `class` = … ``；通常的方式是 `Tag.name(children)` 形式（`Div.panel(…)`），作用域中的 `Attribution` 允许这种写法。
++   entry .closedby   `<dialog>` 上的 `closedby`，作为 `Closedby`
++   entry .color   `<link>` 上的 `color`：遮罩图标的颜色，作为 `Color`
++   entry .colorspace   `<input>` 上的 `colorspace`，作为 `Colorspace`
++   entry .cols   `<textarea>` 上的 `cols`：以字符计的可见宽度，作为 `PositiveInt`
++   entry .colspan   `<td>` 和 `<th>` 上的 `colspan`，作为 `PositiveInt`
++   entry .command   `<button>` 上的 `command`：要调用的命令，作为 `Command`
++   entry .commandfor   `<button>` 上的 `commandfor`：目标元素的 id，作为 `Id`
++   entry .content   `<meta>` 上的 `content`：元数据值，作为 `Textual`
++   entry .contenteditable   所有元素上的 `contenteditable`，作为 `ContentEditable`
++   entry .controls   `<audio>` 和 `<video>` 上的 `controls`：`Presence`
++   entry .coords   `<area>` 上的 `coords`，作为 `Coords`
++   entry .crossorigin   `<audio>`、`<img>`、`<link>`、`<script>` 和 `<video>` 上的 `crossorigin`，作为 `Crossorigin`
++   entry .data   `<object>` 上的 `data`：资源 URL，作为 `Url`
++   entry .datetime   `<del>` 和 `<ins>` 上的 `datetime`：更改的时间，作为 `Datetime`
++   entry .datetime2   `<time>` 上的 `datetime`：机器可读形式，作为 `Temporal`
++   entry .decoding   `<img>` 上的 `decoding`，作为 `Decoding`
++   entry .default   `<track>` 上的 `default`：`Presence`
++   entry .defer   `<script>` 上的 `defer`：`Presence`
++   entry .dir   所有元素上的 `dir`：文本方向，作为 `Dir`
++       `Body(dir = HDir.Rtl)` 通过 `HDir.attributive` 无需导入即可编译。
++   entry .dirname   `<input>` 和 `<textarea>` 上的 `dirname`：表示方向的字段名，作为 `Textual`
++   entry .disabled   `<button>`、`<input>`、`<optgroup>`、`<option>`、`<select>` 和 `<textarea>` 上的 `disabled`：`Presence`
++   entry .disabled2   `<fieldset>` 上的 `disabled`：`Presence`
++   entry .disabled3   `<link>` 上的 `disabled`：`Presence`
++   entry .download4   `<a>` 和 `<area>` 上的 `download`：建议的文件名，作为 `Textual`
++   entry .draggable   所有元素上的 `draggable`：`true` 或 `false`，作为 `Truth`
++   entry .enctype   `<form>` 上的 `enctype`，作为 `Enctype`
++   entry .enterkeyhint   所有元素上的 `enterkeyhint`，作为 `EnterKeyHint`
++   entry .fetchpriority   `<img>`、`<link>` 和 `<script>` 上的 `fetchpriority`，作为 `FetchPriority`
++   entry .for   `<label>` 上的 `for`：被标注控件的 id，作为 `Id`
++       由于 `for` 是关键字，写作 `` `for` = … ``。
++   entry .for2   `<output>` 上的 `for`：参与计算的控件的 id，作为 `Ids`
++   entry .form   表单控件上的 `form`：其所属表单的 id，作为 `Id`
++       位于 `<button>`、`<fieldset>`、`<input>`、`<object>`、`<output>`、`<select>` 和 `<textarea>` 上。
++   entry .formaction   `<input>` 和 `<button>` 上的 `formaction`，作为 `Url`
++   entry .formenctype   `<input>` 和 `<button>` 上的 `formenctype`，作为 `Enctype`
++   entry .formmethod   `<input>` 和 `<button>` 上的 `formmethod`，作为 `Method`
++   entry .formnovalidate   `<input>` 和 `<button>` 上的 `formnovalidate`：`Presence`
++   entry .formtarget   `<input>` 和 `<button>` 上的 `formtarget`，作为 `Target`
++   entry .headers   `<td>` 和 `<th>` 上的 `headers`：单元格的表头单元格的 id，作为 `Ids`
++   entry .headingoffset   所有元素上的 `headingoffset`：0 到 8，作为 `Upto8`
++   entry .headingreset   所有元素上的 `headingreset`，作为 `Presence`
++       该 given 以属性名 `headingoffset` 而不是 `headingreset` 注册，因此 `headingreset = true` 写出的是裸的 `headingoffset`。
++   entry .height   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>` 和 `<svg>` 上的 `height`，作为 `PositiveInt`
++   entry .hidden   所有元素上的 `hidden`：存在，或 `until-found`，作为 `Hidden`
++       其标记是 `Hidden` 而不是 `Presence`，因此 `hidden = true` 需要一个从 `Boolean` 到 `Hidden` 的 given，而库并不提供；作用域中有 `attributives.textAttributive` 时，`hidden = t""` 写出裸属性。
++   entry .high   `<meter>` 上的 `high`，作为 `Decimal`
++   entry .href   `<a>` 和 `<area>` 上的 `href`：链接目标，作为 `Url`
++   entry .href2   `<base>` 上的 `href`：文档基础 URL，作为 `Url`
++   entry .href3   `<link>` 上的 `href`：所链接的资源，作为 `Url`
++   entry .hreflang   `<a>` 和 `<link>` 上的 `hreflang`，作为 `Language`
++   entry .httpEquiv   `<meta>` 上的 `http-equiv`：pragma 指令，作为 `HttpEquiv`
++       写作 `httpEquiv = …`；该属性序列化为 `http-equiv`。
++   entry .id   所有元素上的 `id`，作为 `Id`
++       通过 `Attributive.domId` 接受 `Name[DomId]`，或者在有 `attributives.textAttributive` 时接受 `Text`。
++   entry .imagesizes   `<link>` 上的 `imagesizes`，作为 `ImageSizes`
++   entry .imagesrcset   `<link>` 上的 `imagesrcset`，作为 `ImageSrcSet`
++   entry .inert   所有元素上的 `inert`：`Presence`
++   entry .inputmode   所有元素上的 `inputmode`，作为 `InputMode`
++   entry .integrity   `<link>` 和 `<script>` 上的 `integrity`：子资源完整性哈希，作为 `Textual`
++   entry .is   所有元素上的 `is`：自定义元素名，作为 `CustomElementName`
++   entry .ismap   `<img>` 上的 `ismap`：`Presence`
++   entry .itemid   所有元素上的 `itemid`：微数据项的全局标识符，作为 `Url`
++   entry .itemprop   所有元素上的 `itemprop`，作为 `ItemProp`
++   entry .itemref   所有元素上的 `itemref`，作为 `Ids`
++   entry .itemscope   所有元素上的 `itemscope`：`Presence`
++   entry .itemtype   所有元素上的 `itemtype`，作为 `Urls`
++   entry .kind   `<track>` 上的 `kind`，作为 `Kind`
++   entry .label   `<optgroup>`、`<option>` 和 `<track>` 上的 `label`：用户可见的标注，作为 `Textual`
++       其他 Soundness 库也导出了名为 `label` 的 given，因此在 `soundness` 总括包中，当裸引用会产生歧义时，通过 `Whatwg.label` 访问该名称；属性解析本身从不需要这个名称。
++   entry .lang   所有元素上的 `lang`，作为 `Language`
++   entry .list   `<input>` 上的 `list`：`<datalist>` 的 id，作为 `Id`
++   entry .loading   `<img>` 和 `<iframe>` 上的 `loading`：`lazy` 或 `eager`，作为 `Laziness`
++   entry .loop   `<audio>` 和 `<video>` 上的 `loop`：`Presence`
++   entry .low   `<meter>` 上的 `low`，作为 `Decimal`
++   entry .max   `<input>` 上的 `max`，作为 `Minmax`
++   entry .max2   `<meter>` 和 `<progress>` 上的 `max`，作为 `Decimal`
++   entry .maxlength   `<input>` 和 `<textarea>` 上的 `maxlength`，作为 `PositiveInt`
++   entry .media   `<a>`、`<area>`、`<link>`、`<source>` 和 `<style>` 上的 `media`，作为 `MediaQueryList`
++   entry .method   `<form>` 上的 `method`：`get`、`post` 或 `dialog`，作为 `Method`
++   entry .min   `<input>` 上的 `min`，作为 `Minmax`
++   entry .min2   `<meter>` 上的 `min`，作为 `Decimal`
++   entry .minlength   `<input>` 和 `<textarea>` 上的 `minlength`，作为 `PositiveInt`
++   entry .multiple   `<input>` 和 `<select>` 上的 `multiple`：`Presence`
++   entry .muted   `<audio>` 和 `<video>` 上的 `muted`：`Presence`
++   entry .name   `<button>`、`<fieldset>`、`<input>`、`<output>`、`<select>` 和 `<textarea>` 上的 `name`，作为 `Name`
++   entry .name2   `<details>` 上的 `name`：互斥手风琴分组，作为 `Name`
++   entry .name3   `<form>` 上的 `name`，作为 `Name`
++   entry .name4   `<iframe>` 和 `<object>` 上的 `name`：浏览上下文名称，作为 `Target`
++   entry .name5   `<map>` 上的 `name`，作为 `Name`
++   entry .name6   `<meta>` 上的 `name`：元数据名称，作为 `Name`
++       `#Meta` 对象将标准名称作为预设标签提供（`Meta.Viewport`、`Meta.Description`、…）。
++   entry .name7   `<slot>` 上的 `name`，作为 `Name`
++   entry .nomodule   `<script>` 上的 `nomodule`：`Presence`
++   entry .nonce   所有元素上的 `nonce`：密码学 nonce，作为 `Textual`
++   entry .novalidate   `<form>` 上的 `novalidate`：`Presence`
++   entry .open   `<details>` 和 `<dialog>` 上的 `open`：`Presence`
++   entry .optimum   `<meter>` 上的 `optimum`，作为 `Decimal`
++   entry .pattern   `<input>` 上的 `pattern`，作为 `Regex`
++   entry .ping   `<a>` 和 `<area>` 上的 `ping`：要通知的 URL，作为 `Urls`
++   entry .placeholder   `<input>` 和 `<textarea>` 上的 `placeholder`，作为 `Textual`
++   entry .playsinline   `<video>` 上的 `playsinline`：`Presence`
++   entry .popover   所有元素上的 `popover`，作为 `Popover`
++   entry .popovertarget   `<button>` 和 `<input>` 上的 `popovertarget`：弹出层的 id，作为 `Id`
++   entry .pta   `<button>` 和 `<input>` 上的 `popovertargetaction`，作为 `PopoverAction`
++   entry .poster   `<video>` 上的 `poster`：占位图像，作为 `Url`
++   entry .preload   `<audio>` 和 `<video>` 上的 `preload`，作为 `Preload`
++   entry .readonly   `<input>` 和 `<textarea>` 上的 `readonly`：`Presence`
++   entry .referrerpolicy   `<a>`、`<area>`、`<iframe>`、`<img>`、`<link>` 和 `<script>` 上的 `referrerpolicy`，作为 `ReferrerPolicy`
++   entry .rel   `<a>` 和 `<area>` 上的 `rel`：链接类型，作为 `Tokens`
++   entry .rel2   `<link>` 上的 `rel`：链接类型，作为 `Tokens`
++       `#Link` 对象将每种链接类型作为预设标签提供（`Link.Stylesheet`、`Link.Icon`、…）。
++   entry .required   `<input>`、`<select>` 和 `<textarea>` 上的 `required`：`Presence`
++   entry .reversed   `<ol>` 上的 `reversed`：`Presence`
++   entry .rows   `<textarea>` 上的 `rows`，作为 `PositiveInt`
++   entry .rowspan   `<td>` 和 `<th>` 上的 `rowspan`，作为 `PositiveInt`
++   entry .sandbox   `<iframe>` 上的 `sandbox`，作为 `Sandbox`
++   entry .scope   `<th>` 上的 `scope`，作为 `ThScope`
++   entry .selected   `<option>` 上的 `selected`：`Presence`
++   entry .shadowrootclonable   `<template>` 上的 `shadowrootclonable`：`Presence`
++   entry .srcer   `<template>` 上的 `shadowrootcustomelementregistry`：`Presence`
++   entry .srdf   `<template>` 上的 `shadowrootdelegatesfocus`：`Presence`
++   entry .shadowrootmode   `<template>` 上的 `shadowrootmode`：`open` 或 `closed`，作为 `Openness`
++   entry .shadowrootserializable   `<template>` 上的 `shadowrootserializable`：`Presence`
++   entry .shape   `<area>` 上的 `shape`，作为 `Shape`
++   entry .size   `<input>` 和 `<select>` 上的 `size`，作为 `PositiveInt`
++   entry .sizes   `<img>` 和 `<source>` 上的 `sizes`，作为 `SourceSizeList`
++   entry .sizes2   `<link>` 上的 `sizes`：图标尺寸，作为 `Sizes`
++   entry .slot   所有元素上的 `slot`：影子树插槽名，作为 `Textual`
++   entry .span   `<col>` 和 `<colgroup>` 上的 `span`，作为 `PositiveInt`
++   entry .spellcheck   所有元素上的 `spellcheck`：`true` 或 `false`，作为 `Truth`
++   entry .src   `<audio>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<script>`、`<source>`、`<track>` 和 `<video>` 上的 `src`，作为 `Url`
++   entry .srcdoc   `<iframe>` 上的 `srcdoc`：内联文档，作为 `Srcdoc`
++   entry .srclang   `<track>` 上的 `srclang`，作为 `Language`
++   entry .srcset   `<img>` 和 `<source>` 上的 `srcset`，作为 `SrcSet`
++   entry .start   `<ol>` 上的 `start`：第一项的编号，作为 `Integral`
++   entry .step   `<input>` 上的 `step`，作为 `Decimal`
++   entry .style   所有元素上的 `style`：内联 CSS，作为 `Css`
++   entry .tabindex   所有元素上的 `tabindex`，作为 `Integral`
++   entry .target   `<a>` 和 `<area>` 上的 `target`，作为 `Target`
++   entry .target2   `<base>` 上的 `target`：默认浏览上下文，作为 `Target`
++   entry .target3   `<form>` 上的 `target`，作为 `Target`
++   entry .title   所有元素上的 `title`：提示性文本，作为 `Textual`
++   entry .translate   所有元素上的 `translate`：`yes` 或 `no`，作为 `Affirmation`
++   entry .type   `<a>` 和 `<link>` 上的 `type`：所链接资源的 MIME 类型，作为 `Mime`
++       由于 `type` 是关键字，写作 `` `type` = … ``。
++   entry .type2   `<button>` 上的 `type`：`submit`、`reset` 或 `button`，作为 `ButtonType`
++   entry .type3   `<embed>`、`<object>` 和 `<source>` 上的 `type`，作为 `Mime`
++   entry .type4   `<input>` 上的 `type`，作为 `InputType`
++       很少直接写：`#Input` 为每种类型提供一个预设标签（`Input.Email`、`Input.Range`、…）。
++   entry .type5   `<ol>` 上的 `type`：编号样式，作为 `OlType`
++   entry .type6   `<script>` 上的 `type`，作为 `ScriptType`
++   entry .usemap   `<img>`、`<input>` 和 `<object>` 上的图像映射引用，作为 `HashName`
++       该 given 以属性名 `usemaptype` 而不是规范中的 `usemap` 注册，因此它写出的是 `usemaptype="#map"`。
++   entry .value   `<button>` 和 `<option>` 上的 `value`，作为 `Textual`
++   entry .value2   `<data>` 上的 `value`：机器可读的值，作为 `Textual`
++   entry .value3   `<input>` 上的 `value`，作为 `InputValue`
++   entry .value4   `<li>` 上的 `value`：该项的序号，作为 `Integral`
++   entry .value5   `<meter>` 和 `<progress>` 上的 `value`，作为 `Decimal`
++   entry .width   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>` 和 `<svg>` 上的 `width`，作为 `PositiveInt`
++   entry .wrap   `<textarea>` 上的 `wrap`：`soft` 或 `hard`，作为 `Softness`
++   entry .writingsuggestions   所有元素上的 `writingsuggestions`：`true` 或 `false`，作为 `Truth`
++   entry #doctype   此方言的 `Document[Html]` 所带的 `<!doctype html>` 文档类型声明
++   entry #Interactive   交互内容类别，作为标签名的并集
++       `<a>`、`<audio>`、`<button>`、`<details>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<label>`、`<select>`、`<textarea>` 和 `<video>`。
++       类别是类型，因此 `Html of Interactive` 是任何交互元素。
++   entry #Flow   流内容类别：可以放在 `<body>`、`<div>` 或 `<li>` 中的一切
++       每个标题、每个短语元素、分节元素，以及块级元素（`<address>`、`<blockquote>`、`<details>`、`<dialog>`、`<div>`、`<dl>`、`<fieldset>`、`<figure>`、`<footer>`、`<form>`、`<header>`、`<hr>`、`<main>`、`<menu>`、`<ol>`、`<p>`、`<pre>`、`<table>`、`<ul>`、`<search>`）。
++       `Html of Flow` 是大多数代码表示一段页面内容所需的类型，多段则用 `List[Html of Flow]`。
+
+% 2 1 0 04b7953a611427c4040c93cc1bdb3146
+
+% 3 1 0 0945bf781a065b6d0cdad50dff0c113c
+
+% 4 1 0 01078cd0509a88b119148cbcf7794646
+
+% 5 1 0 098d3307a51c92320b2d260a437bc83b
+
+% 0 1 0 1467ba45fda629c20c3820eaecacc120
+
+% 1 1 0 19c2f738a66353581c8dc954fb044d35
+
+@ 0 47 0 1c791a1a17af35db0f67b78a0255e0d8
++   entry #Phrasing   短语内容类别：文档的文本以及为其标记的元素
++       包括 `"#text"`，因此文本可以出现在任何可以出现短语内容的地方；除内联元素（`<abbr>`、`<b>`、`<code>`、`<em>`、`<span>`、`<time>`、…）外，还包括每个嵌入元素和交互短语元素。
++       `<p>` 或标题是 `over Phrasing`；`Renderable in Phrasing` 可以放在二者之中。
++   entry #Embedded   嵌入内容类别：`<audio>`、`<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<object>`、`<picture>`、`<video>`、`<math>` 和 `<svg>`
++   entry #Sectioning   分节内容类别：`<article>`、`<aside>`、`<nav>` 和 `<section>`
++   entry #ScriptSupporting   `<script>` 和 `<template>`，它们可以出现在列表或表格自身子项可以出现的任何地方
++   entry #Metadata   元数据内容类别：`<head>` 可以包含的内容
++       `<base>`、`<link>`、`<meta>`、`<noscript>`、`<script>`、`<style>`、`<template>` 和 `<title>`。
++   entry #Heading   `<h1>` 到 `<h6>` 以及 `<hgroup>`
++   entry #insertable   解析器可以在标签与子项之间插入的未写出的标签
++       `insertable(tag)` 是 `tag` 可接纳子项中标记为 `insertable` 的子集：`<html>` 的 `<head>` 和 `<body>`、`<table>` 的 `<tbody>`、`<tbody>` 的 `<tr>`、`<colgroup>`。
++       由 `#infer` 使用。
++   entry #infer   当父项不能直接容纳某子项时，要在二者之间插入的标签
++       `infer(parent, child)` 是 `parent` 的可插入子项，通过它可以到达 `child`；否则为 `Unset`。
++       正因如此，`<table><tr>` 解析为 `<table><tbody><tr>`，作为文档读取的 `<p>Hello` 会获得其 `<html>` 和 `<body>`。
++       这是 `Dom` 的约定；解析器调用它。
++   entry #elements   方言的每个标签，按名称
++       由此实例的 `Tag` 成员构建的 `Dictionary[Tag]`；解析器在这里查找起始标签，`Dom#generic` 列出其键。
++   entry #entities   HTML 的命名字符引用，按名称
++       HTML 4 的集合加上 Living Standard 的新增内容，从名称映射到替换文本（`amp` 到 `&`，`nbsp` 到不换行空格，以及两千多个其他引用）。
++       解析器读取它；未知的引用（`&puck;`）按字面留在文本中。
++   entry #attributes   方言的每个属性，按名称
++       由伴生对象的属性 given 构建的 `Dictionary[Attribute]`，同一名称的多个 given（`href`、`href2`、`href3`）合并为一个 `Attribute`，其元素集合为并集。
++       解析器查询它，以拒绝已知元素上的未知属性（`Html.Issue.UnknownAttribute`）。
++   entry #Html   `<html>` 根元素，作为 `honeycomb.Html`
++       一个惰性别名，使 `import htmlDoms.whatwg.*` 将 `Html` 作为标签与其他标签一起引入作用域：`Html(Head(Title("x")), Body(P("y")))` 就是整个文档树。
++       `Html` 对象本身是 `Html` 类型的伴生对象，并且是一个 `Tag.Container of "html" over "head" | "body"`。
++   entry #A   `<a>`：超链接；透明的，因此可以容纳其父项可以容纳的任何内容
++       `Tag.Transparent of "a" over "" in Whatwg`。
++       它接受 `href`、`target`、`download`、`rel`、`hreflang`、`type`、`referrerpolicy` 和 `ping`。
++       由于是透明的，`<p>` 中的 `A(…)` 可以容纳短语内容，`<div>` 中的则可以容纳流内容；解析器会拒绝外层元素无法容纳的子项（`Html.Issue.InadmissibleTag`）。
++   entry #Abbr   `<abbr>`：缩写，包含短语内容；`title` 给出其全称
++   entry #Address   `<address>`：联系信息，包含除标题、分节和嵌套地址以外的流内容
++   entry #Area   `<area>`：图像映射中的一个区域；带预设形状的空标签
+
+% 1 1 0 03257be7e62db82602eda1b7c6cd497b
+
+@ 0 8 0 08a0aec5f35c9280030f144bc1815de0
++         `Topic` 为 `"area"` 的 `Tag.Void`，接受 `alt`、`coords`、`shape`、`href`、`target`、`download`、`ping`、`rel` 和 `referrerpolicy`。
++         它的四个成员预设了 `shape` 属性；注意在当前源代码中它们是以标注 `input` 构建的，因此 `Area.Rect` 序列化为 `<input shape="rect">`。
++     entry .Default   `shape="default"` 区域：整幅图像
++     entry .Rect   `shape="rect"` 区域，`coords` 为左、上、右、下
++     entry .Circle   `shape="circle"` 区域，`coords` 为圆心 x、圆心 y、半径
++     entry .Poly   `shape="poly"` 区域，`coords` 为顶点坐标对的列表
+
+% 0 1 0 1758718c93ca7c19154ca700645739c7
+
+@ 1 1 0 01598a7031213ffa1586ffee2f2a5435
++     entry .Transport   `""`：没有子项
+
+% 2 1 0 0769f835ed306d0d1fc5dc358e26c18c
+
+@ 0 77 0 1e9bc4d531b4931f0c7cfe82c0a46e1e
++   entry #Article   `<article>`：自成一体的作品，包含流内容
++   entry #Aside   `<aside>`：附带内容，包含流内容
++   entry #Audio   `<audio>`：声音；透明的，另加 `<source>` 和 `<track>` 子项
++       接受 `src`、`crossorigin`、`preload`、`autoplay`、`loop`、`muted` 和 `controls`。
++       规范中其子项取决于 `src` 是否存在的规则不是类型：两种形式都能编译。
++   entry #B   `<b>`：引人注意但不增加重要性的文本，包含短语内容
++   entry #Base   `<base>`：文档基础 URL 和默认链接目标；空标签，位于 `<head>` 中
++       接受 `href` 和 `target`；规范要求至少有一个，这一点未强制。
++   entry #Bdi   `<bdi>`：为双向格式化而隔离的文本，包含短语内容
++   entry #Bdo   `<bdo>`：具有显式方向的文本，包含短语内容；`dir` 是必需的
++   entry #Blockquote   `<blockquote>`：引用的段落，包含流内容；`cite` 给出其来源
++   entry #Body   `<body>`：文档的内容，包含流内容
++       自动闭合且可插入：解析器在作为整个文档读取的内容周围补上它，并在输入结束时闭合它。
++   entry #Br   `<br>`：换行；空标签
++   entry #Button   `<button>`：按钮，包含短语内容
++       边界标签：解析器不允许在其外部打开的格式化元素延续到其内部。
++       接受 `type`、`disabled`、`form`、`formaction`、`formenctype`、`formmethod`、`formnovalidate`、`formtarget`、`name`、`value`、`command`、`commandfor`、`popovertarget` 和 `popovertargetaction`。
++   entry #Canvas   `<canvas>`：可编写脚本的位图；透明的，因此可容纳后备内容
++       接受 `width` 和 `height`。
++   entry #Caption   `<caption>`：表格的标题，包含流内容；是 `<table>` 的第一个子项
++   entry #Cite   `<cite>`：作品的标题，包含短语内容
++   entry #Code   `<code>`：一段计算机代码，包含短语内容
++   entry #Col   `<col>`：表格列；空标签，位于 `<colgroup>` 内；`span` 覆盖多列
++   entry #Colgroup   `<colgroup>`：一组列，包含 `<col>` 元素
++       其子项之间只能出现空白（`Html.Mode.Whitespace`），并且它是可插入的，因此直接出现在 `<table>` 中的 `<col>` 会获得一个。
++   entry #Data   `<data>`：带有机器可读 `value` 的内容，包含短语内容
++   entry #Datalist   `<datalist>`：`<input list=…>` 的预定义选项，包含短语内容和 `<option>`
++   entry #Dd   `<dd>`：`<dl>` 中的描述，包含流内容；自动闭合
++   entry #Del   `<del>`：被删除的文本；透明的，带有 `cite` 和 `datetime`
++   entry #Details   `<details>`：展开控件：一个 `<summary>`，然后是流内容
++       接受 `open` 和 `name`，后者将多个组合为互斥手风琴。
++   entry #Dfn   `<dfn>`：术语的定义实例，包含短语内容
++   entry #Dialog   `<dialog>`：对话框，包含流内容；接受 `open` 和 `closedby`
++   entry #Div   `<div>`：通用容器，包含流内容
++   entry #Dl   `<dl>`：描述列表，包含 `<dt>`、`<dd>` 和 `<div>` 组
++       其子项之间只能出现空白，并且它会自动闭合。
++   entry #Dt   `<dt>`：`<dl>` 中的术语，包含流内容；自动闭合
++   entry #Em   `<em>`：重读强调，包含短语内容
++   entry #Embed   `<embed>`：外部应用程序或交互内容；空标签
++       接受 `src`、`type`、`width` 和 `height`。
++   entry #Fieldset   `<fieldset>`：一组表单控件：一个可选的 `<legend>`，然后是流内容
++       接受 `disabled`、`form` 和 `name`。
++   entry #Figcaption   `<figcaption>`：插图的说明文字，包含流内容
++   entry #Figure   `<figure>`：带有可选 `<figcaption>` 的自成一体的内容，包含流内容
++   entry #Footer   `<footer>`：其最近祖先分节的页脚，包含流内容
++   entry #Form   `<form>`：表单，包含流内容
++       接受 `action`、`method`、`enctype`、`accept-charset`（写作 `acceptCharset`）、`autocomplete`、`name`、`novalidate` 和 `target`。
++   entry #H1   `<h1>`：一级标题，包含短语内容
++   entry #H2   `<h2>`：二级标题，包含短语内容
++   entry #H3   `<h3>`：三级标题，包含短语内容
++   entry #H4   `<h4>`：四级标题，包含短语内容
++   entry #H5   `<h5>`：五级标题，包含短语内容
++   entry #H6   `<h6>`：六级标题，包含短语内容
++   entry #Head   `<head>`：文档的元数据，包含 `#Metadata` 内容
++       其子项之间只能出现空白；它会自动闭合，并且是可插入的，因此出现在文档开头的 `<title>` 会被包上一个 `<head>`。
++   entry #Header   `<header>`：其最近祖先分节的介绍性内容，包含流内容；自动闭合
++   entry #Hgroup   `<hgroup>`：带有副标题的标题，包含 `<p>` 以及 `<h1>` 到 `<h6>`
++   entry #Hr   `<hr>`：主题分隔；空标签
++   entry #I   `<i>`：以另一种语气表达的文本，包含短语内容
++   entry #Iframe   `<iframe>`：嵌套的浏览上下文；在此词汇表中是空标签
++       接受 `src`、`srcdoc`、`name`、`sandbox`、`allow`、`allowfullscreen`、`width`、`height`、`referrerpolicy` 和 `loading`。
++       它被定义为 `Tag.Void`，因此不接受子项，并序列化为没有结束标签的 `<iframe …>`，而规范要求有 `</iframe>`。
++   entry #Img   `<img>`：图像；空标签
++       接受 `src`、`alt`、`srcset`、`sizes`、`crossorigin`、`usemap`、`ismap`、`width`、`height`、`referrerpolicy`、`decoding`、`loading` 和 `fetchpriority`。
++       通过 `Unattributive`，`alt` 用 `img.alt` 读回，`width` 用 `img.width` 读回（一个 `Optional[Int]`）。
+
+% 2 1 0 03f7e17846a38e8c174857ab541ae5e6
+
+% 3 1 0 18c84f16d64c9e991a395daab53236cc
+
+% 4 1 0 06df25f1c749179e04989ff0b976ab45
+
+% 5 1 0 125826beff64d2831939e68a516609aa
+
+% 6 1 0 0c59215b5a6987dc1fbe466132642306
+
+% 0 1 0 025220e43d442d4d00d78f5ae0b25466
+
+% 0 1 0 1a9f85dc203bc1fb10c51654cdc31cfe
+
+% 0 1 0 01898fb9bb95434911151e17825cff23
+
+% 1 1 0 021e863cc7a20a0f0a304d09e6749933
+
+@ 0 1 0 09075fc3cbb043b21acb7d6f215b4b11
++   entry #Input   `<input>`：表单控件；为每种 `type` 都带有预设的空标签
+
+% 1 1 0 0ae07bbc95dc63950894f669f6aef457
+
+@ 0 8 0 08bdbf5aed83754507813d2f0e82ead7
++         `Topic` 为 `"input"` 的 `Tag.Void`。
++         单独的 `Input` 是没有 `type` 的输入（文本字段）；每个成员都预设了 `type`，因此 `Input.Email(name = t"email")` 即 `<input type="email" name="email">`，解析器会将 `<input type="button">` 读回为 `Input.Button`。
++         输入接受 `name`、`value`、`disabled`、`readonly`、`required`、`checked`、`placeholder`、`autocomplete`、`list`、`min`、`max`、`step`、`pattern`、`size`、`maxlength`、`minlength`、`multiple`、`accept`、`alt`、`src`、`width`、`height`、`form`、`formaction` 及其同类属性、`dirname`、`popovertarget` 和 `popovertargetaction`。
+
+% 2 1 0 004ef438cab5ce6b0776307a28a79900
+
+% 3 1 0 0e583a5233fbbf4d0e6ed0603637e598
+
+% 4 1 0 0a69d050acc3af3f06b170f5bc8b553c
+
+% 5 1 0 0705afa2b03d6722167ab1a4a85bd4d1
+
+% 0 1 0 0069175a695b6a751fe1fca78233f1be
+
+% 0 1 0 19712ef9c2f82c1209901dcca48549c7
+
+% 0 1 0 0dd785dd53fd43340c75791a6a4f7be3
+
+% 0 1 0 16b16b87d11dcd741a86a175c8a962e8
+
+% 0 1 0 074beae20fe7b5d60a3ebf16013ace29
+
+% 0 1 0 15d7426af5395aed18f629ec3b4a45de
+
+% 1 1 0 1cfb63396a67ea8913a7cb1babbf4cf3
+
+% 1 1 0 168bbb89462f9021028385090ccedaaa
+
+% 2 1 0 0ad501599eebd4ae0f9f9893d5a6110d
+
+% 0 1 0 1fd9e4d6e089289a168e451d54f69244
+
+% 0 1 0 1db7fc37f0e5e7fa04a2945b15effd74
+
+% 0 1 0 1c9a9d9f0d6af57a0c920f4e3aa7e191
+
+% 0 1 0 0a45d8181175fd701a0425228f903f43
+
+% 1 1 0 0106abe1573517f905f3c7db9f0959e6
+
+% 0 1 0 0d05b4573d0b967514bf1648bad77785
+
+% 0 1 0 14a047e3d9445f000725ce33e802f49b
+
+% 0 1 0 19a05f243f1807341edc08783761c522
+
+% 0 1 0 0b1346a7a6450d910dc4b8854e663121
+
+% 0 1 0 0828ac24c01ed8940998eaaa82474c47
+
+% 0 1 0 08456e162bf543f5052932f07018de7d
+
+% 0 1 0 06eee7a6308aa35b1a374c8876718443
+
+% 0 1 0 196e07ab7ead6ff603a63463a485cdd2
+
+% 1 1 0 02a3a31c0db77fb0113fcb0da2fbc4b9
+
+% 2 1 0 13b99e60712cfc4d1ce9bf3cac6b915c
+
+% 3 1 0 1dbf989c65fc736f1e6236ef87dcb1bd
+
+% 4 1 0 0de85f04ae3bd73115be70724d416889
+
+% 5 1 0 197a201a0f4a64e90f6deb6394551e8f
+
+% 6 1 0 180ba83c420275fe07e3d7e4878a5e81
+
+% 1 1 0 1aa7d1187d3b6ac100fd7fd3c1c844f6
+
+@ 2 1 0 1cf1598c69499d341279d280b4e568ec
++     entry .Transport   `""`：没有子项
+
+% 2 1 0 0400dc8b640238710230298e4675c008
+
+@ 0 9 0 06a6962c3498b8ed144744b32df2ba63
++   entry #Ins   `<ins>`：插入的文本；透明的，带有 `cite` 和 `datetime`
++   entry #Kbd   `<kbd>`：用户输入，包含短语内容
++   entry #Label   `<label>`：表单控件的说明，包含短语内容；`for` 指名该控件
++   entry #Legend   `<legend>`：`<fieldset>` 的说明，包含短语内容和标题
++       在当前源代码中，该标签以标注 `label` 构建，因此 `Legend(…)` 序列化为 `<label>`；解析器中的 `<legend>` 也通过 `#elements` 按该标注解析。
++   entry #Li   `<li>`：列表项，包含流内容；自动闭合；`value` 设置它在 `<ol>` 中的序号
++   entry #Link   `<link>`：指向外部资源的链接；为每种 `rel` 都带有预设的空标签
+
+% 1 1 0 0706f5242056950a04881a36a14b9132
+
+@ 0 6 0 1e9299e3c925f8f20f9e1dffad8a80f8
++         `Topic` 为 `"link"` 的 `Tag.Void`，接受 `href`、`rel`、`type`、`media`、`hreflang`、`sizes`、`as`、`crossorigin`、`integrity`、`referrerpolicy`、`blocking`、`disabled`、`color`、`imagesizes`、`imagesrcset` 和 `fetchpriority`。
++         每个成员都预设了 `rel`，因此 `Link.Stylesheet(href = t"/style.css")` 即 `<link rel="stylesheet" href="/style.css">`，解析器会将 `<link rel="stylesheet">` 读回为 `Link.Stylesheet`。
+
+% 0 1 0 1d42c09c91b1b7aa0833df955f30e419
+
+% 0 1 0 10a85bb573d2bca61fc3529cc911aaee
+
+% 0 1 0 150379a258ea6ede069ba61ed7f5f1f8
+
+% 0 1 0 1bfb3037c3fb3a2f0f67d288b2af4bb8
+
+% 0 1 0 0cf16779e757eb4806b6910cca1f63b8
+
+% 0 1 0 16dc0478fbd3dc7c0b725692ca98dce0
+
+% 0 1 0 07b0471fa21797710978d9bd8935dfb6
+
+% 0 1 0 1e1e7c59bcb1aedd1e1a722325d299bc
+
+% 0 1 0 0bbb4c3b7974139c048aa513865b3fd3
+
+% 0 1 0 1e56fc9e78f50b590426ff1cc3879264
+
+% 0 1 0 0f7ce2489b2038350295f7b18eab80c2
+
+% 0 1 0 0fc0d5d6adeaddab1b24553ecb07d533
+
+% 0 1 0 1889953115faf2650b2ddefbfd3bd5ad
+
+% 0 1 0 03f9b16f12491f5b03483cff938c0669
+
+% 0 1 0 14da6370333d616807abc4c72a726bf8
+
+% 0 1 0 1e38fa06084c45f60e37d05055dc9387
+
+% 0 1 0 07a4c8f283f20bc10ab4a83e78681819
+
+% 0 1 0 04b1d43bd027b9c915f74f06f3406ef5
+
+% 0 1 0 0b6f74ce86e1d0b50279c3f333fcaeac
+
+% 0 1 0 048cab25a458ec87030482f3b10f52a7
+
+% 0 1 0 068cbe83c9e254301f781f9adcdb15e7
+
+@ 1 1 0 1ce83cfdbeda450a0771bbd314540714
++     entry .Transport   `""`：没有子项
+
+% 2 1 0 09ddbdfe3fe0f1d502913a81be1ccb41
+
+@ 0 9 0 11c5a605c72a35930490d6e9534c029f
++   entry #Main   `<main>`：文档的主体内容，包含流内容
++   entry #Map   `<map>`：图像映射；透明的，另加 `<area>` 子项；`name` 是必需的
++   entry #Mark   `<mark>`：高亮文本，包含短语内容
++   entry #Math   `<math>`：MathML 内容，对 HTML 而言是外来的
++       外来标签：其子项不是 HTML 元素，而是 `Html.Element.foreign` 节点，解析器为其中的任何标签构建这种节点，保留属性的大小写，并接受 `<![CDATA[…]]>`。
++       archimedes 库将 `Math` 值渲染为这样的节点。
++   entry #Menu   `<menu>`：工具栏的命令，包含 `<li>` 元素；它们之间只能有空白
++   entry #Meta   `<meta>`：文档元数据；为每个标准 `name` 都带有预设的空标签
+
+% 1 1 0 03401698d83002c21f32f37602d14033
+
+@ 0 6 0 1f2a9ff600ed2cb809a34d3516b05b20
++         接受 `name`、`content`、`charset` 和 `http-equiv`（写作 `httpEquiv`）。
++         每个成员都预设了 `name`，因此 `Meta.Viewport(content = t"width=device-width")` 即 `<meta name="viewport" content="width=device-width">`，解析器会将 `<meta name="viewport">` 读回为 `Meta.Viewport`。
++         与 `#Area`、`#Input`、`#Link` 和 `#Track` 不同，此对象不固定其 `Topic`、`Transport` 和 `Form` 类型成员。
+
+% 0 1 0 11257a3108edb07306797fa8d8a62114
+
+% 0 1 0 019e7e59d31cf9bc046e1f4b9a691438
+
+% 0 1 0 11590e5d630771240dc2729d5cf766c0
+
+% 0 1 0 056dea36c1a90df40a0a3cdd22344d14
+
+% 0 1 0 0557d9ae7616763c1ffc565324e6c380
+
+% 0 1 0 0d067c4968cf648511a355ce900963ff
+
+% 0 1 0 059fe8c60c510ebf1d5fb04b54e839d7
+
+% 0 1 0 1a4924fdc61fcac7101ac9821d468e8d
+
+% 0 1 0 061c7b841ac66e5911fa33f7673f8e2c
+
+@ 0 57 0 152cc76f0779134d1f5078d7805b7398
++   entry #Meter   `<meter>`：已知范围内的标量度量，包含短语内容
++       接受 `value`、`min`、`max`、`low`、`high` 和 `optimum`，每个都是 `Decimal`。
++   entry #Nav   `<nav>`：导航链接，包含流内容
++   entry #Noscript   `<noscript>`：脚本关闭时的后备内容，包含 `<link>`、`<style>` 和 `<meta>`
++       词汇表为它提供的是 `<head>` 中的形式；规范中位于 `<body>` 的流内容形式没有类型化。
++   entry #Object   `<object>`：外部资源；透明的，带有 `data`、`type`、`name`、`form`、`width` 和 `height`
++       对格式化元素而言是边界标签。
++   entry #Ol   `<ol>`：有序列表，包含 `<li>` 元素；它们之间只能有空白
++       接受 `reversed`、`start` 和 `type`。
++   entry #Optgroup   `<optgroup>`：带有 `<legend>` 的一组 `<option>`；自动闭合，其间只能有空白
++       接受 `disabled` 和 `label`。
++   entry #Option   `<option>`：`<select>` 或 `<datalist>` 中的选项，包含文本；自动闭合
++       接受 `disabled`、`label`、`selected` 和 `value`。
++       在 `import htmlDoms.whatwg.*` 之内会遮蔽 `scala.Option`，这又是一个优先使用 `Optional` 的理由。
++   entry #Output   `<output>`：计算的结果，包含短语内容；`for` 指名其输入
++   entry #P   `<p>`：段落，包含短语内容；自动闭合
++       正是自动闭合使 `<p>one<p>two` 解析为两个段落；`P(Div(…))` 无法编译，因为 `<div>` 不是短语内容。
++   entry #Picture   `<picture>`：带有备选 `<source>` 的图像，包含 `<source>` 和 `<img>`；其间只能有空白
++   entry #Pre   `<pre>`：预格式化文本，包含短语内容
++       其中的空白由序列化器保留，而在其他地方缩进格式可能会重排空白。
++   entry #Progress   `<progress>`：任务完成度，包含短语内容；`value` 和 `max`
++   entry #Q   `<q>`：行内引用，包含短语内容；`cite` 给出其来源
++   entry #Rp   `<rp>`：ruby 注音的后备括号，包含文本；自动闭合
++   entry #Rt   `<rt>`：ruby 注音，包含短语内容；自动闭合
++   entry #Ruby   `<ruby>`：带 ruby 注音的文本，包含短语内容以及 `<rt>` 和 `<rp>`
++   entry #S   `<s>`：不再准确的文本，包含短语内容
++   entry #Samp   `<samp>`：示例输出，包含短语内容
++   entry #Script   `<script>`：脚本，包含原始文本
++       `Html.Mode.Raw`：内容读到第一个 `</script>` 为止，不解码实体、不识别标签，并按原样写出。
++       接受 `src`、`type`、`async`、`defer`、`nomodule`、`crossorigin`、`integrity`、`referrerpolicy`、`blocking` 和 `fetchpriority`。
++   entry #Search   `<search>`：搜索表单或控件组，包含流内容
++   entry #Section   `<section>`：通用分节，包含流内容
++   entry #Select   `<select>`：下拉控件，包含 `<option>`、`<optgroup>`、`<hr>`、`<button>` 和 `<noscript>`
++       子项之间只能有空白。
++       接受 `name`、`multiple`、`size`、`disabled`、`required`、`form` 和 `autocomplete`。
++   entry #Selectedcontent   `<selectedcontent>`：可定制 `<select>` 所选选项的镜像内容；空标签
++   entry #Slot   `<slot>`：影子树插入点；透明的，带有 `name`
++   entry #Small   `<small>`：旁注和附属细则，包含短语内容
++   entry #Source   `<source>`：媒体或图像源；空标签
++       接受 `src`、`type`、`srcset`、`sizes`、`media`、`width` 和 `height`。
++   entry #Span   `<span>`：通用短语容器
++   entry #Strong   `<strong>`：重要性强，包含短语内容
++   entry #Style   `<style>`：嵌入的 CSS，包含原始文本
++       `Html.Mode.Raw`：`Style(".a { color: red }")` 按原样写出其文本，不做实体编码，解析器也不做任何解码。
++       接受 `media` 和 `blocking`。
++   entry #Sub   `<sub>`：下标，包含短语内容
++   entry #Summary   `<summary>`：`<details>` 的说明，包含短语内容或一个标题
++   entry #Sup   `<sup>`：上标，包含短语内容
++   entry #Svg   `<svg>`：SVG 内容，对 HTML 而言是外来的
++       外来标签：其子项是 `Html.Element.foreign` 节点，解析器为其中的任何标签构建这种节点，保留属性的大小写并接受 `<![CDATA[…]]>`。
++       接受 `width` 和 `height`。
+
+% 2 1 0 1a350e20f051b2a81f9d02458749064d
+
+% 3 1 0 18c8211062d06ec805570e7570e7fd72
+
+% 4 1 0 0c1ccf3ef06fcf15154b5a08667aafea
+
+% 5 1 0 037bda3f9d55117a1eeefbe2a82dc9c3
+
+% 6 1 0 009c6f888da3561b0d853fb8d558aad7
+
+% 0 1 0 01cfa8b31fbfaba00398aed82e62061a
+
+% 0 1 0 194d3a0ab756de130c196e4774c03d82
+
+% 1 1 0 0afcd418b021140615045a52347f5eb0
+
+@ 0 26 0 11c7f7f52fccca1205abcc68d2381143
++   entry #Table   `<table>`：表格，包含 `<caption>`、`<colgroup>`、`<thead>`、`<tbody>` 和 `<tfoot>`
++       子项之间只能有空白，且对格式化元素而言是边界。
++       直接交给 `Table(…)` 的 `<tr>` 无法编译；而解析器则会推断出 `<tbody>`（`#infer`），因此 `<table><tr>…` 读作 `Table(Tbody(Tr(…)))`。
++   entry #Tbody   `<tbody>`：表格的主体行，包含 `<tr>`；自动闭合、可插入，其间只能有空白
++   entry #Td   `<td>`：数据单元格，包含流内容；自动闭合，且是边界
++       接受 `colspan`、`rowspan` 和 `headers`。
++   entry #Template   `<template>`：惰性片段，包含流内容和元数据内容，以及所有原位子项
++       由于其内容从不在原处渲染，它接纳在其他情况下只在列表、表格、行、ruby 或 `<select>` 内有效的内容：`<li>`、`<tr>`、`<td>`、`<option>`、`<source>` 等。
++       为空时序列化为 `<template></template>`；解析时读到必需的 `</template>` 为止。
++       接受 `shadowrootmode` 及其 `shadowroot…` 同类属性。
++   entry #Textarea   `<textarea>`：多行文本控件，包含文本
++       `Html.Mode.Rcdata`：其内容中的实体会被解码，但不识别任何标签，因此 `<textarea><div>x</div></textarea>` 读作文本 `<div>x</div>`。
++       接受 `name`、`rows`、`cols`、`wrap`、`placeholder`、`maxlength`、`minlength`、`required`、`readonly`、`disabled`、`dirname`、`form` 和 `autocomplete`。
++   entry #Tfoot   `<tfoot>`：表格的页脚行，包含 `<tr>`；自动闭合，其间只能有空白
++   entry #Th   `<th>`：表头单元格，包含流内容；自动闭合，且是边界
++       接受 `colspan`、`rowspan`、`headers`、`scope` 和 `abbr`。
++   entry #Thead   `<thead>`：表格的表头行，包含 `<tr>`；自动闭合，其间只能有空白
++   entry #Time   `<time>`：日期或时间，包含短语内容；`datetime` 给出机器可读形式
++   entry #Title   `<title>`：文档的标题，包含文本；位于 `<head>` 中
++       `Html.Mode.Rcdata`：`<title>a &amp; <b></title>` 读作文本 `a & <b>`。
++   entry #Tr   `<tr>`：表格行，包含 `<td>` 和 `<th>`；自动闭合、可插入，其间只能有空白
++   entry #Track   `<track>`：`<audio>` 或 `<video>` 的定时文本轨道；为每种 `kind` 都带有预设的空标签
+
+% 1 1 0 0ab5cc1a9c1882dd0af766d6b5858e96
+
+@ 0 2 0 07f26d93db7adb4611925465dea1c85d
++         `Topic` 为 `"track"` 的 `Tag.Void`，接受 `src`、`srclang`、`label`、`default` 和 `kind`。
++         每个成员都预设了 `kind`。
+
+% 0 1 0 14cbc45d6a74302703b568fa32cbcbf9
+
+% 0 1 0 0fbe4dbcfce10a0e085b1d681c1f124a
+
+% 0 1 0 1d853b831094a136021401872ed48b82
+
+% 0 1 0 0a6f28d9242c4e941e006614c708c575
+
+% 0 1 0 1d85f62e91ec716b03cc397946d7ab97
+
+% 0 1 0 047cf93f210047100704608c02f5312f
+
+@ 1 1 0 0f5d696b1eb883021453932ab0eb31f7
++     entry .Transport   `""`：没有子项
+
+% 2 1 0 17f122dba6b7df9c190c04320d97e49b
+
+@ 0 7 0 0fbd4d2fe4204575098a90702dd46e4a
++   entry #U   `<u>`：非言语的注释，包含短语内容
++   entry #Ul   `<ul>`：无序列表，包含 `<li>` 元素；它们之间只能有空白
++   entry #Var   `<var>`：变量，包含短语内容
++   entry #Video   `<video>`：视频；透明的，另加 `<source>` 和 `<track>` 子项
++       接受 `src`、`poster`、`crossorigin`、`preload`、`autoplay`、`playsinline`、`loop`、`muted`、`controls`、`width` 和 `height`。
++   entry #Wbr   `<wbr>`：可换行位置；空标签
+
+@ 0 1 0 04e8d3433acbf5ab000fa1cb5de7b1de
++ entry .Html4Transitional   HTML 4.01 Transitional 方言：其标签作为一个 `Dom`，其属性作为 given
+
+% 1 1 0 12a42f93356ede88176ea4613df39741
+
+@ 0 8 0 1e26de8f2be4505a013948b5a8a11914
++       这是 honeycomb 所附带的第二种 HTML 描述，用于必须是 HTML 4.01 Transitional 的文档：遗留内容、电子邮件模板，以及使用了 Living Standard 已弃用的表现性元素和属性的标记。
++       与 `Whatwg` 一样，它既是持有属性 given 的**对象**，也是作为 `Dom` 的**类**：标签词汇表（`Font`、`Center`、`Applet`、`Strike`、`Isindex` 等，以及常见标签）、HTML 4 内容类别（`#Inline`、`#Block`、`#Flow`）、`HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"` 文档类型声明，以及 HTML 4 的字符引用。
+
+% 2 1 0 1edf6eb6493c99cc03226acaeb619975
+
+% 3 1 0 0a50404ce481fada18f365d9d70e5501
+
+% 0 1 0 16dc1cda338424090471d71981f2e655
+
+% 0 1 0 12b24b3f033b3df109f5cab406122ca5
+
+% 1 1 0 0b96b6a03f1acee90d61283ae923620e
+
+% 0 1 0 0fc194d34cfa9fa616ee65c9fa14f2c6
+
+% 1 1 0 1c81cf466bbc1f4c0e63c38d343a7204
+
+@ 0 8 0 10748fe39179ffb91623c9ca74d244f6
++       它的属性值标记就是 `Whatwg` 的那些（`Textual`、`Url`、`Presence`、`Color` 等），以别名的形式重新导出，因此适用同样的 `Attributive` given：`checked` 用 `Boolean`，`colspan` 用 `Int`，在有 `attributives.textAttributive` 时任何属性都可以用 `Text`。
++       这个方言自己的标记（`Align`、`Charset`、`Clear`、`Frame`、`Rules`、`Scope`、`Size`、`Valign`、`Valuetype`、`Wrap`）都是 `Whatwg.Textual` 的别名。
++       内在事件属性（`onclick`、`onload` 等）的类型是 `of Script`，`Script` 是 `Whatwg.Scripting` 的别名，因此处理函数必须是类型化的脚本值，而不是文本。
+
+@ 0 5 0 186b0bd3959d394204f5ac6b126f6666
++       这个方言的属性是 `Attribute in Html4Transitional`，有别于 WHATWG 的属性，因此一种词汇表的标签绝不会接受另一种词汇表的属性。
++       解析器能识别 HTML 4 文档类型声明，而 `Html.Provenance(htmlDoms.html4Transitional)` 是在它之下加载的文档的元数据。
++       标签的类型形如 `Tag.Container of "font" over Inline in Html4Transitional`。
+
+% 1 1 0 183f0c23f09a54f51ee9ae1862c91f96
+
+% 1 1 0 165f6b2c44d9fb5b0bc8144ec1758a27
+
+% 2 1 0 1134b435c9167ec8057a656ac52311d1
+
+@ 0 7 0 1ade5a25929ad2df0a3dd6a964a5a3cf
++   entry .Attribute   `honeycomb.Attribute in Html4Transitional`：这个方言的属性
++   entry .attribute   为这个方言中在具名元素上有效的属性生成 given
++       与 `Whatwg.attribute` 相同，但类型为 `in Html4Transitional`：`attribute["bgcolor", "body" | "table", Color]()`。
++   entry .globalAttribute   为这个方言中在所有元素上都有效的属性生成 given
++       与 `Whatwg.globalAttribute` 相同，但类型为 `in Html4Transitional`。
++   entry .Color   `Whatwg.Color`：颜色值，`bgcolor`、`text`、`link` 和 `color` 接受它
+
+% 0 1 0 0856a3ef092a2c7e1c1a1d5f59900092
+
+% 0 1 0 0706e36a29e3c70504847dfcc1858343
+
+% 0 1 0 17f7a1e6bde80cf314aa13bbaaf2cbec
+
+% 0 1 0 162f9f7778b3bc0a1801aaf2c2723649
+
+% 0 1 0 1084c6d3f9ef40e50982340eed1db785
+
+% 0 1 0 09cac6ca8649d0b3142c1e6a9a5b1003
+
+% 0 1 0 19ca6f259342677311d90392b041f522
+
+% 0 1 0 05a6ad98447341d01b43e58d0c6c61ad
+
+% 0 1 0 121d1cf4d821db4f18204d391772c7e7
+
+% 0 1 0 110c1bf7869d34c10995f1f7daf0c9e6
+
+% 0 1 0 0d97f1659cbca4fb11c7bf2749c99469
+
+% 0 1 0 1c8110271ab8671a135ec505862ae2c5
+
+% 0 1 0 06a9294c6595decd034bdfee04fb4a00
+
+% 0 1 0 1be503456036e2841deda50f80c270dc
+
+% 0 1 0 0b84bd621c849dab19d39b501c1f395e
+
+% 0 1 0 0328ed7f262a41e40091cf9d665df566
+
+@ 0 1 0 13871b094eef29a51989f248f4034875
++   entry .Presence   `Whatwg.Presence`：布尔属性，存在或不存在
+
+% 0 1 0 1baf8f213b29d4070c623ed371a74f5a
+
+% 0 1 0 09561c50715a87e91f66a2173b6d7f88
+
+% 0 1 0 0c5c21e39addaab20c312aca812498db
+
+% 0 1 0 01f06c31b75658b6094ac52f1072cc59
+
+@ 0 1 0 031b818cd68a91730a8947e1b18debb7
++   entry .Textual   `Whatwg.Textual`：任意文本
+
+% 0 1 0 181e6214896f5ceb093bd075d2544712
+
+% 0 1 0 10d0ed546a8c05bd05e0dd44fdbe99a1
+
+@ 0 238 0 0bcaa535c93dad371b4031bf18d5b3a9
++   entry .Align   `align` 的值标记：`left`、`center`、`right` 或 `justify`；接受任意文本
++   entry .Charset   `charset` 和 `accept-charset` 的值标记：字符编码名称；接受任意文本
++   entry .Clear   `<br>` 的 `clear` 的值标记：`left`、`right`、`all` 或 `none`；接受任意文本
++   entry .Frame   `<table>` 的 `frame` 的值标记：要绘制边框的哪几边；接受任意文本
++   entry .Rules   `<table>` 的 `rules` 的值标记：要绘制哪些内边框；接受任意文本
++   entry .Scope   单元格的 `scope` 的值标记：`row`、`col`、`rowgroup` 或 `colgroup`；接受任意文本
++   entry .Script   内在事件处理函数的值标记：`Whatwg.Scripting`，普通文本不满足它
++       `onclick = t"…"` 是刻意设计成无法编译的：处理函数是一个类型化的脚本值，由某个脚本库为它提供 `Attributive to Whatwg.Scripting`。
++   entry .Size   `<font>`、`<basefont>` 或 `<hr>` 的 `size` 的值标记；接受任意文本
++   entry .Valign   `valign` 的值标记：`top`、`middle`、`bottom` 或 `baseline`；接受任意文本
++   entry .Valuetype   `<param>` 的 `valuetype` 的值标记：`data`、`ref` 或 `object`；接受任意文本
++   entry .Wrap   `<textarea>` 的 `wrap` 的值标记；接受任意文本
++   entry .id   所有元素上的 `id`，作为 `Id`
++   entry .class   所有元素上的 `class`，作为 `CssClassList`
++   entry .style   所有元素 上的 `style`，作为 `Css`
++   entry .title   所有元素 上的 `title`，作为 `Textual`
++   entry .lang   所有元素 上的 `lang`，作为 `Language`
++   entry .dir   所有元素 上的 `dir`，作为 `Dir`
++   entry .onclick   所有元素 上的 `onclick`，作为 `Script`
++   entry .ondblclick   所有元素 上的 `ondblclick`，作为 `Script`
++   entry .onmousedown   所有元素 上的 `onmousedown`，作为 `Script`
++   entry .onmouseup   所有元素 上的 `onmouseup`，作为 `Script`
++   entry .onmouseover   所有元素 上的 `onmouseover`，作为 `Script`
++   entry .onmousemove   所有元素 上的 `onmousemove`，作为 `Script`
++   entry .onmouseout   所有元素 上的 `onmouseout`，作为 `Script`
++   entry .onkeypress   所有元素 上的 `onkeypress`，作为 `Script`
++   entry .onkeydown   所有元素 上的 `onkeydown`，作为 `Script`
++   entry .onkeyup   所有元素 上的 `onkeyup`，作为 `Script`
++   entry .onload   `<body>` 和 `<frameset>` 上的 `onload`，作为 `Script`
++   entry .onunload   `<body>` 和 `<frameset>` 上的 `onunload`，作为 `Script`
++   entry .onfocus   `<a>`、`<area>`、`<label>`、`<input>`、`<select>`、`<textarea>` 和 `<button>` 上的 `onfocus`，作为 `Script`
++   entry .onblur   `<a>`、`<area>`、`<label>`、`<input>`、`<select>`、`<textarea>` 和 `<button>` 上的 `onblur`，作为 `Script`
++   entry .onsubmit   `<form>` 上的 `onsubmit`，作为 `Script`
++   entry .onreset   `<form>` 上的 `onreset`，作为 `Script`
++   entry .onchange   `<input>`、`<select>` 和 `<textarea>` 上的 `onchange`，作为 `Script`
++   entry .onselect   `<input>` 和 `<textarea>` 上的 `onselect`，作为 `Script`
++   entry .href   `<a>`、`<area>`、`<base>` 和 `<link>` 上的 `href`，作为 `Url`
++   entry .src   `<img>`、`<input>`、`<script>` 和 `<iframe>` 上的 `src`，作为 `Url`
++   entry .alt   `<applet>`、`<area>`、`<img>` 和 `<input>` 上的 `alt`，作为 `Textual`
++   entry .type   `<a>`、`<link>`、`<object>`、`<param>`、`<script>`、`<style>`、`<input>` 和 `<button>` 上的 `type`，作为 `Mime`
++       写作 `` `type` = … ``，因为 `type` 是关键字；`<input>` 的类型通常改用 `#Input` 的预设来选择。
++   entry .typeOl   `<ol>`、`<ul>` 和 `<li>` 上的 `type`：列表标记的样式，作为 `OlType`
++   entry .name   `<a>`、`<applet>`、`<button>`、`<form>`、`<iframe>`、`<img>`、`<input>`、`<map>`、`<meta>`、`<object>`、`<param>`、`<select>` 和 `<textarea>` 上的 `name`
++       类型为 `Name`。
++       `<a name=…>` 是 HTML 4 的锚点，Living Standard 用 `id` 取代了它。
++   entry .value   `<input>`、`<option>`、`<param>` 和 `<button>` 上的 `value`，作为 `Textual`
++   entry .valueLi   `<li>` 上的 `value`：列表项的编号，作为 `PositiveInt`
++   entry .rel   `<a>` 和 `<link>` 上的 `rel`，作为 `Tokens`
++   entry .rev   `<a>` 和 `<link>` 上的 `rev`：反向链接类型，作为 `Tokens`
++       `honeycomb.Rev` 枚举包含 HTML 4 的链接类型，以 `.show` 传入。
++   entry .target   `<a>`、`<area>`、`<base>`、`<form>` 和 `<link>` 上的 `target`，作为 `Target`
++   entry .action   `<form>` 上的 `action`，作为 `Url`
++   entry .method   `<form>` 上的 `method`，作为 `Method`
++   entry .enctype   `<form>` 上的 `enctype`，作为 `Enctype`
++   entry .accept   `<form>` 和 `<input>` 上的 `accept`，作为 `MimeList`
++   entry .acceptCharset   `<form>` 上的 `accept-charset`，作为 `Charset`
++       写作 `acceptCharset = …`；该属性序列化为 `accept-charset`。
++   entry .checked   `<input>` 上的 `checked`：`Presence`
++   entry .disabled   `<button>`、`<input>`、`<optgroup>`、`<option>`、`<select>` 和 `<textarea>` 上的 `disabled`：`Presence`
++   entry .readonly   `<input>` 和 `<textarea>` 上的 `readonly`：`Presence`
++   entry .multiple   `<select>` 上的 `multiple`：`Presence`
++   entry .selected   `<option>` 上的 `selected`：`Presence`
++   entry .maxlength   `<input>` 上的 `maxlength`，作为 `PositiveInt`
++   entry .size   `<input>` 和 `<select>` 上的 `size`，作为 `PositiveInt`
++   entry .sizeFont   `<basefont>`、`<font>` 和 `<hr>` 上的 `size`：字号（`1` 到 `7`，或 `+1`）或水平线的高度，作为 `Size`
++   entry .rows   `<textarea>` 上的 `rows`，作为 `PositiveInt`
++   entry .cols   `<textarea>` 上的 `cols`，作为 `PositiveInt`
++   entry .wrap   `<textarea>` 上的 `wrap`，作为 `Wrap`
++   entry .for   `<label>` 上的 `for`：所标注控件的 id，作为 `Id`
++       写作 `` `for` = … ``，因为 `for` 是关键字。
++   entry .usemap   `<img>`、`<input>` 和 `<object>` 上的 `usemap`：图像映射，作为 `Url`
++   entry .ismap   `<img>` 和 `<input>` 上的 `ismap`：`Presence`
++   entry .longdesc   `<img>` 和 `<iframe>` 上的 `longdesc`：详细描述的 URL，作为 `Url`
++   entry .shape   `<a>` 和 `<area>` 上的 `shape`，作为 `Shape`
++   entry .coords   `<a>` 和 `<area>` 上的 `coords`，作为 `Coords`
++   entry .nohref   `<area>` 上的 `nohref`：`Presence`
++   entry .hreflang   `<a>` 和 `<link>` 上的 `hreflang`，作为 `Language`
++   entry .charset   `<a>`、`<link>`、`<script>` 和 `<meta>` 上的 `charset`，作为 `Charset`
++   entry .media   `<link>` 和 `<style>` 上的 `media`，作为 `MediaQueryList`
++   entry .defer   `<script>` 上的 `defer`：`Presence`
++   entry .language   `<script>` 上的 `language`：脚本语言的名称，作为 `Textual`
++   entry .httpEquiv   `<meta>` 上的 `http-equiv`，作为 `HttpEquiv`
++       写作 `httpEquiv = …`；该属性序列化为 `http-equiv`。
++   entry .content   `<meta>` 上的 `content`，作为 `Textual`
++   entry .scheme   `<meta>` 上的 `scheme`：解释 `content` 的方案，作为 `Textual`
++   entry .cite   `<blockquote>`、`<del>`、`<ins>` 和 `<q>` 上的 `cite`，作为 `Url`
++   entry .datetime   `<del>` 和 `<ins>` 上的 `datetime`，作为 `Datetime`
++   entry .accesskey   `<a>`、`<area>`、`<button>`、`<input>`、`<label>`、`<legend>` 和 `<textarea>` 上的 `accesskey`，作为 `Textual`
++   entry .tabindex   `<a>`、`<area>`、`<button>`、`<input>`、`<object>`、`<select>` 和 `<textarea>` 上的 `tabindex`，作为 `Integral`
++   entry .profile   `<head>` 上的 `profile`：元数据配置文件的 URL，作为 `Url`
++   entry .version   `<html>` 上的 `version`：DTD 版本，作为 `Textual`
++   entry .prompt   `<isindex>` 上的 `prompt`：提示文本，作为 `Textual`
++   entry .xmlns   `<html>` 上的 `xmlns`：XHTML 命名空间，作为 `Url`
++   entry .label   `<optgroup>` 和 `<option>` 上的 `label`，作为 `Textual`
++   entry .standby   `<object>` 上的 `standby`：加载时显示的文本，作为 `Textual`
++   entry .classid   `<object>` 上的 `classid`：实现的 URL，作为 `Url`
++   entry .codebase   `<applet>` 和 `<object>` 上的 `codebase`：`classid`、`data` 和 `archive` 的基础 URL，作为 `Url`
++   entry .codetype   `<object>` 上的 `codetype`：实现的 MIME 类型，作为 `Mime`
++   entry .archive   `<applet>` 和 `<object>` 上的 `archive`：归档的 URL，作为 `Url`
++   entry .declare   `<object>` 上的 `declare`：`Presence`
++   entry .data   `<object>` 上的 `data`：资源的 URL，作为 `Url`
++   entry .code   `<applet>` 上的 `code`：applet 的类文件，作为 `Textual`
++   entry .mayscript   `<applet>` 上的 `mayscript`：`Presence`
++   entry .object   `<applet>` 上的 `object`：序列化的 applet，作为 `Textual`
++       写作 `` `object` = … ``，因为 `object` 是关键字。
++   entry .valuetype   `<param>` 上的 `valuetype`，作为 `Valuetype`
++   entry .frameborder   `<iframe>` 上的 `frameborder`：`0` 或 `1`，作为 `Integral`
++   entry .scrolling   `<iframe>` 上的 `scrolling`：`yes`、`no` 或 `auto`，作为 `Textual`
++   entry .marginheight   `<iframe>` 上的 `marginheight`，作为 `PositiveInt`
++   entry .marginwidth   `<iframe>` 上的 `marginwidth`，作为 `PositiveInt`
++   entry .summary   `<table>` 上的 `summary`：供非视觉呈现使用的描述，作为 `Textual`
++   entry .border   `<img>`、`<object>` 和 `<table>` 上的 `border`：边框宽度，作为 `PositiveInt`
++   entry .cellpadding   `<table>` 上的 `cellpadding`，作为 `PositiveInt`
++   entry .cellspacing   `<table>` 上的 `cellspacing`，作为 `PositiveInt`
++   entry .frameTable   `<table>` 上的 `frame`：要绘制哪些外边框，作为 `Frame`
++   entry .rules   `<table>` 上的 `rules`：要绘制哪些内边框，作为 `Rules`
++   entry .colspan   `<td>` 和 `<th>` 上的 `colspan`，作为 `PositiveInt`
++   entry .rowspan   `<td>` 和 `<th>` 上的 `rowspan`，作为 `PositiveInt`
++   entry .headers   `<td>` 和 `<th>` 上的 `headers`：表头单元格的 id，作为 `Tokens`
++   entry .abbr   `<td>` 和 `<th>` 上的 `abbr`，作为 `Textual`
++   entry .axis   `<td>` 和 `<th>` 上的 `axis`：单元格的类别，作为 `Textual`
++   entry .scope   `<td>` 和 `<th>` 上的 `scope`，作为 `Scope`
++   entry .valign   `<col>`、`<colgroup>`、`<tbody>`、`<td>`、`<tfoot>`、`<th>`、`<thead>` 和 `<tr>` 上的 `valign`，作为 `Valign`
++   entry .char   `<col>`、`<colgroup>`、`<tbody>`、`<td>`、`<tfoot>`、`<th>`、`<thead>` 和 `<tr>` 上的 `char`：对齐字符，作为 `Textual`
++   entry .charoff   与 `char` 相同的元素上的 `charoff`：到对齐字符的偏移量，作为 `Textual`
++   entry .span   `<col>` 和 `<colgroup>` 上的 `span`，作为 `PositiveInt`
++   entry .start   `<ol>` 上的 `start`，作为 `PositiveInt`
++   entry .compact   `<dir>`、`<dl>`、`<menu>`、`<ol>` 和 `<ul>` 上的 `compact`：`Presence`
++   entry .align   表格标题、列、各级标题、`<div>`、`<p>`、`<hr>`、`<img>`、`<table>` 及其各部分等元素上的 `align`，作为 `Align`
++       适用于 `<applet>`、`<caption>`、`<col>`、`<colgroup>`、`<div>`、`<h1>` 到 `<h6>`、`<hr>`、`<iframe>`、`<img>`、`<input>`、`<legend>`、`<object>`、`<p>`、`<table>`、`<tbody>`、`<td>`、`<tfoot>`、`<th>`、`<thead>` 和 `<tr>`。
++   entry .bgcolor   `<body>`、`<table>`、`<td>`、`<th>` 和 `<tr>` 上的 `bgcolor`，作为 `Color`
++   entry .background   `<body>` 上的 `background`：背景图像，作为 `Url`
++   entry .text   `<body>` 上的 `text`：文本颜色，作为 `Color`
++   entry .link   `<body>` 上的 `link`：未访问链接的颜色，作为 `Color`
++   entry .vlink   `<body>` 上的 `vlink`：已访问链接的颜色，作为 `Color`
++   entry .alink   `<body>` 上的 `alink`：活动链接的颜色，作为 `Color`
++   entry .color   `<basefont>` 和 `<font>` 上的 `color`，作为 `Color`
++   entry .face   `<basefont>` 和 `<font>` 上的 `face`：字体族列表，作为 `Textual`
++   entry .noshade   `<hr>` 上的 `noshade`：`Presence`
++   entry .clear   `<br>` 上的 `clear`：要越过哪些浮动元素，作为 `Clear`
++   entry .width   `<applet>`、`<col>`、`<colgroup>`、`<hr>`、`<iframe>`、`<img>`、`<object>`、`<pre>`、`<table>`、`<td>` 和 `<th>` 上的 `width`，作为 `PositiveInt`
++   entry .height   `<applet>`、`<iframe>`、`<img>`、`<object>`、`<td>` 和 `<th>` 上的 `height`，作为 `PositiveInt`
++   entry .hspace   `<applet>`、`<img>` 和 `<object>` 上的 `hspace`：水平边距，作为 `PositiveInt`
++   entry .vspace   `<applet>`、`<img>` 和 `<object>` 上的 `vspace`：垂直边距，作为 `PositiveInt`
++   entry .nowrap   `<td>` 和 `<th>` 上的 `nowrap`：`Presence`
++   entry #doctype   HTML 4.01 Transitional 文档类型声明，带有其公共标识符和宽松 DTD 的 URL
++       `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`，在这个方言之下加载或构建的 `Document[Html]` 携带它。
++   entry #Heading   `<h1>` 到 `<h6>`
++   entry #Phrase   HTML 4 的短语元素：`<em>`、`<strong>`、`<dfn>`、`<code>`、`<samp>`、`<kbd>`、`<var>`、`<cite>`、`<abbr>` 和 `<acronym>`
++   entry #FontStyle   HTML 4 的字体样式元素：`<tt>`、`<i>`、`<b>`、`<u>`、`<s>`、`<strike>`、`<big>` 和 `<small>`
++   entry #Special   HTML 4 的特殊行内元素：链接、图像、对象、字体、换行、脚本、映射、引用等
++       `<a>`、`<img>`、`<applet>`、`<object>`、`<font>`、`<basefont>`、`<br>`、`<script>`、`<map>`、`<q>`、`<sub>`、`<sup>`、`<span>`、`<bdo>` 和 `<iframe>`。
++   entry #FormCtrl   HTML 4 的表单控件：`<input>`、`<select>`、`<textarea>`、`<label>` 和 `<button>`
++   entry #Inline   行内内容类别：短语、字体样式、特殊和表单控件元素，以及文本
++       WHATWG 的 `Phrasing` 在 HTML 4 中的对应物；包括 `"#text"`。
++   entry #Lists   列表元素：`<ul>`、`<ol>`、`<dir>` 和 `<menu>`
++   entry #Block   块级内容类别
++       标题、列表、`<p>`、`<pre>`、`<dl>`、`<div>`、`<noscript>`、`<blockquote>`、`<form>`、`<hr>`、`<table>`、`<fieldset>`、`<address>`、`<center>`、`<isindex>` 和 `<noframes>`。
++   entry #Flow   流内容类别：`#Block` 或 `#Inline`
++       正文内容片段的类型：`Html of Flow`。
++   entry #Metadata   `<head>` 可以包含的内容：`<title>`、`<base>`、`<script>`、`<style>`、`<meta>`、`<link>` 和 `<object>`
++   entry #insertable   解析器可以在标签与子项之间插入的未写出的标签
++       与 `Whatwg#insertable` 相同：`<head>`、`<body>`、`<tbody>`、`<tr>` 和 `<colgroup>`。
++   entry #infer   要插入到父项与其无法直接容纳的子项之间的标签
++       与 `Whatwg#infer` 相同；是解析器所调用的 `Dom` 契约。
++   entry #elements   这个方言的每个标签，按名称索引
++   entry #entities   HTML 4 的具名字符引用，按名称索引
++       HTML 4 DTD 中的 252 个实体；不包括 Living Standard 新增的那些。
++   entry #attributes   这个方言的每个属性，按名称索引，同名的多个 given 合并在一起
++   entry #Html   `<html>` 根元素，作为 `honeycomb.Html`
++       一个惰性别名，使 `import htmlDoms.html4Transitional.*` 把 `Html` 作为标签引入作用域：`Html(Head(Title("x")), Body(P("y")))`。
++   entry #A   `<a>`：超链接，或带 `name` 时为锚点；透明的
++   entry #Abbr   `<abbr>`：缩写，包含行内内容
++   entry #Acronym   `<acronym>`：首字母缩略词，包含行内内容；不在 Living Standard 中
++   entry #Address   `<address>`：联系信息，包含行内内容和 `<p>`
++   entry #Applet   `<applet>`：Java applet，包含 `<param>` 和流内容；在 HTML 4 中已弃用
++       接受 `code`、`codebase`、`archive`、`object`、`alt`、`name`、`width`、`height`、`align`、`hspace`、`vspace` 和 `mayscript`。
++   entry #Area   `<area>`：图像映射中的一个区域；空标签
++   entry #B   `<b>`：粗体文本，包含行内内容
++   entry #Base   `<base>`：文档基础 URL；空标签
++   entry #Basefont   `<basefont>`：基础字号、颜色和字体；空标签，在 HTML 4 中已弃用
++   entry #Bdo   `<bdo>`：具有显式方向的文本，包含行内内容
++   entry #Big   `<big>`：较大的文本，包含行内内容；不在 Living Standard 中
++   entry #Blockquote   `<blockquote>`：长引文，包含流内容
++   entry #Body   `<body>`：文档的内容，包含流内容；自动闭合且可插入
++       接受表现性的 `bgcolor`、`background`、`text`、`link`、`vlink` 和 `alink`，以及 `onload` 和 `onunload`。
++   entry #Br   `<br>`：换行；空标签；`clear` 越过浮动元素
++   entry #Button   `<button>`：按钮，包含流内容；对格式化元素而言是边界
++   entry #Caption   `<caption>`：表格的标题，包含行内内容；是边界
++   entry #Center   `<center>`：居中的流内容；在 HTML 4 中已弃用，Living Standard 中没有
++   entry #Cite   `<cite>`：引用出处，包含行内内容
++   entry #Code   `<code>`：计算机代码，包含行内内容
++   entry #Col   `<col>`：表格列；空标签
++   entry #Colgroup   `<colgroup>`：一组列，包含 `<col>`；子项之间只能有空白，可插入
++   entry #Dd   `<dd>`：`<dl>` 中的定义，包含流内容；自动闭合
++   entry #Del   `<del>`：被删除的文本；透明的
++   entry #Dfn   `<dfn>`：定义实例，包含行内内容
++   entry #Dir   `<dir>`：目录列表，包含 `<li>`；在 HTML 4 中已弃用
++       各项之间只能有空白。
++       不要与 `dir` 属性或 `HDir` 枚举混淆。
++   entry #Div   `<div>`：通用块容器，包含流内容；允许使用 `align`
++   entry #Dl   `<dl>`：定义列表，包含 `<dt>` 和 `<dd>`；自动闭合，子项之间只能有空白
++   entry #Dt   `<dt>`：`<dl>` 中的术语，包含行内内容；自动闭合
++   entry #Em   `<em>`：强调，包含行内内容
++   entry #Fieldset   `<fieldset>`：一组控件：可选的 `<legend>`，然后是流内容
++   entry #Font   `<font>`：带有 `color`、`face` 或 `size` 的文本，包含行内内容；在 HTML 4 中已弃用
++   entry #Form   `<form>`：表单，包含流内容
++       接受 `action`、`method`、`enctype`、`accept`、`accept-charset`（写作 `acceptCharset`）、`name`、`target`、`onsubmit` 和 `onreset`。
++   entry #H1   `<h1>`：第一级标题，包含行内内容
++   entry #H2   `<h2>`：第二级标题，包含行内内容
++   entry #H3   `<h3>`：第三级标题，包含行内内容
++   entry #H4   `<h4>`：第四级标题，包含行内内容
++   entry #H5   `<h5>`：第五级标题，包含行内内容
++   entry #H6   `<h6>`：第六级标题，包含行内内容
++   entry #Head   `<head>`：文档的元数据，包含 `#Metadata`；自动闭合，可插入，子项之间只能有空白
++   entry #Hr   `<hr>`：水平线；空标签；接受 `align`、`noshade`、`size` 和 `width`
++   entry #I   `<i>`：斜体文本，包含行内内容
++   entry #Iframe   `<iframe>`：内联框架，包含作为后备内容的流内容
++       与 `Whatwg#Iframe` 不同，它在这个方言中是一个容器。
++       接受 `src`、`name`、`longdesc`、`frameborder`、`scrolling`、`marginheight`、`marginwidth`、`width`、`height` 和 `align`。
++   entry #Img   `<img>`：图像；空标签
++       接受 `src`、`alt`、`longdesc`、`name`、`usemap`、`ismap`、`width`、`height`、`border`、`align`、`hspace` 和 `vspace`。
++   entry #Input   `<input>`：表单控件；一个空标签，为每种 HTML 4 `type` 提供预设
+
+% 1 1 0 0b041732339024a210a62baf39508373
+
+@ 0 3 0 176a3f6a7d32eafe05d9fa0be85ffeed
++         一个 `Topic` 为 `"input"` 的 `Tag.Void`。
++         每个成员都预设了 `type`；`Input.Checkbox(name = t"terms", checked = true)` 就是 `<input type="checkbox" name="terms" checked>`。
+
+% 1 1 0 136ba03838f778e91b55ac8cc97eb78d
+
+% 2 1 0 112adb0b6ab0f7db121bbe06c0e3da48
+
+% 1 1 0 1136d9e56d70694818bc7a188cc89ec4
+
+% 1 1 0 11a7974cfd989e480483800a42bc41d9
+
+% 2 1 0 195190ef8629669d11b813aa6b933c1d
+
+% 3 1 0 0e28bf2c972c37f102338472c57be10e
+
+% 4 1 0 1917b10ae608abb41451f57141ca5299
+
+% 5 1 0 0d2170ab2bd8bc680bf9c424e216e983
+
+% 6 1 0 1a102f5cce602ea80ef96955a1b1d1cc
+
+% 0 1 0 11a7fd4dea49396e01f6619032646425
+
+% 1 1 0 1a3923fa77e2c3a00364fbd6058a5f7b
+
+@ 2 1 0 00d50d656c8c7dea18fcc17255cd76d5
++     entry .Transport   `""`：没有子项
+
+% 0 1 0 14308abb1fbfb717089a566c6c3124ae
+
+@ 0 54 0 12bb8dcd495f1c9811ee36145bedde21
++   entry #Ins   `<ins>`：插入的文本；透明的
++   entry #Isindex   `<isindex>`：单行搜索提示；空标签，在 HTML 4 中已弃用
++   entry #Kbd   `<kbd>`：键盘输入，包含行内内容
++   entry #Label   `<label>`：控件的说明文字，包含行内内容
++   entry #Legend   `<legend>`：`<fieldset>` 的说明文字，包含行内内容
++   entry #Li   `<li>`：列表项，包含流内容；自动闭合
++   entry #Link   `<link>`：指向外部资源的链接；空标签
++   entry #Map   `<map>`：图像映射，包含块级内容和 `<area>`
++   entry #Menu   `<menu>`：菜单列表，包含 `<li>`；在 HTML 4 中已弃用；子项之间只能有空白
++   entry #Meta   `<meta>`：文档元数据；空标签
++   entry #Noframes   `<noframes>`：供不支持框架的用户代理使用的内容，包含流内容
++   entry #Noscript   `<noscript>`：供不支持脚本的用户代理使用的内容，包含流内容
++   entry #Object   `<object>`：嵌入的对象，包含 `<param>` 和流内容；是边界
++   entry #Ol   `<ol>`：有序列表，包含 `<li>`；子项之间只能有空白；接受 `start`、`type` 和 `compact`
++   entry #Optgroup   `<optgroup>`：一组选项，包含 `<option>`；自动闭合，子项之间只能有空白
++   entry #Option   `<option>`：`<select>` 中的一个选项，包含文本；自动闭合
++       在 `import htmlDoms.html4Transitional.*` 之内遮蔽 `scala.Option`。
++   entry #P   `<p>`：段落，包含行内内容；自动闭合
++   entry #Param   `<param>`：`<object>` 或 `<applet>` 的参数；空标签
++   entry #Pre   `<pre>`：预格式化文本，包含行内内容；允许使用 `width`
++   entry #Q   `<q>`：短引文，包含行内内容
++   entry #S   `<s>`：带删除线的文本，包含行内内容；在 HTML 4 中已弃用
++   entry #Samp   `<samp>`：示例输出，包含行内内容
++   entry #Script   `<script>`：脚本，包含原始文本
++       `Html.Mode.Raw`：一直读到 `</script>`，不进行实体解码。
++       接受 `src`、`type`、`language`、`charset` 和 `defer`。
++   entry #Select   `<select>`：菜单控件，包含 `<option>` 和 `<optgroup>`；子项之间只能有空白
++   entry #Small   `<small>`：较小的文本，包含行内内容
++   entry #Span   `<span>`：通用行内容器
++   entry #Strike   `<strike>`：带删除线的文本，包含行内内容；在 HTML 4 中已弃用
++   entry #Strong   `<strong>`：着重强调，包含行内内容
++   entry #Style   `<style>`：嵌入的 CSS，包含原始文本；接受 `type` 和 `media`
++   entry #Sub   `<sub>`：下标，包含行内内容
++   entry #Sup   `<sup>`：上标，包含行内内容
++   entry #Table   `<table>`：表格，包含 `<caption>`、`<colgroup>`、`<thead>`、`<tbody>` 和 `<tfoot>`
++       子项之间只能有空白，且是边界。
++       接受 `summary`、`border`、`cellpadding`、`cellspacing`、`frame`（写作 `frameTable`）、`rules`、`width`、`align` 和 `bgcolor`。
++   entry #Tbody   `<tbody>`：表体行，包含 `<tr>`；自动闭合，可插入，子项之间只能有空白
++   entry #Td   `<td>`：数据单元格，包含流内容；自动闭合，且是边界
++       接受 `colspan`、`rowspan`、`headers`、`abbr`、`axis`、`scope`、`align`、`valign`、`char`、`charoff`、`bgcolor`、`width`、`height` 和 `nowrap`。
++   entry #Textarea   `<textarea>`：多行文本控件，包含文本（`Html.Mode.Rcdata`）
++       接受 `name`、`rows`、`cols`、`wrap`、`readonly`、`disabled`、`accesskey`、`tabindex`，以及 `onfocus`、`onblur`、`onselect` 和 `onchange` 处理函数。
++   entry #Tfoot   `<tfoot>`：表脚行，包含 `<tr>`；自动闭合，子项之间只能有空白
++   entry #Th   `<th>`：表头单元格，包含流内容；自动闭合，且是边界；接受 `<td>` 所接受的属性
++   entry #Thead   `<thead>`：表头行，包含 `<tr>`；自动闭合，子项之间只能有空白
++   entry #Title   `<title>`：文档的标题，包含文本（`Html.Mode.Rcdata`）
++   entry #Tr   `<tr>`：表格行，包含 `<td>` 和 `<th>`；自动闭合，可插入，子项之间只能有空白
++   entry #Tt   `<tt>`：打字机文本，包含行内内容；不在 Living Standard 中
++   entry #U   `<u>`：带下划线的文本，包含行内内容；在 HTML 4 中已弃用
++   entry #Ul   `<ul>`：无序列表，包含 `<li>`；子项之间只能有空白；接受 `type` 和 `compact`
++   entry #Var   `<var>`：变量，包含行内内容
+
+@ 0 1 0 0c77208f8e644f59152a7668d498de53
++ entry .Tag   作为值的 HTML 标签：应用于属性和子项，生成一个元素
+
+% 1 1 0 1cc5dba03baa35370eeab227618c5bec
+
+@ 0 5 0 12898409be1bc1ed19fc43ff61bbd83c
++       `Tag` 是某一个元素名的构建器，`Whatwg` 这样的 `Dom` 中的每个 `val`（`Div`、`P`、`Img`、`Table`）都是一个 `Tag`。
++       它本身就是一个 `Html.Element`（即该名称的空元素，这就是单独的 `Br` 是 `<br>`、单独的 `Title` 是 `<title></title>` 的原因），而应用它会生成一个新元素：具名参数是属性，位置参数是子项，属性在前。
+
+% 2 1 0 146c4df74aad60f30c66675f43e2bdeb
+
+% 3 1 0 0db49fb5dfb93b7a1d89a7092b82f2e9
+
+% 4 1 0 16d9be8af9fa7f4c07112a584f428ef1
+
+% 5 1 0 1ece1e6812f699c406b62e87d06b77f8
+
+% 6 1 0 0a8d3c8edb51c0551c2f01f14eca9dad
+
+% 0 1 0 154ffb88d3732d4502c8dcf325b33d59
+
+% 0 1 0 0368718e8d0287a70d80e412c601295e
+
+% 0 1 0 1861dafb05e5a0590783aec0f1d8ffde
+
+% 0 1 0 12d20e35dee37c7915d06ba067a2bd14
+
+% 1 1 0 0fc0a57e0d20e50e119e9927a8d0acc6
+
+@ 0 9 0 110c4484b337bedc0ef9b0c305845791
++       检查发生在类型中。
++       标签的类型是 `Tag.Container of "ul" over "li" in Whatwg`、`Tag.Void of "br" in Whatwg` 或 `Tag.Transparent of "a" over "" in Whatwg`：它的 `Topic` 是元素名，`Transport` 是它可以包含的内容，`Form` 是方言。
++       子项必须是一个 `Html of (? <: Transport)`，即一个 `Tag`、一个元素、一个 `Text` 或 `String`（在允许文本的地方）、一个 `Html.Fragment`，或任何具有到某个允许的标注的 `Renderable` 的值，因此 `Ul("hello")` 和 `P(Li)` 无法编译。
++       属性按名称对照方言伴生对象中的 `Attribute` given 进行检查，其值则通过 `Attributive` 对照属性的标记进行检查，因此 `Br(Hr)`、`P(src = …)` 和 `Img(width = 1.5)` 都是编译错误。
+
+@ 0 7 0 0ca1934819c12588169909cc801994b2
++       标签在两个方面是 `Dynamic` 的。
++       `Tag(…)` 和 `Tag(attribute = …)` 经由 `#applyDynamicNamed`，在那里由 `attributes` 宏解析每个名称。
++       `Tag.name(…)`（`Div.panel(P("x"))`）经由 `Tag.Container#applyDynamic`，生成一个 `class`（或 `id`）为 `name` 的元素，前提是作用域中有一个 `Attribution of "panel"`：`stylesheets.uncheckedClasses` 允许任何名称，而 cataclysm 样式表只允许它所声明的名称。
++       标签上预设的类会被保留，新类追加在后面。
+
+@ 0 4 0 010d3fbf6da3e0dc0a522298c6009c0f
++       除了这三个子类之外，`Tag.root` 生成解析器的合成根，`Tag.foreign` 生成用于非 HTML 内容（`Svg`、`Math`）的标签。
++       标志 `autoclose`、`mode`、`insertable`、`boundary`、`void` 和 `transparent` 驱动解析器和序列化器，而 `admissible` 是 `Transport` 的运行时形式。
+
+% 1 1 0 1dbbcc0206619dca0e88dffd28cbd899
+
+% 1 1 0 1e6be24921d0bc681dd8ac55b05c44a7
+
+% 1 1 0 1ce684f05afae2e419d5d0750b31f82b
+
+% 1 1 0 015c7c2fe2921afd05f06d21c0d86818
+
+@ 0 40 0 1a0629aff417ba28023c6c4a87755c9b
++   entry .focusable   标签在诊断信息中如何命名：按其标签名
++       每个标签的单例类型都有一个 `Focusable` given（该类型类的 `Self` 是不变的，而每个标签都有自己的类型），供 tarantula 这样的浏览器驱动按标签名定位元素（`driver \ Div`）。
++   entry .optical   从元素指向其每个具有此标签名的子项的光学器件
++       `Tag is Optical from html onto Html.Node`：`element.focus(Div)`（通过 panopticon）寻址标注与该标签相同的每个直接子项，因此透镜更新只映射这些子项，并围绕它们重建元素。
++       其他子项保持原样，非元素的起点原样返回。
++   entry .root   接纳给定标注的合成根标签；供解析器使用
++       当调用者请求 `Html of "html"` 时，`Tag.root(Set(t"html"))` 是解析器读入的那个不可见的父项；`read[Html of "ul" | "ol"]` 使用一个同时接纳两者的根标签。
++       它的 `node` 返回它自身。
++   entry .void   给定标注的空标签，可带预设属性
++       `Tag.void["br", Whatwg]()` 是一个 `Tag.Void of "br" in Whatwg`。
++       `presets` 是由该标签生成的每个元素都携带的属性，`Input.Email` 就是这样成为一个固定了 `type="email"` 的 `<input>` 的；`boundary` 把它标记为格式化元素的边界。
++   entry .foreign   用于非 HTML 内容的标签，其子项是外来元素
++       有两种形式。
++       `Tag.foreign["svg", Whatwg]()` 生成一个 `Container of "svg" over "#foreign"`，`Svg` 和 `Math` 就是这样的标签：在其内部，解析器为任何标签构建 `Html.Element.foreign` 节点，保留属性的大小写并接受 CDATA。
++       `Tag.foreign[dom](label, attributes)` 生成一个已设置好属性的任意标注的外来标签，类型为 `Tag of "#foreign" over "#foreign"`，解析器对 `<svg>` 内的 `<circle>` 就是这样做的。
++   entry .container   给定标注、包含子项标注联合的容器标签
++       `Tag.container["ul", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)` 是一个 `Container of "ul" over "li" | "script" | "template" in Whatwg`。
++       子项类型被具体化为 `admissible` 集合。
++       `autoclose` 让解析器在一个兄弟元素开始时关闭该元素；`mode` 是 `Html.Mode.Normal`、`Whitespace`（子项之间只能有空白）、`Raw`（`<script>`）或 `Rcdata`（`<textarea>`、`<title>`）；`insertable` 让解析器提供未写出的该元素；`boundary` 阻止格式化元素跨越它；`presets` 固定属性。
++   entry .transparent   透明标签：容纳其父项可以容纳的内容，外加具名的额外项
++       `Tag.transparent["a", "", Whatwg]()` 是一个 `Transparent of "a" over "" in Whatwg`：应用它时，其子项对照的是*外围*元素的内容模型，而不是它自己的，这使得 `A` 既能用在 `<p>` 中，也能用在 `<div>` 中。
++       子项类型指明标签除了继承的内容之外自己还接纳的额外项（`Video` 的是 `"source" | "track"`）。
++       第二个重载以值的形式接受标注和可接纳集合。
++   entry .Container   容纳子项的标签
+
+% 1 1 0 06ed8257112e6b0f0e617005b72ae01f
+
+@ 0 14 0 06ab044e9eb6923b0651cf39a5e52ec3
++         每个普通标签的类：一个 `Container of label over children in dom`，其 `#Result` 是 `Html.Element & Html.Vacuiscible`，即一个仍可在第二个参数列表中提供子项的元素：`Div(id = t"x")(P("y"))`。
++     entry #applyDynamic   `Tag.name(children*)`：以 `name` 为其类或 id 的元素
++         分派 `Div.panel(P("x"))`，生成 `<div class="panel"><p>x</p></div>`。
++         名称由作用域中的 `Attribution of (? >: name)` 检查：`Attribution.empty` 涵盖普通的 `Div(…)` 形式（`apply`），`stylesheets.uncheckedClasses` 允许任何类名，而样式表自己的 `Attribution` 只允许它的名称，并把它声明为 id 的名称生成为 id。
++         标签上预设的 `class` 会被保留，新名称追加在一个空格之后。
++     entry #node   一组属性对应的元素，尚无子项
++         应用属性的 `Result`：一个具有标签标注的 `Html.Element`，先是其预设，然后是给出的属性，并有一个 `Vacuiscible#apply` 用于接着提供子项。
+
+% 0 1 0 1e1614b95cd845a716be3a4dd93d2d40
+
+@ 0 1 0 0eaf44011fdbb6e504ee3fc9e96929c9
++   entry .Transparent   从父项获取内容模型的标签
+
+% 1 1 0 0305f98eb6d1ee8c1a77878582aefe7e
+
+@ 0 8 0 1c93c6ef7b46a1771a3b7fb58d8c0190
++         `A`、`Del`、`Ins`、`Canvas`、`Map`、`Object`、`Slot`、`Audio` 和 `Video` 的类：它的 `#Result` 是一个 `Html.Element & Html.Transparent`，其 `apply` 接受任意标注联合的子项，并把该联合记录为元素的 `Topic`，于是外围元素随后像检查自己的子项一样检查它们。
++     entry #applyDynamic   `Tag.name(children*)`：以 `name` 为其类或 id 的元素
++         与 `Tag.Container#applyDynamic` 相同，但子项只对照标签自己的额外项进行检查；参见 `Tag.transparent`。
++     entry #node   一组属性对应的元素，尚无子项
+
+% 0 1 0 1b95d271a14418390b9ce50e896a3917
+
+@ 0 1 0 10320ae24293243302341cbaa25f67fd
++   entry .Void   不接受子项的标签
+
+% 1 1 0 05f0f534f5d5bc191184dbedd2a254c5
+
+@ 0 5 0 05460f99019d3636182d2267622d7883
++         `Br`、`Img`、`Input`、`Link`、`Meta` 等的类。
++         它的 `#Result` 是一个普通的 `Html.Element of Topic in Form`，没有第二个参数列表，因此 `Br(Hr)` 无法编译。
++         对象 `Whatwg.Input`、`Whatwg.Link`、`Whatwg.Meta`、`Whatwg.Area` 和 `Whatwg.Track` 直接扩展它，以便携带它们的预设变体。
++     entry #node   一组属性对应的元素
+
+% 0 1 0 122f7fd0404ecd480f65881039201a32
+
+@ 0 42 0 1fa0a16b98d48dc9149cb7d13fe0fdbc
++   entry #autoclose   当兄弟元素或父元素关闭时，解析器是否可以关闭这个元素
++       `<li>`、`<p>`、`<dt>`、`<dd>`、`<option>`、`<tr>`、`<td>`、`<th>`、各表格分区、`<head>` 和 `<body>`：HTML 允许文档省略其结束标签的那些元素。
++   entry #mode   元素内容的读写方式：`Html.Mode.Normal`、`Whitespace`、`Raw` 或 `Rcdata`
++       `Raw`（`<script>`、`<style>`）一直读到结束标签，不进行解码；`Rcdata`（`<textarea>`、`<title>`）解码实体，但不识别标签；`Whitespace`（列表、表格、`<select>`、`<head>`）在子项之间只允许空白文本，解析器以 `Html.Issue.OnlyWhitespace` 拒绝其他文本。
++   entry #presets   由这个标签生成的每个元素都携带的属性
++       `Input.Email` 的 `type="email"`，`Link.Stylesheet` 的 `rel="stylesheet"`。
++       应用标签时，其属性添加在预设之后；解析器把标签的预设与开始标签的属性进行匹配，从而把 `<input type="button">` 读回为 `Input.Button`。
++   entry #admissible   这个标签可以包含的标注，作为一个文本集合
++       `Transport` 的运行时形式，解析器用它拒绝子项（`Html.Issue.InadmissibleTag`），`Dom#infer` 用它找到要插入的元素。
++       对于空标签或纯透明标签，它为空。
++   entry #insertable   解析器是否可以提供未写出的这个元素
++       对 `<head>`、`<body>`、`<tbody>`、`<tr>` 和 `<colgroup>` 为真。
++   entry #void   标签是否为空标签：没有子项，也没有结束标签
++   entry #transparent   标签的内容模型是否就是其父项的内容模型
++   entry #boundary   在外部打开的格式化元素是否不能延续到其内部
++       对 `<button>`、`<caption>`、`<object>`、`<table>`、`<td>`、`<th>` 和 `<template>` 为真：收养代理算法不会跨越这些元素重建一个打开的 `<b>` 或 `<i>`。
++   entry #tableLike   这是否是 `<table>`、`<tbody>`、`<thead>`、`<tfoot>` 或 `<tr>`
++       在创建标签时计算一次，供解析器的寄养父项检查使用。
++   entry #isTable   这是否是 `<table>`
++   entry #Result   标签所生成元素的类型：由 `Container`、`Transparent` 和 `Void` 确定
++   entry #applyDynamicNamed   `Tag(attribute = value, …)`：带有这些属性的元素
++       每一次带具名参数的应用背后的 `Dynamic` 入口点。
++       对于普通的 `apply`，它由这些键值对构建元素；对于 `Tag.name(attribute = value)`，它还按作用域中的 `Attribution` 的分配，把 `name` 设为类或 id。
++       每个键值对都交给 `#element`，由其宏解析属性并转换值。
++   entry #element   检查每个属性并生成元素的宏
++       对每个 `(name, value)` 对，它找到 `name is Attribute on (? >: Topic) in Form` given（或一个全局 given），读取其 `Topic` 标记，并召唤 `value is Attributive to marker`；失败时在该参数的位置停止，报告 _`name` has attribute type `marker`, but `value` cannot be attributed as a `marker` without a contextual instance of `value is Attributive to marker`_，或在没有任何 given 允许该元素使用这个名称时报告 _the attribute `name` cannot be used on the element `<tag>`_。
++       其 `Attributive` 产出 `Unset` 的值（为 `false` 的 `Boolean`、空的类列表）会省略该属性。
++   entry #node   一组已转换的属性对应的元素；由每个子类实现
+
+@ 0 1 0 0b4edad196f1b4af0daa36f501751f97
++ entry .Attribute   方言的属性：它的名称、它在其上有效的元素，以及它的值类型
+
+% 1 1 0 11e8b14fe2a82f640764acc8ee19088b
+
+@ 0 6 0 0d866fd5c41c224201c94fa39cc5c3c6
++       `Attribute(label, elements, global)` 是 `Whatwg` 和 `Html4Transitional` 的每个属性 given 所属的类。
++       它的细化完成类型化：一个 given 是 `"src" is Attribute on "img" | "video" of Url in Whatwg`，其中 `Self` 是作为字面量类型的名称，`Plane` 是元素，`Topic` 是值标记，`Form` 是方言。
++       `Tag#element` 通过对 `Self`、`Plane` 和 `Form` 召唤来解析属性；`Html.Element#selectDynamic` 也这样做，通过 `Unattributive` 读回属性。
+
+@ 0 3 0 071b88ec76fb147413092d4cc9b58183
++       方言的 `attributes` 字典为每个名称持有一个 `Attribute`，同名的多个 given（`<a>` 上、`<base>` 上、`<link>` 上的 `href`）由 `#merge` 合并。
++       程序可以用 `Whatwg.attribute()` 或 `Whatwg.globalAttribute()` 定义自己的属性。
+
+% 1 1 0 1aeea62ba1f52ebd16d15e8e34982ed2
+
+% 1 1 0 1c772c825f9db52a0e29ee7b2677920a
+
+@ 0 9 0 0a2cd73cfeaa656c04d962545ac36313
++   entry #label   属性的名称，与标记中的写法相同
++   entry #elements   属性在其上有效的元素名；对于全局属性为空
++   entry #global   属性是否在所有元素上都有效
++   entry #targets   属性是否在某个具名元素上有效
++       `global || elements.has(tag)`；解析器对未知属性的检查。
++   entry #merge   把这个属性与另一个同名属性合为一个，在两者元素的并集上有效
++   entry #Self   属性的名称，作为字符串字面量类型
++   entry #Topic   属性所取值的标记：`Whatwg.Url`、`Whatwg.Presence` 等
++   entry #Plane   属性在其上有效的元素名，作为字面量类型的联合
+
+@ 0 1 0 1ebc17f08e0949411de9e3054c5b7b44
++ entry .Attribution   证明在标签上作为方法使用的名称是有效的类或 id 的证据
+
+% 1 1 0 0c627209c9d305dd1b9cf6501d965402
+
+@ 0 6 0 1d7f649d69fc586d07a2670665870123
++       只有当作用域中有一个 `Attribution of "panel"`（或包含它的联合类型的 `Attribution`）时，才允许 `Div.panel(…)`；该归属说明这个名称填充哪个属性，`class` 还是 `id`。
++       这个库为普通的 `apply` 形式提供 `.empty`，并为任何名称提供 `stylesheets.uncheckedClasses`；cataclysm 样式表自带一个，列出它所声明的类和 id，因此它不认识的名称是编译错误。
++       `.classes` 为一组已知的名称手工生成一个。
+
+% 2 1 0 19faa8e1545ba18507a63a8950294a4c
+
+% 3 1 0 18c81dd374f4573f09193b8daf5cdfc2
+
+% 4 1 0 125970247177f8b91ff10defafbd6b0d
+
+% 5 1 0 137ebd0ad791e4fc06e605c02a804ff7
+
+% 0 1 0 0cefbec28e649b6e08fcd9c1bf36517b
+
+% 0 1 0 0c971b1b914f534d1e4e6d08826c7950
+
+% 1 1 0 098bebea9146d4b30a9dbbc6d10ac408
+
+% 1 1 0 19d5cac85e7f6a9f0ba582bbdba7a976
+
+% 0 1 0 1607047dfc5d7d0b0945d0eda897eb1b
+
+@ 0 7 0 01033636861fd0b50a5098908aaba179
++   entry .classes   把一个或多个名称作为类的归属
++       `Attribution.classes[topic]()`，其中 `topic` 是一个字面量类型或字面量类型的联合，作为 `Topic`。
++       这些名称不会对照 CSS 标识符规则进行检查；`ClassList` 则会。
++   entry .empty   普通 `Tag(children)` 调用的归属
++       `Tag(…)` 经由 `Dynamic` 以 `applyDynamic("apply")` 分派，而这个 `attribute` 为空的 given 使该形式不添加任何东西。
++       位于隐式作用域中。
++   entry #attribute   名称所填充的属性：`class`、`id`，或者对于普通调用为空
+
+@ 0 1 0 0ae14f4755be0fb70c4bd4f6a22a1b5e
++ entry .Attributive   对于某个属性的值标记，一个值如何成为属性的文本
+
+% 1 1 0 102a1c1027e931fe1deef3f81651ceff
+
+@ 0 5 0 1b9dc9500de281e91dd87a24bff4d2b5
++       `value is Attributive to marker` 为 `Topic` 为 `marker` 的属性转换一个值：正因为有 `Int is Attributive to Whatwg.PositiveInt`，`Img(width = 50)` 才能编译，而 `Img(width = 1.5)` 不能。
++       `#attribute` 接受属性的名称和值，返回带有其文本的名称、单独的名称（像 `disabled` 这样的裸属性），或者 `Unset`，后者会省略该属性。
+
+@ 0 1 0 1b7440a46e3874f913982b12f6950638
++       伴生对象持有标准组合的 given，它们都位于隐式作用域中：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 2 0 19b6bcdcf51dd65c1221de49bc680e37
++       column  标记
++       column  值类型
+
+% 0 1 0 1decd2b981be51750bbb7bb7b180dc12
+
+% 0 1 0 197632c6f5b04229181b698e2608e3c1
+
+% 0 1 0 1582b33fb1c4956d1385390e409959e2
+
+% 0 1 0 1c28caf398f4a66e0e469fc886c8329e
+
+% 0 1 0 085e470981cef2960cc5745d8ab4b15d
+
+% 0 1 0 1eeaddb9f91252d20700198fc5a88a30
+
+% 0 1 0 1cd296155545456e02a4a48467126dbf
+
+@ 0 1 0 0bcf5e0a6966fb580b3bdea39cb676aa
++       row  `Whatwg.Url`  任何类型化的 URL
+
+% 0 1 0 08f9e913b8570933055a3c32aeebab82
+
+% 1 1 0 0a1206ac909b4fa71c59282f0790f020
+
+@ 0 2 0 1930a5f287d430cc0225c6e081896702
++       其他库会添加自己的 given：graffiti 的 `urlText` 让 `Text` 可以充当 `Url`，querencia 的 `scripting` 让外来的 DOM 表达式可以充当事件处理函数。
+
+@ 0 4 0 1c32a69c14b32b911b992683705c8f26
++       这个集合尚不完整（许多标记，如 `Target`、`Method`、`Sandbox`、`Rel` 等，还没有自己的 given，因此为它们的值命名的枚举以 `.show` 传入），而选择 given `attributives.textAttributive` 让 `Text` 一次性地适用于所有标记，在集合补全之前，这是通常的导入。
+
+% 2 1 0 1da107eb78575594139627df2f960b2e
+
+% 3 1 0 00cbc16ae621f34017ce7ffeac548abb
+
+@ 0 1 0 071185095d5e3574160f87514852b4bb
++         label `src` 用 URL，`width` 用 `Int`，`ismap` 用 `Boolean`
+
+% 1 1 0 1ff89179ab81b4a00554a7a82f14715f
+
+% 2 1 0 0145ff55b6d04d72137c444ca072b5ce
+
+% 3 1 0 14b43f72b5a0cd851f440aecd6223bd1
+
+% 4 1 0 0ade9a89397b743c0205cf26ad9b3141
+
+% 0 1 0 077b99e61887819807dd06af2d9eebdc
+
+% 0 1 0 1726b7797913cfea145d82d4312c95a8
+
+% 1 1 0 13551f317cf7aab017b72527e15e589b
+
+@ 0 1 0 193392417b6549f2006197981c5a2856
++         label 为 `false` 的 `Boolean` 会省略该属性
+
+% 1 1 0 0ef8994502dfe4160ec96a2588c21a62
+
+% 0 1 0 013038691df77c6d1af7f57554e892b6
+
+% 0 1 0 1507c99ea66b77db0523b3f1dd860d0f
+
+% 1 1 0 059cba465f461e441cc39d2dd3704a4b
+
+@ 0 1 0 0c0abfbb3eb7f13d0d9ee6c42dc05ad9
++         label 在需要 URL 的地方使用 `Text` 需要选择 given
+
+% 1 1 0 1df722cbf86312501265932930e3e985
+
+% 0 1 0 1c5e0714acac0f6c0e9b539e8e3b025d
+
+% 0 1 0 06f28554ec9c28420ade3c85047cd029
+
+% 0 1 0 0db8f2f3b60c20b003d67b689ccbc880
+
+% 0 1 0 17093402a196e9d50d5b842d4dc03239
+
+% 1 1 0 01bb05c2802e858d17b1331085fe405c
+
+% 2 1 0 0018abd3f47a6f5a0327744eab8c6d88
+
+% 0 1 0 1eb2f8d04280d3cb04245062daf594ea
+
+% 1 1 0 145c99a740ba4e70085615df8f1b8c52
+
+@ 0 18 0 1259042bc39fa8371c8b224b1a2aac4b
++   entry .textTextual   把 `Text` 原样作为 `Whatwg.Textual` 属性值
++   entry .stringTextual   把 `String` 原样作为 `Whatwg.Textual` 属性值
++   entry .boolean   把 `Boolean` 作为 `Whatwg.Presence` 属性：为真时存在，为假时省略
++   entry .switch   把 `Boolean` 作为 `Whatwg.Switch` 属性：`on` 或 `off`
++   entry .truth   把 `Boolean` 作为 `Whatwg.Truth` 属性：`true` 或 `false`
++   entry .int   把 `Int` 作为 `Whatwg.Integral` 属性
++   entry .posInt   把 `Int` 作为 `Whatwg.PositiveInt` 属性；不检查符号
++   entry .double   把 `Double` 作为 `Whatwg.Decimal` 属性
++   entry .domId   把 `Name[DomId]` 作为 `Whatwg.Id` 属性
++   entry .cssClass   把 `Name[CssClass]` 作为 `Whatwg.CssClassList` 属性
++   entry .classList   把 `ClassList` 作为 `Whatwg.CssClassList` 属性，以空格连接；为空时省略
++   entry .url   把任何 `Abstractable across Urls to Text` 的值作为 `Whatwg.Url` 属性
++       一个 `HttpUrl` 或任何类型化的 URL，写成其通用文本。
++       普通的 `Text` 不属于此类；`attributives.textAttributive` 或 graffiti 的 `urlText` 可以接纳它。
++   entry .style   把 `Text` 原样作为 `Whatwg.Css` 属性
++   entry .cssClassList   把 `List[Name[CssClass]]` 作为 `Whatwg.CssClassList` 属性，以空格连接；为空时省略
++   entry .domIds   把 `List[Name[DomId]]` 作为 `Whatwg.Ids` 属性，以空格连接；为空时省略
++   entry #attribute   某个值对应的属性名称和文本、单独的名称，或者为 `Unset` 以省略该属性
+
+@ 0 1 0 08571082166cb3841da576f8bb6aa96b
++ entry .Unattributive   属性的文本如何按其值标记读回为带类型的值
+
+% 1 1 0 1716956cc10de77b1efda94eaea73fa7
+
+@ 0 6 0 1788f1216170d7af173261d9509aba96
++       它是 `Attributive` 的逆：`marker is Unattributive to result` 把元素为某个属性所持有的 `Optional[Text]` 转换为一个值，`Html.Element` 上的 `element.alt` 或 `element.width` 正是通过它解析的——属性 given 的 `Topic` 选择实例，因此 `Img(width = 50).width` 是 `Optional[Int]`，而 `Img(alt = t"x").alt` 是 `Text`。
++       只有四个 given，因此其他值标记的属性无法按名称读回。
+
+% 2 1 0 0ad25ad013d7b6700f27feca57d0bac2
+
+% 3 1 0 0a72f76796a87f950192daba83d2618c
+
+% 4 1 0 012dc1d58881360e0296e5a4f42cb725
+
+% 5 1 0 0bc920fe5f82f2af142b5f66d3604705
+
+% 6 1 0 178e3d8141a7cf6c0e8583ca1c46096f
+
+% 0 1 0 04e0bd217b410f6c1336be68e7e62498
+
+% 0 1 0 0ea879979ea1b02508785f0ba238cf06
+
+% 1 1 0 05073f4b192bacab0992adfef42801df
+
+% 1 1 0 101127ae3e14c25502dd5b53efecd790
+
+@ 0 5 0 01d846dd1ac652c21797549ab7c3e52b
++   entry .textTextual   把 `Whatwg.Textual` 属性作为 `Text`，缺失时为空
++   entry .int   把 `Whatwg.Integral` 属性作为 `Optional[Int]`；缺失或不是数字时为 `Unset`
++   entry .positiveInt   把 `Whatwg.PositiveInt` 属性作为 `Optional[Int]`；缺失或不是数字时为 `Unset`
++   entry .cssClassList   把 `Whatwg.CssClassList` 属性作为 `List[Text]`，按空格拆分；缺失时为 `Nil`
++   entry #unattribute   属性文本对应的值，或属性缺失时对应的值
+
+@ 0 1 0 1aa75de295c0dc6d11316f39b658512f
++ entry .ClassList   一组 CSS 类名，用于元素的 `class` 属性
+
+% 1 1 0 03193359f296269501ba332224d975f6
+
+@ 0 5 0 1ab5b3b6805e1e17107dc8c108ea36c0
++       `ClassList["one" | "two"]()` 是一组在代码编译时被检查的类名：类型参数的每个字面量都必须是 CSS 标识符，因此 `ClassList["1bad"]()` 是一个编译错误 _`1bad` is not a valid CSS class name_，而不是运行时失败。
++       结果具有细化类型 `ClassList of "one" | "two"`，而 `ClassList(set)` 包装已经作为 `Name[CssClass]` 检查过的名称。
+
+@ 0 2 0 07b84fa068f59e4b186d9581512a99e7
++       类列表通过 `Attributive.classList` 成为属性值——空的类列表会省略该属性——并且类列表可以用 `+` 和 `-` 组合。
+
+% 2 1 0 12f8a8028e85f41c052b8fa91df9167f
+
+% 3 1 0 0b0d678f37c8ca47001c37c5da7a882a
+
+% 4 1 0 0e820d0bf006b72d04434f2d6f22a7ff
+
+% 5 1 0 0bc9a337e5b7077a15bb130d87bf8e96
+
+% 0 1 0 05f5d4c1e3a2195d00ae5e836bb6e731
+
+% 0 1 0 0490ff23cca43c381ed7d06bf0738614
+
+% 0 1 0 0f818e950148527a1e7b70c863537093
+
+% 0 1 0 1393ef9efc369cec0dc639642dd70520
+
+% 1 1 0 03af5ba4fefc894310d709d6738e4027
+
+% 2 1 0 1ae7fddad03832ee18d06150db89cc6f
+
+% 1 1 0 07743d85fd55d4cc0852474e25da6ffb
+
+@ 0 14 0 0e02658bb8dfeee0113e8f3b73288724
++   entry .apply   `ClassList["a" | "b"]()`：由字面量构成的类列表，每个字面量都作为 CSS 标识符检查
++       这是一个宏：类型参数必须是一个字符串字面量或它们的联合，否则展开会以 _the class names should be string literals_ 中止；每个字面量都按 `CssClass` 的 `Nominative` 规则检查。
++       case class 的 `apply(classes)` 接收已经检查过的 `Set[Name[CssClass]]`。
++   entry .focusable   类列表在诊断信息中如何命名：作为 CSS 选择器 `.a.b`
++       为每个细化的 `ClassList of …` 类型提供，因此浏览器驱动可以按类定位元素。
++   entry .addable   `list + other`：两个类列表的并集
++   entry .subtractable   `list - other`：一个类列表中不在另一个之中的类
++   entry .empty   空的类列表，作为普通调用的 `Attribution`
++       `ClassList` 是 `Topical` 的，这个 `Topic = "apply"` 的 given 在以 `ClassList` 为证据的地方，起到与 `Attribution.empty` 相同的作用。
++   entry #classes   类名，作为 `Set[Name[CssClass]]`
+
+@ 0 1 0 182e5f19b6d672301093bd6dc2f25f19
++ entry .Dom   对一种 HTML 方言的描述：它的标签、属性、实体、doctype 和推断规则
+
+% 1 1 0 1abb748d0ee599cb12c0510c55cbd915
+
+@ 0 7 0 0f891f999ab090fd11b35751ef89eea1
++       `Whatwg` 和 `Html4Transitional` 所实现的契约，也是解析器、序列化器和 `h"…"` 插值器所需的上下文值：一个 `Dom` given——从 `htmlDoms` 中按名称导入（`htmlDoms.whatwg` 或 `htmlDoms.html4Transitional`），因为 `import soundness.*` 两者都不引入——说明存在哪些标签、每个标签接受哪些属性、解码哪些具名实体、文档得到什么 doctype，以及解析器可以插入哪些未写出的元素。
++       `Document[Html]` 在其 `Html.Provenance` 中记录它是在哪个 dom 下读取的。
+
+@ 0 4 0 0653b965072aa7a7146b23085940f831
++       另一种方言是一个扩展 `Dom` 的类，每个标签一个由 `Tag.void`、`Tag.container` 和 `Tag.transparent` 构成的 `val`，再加上一个包含 `Attribute` given 的伴生对象；`elements` 和 `attributes` 表可以通过反射从成员构建，两种已提供的方言就是这样做的。
+
+% 1 1 0 00d82e03285336d40c51dd7997a5b30f
+
+% 2 1 0 0aecb3f4544d81a717a49eaeedd382ca
+
+% 1 1 0 0e57e8152790a3f00a9651b8f7ccee66
+
+@ 0 10 0 1d68b84b3fbf883609239f56acbba8e3
++   entry #elements   方言的每个标签，按名称
++   entry #attributes   方言的每个属性，按名称
++   entry #entities   具名字符引用，从名称到替换文本
++   entry #doctype   这种方言的 `Document[Html]` 所带的 doctype
++   entry #infer   在父元素与它无法直接容纳的子元素之间插入的标签，或 `Unset`
++       作为完整文档读取时，`<table><tr>` 正是这样得到它的 `<tbody>`，而单独的 `<p>` 得到它的 `<html>` 和 `<body>`。
++   entry #generic   接受方言中每个元素的根标签
++       覆盖 `#elements` 全部名称的 `Tag.root`：不带标注的 `read[Html]` 解析到其中，因此片段可以以任何元素开头。
+
+@ 0 1 0 0df801bda3e6b2630dff6856091fb84a
++ entry .Renderable   任意类型的值如何变成 HTML，以及变成什么样的 HTML
+
+% 1 1 0 022dc36404607239131be563f1a5a57c
+
+@ 0 5 0 08d0a21764778b470dca9f817b0e8c57
++       `value is Renderable in label` 表示 `value` 渲染为 `Html of label`，并让它出现在接纳该标注的任何地方：作为标签的子项、代入 `h"…"` 字面量，或用扩展方法 `html` 转换。
++       类型成员 `Form` 就是该标注（或联合），因此编译器知道 `List[Text] is Renderable in "li"` 可以放在 `<ul>` 中，而不能放在 `<div>` 中。
+
+% 2 1 0 0a082249556b3074014493b1e1b82c1f
+
+% 3 1 0 13752bd20cd064b71ca67c9c16ac5345
+
+% 4 1 0 1ccd3cea7464bf90142033228e071530
+
+% 5 1 0 0b0cae729f967ba50565aa5c5a5bec8d
+
+% 0 1 0 1b04b9f57f180dc6164787cee617fb32
+
+% 0 1 0 1e5bf1f9d3a439051e3f52f2a42042da
+
+% 0 1 0 096c5abc1af8ad3802127c141f0d3eaf
+
+% 0 1 0 072cf1706c9269650129c8e56d7e9b95
+
+% 0 1 0 18769f26cf7371511bf4b5b3380b9354
+
+% 1 1 0 0e5cf5e99fc964cf14b21f61be61a66f
+
+@ 0 3 0 08b47aecae1288cf060777f014122040
++       其他库为它们的类型提供渲染：这里是 `Message` 和 `StackTrace`；在别处则有 punctuation 的 Markdown、archimedes 的 `Math`、legerdemain 的表单字段以及 graffiti 的 `Archetype` 页面，页面正是这样无需胶水代码就能作为 HTML 提供的。
+
+% 0 1 0 0e73a0986f0643d513e4ea2965673cc0
+
+% 1 1 0 1dcfa7f28910aaad005e6c2a0e56c41e
+
+@ 0 8 0 069fa1b60254b24a16bb570ac6d71180
++   entry .message   把 `Message` 作为短语内容：它的文本，嵌套的消息依次渲染
++       `Form = Phrasing`，因此消息可以放在 `<p>` 或标题中；堆栈跟踪的渲染就是以 `H4(stackTrace.message.html)` 使用它的。
++   entry .stackTrace   把 `StackTrace` 作为流内容：一个带有标题和帧表格的 `<div class="stack">`
++       组件、类名和消息分别作为 `<h2>`、`<h3>` 和 `<h4>`，然后是一个 `<table>`，每个帧一个 `<tr>`，每个单元格的类为 `class`、`method`、`file`、`line` 或 `code`，供样式表选取。
++   entry #render   值对应的 HTML，作为 `Html of Form`
+
+@ 0 1 0 1d5c6c4e87b648d20623b844ff04197f
++ entry .Autocomplete   `autocomplete` 的取值：`On` 或 `Off`
+
+% 1 1 0 12f6110c4d34f4a719cbf55123efb2e8
+
+@ 0 4 0 1d13856ed3beef780dd9d8610b412365
++       `Autocomplete.On.show` 为 `on`。
++       该属性本身的类型是 `Whatwg.Switch`，`Boolean` 通过 `Attributive.switch` 直接满足它；这个枚举没有自己的 `Attributive`。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 07d883904d366f23063493b6c21e676e
++ entry .Capture   `<input type="file">` 的 `capture` 的取值：`Environment` 或 `User`
+
+% 1 1 0 1040dcd805b7ecb01c9b10e19ffce16e
+
+@ 0 3 0 0dfb05cfb3195d24110eb2d47c9e70da
++       以小写显示。
++       WHATWG 词汇中没有声明 `capture` 属性的 given，因此这个枚举目前只是一组名称。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 0b7aadb9a53399de114d1dc0c93ba1e8
++ entry .Crossorigin   `crossorigin` 的取值：`UseCredentials` 或 `Anonymous`
+
+% 1 1 0 1adb2073272cd3820dce912db998600e
+
+@ 0 5 0 0f50dad451712c300a3a6875c287d9c2
++       以 kebab 形式显示，即 `use-credentials` 和 `anonymous`。
++       该属性的类型是 `Whatwg.Crossorigin`，这个枚举没有针对它的 `Attributive`，因此在作用域内有 `attributives.textAttributive` 时，以 `crossorigin = Crossorigin.Anonymous.show` 传递。
++   entry .showable   把值渲染为它的 kebab 形式名称
+
+@ 0 1 0 0bad3cd383ba35360032179a94c70090
++ entry .HDir   `dir` 的取值：`Ltr`、`Rtl` 或 `Auto`
+
+% 1 1 0 0d025faf776d60101ac10dbce78b6f72
+
+@ 0 5 0 158d91555ceb901e19651f18c1e58a41
++       唯一拥有自己的 `Attributive` 的属性枚举，因此 `Body(dir = HDir.Rtl)` 无需导入即可编译，并写出 `dir="rtl"`。
++       它命名为 `HDir` 而不是 `Dir`，以便为 HTML 4 的 `<dir>` 标签和其他库的 `Dir` 留出空间。
++   entry .showable   把值渲染为它的小写名称
++   entry .attributive   把 `HDir` 作为 `Whatwg.Dir` 属性值
+
+@ 0 1 0 01f4602d2d1c744a01a2b2867d685441
++ entry .HttpEquiv   `<meta>` 的 `http-equiv` 的取值：`ContentSecurityPolicy`、`ContentType`、`DefaultStyle` 或 `Refresh`
+
+% 1 1 0 18b70a1b89f09f240d65e5676a3989e5
+
+@ 0 3 0 0bf64fca3f1dd54f0a61f875f44d0968
++       以 kebab 形式显示（`content-security-policy`）。
++       由于这个枚举没有 `Attributive`，它在有 `attributives.textAttributive` 时以 `.show` 传递。
++   entry .showable   把值渲染为它的 kebab 形式名称
+
+@ 0 1 0 191492c3ee0d50071ae75ab8c1eb5394
++ entry .Kind   `<track>` 的 `kind` 的取值：`Subtitles`、`Captions`、`Descriptions`、`Chapters` 或 `Metadata`
+
+% 1 1 0 1db59f5c426b93881b11aa67237858f9
+
+@ 0 3 0 16f881d41673b7a807395691c08e9101
++       以小写显示。
++       `Whatwg.Track` 把每个取值都作为预设标签提供（`Track.Captions`），这是通常的写法；这个枚举没有 `Attributive`。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 10753c6cea2ebd8906a1e3d4b84ae50f
++ entry .Method   `<form>` 的 `method` 的取值：`Post`、`Get` 或 `Dialog`
+
+% 1 1 0 19ef58c124b87745151d603e8ac4e444
+
+@ 0 3 0 07382eba021dce2f195b8e750d7cc06c
++       以小写显示。
++       由于这个枚举没有 `Attributive`，它在有 `attributives.textAttributive` 时以 `method = Method.Post.show` 传递。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 029b255c41bdecd011fb91783536fea5
++ entry .Preload   `preload` 的取值：`None`、`Metadata` 或 `Auto`
+
+% 1 1 0 131b4a64695cfeeb055cbf3b6833b187
+
+@ 0 3 0 0e983746a3f93cbf16bc349ce8ca057e
++       以小写显示。
++       完整写作 `Preload.None`，以免与 `scala.None` 混淆。
++       以 `.show` 传递；这个枚举没有 `Attributive`。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 1a71afe0af476dfd02283d5804300e55
++ entry .Rel   `rel` 的链接类型，从 `Alternate` 到 `Tag`
+
+% 1 1 0 01d5ec7e930ef448018cef6ba94ab383
+
+@ 0 6 0 079a132fc076afeb1aa1ee24d9503228
++       `Alternate`、`Author`、`Bookmark`、`Canonical`、`DnsPrefetch`、`External`、`Help`、`Icon`、`License`、`Manifest`、`Modulepreload`、`Next`、`Nofollow`、`Noopener`、`Noreferrer`、`Opener`、`Pingback`、`Preconnect`、`Prefetch`、`Preload`、`Prerender`、`Prev`、`Search`、`Stylesheet` 和 `Tag`，以 kebab 形式显示（`dns-prefetch`）。
++       对于 `<link>`，`Whatwg.Link` 把其中大多数作为预设标签提供；在 `<a>` 上则传递 `.show`。
++   entry .showable   把值渲染为它的 kebab 形式名称
+
+@ 0 1 0 131ec2184fdcac880e565420dac032f5
++ entry .Rev   HTML 4 中 `rev` 的反向链接类型，从 `Alternate` 到 `Bookmark`
+
+% 1 1 0 1fad3fb4da9536051009836f31d94d71
+
+@ 0 4 0 13df40fa599c7f361a72a6fb9932e130
++       `Alternate`、`Stylesheet`、`Start`、`Next`、`Prev`、`Contents`、`Index`、`Glossary`、`Copyright`、`Chapter`、`Section`、`Subsection`、`Appendix`、`Help` 和 `Bookmark`，以小写显示。
++       `rev` 只存在于 `Html4Transitional` 中。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 1306814d4021797b0db5d70f1d00ea07
++ entry .Sandbox   `<iframe>` 的 `sandbox` 的令牌
+
+% 1 1 0 1a6e4d734d47ac790d562d2f4a34767f
+
+@ 0 5 0 18793b5c6204d12d0cfc016d98f89f27
++       `AllowForms`、`AllowPointerLock`、`AllowPopups`、`AllowPresentation`、`AllowSameOrigin`、`AllowScripts` 和 `AllowTopNavigation`，以 kebab 形式显示（`allow-forms`）。
++       该属性以 `Whatwg.Sandbox` 的形式接受多个以空格分隔的令牌；这个枚举没有 `Attributive`，因此列表要连接起来作为文本传递。
++   entry .showable   把值渲染为它的 kebab 形式名称
+
+@ 0 1 0 09d9aa133bb3b0720a58f9e56e684c1e
++ entry .Shape   `<area>` 的 `shape` 的取值：`Circle`、`Default`、`Poly` 或 `Rect`
+
+% 1 1 0 0807134655ea55eb0620e4afa5953f15
+
+@ 0 3 0 01ffc9a9509978a30bea58537cf8c400
++       以小写显示。
++       `Whatwg.Area` 把每个取值都作为预设标签提供；这个枚举没有 `Attributive`。
++   entry .showable   把值渲染为它的小写名称
+
+@ 0 1 0 1e2a3e26190d8c6b07da37ae7936c076
++ entry .Target   `target` 的取值：一个具名上下文，或 `Self`、`Blank`、`Parent`、`Top`
+
+% 1 1 0 036079e396d2db200ef30deef3d4f1a5
+
+@ 0 5 0 193a81fe985234cc1da05e761b1f5f6c
++       `Target.Browse(name)` 是一个具名的浏览上下文，显示为该名称；四个关键字显示为 `_self`、`_blank`、`_parent` 和 `_top`。
++       该属性的类型是 `Whatwg.Target`，这个枚举没有针对它的 `Attributive`，因此在作用域内有 `attributives.textAttributive` 时以 `.show` 传递。
++   entry .showable   把值渲染为它的关键字或上下文名称
+
+@ 0 1 0 0bdf15674f74923e1e0264783492350d
++ entry .Wrap   `<textarea>` 的 `wrap` 的取值：`Soft` 或 `Hard`
+
+% 1 1 0 07cb67e88de1ada11a7cc86618279869
+
+@ 0 4 0 126017d5d33c20ba0bbe6575001394cd
++       以小写显示。
++       WHATWG 属性的类型是 `Whatwg.Softness`，HTML 4 属性的类型是 `Html4Transitional.Wrap`（任意文本）；这个枚举没有 `Attributive`，因此以 `.show` 传递。
++   entry .showable   把值渲染为它的小写名称

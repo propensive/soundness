@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0dbeeb7fff32690e0545a16a18e1012e
++ # `↯/s.27.3` – Literał szesnastkowy ma nieparzystą liczbę cyfr
+
+@ 0 1 0 1901e4c63e087e5013f26c581ed9d394
++ Zgłaszany w czasie kompilacji, gdy literał szesnastkowy nie ma parzystej liczby cyfr.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 09ebd074bb3f0f5b12a2c968f3781c14
++ Każdy bajt to dwie cyfry szesnastkowe, więc przy nieparzystej liczbie zostaje jedna cyfra,
++ która nie oznacza całego bajtu.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 159d63f2701bddd614e040cf78af158f
+
+% 1 1 0 11bad205be73f5360d5141227974ab8c
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 0d6e7f190fa675af16bd53a86de5cbf8
++ Dodać zero wiodące do cyfry, która stoi samotnie.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 1f783763bc94d7c00f0bb1776327e25f
++ - Pozostałe błędy literałów binarnych i szesnastkowych: [Rodziny](README.md#families)
++ - Źródło: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

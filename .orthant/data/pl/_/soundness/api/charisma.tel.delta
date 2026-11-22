@@ -1,0 +1,578 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 156c0042ea075de716dcd091500586e5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 103629cd6cdabfbe1a2d06180576bdf5
++ info   układ okresowy, cząsteczki, wzory i równania chemiczne jako typowane wartości
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 163bd43c71dd86ee06f3fcdad7e99da5
++     _Charisma_ modeluje notację chemiczną jako strukturę, a nie tekst. 118 pierwiastków to
++     wartości w `PeriodicTable`; pierwiastki łączą się wiązaniem `*` w `Molecule`, która może
++     mieć ładunek i stan skupienia; cząsteczki ze współczynnikami sumują się przez `+` we
++     `Chemical.Formula`; a dwa wzory, połączone jedną z pięciu typowanych strzałek reakcji,
++     tworzą `Chemical.Equation`, które potrafi stwierdzić, czy jest zbilansowane.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a7e25f2ee091fad1e8e94495e464ada
+
+% 0 1 0 114147192ce1f0220ad31cc37492a060
+
+% 0 1 0 0e5cb0ce3a9e5f4d1473d79a002fb3a5
+
+% 0 1 0 1012ba5281a966e01246e89a8478e66e
+
+% 0 1 0 1faab479dc315f50055bdd6e3dc14f38
+
+% 0 1 0 059d8d04765b34801b9939b3fc9f84ef
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 03316eaea154698c0a4825b2ba7ff5a9
++     Operatory są zdefiniowane w dwóch traitach: `Molecular`, który rozszerzają pierwiastek i
++     cząsteczka, ma wiązanie `*`, współczynnik `*` i operatory ładunku; `Formulable`, który
++     rozszerza każda wartość cząsteczkowa i każdy wzór, ma `+` i strzałki reakcji. Dzięki
++     temu pierwiastek, cząsteczka i wzór mogą stać po dowolnej stronie równania.
+
+@ 0 4 0 0b02f2ec81907e990a81ff3de5f350ee
++     Każda wartość przedstawia się przez `show` w konwencjonalnej notacji – liczności w
++     indeksie dolnym, ładunki w indeksie górnym, porządek Hilla z węglem i wodorem na początku
++     – i jest inspekcjonowana odrębnie, tak aby pierwiastka, cząsteczki i jednoskładnikowego
++     wzoru nigdy nie pomylić w komunikacie o niepowodzeniu testu.
+
+@ 0 2 0 1a15cd6622cbd41609137a3e65e7a9f8
++     Biblioteka to jeden zestaw źródeł, `charisma.core`, niezależny od platformy, a wszystko
++     jest eksportowane do modułu zbiorczego `soundness`. Nie ma givenów do zaimportowania.
+
+% 0 1 0 0eec00f5382711ff1472fbe828f8ef2f
+
+% 0 1 0 098fa0d92269751b19c86629687019d4
+
+% 0 1 0 01a59ab4267dbf1404f2279078ad0f74
+
+% 0 1 0 13ba45690287a76b111f880282b5d119
+
+% 0 1 0 12ac5f266e89c3e819f797ab2885a785
+
+@ 0 1 0 01378691848364bd0c1742170214fc0a
++ entry .Chemical   przestrzeń nazw słownictwa chemicznego: pierwiastki, wzory i równania
+
+% 1 1 0 04297b7914bf33d91dd7afaac6083ff2
+
+@ 0 3 0 04a30196041a52d20363a4761b23bab3
++       Nie ma typu `Chemical`: obiekt zawiera `Element`, `Formula` i `Equation`, trzy rodzaje
++       bytów chemicznych, których nazwy byłyby w przeciwnym razie zbyt ogólne dla modułu
++       zbiorczego. Cząsteczki to `Molecule`, na najwyższym poziomie pakietu.
+
+% 1 1 0 089dce62e63601a7054c213f69120113
+
+% 1 1 0 0816248f4e0f5a6a17684c30f30b6387
+
+@ 0 1 0 15280788efa6e7fe01d962a7f4219bf2
++   entry .Element   pierwiastek chemiczny: jego liczba atomowa, symbol i nazwa
+
+% 1 1 0 1e9f63d226eacbb900203f3f8c73ce69
+
+@ 0 2 0 1cb708e16a6d6c500ab5eb339dfb569e
++         Pierwiastek jest wartością, zwykle pobieraną z `PeriodicTable`, i jest `Molecular`:
++         sam w sobie jest cząsteczką jednego atomu, wiąże się przez `*`, a argument typu go
++         powtarza.
+
+% 2 1 0 11699786aed31c42129bd572020eac4b
+
+% 3 1 0 03cad26679fb0123177a651a87f203ac
+
+% 0 1 0 0096caa091644153111ed891aed90540
+
+% 0 1 0 0adc88edff1ea2960c26e1e718ef8d41
+
+% 0 1 0 02afd1e76f78712a184b6496ab3b2b8c
+
+% 0 1 0 19df082991b2d1c316c8b1e3533d013f
+
+% 0 1 0 1f85c15cd92f731f05f58a5332c6b463
+
+% 1 1 0 15c294af6ab7f216055d63c7883a9833
+
+@ 0 12 0 075d3928f014d4471d2719d0d1d023c3
++         Pierwiastek pokazuje się jako sam symbol, a inspekcjonuje ze znakiem atomu i liczbą
++         atomową, co odróżnia go od każdego innego krótkiego tekstu.
++     entry .showable   pokazuje pierwiastek jako jego symbol, `Fe`
++     entry .inspectable   inspekcjonuje pierwiastek ze znakiem atomu i jego liczbą, `⚛Fe(26)`
++     entry #number   liczba atomowa
++     entry #symbol   symbol chemiczny, `Fe`
++     entry #name   nazwa angielska, `Iron`
++     entry #apply   cząsteczka z tym pierwiastkiem powtórzonym, z licznością jako argumentem typu, `O[2]`
++         `O[2]` to cząsteczka dwóch atomów tlenu: liczność jest literałowym typem liczby
++         naturalnej, więc musi być znana w czasie kompilacji. Dla liczności znanej dopiero w
++         czasie wykonania należy użyć `O ** n`.
++     entry #molecule   ten pierwiastek jako cząsteczka jednego atomu
+
+@ 0 1 0 0077ef00fcb0f3680ffcfc506fc0a4f1
++   entry .Formula   suma cząsteczek, każdej ze współczynnikiem: `2H₂ + O₂`
+
+% 1 1 0 1272e01e968dc3dd07f2db09511e03c8
+
+@ 0 3 0 042704868b197ab71e4e71dd3b9ad73b
++         Wzór to `Ledger` przyporządkowujący każdej `Molecule` jej współczynnik. Tworzy się go
++         z wartości cząsteczkowej ze współczynnikiem (`H[2]*2`) lub przez `.apply`, a rozszerza
++         przez `+`, które dodaje współczynniki cząsteczki występującej w obu składnikach.
+
+% 2 1 0 1769c7c84d8bedf4189f8bb584e34a10
+
+% 3 1 0 12ca4fb91296658b18c9199f8c0c139c
+
+% 4 1 0 13f1e469ce15e1c40b26c549ff2023b0
+
+% 0 1 0 19ad8c51345cc3450a0ce64afef48876
+
+% 0 1 0 07e382595117bb4910c2106daa7e8255
+
+% 0 1 0 06fa04dfcbe9bcbd0b38b5982ec53f2d
+
+% 0 1 0 0a493f9b96054150086122d8a0ac74dd
+
+% 1 1 0 0f841ca3789a71fa142d772e265bd38e
+
+@ 0 10 0 19ab90aeb0c93bb31f3a0866d6f14e5b
++         Współczynnik 1 jest pomijany przez `show`, ale wypisywany przez `inspect`, więc
++         jednoskładnikowy wzór nigdy nie jest inspekcjonowany tak samo jak cząsteczka, którą
++         zawiera.
++     entry .apply   wzór z jedną cząsteczką o współczynniku 1
++     entry .showable   pokazuje wzór jako jego składniki połączone ` + `, pomijając współczynniki 1
++     entry .inspectable   inspekcjonuje wzór z każdym współczynnikiem wypisanym lub jako `∅`, gdy jest pusty
++     entry #molecules   każda cząsteczka wzoru wraz z jej współczynnikiem
++     entry #formula   sam wzór, czego wymaga `Formulable`
++     entry #atoms   liczba atomów każdego pierwiastka we wszystkich składnikach, z uwzględnieniem współczynników
++         Multizbiór atomów po jednej stronie równania: atomy każdej cząsteczki pomnożone przez
++         jej współczynnik i zsumowane. Dwie strony są zbilansowane, gdy ich `atoms` są równe.
+
+@ 0 1 0 194a8438e2a9c3b70a4461cd53f44389
++   entry .Equation   dwa wzory połączone strzałką reakcji: `2H₂ + O₂ → 2H₂O`
+
+% 1 1 0 182deb5e124895120ac60687384d4422
+
+@ 0 2 0 07fd50d897fb637c0a8c4e995c72be4d
++         Równanie tworzy się z dwóch wartości formułowalnych jedną ze strzałek `Formulable`:
++         `-->`, `<->`, `<=>`, `<~>` lub `===`, z których każda daje inny `Reaction`.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 0b6a79d6518c7cd31c35d380a8d87779
+
+% 1 1 0 0ac0f6686f027f880a8532a051d5d81c
+
+% 2 1 0 1124775b40b143831f70f2e8107f006b
+
+% 3 1 0 16fe0e1d451b3f270c74906a0ab4bd97
+
+% 0 1 0 0feaff12a952ea2d1d4e380a15a55960
+
+% 0 1 0 1b3ffd6b576a53be15442b32343077f0
+
+% 1 1 0 08a6c54cf8b769771d0e7d7c2c64f884
+
+% 2 1 0 04cc48c803e42c4d1505a33be8fc5353
+
+% 3 1 0 1178f24c8c38c4cf08ef75352cfa29b9
+
+% 0 1 0 0afe359ff97567560a618265bb732998
+
+% 0 1 0 1a30953c37a0de5817c11df8a4b4e32e
+
+% 1 1 0 14acf53d0be933de05a998f6bb5672f5
+
+% 2 1 0 1e35bb5c8115c5d70e02b24de0e4f7d0
+
+% 3 1 0 03963f30aca3773e0a2acfc803c08a7e
+
+% 0 1 0 169f763e838c5384154f8d0ae0f2ddcf
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 12 0 04673803ee0dd1c8014fef67403ae88d
++         `#balanced` porównuje atomy obu stron; nic innego nie jest sprawdzane, więc
++         niezbilansowane równanie jest poprawną wartością.
++     entry .showable   pokazuje równanie jako jego dwie strony ze strzałką reakcji między nimi
++     entry .inspectable   inspekcjonuje równanie z jego częściami i reakcją nazwaną, a nie narysowaną
++         `Equation(2H₂ + 1O₂ ╱ NetForward ╱ 2H₂O)`, tak aby jego inspekcja nigdy nie była
++         notacją, którą daje `show`.
++     entry #lhs   wzór na lewo od strzałki
++     entry #reaction   rodzaj reakcji oznaczanej przez strzałkę
++     entry #rhs   wzór na prawo od strzałki
++     entry #balanced   czy obie strony mają tę samą liczbę atomów każdego pierwiastka
++         Porównuje `lhs.atoms` z `rhs.atoms`. Ładunek nie jest porównywany, więc równanie,
++         którego strony różnią się tylko ładunkiem, uznaje się za zbilansowane.
+
+% 2 1 0 0c094415c82b92411d3a819b9ddc5f06
+
+% 3 1 0 065730463cdf797402532ddecd4e0576
+
+% 4 1 0 1084f693e06ddf6b06c900d0b94e789b
+
+% 0 1 0 093947e4d98b46460b97a37c5a91a5c7
+
+% 0 1 0 08434e7dd6145fb203157befad794b98
+
+% 1 1 0 0c29dda3e34fde8b08ab075db97195ef
+
+@ 0 1 0 061c2f7b6bdae24f0977b7658719df52
++ entry .Molecule   atomy połączone wiązaniem, z ładunkiem elektrycznym i opcjonalnym stanem skupienia
+
+% 1 1 0 1171cca64a2a4a561fa02602f2dc48dc
+
+@ 0 3 0 057f831ccb9ad2281310ce59b76b50cc
++       Cząsteczka to `Map` przyporządkowująca każdemu pierwiastkowi jego liczność, ładunek i
++       opcjonalny `PhysicalState`. Zwykle buduje się ją z pierwiastków operatorami
++       `Molecular`, a nie konstruuje bezpośrednio.
+
+% 2 1 0 1efaedfebf415a400482e5e7844b615e
+
+% 3 1 0 17bf00c6e47c25e41573d4c87717fcff
+
+% 0 1 0 1be9af58c81138fa0f9c01122e57d8da
+
+% 0 1 0 0e6f22dab54a5e1e019a6cc08a161f43
+
+% 0 1 0 17a2f104107ba83106e7e8431c34a9f4
+
+% 0 1 0 026740018ae032c3143abff95f1e2e6f
+
+% 1 1 0 0184b3434265f1fa1f4ce6d73983582c
+
+@ 0 6 0 1eaad6d717391a1e1331d3b754b964d4
++       Pokazuje się w porządku Hilla: najpierw węgiel, a potem wodór, gdy cząsteczka zawiera
++       węgiel, a każdy inny pierwiastek (także wodór, w cząsteczce bez węgla) alfabetycznie
++       według symbolu. Liczności są indeksami dolnymi, ładunek to wartość bezwzględna w
++       indeksie górnym (pomijana dla ±1), po której następuje `⁺` lub `⁻`, a stan występuje
++       po nich w nawiasach. Połączenie dwóch cząsteczek sumuje ich atomy i ładunki, a stanu nie
++       ustawia, więc stan należy nadać gotowej cząsteczce.
+
+% 0 1 0 1a750f59616e982b154c42bc6dbeebe9
+
+% 1 1 0 1b31ebf85c8a86cc0f31d46c7adbb38f
+
+@ 0 7 0 09c5da15e3ef67420c4d1b305fb14a4d
++   entry .apply   pusta, nienaładowana cząsteczka albo cząsteczka jednego atomu pierwiastka
++   entry .showable   pokazuje cząsteczkę w porządku Hilla, z licznościami w indeksie dolnym, ładunkiem i stanem: `O₄S²⁻(aq)`
++   entry .inspectable   inspekcjonuje cząsteczkę jako wzór, który daje `show`, `H₂O`
++   entry #elements   każdy pierwiastek cząsteczki wraz z jego liczbą atomów
++   entry #charge   ładunek elektryczny w jednostkach ładunku elementarnego
++   entry #state   stan skupienia lub `Unset`, jeśli go nie podano
++   entry #molecule   sama cząsteczka, czego wymaga `Molecular`
+
+@ 0 1 0 0da2972d9e5737d804a9a556c3da284b
++ entry .Molecular   wszystko, co jest cząsteczką: wiąże się przez `*`, skaluje się i ma ładunek oraz stan
+
+% 1 1 0 083fba2ddb236a651e2df312d2fd217e
+
+@ 0 2 0 17bfc81dc38a48c31be174f46e093700
++       Trait rozszerzany przez `Chemical.Element` i `Molecule`. Każdy operator działa na
++       `#molecule` wartości.
+
+% 2 1 0 098f7220f814690211fc5f4b2bd37913
+
+% 3 1 0 0b70cc632c2fa46b136753117011eda9
+
+% 0 1 0 0b38a06ea3a181070caecea128802ddb
+
+% 0 1 0 099cc170dddeb36316411e71b74b4f37
+
+% 0 1 0 01b054fdcb6b58fa10b1f7253648005e
+
+% 0 1 0 0681b0d6ddccc517094d98b7013c9453
+
+% 0 1 0 1d11e3bc931e973417f148daf0336f3c
+
+% 0 1 0 1dd67adc018989370874e069516867b2
+
+% 1 1 0 0bc9d1ab28b6c5380494699ee1e197a8
+
+@ 0 3 0 130621a1f012e7a6185c1335c4da7a7b
++       Są dwa mnożenia, oba zapisywane jako `*`: przez inną wartość cząsteczkową łączy je
++       wiązaniem w jedną `Molecule`, a przez `Int` daje `Chemical.Formula` z tym
++       współczynnikiem. `**` mnoży natomiast atomy wewnątrz cząsteczki.
+
+% 1 1 0 1a4965b24bdfa4d0175fb4f55c921636
+
+% 0 1 0 14ced0bdf8a0ff7901b77a2603ca4bc0
+
+@ 0 12 0 097182029a6ec3760fd03df2ff9bd53a
++   entry #molecule   ta wartość jako `Molecule`
++   entry #formula   ta wartość jako wzór z jedną cząsteczką o współczynniku 1
++   entry #*   łączy wiązaniem z inną cząsteczką albo daje wzór ze współczynnikiem `Int`
++       `H[2]*O` to jedna cząsteczka z atomami i ładunkami obu; `water*2` to wzór `2H₂O`.
++       Wiązanie pozostawia stan skupienia nieustawiony.
++   entry #**   cząsteczka z każdą licznością atomów i ładunkiem pomnożonymi
++       `(H[2]*O) ** 3` to `H₆O₃`, pojedyncza cząsteczka; dla porównania `*` z `Int` daje
++       współczynnik.
++   entry #unary_-   cząsteczka z ładunkiem obniżonym o jeden: `-Cl` to jon chlorkowy
++   entry #unary_+   cząsteczka z ładunkiem podwyższonym o jeden: `+Na` to jon sodu
++   entry #ion   cząsteczka z zastąpionym ładunkiem: `Fe.ion(3)`
++   entry #inState   cząsteczka z zastąpionym stanem skupienia lub usuniętym przez `Unset`
+
+% 1 1 0 15bd0166f7899cee0cf9f9879770e211
+
+% 2 1 0 1106c3b1fc862df21e28b03fbb570482
+
+% 0 1 0 0973230b615ea8b1139d782f38e5c8b7
+
+% 0 1 0 17618ec681b98a25189d4cf481196a35
+
+% 1 1 0 1ee8e69699eabe34179a2e0977eab669
+
+@ 0 2 0 022b063e6d4ed1df10b776d0d7313221
++       Należy uważać na priorytet: `Na*Cl.inState(…)` ustawia stan samego chloru, a wiązanie
++       następnie go odrzuca.
+
+@ 0 1 0 0eac964146e5769010bb15a4eafbe3fc
++ entry .Formulable   wszystko, co może być stroną równania: dodaje się przez `+` i przyjmuje strzałkę reakcji
+
+% 1 1 0 129c56c341f42db404fd69753e9e2344
+
+@ 0 2 0 1096f692aaa2f356076ca5d215ca1bf2
++       Trait rozszerzany przez wartości `Molecular` i przez `Chemical.Formula`. Jego operatory
++       działają na `#formula` wartości, więc pierwiastki, cząsteczki i wzory można dowolnie
++       mieszać.
+
+% 2 1 0 1fc93bec26c6983f19bbd1bebae9ec51
+
+% 3 1 0 17a36e365651b0e10d40d3a8df386ab6
+
+% 0 1 0 10786b38141cebb218e31b1534ee1ed1
+
+% 0 1 0 1eb5b0ac1072c0be1e28f48133c9e8a8
+
+% 0 1 0 08a39b1c2298ea2518f1fcd895c28ad3
+
+% 0 1 0 0d812ea3a471517b036599f4bdb7d5f7
+
+% 1 1 0 03e681f2f7db20fc05f65c8e9f13cac3
+
+@ 0 3 0 1f0e81482fe61fa41a3e58d426dc7ae9
++       `-->` zaczyna się od `-`, więc wiąże dokładnie tak silnie jak `+` i jest łączny lewostronnie:
++       suma po jego prawej stronie musi być ujęta w nawiasy, inaczej `+` zastosuje się do
++       równania i wiersz się nie skompiluje. Pozostałe strzałki wiążą słabiej niż `+`.
+
+@ 0 3 0 14b6406d7847411d07f45bf9ea21743f
++       Każda strzałka tworzy `Chemical.Equation` z innym `Reaction`: `-->` reakcję
++       przebiegającą netto w przód, `<=>` reakcję przebiegającą w obu kierunkach, `<~>` reakcję
++       w stanie równowagi, `<->` rezonans, a `===` relację stechiometryczną.
+
+% 0 1 0 0dc1772b1c87e5df122940ec0a3c85cb
+
+% 0 1 0 144a5504c36ee2bd1eca19311c5501f6
+
+@ 0 5 0 0ca1e40ce4d245ba1d9e0aacc9e88725
++   entry #formula   ta wartość jako `Chemical.Formula`
++   entry #+   suma dwóch wzorów, dodająca współczynniki cząsteczki występującej w obu
++   entry #-->   równanie z reakcją netto w przód, `→`
++       `lhs --> rhs`. Wiąże tak silnie jak `+` i jest łączny lewostronnie, więc suma po prawej
++       stronie wymaga nawiasów: `CH₄ + 2O₂ → CO₂ + 2H₂O` to
+
+% 0 1 0 0416aacada3c1ddf0b05179d546e48ab
+
+@ 0 4 0 1c536b2ee6dcca8e1c4c776659fb1167
++   entry #<->   równanie z rezonansem, `Reaction.Resonance`
++   entry #<=>   równanie przebiegające w obu kierunkach, `⇄`
++   entry #<~>   równanie w stanie równowagi, `⇋`
++   entry #===   równanie z relacją stechiometryczną, `Reaction.Stoichiometric`
+
+@ 0 1 0 0996117b8cd57ad900cb4f7c5be984e1
++ entry .PhysicalState   stan skupienia cząsteczki: stały, ciekły, gazowy lub wodny
+
+% 1 1 0 1408c0187a5d0c701b1c8d12aca4154e
+
+@ 0 5 0 0dc504a4604e3a73040659a61d8fd4dd
++       Wyliczenie `Solid`, `Liquid`, `Gas` i `Aqueous`, pokazywanych jako `(s)`, `(l)`, `(g)`
++       i `(aq)` po cząsteczce. Stan nadaje się przez `Molecular#inState`; jest on adnotacją, a
++       nie częścią tożsamości substancji przy tworzeniu wiązań: połączenie dwóch cząsteczek
++       pozostawia stan wyniku nieustawiony.
++   entry .showable   pokazuje stan jako `(s)`, `(l)`, `(g)` lub `(aq)`
+
+@ 0 1 0 06a978e891636c0409d10cae95bb2061
++ entry .Reaction   relacja, jaką równanie chemiczne stwierdza między swoimi dwiema stronami
+
+% 1 1 0 0ac93b4b92993c9f0738d8c3e70d5330
+
+@ 0 5 0 1873ab0c7ba5917117a8dfb71699998a
++       Wyliczenie `NetForward` (pokazywane jako `→`, z `-->`), `BothDirections` (`⇄`, z
++       `<=>`), `Equilibrium` (`⇋`, z `<~>`), `Stoichiometric` (`↔`, z `===`) i `Resonance`
++       (`=`, z `<->`). To, którą strzałkę zapisze chemik, niesie znaczenie, a równanie je
++       zachowuje.
++   entry .showable   pokazuje reakcję jako jej strzałkę
+
+@ 0 1 0 1b744dbb3f1c51c20d2f00aac13d326c
++ entry .PeriodicTable   118 pierwiastków chemicznych, według symbolu, liczby atomowej lub nazwy
+
+% 1 1 0 021c67b693c55e71180fda499144d818
+
+@ 0 2 0 113a849ad24c43e71b0247c764ee1587
++       Każdy pierwiastek to `val` nazwany swoim symbolem, więc importuje się je pojedynczo lub
++       wszystkie naraz; pierwiastek można też znaleźć w czasie wykonania po jego liczbie lub
++       symbolu.
+
+% 2 1 0 035098e25528a19613fe44df9d7d1d90
+
+% 3 1 0 104694ccee4e9d6b1d9dfcd8ba909f38
+
+% 0 1 0 05ad2a909b4f448c1fddacb0931dcb41
+
+% 0 1 0 0ff1d406afbb5dab0852f3745a0c7d11
+
+% 0 1 0 05ec797a958ea4890258076c8c822f67
+
+% 0 1 0 151de6032a494c7118a0c15c2c1f6755
+
+% 0 1 0 18c268f064998c6c1f9b9fe008babfc9
+
+% 0 1 0 0aab1fdad10e5b5e027e4495f8151c07
+
+% 1 1 0 10344f8ee16d43900585870247520a2e
+
+@ 0 1 0 04b7971097e31a3b1441b3df4bd2a19f
++       Poza oganesonem `.element` daje systematyczny pierwiastek IUPAC dla dowolnej liczby
++       atomowej.
+
+% 0 1 0 07ff5912b246d3cf14720c8e16c084b0
+
+@ 0 129 0 10f3e29466f9954d1a3d0d0eefd3eece
++   entry .apply   pierwiastek o danej liczbie atomowej lub symbolu albo `Unset`, jeśli takiego nie ma
++       `PeriodicTable(26)` i `PeriodicTable(t"Fe")` to żelazo; liczba spoza zakresu od 1 do
++       118 lub nieznany symbol daje `Unset`. Wyszukiwanie po symbolu rozróżnia wielkość liter.
++   entry .elements   wszystkie pierwiastki w kolejności liczby atomowej
++   entry .symbols   wszystkie pierwiastki, z kluczem będącym ich symbolem
++   entry .element   pierwiastek o danej liczbie atomowej, z jego systematyczną nazwą i symbolem IUPAC
++       Buduje nazwę tymczasową z cyfr liczby – `nil`, `un`, `bi`, `tri`, `quad`, `pent`,
++       `hex`, `sept`, `oct`, `enn` – oraz `ium`, z podwojonym `i` skróconym do jednego: 119 to
++       `Ununennium` (`Uue`), 120 `Unbinilium` (`Ubn`), a 122 `Unbibium` (`Ubb`). Daje
++       systematyczny pierwiastek dla każdej liczby, także tych, które mają w tabeli
++       rzeczywistą nazwę.
++   entry .H   wodór, pierwiastek 1
++   entry .He   hel, pierwiastek 2
++   entry .Li   lit, pierwiastek 3
++   entry .Be   beryl, pierwiastek 4
++   entry .B   bor, pierwiastek 5
++   entry .C   węgiel, pierwiastek 6
++   entry .N   azot, pierwiastek 7
++   entry .O   tlen, pierwiastek 8
++   entry .F   fluor, pierwiastek 9
++   entry .Ne   neon, pierwiastek 10
++   entry .Na   sód, pierwiastek 11
++   entry .Mg   magnez, pierwiastek 12
++   entry .Al   glin, pierwiastek 13
++   entry .Si   krzem, pierwiastek 14
++   entry .P   fosfor, pierwiastek 15
++   entry .S   siarka, pierwiastek 16
++   entry .Cl   chlor, pierwiastek 17
++   entry .Ar   argon, pierwiastek 18
++   entry .K   potas, pierwiastek 19
++   entry .Ca   wapń, pierwiastek 20
++   entry .Sc   skand, pierwiastek 21
++   entry .Ti   tytan, pierwiastek 22
++   entry .V   wanad, pierwiastek 23
++   entry .Cr   chrom, pierwiastek 24
++   entry .Mn   mangan, pierwiastek 25
++   entry .Fe   żelazo, pierwiastek 26
++   entry .Co   kobalt, pierwiastek 27
++   entry .Ni   nikiel, pierwiastek 28
++   entry .Cu   miedź, pierwiastek 29
++   entry .Zn   cynk, pierwiastek 30
++   entry .Ga   gal, pierwiastek 31
++   entry .Ge   german, pierwiastek 32
++   entry .As   arsen, pierwiastek 33
++   entry .Se   selen, pierwiastek 34
++   entry .Br   brom, pierwiastek 35
++   entry .Kr   krypton, pierwiastek 36
++   entry .Rb   rubid, pierwiastek 37
++   entry .Sr   stront, pierwiastek 38
++   entry .Y   itr, pierwiastek 39
++   entry .Zr   cyrkon, pierwiastek 40
++   entry .Nb   niob, pierwiastek 41
++   entry .Mo   molibden, pierwiastek 42
++   entry .Tc   technet, pierwiastek 43
++   entry .Ru   ruten, pierwiastek 44
++   entry .Rh   rod, pierwiastek 45
++   entry .Pd   pallad, pierwiastek 46
++   entry .Ag   srebro, pierwiastek 47
++   entry .Cd   kadm, pierwiastek 48
++   entry .In   ind, pierwiastek 49
++   entry .Sn   cyna, pierwiastek 50
++   entry .Sb   antymon, pierwiastek 51
++   entry .Te   tellur, pierwiastek 52
++   entry .I   jod, pierwiastek 53
++   entry .Xe   ksenon, pierwiastek 54
++   entry .Cs   cez, pierwiastek 55
++   entry .Ba   bar, pierwiastek 56
++   entry .La   lantan, pierwiastek 57
++   entry .Ce   cer, pierwiastek 58
++   entry .Pr   prazeodym, pierwiastek 59
++   entry .Nd   neodym, pierwiastek 60
++   entry .Pm   promet, pierwiastek 61
++   entry .Sm   samar, pierwiastek 62
++   entry .Eu   europ, pierwiastek 63
++   entry .Gd   gadolin, pierwiastek 64
++   entry .Tb   terb, pierwiastek 65
++   entry .Dy   dysproz, pierwiastek 66
++   entry .Ho   holm, pierwiastek 67
++   entry .Er   erb, pierwiastek 68
++   entry .Tm   tul, pierwiastek 69
++   entry .Yb   iterb, pierwiastek 70
++   entry .Lu   lutet, pierwiastek 71
++   entry .Hf   hafn, pierwiastek 72
++   entry .Ta   tantal, pierwiastek 73
++   entry .W   wolfram, pierwiastek 74
++   entry .Re   ren, pierwiastek 75
++   entry .Os   osm, pierwiastek 76
++   entry .Ir   iryd, pierwiastek 77
++   entry .Pt   platyna, pierwiastek 78
++   entry .Au   złoto, pierwiastek 79
++   entry .Hg   rtęć, pierwiastek 80
++   entry .Tl   tal, pierwiastek 81
++   entry .Pb   ołów, pierwiastek 82
++   entry .Bi   bizmut, pierwiastek 83
++   entry .Po   polon, pierwiastek 84
++   entry .At   astat, pierwiastek 85
++   entry .Rn   radon, pierwiastek 86
++   entry .Fr   frans, pierwiastek 87
++   entry .Ra   rad, pierwiastek 88
++   entry .Ac   aktyn, pierwiastek 89
++   entry .Th   tor, pierwiastek 90
++   entry .Pa   protaktyn, pierwiastek 91
++   entry .U   uran, pierwiastek 92
++   entry .Np   neptun, pierwiastek 93
++   entry .Pu   pluton, pierwiastek 94
++   entry .Am   ameryk, pierwiastek 95
++   entry .Cm   kiur, pierwiastek 96
++   entry .Bk   berkel, pierwiastek 97
++   entry .Cf   kaliforn, pierwiastek 98
++   entry .Es   einstein, pierwiastek 99
++   entry .Fm   ferm, pierwiastek 100
++   entry .Md   mendelew, pierwiastek 101
++   entry .No   nobel, pierwiastek 102
++   entry .Lr   lorens, pierwiastek 103
++   entry .Rf   rutherford, pierwiastek 104
++   entry .Db   dubn, pierwiastek 105
++   entry .Sg   seaborg, pierwiastek 106
++   entry .Bh   bohr, pierwiastek 107
++   entry .Hs   has, pierwiastek 108
++   entry .Mt   meitner, pierwiastek 109
++   entry .Ds   darmsztadt, pierwiastek 110
++   entry .Rg   roentgen, pierwiastek 111
++   entry .Cn   kopernik, pierwiastek 112
++   entry .Nh   nihon, pierwiastek 113
++   entry .Fl   flerow, pierwiastek 114
++   entry .Mc   moskow, pierwiastek 115
++   entry .Lv   liwermor, pierwiastek 116
++   entry .Ts   tenes, pierwiastek 117
++   entry .Og   oganeson, pierwiastek 118

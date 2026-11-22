@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 1 0 1b6d0f675f9294e01706ebea4af93509
++ # `SN-441` – Pusty wiersz po importach (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Wtyczka kompilatora Decorum, która zgłaszała ten błąd, została wydzielona z Soundness i jest
++ teraz [Consequent](https://github.com/propensive/consequent), samodzielnym narzędziem
++ sprawdzającym styl Consequent. Reguła przetrwała tam pod nowym identyfikatorem, w którym litera
++ nazywa zasadę, z której reguła się wywodzi:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Było
++ column  Jest
+
+% 0 1 0 125b9451f90a9f5b145e28168e15c962
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

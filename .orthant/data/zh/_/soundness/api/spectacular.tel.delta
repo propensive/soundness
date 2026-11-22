@@ -1,0 +1,470 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 004a1f01fc0dff17145fbd3f35b0816d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d3d8daeea3f67a102196a137ebbdd2
++ info   值的两种文本呈现：`show` 面向程序的使用者，`inspect` 面向程序的编写者
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 13b7d55ec18e5adc07acf3146bda6acb
++     _Spectacular_ 区分了值变成文本的两种原因。
++     `show` 通过 `Showable` 实例为**人**呈现值——即适合出现在消息、日志行或屏幕上的形式——对于没有该实例的类型，调用它是编译错误，因此一个永远不应呈现给用户的值根本就不具有实例。
++     `inspect` 通过 `Inspectable` 实例为**程序员**呈现值——一种无歧义、单行、类似源代码的形式，用于调试和测试输出——它总是成功：它会派生出结构化的呈现，或者在万不得已时标记一个借用的呈现。
+
+% 2 1 0 1c5307a8d3f241100045ece9f798b311
+
+% 3 1 0 022ea62af8dd535e0765103bc914457e
+
+% 0 1 0 111ba3b0152c0d27148d3e15fb767da5
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 07798669b2774c5309d45356d7768cd1
+
+% 0 1 0 1bb4cafea7927d1c1dab712eccf8cf72
+
+% 0 1 0 0f4b9db8cbe7051f1986899076d2c414
+
+% 0 1 0 1c265419279a7ef207d00fba71437906
+
+% 1 1 0 02c11d8990e62a2416311f0ac8f6a6e8
+
+@ 0 2 0 0d6b9d2c3781a8750246c510b3508d00
++     同样的 `Showable` 实例驱动 `t"…"` 插值，因此被替换进去的值会以 show 的形式呈现；而 `Showable` 同时也是 `Communicable`，因此可以被替换进 `m"…"` 消息中。
+
+@ 0 3 0 14dff66d5a7c29b90b12738ca7208928
++     `Boolean` 没有唯一显而易见的呈现方式，因此显示它需要作用域中有一个 `Affirmation`，通过按名称导入 `affirmations` 包中的某个 given 来选择：`import soundness.*` 不会导入 given，而且有意不提供默认值。
+
+@ 0 2 0 1e132612e159141f18c162501f008922
++     `Inspectable` 的呈现在所有 Soundness 类型中遵循同一套记法，因此两种类型的呈现永远不会相同：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 14 0 10a28f10b2551a33190308cf373d137f
++     column  值
++     column  呈现
++     row  `List`  `[a, b]`
++     row  `Set`  `{a, b}`
++     row  `Map`  `{k → v}`
++     row  `Ledger`  `⟦k → v⟧`
++     row  `Sequence`  `⟨ a b ⟩`
++     row  积类型  `Name(field:value ╱ …)`
++     row  存在值的 `Optional`  `｢value｣`
++     row  缺失值的 `Optional`  `○`
++     row  文本  `t"…"`
++     row  字符  `'x'`
++     row  定长数值  上标后缀，`42ᵘ⁸`
++     row  序数  上标后缀，`1ˢᵗ`
+
+% 1 1 0 1de1fa85c90e932302db9c7d8f344aa7
+
+@ 0 3 0 038cf486417fa730022f2a47284a5334
++     *非*原生的呈现带有标记：`toString` 用 `“…”`，借用的 `Showable` 形式用 `⸢…⸣`，借用的 `Encodable in Text` 形式用 `⸤…⸥`，`Inspectable.fallbacks` 会找出它们。
+
+@ 0 3 0 1f51589fab749e030ea649ba67cbb254
++     该库有一个源集 `spectacular.core`，可在所有平台上编译。
++     所有内容都导出到 `soundness` 总括包，`affirmations` 选择包与总括包自身的同名包合并。
+
+% 0 1 0 129c0b8b64cee0420c8e0ea5ad9fcae1
+
+% 0 1 0 0108f75647c456f308c7a66a5d157d69
+
+% 0 1 0 1e51b6b85bca5f8e04623ce95d392494
+
+% 0 1 0 006a2e098fbd5de0107280f0eefa5ac2
+
+% 0 1 0 017db0d687bd1b801350d05a078eccd5
+
+@ 0 5 0 19a4a9bb533c34fc036a607edee8a965
++ entry .show   通过值的 `Showable` 实例，将其呈现为供人阅读的文本
++     这是对任何类型具有 `Showable` 的值的扩展方法：`value.show` 即 `Showable.text(value)`。
++     没有实例的类型无法显示，请求显示它是编译错误，而不是悄悄回退到 `toString`，因此类型通过不提供实例来表明它不用于展示。
+
+% 2 1 0 16ace8abc1fc40741064f3342bdd6f07
+
+% 3 1 0 0f37e0ffd67a6d1f142348b1d166df71
+
+% 0 1 0 1a0bd77440a1afcd05a73c67b59e9098
+
+% 0 1 0 1cd80bc7e5a20a6d1c5cff274bfcc198
+
+% 1 1 0 0032e268fd318a4f05cbb1ff5c16465c
+
+@ 0 2 0 13ff6595eb35d10d0dd87272a60f1f6e
++     将值插值进 `t"…"` 会以同样的方式显示它。
++     如需总是成功的调试形式，请使用 `inspect`。
+
+@ 0 5 0 1dde755339a597ef1c41be5de73f16cc
++ entry .inspect   通过值的 `Inspectable`，将其呈现为供程序员阅读的无歧义文本
++     这是对任何值的扩展方法：`value.inspect` 即 `Inspectable.text(value)`，而由于 `Inspectable.derived` 覆盖所有类型，它永远不会编译失败。
++     呈现紧凑、只占一行，在代价不高时类似合法的源代码，并显示与值的*静态*类型相关的每一部分状态。
+
+% 2 1 0 119dd9d57f4d10de14d355d80cdd53cf
+
+% 3 1 0 16ccddd5d6ba37f9009aeafb974de351
+
+% 0 1 0 03fa5901efb65de71e683184e9d8c495
+
+% 0 1 0 0653ee11dfccbfd516a531cd598c5291
+
+% 0 1 0 105a22e9676c91e516b8b81a043ca0e3
+
+% 1 1 0 08190b77954f25040abb8f5e3f389def
+
+@ 0 2 0 114588057a63ad3115ba291f0d5076d0
++     呈现取决于静态类型：类型为 `Any` 的值会回退到 `toString`，并以 `“…”` 标记。
++     记法和回退链见 `Inspectable`。
+
+@ 0 1 0 06349c54a2554f4b1227467330725e1f
++ entry .Showable   可以展示给人的值的类型类，写作 `value is Showable`
+
+% 1 1 0 1fbaf02aa5793e3d0fa2c57da4cc73ca
+
+@ 0 3 0 0abfad0d29408e650f3398a0571837e1
++       这是单方法的类型类 `text(value: Self): Text`，因此实例写成从值到其文本的函数。
++       它扩展 `Communicable`，因此可显示的值也可以作为其文本的 `Message` 被替换进 `m"…"` 消息。
+
+% 2 1 0 1f4bb862fc855677140227f827c58266
+
+% 3 1 0 0e5f4a725071df2e105f97e04da8e047
+
+% 0 1 0 1841ca150a515c480de45042492abd6c
+
+% 0 1 0 19067f76d063d6950b5af7a09323234a
+
+% 0 1 0 1a513ea61155c70f1495dca709b281f6
+
+% 1 1 0 18d7e4237ef2bf97124ff506250319e2
+
+@ 0 6 0 1201d9bed979d90d1618001b2894dc35
++       `Showable` 有意要求严格：没有派生，也没有回退，因此一个类型只有在有人决定了它应当如何呈现时才能显示。
++       伴生对象中有以下类型的实例：基本类型、`Text`、`String`、`Message`、`Memory`、每个 Scala `enum`、每个 `Textualizable` 类型，以及 Soundness 的集合。
++       `Double` 需要作用域中有 `DecimalConverter`，`Boolean` 需要 `Affirmation`，因为两者都没有与上下文无关的唯一形式。
+
+@ 0 3 0 077a8dd82832cf5d0d8b2b95373a23c7
++       对于带细化的类型（带品牌的列表、字面量类型），实例应针对其主体的子类型编写（`[self <: Play] => self is Showable`），因为 `Self` 是不变的，`Play` 的实例并不覆盖带细化的 `Play`。
+
+% 0 1 0 054a0f456fff0d1b16950c7c5cd08d95
+
+% 0 1 0 03ec24798555039b13e1fae02f0e6f64
+
+% 0 1 0 0460ddf9c54dc8281e6b24cfd987bed0
+
+@ 0 19 0 0af697bd3d4a2ce016ad7713dbc5ff9f
++   entry #text   将值呈现为文本
++   entry #message   将值呈现为 `Message`，用于 `m"…"` 插值
++       即 `Message(text(value))`：正是这个成员使每个 `Showable` 都成为 `Communicable`。
++   entry .showable   通过文本化显示任何 `Textualizable` 值
++   entry .text   原样显示 `Text` 及其任何子类型
++   entry .string   将 `String` 显示为其文本
++   entry .char   将 `Char` 显示为单字符文本
++   entry .long   以十进制显示 `Long`，不带后缀
++   entry .int   以十进制显示 `Int`
++   entry .short   以十进制显示 `Short`
++   entry .byte   以十进制显示 `Byte`
++   entry .message   将 `Message` 显示为其文本
++   entry .double   通过作用域中的 `DecimalConverter` 显示 `Double`
++       需要一个 `DecimalConverter`，由它决定位数、记数法和舍入；没有它，`Double` 完全无法显示。
++   entry .boolean   通过作用域中的 `Affirmation` 显示 `Boolean`
++       需要一个 `Affirmation`，从 `affirmations` 包中按名称导入或在本地定义；没有它，`Boolean` 完全无法显示，因为擅自决定 `true` 和 `false` 的呈现就是擅自假定了上下文。
+
+% 2 1 0 0966de77a20430741086d785b4e99957
+
+% 3 1 0 01b6ab3065e045d41aee90c4efe68236
+
+% 0 1 0 04e290179737ee7d1db4efe334260f63
+
+% 0 1 0 0c22667d13e53e261853f5c8672cf960
+
+% 1 1 0 0c7be37ba5e295a70f524c826e7de5b0
+
+@ 0 17 0 1dfd5e1328ddf9cf1a74d7f271ce246a
++   entry .option   显示 Scala `Option`：其值，或 `none`
++   entry .memory   通过 `Memory` 计数自身的 `text` 呈现来显示它
++   entry .enumeration   按名称显示任何 Scala `enum` 的分支
++       每个 `reflect.Enum` 都显示为其 `toString`，即分支的名称，因此除非需要不同的形式，枚举无需自己的实例；带参数的分支会连同其参数一起显示，但不带标注。
++   entry .set   将 `Set` 显示为 `{a, b}`，每个元素都以 show 形式显示
++   entry .list   将 `List` 显示为 `[a, b]`，每个元素都以 show 形式显示
++       针对 `List[element]` 的子类型编写，因此带品牌的列表（已知非空的 `List`）也能显示。
++   entry .sequence   将 `Sequence` 显示为 `[ a b ]`，每个元素都以 show 形式显示
++   entry .none   将 `None` 显示为 `none`
++   entry .specializable   按小写名称显示 `Specializable` 标记
++   entry .zerary   以从零开始的形式显示 `Ordinal`，即 `3.₀`
++   entry .typeRepr   在宏中将宏的 `TypeRepr` 显示为其源代码名称
++       需要 `Quotes`；名称的呈现方式与 stenography 呈现类型的方式相同。
++   entry .meta   在宏中将宏的 `Type[T]` 显示为其源代码名称
+
+@ 0 1 0 1170b2b48d2e95311042291b2f4b510b
++ entry .Inspectable   调试呈现的类型类，每个值都具有它，写作 `value is Inspectable`
+
+% 1 1 0 09ab7b24ba2ec69305bb3b8ceef5505a
+
+@ 0 4 0 0ddff45bb7141f170ac0cef04dac2533
++       这是单方法的类型类 `text(value: Self): Text`，将值呈现为供程序员在调试器或测试输出中阅读的形式。
++       与 `Showable` 不同，它是全的：当一个类型没有自己的实例时，`derived`（继承自 `Inspectable2`）会提供一个，依次尝试
+
+@ 0 6 0 1fb818e5fa78f5b413605197cb234ac1
++       1. `Encodable in Text`，借用并以 `⸤…⸥` 标记；
++       2. `Showable`，借用并以 `⸢…⸣` 标记；
++       3. `Optional` 类型（`Mandatable`），呈现为 `｢value｣` 或 `○`；
++       4. 通过 `Derivation` 的结构化呈现，适用于任何 case class、枚举或密封层次结构；
++       5. 值的 `toString`，以 `“…”` 标记。
+
+@ 0 3 0 108bf24c180c100b1fa76ac4dec30250
++       类型伴生对象中或此处的原生实例优先于以上所有方式。
++       这些标记是有意为之的：借用的呈现是传输形式或面向人的形式，而不是调试形式，读者应当一眼就能看出某个类型缺少实例。
+
+% 2 1 0 070380bf901687a108c3159f1d566bc0
+
+% 3 1 0 01a167ade2b612fa1059c935cb7d746f
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 1475fadc6b8c1dc11297158ef4566fe2
+
+% 0 1 0 04a0c3e0d6dd71a30a5c2663899a1e3b
+
+% 0 1 0 1c7de876e001e2d30178b0071e0f869c
+
+% 0 1 0 120c0a0b7482f9760b1f695d7a0c41b4
+
+% 0 1 0 0c472f89b5ecfde5140bd594c5feba5a
+
+% 1 1 0 0a5b6c611d6d0b8f0da3f1ddca05a4f6
+
+@ 0 10 0 10ab48c31d52ca761acb54ebf94c8948
++       由于缺少实例从不是编译错误，覆盖范围可能会悄无声息地退化：某个类型增加了一个细化，其呈现就降为 `toString`。
++       `.fallbacks` 正是库的测试用来断言以防止这种情况的工具。
++       实例应针对其主体的子类型编写（`[self <: Port] => self is Inspectable`），因为 `Self` 是不变的，`Port` 的实例并不覆盖 `Port over Tcp`；对于带参数的主体，应用通配符绑定参数（`[self <: Cookie[?]]`），而不是使用第二个类型参数，后者可能悄无声息地无法解析。
++       不透明集合 `List`、`Set`、`Map` 和 `Chain` 是例外，它们保留精确的 `Self`。
++       实例应放在主体的伴生对象中，而不是顶层，这样无需导入就能找到它。
+
+@ 0 1 0 14c0d25300a6ac3210d3be7e8aff6281
++       所用的记法，按类别列出：
+
+@ 0 9 0 0581782c39906d280135a921ac1b6073
++       - 容器：`[a, b]` 列表，`{a, b}` 集合，`{k → v}` 映射，`⟦k → v⟧` 账簿，`⟨ a b ⟩` 序列，`⦋…⦌` 数组，`⁅…⁆` 冻结数组，`a ⋰ b ⋰ ..?` 惰性链
++       - 积类型：`Name(field:value ╱ field2:value)`，`(a ╱ b)` 元组，`(name:value ╱ …)` 具名元组
++       - 可选性：`｢value｣` 存在，`○` 缺失
++       - 文本：`t"…"` 带转义，`'x'` 字符
++       - 数值：`3`、`3L`、`3.1F`、`3.toByte`、`BigInt(42)`；定长数值为 `42ᵘ⁸`、`-7ˢ³²`、`2Fᵇ⁸`、`3.14ᶠ⁶⁴`
++       - 位置：`1ˢᵗ` 序数，`1ˢᵗ‥5ᵗʰ` 区间，`⟪4:8+5⟫` 跨度
+
+% 0 1 0 028c9fa119d499711832636bca3efefc
+
+% 0 1 0 0c7de4a9cef4e99c108787751c26e02d
+
+% 0 1 0 1ec09ea5f9520b9317bc0800d08a225d
+
+@ 0 9 0 1c45a5bcb66a916515cb3ec319ace763
++   entry #text   将值呈现为供程序员阅读的形式
++   entry #contramap   另一种类型的实例，通过将其转换为本类型来呈现
++       `inspectable.contramap[Celsius](_.degrees)` 将 `Celsius` 呈现为其度数的呈现形式。
++       该 lambda 必须是纯的。
++   entry .fallbacks   一组呈现中非原生的那些：带有 `“…”`、`⸢…⸣` 或 `⸤…⸥` 的呈现
++       按顺序返回包含借用呈现或 `toString` 呈现的三种标记之一的那些呈现。
++       库的测试断言其自身的类型都以原生方式检视，并应同时配上一个用例，断言未覆盖的类型*确实*会被报告出来，这样该检查就不会空洞地通过。
+
+% 2 1 0 1bebacdbbe0026080227a512d07915b9
+
+% 3 1 0 1b812eff558d441f19b36d79cf4e60be
+
+% 0 1 0 1d71d747992e8e1e1ba35accae1a5a78
+
+% 1 1 0 1de19ba0e6b6d4600d09671c9c712d39
+
+@ 0 7 0 0995a3a29476b0ec13312c3ef7495be4
++   entry .marker   某个字符是否为回退标记 `“`、`⸢` 或 `⸤` 之一
++   entry .escape   按 Scala 字面量中的写法转义字符
++       换行符、制表符、回车符、反斜杠、双引号、单引号、退格符和换页符使用各自的反斜杠转义；可打印 ASCII 以外的任何其他字符变为 `\uXXXX`。
++       当第二个参数为 `true` 时，转义字符写作 `\e`，与 `t"…"` 字面量中一样。
++   entry .Derivation   针对积类型和和类型的 `Inspectable` 结构化派生
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 80 0 0569e24877c6fe891be71a3762c98b58
++         这是一个 wisteria `Derivable[Inspectable]`。
++         积类型呈现为 `Name(field:value ╱ …)`，每个字段由其静态类型的实例呈现；没有字段的 case object 呈现为其裸名称；元组省略名称和标注。
++         和类型呈现为该值所属的变体。
++         对于任何具有 `Reflection` 的类型，`derived` 都会用到它；对于每个 Scala `enum`，`Inspectable.enumeration` 会用到它。
++     entry .conjunction   积类型的呈现：其名称及带标注的字段
++     entry .disjunction   和类型的呈现：其变体的呈现
++   entry .char   将 `Char` 呈现为带引号、经转义的字面量 `'x'`
++   entry .int   以十进制呈现 `Int`
++   entry .long   呈现 `Long`，带 `L` 后缀，如 `3L`
++   entry .byte   将 `Byte` 呈现为 `3.toByte`
++   entry .short   将 `Short` 呈现为 `3.toShort`
++   entry .string   将 `String` 呈现为经转义的字符串字面量 `"…"`
++   entry .text   将 `Text` 呈现为经转义的 `t"…"` 字面量
++       每个控制字符和引号都按 Scala 的方式转义，转义字符则写作 `\e`，因此包含换行符的文本与包含 `\` 和 `n` 的文本可以区分开，并且该呈现可以粘贴回代码中。
++   entry .float   呈现 `Float`，带 `F` 后缀，其无穷大和 NaN 按名称呈现
++   entry .double   呈现 `Double`，其无穷大和 NaN 按名称呈现（`Double.NaN`）
++   entry .boolean   将 `Boolean` 呈现为 `true` 或 `false`，无需 `Affirmation`
++   entry .unit   呈现 `()`
++   entry .bigInt   将 `BigInt` 呈现为 `BigInt(42)`
++   entry .bigDecimal   将 `BigDecimal` 呈现为 `BigDecimal(1.5)`
++   entry .unset   将 `Unset` 呈现为 `○`
++   entry .reflectEnum   按 `toString` 呈现静态类型为 `reflect.Enum` 的值
++       仅适用于类型就是 `reflect.Enum` 本身的值，这种值没有可用的反射信息；已知枚举类型的值由 `.enumeration` 以结构化方式呈现。
++   entry .enumeration   派生任何 Scala `enum` 的呈现，带字段标注：`Circle(radius:5)`
++       它优先于每个枚举都具有的借用 `Showable` 呈现（那样会丢失标注），同时让位于自己定义了实例的枚举。
++   entry .tuple   将元组呈现为 `(a ╱ b)`，每个元素由其静态类型的实例呈现
++       它是 inline 的，因为它遍历召唤处已知的元素类型。
++       类型为裸 `Tuple` 的值，其元素未知，会呈现为其 `toString`，并以 `“…”` 标记。
++   entry .namedTuple   将具名元组呈现为 `(name:a ╱ age:b)`
++       具名元组是不透明别名，`Derivation` 无法看到其内部，因此它有自己的这个实例。
++       没有原生实例的元素会单独降级。
++   entry .u8   呈现 `U8`，带后缀 `ᵘ⁸`：`200ᵘ⁸`
++   entry .u16   呈现 `U16`，带后缀 `ᵘ¹⁶`
++   entry .u32   呈现 `U32`，带后缀 `ᵘ³²`
++   entry .u64   呈现 `U64`，带后缀 `ᵘ⁶⁴`
++   entry .s8   呈现 `S8`，带后缀 `ˢ⁸`
++   entry .s16   呈现 `S16`，带后缀 `ˢ¹⁶`
++   entry .s32   呈现 `S32`，带后缀 `ˢ³²`：`-7ˢ³²`
++   entry .s64   呈现 `S64`，带后缀 `ˢ⁶⁴`
++   entry .b8   将 `B8` 呈现为两位大写十六进制数字，带后缀 `ᵇ⁸`：`2Fᵇ⁸`
++   entry .b16   将 `B16` 呈现为四位补零的十六进制数字，带后缀 `ᵇ¹⁶`
++   entry .b32   将 `B32` 呈现为八位补零的十六进制数字，带后缀 `ᵇ³²`
++   entry .b64   将 `B64` 呈现为十六位十六进制数字，带后缀 `ᵇ⁶⁴`
++   entry .f32   呈现 `F32`，带后缀 `ᶠ³²`，其无穷大呈现为 `∞` 和 `-∞`
++   entry .f64   呈现 `F64`，带后缀 `ᶠ⁶⁴`：`3.5ᶠ⁶⁴`
++   entry .q32   将 `Q32` 有理数呈现为分数，带后缀 `ʳ³²`：`3/4ʳ³²`
++   entry .q64   将 `Q64` 有理数呈现为分数，带后缀 `ʳ⁶⁴`
++   entry .bcd   呈现 `Bcd` 十进制数，带后缀 `ᵇᶜᵈ`
++   entry .decimal   呈现 `Decimal`，带后缀 `ᵈ`：`3.14ᵈ`
++   entry .ordinal   以从一开始的形式呈现 `Ordinal`，带英文后缀：`1ˢᵗ`、`3ʳᵈ`、`11ᵗʰ`
++       从一开始的数字是程序员计数时使用的数字；从零开始的形式是实现细节，显示它会使每个呈现都差一。
++   entry .interval   将 `Interval` 呈现为 `1ˢᵗ‥5ᵗʰ`，为空时呈现为 `∅`
++   entry .span   按形状呈现 `Span`：`⟪∅⟫`、`⟪@4+5⟫`、`⟪4:8+5⟫`、`⟪4‥8⟫` 或 `⟪4:8‥6:2⟫`
++       `Span` 将五种范围之一打包进一个 `Long`：空、偏移量和长度、行列及长度、整行范围，或一个区域。
++       数字从一开始。
++   entry .memory   精确呈现 `Memory` 计数，如 `4194304B`，从不舍入
++   entry .digit   呈现 `Digit`，带后缀 `ᵈᵍ`
++   entry .message   将 `Message` 呈现为 `m"…"`
++   entry .set   将 `Set` 呈现为 `{a, b}`
++   entry .map   将 `Map` 呈现为 `{k → v, …}`，其条目没有有意义的顺序
++   entry .ledger   将 `Ledger` 呈现为 `⟦k → v, …⟧`，按插入顺序
++       其括号与 `Map` 不同，因为 `Ledger` 的顺序有意义而 `Map` 的没有，呈现必须表明值是哪一种。
++   entry .sequence   将 `Sequence` 呈现为 `⟨ 1 2 3 ⟩`
++   entry .list   将 `List` 呈现为 `[a, b]`
++   entry .array   将 Scala 数组呈现为 `⦋…⦌`，带元素种类和下标索引
++       前缀指明 JVM 元素类型（`Int` 为 `🅸`，对象为 `🅻`，……）和维数，每个元素前面是以下标数字表示的索引。
++   entry .arraySeq   将可变的 `ArraySeq` 呈现为数组，以 `⦌ₛ` 结尾
++   entry .stream   惰性呈现 `Chain`：`1 ⋰ 2 ⋰ 3 ⋰ ..?`，从不强制求值
++       至多显示三个已强制求值的元素；未强制求值的尾部为 `∿∿∿`，结尾为 `⯁`。
++   entry .frozenArray   将冻结的 `Array[element]^{}` 呈现为 `⁅…⁆`，带下标索引
++   entry .option   将 Scala `Option` 呈现为 `Some(3)` 或 `None`
++   entry .none   呈现 `None`
+
+@ 0 1 0 0b7f9fd99975fa261dfdc16d8d3e0e2e
++ entry .Inspectable2   `Inspectable.derived` 所在的较低优先级位置，即全的回退
+
+% 1 1 0 099878106ac570f207b86fa846b538bb
+
+@ 0 8 0 1421eb500c42c89607032f3b70a8c30b
++       这是 `Inspectable` 的伴生对象所扩展的特质，使 `derived` 的优先级低于伴生对象中编写的每个实例。
++       不直接使用；其 `derived` 通过伴生对象找到。
++   entry #derived   适用于任何没有实例的类型的实例：借用、派生或 `toString`
++       依次尝试 `Encodable in Text`（以 `⸤…⸥` 标记）、`Showable`（以 `⸢…⸣` 标记）、`Optional` 类型（`｢value｣` 或 `○`）、`Reflection`（通过 `Inspectable.Derivation` 进行结构化呈现），最后是值的 `toString`（以 `“…”` 标记）。
++       编码形式经过转义或编码的类型必须定义自己的实例，因为借用的形式会产生误导。
+
+% 2 1 0 07bd94bab987c04e0c039f20e487ab02
+
+% 3 1 0 10e26d299070d6281cc722d222d5c873
+
+% 0 1 0 11da9e1c35c709420b6404557d3f081e
+
+% 0 1 0 035881435be41cc403fe04226e3aef5e
+
+% 1 1 0 013e7d731d62d9a91a45be4bb9072a4f
+
+@ 0 1 0 15e01e2786c03ac61f5d7ebaa136afb8
++ entry .Affirmation   `Boolean` 显示时所用的一对词：`yes`/`no`、`on`/`off`……
+
+% 1 1 0 0681e9a5657a6b65043d2ea736938da4
+
+@ 0 3 0 0a7e0b3da22e475a03c39528a002e595
++       这是一个由两段文本组成的 case class，作为上下文值选择：`Showable.boolean` 需要它，因此 `Boolean` 只有在上下文说明了如何显示之后才能显示。
++       `affirmations` 包提供了四个，每个都按名称导入；任何其他的词对只需一行 given。
+
+% 2 1 0 1980f91307a0d8bc087bd93315cf6d0a
+
+% 3 1 0 0ffc3b9fc5bcb5361b36f287b3b0c329
+
+% 0 1 0 17ce223a7128eaab1b6a378e3d2ca72b
+
+% 0 1 0 119c1ee8696ed6cf1ec4696b95885c03
+
+% 1 1 0 1f58794f81ee33161442b4ef6ff32cfc
+
+% 0 1 0 05bb0eed180a403f12eb0b5154ea815e
+
+@ 0 3 0 05143ffeca4595da16346ce5396ece6e
++   entry #yes   `true` 对应的文本
++   entry #no   `false` 对应的文本
++   entry #apply   布尔值对应的文本：为 `true` 时是 `yes`，否则是 `no`
+
+@ 0 1 0 0e15c824007761fc011d54b2f97afaf9
++ entry .affirmations   显示 `Boolean` 的标准方式，每种都是按名称导入的 given
+
+% 1 1 0 0dc4c3f64feb2f40053104edef3668a9
+
+@ 0 3 0 08380eadc990ddac1bdea571efc8a23c
++       显示 `Boolean` 需要 `Affirmation`，而默认情况下作用域中没有：`import soundness.*` 不会引入其中任何一个，因为 `import pkg.*` 不会导入 given，需要按名称导入一个。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0f02a63ef8e836b3160cacc04880deba
+
+% 1 1 0 1244e4fbd22b53f61fd25b7dd79e396f
+
+% 2 1 0 1efa81a507656bcc03ecbdc43a65a48f
+
+% 0 1 0 12a13ba3fc421d8200a8972225dcb95b
+
+% 0 1 0 0b45b0bec2b48f970b162d49ca17450a
+
+% 0 1 0 1263596568bf177c1877298821855e71
+
+% 1 1 0 071d924aa51010a3034c6cf34eb42582
+
+% 2 1 0 0c42cc5aed56f36514dd7fed76baa321
+
+% 0 1 0 0a674cd65b2ae611035354988ed7a030
+
+% 0 1 0 1d794d1c13653bee10212b344721eab9
+
+% 0 1 0 0dcada4ae6d2ad8d1b106189afd89927
+
+% 1 1 0 1c0eee80ec20787610b8dbf997cf49dc
+
+% 2 1 0 160f060b8acc1f760743271a89e4010a
+
+% 0 1 0 030eb204fe92383e07beb8d93516f75e
+
+% 0 1 0 08148be00d3bedb1126f4e778f34fe7b
+
+% 0 1 0 04edd3c03071d7dc1e30dde0fe9183c7
+
+% 1 1 0 02ea007cb2fc96c30d34f5d1067fb27e
+
+% 2 1 0 061e993975773ca5156469d02a9000b2
+
+% 0 1 0 1d0f0467c40618f819b4512bc40c636c
+
+% 0 1 0 0c81ff4a29a91fb91ccb297b2c9152d8
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 03ae70631e152b740eafc0592947c617
++   entry .yesNoAffirmation   将 `true` 显示为 `yes`，`false` 显示为 `no`
++   entry .onOffAffirmation   将 `true` 显示为 `on`，`false` 显示为 `off`
++   entry .trueFalseAffirmation   将 `true` 显示为 `true`，`false` 显示为 `false`
++   entry .oneZeroAffirmation   将 `true` 显示为 `1`，`false` 显示为 `0`

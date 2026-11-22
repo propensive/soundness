@@ -1,0 +1,937 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a81193df7d39ba70195f212044dabe8
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1aa35c85d608716d1e9e41e76f8b6361
++ info   nazwy, których reguły poprawności są częścią ich typu, sprawdzane podczas kompilacji kodu i w chwili nadejścia tekstu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 11c5ecbcabd3ef900252cc01cc95cf12
++     _Nomenclature_ reprezentuje nazwę – nazwę pliku, id elementu DOM, klasę CSS, gałąź Git,
++     id testu – jako `Name[plane]`: tekst, o którym wiadomo, że spełnia reguły przestrzeni nazw,
++     czyli **płaszczyzny**, do której należy. Płaszczyzna to typ znacznikowy z givenem
++     `Nominative`, który określa jej reguły jako przecięcie typów ograniczeń,
++     `MustNotContain["/"] & MustNotEqual[".."]`, a `Name` dla tej płaszczyzny istnieje tylko
++     wtedy, gdy jego tekst spełnia każdą z nich: literał zapisany interpolatorem `n"…"` jest
++     sprawdzany podczas kompilacji kodu, a tekst nadchodzący w czasie wykonania staje się `Name`
++     przez `Name[plane](text)` lub `text.as[Name[plane]]`, które zgłaszają `Name.Error`
++     wskazujący jedyną złamaną regułę. Posiadanie `Name[plane]` jest więc dowodem, że nazwa
++     jest poprawna w tej płaszczyźnie.
+
+% 2 1 0 0a126953ff56d1a2186c0cd02ffb8ced
+
+% 3 1 0 0072a091f3033bce0c88bfb38497e8f2
+
+% 4 1 0 196342a37369401d14003bdc18411299
+
+% 5 1 0 197b757df8de8ec410eec4e04b4f02a6
+
+% 2 1 0 142f07214e09e92d0b8142c18e527621
+
+% 0 1 0 0ba4425c353af124141a12adddaebe4a
+
+% 2 1 0 0e94c575118146b61588b4e9b14dfeee
+
+% 0 1 0 0ee9344f94f99bef00ecb0da117630d3
+
+% 0 1 0 0aaa2c4ab9511f620904ea17afaec2f1
+
+% 0 1 0 16870bca5cae5c1e1635d0c096a4e078
+
+% 1 1 0 07eae694fa15ef760d6e851b424bca6f
+
+@ 0 12 0 14fd707f5dce1be61c2c88ab1591c1f4
++     `Name` jest podtypem `Text`, więc przekazuje się go wszędzie tam, gdzie tekst, i jest równy
++     tekstowi, który opakowuje; jest kowariantny względem swojej płaszczyzny, więc `Name[A & B]`
++     nadaje się tam, gdzie wymagany jest `Name[A]` lub `Name[B]` – w ten sposób jeden literał
++     `n"…"` przyjmuje typ każdej płaszczyzny w zasięgu, której reguły spełnia. Reguły to obiekty
++     `Rule` sparowane z typami `Check` – `MustStart`, `MustNotStart`, `MustEnd`, `MustNotEnd`,
++     `MustContain`, `MustNotContain`, `MustNotEqual`, `MustMatch` i `MustNotMatch`, każdy
++     sparametryzowany literałem – oraz trzy reguły predykatowe sparametryzowane zamiast tego
++     własnym opisem: `JavaIdentifier`, `CssIdentifier` i `DomIdentifier`. Reguła potrafi się
++     opisać, więc błąd kompilacji dla złego literału i błąd czasu wykonania dla złych danych
++     wejściowych mówią to samo, tymi samymi słowami. Płaszczyzny `DomId`, `CssClass` i
++     `Required` są wbudowane; płaszczyzny systemu plików z galilei (`Linux`, `Windows`,
++     `MacOs`, …), płaszczyzna `Classpath` z hellenism i płaszczyzna `Probing` identyfikatorów
++     testów z probably są zdefiniowane w ten sam sposób.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     Biblioteka ma dwa zbiory źródeł:
+
+@ 0 2 0 11d745a0956fe91615839189b74b33a5
++     - `nomenclature.core` – `Name`, `n"…"`, `Nominative`, `Rule`, `Check`, reguły `Must…`,
++       reguły identyfikatorów i trzy wbudowane płaszczyzny. Kompiluje się dla JVM, Scala.js i
+
+% 0 1 0 09331aec56618cb8079b51ba08a1c73b
+
+@ 0 3 0 195552f7a0c6cf9b19060f49272edf22
++     - `nomenclature.lexicon` – `Moniker` i `Vocabulary`: przyjazne dla ludzi nazwy w postaci
++       `brilliant-leopard` dla małych liczb całkowitych, budowane z list słów wczytywanych z
++       dowolnego strumieniowalnego źródła.
+
+@ 0 6 0 16838e191ab5030218a0038979e52ee8
++     Given `Nominative` deklaruje się jako `inline given … = !!`: makra stojące za `n"…"` i
++     `Name[plane](…)` odczytują tylko jego *typ*, więc żadna instancja nigdy nie jest
++     konstruowana, a `!!` to wymazany zastępnik. Ponieważ `import pkg.*` nie importuje
++     givenów, płaszczyzna zadeklarowana w obiekcie towarzyszącym biblioteki jest znajdowana
++     przez zasięg niejawny, natomiast zadeklarowaną na najwyższym poziomie pakietu trzeba
++     zaimportować po nazwie. Wszystko jest eksportowane do modułu zbiorczego `soundness`.
+
+% 0 1 0 01344a9f049a555d0c49ac610582934a
+
+% 0 1 0 0643e424fdc197da0bda9b45a647ed2f
+
+% 0 1 0 1ad89318248b78430a4e47d6df514888
+
+% 0 1 0 11eaff0bc7ac00be13ab93ec3c900aee
+
+@ 0 1 0 182f502880dd33a9078ebcee50e4b150
++ entry .Name   tekst o udowodnionej poprawności w płaszczyźnie nazewnictwa: `Name[plane]`, podtyp `Text`
+
+% 1 1 0 00a6fce456d6d9fe06a1f50f85f2a68b
+
+@ 0 9 0 0a1b1f0d3a182c5f0ebb8c3682dd8c14
++       `Name[plane]` to typ nieprzezroczysty `nomenclature.internal.Name[plane]`, tutaj
++       eksportowany. Jest to `Text`, który przeszedł każdą regułę `plane`, gdzie `plane` jest
++       typem z givenem `Nominative` w zasięgu niejawnym. Nazwę tworzy się na trzy sposoby: `n"…"`
++       zapisuje literał i sprawdza go względem każdej płaszczyzny w zasięgu podczas kompilacji
++       kodu; `Name[plane](text)` sprawdza tekst czasu wykonania względem reguł jednej
++       płaszczyzny i zgłasza `Name.Error`, jeśli któraś reguła zawiedzie; a
++       `text.as[Name[plane]]` to to samo sprawdzenie przez klasę typów `Decodable`. Nazwa, która
++       istnieje, jest poprawna, więc kod przyjmujący `Name[Linux]` nigdy jej ponownie nie
++       waliduje. Składowe obiektu towarzyszącego – `Name.apply`, `Name.verify`, jego giveny,
++       `Name.Error` i `Name.Extractor` – są opisane pod `nomenclature.internal.Name`.
+
+% 2 1 0 0649bf3083c5aa1a1b3b0b120c4b1a64
+
+% 3 1 0 02ccc6c005f31236056bf3e24cca8798
+
+% 4 1 0 0fce983bd1155ef106dcfa0f0f8c4203
+
+% 5 1 0 13cbc429b504a4b802940ed9bf793b62
+
+% 2 1 0 13d4d0e6cce0469c14ba325a5926d0f0
+
+% 0 1 0 0c7de9437090032f037adf6445ae39c2
+
+% 0 1 0 1768d62f1b49c9551637474d70038f83
+
+% 0 1 0 1ab6f8485d99ca471401b55f52cc49d4
+
+% 0 1 0 0b5c7266730a487e09df8ccdb6528de2
+
+% 0 1 0 1a419a2b5ee70d901fa6700a6b7faf1c
+
+% 0 1 0 1d2f7064bf5ee66b18c92ec1ac87da42
+
+% 1 1 0 0ade400695c06c37104610b1f4d1b2d4
+
+@ 0 4 0 0d787a3835d3ce3b1bc0cf8b8810aadd
++       `Name` jest kowariantny względem swojej płaszczyzny, więc `Name[A & B]` jest `Name[A]` i
++       `Name[B]`: nazwa poprawna jednocześnie w kilku płaszczyznach ma za płaszczyznę ich
++       przecięcie. Dwie płaszczyzny o identycznych regułach są nadal różnymi typami, więc
++       `Name[Branch]` nie jest akceptowany tam, gdzie wymagany jest `Name[Tag]`.
+
+@ 0 4 0 098ac5480406e44912137dbd39553947
++       Reguły są sprawdzane w kolejności, w jakiej zapisuje je przecięcie płaszczyzny, a
++       zgłaszana jest pierwsza naruszona, więc błąd wskazuje jedną konkretną usterkę.
++       Sprawdzenie wykonują dla literału w czasie kompilacji, a dla tekstu w czasie wykonania,
++       te same predykaty `Rule.check`, więc oba nigdy się nie różnią.
+
+% 0 1 0 09e6b35af477e3391b3c66352b9c7211
+
+% 1 1 0 077394122ca21de8081afd2a7a21f653
+
+% 0 1 0 1bda394a07b49d8c072025e177e73cd5
+
+@ 0 7 0 1365b6b6b34cad0d04e4cf3caf6f919e
++ entry .n   interpolator `n"…"`: literał nazwy sprawdzany względem płaszczyzn w zasięgu podczas kompilacji kodu
++     `n"main"` to `Name`, którego płaszczyzną jest przecięcie wszystkich płaszczyzn z givenem
++     `Nominative` w zasięgu, których reguły literał spełnia, więc jeden literał nadaje się
++     wszędzie tam, gdzie wymagana jest którakolwiek z tych płaszczyzn, a jeśli żadna
++     płaszczyzna w zasięgu go nie akceptuje, jest to błąd kompilacji: _the name `.` is not a
++     valid identifier in any namespace in scope_. Przy oczekiwanym typie `Name[Tag]` literał
++     łamiący jedną z reguł `Tag` nie jest z nim zgodny, ponieważ `Tag` nie należy do
++     płaszczyzn, w których uznano go za poprawny.
+
+% 2 1 0 064bb4e989d4a34008554a0cb0f7b722
+
+% 3 1 0 0c2b4e383d1a18aa15e1514d18339501
+
+% 2 1 0 0374a95aed8876a3159cb7c8f2501535
+
+% 0 1 0 1b3ef768c8027e6100caf3a40bfe9d0c
+
+% 2 1 0 1944309d44ac0fa81feb08c31581b4c9
+
+% 0 1 0 0b22b168871babdd005557f30be306b7
+
+% 1 1 0 175a24bd0ff8647e1ac62bf8ae2a3469
+
+@ 0 5 0 1ede924ed7b5b7531c473bcec7693ad8
++     Interpolator nie przyjmuje podstawień `$`, ponieważ tekst musi być znany podczas
++     kompilacji kodu; tekst znany dopiero w czasie wykonania sprawdza się za pomocą
++     `Name[plane](text)`. Znaki literału są brane dosłownie, bez przetwarzania sekwencji
++     ucieczki. Jako wzorzec `case n"main" =>` dopasowuje `Name` równy literałowi, a literał jest
++     najpierw sprawdzany względem płaszczyzny wartości dopasowywanej.
+
+@ 0 4 0 00ad224a54d3e1d50b93f1e428c77575
++     To, które płaszczyzny są w zasięgu, decyduje o tym, co wywnioskuje `n"…"`: płaszczyzna
++     zadeklarowana w obiekcie towarzyszącym jest zawsze widoczna przez zasięg niejawny, a
++     własne płaszczyzny modułu zbiorczego – płaszczyzny systemu plików, `Classpath`, `Probing` –
++     należą do kandydatów, więc `n"…"` bez przypisanego typu ma szeroki typ przecięcia.
++     Zaostrzenie reguł płaszczyzny zawęża to, co akceptuje:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 03a59cc2657c83550a806c22dfd6c78b
++       label Jedna reguła: tag nie może być pusty
+
+% 1 1 0 0443393cb54732a807e5ab87f8f7f313
+
+% 2 1 0 04d52c503b2b09661ff207e587107fa7
+
+% 3 1 0 0274bf13f4b8d18603e381e4c812bf63
+
+% 0 1 0 13050599ca4490a60045e199c58a65a6
+
+% 0 1 0 1f2d618d49526bf20d2405d03db34126
+
+% 1 1 0 1bc3fda2041738f7179a8a46b4a1e2c2
+
+@ 0 1 0 0c34c3e1b27a18c0064085a33defd064
++       label Dwie reguły: nie może też zawierać kropki
+
+% 1 1 0 0f0a0b364f7ec55217ba2ccada971430
+
+% 2 1 0 0d16dc492f2d504305a735dc9aba1688
+
+% 3 1 0 0fd3a3206f667bd01063adcee7ac75f8
+
+% 0 1 0 016b6322202214a11fcea33534565c86
+
+% 1 1 0 0c0dac91dff89b611bddf5890def1235
+
+% 0 1 0 043e50fb48cb5a160375b25e441d19f6
+
+% 1 1 0 189c7b61611f2aef1ec56557f86e2bfd
+
+@ 0 1 0 11486c5272de72ee07b4bd819c7ce968
++       label Trzy reguły: musi też pasować do wzorca
+
+% 1 1 0 0468020480e23a1218b4b7871869a797
+
+% 2 1 0 1fcea5dde2a9cee31a580262eb35b687
+
+% 3 1 0 1f0f7be042cf095b1d2ae185a8a8af67
+
+% 0 1 0 1f86c349a92a6c790cc917f9280d3f3d
+
+% 0 1 0 0a5db3e22d7e53bc1d6b1b5d0414e3d4
+
+% 1 1 0 14f2451839dd32fa0f9a1dd66b368635
+
+% 0 1 0 0fbeaf30998b66e70bb279820d04b049
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 04b75a197104e31b05d2dc8d2d55cae5
++ entry .Nominative   klasa typów nadająca płaszczyźnie jej reguły: `plane is Nominative under rules`
+
+% 1 1 0 006554dc7bde605a028482d775f4d26c
+
+@ 0 7 0 11916b823d3807600e14daf9ce6cbe8c
++       `Nominative` to `Typeclass`, którego `Self` jest płaszczyzną, a `Limit` (z `Limited`,
++       zapisywany aliasem `under`) – regułami płaszczyzny: przecięciem typów `Check`, z których
++       każdy jest regułą zastosowaną do literału, na przykład
++       `MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]`. Makra
++       stojące za `n"…"`, `Name[plane](text)` i `text.as[Name[plane]]` przywołują given dla
++       płaszczyzny i odczytują jego typ `Limit`, aby ustalić, które reguły uruchomić, w
++       kolejności, w jakiej są zapisane.
+
+% 2 1 0 123f7c0a6e6d7c2a042747a370a575f6
+
+% 3 1 0 19d91c6bff362471039db4ac593f3c5f
+
+% 2 1 0 067f04405252bb4d1089cbfb87ae9afe
+
+% 0 1 0 0247abd22b057aec1166dc6929d21a15
+
+% 0 1 0 1806acb40e4d42d3072d7a6203d2e79b
+
+% 0 1 0 0b172320816daf081147f247b69aee55
+
+% 1 1 0 061d0aa6b92a393119270d9c14b91e5a
+
+@ 0 7 0 0db1e88bb3d33cde0da130f56f901566
++       Given deklaruje się jako `inline given … = !!`: odczytywany jest tylko jego typ, więc
++       żadna instancja nie jest konstruowana, a `!!` zastępuje wartość. Należy on do obiektu
++       towarzyszącego płaszczyzny, gdzie zasięg niejawny znajduje go bez importu; płaszczyzna z
++       aliasem `Rules`, jak płaszczyzny systemu plików, pozwala ponownie użyć tych samych reguł
++       w typie elementu `Path`. Reguły, której parametr nie jest typem literału napisowego, nie
++       da się obliczyć w czasie kompilacji: `n"…"` pomija taką płaszczyznę, a
++       `Name[plane](text)` i `Name.verify` zgłaszają ją jako zły typ.
+
+% 0 1 0 0235f0d0e7c37aa6091b8a6b9e188797
+
+% 1 1 0 1775991a0074c67f03089b757197e37b
+
+@ 0 4 0 06aea983922f91df0ba1fa026682d4db
++   entry .apply   `Nominative[plane, rules]()`: instancja czasu wykonania, dla kodu, który potrzebuje wartości
++       Tworzy instancję `plane is Nominative under rules`. Makra odczytują typ givena, a nigdy
++       jego wartość, więc given płaszczyzny to zwykle `!!`; ten konstruktor jest dla givena,
++       który musi być rzeczywistą wartością, na przykład gdy jest przekazywany jawnie.
+
+@ 0 1 0 05678f5acee592091d1f0f37e10d26a4
++ entry .Rule   czym jest obiekt ograniczenia: predykatem na nazwie i opisującą go frazą
+
+% 1 1 0 11f3ec89c728b75c0c19ae832a1d0370
+
+@ 0 7 0 1a2503367291bdce0e8791044ea6a525
++       Każde ograniczenie, `MustStart`, `MustNotContain`, `CssIdentifier` i pozostałe, to
++       obiekt rozszerzający `Rule` o dwie rzeczy: `#check`, predykat nazwy i parametru reguły,
++       oraz `#describe`, który zamienia parametr we frazę używaną przez błąd, _must start with
++       x-_. Obok obiektu jest zapieczętowany trait o tej samej nazwie rozszerzający
++       `Check[parameter]`, który jest typem zapisywanym w regułach płaszczyzny; makra znajdują
++       obiekt jako obiekt towarzyszący traitu i wywołują na nim `check`, w czasie kompilacji dla
++       literału i w czasie wykonania dla tekstu.
+
+@ 0 1 0 1e2b8ae8da83a65a0eb6a60bad32e7cd
++       Nowa reguła to taka para:
+
+% 2 1 0 1013915bfc3a6e8b0c43b8ecf9c88f82
+
+% 3 1 0 0efc3b5287da70b8167a66fa98832225
+
+% 0 1 0 0c5d5e7ea210cf94045cf08256727b8e
+
+% 0 1 0 0eb265db8283f3f718966ce3df0858fd
+
+% 0 1 0 1a9ab344a61b79000eefb9d0b2b362eb
+
+% 0 1 0 130e254d6ed06a8c08074e46274aacb5
+
+% 1 1 0 1aec9c31192efd5112ec03fba999ce6b
+
+@ 0 5 0 05e914f7e5db138f13ef270814359297
++       Opis jest częścią reguły, a nie jest zapisywany przy każdym użyciu, więc błąd kompilacji
++       dla złego literału i `Name.Error` w czasie wykonania mówią to samo. Parametr reguły jest
++       zawsze typem literału napisowego, odczytywanym jako tekst; reguła, która nie ma
++       naturalnego parametru – jak `JavaIdentifier` – przyjmuje zamiast tego jako parametr opis
++       do użycia w błędzie.
+
+% 1 1 0 1e77b294ef1339b612498ec9fc818bcb
+
+% 1 1 0 010702b9e894530e0583925a28b3690b
+
+@ 0 7 0 06ba788de8be83631488d3f8cf41b555
++   entry #describe   fraza, z którą zgłaszane jest naruszenie, utworzona z parametru reguły
++       Funkcja `Text => Message`: dla `MustNotStart` i parametru `0` – _must not start with 0_.
++       Komunikat `Name.Error` to _the name … is not valid because it_, a po nim ta fraza.
++   entry #check   czy nazwa spełnia regułę: `(name, parameter) => Boolean`
++       Predykat przyjmujący tekst kandydata i parametr reguły. Wywołuje go w czasie wykonania
++       `Name[plane](text)`, a w czasie kompilacji makro dla literału `n"…"`.
+
+@ 0 6 0 0eb2f3b37e094ed81e8d918f99070c0c
++ entry .Check   typ reguły zastosowanej do jej parametru: `MustStart["x-"]` jest `Check["x-"]`
++     Trait, który rozszerza zapieczętowany trait reguły, sparametryzowany literałowym
++     parametrem reguły. Reguły płaszczyzny to przecięcie typów `Check`, a makra rozkładają to
++     przecięcie na jego składowe `Check`, odczytują parametr każdej jako stałą napisową i
++     znajdują obiekt `Rule` o tej samej nazwie. `Check` nigdy nie jest instancjonowany: jest
++     wyłącznie opisem na poziomie typów.
+
+@ 0 3 0 0d3a9f4f371d12fc0323b5e35a84d272
++ entry .MustStart   reguła, że nazwa zaczyna się podanym tekstem: `MustStart["x-"]`
++     _must start with x-_. Cały prefiks musi znajdować się na początku: `x-ray` i samo `x-`
++     przechodzą `MustStart["x-"]`, a `ray-x-` nie.
+
+% 2 1 0 1e4043df10614e1f02b4a12018d1b92c
+
+% 3 1 0 14337f7cc6a81db61314457d75393d42
+
+% 4 1 0 0178bd1b18ef85cc12a4be1779455a84
+
+% 5 1 0 08688194ec5e0da0161859205cfb9862
+
+% 0 1 0 1035460a96b3c1e711bf3b21be85a0eb
+
+% 0 1 0 05d3d8f607196879036df640cc06fc4d
+
+% 0 1 0 17eb14cd24546e7a0ae79932e77480c2
+
+% 0 1 0 04e57081824689851f3319965e90b055
+
+% 0 1 0 1d1705e7257398c21f13232eadcceb29
+
+% 1 1 0 01dbbaa9b134f3c115d3971e6def14b0
+
+@ 0 4 0 1494423d6e22d1560fc44a103f5f9fee
++ entry .MustNotStart   reguła, że nazwa nie zaczyna się podanym tekstem: `MustNotStart["0"]`
++     _must not start with 0_. Dopełnienie `MustStart`: nazwa, której pierwsze znaki są
++     parametrem, nie przechodzi, a każda inna przechodzi, łącznie z taką, która zawiera ten
++     tekst gdzie indziej.
+
+@ 0 3 0 0c46ca0571306a6e16300ac9d7c1b106
++ entry .MustEnd   reguła, że nazwa kończy się podanym tekstem: `MustEnd["!"]`
++     _must end with !_. Nazwa, której ostatnie znaki są parametrem, przechodzi; `hello!9` nie
++     przechodzi `MustEnd["!"]`.
+
+@ 0 3 0 16fc6c73f76c6cee1712b13e07b4595f
++ entry .MustNotEnd   reguła, że nazwa nie kończy się podanym tekstem: `MustNotEnd["z"]`
++     _must not end with z_. `quartz` nie przechodzi `MustNotEnd["z"]`; `zebra` i `quartz-a`
++     przechodzą, ponieważ tekst jest zabroniony tylko na końcu.
+
+@ 0 3 0 10154b770e4430cc0af10b5f77f95242
++ entry .MustContain   reguła, że nazwa zawiera podany tekst w dowolnym miejscu: `MustContain["-"]`
++     _must contain -_. Tekst może być na początku, w środku lub na końcu: `main-nav`, `-nav` i
++     `main-` przechodzą `MustContain["-"]`, a `mainnav` nie.
+
+@ 0 3 0 028f646d3507cc6d007798652c4bed34
++ entry .MustNotContain   reguła, że nazwa nigdzie nie zawiera podanego tekstu: `MustNotContain["/"]`
++     _must not contain /_. Reguła, której płaszczyzny systemu plików używają, aby zabronić
++     separatora wewnątrz elementu ścieżki, a id DOM – aby zabronić spacji.
+
+@ 0 6 0 0aa4c625adb15b7b0f8ddbb0e0d77a8d
++ entry .MustNotEqual   reguła, że nazwa nie jest dokładnie podanym tekstem: `MustNotEqual[".."]`
++     _must not equal .._ lub, dla pustego parametru `MustNotEqual[""]`, _must not be empty_.
++     Typowa postać reguły niepustości i wykluczania specjalnych nazw zastrzeżonych przez
++     przestrzeń nazw: płaszczyzny systemu plików zapisują `MustNotEqual["."] & MustNotEqual[".."]
++     & MustNotEqual[""]`. Nie ma `MustEqual`, ponieważ płaszczyzna z jedną poprawną nazwą nie
++     jest przestrzenią nazw.
+
+@ 0 6 0 1a729d1d8279268c0e11d886096776f6
++ entry .MustMatch   reguła, że nazwa w całości pasuje do wyrażenia regularnego: `MustMatch["[a-z]+"]`
++     _must match [a-z]+_. Parametr jest wyrażeniem regularnym Javy, a dopasowanie jest
++     zakotwiczone na obu końcach, tak jak w `String.matches`: `MustMatch["a+"]` akceptuje `aaa`
++     i odrzuca `baa` oraz `aab`, w których wzorzec występuje tylko wewnątrz nazwy. Pusta nazwa
++     nie przechodzi wzorca „jeden lub więcej”. Po tę regułę należy sięgnąć, gdy alfabet
++     przestrzeni nazw jest klasą znaków: tagi testów z probably to
++     `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`.
+
+@ 0 5 0 1c237dc2c577061905a24806fbc97f00
++ entry .MustNotMatch   reguła, że nazwa nie pasuje w całości do wyrażenia regularnego: `MustNotMatch["[0-9]+"]`
++     _must not match [0-9]+_. Dopełnienie `MustMatch`, z tym samym zakotwiczeniem: `123` nie
++     przechodzi `MustNotMatch["[0-9]+"]`, a `1a3` przechodzi, ponieważ wzorzec nie pasuje do
++     całej nazwy. Płaszczyzna `Classpath` używa `MustNotMatch["[0-9].*"]`, aby zabronić cyfry na
++     początku.
+
+@ 0 8 0 1d99228f7d54714106a46a9227af5e95
++ entry .JavaIdentifier   reguła, że nazwa jest identyfikatorem Javy, sparametryzowana swoim opisem
++     _must be a valid Java identifier_, dla `JavaIdentifier["a valid Java identifier"]`.
++     Sprawdzenie odpowiada definicji z `java.lang.Character`: niepusta nazwa, znak mogący
++     rozpoczynać identyfikator, a po nim znaki mogące być częścią identyfikatora; słowa
++     kluczowe nie są wykluczane. W przeciwieństwie do reguł `Must…` parametr nie jest czymś, z
++     czym się porównuje, lecz frazą, której powinien użyć błąd – taką postać przyjmuje reguła,
++     której sprawdzenie jest własnym predykatem, a nie porównaniem z literałem. To reguła
++     płaszczyzny `Probing` z probably, płaszczyzny identyfikatorów testów.
+
+@ 0 7 0 1e40ec84ae07d1dd11123c7938c2e6f5
++ entry .CssIdentifier   reguła, że nazwa jest identyfikatorem CSS, sparametryzowana swoim opisem
++     _must be a valid CSS identifier_, dla `CssIdentifier["a valid CSS identifier"]`.
++     Sprawdzenie to gramatyka `<ident-token>` z CSS Syntax Module Level 3 bez sekwencji
++     ucieczki: opcjonalny początkowy `-` lub `--`, znak rozpoczynający identyfikator (litera,
++     `_` lub dowolny znak spoza ASCII), a potem znaki identyfikatora, które dopuszczają też
++     cyfry i `-`. Samotny `-`, cyfra na początku i sekwencja ucieczki są odrzucane. To reguła
++     płaszczyzny `CssClass`.
+
+@ 0 4 0 035dabdf7388252b16f25d96a11a81a6
++ entry .DomIdentifier   reguła, że nazwa jest id elementu HTML, sparametryzowana swoim opisem
++     _must be a valid DOM id_, dla `DomIdentifier["a valid DOM id"]`. Sprawdzenie pochodzi z
++     HTML Living Standard: co najmniej jeden znak i brak białych znaków ASCII (tabulacji, nowego
++     wiersza, wysunięcia strony, powrotu karetki ani spacji). To reguła płaszczyzny `DomId`.
+
+@ 0 1 0 05d8aa9b763b5e2d12c98218247f7e4b
++ entry .CssClass   płaszczyzna nazw klas CSS: `Name[CssClass]` to poprawny identyfikator CSS
+
+% 1 1 0 17655ddaded8796416244c979a315de5
+
+@ 0 4 0 09938a0ea0316bbf10611eed3940f478
++       Typ znacznikowy z jedyną regułą `CssIdentifier["a valid CSS identifier"]`, więc
++       `Name[CssClass]` to tekst, który może następować po `.` w selektorze. Elementy HTML z
++       honeycomb przyjmują swoje klasy jako `Name[CssClass]`, dzięki czemu literał klasy z
++       literówką się nie kompiluje.
+
+% 2 1 0 1b3290796740ca260cbf87dd79a4a2b4
+
+% 3 1 0 1125c907f85303a30fb5558ef8ad73f0
+
+% 4 1 0 12434a4d3bb44dc912645fb5f14d078d
+
+% 5 1 0 1ed8b8c2cb0d4fab1aff2f8205c74bed
+
+% 0 1 0 1b51963ea3ee3587030fd62dfd8b5701
+
+% 0 1 0 1d095fbfdb20f12519f11e7618603f7c
+
+% 0 1 0 14099df8c0be2e561cba32e9cb915082
+
+% 1 1 0 1a8051769b5d99d3067325855e1c4ecc
+
+% 0 1 0 1861cd670d733e4a12073f28351b3db6
+
+@ 0 2 0 083f8e1d8a2bb9ce044cd0445b0f7a8e
++   entry .nominative   given, który podporządkowuje nazwy klas CSS regule `CssIdentifier`
++       W obiekcie towarzyszącym, więc w zasięgu niejawnym wszędzie tam, gdzie pada nazwa
++       `CssClass`.
+
+@ 0 1 0 180a9d457ad40cbb164dd93c765f4180
++ entry .DomId   płaszczyzna id elementów DOM: `Name[DomId]` to poprawne id HTML
+
+% 1 1 0 01821cd1524bbba2132f64bd3781210f
+
+@ 0 3 0 0363072fb4f2f5141578b6a48cb5ada7
++       Typ znacznikowy z jedyną regułą `DomIdentifier["a valid DOM id"]`: niepusty, bez białych
++       znaków ASCII. Atrybuty `id` z honeycomb przyjmują `Name[DomId]`, a id DOM jest
++       `Focusable`, więc może być celem `focus` jako selektor CSS `#id`.
+
+% 2 1 0 120ee4532fca0573104e1d94b5253ccc
+
+% 3 1 0 1558c1bcf544878002eb3d751c4aa928
+
+% 4 1 0 166c3a0886d0402a0121546a12fe537b
+
+% 5 1 0 1b04342628e60d1d09113f11e962f5b6
+
+% 0 1 0 0f5a54653dd2dc2f00e78ae70516d152
+
+% 0 1 0 1071e9fb9d6ab2ab07f436d43c631f01
+
+% 0 1 0 0727bcceb3e7140b1fcf2c879ea68a58
+
+% 1 1 0 151f0dcc08c2101216fc4992103c348b
+
+% 0 1 0 1f4c7f3e9eb63afd16405e3f61e635d2
+
+@ 0 6 0 16d33b5b3a84aad818495abd7c8206c5
++   entry .nominative   given, który podporządkowuje id DOM regule `DomIdentifier`
++       W obiekcie towarzyszącym, więc w zasięgu niejawnym wszędzie tam, gdzie pada nazwa
++       `DomId`.
++   entry .focusable   id DOM wskazuje swój element jako selektor CSS `#id`
++       Given `Focusable` dla `Name[DomId]`, ze strategią `css selector` i tekstem fokusu
++       złożonym z `#` i id, dla bibliotek, które lokalizują element na stronie za pomocą
++       selektora.
+
+@ 0 4 0 1865d9e919d5eaa80b616a20a8687dd3
++ entry .Required   płaszczyzna, której jedyną regułą jest niepustość: `Name[Required]` to dowolny niepusty tekst
++     Typ znacznikowy z jedyną regułą `MustNotEqual[""]`, na częsty przypadek, w którym „niepusty”
++     to wszystko, czego wymaga pole. Jego given `Nominative` jest anonimowy i znajduje się w
++     obiekcie towarzyszącym, więc jest w zasięgu niejawnym wszędzie tam, gdzie pada nazwa
++     `Required`.
+
+% 2 1 0 164f9f2007588a21072fa8619e5b195f
+
+% 3 1 0 0b1419c58816707310de627795983527
+
+% 4 1 0 1de79b91d635c1011b2349822231d26a
+
+% 5 1 0 17dc4c4b32d3fa6709d952e562c0542e
+
+% 0 1 0 04f99f6769ca7eee164c91ca62e9642f
+
+% 0 1 0 14c6a570a445ee5e04742bccb52763b6
+
+% 0 1 0 12df3a40cf0e33f5192c20e291fd9033
+
+% 1 1 0 1e62608f07aa0d140fbef6b047742366
+
+@ 0 6 0 117593de3124057318bdf440ab8128c8
++ entry .disintersect   `disintersect[A & B & C]`: typ przecięcia rozłożony na typ krotki
++     Metoda `transparent inline`, której wynikiem jest wartość typu krotki `(A, B, C)` dla
++     przecięcia `A & B & C` i `EmptyTuple` dla typu, który nie jest przecięciem. Jest to
++     operacja na poziomie typów, której makra używają do przechodzenia reguł płaszczyzny,
++     udostępniona dla kodu, który musi wyliczyć składowe typu przecięcia; sama wartość to
++     `null` rzutowany na typ krotki i nie wolno jej używać – tylko jej typu.
+
+@ 0 4 0 0c0cc6cc3f86b9450146d4c32ada9010
++ entry .staticCompanion   `staticCompanion[T]`: obiekt towarzyszący typu jako wartość
++     Metoda `transparent inline`, która rozwiązuje się do obiektu towarzyszącego `T`,
++     typowanego jako `Matchable`: `staticCompanion[MustStart[""]]` to obiekt `MustStart`. W ten
++     sposób makra docierają do `Rule` z typu `Check`; udostępniona dla kodu, który potrzebuje
++     tego samego.
+
+@ 0 1 0 1feb6c398c63d8c115f8852d98b555f7
++ entry .internal   nieprzezroczysty typ `Name` i jego obiekt towarzyszący, które eksportuje pakiet `nomenclature`
+
+% 1 1 0 0dce44c4bf917fd312215bb755036889
+
+% 2 1 0 0a7ba4ad3f3c4d26033defbe9012414f
+
+@ 0 5 0 00950f79f66ee7380a5a7b676e9711ed
++       Nie do bezpośredniego użytku: `Name` znajduje się tutaj, aby jego reprezentacja jako
++       `Text` była ukryta przed resztą pakietu, i jest eksportowany jako `nomenclature.Name`,
++       którego strona zawiera pełny opis. Jego składowe to `Name.apply`, `Name.verify`, giveny
++       `encodable`, `inspectable` i `decodable`, `Name.Error` oraz `Name.Extractor`.
++   entry .Name   tekst o udowodnionej poprawności w płaszczyźnie; zobacz `nomenclature.Name`
+
+% 1 1 0 1ea68e404aeb900b0242866ddd05ddef
+
+@ 0 9 0 047049cec43fb59d17554d4ab8817030
++         Typ nieprzezroczysty `Name[+plane] <: Text` z obiektem towarzyszącym. Jego strona w
++         pakiecie `nomenclature` zawiera pełny opis; składowe obiektu towarzyszącego, których
++         eksport nie deklaruje, są opisane tutaj.
++     entry .apply   `Name[plane](text)`: sprawdza tekst względem reguł płaszczyzny, zgłaszając `Name.Error`
++         Metoda `transparent inline`, która rozwija się do kolejnych sprawdzeń reguł
++         płaszczyzny, a po nich do tekstu rzutowanego na `Name[plane]`. Wymaga givena
++         `plane is Nominative` w zasięgu – jego brak to błąd kompilacji, _Couldn't find a
++         `Nominative` instance on `plane`_ – oraz `Tactic[Name.Error]`, przez którą zgłaszana
++         jest pierwsza reguła, która zawiedzie. Parametr każdej reguły musi być typem literału
++         napisowego, jakie przyjmują reguły `Must…`.
+
+% 2 1 0 0356d0824c20d1da0f96a1319f478caf
+
+% 3 1 0 118664a2e22d659d1711c257ec07853a
+
+% 4 1 0 0f52e77b9628a8e207266c5237bf031c
+
+% 5 1 0 12f5dce5e61afa620e589fce36d305f1
+
+% 0 1 0 1743380767d7a0a300f7d60d8c3a71a9
+
+% 0 1 0 0c722910857aa4d41c4869debeaf63a8
+
+% 0 1 0 06bda54b067913300d9aeb5cfa92f4ce
+
+% 1 1 0 1c3f1b3bac6981181c56ed5264723b41
+
+@ 0 23 0 1325ccca400027531789b86c900647e4
++     entry .verify   `Name.verify[literal, plane]`: literał sprawdzany względem jednej płaszczyzny podczas kompilacji kodu
++         Metoda `inline`, która przyjmuje nazwę jako typ literału napisowego, a płaszczyznę jako
++         typ, i albo rozwija się do literału rzutowanego na `Name[plane]`, albo przerywa
++         kompilację słowami samej reguły, _the name is not valid because it must not start with
++         0_. Interpolator `n"…"` to zwykły sposób zapisania sprawdzanego literału; `verify` to
++         postać dla kodu, który ma płaszczyznę pod ręką i nie chce wnioskowania po wszystkich
++         płaszczyznach w zasięgu, jakie wykonuje `n"…"`.
++     entry .encodable   nazwa koduje się jako tekst, którym jest
++         Given `Encodable in Text` dla dowolnego `Name[plane]`: tożsamość, więc nazwa
++         serializuje się dokładnie tak jak jej tekst.
++     entry .inspectable   nazwa jest inspekcjonowana jako `n"…"`, odróżnialna od tekstu, którym jest
++         Given `Inspectable` dla dowolnego podtypu `Name[Any]`. `Name` jest `Text`, więc bez
++         własnej instancji trafiłby do instancji `Text` i byłby przedstawiany jako `t"…"`, a
++         zwalidowana nazwa byłaby nieodróżnialna od niesprawdzonego tekstu; ta instancja
++         przedstawia `n"puck"`, ze znakami poprzedzonymi sekwencjami ucieczki tak jak w literale
++         tekstowym. Jest napisana dla każdego podtypu `Name[Any]`, a nie dla jednej płaszczyzny,
++         ponieważ `Self` klasy typów jest inwariantny, a instancja dla `Name[Linux]` nie
++         obejmowałaby `Name[Linux & Posix]`.
++     entry .decodable   `text.as[Name[plane]]`: dekodowanie z walidacją, przez klasę typów `Decodable`
++         Given `inline`, dostępny dla dowolnej `plane` z givenem `Nominative` w zasięgu, który
++         dekoduje tekst za pomocą `Name[plane](text)`. Wymaga `Tactic[Name.Error]` w zasięgu,
++         przez którą zgłaszana jest pierwsza reguła, której tekst nie spełnia, więc dowolny
++         format dekodujący swoje pola przez `Decodable` – dokument JSON, argument wiersza
++         poleceń, element ścieżki – może bezpośrednio odczytać `Name[plane]` i odrzucić
++         niepoprawną nazwę na granicy.
+
+% 2 1 0 1ac15467a06f2f8b1090623286d48123
+
+% 3 1 0 0a5496cf153356110d65379a417f87d0
+
+% 4 1 0 02a4c868e66460bc068b846a958f8cc2
+
+% 5 1 0 1bff1f764c1d391f156fda0700869cb2
+
+% 0 1 0 072c67b39305446916a01b96ef308678
+
+% 1 1 0 1b56cbd170930b201c4904eb54822769
+
+@ 0 1 0 030ceaccdbe1171d08fe0a5c84272962
++     entry .Error   zgłaszany, gdy tekst nie jest poprawną nazwą w swojej płaszczyźnie
+
+% 1 1 0 1c4a88f8296ce7c41fc7810998a4f8e3
+
+@ 0 6 0 160d107e4bd99987187d237af1371597
++           Błąd `↯/s.68.1`: _the name `name` is not valid because it `must not start with 0`_.
++           Druga połowa to opis parametru sporządzony przez samą naruszoną regułę
++           (`Rule.describe`), więc komunikat podaje dokładną regułę, którą tekst złamał, a nie
++           tylko to, że był niepoprawny. Zgłaszany przez `Name[plane](text)` i przez
++           `text.as[Name[plane]]` dla pierwszej reguły w przecięciu płaszczyzny, której tekst nie
++           spełnia; wymaga `Diagnostics` w zasięgu, na przykład
++           `errorDiagnostics.stackTracesDiagnostics`.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1012e0401a4235931db671ec67f92f61
+
+% 0 1 0 1cce7224b7fe056907129e25d1266318
+
+% 0 1 0 044ab87093645a1716c7c1ff254ac4d5
+
+% 1 1 0 0111aa621ee0d5a31df6c5fd1674b6a8
+
+@ 0 6 0 16a9fdf09f96525c19fd9a0c667633c1
++       entry #name   tekst, który został odrzucony
++       entry #rule   `Rule`, która go odrzuciła, na przykład `MustNotStart` lub `CssIdentifier`
++       entry #parameter   parametr reguły: literał, do którego zastosowano jej typ `Check`
++           Dla `MustNotStart["0"]` jest to `0`; dla reguły sparametryzowanej opisem, takiej jak
++           `CssIdentifier["a valid CSS identifier"]`, jest to opis.
++     entry .Extractor   obiekt, do którego rozwija się literał `n"…"`: nazwa z wnioskowania lub wzorzec
+
+% 1 1 0 130a7308b9ca58e3075aba71906b5927
+
+@ 0 14 0 157bb99d26dce5f80944c760417c872c
++           `n"hello"` rozwija się do `Name.Extractor["hello"]()`, więc w tej klasie mieszczą się
++           oba zastosowania interpolatora: `#apply` tworzy nazwę z najdokładniejszą płaszczyzną,
++           w której literał jest poprawny, a `#unapply` pozwala zapisać `n"hello"` jako wzorzec
++           dla `Name[plane]`. Nie konstruuje się go bezpośrednio.
++       entry #apply   literał jako `Name` każdej płaszczyzny w zasięgu, której reguły spełnia
++           Metoda `transparent inline`, której typ wyniku to przecięcie typów `Self` wszystkich
++           givenów `Nominative` w zasięgu, które akceptują literał, na przykład `Name[A & B]`.
++           Literał, którego nie akceptuje żadna płaszczyzna w zasięgu, to błąd kompilacji, _the
++           name `.` is not a valid identifier in any namespace in scope_. Płaszczyzna, której
++           reguła ma parametr nieliterałowy, jest pomijana, a nie zgłaszana.
++       entry #unapply   `case n"main" =>`: dopasowuje `Name[plane]` równy literałowi
++           Ekstraktor `inline`, który podczas kompilacji kodu sprawdza, czy literał jest
++           poprawną nazwą w płaszczyźnie wartości dopasowywanej – wzorzec, który nigdy nie
++           mógłby pasować, jest błędem ze słowami reguły – a następnie w czasie wykonania
++           porównuje oba teksty.
+
+@ 0 1 0 1264224873e3f8180ae0819b55ad658d
++ entry .protointernal   implementacje makr stojących za `n"…"`, `Name[plane](…)` i `Name.verify`
+
+% 1 1 0 1b49bb50a2179e69010972e2d124c35f
+
+% 2 1 0 02201a01450e59f2117f18e8b8347b6e
+
+@ 0 22 0 1244042948a98e100e460f8b27db7e2f
++       Nie do bezpośredniego użytku: obiekt istnieje, aby makra miały stałe miejsce. Jego
++       publiczne składowe to ciała makr `extractor`, `inferName`, `makeName`, `parse`, `parse2`
++       i `disintersection` oraz współdzielone przez nie metody pomocnicze: `build`, `decompose`,
++       `everyNominative`, `planeAccepts`, `constant` i `companion`.
++   entry .extractor   makro stojące za `n"…"`: opakowuje typ literału w `Name.Extractor`
++   entry .inferName   makro stojące za `Name.Extractor#apply`: przecięcie wszystkich akceptujących płaszczyzn w zasięgu
++       Zbiera wszystkie giveny `Nominative` w zasięgu, zachowuje `Self` każdego, którego
++       wszystkie reguły akceptują literał, i wstawia literał jako `Name` ich przecięcia; gdy
++       żadna płaszczyzna nie akceptuje, przerywa z _the name … is not a valid identifier in any
++       namespace in scope_.
++   entry .makeName   makro stojące za `Name[plane](text)`: sprawdzenia płaszczyzny wstawione po kolei
++   entry .parse   makro stojące za `Name.verify`: literał sprawdzany względem jednej płaszczyzny, przerywające słowami reguły
++   entry .parse2   makro stojące za `Name.Extractor#unapply`: `parse`, a potem test równości
++   entry .disintersection   makro stojące za `disintersect`
++   entry .build   lista typów zamieniona w typ krotki
++   entry .decompose   typ przecięcia rozłożony na zbiór swoich składowych
++   entry .everyNominative   każdy given `Nominative` w zasięgu w punkcie rozwinięcia, nie tylko najlepszy
++       Wielokrotnie uruchamia wyszukiwanie niejawne, ignorując już znalezione giveny i
++       uwzględniając obie strony niejednoznaczności, tak aby `n"…"` widział każdą płaszczyznę w
++       zasięgu.
++   entry .planeAccepts   czy każda reguła z `Limit` płaszczyzny akceptuje nazwę
++   entry .constant   napis, któremu odpowiada typ literału, z usuniętymi adnotacjami sprawdzania przechwytywania
++   entry .companion   obiekt towarzyszący symbolu, ładowany refleksyjnie i typowany tak, jak żąda wywołujący
+
+@ 0 1 0 07021d4c174a13f81347eaf6a2dff942
++ entry .anteprotointernal   makro stojące za `staticCompanion`
+
+% 1 1 0 183863057e49b74914c2252aab94c73a
+
+% 2 1 0 065004a73d1ad6911e7bebbe5e29995e
+
+@ 0 3 0 1ca09fda0211eacf0fd25cb41f60411f
++       Nie do bezpośredniego użytku: zawiera `staticCompanion`, makro rozwiązujące typ do jego
++       obiektu towarzyszącego, którego `protointernal.makeName` używa, aby dotrzeć do `Rule` z
++       `Check`.
++   entry .staticCompanion   makro stojące za `nomenclature.staticCompanion`
+
+@ 0 1 0 0aab8f03ee6007ce046da48f323d4c9c
++ entry .Moniker   mała liczba całkowita z łatwym do zapamiętania dwuczłonowym przydomkiem, `brilliant-leopard`, z `Vocabulary`
+
+% 1 1 0 0dd5ef61278f31ff0185b0568ded4616
+
+@ 0 6 0 0c35c51a615f57010f9dcbc0808a1589
++       `Moniker` to liczba porządkowa `Int` sparowana, przez swoją płaszczyznę, z `Vocabulary`,
++       który ją nazywa: `Moniker over Session` to przydomek, którego słowa pochodzą z
++       `Vocabulary over Session` w zasięgu. Koduje się jako `adjective-animal` i dekoduje z tego
++       tekstu, więc sesji, kompilacji lub zadaniu można nadać nazwę, którą człowiek może
++       przeczytać przez telefon, podczas gdy program zachowuje liczbę. Znajduje się w zbiorze
++       źródeł `nomenclature.lexicon`.
+
+% 2 1 0 0fa5530ad0c95f08176d7e3fe63d62bc
+
+% 3 1 0 0f0b5a66eba6c2fe033e9daa50924d13
+
+% 4 1 0 157887d1a498648d03aa5fde63b3973a
+
+% 5 1 0 057c340da736968301d5df2c9db82a95
+
+% 6 1 0 17cc05979af9e1590b540c5cdd8cd098
+
+% 8 1 0 099f0a654ba6aa041d1d28d1c161450c
+
+% 9 1 0 0e11bd89211d9dfd1af30a54e5bb0af9
+
+% 0 1 0 03f45d838bc20c881d619ff33706c1c8
+
+% 0 1 0 154d57eadd71aaea1aa697e676a99b9e
+
+% 1 1 0 008b1044caa7fc54058c4cfd1ed05148
+
+@ 0 6 0 0cfd40dc3aa3213414b99ae6c6321dcf
++       Płaszczyzna jest typem wybieranym przez program, więc dwa słowniki mogą współistnieć jako
++       `Vocabulary over Session` i `Vocabulary over Job`, a `Moniker(10351)` bez zapisanej
++       płaszczyzny wnioskuje ją z jedynego słownika w zasięgu. Zarówno kodowanie, jak i
++       dekodowanie wymagają `Tactic[Moniker.Error]`, ponieważ liczba może leżeć poza zakresem
++       słownika, a tekst może zawierać słowo, którego słownik nie ma; przydomek jest
++       *inspekcjonowany* jako swoja liczba porządkowa, `10351ᵐᵏ`, ponieważ przedstawienie
++       diagnostyczne nie może polegać ani na słowniku, ani na taktyce.
+
+% 0 1 0 08dd20918dd78eaa154df952240e6ae1
+
+@ 0 25 0 1c128f380b174a3f02b8e9cf56e17492
++   entry .Moniker   sam typ nieprzezroczysty, `Int`, który `nomenclature` eksportuje jako `Moniker`
++       `Moniker.Moniker` jest zadeklarowany wewnątrz obiektu towarzyszącego, aby jego
++       reprezentacja jako `Int` była widoczna tylko tam; pakiet eksportuje go jako
++       `nomenclature.Moniker` i to tę nazwę należy pisać. Jego płaszczyznę podaje się przez
++       doprecyzowanie, `Moniker over Session`.
++   entry .apply   `Moniker[plane](ordinal)`: przydomek na płaszczyźnie `Vocabulary` w zasięgu
++       Wymaga givena `Vocabulary over plane`; płaszczyzna jest z niego wnioskowana, gdy w
++       zasięgu jest tylko jeden. Liczba porządkowa nie jest tutaj sprawdzana pod kątem zakresu,
++       lecz dopiero przy kodowaniu przydomka, które zgłasza `Moniker.Error` z `OutOfRange` dla
++       liczby porządkowej równej `size` słownika lub większej.
++   entry .ordinal   liczba całkowita, której odpowiada przydomek
++       Rozszerzenie dla `Moniker`: liczba porządkowa, z której go utworzono, lub ta, do której
++       zdekodowano jego tekst, `adjectiveIndex × animalCount + animalIndex`.
++   entry .inspectable   przydomek jest inspekcjonowany jako swoja liczba porządkowa z przyrostkiem w indeksie górnym: `10351ᵐᵏ`
++       Przyrostek odróżnia go od `Int`, do którego jest wymazywany. Przedstawienie nie używa ani
++       słownika, ani taktyki, których obecności w zasięgu przedstawienie diagnostyczne nie może
++       zakładać.
++   entry .encodable   `moniker.encode`: dwuczłonowa nazwa, przez `Vocabulary` w zasięgu
++       Given `Encodable in Text` dla `Moniker over plane`, wymagający `Vocabulary over plane` i
++       `Tactic[Moniker.Error]`, przez którą zgłaszane jest `OutOfRange`, gdy liczba porządkowa
++       nie jest taką, którą słownik potrafi nazwać. Given przechwytuje taktykę, więc jest
++       zdolnością i jest rozwiązywany tam, gdzie taktyka jest w zasięgu.
++   entry .decodable   `text.as[Moniker over plane]`: dwuczłonowa nazwa odczytana z powrotem jako przydomek
++       Given `Decodable in Text` dla `Moniker over plane`, wymagający `Vocabulary over plane` i
++       `Tactic[Moniker.Error]`: `Malformed` jest zgłaszane dla tekstu, który nie jest dwoma
++       słowami połączonymi `-`, a `UnknownWord` dla słowa, którego nie ma na liście słownika dla
++       jego pozycji.
+
+% 2 1 0 186fdcd93c2c77720c91c7ec8fc97a12
+
+% 3 1 0 13b9add1aaf25de61a4ca96738f1b504
+
+% 4 1 0 0db01f69c7fdfe36004387a6d85b760e
+
+% 5 1 0 12e5d587fe96428913b3a892c4a5b9c5
+
+% 6 1 0 06bf74e897f510270f125a6aef243670
+
+% 8 1 0 068289910d067f30091c810194a2ffe4
+
+% 9 1 0 03e95f0711ce4cb40250b808c03df051
+
+% 0 1 0 1009b57fbe80ceab0eb6ad270728a295
+
+% 0 1 0 0f02a3454f3d1f760cd398c18ea26595
+
+% 1 1 0 074fd0880c323caa08a4eda4acb903af
+
+@ 0 1 0 0516bc71dc40025b1b7e00c987d78a1c
++   entry .Error   zgłaszany, gdy przydomka nie można nazwać lub jego tekstu nie można odczytać
+
+% 1 1 0 151a7c968a8671060f0afc71f5fa23e1
+
+@ 0 7 0 0f8fb00b7ac40c041015e415230a2a22
++         Błąd `↯/s.68.2`, z podnumerem dla swojej `#reason`: _the moniker is not valid because
++         the number 100000 is outside the representable range_. Zgłaszany przez
++         `Moniker.encodable` dla liczby porządkowej, której słownik nie potrafi nazwać, i przez
++         `Moniker.decodable` dla tekstu, który nie jest `adjective-animal` lub którego słów
++         słownik nie zawiera. Wymaga `Diagnostics` w zasięgu.
++     entry #reason   przyczyna: `Unreadable`, `OutOfRange`, `Malformed` lub `UnknownWord`
++     entry .Reason   cztery przyczyny niepoprawności przydomka, każda z własnym podnumerem błędu
+
+% 1 1 0 114ef66a2807a5a400241d26c6172bec
+
+@ 0 1 0 1e263bfb4748cbbf130d98ab015af37a
++           Każdy przypadek ma własny podnumer błędu:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Przypadek
++           column  Kod
++           column  Komunikat
++           column  Uwaga
+
+% 0 1 0 112102a413cc94f61c17c8d712ad0966
+
+@ 0 3 0 067d60e0d45600a91780beb7630d636d
++           row  `OutOfRange(value)`  2  _the number `value` is outside the representable range_  liczba porządkowa poniżej zera albo równa `size` słownika lub większa
++           row  `Malformed(moniker)`  3  _`moniker` is not of the form `<adjective>-<animal>`_  tekst, który nie dzieli się na `-` na dokładnie dwa słowa
++           row  `UnknownWord(word)`  4  _the word `word` does not appear in the vocabulary_  słowo nieobecne na liście przymiotników lub zwierząt
+
+% 1 1 0 0a172d00302f601007f2e91a9e506c10
+
+@ 0 2 0 01cb5285a59367fb1b817cfa1cfcb609
++       entry #number   podnumer przyczyny, który `Moniker.Error` zgłasza wraz z błędem `↯/s.68.2`
++     entry .communicable   przedstawia każdą przyczynę `Moniker.Error` jako jej komunikat
+
+@ 0 1 0 1079c9d5c5bb6ec30f6181a074fbecfe
++ entry .Vocabulary   dwie listy słów, przymiotników i zwierząt, które nazywają przydomki płaszczyzny
+
+% 1 1 0 0e7c016eaf3d9192124c527287484e05
+
+@ 0 7 0 0f7eee5e3d09082100131b02d6d0bf4b
++       `Vocabulary over plane` buduje się z dwóch źródeł słów, po jednym słowie w wierszu, i
++       nazywa każdą liczbę porządkową od `0` do `#size - 1` jako `adjective-animal`, biorąc
++       przymiotnik z pozycji `ordinal / animals`, a zwierzę z pozycji `ordinal % animals`.
++       Źródłami może być wszystko, co jest `Streamable by Data over Credit`: listy słów
++       dołączone do komponentu `nomenclature.lexicon` jako zasoby ścieżki klas
++       `/nomenclature/adjectives.txt` (400 słów) i `/nomenclature/animals.txt` (250 słów), które
++       nazywają 100 000 przydomków, albo własne pliki programu.
+
+% 2 1 0 00a2434e7112372204c5f84bbfcc4a67
+
+% 3 1 0 0d2f692c1f16873a064c3c0abd4dfb5f
+
+% 4 1 0 18f5486e3cdd7fff14788d69af2cae56
+
+% 5 1 0 07fd7f2bb0a70cef0132eac1502a6f24
+
+% 6 1 0 0c58ea1c77cffa8905265ecefb4c44fe
+
+% 8 1 0 1f7239483f2edfac144b174f0d645f6b
+
+% 0 1 0 0f9809de4083aa4809a336f2a9edadb4
+
+% 0 1 0 0b33bbe95b9157c105288323c7239f13
+
+% 0 1 0 1087637be6fd90121db54b6765012a84
+
+% 0 1 0 0626594b5bd4a48c0ebdc5c7c4964e7c
+
+% 1 1 0 05d55a7472adb91e17da29c94988c482
+
+@ 0 6 0 068779ce23944ef5069ae356e9663a05
++       Słownik wiąże się jako given, `given (Vocabulary over Session) = …`, aby znalazły go
++       `Moniker[Session](…)`, `encode` i `as[Moniker over Session]`; płaszczyzna jest własnym
++       typem znacznikowym programu, a te same dwie listy związane na dwóch płaszczyznach dają
++       dwie niezależne przestrzenie nazw. Puste wiersze i otaczające białe znaki w źródłach są
++       pomijane; kolejność wierszy jest kolejnością liczb porządkowych, więc po zapisaniu
++       przydomków nie wolno zmieniać kolejności listy.
+
+% 0 1 0 1e0f92265c2f2c0f1ed98d475f7a626a
+
+@ 0 14 0 0b3dd3651194fc6b1b867d86c70cb71a
++   entry .apply   `Vocabulary(adjectives, animals)`: słownik wczytany z dwóch strumieniowalnych źródeł
++       Wczytuje każde źródło jako tekst, dzieli je na wiersze, przycina każdy wiersz i pomija
++       puste. Płaszczyzną jest parametr typu `transport`, wnioskowany z oczekiwanego typu
++       `Vocabulary over Session`; odczyty wymagają wartości kontekstowych potrzebnych givenom
++       `Streamable` źródeł, na przykład `Classloader` dla zasobu ścieżki klas.
++   entry #Transport   płaszczyzna, na której słownik nazywa przydomki, zapisywana `Vocabulary over plane`
++   entry #size   ile przydomków słownik potrafi nazwać: przymiotniki × zwierzęta
++   entry #name   dwuczłonowa nazwa liczby porządkowej; zgłasza `Moniker.Error`, jeśli jest poza zakresem
++       `OutOfRange` jest zgłaszane dla liczby porządkowej poniżej zera albo równej `#size` lub
++       większej. Wymaga `Tactic[Moniker.Error]`.
++   entry #number   liczba porządkowa dwuczłonowej nazwy; zgłasza `Moniker.Error`, jeśli nie można jej odczytać
++       Dzieli na `-` i wyszukuje każde słowo na jego liście: `Malformed` dla tekstu, który nie
++       jest dokładnie dwoma słowami, `UnknownWord` dla słowa nieobecnego na liście dla jego
++       pozycji. Wymaga `Tactic[Moniker.Error]`.

@@ -1,0 +1,461 @@
+orthant 2 language
+
+% 0 1 0 0aa7e74db567b4831d0dc81ff895a17b
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 3 0 13cb4f68643a8d220eb9db4eab8124ac
++ [CBOR](https://en.wikipedia.org/wiki/CBOR) 是 JSON 的二进制近亲。
++ 它具有相同的数据模型，只是为机器紧凑地编码，而不是为人可读地编码，并已标准化为 [RFC 8949](https://datatracker.ietf.org/doc/html/rfc8949)。
+
+@ 0 3 0 015c85d1292c97d01611ae22711fd0e9
++ 它的读写接口与文本格式相同。
++ 字节被解析为一个 `Cbor` 值。
++ case class 借助[派生]出的编解码器与之相互转换。
++ 导航、更新和透镜的用法与 [JSON](json.md) 和 [YAML](yaml.md) 相同。
+
+@ 0 1 0 00ba26345b6873d30caa289219891e19
++ ### 关于二进制交换
+
+@ 0 3 0 1d22ec9e4ca0e108098ceefaa69505d1
++ JSON 的可读性是以字节数和解析时间为代价换来的。
++ 在没有人阅读数据的地方，例如设备协议、缓存条目或消息队列，这个代价换不来任何东西。
++ CBOR 保留了 JSON 由映射、数组、数字、文本和字节串构成的形状，采用紧凑的二进制形式。
+
+@ 0 4 0 16cdd148f1ebfed41f82ab5b586714e9
++ 二进制格式通常通过摆弄字节的 API 来使用，这比其文本对应物的 API 笨拙得多。
++ 在这里，CBOR 享有文本格式的全部待遇：派生的编解码器、带原因的有类型错误、动态访问和光学组件。
++ 选择紧凑的格式不会让代码损失任何表达力。
+
+@ 0 3 0 1a7c28911c81c822085fb5a23e17be06
++ 编解码器由类型派生，因此类型就是 schema。
++ 编码的[正确性](../../philosophy/correctness.md)来自定义，而不是来自测试。
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ 一切都来自 `soundness` 包。
++ 示例把任何错误作为异常抛出，最后一个导入让它们能够打印结果：
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### 编码与解码
+
+@ 0 1 0 0de710a63d1e11940483607e12966092
++ `in[Cbor]` 把一个值编码为 `Cbor` 值，`as` 则把它解码为某个类型：
+
+% 2 1 0 14dc84a2bbb04f7f0cbf531ccbda86ff
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 06d7e7b4a9cc1f231de1ae705d39655e
+
+% 1 1 0 0ae6af0b355b626508990d4248642059
+
+% 3 1 0 0126fb71f62a13f416bebf2112828b46
+
+% 4 1 0 0457659abc0b791b1db1e73c9187dab5
+
+% 5 1 0 081bf2ead08971d01c53ffda7f3e2701
+
+% 0 1 0 16961ba24f67a8350b17658aad92555a
+
+% 1 1 0 0dc3956086204a5219520a09e0ce0456
+
+@ 0 2 0 175c7ad4fc53307c09c9eb36a74eb112
++ `Cbor` 值是一棵树。
++ `Cbor.unseal` 把它暴露为一个 `Cbor.Ast`，后者可以序列化为其字节：
+
+% 2 1 0 0dac70e087744c721fb2f35ae843ad80
+
+% 0 1 0 04776ed941cccf621c4cfc8c6131310b
+
+% 1 1 0 1604747b9dfaadcc0de1b34e8a282761
+
+@ 0 2 0 02a4cffda91603431906c6b49af23af1
++ 字节可以用 `read[Person in Cbor]` 一步直接读回为某个类型，无论它们是整体到达，还是作为由数据块组成的[流](streams.md)到达：
+
+% 2 1 0 107a58b2b1e47bc80460f388b30e06a9
+
+% 3 1 0 040d01adf36aed9e1f96b1e3e1c01017
+
+% 4 1 0 1313dd8d39cc63df0fcaac24603f26b9
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1910d92d472a190a0f38b5ff7442c4bd
+
+% 1 1 0 0711d8665c63e6fc0a37c1ecb3396950
+
+@ 0 2 0 1c30f4e6a2b3ea5618bf0ff9f5388ead
++ 写入的两个步骤也以同样的方式合并。
++ `in[Data over Cbor]` 把一个值直接编码为其字节，它是 `read[Person in Cbor]` 的镜像：
+
+% 2 1 0 10885f3260873d4505fc9f34e7853d22
+
+% 3 1 0 084e1160946a1d841b49e2da168f4aae
+
+% 4 1 0 13aab4f09ba7500d17559b246ee9fb69
+
+% 0 1 0 0d967ba9256e7d53133ab875081346a5
+
+% 1 1 0 0d6b4294cf84f1f507cc032201a05099
+
+@ 0 1 0 1ac58c08105dbde5177030615f2a15ce
++ 同一个 `Person` 写成紧凑的 [JSON](json.md) 是 26 个字节。
+
+@ 0 2 0 197bb7f71cb6e7ec1927b4db86e9526d
++ `@name[Cbor]` [注解](annotations.md)会重命名编码后映射中的字段。
++ 密封层次结构使用一个判别字段编码，只需声明一次：
+
+% 2 1 0 105a21c6926639a513f2bee537a6ddab
+
+% 0 1 0 02db9e1b73d5c5521143ec73eac70fbe
+
+% 0 1 0 1cc829c7966ae5510546cd22e946cc3b
+
+% 0 1 0 18810d85a35ec0131eac8a39663bb6a7
+
+% 0 1 0 18d56cdc91da34b007e9bdbb945fe3d9
+
+% 0 1 0 17cbf1c1b2f88a950c0158720124ea99
+
+% 1 1 0 1c38c0f5c79024af1adb2eee1785e38d
+
+% 3 1 0 09985cddd9e7414d03dd4e2ea7e7f489
+
+% 4 1 0 1bd50b4fb774a3ca1d7b0c15afd448cd
+
+% 5 1 0 1701a4bdf1371b5d05c0c88949500894
+
+% 0 1 0 0bc6e77113dc267b141f2ab6ff708bbb
+
+% 1 1 0 097f7f1719953bfd116b43e7cd67891b
+
+@ 0 1 0 144fe1e096ebc90c106331620bc1b49e
++ ### 可选字段
+
+@ 0 3 0 00302a73721be86e1b840ffecec7ccf8
++ `Optional` 字段在未设置时会从映射中省略，而带默认值的字段在映射缺少它时会取该默认值。
++ 因此，消息可以增加字段，而不会破坏比这些字段更旧的读取方。
+
+@ 0 3 0 00b41b36d46ad4cf014b02009bf74a2f
++ 读取 `Optional` 字段遵循[解码](decoding.md#policies-for-optional-fields)中描述的方针。
++ 每种方针都可以单独改变，方法是使用 `optionalityOptions` 包中的一个 given：
+
+% 2 1 0 0cc71aad7ad741f400c005aec8d8cfa3
+
+@ 0 6 0 1f32c166cb54137100466137e13ffafa
++ column  字段的情况
++ column  读作
++ column  除非
++ row  从映射中省略，或为 `undefined`  `Unset`  `strictCborAbsence` 使其成为错误
++ row  CBOR `null`  `Unset`  `strictCborNulls` 把它交给内层解码器
++ row  存在但被内层解码器拒绝  错误  `lenientCborFaults` 把它读作 `Unset`
+
+% 1 1 0 15b02f5f43f774eb03af51afac3759dc
+
+@ 0 1 0 0c684a1d814035a205c1555871f0304a
++ 这里在应为数字的地方放入了文本，而宽松的方针把它读作 `Unset`：
+
+% 2 1 0 17bdd22cc9970ded110ffa7b32846d7f
+
+% 0 1 0 1f475b1102b27d1d120eb51f49ad9fc4
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 0b7114d37596942708a6dbd3e3b615fc
+
+% 0 1 0 161be2cda6b84eac16b1d21303956ac2
+
+% 0 1 0 0f2c16441a98695914951dce76cff619
+
+% 1 1 0 10ae5639ef490fb401d3b4b2ff5f9718
+
+% 3 1 0 0bd61d98600006021bd4ee902295507b
+
+% 4 1 0 0c2facd88dac618401ca35069e1c9ea2
+
+% 5 1 0 0e54c3deba3c75161a6cbacf066b1ffb
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 0a429356bc825bc3171873cfbd26352d
++ ### 导航与更新
+
+@ 0 2 0 18382c63453d8dfa0d124df00b5c7e4d
++ 启用动态访问后，映射的字段可以作为成员读取，数组可以按索引访问。
++ 给字段赋值会得到一个新值，而赋值 `Unset` 会移除该字段：
+
+% 2 1 0 1cf656f43d618a1b0b42167b9028ea29
+
+% 0 1 0 044fb166331dd0d504a62e2486cae76d
+
+% 0 1 0 0f91e092d72589c31a1c3665709f237a
+
+% 1 1 0 17d1d2d38d697eca17f63912480edf54
+
+% 3 1 0 13f609c0ccb7212b1ede95a81f9b0cb4
+
+% 4 1 0 00920bc560d4bdc40b3f6c2776654944
+
+% 5 1 0 11a909349cf7a5710e1cae9b293df5e3
+
+% 0 1 0 156f6e4c658eaab81898ebd818428fae
+
+% 0 1 0 1533208883c6b0c1163d5a85455bd723
+
+% 1 1 0 1fe25cc573d2fc6a019f13ad94548039
+
+@ 0 3 0 07e617d667e62a91007ee2f5a76f3170
++ 该导入把许可 `Cbor is Dynamical` 授予其作用域的其余部分。
++ `dynamically[Cbor]:` 则只把它授予单个代码块，如 [JSON](json.md#fields-as-members) 中所述。
+
+@ 0 2 0 013646e4035d8a150837bad8584698e4
++ 更深层的更新使用[透镜](optics.md)，配合光学组件 `Each` 和 `Filter` 一次修改多个元素，与文本格式完全相同。
+
+@ 0 1 0 0bf26d8387ce219a0f44a7f777d37446
++ ### 直接构建
+
+@ 0 1 0 0b38fc37b981cbcf0d2dbd7b2bffcd70
++ 在没有合适的 case class 时，可以用具名参数组装一个 CBOR 映射：
+
+% 2 1 0 1e54113d5f0b629e0b0bc1b3a2d6c7f1
+
+% 3 1 0 1e10f0a5c30f9f730eb2d5698a93853b
+
+% 4 1 0 05ba0050ddceab61154b64bf6896a75b
+
+% 0 1 0 1c4ec162c42848a904d9afebccfecb47
+
+% 1 1 0 0a3adf8667cfba5916c940c32329115b
+
+@ 0 1 0 133b7d47e26d887d1ef8815c05a1ce11
++ ### 诊断表示法
+
+@ 0 3 0 06bc0739897b3a6915bbfd6ba93363f6
++ RFC 8949 定义了一种人类可读的 CBOR 呈现方式。
++ 它相当于该格式的十六进制转储，但确实可以阅读，由 `show` 生成。
++ 字节串写作 `h'…'`，数组和映射则写成类似 JSON 的对应形式：
+
+% 2 1 0 1be0d1ed18d497ca1e67a2ad882b2ff1
+
+% 3 1 0 01cc52b028420cb405f67b68c22ff006
+
+% 4 1 0 0ab895f39f8875d718f5c6c304a65bc6
+
+% 0 1 0 1939321c462c7e3106343eeb535dd083
+
+% 0 1 0 1cbb9ed89d817a010dc56278837ba561
+
+% 1 1 0 01dd2de9cc791402156cc6e7c029daea
+
+@ 0 3 0 1b7afe2b4220f08d0950299d333fd38f
++ 当一条消息不符合预期时，就应该求助于它。
++ 这种表示法用格式自己的词汇说明字节的含义。
++ [Base 编码](base-encoding.md)介绍了 `hex"…"` 字面量。
+
+@ 0 1 0 140952e0eb3777530cc4641fed18cda7
++ ### 标签
+
+@ 0 4 0 14221ced43994d8c1d10c28e8da27ab0
++ CBOR 的标签为一个值标注其含义。
++ 标签 1 是纪元时间，标签 2 是大整数，而注册表中的标签多达数百个。
++ 带标签的值同时保留其标签和内部的值，因此携带标签的文档在读写时不会丢失它们。
++ 下面这些字节是包裹整数 1363896240 的标签 1：
+
+% 2 1 0 0185d5a2dc44601d0f8dd7b713f79e33
+
+% 0 1 0 12def72eacffbe8f0e95b4d9b32c8d24
+
+% 0 1 0 13d9ba12116c9da50b2346d78b6da5b9
+
+% 1 1 0 0e74c39a6eee4664147558db50ea479c
+
+% 3 1 0 1db63bb2ec0a31c616326d1b15fceff5
+
+% 4 1 0 1a07acbaee13a25a03ae2b01cab69366
+
+% 5 1 0 1a03d3356779c5fc18fb59f67a80f514
+
+% 0 1 0 074ffe19ba0a0d251bedfb374e64c0f4
+
+% 0 1 0 1df9fc1edfcddcca1c325380971173f2
+
+% 1 1 0 049f1107507128241c57e87c9638f8f4
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### 错误
+
+@ 0 2 0 1b7ffb6f89cc41fd1dff9cf10d043375
++ 格式错误的文档，或无法进行的转换，会抛出一个带有具体原因的 `Cbor.Error`。
++ 协议故障通过错误来诊断，而不是通过十六进制转储：
+
+% 2 1 0 0b56f20454d84bfb0502e0628b783f58
+
+@ 0 13 0 198eeb073557313903d0dae4a3e05a94
++ column  原因
++ column  抛出时机
++ row  `Truncated(offset)`  输入在值的中途结束
++ row  `Reserved(offset, byte)`  首字节是 CBOR 保留的字节
++ row  `BadSimpleValue(offset, value)`  简单值无效
++ row  `InvalidUtf8(offset)`  文本串不是有效的 UTF-8
++ row  `Overflow(offset)`  整数对 `Long` 来说太大
++ row  `UnexpectedBreak(offset)`  出现了意外的 break 终止码
++ row  `Trailing(offset)`  值结束后还有字节
++ row  `OutOfRange`  数组索引越界
++ row  `NotType(found, expected)`  值的类型错误
++ row  `NonStringKey`  映射的键不是字符串
++ row  `Absent`  值不存在
+
+% 1 1 0 1008d72f4a413a8c0fef36afeca5e419
+
+@ 0 4 0 1904ba9f990acc8711c4ea354d2a27ba
++ 解析失败会携带出错字节的偏移量，对二进制格式而言，这就是诊断的全部。
++ 在值中途结束的输入会指明本应紧随其后的字节的偏移量。
++ 尾随字节会指明多余部分从何处开始。
++ 保留的首字节会同时指明其偏移量和值。
+
+@ 0 1 0 12f82d488025786505838c2a831d96b0
++ 这些字节承诺了一个包含三个元素的数组，却只给出了两个：
+
+% 2 1 0 14a21e218417264e1668b6ec3bab914a
+
+% 3 1 0 17ea6daf390feab102e70e63af54168a
+
+% 4 1 0 1785c2737893c5350e03100b96ccef9c
+
+% 5 1 0 1070e9b05535142e09d6ba644fd5f146
+
+% 0 1 0 11fccc894503e3a2069d2b4ae6b55c90
+
+% 1 1 0 0bd856ffc680e03514f98c113bef3521
+
+% 3 1 0 1b0f2280ee0bfb30181789d932d8be9c
+
+% 4 1 0 136674246305cfdf18c206eeb9bd2fc3
+
+% 5 1 0 0861879966e441aa16a87e91cfd6ee1d
+
+% 0 1 0 12b06cf81e7cb7b717cf84614a682beb
+
+% 1 1 0 1e71bf4bc23290481ea5b41847142105
+
+@ 0 1 0 1126327ccf5ff0bd12013462d50465f4
++ 转换为错误类型的报告也同样清楚：
+
+% 2 1 0 16fe39c1896c06811f8869fd9df074ec
+
+% 3 1 0 01b0889db290171c12f158f60c0f434f
+
+% 4 1 0 04e8f17ec9a4baff116a9bd04561fa6e
+
+% 5 1 0 18d13c40cd4fa3cf09c07ad2d1720581
+
+% 0 1 0 19c43a75b6c7388707a712433e6cfa94
+
+% 1 1 0 158a63b0c6c9e2fd0b90a613e72950b5
+
+@ 0 1 0 0d7d72dd795d6afd0ab45189385226ce
++ ### 直接解析
+
+@ 0 2 0 08d37d8384e244600779196b79c13f30
++ 具有 `Cbor.Parsable` 实例的类型可以直接从字节读取，不经过中间树。
++ 该实例在[编译时]派生，并为这一确切的形状组合出一个解析器：
+
+% 2 1 0 017cf1f5d30a01400b3d63da053fb3dd
+
+% 3 1 0 03f127ddeab0734d1b2f5077cb2d2b4f
+
+% 4 1 0 09c44f6f610f07630bec2de87878c025
+
+% 0 1 0 1f5654498625134507353d6e509f5d7b
+
+% 0 1 0 040cefdfe6867c0c167b3575c426d8d4
+
+% 0 1 0 1a8c4371301e9dbf1b7f41338b79422d
+
+% 1 1 0 073a1aebc91eb3e91a150bac7e5f4cee
+
+@ 0 3 0 13519c187c549a881aebc9814d441fe7
++ 这一派生按名称导入。
++ 密封层次结构，以及类型带有手写 `Inlinable` 的字段，还需要 `breviloquence.staged` 模块，它在代码编译时对判别字段和那些实例求值。
+
+@ 0 4 0 046dd874c9fca23e02c3146609f09117
++ 从流中读取的方式相同，输入永远不会先被组装起来。
++ 解析器在每个数据块到达时读取它，因此跨越两个数据块的值与整体到达的值读取结果完全相同。
++ 占用的内存以正在读取的那一项为界，而不是以整个文档为界。
++ `read[Cbor]` 同样在数据块到达时读取它们，但会构建整棵树。
+
+@ 0 1 0 1abd37e896cbdb3e12c3207c12bff33f
++ ### 直接打印
+
+@ 0 2 0 122856a995529971091ec9e963eb1589
++ 同一个派生也生成写入的一侧。
++ `Cbor.Printable` 直接写出一个值的字节，不经过树，而 `in[Data over Cbor]` 只要存在这样的实例就会使用它：
+
+% 2 1 0 09271e6af7bd648110744a593404c8b2
+
+% 3 1 0 10241ae142ecaf1b0ba4035ca2e3d2bd
+
+% 4 1 0 04bfbc7eafa26aa6042dc1712f66a5c6
+
+% 0 1 0 172c69bba48d0ecf07985626ea524527
+
+% 0 1 0 0c1fa88d4b6fd1d80d9318d2cb8c7806
+
+% 1 1 0 0d6943e060b45bb406ae42aa986a2385
+
+@ 0 3 0 1343bc2dc5f9fe3c1310fb53a02f107b
++ 这些字节与派生编码所写出的完全相同。
++ `Cbor.Printable.emit` 一次写一个块，每个块写满时就交给一个函数，因此可以发送一个值而无需在任何时候保存其完整编码。
+
+@ 0 1 0 1c555ed5399ee61c077ba377bf165e62
++ ### 为每个类型选择途径
+
+@ 0 3 0 1fc088dc7f2dc7e01050d70aef829801
++ 记录可以用 `derives Cbor.Direct` 同时生成这两个实例，放入其伴生对象中。
++ 然后一个导入就能为作用域中的每个记录选择途径。
++ 不是记录的类型是泛型 case class 或密封层次结构：
+
+% 2 1 0 010c759e3f4a64161bddc2668c746bfa
+
+@ 0 6 0 119ee93788d444dc1821e5abc121f62e
++ column  导入
++ column  对于记录
++ column  对于其他任何类型
++ row  `codecs.direct`  生成的解析器和打印器  派生的编解码器，除非它有自己的直接实例
++ row  `codecs.derived`  派生的编解码器，即使存在直接实例  派生的编解码器
++ row  `codecs.strict`  生成的解析器和打印器  指明该类型的编译错误，除非它有直接实例
+
+% 1 1 0 0bc3dae46640c00612bedd66e8f1ac1e
+
+@ 0 2 0 15ea4a3415a3ee460a3b16064e0bf359
++ 在 `codecs.strict` 下，`read[Play in Cbor]` 和 `in[Data over Cbor]` 永远不会回退到树。
++ 这些模式是互斥的选择，因此一次只导入一个。
+
+@ 0 1 0 05e698dc3a16622d191bb8b38a8e39ad
++ ### 基于 HTTP 的 CBOR
+
+@ 0 3 0 15c3fb684b7921a70ec4566423484d13
++ `Cbor` 值可以作为请求正文或响应正文，媒体类型为 `application/cbor`，正文在到达时会被解析回来。
++ 因此二进制 API 的使用和提供，与 [JSON API](json.md#json-over-http) 使用相同的代码。
++ 只有格式的类型不同。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 1 0 1880def239f995951e7c76b15d61a728
++ - [二进制数据](binary-data.md)介绍 CBOR 写入所用的字节。

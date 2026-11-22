@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1606a11a7b2526e307ffb707e426a29d
+
+@ 0 1 0 14a61fc190d3e2e70e7d9df38c9a00cc
++ 当 YAML 文档无法解析，或无法读取为所请求的类型时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0e17ce7f62342fba0c886a3d23c58796
++ Ypsiloid 通过此错误同时报告解析失败和转换失败。
++ 解析失败意味着文本不是良构的 YAML；转换失败意味着文档有效，但不具有目标类型所要求的形状。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 0f9ecc91dab2a31d02bed0df10eed7ba
+
+% 0 1 0 0ba8c4367974cc6f19b4701858fca3c1
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 4 0 112ccf4652acdf9a09cdf28bd245aed3
++ 对于解析失败，请对照 YAML 规范检查文档，缩进和块标量指示符通常是罪魁祸首。
++ 对于转换失败，请比较文档的形状与类型的字段；在累积式策略下，每处不匹配都会被一次性报告，各自附带指向出错节点的路径。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1ca73333d9c677d8198f09e68a25c46d
++ - 源代码：`lib/ypsiloid/src/core/ypsiloid.Yaml.scala`

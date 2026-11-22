@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 1 0 1992d28bc027cd86144d8211aebbc5e3
++ # `↯/s.116.1` – `Httpd.Error`
+
+@ 0 2 0 0a914f7ca990f7411312c59f95389510
++ Zgłaszany, gdy Scintillate nie może uruchomić serwera HTTP na żądanym porcie.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 16d858387f91b9f61d6c27a694355b4f
++ System operacyjny odmówił związania listenera z portem – zwykle dlatego, że port jest już w
++ użyciu albo jest uprzywilejowany, a proces nie ma do niego pozwolenia.
+
+@ 0 4 0 0d201869c13bd46b0d76dd3129898f34
++ To **nie** jest odpowiedź HTTP 5xx. Taką jest `Http.Status.Category.ServerError` w
++ telekinesis, opisujący odpowiedź wysłaną przez serwer; ten błąd opisuje serwer, który nigdy nie
++ wystartował. Do czasu rozróżnienia tych dwóch błąd nazywał się `ServerError`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1226dc50bc5618d319fb15e7b9fa3a09
+
+% 1 1 0 1155b4147f71d900099fb1711c5f6595
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 0cae5ffc7e29ed1c10e315cb2f3e0955
++ Wybrać inny port, zwolnić kolidujący albo uruchomić proces z wystarczającymi przywilejami.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1d31e7adc17911a20596ff34e3235ba2
++ - Źródło: `lib/scintillate/src/server/scintillate.Httpd.scala`

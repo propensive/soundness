@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 064e8938f32c16450d6458fad84c0ca4
++ # `SN-473` – Układ cytatów i wstawek (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Wtyczka kompilatora Decorum, która zgłaszała ten błąd, została wydzielona z Soundness i jest
++ teraz [Consequent](https://github.com/propensive/consequent), samodzielnym narzędziem
++ sprawdzającym styl Consequent. Reguła przetrwała tam pod nowym identyfikatorem, w którym litera
++ nazywa zasadę, z której reguła się wywodzi:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Było
++ column  Jest
+
+% 0 1 0 0dfeb6b43f011c2606e47d77f7789fa9
+
+% 0 1 0 06a3c2ed637513cc161099f951178336
+
+% 0 1 0 0dc2be03bcad4d21120cf695b95f7971
+
+% 0 1 0 14e1b91a15e586760e09533221a76fac
+
+% 0 1 0 1c00b4306f1dbfcb0a05afce89ef65e7
+
+% 0 1 0 031faf46c855f92106020c6af2375c22
+
+% 0 1 0 0a3eaa5d218e327601fe69075a7f525d
+
+% 0 1 0 0765d151c69213100a854e86924a45a8
+
+% 0 1 0 12e47287c1d9c9801d67217ef0a5a4b8
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

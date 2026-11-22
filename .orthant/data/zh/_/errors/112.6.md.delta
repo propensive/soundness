@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 01d66aacce277441090467d3e1dd74ac
++ # `↯/s.112.6` — 缺少 `Online` 实例
+
+@ 0 2 0 076b39d9738d69070b123f42615ac4e6
++ 当没有可用的上下文 `Online` 实例时，由 Obligatory 的 `rpc` 宏在编译时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 1d4bd1f2619c1a9b1217073be9bdab0f
++ 该宏需要一个 `Online` 实例，以确认当前作用域中允许进行网络操作。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 04b2a14834521e6c18785282523beee7
+
+% 1 1 0 00e4cc30c49b6cb40cd2965308f5b2fb
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 1b3571012bf6e9e90d3540702bc64fd9
++ 在调用处将一个 `Online` 实例引入作用域。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1b26732fe62cfa1207b80e721b9a052d
++ - 源代码：`lib/obligatory/src/json/obligatory.internal.scala`

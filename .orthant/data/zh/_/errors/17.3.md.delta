@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 17222be26c237d9b0d685d44bf67d932
++ # `↯/s.17.3` — 类型有多个 `flatMap` 方法
+
+@ 0 2 0 1f7e9519267c3cd30dca3b05dc014378
++ 当目标类型有不止一个 `flatMap` 重载时，由 Mercator 的 `monad` 宏在编译时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 1 0 140ee65cbcef038b0270bb5dc7a581a0
++ 多个 `flatMap` 重载对派生而言是有歧义的。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1a8da2143086402906e00d6176c3fb0c
+
+% 1 1 0 04c6fa1e32379b73099fb9cf82c92a0f
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 08318d39875630370c0e182c5cdb480a
++ 移除重载或为其改名，或手动提供一个 `Monad` 实例。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - 源代码：`lib/mercator/src/core/mercator.internal.scala`

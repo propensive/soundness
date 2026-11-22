@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 01de337765580144046008203d876e31
+
+@ 0 1 0 0a11d4f659e111b0097090de9b28fec8
++ 当 SVG 内容无法读取为 Savagery 所建模的带类型图形时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 15a91bb4336aaa55067170a777d849e6
++ Savagery 把 SVG 解析为带类型的形状、路径、渐变和变换。
++ 那些是良构的 XML、却不属于此解析器所建模的 SVG 的内容——未知元素，或在需要数字的地方不是数字的属性——在这里报告。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 14d1b00db49ab1a80648a4bb40376b59
+
+% 0 1 0 0cd794c468f984d91124ffb2da81bb5a
+
+% 0 1 0 11a543a13c1b25a70cb48a06b88c274f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 3 0 0347bb6872ff3d9a1f5881a5fe444b7b
++ 检查该元素及其属性是否属于 Savagery 所建模的范围。
++ 由绘图程序生成的 SVG 可能包含这一子集之外的结构；回退做法是把它作为普通 [XML](../en/modules/xml.md) 读取。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1d467f3ddbee61b91a1f13228b8b2289
++ - 源代码：`lib/savagery/src/core/savagery.Svg.scala`

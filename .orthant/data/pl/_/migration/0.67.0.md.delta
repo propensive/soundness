@@ -1,0 +1,292 @@
+orthant 2 language
+
+@ 0 1 0 15c734f769eadc1f0a57e20a69d2c9c5
++ # Zmiany od wersji 0.66.0
+
+@ 0 3 0 11b9fc9daa6e74e7032e083d78174f95
++ Ten plik czyta agent LLM, aby zaktualizować kod korzystający z bibliotek Soundness z wersji
++ 0.66.0 do następnego wydania. Każdy wpis dokładnie określa, co się zmieniło; format opisuje
++ `AGENTS.md`. Wpisy są pogrupowane według modułów, a w obrębie modułu ostatnio dodane są na
++ końcu.
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 1 0 12b7b0207b1c966c09b7e5f168c21588
++ - Przemianowano `rudiments.matchable` na `rudiments.unsafeMatchable`. Sygnatura bez zmian:
+
+% 0 1 0 0683e6d0f5e5fdc60fbd9040dc1d1097
+
+@ 0 2 0 081cfc53ec33015713903bc8dadff17a
++   Unsafe): value & Matchable`. Przemianowano również w eksporcie modułu zbiorczego
++   `soundness`. (#TBD)
++ - Przemianowano `rudiments.mutable` na `rudiments.unsafeMutable`. Sygnatura bez zmian:
+
+% 0 1 0 0492c2803aa5993f12003056520f7cac
+
+@ 0 2 0 18a7ad602635053f02ea656a85780fc4
++   Unsafe): scala.Array[element]`. Przemianowano również w eksporcie modułu zbiorczego
++   `soundness`. (#TBD)
++ - Przemianowano `rudiments.immutable` na `rudiments.unsafeImmutable`. Sygnatura bez zmian:
+
+% 0 1 0 07cb3d81adecba1e026e35ada9439380
+
+@ 0 7 0 011ca8c6a8b734890f1d1a7ff7cc8615
++   Unsafe): Array[element]^{}`. Przemianowano również w eksporcie modułu zbiorczego
++   `soundness`. (#TBD)
++ - Przemianowano `rudiments.attested` na `rudiments.unsafeAttested`, we wszystkich trzech
++   przeciążeniach: postaci przedziałowej `extension (interval: Interval) inline def
++   unsafeAttested[within](within: within)(using erased Unsafe): Interval in within.type`,
++   postaci indeksowej `def unsafeAttested(index: applicable.Operand)(using erased Unsafe)` oraz
++   postaci z lambdą `inline def unsafeAttested[result](index: applicable.Operand)(inline lambda:
++   (applicable.Operand in value.type) => result)(using erased Unsafe)`. Sygnatury bez zmian.
+
+% 1 1 0 00f3624b7464205c059bb8097cb582e6
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 16 0 17cb8d32e6e0a5171425ddd348c197df
++ - Przemianowano `zephyrine.Stream#storage(using Unsafe)` na `unsafeStorage`. Sygnatura bez
++   zmian. (#TBD)
++ - Przemianowano `zephyrine.Intake#buffer(using Unsafe)` na `unsafeBuffer`. Sygnatura bez
++   zmian. (#TBD)
++ - Przemianowano `zephyrine.Region#raw(using Unsafe)` na `unsafeRaw`. Sygnatura bez zmian. (#TBD)
++ - Przemianowano `zephyrine.Slate#raw(using Unsafe)` na `unsafeRaw`. Sygnatura bez zmian. (#TBD)
++ - Przemianowano `zephyrine.Cursor#datum(using erased Unsafe)` na `unsafeDatum`. Sygnatura bez
++   zmian. (#TBD)
++ - Dwa typowane rozszerzenia bufora kursora, dotąd oba nazwane `buffer` i rozróżniane typem
++   elementu odbiorcy, otrzymały nowe nazwy: `extension [cap^](cursor: Cursor[Data, cap])
++   inline def buffer(using erased Unsafe): scala.Array[Byte]` staje się `unsafeDataBuffer`
++   (`@targetName("dataBuffer")` bez zmian), a `extension [cap^](cursor: Cursor[Text, cap])
++   inline def buffer(using erased Unsafe): scala.Array[Char]` staje się `unsafeTextBuffer`
++   (`@targetName("textBuffer")` bez zmian). Miejsce wywołania musi wybrać według typu elementu
++   kursora: `Cursor[Data, ?]` używa `unsafeDataBuffer`, `Cursor[Text, ?]` używa
++   `unsafeTextBuffer`. Poza tym sygnatury bez zmian. (#TBD)
+
+% 0 1 0 00b31912d51098c51da90af4b3f83df7
+
+@ 0 2 0 06fd6aaa28e939a709c903bfe0a30127
++ - Przemianowano `serpentine.Path#child(value: Text)(using erased Unsafe)` na `unsafeChild`.
++   Sygnatura bez zmian. (#TBD)
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 4 0 0927926cc34ad7d315821bc481c341fd
++ - Przemianowano `kaleidoscope.Regex.apply(parts: List[String])(using erased Unsafe): Regex` na
++   `kaleidoscope.Regex.unsafeFrom(parts: List[String])(using erased Unsafe): Regex`. Drugie
++   przeciążenie, `Regex.apply(text: Text): Regex in JavaBaseRegex raises Regex.Error`, pozostaje
++   bez zmian; wywołanie postaci `Regex(List(…))(using Unsafe)` musi stać się
+
+% 0 1 0 1c7c240e8a1b8d7a10be8e53a4c38f5d
+
+% 0 1 0 18633a2e1ba33aa80852ef15b48ce21d
+
+@ 0 21 0 0f8f17db0d15a367091e3baf453e0031
++ - `geodesy.Location#longitude` zwraca teraz kąt w `[-π, π)` (od −180° do 180°); dotąd zwracał
++   `[0, 2π]`, więc długość wschodnia 10° pozostaje bez zmian, ale lokalizacja zbudowana z
++   długością 270° jest teraz odczytywana jako −90°. `Location#encode` i kodowanie URI `geo:`
++   podążają za tym, zapisując długości zachodnie jako liczby ujemne. Kod zakładający nieujemną
++   długość powinien wywołać `.principal` na wyniku. (#TBD)
++ - `geodesy.Location(latitude: Angle, longitude: Angle)` nie gubi już długości zachodnich: każda
++   ujemna długość dotąd się nasycała i była odczytywana jako 0°. `Location(north: Int, east:
++   Int)` (w mikrostopniach) dotąd zwracał szerokość około 0° dla każdego wejścia; teraz zwraca
++   podaną szerokość. Geohashe i `surfaceDistance` takich lokalizacji odpowiednio się zmieniają.
++   Zapisane geohashe obliczone z lokalizacji zachodnich lub podanych w mikrostopniach były błędne
++   i należy je obliczyć ponownie. (#TBD)
++ - `geodesy.Location#bearing` odróżnia teraz wschód od zachodu (brał wartość bezwzględną różnicy
++   długości, więc każdy azymut na zachód wychodził na wschód) i zwraca azymut znormalizowany do
++   `[0, 2π)`, zanim trafi on do instancji `Directional`. `Compass[n](angle)` przyjmuje dowolny
++   kąt, także ujemny, co dotąd rzucało `ArrayIndexOutOfBoundsException`. (#TBD)
++ - Instancja `Decodable in Text` dla `Geolocation` parsuje teraz `;crs=…`, `;u=…` i dalsze
++   parametry, co dotąd zawsze zgłaszało `Geolocation.Error` z przyczyną `MissingEquals`, oraz
++   akceptuje parametry bezpośrednio po długości (`geo:1,2;u=3`), co dotąd zgłaszało
++   `UnexpectedSuffix`. Instancja `Encodable in Text` dla `Geolocation` zapisuje teraz `crs` i
++   `parameters`, w kolejności `;crs=…`, `;u=…`, a następnie każdy parametr, które dotąd
++   pomijała. (#TBD)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 8 0 072a625bde100799028eb6202eb9924e
++ - `gossamer.Decimalizer#decimalize` nie gubi już przeniesienia zaokrąglenia z cyfry wiodącej.
++   Gdy każda zachowana cyfra to 9, a następna zaokrągla się w górę, wynik tracił wiodącą `1`
++   (`Decimalizer(decimalPlaces = 1).decimalize(9.96)` dawało `"0.0"`); teraz jest to kolejna
++   potęga dziesięciu z tą samą precyzją (`"10.0"`; `Decimalizer(2).decimalize(9.99)` daje
++   `"10"`). Jeśli przeniesienie osiąga `exponentThreshold`, wartość jest zapisywana w postaci
++   wykładniczej (`Decimalizer(4).decimalize(999.96)` daje `"1.000×10³"`). Każdy `Showable` dla
++   `Double`, który przechodzi przez `Decimalizer`, zmienia się w ten sam sposób. Kod, który
++   dopasowywał stary obcięty wynik, musi oczekiwać poprawionego tekstu. (#TBD)
+
+% 0 1 0 1158a6567f5d98ee0a180931c96339da
+
+@ 0 8 0 18cfc1aec187223b1ab447e8f8044f84
++ - `hieroglyph.Chars.superscript` (osiągane jako `char.superscript`) zwracało znaki **indeksu
++   dolnego** dla `(`, `)`, `+`, `-` i `=` – U+208D, U+208E, U+208A, U+208B, U+208C. Teraz zwraca
++   postaci indeksu górnego U+207D, U+207E, U+207A, U+207B, U+207C. Cyfry były i pozostają
++   poprawne. Kod lub dane testowe przypinające stare (błędne) znaki dla tych pięciu wejść należy
++   zaktualizować. (#TBD)
++ - `hieroglyph.Chars.subscript` (osiągane jako `char.subscript`) odwzorowuje teraz `(`, `)`,
++   `+`, `-` i `=` na U+208D, U+208E, U+208A, U+208B, U+208C; dotąd odwzorowywało tylko cyfry i
++   dla tych pięciu zwracało `Unset`. Kod polegający na `Unset` dla nich musi obsłużyć obecną
++   wartość. (#TBD)
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 11 0 14453f039a5707c9005b20c7f3ed3494
++ - Instancja `Showable` dla `Media.Suffix` przedstawia teraz przyrostek tak, jak zapisuje się go
++   w typie mediów, używając `Suffix#name`: `JsonSeq` pokazuje się jako `json-seq` (było
++   `jsonseq`), `CborSeq` jako `cbor-seq`, a `FastInfoset` jako `fast-infoset`. Pozostałe
++   dwanaście przyrostków bez zmian. (#TBD)
++ - `MediaType.parse` (a więc także `Text#as[MediaType]` i `media"…"`) akceptuje teraz
++   przyrostki z łącznikiem `+json-seq`, `+cbor-seq` i `+fast-infoset`, które dotąd zawsze
++   zgłaszały `MediaType.Error` z przyczyną `InvalidSuffix`, ponieważ przed wyszukaniem w
++   wyliczeniu cały przyrostek był zapisywany wielką literą (`Json-seq`), a nie każde słowo
++   rozdzielone łącznikiem. Przyczyna `InvalidSuffix` podaje teraz przyrostek tak, jak został
++   zapisany, małymi literami, a nie wielką literą. (#TBD)
++ - `MediaType.parse` zgłasza teraz `MediaType.Error` z przyczyną `MissingParam` dla parametru
++   bez `=` (`text/plain; foo`); dotąd rzucał `IndexOutOfBoundsException`, którego nie mogła
++   przechwycić żadna `Tactic`. (#TBD)
+
+% 0 1 0 05a039658357a62915cb363c5761cf36
+
+@ 0 6 0 124a57e6dc93d81c0410056e3284c3f5
++ - `gastronomy.Feistel.apply(subkeys, round)(input)` nie psuje już wyniku, gdy funkcja rundy
++   zwraca ujemny `Int`. XOR górnego słowa z wynikiem rundy był poszerzany przez `Int#toLong`,
++   który rozszerza znak, wypełniając górne 32 bity wyniku – właśnie wsuniętą połowę –
++   jedynkami; teraz jest maskowany do 32 bitów. Każda wartość wyprowadzona z sieci `Feistel`,
++   której funkcja rundy mogła zwrócić liczbę ujemną, się zmienia, więc utrwalone wartości
++   należy obliczyć ponownie. (#TBD)
+
+% 0 1 0 0cc2d1f372946d701781f2258ebc29ab
+
+@ 0 6 0 03f4c93e0c2f73160e5ba44e8f7c5b96
++ - Gniazdo nasłuchujące `scintillate.SocketServer` jest teraz wiązane z kolejką oczekujących
++   połączeń o długości 1024 (`jn.ServerSocket(port, 1024, address)` oraz, dla TLS,
++   `createServerSocket(port, 1024, address)`), a gniazdo `scintillate.Reactor` z 1024 (było 128);
++   dotąd `SocketServer` przekazywał `0`, czyli domyślne 50 z JDK. Jądro ogranicza tę wartość
++   (`kern.ipc.somaxconn`, `net.core.somaxconn`). Widoczne tylko jako liczba jednocześnie
++   oczekujących połączeń przyjmowanych, zanim pakiety SYN zaczną być odrzucane. (#TBD)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 10 0 1ab36946e62eec82037963663bd517a3
++ - `sedentary.LocalhostDevice#invoke` uruchamia JVM pomiarową ze standardowym wyjściem błędów
++   dziedziczonym z harnessu (`ProcessBuilder.Redirect.INHERIT`) zamiast przekazywanego potokiem i
++   odrzucanego, więc stderr procesu potomnego pojawia się teraz na stderr harnessu; niezerowy
++   kod wyjścia procesu potomnego zgłasza `Bench.Error`. (#TBD)
++ - W `sedentary.Stress` ciało, które rzuca dowolny `Throwable` inny niż `OutOfMemoryError`, nie
++   kończy już swojego wątku roboczego nieprzechwyconym wyjątkiem: okno jest zapisywane jako
++   nieudane (`ok = false`, co kończy przegląd lub wyszukiwanie przepustowości tak, jak zrobiłoby
++   to niepowodzenie SLO), a na stderr wypisywany jest jeden wiersz `sedentary: a worker failed at
++   N=<n>: <throwable>`. Dotąd takie okno kończyło się bez operacji martwego wątku roboczego, a
++   wyjątek był wypisywany dla każdego wątku przez domyślny handler nieprzechwyconych wyjątków.
++   (#TBD)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 8 0 02e0cf0bbf8c434d1799bfbeac912a62
++ - `snooze(duration)`, a więc także zbudowane na nim `sleep(instant)`, `delay` i `hibernate`,
++   zawsze odczekują teraz cały swój czas trwania, chyba że zadanie zostanie anulowane. Pod
++   nadzorcą z pulą (`threading.pooledThreading`) zadanie przekazane wątkowi nośnemu, który
++   jeszcze się kręcił, mogło zastać zezwolenie na zaparkowanie pozostałe po przekazaniu, a jego
++   następne `snooze` wracało natychmiast. To samo dotyczy każdego `Supervisor` na JVM, którego
++   `sleep` pochodzi z `ThreadSupervisor`: `sleep` parkuje teraz wielokrotnie aż do swojego
++   terminu, kończąc wcześniej tylko wtedy, gdy wątek zostanie przerwany. Kod, który polegał na
++   wcześniejszym powrocie `snooze` bez anulowania, musi zamiast tego użyć `park` i `unpark`.
++   (#2006)
+
+% 0 1 0 1fbc3e2eb3ac8c1d08a287e2c3a4960b
+
+@ 0 12 0 1be31ea9213d9f2619dd92a3517640f2
++ - Abstrakcyjną składową `escritoire.Columnar` jest teraz `def flex(metrics:
++   tessellate.Metrics, maxWidth: Int): Flex`, która wyprowadza żądanie kolumny z łącznych
++   szerokości wewnętrznych jej wierszy. Dawna abstrakcyjna `def flex[text: Textual { type Result
++   = Char }](lines: Array[text]^{}, maxWidth: Int)(using Text is Measurable): Flex` jest teraz
++   konkretna i deleguje do niej przez `Columnar.metrics(lines)`. Zewnętrzna implementacja
++   `Columnar` musi zamiast tego implementować `flex(metrics, maxWidth)`, obliczając wynik z
++   parametru `metrics` tam, gdzie dotąd składała `Flow.metrics` po wierszach; nie musi już
++   nadpisywać postaci z `lines`. (#2007)
++ - `Columnar` zyskuje `accommodates(aggregate: Metrics, cell: Metrics): Boolean`, prawdziwe, gdy
++   komórka nie może zmienić żądania kolumny; domyślnie jest to `cell.min <= aggregate.min &&
++   cell.natural <= aggregate.natural`. Strategia, której żądanie ignoruje treść,
++   powinna nadpisać je na `true`, tak jak robi to `columnar.Fixed`. Nowe jest
++   `Columnar.metrics(lines): Metrics`: złożenie maksimum `Flow.metrics` każdego wiersza. (#2007)
+
+% 0 1 0 1308c4aae25b50821be43aace8323e07
+
+@ 0 7 0 08e12c11eec4ad900e3815ade66cf685
++ - `tessellate.Flow.wrap` nie usuwa już końcowych spacji z wiersza, który kończy się twardym
++   podziałem (`\n` lub `\r`) albo końcem treści; usuwa je tylko w takim stopniu, w jakim jest to
++   potrzebne, by wiersz zmieścił się w `width`. Wiersz kończący się miękkim podziałem nadal traci
++   spacje pochłonięte przez podział. Zawinięty tekst oraz tabele przedstawiane przez
++   `Flow.wrap` (takie jak `Grid.render` z escritoire) zachowują więc znaczące końcowe spacje:
++   stylizowana komórka taka jak `e"$Bg(green)( ✓ )"` zachowuje teraz swoją trzecią, stylizowaną
++   komórkę, zamiast być ponownie dopełniana niestylizowaną spacją. Kod lub kontrolki testowe,
++   które oczekiwały przyciętych wierszy, należy zaktualizować. (#2000)
+
+% 0 1 0 0a2330b2780f03b71aba65d339a6e0e3
+
+@ 0 15 0 10e46679c33c039d1241aced93c1cd47
++ - Nowa biblioteka `cartouche`, silnik pozycjonowania tekstu: `def arrange[result](body:
++   (Arranger.Pass^) ?=> result)(using Arranger): result` wykonuje swoje ciało dwukrotnie,
++   rejestrując każde wywołanie `position(...)` w pierwszym przebiegu i odpowiadając na nie z
++   rozwiązanego rozmieszczenia w drugim. Także `def position(caption: Caption)(using
++   Arranger.Pass^): Caption.Position`, `def position(width: Double, height: Double, x: Double,
++   y: Double, attachments: List[Caption.Attachment] = Caption.Attachment.compass, standoff:
++   Double = 0.0, reach: Double = 0.0, padding: Double = 0.0, priority: Int = 0, fallback:
++   Caption.Fallback = Caption.Fallback.Overlap)(using Arranger.Pass^): Caption.Position`, `def
++   avoid(obstacles: Obstacle*)(using Arranger.Pass^): Unit`, `def canvas(box:
++   Obstacle.Box)(using Arranger.Pass^): Unit`, typy `Caption` (z `Caption.Attachment`,
++   `Caption.Fallback`, `Caption.Leader`, `Caption.Position`), `Obstacle` (z `Obstacle.Box`,
++   `Obstacle.Line`, `Obstacle.Disc`) i `Arranger` (z `Arranger.Greedy`, `Arranger.Annealing` i
++   `Arranger.Pass`) oraz importowalne giveny `arrangers.greedyArranger` i
++   `arrangers.annealingArranger`. Wszystko eksportowane z modułu zbiorczego `soundness`.
++   Zmiana addytywna: żaden istniejący kod się nie zmienia. (#2012)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 5 0 19ffcf797ed10a4911b08620258ef7b9
++ - `tasseomancy.Plottable#draw` zyskuje wymagany given: `def draw(form: Form, data: Self, fit:
++   Result)(using Operand, ChartPalette, FontMetric, Arranger): Chart.Drawing`, gdzie `Arranger`
++   to `cartouche.Arranger`. `Chart#drawing`, `Chart#svg` i `Chart#revise` zyskują ten sam given
++   `Arranger`. Obiekt towarzyszący `Arranger` dostarcza wartość domyślną, więc miejsca
++   wywołania, które przywołują je niejawnie, nie wymagają zmian; implementacja `Plottable` musi
++   dodać ten parametr. (#2012)
+
+% 0 1 0 0c2158b85b3b291d1c1e1399b1908a25
+
+@ 0 6 0 0970f4adebaf508f0ef9cf97964be03c
++   Srgb): List[Figure]` staje się `tickLabel(at: Chart.Anchoring, text: Text, axis: Axis, color:
++   Color in Srgb): List[Figure]`. `at` było położeniem znacznika osi, od którego metoda
++   przesuwała etykietę o `tickLength + gap`; teraz jest to własny punkt zakotwiczenia etykiety
++   wraz z jej wyrównaniem, już przesunięty. Nadpisanie, które umieszczało tekst w `at` z własnym
++   zakotwiczeniem i linią bazową, powinno umieszczać go w `at.point` z `at.anchor` i
++   `at.baseline`; nadpisanie, które obracało lub w inny sposób przesuwało etykietę, stosuje te
++   same przekształcenia do `at.point`. (#2012)
+
+% 0 1 0 15287bc3c9a637401741cd65f44427a3
+
+@ 0 4 0 1f579633ff54a0d1172452fe6deb430b
++   List[Figure]` staje się `pointLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb):
++   List[Figure]`. `at` było położeniem znacznika punktu, od którego metoda przesuwała etykietę w
++   prawo; teraz jest to własny punkt zakotwiczenia etykiety wraz z jej wyrównaniem, po tej
++   stronie, którą wybrało rozmieszczenie. Nadpisania dostosowuje się tak jak dla `tickLabel`.
++   (#2012)
+
+% 0 1 0 18ca6b7d3205aee7145bf4a8e00da3bc
+
+@ 0 14 0 0f3499f74e1c8e6f0b784474189288cc
++   staje się `wedgeLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure]`,
++   gdzie `at` to punkt zakotwiczenia i wyrównanie etykiety, jak wyżej; dotąd był to środek
++   wycinka, z tekstem wyśrodkowanym na nim. (#2012)
++ - Nowa `case class Chart.Anchoring(point: Point, anchor: Lettering.Anchor, baseline:
++   Lettering.Baseline)` z `Chart.Anchoring.of(position: cartouche.Caption.Position):
++   Chart.Anchoring` oraz nowa metoda stylu `Chart.Style#leader(from: Point, to: Point, color:
++   Color in Srgb): List[Figure]`, domyślnie rysowana jako jednopikselowa łamana z obrysem;
++   nadpisuje się ją, aby nadać styl liniom odniesienia lub je wyłączyć. (#2012)
++ - Zmiana zachowania: etykiety wykresów są teraz rozmieszczane przez cartouche. Notatka punktu
++   może zostać umieszczona po innej stronie niż prawa albo odsunięta z linią odniesienia tam,
++   gdzie w przeciwnym razie nachodziłaby na inną notatkę, znacznik, linię lub legendę; procent
++   wycinka wykresu kołowego może zostać przesunięty na zewnątrz z linią odniesienia; etykieta
++   znacznika osi, która nachodziłaby na sąsiednią, jest pomijana. Wykres, którego etykiety się
++   nie nakładały, przedstawia się tak jak wcześniej. Przedstawione SVG wykresu z nakładającymi
++   się etykietami zmienia się więc i może zawierać dodatkowe elementy `polyline` dla linii
++   odniesienia. (#2012)

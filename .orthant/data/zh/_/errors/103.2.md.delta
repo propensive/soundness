@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1e30ab7929bf34ba0f1e63c6c8a224f3
+
+@ 0 1 0 005a4461066515c51fd2df1c6236101d
++ 当 HTTP 请求无法构造或发送时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1f3eaa70997f2ee81309113d33d8da5f
++ 它涵盖请求本身的错误——无法表达的 URL、无效的头部、无法分帧的正文——不同于失败的响应（那是 `HttpError`）或失败的连接（那是 `ConnectError`）。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 0b50672c8207281a1cd70985271e6e3f
+
+% 0 1 0 1fef6c0f444e31e71436c96afb19a97e
+
+% 0 1 0 1473fda1164814c1054a58c7589978b9
+
+% 0 1 0 18c5e98445f4aff618744b427f5b441f
+
+% 0 1 0 18bd29f07a7962121accf160ddcd0c18
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 11ff39f1ada1db05046d71d24ff79f5c
++ 原因指明了请求中出错的部分。
++ 常见的情况是头部值中含有换行符，或者使用了传输层不支持的方法。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 082742a867b8ffd405367b3235b24eba
++ - 源代码：`lib/telekinesis/src/core/telekinesis.Http.scala`

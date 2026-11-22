@@ -1,0 +1,694 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 135f99229467d8821f05735b5e5994a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 05772917a1ce118015eec2e617a18b5c
++ info   序列之间的最小编辑脚本，作为可以应用、反转、对齐、序列化和重拟的值
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 0481dc3f9421873606e2a603c7c67c07
++     _Dissonance_ 将两个序列之间的差异计算为一个不可变的值。
++     `diff` 对任意两个 `Sequence` 运行 Myers 算法，使用相等性或调用者选择的比较方式，并返回一个 `Diff`：由插入（`Diff.Ins`）、删除（`Diff.Del`）和未变元素（`Diff.Par`）组成的编辑脚本，每一项都带有其在两个序列中的位置。
+
+@ 0 6 0 0e15268e4561d8fc068e763f88b13d5b
++     `Diff` 可以作为补丁应用于原始序列，用 `flip` 反转，分组为变化段和未变段，用 `rdiff` 细化为 `RDiff`（它将删除与替代它们的插入配对为替换，即 `Diff.Sub`），以 unix `diff` 格式序列化并从中读回。
++     `Redraft` 是补丁的宽容形式，它只指明要删除和添加的行，并自行找出它们所属的位置；而 `Evolution` 跨越许多版本而非两个版本追踪每个元素。
+
+% 2 1 0 1859e7f790d94e9102a00caf8d46e178
+
+% 3 1 0 0489071a72bc29770b0fb909dd603e7a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1223ae28266dd8440738ca5b9e458b59
+
+% 0 1 0 1053e055a687c8e21576ea606c53ac16
+
+% 0 1 0 080da6aab21a4f8f0bba6bcffa750f5a
+
+% 0 1 0 0533c12dadfb997b096ac099f7618e80
+
+% 1 1 0 1f6f3ed8ffd7bccc178197cb96972248
+
+@ 0 4 0 080d2c676c520acb060ac71435344e9b
++     由 `diff` 计算或从重拟稿解析得到的差异，在其编辑中携带每个元素，并在其类型中表明这一点：它是 `Diff[element] & Retained`，在其上 `kept` 读取编辑的值，无需处理缺失。
++     从 unix 格式读取的差异没有其未变行的值，因此它是普通的 `Diff`，不能渲染为重拟稿。
+
+@ 0 2 0 040d03a1d2ec7b831f32fcdc6a9a6565
++     本库只有一个源集 `dissonance.core`，可编译到 JVM、Scala.js 和 Scala Native。
++     所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 1c05bf4ee47dd1e500b737adf58b91cc
+
+% 0 1 0 1e32564d1cd51cc71961ab841471d954
+
+% 0 1 0 04d03e334547df2214a04d51c9d81383
+
+% 0 1 0 0d4474326c2fc7bf1a3daa864ff9a18b
+
+@ 0 6 0 1726112647e0258b112b71948c6c6827
++ entry .diff   用 Myers 算法得到的、将一个序列变为另一个序列的最小编辑脚本
++     `diff(left, right)` 比较两个 `Sequence`，并以 `Diff` 返回将 `left` 变为 `right` 所需的最少插入和删除，其间穿插未变的元素。
++     第三个参数用任意比较方式取代 `==`，例如不区分大小写的比较；`right` 中与 `left` 中某个相等元素配对的元素，报告为保存 `left` 中元素的 `Diff.Par`。
+
+% 2 1 0 12ef142ef7282ac011bed5e237b4f34c
+
+% 3 1 0 109a57299457cbad08b1addd099559eb
+
+% 0 1 0 1880788b16cd7de21203ffe4e6f10b81
+
+% 0 1 0 0c815ea58c5674420a79d538ece9a53e
+
+% 0 1 0 1cd07cbc74e1280a00fc828ccb176a7d
+
+% 1 1 0 0de3df4512f1fdf81f9abc7bd21d0992
+
+@ 0 3 0 1ce03669ed2fff69108d06aa849a8a9d
++     算法做出的每个编辑都保存其元素，因此结果是 `Diff[element] & Retained`：它可以渲染为 `Redraft`，`kept` 也可以直接读取其编辑的值。
++     元素可以是任意类型。
+
+@ 0 1 0 167be5d967b7133711914750c9984af9
++ entry .Diff   编辑脚本：两个序列之间的插入、删除和未变元素
+
+% 1 1 0 1afd950f9e931e351b458209bb397e06
+
+@ 0 4 0 12d9588af899b4ac0e1c61c8ceb156ad
++       `Diff` 是 `#edits` 的序列，每一项是 `Ins`、`Del` 或 `Par`，按应用顺序排列。
++       每一项都带有其在左序列、右序列或两者中的位置，并可选地带有其元素。
++       它通常由 `diff` 生成，但也可以手工构建，或从 unix 格式读取。
+
+% 2 1 0 18daf4a0ba7db46211a82b86e5a9c574
+
+% 3 1 0 1308c0009e852b9e09318a2c1b075c22
+
+% 0 1 0 153130800463f6e50c69e69ccb42888c
+
+% 0 1 0 1a75875f9c803a90166b020aaecca6cc
+
+% 0 1 0 15e90832dd50cd650de92af09720d277
+
+% 0 1 0 02d7899b3ccb9b6d1a86f889b60254ed
+
+% 0 1 0 1a07454f2cfd4cd41b2cda67b1616e35
+
+% 1 1 0 05e034fce9b8a91707069873c7a90911
+
+@ 0 3 0 0a865e56399142590c10d0675d2f0907
++       由 `Text` 行组成的差异可以用 `.serialize` 序列化为 unix `diff` 格式，该格式可以通过 `.aggregable` 用 `read[Diff[Text]]` 读回。
++       保留了值的 `Text` 差异可以用 `.redraft` 渲染为 `Redraft`。
+
+% 0 1 0 07f33fb4790caf24087bfb6be5445419
+
+% 0 1 0 0bc896c0597c8cae06d31ce4c96f7c85
+
+% 0 1 0 13ff3e22cb16b87f1e6a65403b02bc5b
+
+@ 0 5 0 0d1a57cc1a67d9b102769ab49b524886
++   entry .aggregable   从 unix 格式差异的各行读取 `Diff[Text]`，即 `read[Diff[Text]]`
++       使 `Diff[Text]` 可以从默认格式（不带选项的 `diff`）的 `Text` 行流中读取的 given：诸如 `2c2,3`、`3d2` 和 `0a1` 的命令行，以 `< ` 为前缀的删除行，以 `> ` 为前缀的插入行，以及它们之间的 `---`。
++       它需要 `Tactic[Diff.Error]`，遇到无法读取的行时抛出该错误。
+
+% 2 1 0 02ce28f225f691a31ae04d1693c8fd72
+
+% 3 1 0 1d639a1fdd0eb2cb15e6cebd6bb81059
+
+% 4 1 0 042d246d3d6524bf0fb185c85af398ce
+
+% 0 1 0 1633ab8ab31e00a5089b6a52a1eeba09
+
+% 0 1 0 05e7af60d4356f970e082066cf210c13
+
+% 1 1 0 14a324be9fda49af17867208f4f35a1f
+
+@ 0 9 0 04cbe879ecd43c661851a101d72a1631
++       该格式不重复未变的行，因此解析所得差异中的 `Par` 不带值：它完全可以为原始序列打补丁，但它是普通的 `Diff`，而不是 `Retained` 的，因此不能用 `.redraft` 渲染。
++   entry .serialize   以 unix 格式差异的各行表示的文本差异
++       `Diff[Text]` 上的扩展方法，返回 `Chain[Text]`：对每个变化区域，先是一个命令行（`<left>a<right>`、`<left>d<right>` 或 `<left>c<right>`，范围写作 `start,end`），然后是每个以 `< ` 为前缀的删除行，若该区域既有删除又有插入则有一行 `---`，再是每个以 `> ` 为前缀的插入行。
++       未变的行不写出。
++       这些行可以用 `read[Diff[Text]]` 读回。
+
+% 2 1 0 10972ea5debea5a40ff52a37acc717be
+
+% 3 1 0 06c06b8d7435d54c01e5fe8e09d3b3fd
+
+% 0 1 0 1157a3f882021e8c11ddb0107f9b95df
+
+% 0 1 0 19597f3633580e4d07f7213b62bc6fe9
+
+% 1 1 0 0fd133825339f0630848e6c7c3dd9304
+
+@ 0 6 0 135a8cff43ca197707a98b280d94d41c
++   entry .redraft   将保留了值的文本差异渲染为 `Redraft`，带有所要求的上下文量
++       `Diff[Text] & Retained`（例如 `diff` 的结果）上的扩展方法。
++       上下文是一个 `Redraft.Context`：`Minimal`（默认值）只保留无歧义地定位每处变化所需的未变行，`Full` 保留全部未变行，`Fixed(n)` 保留距离变化 `n` 行以内的未变行。
++       由差异渲染出的重拟稿应用于原始序列时，总能得到该差异的目标。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0dac36ff7bea52e6153f98fe1f80f62d
+
+% 1 1 0 135ec5837037683c18323f3429d93d17
+
+% 2 1 0 016ce39a1bb73ec4039d98b9d00c86ed
+
+% 3 1 0 16971d1a36d8cea81c7ab0b771a25c0b
+
+% 0 1 0 18241eb46aa6a3d114544c9db11d03f2
+
+% 0 1 0 0da7f9964ef259901510193a0f963478
+
+% 0 1 0 1356bed9bedcf11e08812d64996f01f6
+
+% 1 1 0 0eba94037a76d104003b77cb1d050b37
+
+% 2 1 0 1b7f80d078af7bb00783cc3355ed37e2
+
+% 3 1 0 0d574ef8528062cd0613089c1cbc3b83
+
+% 0 1 0 09027bc403eb958d180d2dd0364814cc
+
+% 0 1 0 07c83c46cd00c6ec133a6e9150aac30b
+
+% 0 1 0 1e828c75e032975d1d8ad6a90aea92c1
+
+% 1 1 0 19597f0e39f86ac50fe7ede9ad7cbc9d
+
+% 2 1 0 11eccba92d3c670815c75442ebb1f260
+
+% 3 1 0 160fb7ce6fdf019b19a6039a7902b6e4
+
+% 0 1 0 002c6629684c0d1b0a4a573c1400d262
+
+% 0 1 0 0d4a518880fd56ca09ecd25251a82940
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 0c485717e066e47014d89fe4a442ecfa
++       解析所得的差异的未变行没有值，因此不是 `Retained` 的，也就没有 `redraft`：类型排除了无法重现原始内容的渲染。
++   entry .Error   unix 格式差异中的某行无法读取时抛出
+
+% 1 1 0 1938449aaa6b1005073a5fdf583315b3
+
+@ 0 19 0 111f25c69251e0ab14c77a182dff06f7
++         错误 `↯/s.78.1`：_could not read the diff at line `lineNo`: `line`_。
++         由 `Diff.aggregable`（`read[Diff[Text]]`）在命令行的范围不是数字，或该行根本不是命令时抛出。
++         格式错误的范围会中止读取；无法识别的命令行会被抛出然后跳过，因此在能够恢复的战术下，差异的其余部分仍会被读取。
++     entry #lineNo   无法读取的行的行号，从 1 开始计数
++     entry #line     无法读取的行的文本
++   entry #edits     各编辑，按应用顺序排列
++   entry #size      插入和删除的数量，不计未变元素
++       当且仅当两个序列相等时为零。
++   entry #flip      反转的差异，将右序列变回左序列
++       每个 `Ins` 变为 `Del`，每个 `Del` 变为 `Ins`，每个 `Par` 的两个位置互换。
++       元素类型变为 `Optional[element]`，因为反转后的插入是一个值存在但类型为可选的删除。
++   entry #map       对每个编辑的元素应用一个函数
++       位置保持不变；不带值的编辑仍不带值。
++       结果是普通的 `Diff`，而不是 `Retained` 的：如果每个编辑仍携带其值，用 `retained` 重新标记它。
++   entry #patch     将差异应用于原始序列，得到目标序列
+
+% 1 1 0 0ae45443f90e7f6e07140d84b1e93eb6
+
+@ 0 5 0 1d695b7fccd747cb06a462fa2f60bb95
++         `diff.patch(original)` 在由原始元素组成的 `List` 上遍历各编辑：插入取自差异，删除跳过一个元素，未变元素被保留。
++         它返回一个 `Chain`。
++         对于带值的 `Par`，可选的第二个参数 `update(fromDiff, fromOriginal)` 选择输出什么；默认是差异自身的值，而对于不带值的 `Par`（如解析所得的差异），则是原始序列中的值。
+
+% 2 1 0 0ccf2e34139ec9a316cb5de00e1cf915
+
+% 3 1 0 1fd1470f7ee70b2f03f693619d4bd4ab
+
+% 0 1 0 0669755daec78d2b002efab7cc78043d
+
+% 0 1 0 1d822d19dad5342d0d0fc152e28ad96a
+
+% 0 1 0 1454096cde6592e6123d6528364b1d3b
+
+% 1 1 0 0caa6a38ee414bfa133daead38d7a252
+
+@ 0 3 0 190b11afbaa50eff080d8968de8f0279
++         删除或保留超出所应用序列末尾的差异会引发 panic：它是针对另一个原始序列计算的。
++   entry #rdiff     将每个删除与相似的插入配对为替换，得到 `RDiff`
+
+% 1 1 0 0de5d415e45dfb26028a4355f4d497c3
+
+@ 0 5 0 151880463e43e53c01b1c50e726f83c9
++         `diff.rdiff(similar)` 查看差异的每个变化区域（每个 `Tract.Changed`），在既有删除又有插入之处，将删除与插入配对为 `Sub`。
++         在一个区域内，配对本身就是以 `similar` 作为比较方式、对删除的元素与插入的元素所做的差异，因此会按顺序找出尽可能多的相似对；剩余的仍为普通的 `Del` 和 `Ins`。
+
+% 2 1 0 14d9d16977951cd91858986a5182d53a
+
+% 3 1 0 0bb3268ff8655ee30e02198f52323677
+
+% 0 1 0 04ba46e26096c45a0a90f16d843bce57
+
+% 0 1 0 0911a8846dc1a8a607c50cfae3b62f43
+
+% 0 1 0 08e77f8c287716e10b0d0694875e2dbb
+
+% 0 1 0 14d712934fa769a610dcf35446d302ba
+
+% 0 1 0 0f0c337d33695c310b66336cc0070075
+
+% 0 1 0 072be6f4abfad85011f9c70a616bc2b3
+
+% 0 1 0 19cce9433e426b310961547c2b5ec1f1
+
+% 1 1 0 0f310b179036088008e677ff0e44cd2e
+
+@ 0 13 0 15d9e7cacd35b262197c24346e7b2db7
++         第二个参数 `subSize`（默认为 `1`）在区域的删除和插入数量相等且各自不超过 `subSize` 时，不查询 `similar` 而直接将其配对：在这种规模下，即使值之间毫无共同之处，对应关系也是显而易见的。
++         不带值的编辑（如解析所得差异中的编辑）从不与任何东西相似。
++   entry #collate   分组为交替的未变元素段和变化元素段的各编辑
++       `Tract` 的 `List`：每个极大的 `Par` 连续段是一个 `Tract.Unchanged`，它们之间的每个删除和插入连续段是一个 `Tract.Changed`，分别保存其删除和插入。
++   entry #chunks    各变化区域，每个都带有其位置及其删除和插入
++       `Chunk` 的 `Chain`，每个变化区域一个，正如 unix 格式所写的那样；它们之间的未变元素不被表示。
++       `Diff.serialize` 基于它编写。
+
+@ 0 1 0 019c93a94fac73411b6ac42033c5d138
++   entry .Change   `RDiff` 的一个步骤：一个编辑，或以一个元素替换另一个元素
+
+% 1 1 0 09b70e29016e1ac61ffec7bbcabfa68a
+
+@ 0 3 0 0fc7fdb4a786ba3b163f6eaacb08274f
++         `Edit`（因而也是 `Ins`、`Del` 和 `Par`）和 `Sub` 的密封超类型，`Sub` 是 `Diff#rdiff` 由相似的删除和插入构成的替换。
++         对 `RDiff` 的 `#changes` 进行的匹配有四个分支。
+
+% 2 1 0 1e5a24c6c24bd3741bb64eb089ab6b2f
+
+% 3 1 0 08b05827b53dc7211ea5758bd4d076cd
+
+% 0 1 0 17051ab99b5a6f820fbb734c2a7b9bfa
+
+% 0 1 0 0fe17d39ee4c6408024830ff17515742
+
+% 0 1 0 18ae0a5805f5a99907a4f90d34e1d84c
+
+% 0 1 0 1d4b8c212081ce5012338461a2e1e8d2
+
+% 0 1 0 056e4e0a175918f61af4d4d0005513b9
+
+% 1 1 0 0f43ed8ba8a9542e016405a702420b46
+
+% 0 1 0 12348145daba71b511f9ff9ac57c2011
+
+% 0 1 0 128360b0b8637d6e0affd79eb4789755
+
+@ 0 2 0 1eb4d03c544356b3007aec5bb181d02e
++     entry #map   对该变化的元素（一个或多个）应用一个函数，保持其位置
++   entry .Chunk   差异的一个变化区域：它在哪里，删除什么，插入什么
+
+% 1 1 0 15ac7c2662c48f06055c0a72054765d1
+
+@ 0 7 0 03e22e424c2404ae04c8b152ac3db7ff
++         unix `diff` 格式的单位，由 `Diff#chunks` 给出：区域在左右序列中的起始位置，然后是其删除和插入。
++     entry #position        区域在左序列中的起始位置
++     entry #rightPosition   区域在右序列中的起始位置
++     entry #dels            区域的删除，按顺序排列
++     entry #inss            区域的插入，按顺序排列
++   entry .Edit   `Diff` 的一个步骤：插入、删除或未变元素
+
+% 1 1 0 18705ee6a4031dcc0803c35b98cb908b
+
+@ 0 2 0 106cdcd355fb32410281fa99a20f9b3d
++         `Ins`、`Del` 和 `Par` 的密封超类型，即构成 `Diff` 的三种编辑。
++         `Edit` 也是 `Change`，即 `RDiff` 步骤的更宽类型，后者增加了 `Sub`。
+
+@ 0 3 0 1453d6695b7ac6ad09bc26104ab7b298
++         每个编辑都有一个 `#value`，它是 `Optional` 的：`Ins` 总有值，但 `Del` 或 `Par` 可能没有，例如从 unix 格式读取的差异。
++         在类型为 `Retained` 的编辑上，`kept` 将值读作裸元素。
+
+% 0 1 0 1fec29d8fa8be0651fc27f2097791143
+
+% 0 1 0 03c87158145bb8ed189b8d3a6d7b627d
+
+@ 0 5 0 17a2b4cd7a319ecb107a8ce9136d8a47
++     entry #value   编辑所涉及的元素，若携带的话
++     entry #map     对编辑的元素应用一个函数，保持其位置
++         结果是同一种类的 `Edit`；`Retained` 标记不会保留，可以用 `retained` 重新建立。
++   entry .Del   删除：左序列中不在右序列中的元素
+
+% 1 1 0 04301b65aff75468087ef97827de9dad
+
+@ 0 6 0 160955f4fcf33a6f129c7f08dbe550f6
++         `Del(left, value)`：左序列位置 `left` 处的元素被移除。
++         值是 `Optional` 的，默认为 `Unset`，因为补丁只需要位置；由 `diff` 得到的差异总会记录它，从 unix 格式读取的差异也会记录。
++     entry #left    被删除元素在左序列中的位置，从零开始
++     entry #value   被删除的元素，若携带的话
++   entry .Ins   插入：右序列中不在左序列中的元素
+
+% 1 1 0 06a21cd56bc4faef01dcf3cba3db280f
+
+@ 0 5 0 0ef98a4584b3a1140ff17e452c47f672
++         `Ins(right, value)`：`value` 被插入到右序列的位置 `right` 处。
++         插入总是携带其值，否则补丁无法产生它。
++     entry #right   被插入元素在右序列中的位置，从零开始
++     entry #value   被插入的元素
++   entry .Par   未变元素，在两个序列中各有一个位置
+
+% 1 1 0 14d0268197a20af50ed4422b92f94a16
+
+@ 0 7 0 0c8164645a4e52d9075da221ecb3f6e6
++         `Par(left, right, value)`：左序列位置 `left` 处的元素就是右序列位置 `right` 处的元素。
++         值默认为 `Unset`：从 unix 格式读取的差异不重复未变的行，因此没有值。
++     entry #left    元素在左序列中的位置，从零开始
++     entry #right   元素在右序列中的位置，从零开始
++     entry #value   该元素，若携带的话
++   entry .Sub   替换：左序列中的元素被右序列中一个相似的元素取代
+
+% 1 1 0 1100e2a9a8b2eb621499c3174aefe256
+
+@ 0 8 0 032a5ee7223a92d016a98a5f3b409a7b
++         只由 `Diff#rdiff` 生成，来自它判定为相互对应的一个删除和一个插入。
++         `Sub(left, right, leftValue, rightValue)` 表示位于 `left` 的元素 `leftValue` 变成了位于 `right` 的元素 `rightValue`。
++         两个值都是 `Optional` 的，因为解析所得差异中的删除可能没有值。
++         `RDiff#flip` 交换两侧。
++     entry #left         被替换元素在左序列中的位置
++     entry #right        替换者在右序列中的位置
++     entry #leftValue    被替换的元素，若携带的话
++     entry #rightValue   替换它的元素，若携带的话
+
+@ 0 1 0 092e813e2074b6b30eb355362a0da949
++ entry .RDiff   对齐的差异，其中相似的删除和插入配对为一个 `Sub`
+
+% 1 1 0 13a0900412ca60e31699baaa0530da05
+
+@ 0 4 0 0360aa1d68a9c1d70cc0a1a1d31d5ca5
++       `Diff#rdiff` 的结果：步骤与 `Diff` 相同，只是在删除和插入相互对应之处，它们合为一个 `Diff.Sub`。
++       它适合用于显示——将变化的行显示为对旧行的修改，而不是一次移除加上一次无关的添加——也适合用于比较结构化记录，在那里被修改的记录仍是同一条记录。
+
+% 2 1 0 1c45aace9e7522991bf8da2b3d680585
+
+% 3 1 0 09f4c355d4dae355003a68ae46084c7d
+
+% 0 1 0 1789e65888ca03ad1329a9d152760838
+
+% 0 1 0 162ad885e2395f9e0d6992f615faef7f
+
+% 1 1 0 0aaa7de91007991e12af9aa37f609b62
+
+% 1 1 0 0445d0a02ca20d4f1d065f9e925c448f
+
+% 0 1 0 1ec5174d63c98c3b0d8112feb9d6307d
+
+@ 0 5 0 0fe050d5592ecf3d0f31dabafbf2befa
++   entry #changes   各步骤，按顺序排列：`Par`、`Del`、`Ins` 和 `Sub`
++   entry #flip      反转的对齐差异，从右序列变回左序列
++       插入和删除互换位置，每个 `Diff.Par` 和 `Diff.Sub` 的两个位置（对于 `Diff.Sub`，还有其两个值）互换。
++   entry #map       对每个步骤的元素（一个或多个）应用一个函数
+
+@ 0 1 0 150a022fd3691ced17c6c1e9bc1bf6a7
++ entry .Tract   差异中的一段：要么是一个变化区域，要么是一串未变元素
+
+% 1 1 0 01ca002c4d999fd51678420bb94a2b0d
+
+@ 0 3 0 0937287770bd8dc50dbf6f3c5f04a72d
++       `Diff#collate` 将差异划分为交替的 `Tract`。
++       `Changed` 段分别保存一个区域的删除和插入，这正是 `Diff#rdiff` 所配对的；`Unchanged` 段保存区域之间的 `Diff.Par`。
+
+% 2 1 0 177df52756b815101374a1d1d0e0de21
+
+% 3 1 0 100c35a56a4074630b8a4352f5c5f474
+
+% 0 1 0 0aa08982e6043d3600fbec3d80733683
+
+% 0 1 0 052bbd09f733caa30df3b2c155cc702e
+
+% 0 1 0 1fcd19a9c4be0d2e031a60a70bcb5a37
+
+% 1 1 0 1865d56d66d14c5219ff7c050b7b0014
+
+@ 0 5 0 09daf727ab98f56c04e113aeb6184938
++   entry .Changed   一个变化区域：其删除和插入
++     entry #deletions    区域的删除，按顺序排列
++     entry #insertions   区域的插入，按顺序排列
++   entry .Unchanged   一串未变元素
++     entry #retentions   该段中的 `Par`，按顺序排列
+
+@ 0 6 0 0a6b67309365b4cd1d1721328fe628e0
++ entry .Retained   差异的每个编辑都携带其元素的类型层面证明
++     `Retained` 是一个细化类型 `Any { type Retain = true }`，它标记已知其值都存在的 `Diff.Edit` 或 `Diff`。
++     `diff` 和 `Redraft#resolve` 返回 `Diff[element] & Retained`；从 unix 格式读取或手工构建的差异则不是。
++     由于它是细化类型而不是特质，这一标记在运行时没有任何开销：`Diff.Edit[Text] & Retained` 与其他任何 `Diff.Edit` 无异。
+
+@ 0 3 0 1cb8a1d91522cb6d03a1eeff454d4e58
++     有两个操作需要该证明。
++     `kept` 将编辑的值读作裸元素而不是 `Optional`，`Diff.redraft` 将差异渲染为 `Redraft`，后者必须重现每个保留的行和删除的行。
+
+% 2 1 0 1ca7027e5cd54a3a066acc277b18636f
+
+% 3 1 0 09a6b3789ef41e1701c903dd21563814
+
+% 0 1 0 1c30bbd6fa7a25d20e904a805505e003
+
+% 0 1 0 15cb6620c8ab183e1248f76642a3719a
+
+% 1 1 0 1577b50d1ae2071705019453182e30e4
+
+@ 0 2 0 17f3ff53566adb99108b9b216ccedee9
++     `retained` 将一个值标记为已保留，用于从构造上已知携带其值的差异或编辑；`retentions` 给出已保留差异中带有该标记的各编辑。
+
+@ 0 5 0 16ffb69c5e3adbcc14ef1d54dbcf6764
++ entry .retained   在已知每个值都存在之处，将编辑或差异标记为 `Retained`
++     `Diff.Edit` 和 `Diff` 上的扩展方法，返回类型为 `& Retained` 的接收者。
++     它什么也不检查：它是刚刚提供了每个值的代码记录这一事实的地方，正如 `diff` 和 `Redraft#resolve` 所做的那样。
++     标记一个其编辑缺少值的差异，会使 `kept` 把缺失的值当作元素返回，并使渲染出的重拟稿出错。
+
+% 2 1 0 10b9a1927d164a770ba0bdf4625ac9b6
+
+% 3 1 0 053883b54c0cf29200aebb8eaccbe98a
+
+% 0 1 0 11b123dbddfc274d14daaf929028113a
+
+% 0 1 0 0b6e7fd04a0d389c14e65e6a44501669
+
+% 1 1 0 11bd81eeb17cd13014c8421d2821296f
+
+@ 0 2 0 1cbeb1293df5b4990d61e5f210c90e62
++     `Diff.Edit#map` 和 `Diff#map` 会丢弃该标记，当映射后的值仍全部存在时，必须用 `retained` 重新应用它。
+
+@ 0 5 0 145744e2a6c6832e00f50d7ca22a74f1
++ entry .kept   编辑的值：在 `Retained` 编辑上是裸元素，否则是 `Optional`
++     任何 `Diff.Edit` 上的扩展方法。
++     在静态类型为 `Retained` 的编辑上，它是一个返回元素本身的 `transparent inline` 访问器，因此无需处理缺失；在其他任何编辑上，或类型未知之处，它就是 `#value`，即 `Optional[element]`。
+
+% 2 1 0 1cc1d9c65040905103473c07037dab3c
+
+% 3 1 0 1cbd7b12c5dfe67f0d157110939f4b6e
+
+% 0 1 0 176ed9826aaf0da001ff6fb5ffc151cf
+
+% 0 1 0 03b00ce7ad32f5be05f4e483a09c78e7
+
+% 1 1 0 0d03c3a570ece5da174c7ae31ac46488
+
+@ 0 3 0 011e14053c4cf27c1dac9bc2ed8a474c
++ entry .retentions   已保留差异的各编辑，每个都类型化为 `Retained`
++     `Diff[element] & Retained` 上的扩展方法，以 `List[Edit[element] & Retained]` 给出其 `#edits`，从而可以对每一项应用 `kept` 来读取裸元素。
+
+@ 0 1 0 008a82923608c8cb0d63f17082435f44
++ entry .Redraft   文本行的宽容补丁：只有变化，通过搜索原始内容来定位
+
+% 1 1 0 18b18466b2a7b4cc067dbcef64dc8c8d
+
+@ 0 5 0 163f5cbd47d07e710bc41643d417882f
++       unix `diff` 格式精确说明每处变化的位置，因此不适用于已经移动过的文本。
++       `Redraft` 只说明要移除的行和要添加的行，外加定位它们所需的尽可能少的未变行，并通过搜索原始内容找出它们所属的位置。
++       这种形式让人或语言模型能够对一个只读过的文本提出编辑。
+
+@ 0 2 0 107815e0c500f10f144da6c0f65aa251
++       重拟稿是 `Redraft.Directive` 的序列，通常用 `Redraft.parse` 从文本行解析而来：
+
+@ 0 5 0 1022eb7a55063e37040624acdf6aa8ea
++       - `- line` 移除 `line`，`+ line` 插入 `line`；
++       - `< line` 和 `> line` 无条件地移除和插入；
++       - 其他任何行都是上下文，必须与原始内容中的某一行匹配；
++       - 以 `\` 开头的行是去掉 `\` 后的上下文，用于本身以标记开头的上下文行。
+
+% 2 1 0 12624fc76c3391ec1383277f3c32dc4c
+
+% 3 1 0 1c9a6254f46917f41c1dddf84edaee83
+
+% 4 1 0 0932fae0e310f5e511b6ae1d7efb20c5
+
+% 0 1 0 06bf6c1fc80760bf04c6639ac8036e72
+
+% 0 1 0 0ab5dd85835952a80c47350d189e4ead
+
+% 0 1 0 0108b2fcb07c6d0312453abac90b8b1c
+
+% 1 1 0 064818c1f48b593f134cffec183327a0
+
+@ 0 7 0 009c7622a9672e7815ac07404626778a
++       上下文行和移除行按顺序匹配，每一行都与前一行之后的第一个匹配行匹配，因此它们之间的未变行无需写出；插入放在最后一个匹配行之后。
++       当原始内容中也有字面上的 `- x` 或 `+ x` 行时，`- x` 或 `+ x` 行就有歧义，因为它可能是那一行的上下文：歧义会被报告，而无条件的 `<`/`>` 写法可以消除它。
++       在更下方也会匹配的变化——对 `a`、`b`、`a` 使用 `- a`——锚定不足，会被报告，而不是凭猜测应用；再加一行上下文即可锚定它。
+
+@ 0 3 0 005120896ab87af00be47dbb8d0390b8
++       `#patch` 应用重拟稿，`#resolve` 将其转换为它所描述的 `Diff`，`#verify` 列出其问题而不抛出错误。
++       `Diff.redraft` 将差异渲染为重拟稿，`#serialize` 将重拟稿写回为行。
+
+% 1 1 0 05596dd78d926b0b1d0bb216a6c89219
+
+% 0 1 0 09e1d38840383d7001529b3722f7813d
+
+@ 0 6 0 012d884e3cd2967708c5a8ed6551df31
++   entry .parse   从文本行读取重拟稿
++       每一行变为一个 `Redraft.Directive`：`+ ` 和 `- `（或单独的 `+` 或 `-`）变为插入或移除该行其余部分的 `Mark`，`> ` 和 `< ` 变为无条件的 `Add` 或 `Cut`，以 `\` 开头的行变为其余部分的 `Keep`，其他任何行变为其自身的 `Keep`。
++       解析从不失败；重拟稿是否适用，由 `Redraft#resolve`、`Redraft#patch` 或 `Redraft#verify` 针对原始内容检查。
+
+% 2 1 0 0d64da100682189419fc6aaa2595877c
+
+% 3 1 0 161a90c0fc3e4894139d5292d2156be2
+
+% 0 1 0 1288798be4d5098f02e2e125c204520c
+
+% 0 1 0 0a9ff90c83d16cd00bfffd5d23c5eb62
+
+% 1 1 0 0ef0692e4a9227ac171e1e349d561e74
+
+@ 0 7 0 180d898bf9907886155a26ea15262b4c
++   entry .render   将保留了值的文本差异渲染为带有给定上下文的重拟稿
++       `Diff.redraft` 的实现，调用它的通常方式就是 `Diff.redraft`。
++       `Minimal` 上下文以贪心方式求得：从离变化最远的上下文行开始逐行丢弃，只要重拟稿仍能无歧义地应用于原始内容并给出相同的结果。
++       以 `+` 或 `-` 表示会有歧义的插入或移除写作 `>` 或 `<`。
++   entry .Directive   重拟稿的一行：上下文、插入、移除或有歧义的标记
+
+% 1 1 0 0f11b9c3b2c637691172de24a5a6a42a
+
+@ 0 17 0 14b98061910bc23f07a02bff7421aadb
++         `Redraft.parse` 从每一行得到的东西，也是 `Redraft#serialize` 写回的东西。
++         `Mark` 是普通的 `+`/`-` 形式，它被读作插入或移除，除非原始内容中有以该字面标记行作为上下文的情形；`Add` 和 `Cut` 是无条件的 `>`/`<` 形式。
++     entry .Keep   上下文行，必须与原始内容中的某一行匹配
++       entry #line   该行的文本
++     entry .Add    无条件插入，写作 `> line`
++       entry #line   要插入的行
++     entry .Cut    无条件移除，写作 `< line`，所移除的行必须在原始内容中
++       entry #line   要移除的行
++     entry .Mark   插入或移除，写作 `+ line` 或 `- line`
++       entry #line     要插入或移除的行，不含其标记
++       entry #insert   插入（`+`）为 `true`，移除（`-`）为 `false`
++   entry .Anomaly   应用重拟稿时发现的问题：在何处、是什么、为什么
++       由 `Redraft#verify` 返回，也是 `Redraft.Error` 的实质内容。
++       `line` 是出错指令的索引（从零开始），`text` 是它所指的行，`reason` 是一个 `Redraft.Error.Reason`。
+
+% 2 1 0 0d140fa7d914641810b510043b1e14f9
+
+% 3 1 0 074a1953731af6f904d2e13ab72d31a6
+
+% 0 1 0 1d4866d6e9b23c391577f37fb3750f4a
+
+% 0 1 0 012f2d32eb2aec390d0daa63488d523d
+
+% 1 1 0 01efba5656bf286a12ab3cc7c8ae937c
+
+@ 0 1 0 11788a8fb6d59ce4004853bedd329079
++   entry .Context   渲染出的重拟稿保留多少未变的上下文
+
+% 1 1 0 1f9fad89c7318e4d03c4090fecef68f5
+
+@ 0 6 0 0007e60e020028000c10e7fb07300b22
++         传给 `Diff.redraft`。
++         `Minimal` 只保留缺少它们重拟稿就会有歧义或应用到别处的上下文行；`Full` 保留每个未变行；`Fixed(lines)` 像统一差异格式那样保留距离变化 `lines` 行以内的行。
++     entry .Fixed   距离变化固定距离以内的未变行
++       entry #lines   在每处变化两侧各保留多少行上下文
++   entry .Error   重拟稿无法应用于原始内容时抛出
+
+% 1 1 0 1c5321af5aed8ad5101e4a8c31f96af5
+
+@ 0 3 0 0d9f7d7efc88bc4013a9d30360a7ed32
++         错误 `↯/s.78.2`：_the redraft could not be applied at line `line` (`text`) because `reason`_。
++         由 `Redraft#resolve` 和 `Redraft#patch` 针对发现的第一个异常抛出；用 `Redraft#verify` 列出全部异常。
+
+% 2 1 0 11e5dab5b088f875197688d9ee7230c0
+
+% 3 1 0 1f42ab1c5b3b29721f01a8417845be54
+
+% 0 1 0 199d7e5ac508520317122dd2f84a380b
+
+% 0 1 0 0a37570b5a960a8a12e3d1e2ca4d241b
+
+% 0 1 0 1b2fb71bc79ff8fe1c9a54ea50495033
+
+% 1 1 0 062f775054c5f364092508e54b8c8625
+
+@ 0 1 0 0d86d72f6ff3352c1d7062c04c1780d8
++     entry .Reason   重拟稿的某条指令无法应用的原因
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 24 0 019d3fabddd7f9ac06f76cb03ba1d7a7
++           `NoMatch`（_no matching line could be found in the original_）：上下文行或移除行不在原始内容中位于其前面已匹配行之后的部分里。
++           `Ambiguous`（_the change could be interpreted in more than one way_）：`+`/`-` 行既可能是变化，也可能是字面标记行的上下文行；用 `>`/`<` 书写，或用 `\` 转义上下文。
++           `Unanchored`（_there is not enough context to locate the change unambiguously_）：该行在更后面也会匹配；添加一行上下文。
++       entry .communicable   将每个原因描述为一条消息
++       entry #number   原因的编号，即错误代码的第二部分
++     entry #line     无法应用的指令的索引，从零开始
++     entry #text     该指令所指的文本行
++     entry #reason   无法应用的原因，以 `Redraft.Error.Reason` 表示
++   entry #directives   重拟稿的各指令，按顺序排列
++   entry #serialize    以文本行表示的重拟稿，`Redraft.parse` 可以将其读回
++       `Mark` 写作 `+ ` 和 `- `，`Add` 和 `Cut` 写作 `> ` 和 `< `，以标记或 `\` 开头的上下文行用 `\` 转义。
++   entry #resolve      重拟稿针对原始内容所描述的 `Diff`，或一个 `Redraft.Error`
++       用 `==` 或给定的比较方式将重拟稿的指令与 `original` 匹配，并返回覆盖原始内容每一行的 `Diff[Text] & Retained`。
++       它针对第一个异常抛出 `Redraft.Error`，因此需要 `Tactic[Redraft.Error]`。
++   entry #verify       重拟稿针对原始内容的所有异常，不抛出错误
++       空的 `List` 表示重拟稿可以干净地应用。
++   entry #patch        将重拟稿应用于原始内容，得到编辑后的行
++       先 `#resolve` 再 `Diff#patch`：结果是 `Chain[Text]`，或通过作用域中的 `Tactic[Redraft.Error]` 抛出的 `Redraft.Error`。
+
+% 2 1 0 149c7015a4d86f3905d9fd77c4c00580
+
+% 3 1 0 15f6551646d0f175105ddcca44447744
+
+% 4 1 0 0bb5b8bfbabf8b47178f1c828c1dc3f8
+
+% 0 1 0 069df5c5321100b81ec997af24be4295
+
+% 1 1 0 14bc7d916b43e14210911858a0aa51e0
+
+@ 0 7 0 0598dfe5c90d2a3f0889aedfcf413871
++ entry .evolve   跨越一系列版本追踪元素，在所有版本中识别每个元素
++     `evolve(versions)` 将每个版本与下一个版本做差异，并将结果合并为一个 `Evolution`：由原子组成的单一序列，每个原子是一个元素及其所在版本的集合。
++     在差异允许的情况下，消失后又重新出现的元素会被识别为同一个原子。
++     可选的 `similar` 比较使每一步成为对齐差异（`Diff#rdiff`），这样被修改的元素会延续其原子，而不是开始一个新原子。
++     元素类型需要 `ClassTag`。
+
+% 2 1 0 1bfe916e08595b33004e4aad30ebf326
+
+% 3 1 0 1466de2f5c5184a31f8c82869387fb97
+
+% 0 1 0 1c48a4b0b0a44b2609396fa6f0a2024d
+
+% 0 1 0 0f5507654fabb6dc08ce627f0ace4470
+
+% 0 1 0 11d6e4e68912594408d6dca05181a7bd
+
+% 1 1 0 1f5bd808cf89d75615b90e5f00dc96e5
+
+@ 0 1 0 12dcdd5d77af3cfc138a9506e82016ec
++ entry .Evolution   多个版本的历史，表示为一个带有版本标记的元素序列
+
+% 1 1 0 0e4c5943892a97d904130a4fdf4b6058
+
+@ 0 5 0 1ff184e988dd000e01022817b0694592
++       由 `evolve` 生成。
++       它的 `#sequence` 将每个版本的每个元素交错排列，顺序与每个版本都一致，每个 `Evolution.Atom` 按 `Ordinal` 记录它所出现的版本。
++       将它应用于一个序数，就能精确重建该版本，这正是文档历史、撤销栈或一系列草稿所需的结构。
+
+% 0 1 0 15b660f675beea740331433608e2096c
+
+@ 0 7 0 044f18260b2844341a50f06a4265e621
++   entry .Atom   演化中的一个元素，带有它所在的版本
++     entry #value      该元素
++     entry #presence   元素出现于其中的各版本的序数
++     entry #add        同一个原子，并且也出现在另一个版本中
++     entry #has        元素是否出现在某个版本中
++   entry #sequence   每个版本的每个元素，按顺序排列，每个都带有其版本
++   entry #apply      按序数重建一个版本（第一个版本为 `Prim`）

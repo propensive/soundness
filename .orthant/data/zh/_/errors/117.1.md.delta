@@ -1,0 +1,40 @@
+orthant 2 language
+
+% 0 1 0 1cd264e58d1e637101c36854b3b3702b
+
+@ 0 1 0 0ff2fc062be2430c00dbf785cc67083f
++ 当针对远程提供方的 OAuth 流程失败时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1227c6afc583442917f248f4428e04a5
++ Orthodoxy 居间处理 OAuth 2.0 交换。
++ 任何失败——网络、解析、状态或权限范围——都表现为下列变体之一。
++ 消息为 `OAuth failed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 1990aee9c6705d0502ee21e116372ca4
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.117.1.1`  `Connection`  到 OAuth 提供方的 TCP/TLS 连接失败。  `[↯/s.117.1.1] OAuth failed because could not connect to the OAuth provider at https://example.com because the connection was refused`  检查网络连通性、提供方 URL 和 TLS 配置。查看内部的 `ConnectError.Reason` 以了解详情。
++ row  `↯/s.117.1.2`  `InvalidJsonResponse`  提供方返回的正文无法解析为 JSON。  `[↯/s.117.1.2] OAuth failed because Invalid JSON response`  查阅提供方文档中预期的响应格式；检查原始响应以寻找线索。
++ row  `↯/s.117.1.3`  `UnexpectedHttpStatus`  提供方响应的状态不在预期集合之内。  `[↯/s.117.1.3] OAuth failed because the provider returne an unexpected HTTP status: 500`  查阅提供方关于状态的文档；许多提供方对客户端错误返回 4xx，并在正文中附带诊断用的 JSON。
++ row  `↯/s.117.1.4`  `InsufficientPrivileges`  用户没有授予应用所请求的权限范围。  `[↯/s.117.1.4] OAuth failed because the user has not granted access to read:user`  再次提示用户并包含所需的权限范围，或者让需要它的功能平稳降级。
++ row  `↯/s.117.1.5`  `Unauthorized`  用户明确拒绝授权，或提供方拒绝了凭据。  `[↯/s.117.1.5] OAuth failed because authorization was not granted`  向用户显示清晰的消息，并在适当时重新发起 OAuth 流程。
++ row  `↯/s.117.1.6`  `Other`  不属于上述类别的其他错误。  `[↯/s.117.1.6] OAuth failed because an unexpected error occurred`  检查日志以及附加在错误上的任何原因。此变体有意保持笼统；将来可能会增加更具体的原因。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 03287911e639c5a7105007e6dd07c192
++ - 源代码：`lib/orthodoxy/src/core/orthodoxy.OAuth.scala`

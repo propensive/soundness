@@ -1,0 +1,2411 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 122cc318b6f0fa4110febb0a286dd3a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cb1c72d271e663116482ada82e487d8
++ info   命令行应用：参数、标志、子命令、Tab 补全、帮助和手册页，全部出自同一份代码
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 14e7a7820e9a843b1390b0b06e2c2bc9
++     _Exoskeleton_ 是包裹命令行程序的框架。
++     入口点——`application`，或一个扩展 `Application` 的对象——交给程序主体一个 `Cli`：由 `Argument` 组成的参数列表、环境、工作目录、标准流以及登录用户。
++     主体通过类型化的声明恢复这些参数的结构：`Subcommand` 是与参数进行匹配的提取器，`Flag[Int](t"jobs")` 读取一个解码为其类型的操作数，`Switch` 只读取是否出现，`Setting` 则依次从命令行、环境变量或 `Configurator` 级联中读取一个值。
+
+@ 0 10 0 00bf789101abfaa402a2bb1c3ad3916d
++     不寻常之处在于，命令行工具提供的其他一切——bash、zsh、fish 和 PowerShell 的 Tab 补全、`--help` 输出、手册页以及退出状态表——都是从同一份代码中读出来的，而不是在它旁边另写。
++     在 `executives.completionsExecutive` 下，主体被分为一个纯粹的前导部分和一个 `execute` 代码块：前导部分声明标志并匹配子命令，`execute` 代码块完成实际工作。
++     补全请求只运行前导部分，而且是在一种记录代码所请求的内容、而不据此行动的模式下运行，因此程序检查的标志就是它提供的标志，而且提供的条件与代码检查它的条件完全一致。
++     `Help` 树以同样的方式构建，即在每个子命令前缀处重新运行前导部分，`roff` 再将这棵树渲染为供 `Manpages.install` 使用的手册页。
+
+% 2 1 0 0e8fe3692e5776d60c3df8fb09031ca3
+
+% 3 1 0 041176f88f179a850b0ef8766fd15752
+
+% 4 1 0 12644ff60fba69061be8ebc0b8e8773a
+
+% 5 1 0 06e071d345d51b911fb084b06bfb92ad
+
+% 6 1 0 1b6dcd789ee7442f0f1a592967766059
+
+% 7 1 0 07b8ae33a1d4bf060af2edb1c6d1ebea
+
+% 0 1 0 1321d62978713c880d4a931791c4ae29
+
+% 0 1 0 0bf9e712abe8b3fa0535aae73c0ab308
+
+% 0 1 0 03ef00c426b52bd710c374a3d6449522
+
+% 0 1 0 0ca48a169334e0f216d07557af84c9be
+
+% 0 1 0 10d0d2ddd9a71910015401a973eb6ac4
+
+% 0 1 0 0463bdf59a03f0211ddb6214dbb99400
+
+% 1 1 0 13b4fdb09e1f55771bac788ec609b48f
+
+% 0 1 0 108d5e4d9e7cd92d1bf5b45d711dbc60
+
+% 0 1 0 1415323e361133120a373b2916ee3d9f
+
+% 1 1 0 0cf627098dfc57aa1fa7693e067ebf33
+
+@ 0 2 0 18c3f7ebe312248f130796a53b7d9a2d
++     入口点由三个上下文选择决定，每个都是按名称导入的 given，因为 `import soundness.*` 不导入任何 given：
+
+@ 0 9 0 0de681efc5845ff90eaecb5aa2bd133d
++     - 来自 `executives` 的**执行器**：`directExecutive` 运行主体一次，并期望得到一个 `Exit`；`completionsExecutive` 期望得到一个 `Execution`，并且还会响应补全、帮助和 `{admin}` 请求；
++     - 来自 `interpreters` 的**解释器**：`posixInterpreter` 读取 `--long` 和 `-s` 标志，`posixClusteringInterpreter` 还会把 `-abc` 读作 `-a -b -c`，`simpleInterpreter` 则把每个参数都当作操作数；
++     - 来自 `backstops` 的**兜底处理器**，它把从主体中逃逸的异常转换为退出状态：`genericErrorMessageBackstop`、`exceptionMessageBackstop`、`stackTraceBackstop` 或 `silentBackstop`。
+
+@ 0 1 0 032fe8b7bc5036a10963423f753366e5
++     该库由五个源码集组成：
+
+@ 0 14 0 06fca0a5aa6e0449115af5e7a064721a
++     - `exoskeleton.args`——参数模型及其类型类：`Cli`、`Argument`、`Commandline`、`Flag`、`Switch`、`Setting`、`Subcommand`、`CommandGroup`、`Status`、`Interpretable`、`Discoverable`、`Suggestible`、`Suggestion`、`interpreters` 包，以及 `Effectful`/`Speculative` 标记。与平台无关。
++     - `exoskeleton.core`——入口点和执行器模型：`application`、`Application`、`Executive`、`Invocation`、`Entrypoint`、`Backstop`，`backstops` 和 `executives`（`directExecutive`）包，以及 `Help` 和 `Install`。
++     - `exoskeleton.completions`——仅限 JVM 和 Native：`Completion`、`Completions`（shell 脚本及其安装）、`execute`、`Execution`、`explain`、`helpTree`、`Pathname`、`pathnameDiscoverable`、`CliEvent` 和 `executives.completionsExecutive`。
++     - `exoskeleton.manpage`——`Manual`、`Help` 上的 `roff` 扩展方法，以及 `Manpages`。
++     - `exoskeleton.rig`——一个测试装置，不属于总括包的常规接口：`Enclave` 将应用打包为由守护进程支持的可执行文件，`Pane` 在伪终端或 tmux 会话中驱动一个真实的 shell，以便对 Tab 补全显示的内容进行断言。
+
+@ 0 4 0 088917dd0d47a53f1994e7dfeb9fd398
++     所有内容都导出到 `soundness` 总括包，`backstops`、`executives` 和 `interpreters` 选择包与总括包自身的同名包合并。
++     作用域中的 `Cli` 还提供 `Environment`、`WorkingDirectory` 和 `Stdio`，因此应用主体无需其他导入即可读取变量、解析路径或打印输出。
+
+% 0 1 0 045312f92904f021122b8b8eaf264228
+
+% 0 1 0 0bf2622b27aea5ae0058b788425717d8
+
+% 0 1 0 0b33ce92147f58c80dcdd2357277af79
+
+% 0 1 0 1280c3a820736ae60dc47884934d4966
+
+% 0 1 0 089f68418acdcb3a190a79bb13f386c9
+
+% 0 1 0 15080cb110e509ac1e7b1e50b1e4292c
+
+% 0 1 0 1e22b5a0ae8476581273f2369ed0779a
+
+% 0 1 0 01fe38b039db363f15580bc00331c75b
+
+% 0 1 0 152568d419c464e712269d96e3f14923
+
+@ 0 1 0 1f794a9726d9a647044ad7162bcdbae0
++ entry .application   包裹程序的入口点，为其主体提供一个 `Cli`，并以主体返回的状态退出
+
+% 1 1 0 1e134c98863b39861d06d56d284d51db
+
+@ 0 7 0 0ca29175f354832208beccde4a5cfcdf
++       `application(arguments)(block)` 是命令行程序的入口点。
++       它根据正在运行的进程（通过 `ProcessHandle` 找到的可执行文件及其脚本名称）构建一个 `Entrypoint`，向作用域中的 `Executive` 请求一个基于参数、JVM 的环境和工作目录、文件描述符 `Stdio` 以及进程的 `Login` 的 `Cli`，为 `signals` 中的每个信号安装一个分派到 `Cli#trap` 处理函数的处理函数，通过执行器运行代码块，然后以所得 `Exit` 的代码调用 `System.exit`。
++       它从不返回。
+
+@ 0 7 0 17bf7023f1dbf51f11ec5a1d398c1e14
++       它需要作用域中有一个 `Executive`、一个 `Interpreter` 和一个 `System`，每个都按名称导入。
++       代码块的类型是 `(erased permit: executive.Permit) ?=> Cli ?=> executive.Return`：在 `executives.directExecutive` 下，许可是 `Effectful`，返回值是 `Exit`，因此在代码块中任何位置读取的标志都是它的 `Optional` 值；在 `executives.completionsExecutive` 下，许可是惰性的 `Speculative`，返回值是 `Execution`，因此在前导部分读取的标志是一个 `Prospective` 句柄，副作用要等到 `execute` 才发生。
+
+% 2 1 0 0aaf4d4e6a0183d61c3faa4beaf66376
+
+% 0 1 0 182d798de2dcf8af067bb374d7fd4148
+
+% 1 1 0 18f313f9a055a8dd0cfd9917d24360cc
+
+% 0 1 0 16cd8375b554b41412ba2f79c8a481c8
+
+% 0 1 0 1190e056a655f1590ba14ecb4bdec7db
+
+% 1 1 0 0620ad3f241e54ac0f260b0a18bf8a0a
+
+% 0 1 0 0f9693bf17b31d2e0afe492d7824647a
+
+% 1 1 0 02302e8cd3f81f0113ad7afbfc01fd92
+
+% 0 1 0 000aa7e8ca3cf5e31274be92cb8adabb
+
+% 0 1 0 0d2c8a6db36a955719c9d26424f15c48
+
+% 0 1 0 02efc6ff9d734d051c1132f80c61665f
+
+% 0 1 0 14648cf2c1d7887a04b1732bc65385cc
+
+% 1 1 0 1d0872aa195bc1e90f7bf2c14e2bf418
+
+% 2 1 0 0c1d8d958391db3e0e44b0b3a74ee775
+
+@ 0 4 0 08445d43d5df0bb91448623ef5a7f18b
++       打包为 `Main-Class` 为 `mytool` 或 `MyTool` 的可执行 JAR 后，两者都可以从 shell 运行。
++       状态必须显式返回，而不能隐含：`Exit.Ok` 报告成功，`Exit.Fail(1)` 报告失败。
++       从代码块中逃逸的异常会到达构建执行器时所用的 `Backstop`。
+
+% 0 1 0 0ed58f4e653f52560b730bfe145009d3
+
+% 0 1 0 07e35020bf3fa4191c9dc031b7200719
+
+% 1 1 0 01599b1800d1ffa20ecccfdefe56e7ca
+
+% 0 1 0 0298981e9773eff708f8179cf6ceda72
+
+@ 0 1 0 18452760a612592d15fa940f997457e7
++ entry .Application   一个抽象类，其 `main` 转换 JVM 的参数，并在直接执行器下调用 `invoke`
+
+% 1 1 0 1d56d5600b940a0c00ef2b38e88948d6
+
+@ 0 7 0 11c2f92bb2a8b8f50a435f57576258b4
++       最短的完整程序：扩展 `Application` 的对象会得到 `main`，它将 JVM 的 `Array[Text]` 转换为列表，并在已选定 `executives.directExecutive`、`backstops.genericErrorMessageBackstop`、`interpreters.posixInterpreter` 和 `systems.javaBaseSystem` 的情况下调用 `application`，因此只需编写 `invoke`。
++       需要不同执行器、解释器或兜底处理器的程序——尤其是需要 Tab 补全的程序——会自行调用 `application`，并使用自己的导入。
+
+% 2 1 0 18eb39f72a5509ee1d6858cc37768586
+
+% 3 1 0 0d5d9f081bcef1f8140b9a8251813699
+
+% 0 1 0 1bba4eb39d03daf01befac22af62d39e
+
+% 0 1 0 183a8b791ed2da9e146ddf6def4b4ea6
+
+% 0 1 0 0a764f1f217cf51e0790cb37c8a99324
+
+% 1 1 0 18e47bf276d0f396119b2e685afc8e8a
+
+% 2 1 0 069383c5bd6e172b0e92408f543c31d0
+
+% 1 1 0 015c3a09e1d3b0121925d0610f50dd11
+
+@ 0 5 0 0298761674194a1e1402d9a7b4feca21
++   entry #invoke   程序的主体：在作用域中有 `Cli` 的情况下运行，并返回退出状态
++       抽象方法。
++       在直接执行器下，作用域中始终有一个 `Effectful`，因此 `Flag[T](…)()` 是标志的 `Optional` 值，`Switch(…)()` 是它是否出现，`Out.println` 会立即打印。
++   entry #main   JVM 入口点：转换参数数组并调用 `application`
+
+@ 0 1 0 1be32269328f7d2f15862b5a748c9c48
++ entry .Cli   一次命令行调用的上下文：其参数、环境、流、登录用户和补全状态
+
+% 1 1 0 0894be1fd438ec8b1bbf65a93af9a275
+
+@ 0 8 0 05d6a2851e27be301a03a7e20c07e1fb
++       `Cli` 是一种*能力*——独占的，生命周期与引入它的 `Executive#process` 作用域相同——携带着应用主体可能想了解的、关于它正在处理的调用的一切。
++       它是一个 `Console`，因此 `Out`、`Err` 和 `In` 通过它工作；它提供 `WorkingDirectory`、`Environment` 和 `Stdio`，因此 `Environment[Text](t"HOME")`、路径解析和打印输出都无需其他 given；它还记录代码所请求的内容——注册的标志、要求的条件、允许的状态、提供的建议——`Invocation` 正是借此一并报告缺失的标志，`Completion` 也正是借此将同一份代码变成建议。
+
+@ 0 6 0 113a13a08350e8f900e992fe6a3835d0
++       它的两种实现是用于真实运行的 `Invocation` 和用于 Tab 补全请求的 `Completion`；`helpTree` 在每个前缀处驱动一个 `Completion`。
++       大多数记录方法（`#register`、`#record`、`#present`、`#demand`、`#fault`、`#explain`、`#matched`、`#suggest`）在特质上是空操作，由其中一种或两种实现覆写；应用代码通过 `Flag`、`Subcommand`、`Argument#suggest` 和 `explain` 间接使用它们，而不是直接调用。
+
+% 2 1 0 10eb7aac1d48bfc7115ebae645e4cb7a
+
+% 3 1 0 01051afe92c4f7b10e14e3efb14905ec
+
+% 4 1 0 0735ba3feb1c50600c00ad0cea911977
+
+% 0 1 0 019f7b42246dbfbd160c1ad2004d7ade
+
+% 0 1 0 08c31228bc798234084f281bc85813bb
+
+% 0 1 0 011c2a4a0a2e8044077141e643180403
+
+% 0 1 0 06a3b03993f4e7350f52044217f59c72
+
+% 1 1 0 0d203ce2c991531604bee6a5f69c1a20
+
+@ 0 3 0 0dfb1803e93561f71dcacc9817aac2cc
++       伴生对象中有 `Cli.arguments`，它把文本转换为带位置的 `Argument`，还有补全执行器的管理子命令所用的 `{admin} await` 信箱（`prepare`、`log`、`done`、`await`）。
+
+% 1 1 0 12fefa64c094aaf7135f451ab4ead589
+
+% 1 1 0 11225d6aaa95679615841d95867201ab
+
+% 1 1 0 1f1b436a3fe8d86f1a6c5a11a641a582
+
+% 0 1 0 088eab1841834a321eb863001aaf0144
+
+@ 0 7 0 0a16f35d0f0ce5971fac4943095b6d3e
++   entry .arguments   将文本列表转换为 `Argument`，并用光标标记获得焦点的那个参数
++       `Cli.arguments(textArguments, focus, position, tab)` 从 `0` 开始为文本编号，并将每个文本包装为 `Format.Full` 格式的 `Argument`。
++       当 `focus` 指定一个索引时，列表会用空文本填充至该索引，该参数在 `position` 处带有光标；若 shell 没有给出位置（bash 不提供位置），光标就在其文本末尾，整词前缀匹配本来也是这样假定的；`tab` 是参数所记录的 Tab 键按下次数。
++       没有焦点时——即普通调用——没有任何参数带有光标。
+
+% 2 1 0 0f365c021140aed214be42d31bb291cb
+
+% 3 1 0 01d6e67ed2262fa01a131337133fd6b4
+
+% 0 1 0 0a2b153f8067f8ba15272c2b25942e92
+
+% 0 1 0 1d592d5118ab9b6e159effa7ea6695ba
+
+% 1 1 0 07f2b2d29f6566f208177abff163712d
+
+@ 0 69 0 121a3a9f8bc236121e9027eb3e982d8c
++   entry .prepare   重置 `{admin} await` 信箱：清空已记录的消息，并设置一个新的触发器
++       由补全执行器在等待之前调用；该信箱在进程中是全局的，因此一次只服务一个 `await`。
++   entry .log   向 `{admin} await` 信箱追加一条消息
++       作为守护进程运行的应用可以在这里记录诊断信息行；`done` 触发时，下一次 `{admin} await` 调用会将它们打印出来。
++   entry .done   释放一个挂起的 `{admin} await`
++   entry .await   最多等待十秒以等到 `done`，然后按顺序返回已记录的消息
++       需要作用域中有一个 `Monitor`。
++       超时不是错误：已记录的内容都会被返回。
++   entry #arguments   本次调用的参数，每个都是带有位置的 `Argument`
++       对于 `Completion`，这些是命令名之后的参数，按 shell 的切分方式排列；`Completion#fullArguments` 保留原始的 `{completions}` 请求。
++   entry #environment   调用的环境变量
++       在守护进程下，这是*客户端*的环境，而不是常驻 JVM 的环境，这就是 `Completions.install` 和 `Manpages.install` 从 `Cli` 而不是从 `environments.javaBaseEnvironment` 取得其 `Environment` 的原因。
++   entry #workingDirectory   运行命令时所在的目录
++   entry #proceed   应用自身的主体是否应当运行
++       当执行器已经自行处理了这次调用时——即补全执行器的 `{admin}` 子命令——为 `false`，普通运行时为 `true`。
++   entry #login   运行命令的用户：一个带有用户名以及（若已知）`UserId` 的 `Login`
++   entry #register   记录代码查询了某个标志，以及其操作数的 `Discoverable` 和占位符
++       每次读取 `Flag` 或 `Setting` 都会调用它，因此程序检查的标志就是 `Completion` 提供的标志。
++       声明为 `secret = true` 的标志会被查询，但从不被记录。
++       在 `Invocation` 上是空操作。
++   entry #record   记录 `execute` 代码块可能返回的退出状态
++       由 `execute` 调用，传入从代码块结果类型具化得到的 `Status.Admissible` 列表，因此 `Completion` 和 `Help` 探测无需运行代码块即可得知这些状态。
++   entry #present   记录某个标志已在命令行上指定
++       `Completion` 借此停止提供已经出现过的不可重复标志。
++   entry #demand   记录某个标志是必需的，以及它是否已给出
++       要求是累积的，从不快速失败：`Invocation` 收集缺失的标志，供 `execute` 一并报告；`Completion` 则为帮助记下必需性，同时继续提供建议，因为补全一个必需标志尚未全部出现的命令是常见情形。
++   entry #fault   记录某个标志已给出，但其操作数无法解码，以及原因
++       与 `#demand` 一样，错误是累积的，供 `execute` 一并报告，并且从不妨碍补全。
++       调用它的是 `Flag#validate`。
++   entry #locate   标志的原始操作数参数，若标志根本没有给出则为 `Unset`
++       区分带有格式错误操作数的标志与缺失的标志，这是 `Flag#validate` 所需要的；在特质上默认为 `Unset`，两种实现都委托给 `Interpreter`。
++   entry #explain   为当前子命令部分附加一段帮助
++       `update` 函数以具名上下文值（`prior`）的形式接收先前的说明，并返回新的说明；通常通过顶层的 `explain` 调用它。
++       只有 `Completion` 会记录它，用于 zsh 的补全标题和帮助。
++   entry #matched   记录某个 `Subcommand` 在分派过程中匹配了一个参数
++   entry #matches   迄今为止匹配的子命令名称，作为从第一个参数开始的连续序列
++       在 `Invocation` 上，记录的匹配会去重，并在第一个空缺处截断，因此仅与后面某个参数的匹配无法伪造出错误的前缀；结果就是 `Help#local` 用来找到当前子命令部分的路径。
++   entry #trap   为本次调用的剩余部分安装一个信号处理函数
++       接受一个 `PartialFunction[Signal, SignalResponse]`；`#dispatchSignal` 按从新到旧的顺序查询处理函数，回答 `SignalResponse.Defer` 的处理函数会把信号传给下一个。
++       处理函数匹配一个 `Signal`，因此一个分支写作 `case Signal(Interrupt.Int, _, _, _) => …`。
++       顶层的 `trap` 是对作用域中 `Cli` 的同一调用。
++   entry #dispatchSignal   将信号按从新到旧的顺序交给已安装的处理函数
++       返回第一个作出决定的 `SignalResponse`，若没有处理函数认领该信号，则返回 `SignalResponse.Reject`。
++       `application` 将每个请求的 `UnixSignal` 连接到这里。
++   entry #parameter   通过 `Interpreter` 读取标志的操作数，作为操作数类型的 `Optional`
++       抽象方法：`Invocation` 和 `Completion` 都通过解释器的 `read` 解析它，后者在解析的同时注册该标志。
++       `Flag#apply` 及其同类方法是它的类型化前端。
++   entry #suggest   为光标处的参数提供建议
++       除 `Completion` 外均为空操作；在 `Completion` 上，若该参数正是被补全的那个，就记录候选项。
++       `Argument#suggest` 根据参数的格式计算前缀和后缀，然后调用它。
+
+@ 0 1 0 167f952164eabc1212918b70356761ff
++ entry .Invocation   真实运行的 `Cli`：一个基于参数、环境、流和登录用户的 case class
+
+% 1 1 0 014c1c33f175e9490ce40b78fb9391a4
+
+@ 0 6 0 0325964d237c3e8e0b9994914293abe0
++       `Invocation` 是执行器为普通运行构建的对象（与之相对，Tab 补全请求使用 `Completion`）。
++       它本身就是一个 `Stdio`，导出其 `#stdio` 的 `out`、`err`、`in` 和 `termcap`，并累积前导部分请求的内容，以便 `execute` 在运行代码块之前检查：要求了但缺失的标志（`#missingRequisites`），以及操作数解码失败的标志（`#faults`）。
+
+@ 0 1 0 0c2d9e51d645d8621ede7e519dcc87b3
++       测试直接构建一个 `Invocation`，以便在没有进程的情况下运行应用主体：
+
+% 2 1 0 09caa27b05bca0920932a864050a46d4
+
+% 3 1 0 147e16c4b8c62ba91002f176d00f90c9
+
+% 4 1 0 038ee72f1d05ffc91757f1c46d5ac6ad
+
+% 1 1 0 036f65fe293af5610f9612e15ea1eb97
+
+% 2 1 0 1ffffb99e00d2d950a41bf2eff26f41b
+
+% 0 1 0 0aa0aaf4665eea3d1a8a699867463eda
+
+% 0 1 0 16b96af9a6c995780a737fcfe03b55b2
+
+% 0 1 0 190dd21be9647527191f67482320f9e3
+
+% 0 1 0 0439ea68ca08c8cd095b772be5099170
+
+% 0 1 0 0893ba5999ec82f817a5634f9edb0902
+
+% 0 1 0 1c329e91d6da962219862fc6245776da
+
+% 0 1 0 015c1c83937d26970eb8480f2cda0126
+
+% 0 1 0 0131335eb1a929150c042e92861410fd
+
+% 0 1 0 146f62658be4db5404d4e97831c2ad3e
+
+% 0 1 0 1fee03e6ccf9f73112d2cbc1d4d71392
+
+% 1 1 0 1b786e71a1674efb00b845a28046239c
+
+@ 0 1 0 065a0c0b12b1a0701c5883c11f9bc2e8
++       构造时，它需要作用域中有一个 `Interpreter`，并会保留它。
+
+% 1 1 0 18e52a68911c9c411443d2aeee12e06d
+
+% 1 1 0 19a34f7248fba5490ed53b8cfce251c4
+
+% 1 1 0 051a7ddbc8df51b81fa55eca27b30843
+
+@ 0 13 0 0adec2462d9c63af0d533c8a75bc1c7a
++   entry #arguments   参数，每个都是一个 `Argument`
++   entry #environment   调用的环境
++   entry #workingDirectory   调用的工作目录
++   entry #stdio   标准流
++   entry #proceed   应用主体是否应当运行；对 `{admin}` 调用为 `false`
++   entry #login   运行命令的用户
++   entry #missingRequisites   未指定的必需标志，按要求它们的顺序排列
++       由前导部分中的 `Flag#require` 和 `Flag#validate` 填充；`execute` 将它们一并打印，并以状态 2 退出，而不运行其代码块。
++   entry #faults   已验证但操作数解码失败的标志，附带原因，按顺序排列
++       由前导部分中的 `Flag#validate` 填充；`execute` 将它们与缺失的标志一同报告。
++   entry #parameter   通过解释器读取标志的操作数
+
+@ 0 1 0 1040ec35e665ffef0d3d446686e05e72
++ entry .Executive   决定入口点主体返回什么以及如何运行的方针
+
+% 1 1 0 0db9acbc04823be30ca59ae422a8df53
+
+@ 0 8 0 07fa2ca257ceac8f0f74c6b81d2c2e6a
++       通过按名称导入某个 `executives` given 来选择 `Executive`。
++       它为调用构建 `Cli`（`#invocation`），运行主体并将其结果转换为 `Exit`（`#process`），还可能从主体构建一棵 `Help` 树（`#help`）。
++       它的三个类型成员确定了主体的契约：`#Return` 是主体产出的类型（`Exit` 或 `Execution`），`#Interface` 是主体得到的 `Cli`，`#Permit` 是主体接收的擦除能力——只真实运行主体的执行器给出 `Effectful`，还可能为发现补全而运行主体的执行器给出 `Speculative`。
+
+@ 0 5 0 06ee8fd4299209511d33a6ff78b8e95e
++       提供的两个执行器是 `executives.directExecutive` 和 `executives.completionsExecutive`。
++       用户定义的执行器必须声明全部三个类型成员；其 `process` 将主体视为 `Cli ?=> Return`，而不是 `Interface ?=> Return`，因为把 `Cli ?=>` 上下文函数适配到抽象接口类型会触发捕获根合一的问题。
+
+% 0 1 0 034676680c963f05067c4c09c632cbe3
+
+% 1 1 0 1718777f71008f7a19473d8e336fd137
+
+@ 0 14 0 0d030e4b3cf4015e1f34349bbce70ea4
++   entry #Return   入口点主体返回的类型：`Exit` 或 `Execution`
++   entry #Interface   该执行器交给主体的 `Cli` 种类
++   entry #Permit   主体接收的擦除能力：`Effectful` 或 `Speculative`
++       在 `Effectful` 下，`Flag#apply` 解析为值，要求 `Effectful` 的方法可以在主体中任何位置调用；在 `Speculative` 下，它们只能在 `execute` 内部使用。
++   entry #invocation   根据参数、环境、目录、流、入口点和登录用户为一次运行构建 `Cli`
++       需要一个 `Interpreter`。
++       补全执行器在这里检查参数，以识别 `{completions}` 或 `{admin}` 请求。
++   entry #process   针对一个 `Cli` 运行主体，并将其结果转换为 `Exit`
++       从主体中逃逸的异常在这里遇到 `Backstop`。
++   entry #help   通过重新运行前导部分从主体构建 `Help` 树，若该执行器无法做到则为 `Unset`
++       只有补全执行器可以，因为它的 `Interface` 是 `Cli`，而 `Completion` 是一个有效的接口；默认返回 `Unset`。
+
+@ 0 1 0 15209f4d7bbdf12414a6d2fc50e7d7c0
++ entry .Entrypoint   调用背后的可执行文件：其路径、脚本名称，以及如何使其退役
+
+% 1 1 0 193f899f7cc7c5cc12fc0421c58222fd
+
+@ 0 10 0 163f2385191661ce1d99d9574dbbb218
++       `application` 根据 `ProcessHandle.current` 构建一个；守护进程则提供自己的。
++       `Completions.install` 将 `#script` 用作补全脚本所补全的命令名，并用 `#executable` 检查 `PATH` 上的命令是否就是本程序。
++       它是 `Findable` 的，并作为被跟踪的能力（`Entrypoint^`）传递。
++   entry #script   调用命令所用的名称，补全脚本补全的就是它
++   entry #executable   正在运行的可执行文件的路径
++   entry #retire   请求为本次调用服务的进程在工作完成后结束
++       守护进程会停止接受调用，让进行中的调用完成，然后退出；默认实现什么也不做，适用于本来就随调用一同结束的进程。
++       补全执行器的 `{admin} shutdown` 会调用它。
+
+@ 0 1 0 099d2c52a2aefd4f13eb64c59744e9b9
++ entry .Backstop   如何处理从应用主体中逃逸的异常
+
+% 1 1 0 1d9c2b18b021204b01be1694ccf11120
+
+@ 0 5 0 1b6c969cfe799d5d1c51f4f51dfc5bb5
++       `Backstop` 将一个 `Throwable` 转换为 `Exit`，并有一个 `Stdio` 用于报告。
++       执行器将它作为上下文参数接收，因此通过按名称导入某个 `backstops` given 来选择它。
++       `Backstop(report)` 构建一个兜底处理器，它用错误调用 `report`，然后对 `Exception` 以状态 1 退出，对更严重的情况以状态 2 退出。
+
+% 2 1 0 16c4850fd5703a2b13dbf32917f62c15
+
+% 3 1 0 0f0d47443cd700661bfde64385da4d25
+
+% 0 1 0 09082bf769605c7e0fbb95eee42e5878
+
+% 0 1 0 17ad8662d3113ceb14e0fc6f9b05eb82
+
+% 1 1 0 17e53566a9eb2fb416d65abe77cc12aa
+
+% 0 1 0 138546d192534ffe01db1bc67dce4ec8
+
+@ 0 2 0 1c60f1cd193527de01b5bdc2f276b91f
++   entry .apply   用给定函数报告的兜底处理器，然后对异常以 1 退出，否则以 2 退出
++   entry #handle   将逃逸的错误转换为退出状态，并在作用域中的 `Stdio` 上报告
+
+@ 0 1 0 0e4963d6795507980c0fffe300b0e178
++ entry .backstops   标准的兜底处理器，每个都是按名称导入的 given
+
+% 1 1 0 0de1a05769772e690146665c18c30d58
+
+@ 0 3 0 15b46d55b4215ba017be23cf14256616
++       执行器需要一个 `Backstop` 来处理从应用主体中逃逸的异常；`import soundness.*` 不会引入任何兜底处理器，因此要按名称导入一个。
++       `Application` 自行选择了 `genericErrorMessageBackstop`。
+
+% 2 1 0 0dfd1f1a729d4e3f0c9e95bbb648e64b
+
+% 3 1 0 0243e59e93a8131d1a2e963002a25fb2
+
+% 0 1 0 0887023c99dd3402143f4d4482d68355
+
+% 1 1 0 057153c6da6dbca608db361e8b9b06a2
+
+@ 0 6 0 0cee0a492acb1fad0713a9cb44989528
++       四者都对 `Exception` 以状态 1 退出，对其他任何 `Throwable` 以状态 2 退出；它们的区别仅在于事先向标准输出打印什么。
++   entry .silentBackstop   什么也不打印
++   entry .exceptionMessageBackstop   打印异常自身的 `toString`
++   entry .stackTraceBackstop   打印完整的堆栈跟踪，通过 digression 的 `StackTrace` 渲染
++   entry .genericErrorMessageBackstop   打印 `An unexpected error occurred.`
+
+@ 0 1 0 1a5c4b4c8e69503e193593f75e995565
++ entry .executives   执行器：入口点主体的运行方式，每个都是按名称导入的 given
+
+% 1 1 0 0b346f06f5a54db50ccf1d48967c08fb
+
+@ 0 4 0 1afdd685b127644d162e66e3fed2d876
++       执行器决定入口点主体的返回类型以及主体内部可用的能力，因此要在定义入口点的位置按名称审慎地选择。
++       `directExecutive` 位于 `exoskeleton.core`；`completionsExecutive` 位于 `exoskeleton.completions`，两者都需要一个 `Backstop` given。
+
+% 2 1 0 1adf5bd6652c19721515f76a9a00b059
+
+% 3 1 0 001edf949ad867450d9e5fc3269035cb
+
+% 4 1 0 19f816d69dcaab971bbaeaa819788416
+
+% 5 1 0 0460d6d6f9535d47164f8f5258e4fcf1
+
+% 6 1 0 145c03829ea9bc1a1f1d2964fee20209
+
+% 7 1 0 191904ca7f4b7344114c51b253bbd164
+
+% 2 1 0 0f27355aa25355f31e45bbe1621f22a9
+
+% 0 1 0 0acdc9680488fec4178165d7b3f826b5
+
+% 1 1 0 05e857d2f7851b571d8bedc40b62cec4
+
+% 0 1 0 0f50f363425af8930da59458a8f1dc18
+
+% 1 1 0 1586be1e11e330d30deb618ed5136a3f
+
+% 2 1 0 1e88a61f73532dfb0b0df9d633795a44
+
+@ 0 14 0 00304ff8e26d0a12052b01bbcbb9b5a6
++   entry .directExecutive   真实地运行主体一次，期望得到一个 `Exit`
++       `Return = Exit`、`Interface = Invocation`、`Permit = Effectful`：主体从不以推测方式运行，因此在其中任何位置读取的标志都是它的 `Optional` 值，`Switch` 是它是否出现，要求 `Effectful` 的方法可以在整个主体中调用。
++       它构建的 `Cli` 是一个 `Invocation`，当第一个参数为 `{admin}` 时，其 `proceed` 为 false。
++       从主体中逃逸的异常交给 `Backstop`。
++   entry .completionsExecutive   为补全、帮助和管理运行前导部分，为真实运行运行整个主体
++       `Return = Execution`、`Interface = Cli`、`Permit = Speculative`。
++       它首先检查参数：一个 `{completions} <shell> <focus> <position> <tty> -- <words…>` 请求（即 `Completions.script` 写出的脚本所发送的请求）会构建一个 `Completion`，并以该 shell 的格式打印其建议；`{admin} pid`、`kill`、`shutdown`、`await` 和 `install` 无需运行主体即可应答；其他任何情况都是一个 `Invocation`，其 `Execution` 的退出状态成为进程的退出状态。
++       在它之下，输出和副作用应放在 `execute` 内部：每次按下 Tab 键都会运行前导部分。
+
+@ 0 4 0 0abd408cfe4b1563114a1f004a8aa680
++       该 given 是 `CompletionsExecutive` 的一个实例，类型为 `CompletionsExecutive^{parasite.threads}`，因为 `{admin} await` 在全局线程下进行监管；导入它的方式与其他任何 given 相同。
++   entry .CompletionsExecutive   `completionsExecutive` 背后的类，用于手工构建执行器
+
+% 1 1 0 06ab7e56c06649ca1b1aa770710e541d
+
+@ 0 3 0 1126e30487af5a5e16e1e666d152233a
++         `CompletionsExecutive()(using Backstop)` 就是 `completionsExecutive` 返回的执行器，写成具名类，以便声明 `uses parasite.threads`。
++         它的 `help` 委托给 `helpTree`。
+
+% 0 1 0 1d62a3fad1b0ab9605f3508c3c166f95
+
+% 0 1 0 114f60daa9d4849908bd2eeadbcf4fcc
+
+% 0 1 0 0285f482f743cc7509e638c2898170f9
+
+@ 0 3 0 1f9cab62ea48ee8413bd96a088ee918d
++     entry #invocation   识别 `{completions}` 和 `{admin}` 请求，否则构建一个 `Invocation`
++     entry #process   打印 `Completion` 的建议，或运行 `Invocation` 并取其退出状态
++     entry #help   主体的 `Help` 树，用 `helpTree` 构建
+
+@ 0 4 0 03e24fa861d1094f13eb4dbc622f8f88
++ entry .trap   在作用域中的 `Cli` 上安装一个信号处理函数
++     `trap { case Signal(Interrupt.Int, _, _, _) => SignalResponse.Reject }` 就是 `summon[Cli].trap(handler)`：参见 `Cli#trap`。
++     只有在 `application` 的 `signals` 列表中列出的信号才会被传递。
+
+@ 0 1 0 17c6cd10fc051d2a18f2cd1bb07e5268
++ entry .Install   向主机写入某些内容失败时抛出的错误：补全脚本、手册页、守护进程
+
+% 1 1 0 0a9fe82d96e082dc0f42255127abba19
+
+@ 0 5 0 061e284f51d2d80211350fcd381bc997
++       安装补全脚本（`Completions.install`）、手册页（`Manpages.install`）或守护进程，失败的方式都是同样两种，因此该错误属于安装这一行为，而不属于某个特定的安装程序。
++       `Install.Error` 是错误 `↯/s.109.3`，_the installation failed because `reason`_，以原因的编号作为子代码。
++   entry .Error   错误 `↯/s.109.3`：安装失败，原因在于环境或 I/O 故障
+
+% 1 1 0 162ab5c75f7eafe20cc7e6b545f53cba
+
+@ 0 6 0 173b7d4079cd31010b67837f032d5cb7
++         由 `Completions.install` 和 `Manpages.install` 通过 `Tactic[Install.Error]` 抛出。
++         `Reason.Environment`（1）表示 _it was not possible to get enough information about the install environment_——某个路径、名称或 shell 查询失败；`Reason.Io`（2）表示 _an I/O error occurred when trying to write an installation file_。
++     entry .Reason   安装失败的原因：`Environment` 或 `Io`
+
+% 1 1 0 0aefce0415264d1f1ae40bd1f270f018
+
+@ 0 5 0 012689fa8b91feba1cb8f8eb1d7575e8
++           一个枚举，带有 `number`（`Environment` 为 1，`Io` 为 2），以及一个将每个原因渲染为其消息的 `Communicable` given。
++       entry .communicable   将原因渲染为其消息
++       entry #number   子代码：`Environment` 为 1，`Io` 为 2
++     entry #reason   原因
+
+@ 0 4 0 0948658221395b280e6ceac77ecde356
++ entry .arguments   作用域中 `Cli` 的参数，作为 `Argument` 列表
++     `arguments` 就是 `summon[Cli].arguments`：shell 在命令名之后传入的单词，每个都是一个 `Argument`，应用时得到其文本，并记住自己的位置。
++     它通常是子命令匹配的被匹配值：
+
+% 2 1 0 10c170958a1a4bc81cd36fa132890dab
+
+% 3 1 0 04d6e642baf520c61698550d03388aac
+
+% 4 1 0 025f9b22cda9ce4a1bcab3b0c4881730
+
+% 5 1 0 0cf784719a0132ba1ce1f6d6466a7a48
+
+% 6 1 0 0cb042434eb1d54c0cc85289fab126c8
+
+% 7 1 0 1aebabdec10192950571797edbf1afba
+
+% 0 1 0 096e8d0000ed218e04d7e9d401a15457
+
+% 0 1 0 0c414f9f8a1622a202a766e7a5d7b2fb
+
+% 0 1 0 162783823ba044e012092cdc5b7668d5
+
+% 0 1 0 0fef0f55ca5524ac022cf1a0b88bce8d
+
+% 1 1 0 0d73158db53dfbf10a5d203cf7233186
+
+@ 0 1 0 0b374c78571d20eb06fc837030f0ab0e
++ entry .Argument   命令行中的一个单词，带有其位置、光标以及正在读取的那一部分
+
+% 1 1 0 0b68ca45a79503c8073bb8bb705e45c7
+
+@ 0 7 0 1d8b3d1bdf3ca7301721f036f269797c
++       `Argument` 不只是它的文本。
++       它知道自己的 `#position`（命令之后的第一个单词为 `0`）、光标是否在其中以及位于何处（`#cursor`，仅对补全请求正在补全的单词设置）、在那里按下了几次 Tab 键（`#tab`），以及它的 `#format`：解释器正在读取该单词的哪一部分，因为 `--jobs=4` 是两部分，而在聚合解释器下 `-abc` 是三部分。
++       应用一个参数，即 `argument()`，得到其格式所选定的那一部分；`#value` 是整个单词。
+
+@ 0 3 0 0cd470f084b83a971f06bfe9bc494309
++       `Argument.unapply` 提取应用后的文本，因此 `case Argument(t"--") => …` 按该文本进行匹配；`Subcommand` 和 `Pathname` 是应用通常用来匹配参数的提取器。
+
+% 2 1 0 0d46a59971773429022c93931db53dc6
+
+% 3 1 0 00cf600f3c2d62ba186bea8e3ff5040d
+
+% 0 1 0 1f9108ec7fc2a5f01709df2e69f5eff6
+
+% 0 1 0 0de5bda83fa668da17b345b9ac32153e
+
+% 0 1 0 028edfc289405e040df64f0d592a4207
+
+% 1 1 0 146fcb6f2f221c430da5fa514033fe47
+
+% 1 1 0 114748e5244c494f1172864ff0621ab4
+
+% 0 1 0 09e7a5f95d88d4000a2eba04d6f48b51
+
+% 1 1 0 0e78178972908c2a1eb3e62c60a290be
+
+@ 0 31 0 097a8a5d194129090494368ea83eaa8f
++   entry .Format   参数代表单词的哪一部分
++       `Full` 是整个单词；`EqualityPrefix` 和 `EqualitySuffix` 是 `--flag=value` 形式单词的两边；`CharFlag(index)` 是 `-abc` 这类聚合短标志中的一个字母；`FlagSuffix` 是附在短标志上的操作数，即非聚合解释器下 `-abc` 中的 `bc`。
++       枚举分支不是条目：`CharFlag` 携带该字母在聚合中的 `Ordinal`。
++   entry .unapply   提取参数应用后的文本，因此 `Argument` 可以按 `Argument(text)` 匹配
++   entry .inspectable   将参数渲染为 `position: value / format => applied text`
++   entry #position   单词在命令行上的索引，命令之后的第一个单词为 `0`
++   entry #value   整个单词，与格式无关
++   entry #cursor   光标在单词中的偏移量，若该单词未被补全则为 `Unset`
++   entry #tab   若这是一次补全，在该位置按下 Tab 键的次数
++   entry #format   该参数读取的单词部分：参见 `Argument.Format`
++   entry #apply   格式所选定部分的文本
++       对 `--jobs=4` 的 `EqualityPrefix` 为 `--jobs`，对其 `EqualitySuffix` 为 `4`，对 `-abc` 的第二个 `CharFlag` 为 `-b`，对 `Full` 为整个单词。
++   entry #prefix   光标之前的文本，若单词没有光标则为 `Unset`
++   entry #suffix   光标之后的文本，若单词没有光标则为 `Unset`
++   entry #contains   单词内的某个偏移量是否落在该格式所选定的部分之内
++   entry #wrap   调整建议的形状，使其扩展该单词的这一部分，而不是替换整个单词
++       对 `EqualitySuffix`，建议会加上 `--flag=` 前缀；对 `CharFlag`，标志建议会把已经输入的字母保留为隐藏前缀，只插入新字母，因此在 `-ab` 处选择 `-c` 会得到 `-abc`，而 `display` 仍将该标志显示为 `-c`，并设置 `incomplete`，使 shell 不结束该单词。
++       不是标志的建议保持不变。
++       `Completion#serialize` 将此应用于获得焦点的单词的候选项。
++   entry #suggest   若该参数正是被补全的那个，则为其提供建议
++       `argument.suggest(update)` 将先前的建议作为具名上下文值 `prior` 传给 `update`，并把结果连同该参数格式所要求的前缀和后缀记录在 `Cli` 上。
++       `Subcommand#unapply` 和 `Pathname.unapply` 会调用它；为位置参数提供自己的候选项的应用也这样做：
+
+% 2 1 0 1c1dd697d90eb008063a27a3da470fca
+
+% 3 1 0 0a8ee2d00ea797b304850bc0d633c1d7
+
+% 4 1 0 1eba134655fec2930f3eee22a4235715
+
+% 0 1 0 0409e4597256e5030a0648faa1263e71
+
+% 0 1 0 117200c2aac680131376a61d784b607c
+
+% 1 1 0 066a6bd5519e363e1d81e40d26cd2b77
+
+@ 0 4 0 1b1b8c032ae19cfb0973f594ec14eb6d
++   entry #select   将一列选项作为该参数的候选项提供，并读取它所指定的那个选项
++       `argument.select(options)` 要求选项类型是 `Suggestible` 的；它提供每个选项的建议，并将其标记为操作数值，使帮助树不深入其中，然后返回文本与该参数相等的选项，或 `Unset`。
+
+@ 0 1 0 19c107e451be37e301b69ddd0eb0299e
++ entry .Commandline   参数经解释后的结构：位置参数、带有操作数的标志，以及焦点
+
+% 1 1 0 025de84fded4a9e9096471e6248c03e7
+
+@ 0 6 0 1c9e0ed64a457b65056afc41591a4822
++       两个 POSIX 解释器的 `Topic`。
++       `#positional` 保存第一个标志之前的单词，`#parameters` 将每个标志单词映射到其后的操作数单词，`#postpositional` 保存单独的 `--` 之后的一切，`#focus` 是补全请求中光标所属的标志——若光标所在单词本身是标志，就是该单词，否则是它之前的标志，因此无论标志位于何处，都能补全它的操作数，而不只是当它位于最后时。
+
+% 2 1 0 1c2c1d0ffcb8bb4a152e6abb536b84b5
+
+% 3 1 0 1059415b05c557ec0c3f4dda627ee012
+
+% 0 1 0 14e935c967264b8911279eb5f217fd7b
+
+% 0 1 0 02c79688e708d2d4193315ea7d3a80f1
+
+% 0 1 0 06e436f4533253860a6ae0c2948a59d8
+
+% 0 1 0 1e402810b35388691c28507e8d7a97c7
+
+% 1 1 0 0d77919475b5a3511b4e42e8254d020a
+
+% 0 1 0 13ee814eb3f0504013184b3efaaef7b4
+
+% 1 1 0 05c51193d924aefa157383fd18062b38
+
+@ 0 13 0 18bac4cdd7d4de9d0d78a44bc92a3130
++   entry #positional   第一个标志之前的单词
++   entry #parameters   每个标志单词（按其格式）映射到其后的操作数单词
++   entry #postpositional   单独的 `--` 之后的单词，从不被当作标志读取
++   entry #focus   若这是一次补全请求，光标所属的标志
++   entry #at   标志的操作数参数，若标志不存在或没有操作数则为 `Nil`
++   entry #locate   标志的操作数参数，若标志未给出则为 `Unset`
++       标志第一次出现时的操作数；对声明为 `repeatable` 的标志，则是按命令行顺序排列的每次出现的操作数。
++       与 `#at` 不同，它区分不存在的标志（`Unset`）和存在但没有操作数的标志（`Nil`），`Flag#validate` 需要借此区分缺失的标志与格式错误的标志。
++   entry #read   将标志的操作数读取为某个类型，同时在 `Cli` 上注册该标志
++       需要操作数类型的 `Interpretable` 和用于补全的 `Discoverable`；解释在 `safely` 下运行，因此格式错误的操作数读作 `Unset`。
+
+@ 0 1 0 0f5cce921f42f42701fec35481467c68
++ entry .CommandGroup   在帮助中将相关子命令列在一起的标题
+
+% 1 1 0 1fb7dce833342ebd0e4f4082094dc282
+
+@ 0 5 0 12dcdbb20189e72e1d95b2f1807521c5
++       `CommandGroup(name, description)` 命名一个组；用 `group = admin` 声明的 `Subcommand` 在 `Help#teletype` 中列在标题 `Admin commands:` 之下，在手册页的 COMMANDS 中则列在它自己的小节里，描述（一个 `Text` 或带样式的 `Teletype`）作为下方的一段文字。
++       组中每个成员都以完全相同的方式带有的标志会被提取出来，作为公共选项只列出一次。
+
+% 2 1 0 0cb9e4c7805b4f881566e3fc6b7264b5
+
+% 3 1 0 0e15f85ad4df2a360c7ec1a4396e8b83
+
+% 0 1 0 1052020a384608da0e4440ec5d7d9449
+
+% 0 1 0 0a6f9d6bcad5d0c21d6cf0fdad346e02
+
+% 1 1 0 0f971facfa45af911d329a2ce4005b40
+
+@ 0 2 0 1de4589210aeb9ab1fbf185ff69203ab
++   entry #name   标题
++   entry #description   显示在标题下方的可选段落
+
+@ 0 1 0 1249237f03456d861664eeb3e58225b5
++ entry .Discoverable   标志的操作数类型如何为补全建议自己的值
+
+% 1 1 0 1f3a80d3ba198d241a8f74464b179b15
+
+@ 0 6 0 02980f775623342a1307f8371115a9b1
++       一个只有一个方法 `#discover` 的类型类，从部分输入的操作数和 Tab 键按下次数得到一列 `Suggestion`。
++       若 `Mode is Discoverable`，则 `Flag[Mode]` 会在 `--mode ` 之后提供这些值；given 从标志的读取位置取得，作用域中没有时默认使用 `Discoverable.noSuggestions`。
++       伴生对象为任何 `Enumerable` 且 `Identifiable` 的枚举派生一个实例，按所导入的 `enumIdentification` given 选定的风格命名各个分支。
+
+% 2 1 0 1e23dfb71047b07411cb014da1210860
+
+% 3 1 0 0327b7f295d1622b11fff55a7b224f20
+
+% 5 1 0 186cd139f6209cb111186df8cdb8116b
+
+% 0 1 0 1cc8908026e2acb90c2eec16c5686aaf
+
+% 0 1 0 1e89eefa630d35710d7e9b0f075a8ad1
+
+% 1 1 0 0a98d44d1935a55d1aacd1b88004d600
+
+@ 0 3 0 10996b3ef488d3ba067674ae738ef876
++       位于 `exoskeleton.completions` 中的 `pathnameDiscoverable` 是 `Path on Local` 的实例，按段逐步补全文件系统路径；它是一个顶层 given，必须按名称导入。
+
+% 1 1 0 06d2106837d5af3600a0bcc6b9b2c517
+
+% 1 1 0 18a03d80fd7c2d7c15bc46f753d77e00
+
+% 1 1 0 07dd2a189aa14ea31f95e43fa1f55d92
+
+@ 0 10 0 065d1ea599276b510e6887387d14bc90
++   entry .noSuggestions   什么也不建议的实例，在作用域中没有实例时读取标志的默认值
++   entry .enumerable   按其 `Identifiable` 给出的名称，建议枚举的每个分支
++       对任何 `value: {Enumerable, Identifiable}` 都处于隐式作用域中；采用哪个 `Identifiable`，通过导入 `kebabCaseIdentifiable` 之类的 `enumIdentification` given 来选择。
++   entry #discover   光标处操作数的建议
++       `operand` 是迄今为止输入的文本（单词尚未开始时为空），因此实例可以对它进行解析——像 `Pathname` 那样进入正在输入的目录——`tab` 是在该位置按下 Tab 键的次数，因此重复按键可以显示更多内容。
+
+@ 0 8 0 063838bb6926d9f30d534d2498f1491d
++ entry .Effectful   标记代码真实运行（而不是为补全而推测性运行）的擦除能力
++     `Effectful` 从不被实例化：`execute` 代码块为其主体凭空召出它，`executives.directExecutive` 则把它作为 `Permit` 授予整个主体。
++     `Flag#apply`、`Flag#require` 和 `Flag#validate` 用 `summonFrom` 根据它是否存在进行分派：没有它时解析为延迟句柄（`Prospective`、`Requisite`），有它时解析为值；`Prospective#apply`、`Requisite#apply` 和 `Flag#value` 则直接要求它。
++     用户定义的方法也可以要求它，使不可逆的操作无法从 Tab 补全所运行的前导部分中调用：
+
+% 2 1 0 082e50f9f71626131bcc4e2bb31985fc
+
+% 3 1 0 00d600b11f08fb6415f375c6005a0a71
+
+% 0 1 0 1aa6b56656bfe52103da406ba8ac5ed5
+
+% 1 1 0 0df5afc01a5e9b5b1226dbc9864a141b
+
+@ 0 2 0 1ee4f37aec84f9b5083f48bc926834a3
++     `Completions.install` 和 `Manpages.install` 正是出于这个原因要求它；`effectful` 逃生舱口在 `execute` 之外凭空召出它。
+
+@ 0 4 0 064add575e6388df0f2f667acc024790
++ entry .Speculative   `Effectful` 的惰性对应物：一个可能只为发现补全而运行的主体所得到的许可
++     `executives.completionsExecutive` 将 `Speculative` 授予为其 `Permit`。
++     它不放行任何有副作用的操作：在它之下读取的标志是一个 `Prospective`，要求 `Effectful` 的任何代码在 `execute` 之外都无法编译。
+
+@ 0 6 0 185762a5eaac490b161aecd9611afaa4
++ entry .effectful   逃生舱口：在任何 `execute` 之外，用凭空召出的 `Effectful` 运行一个代码块
++     `effectful(block)` 求值代码块，如同在 `execute` 内部一样。
++     使用它的代码放弃了 `execute` 提供的保证：特别是，在凭空召出的 `Effectful` 下应用的 `Requisite` 可能会引发 panic，因为缺失标志的守卫尚未运行。
++     它的正当用途是测试，或者不经 `execute` 代码块安装某些内容的管理路径，正如 `Completions.ensure` 所做的那样。
+
+@ 0 1 0 00faef793b2912a9097ffedccbb36d09
++ entry .Flag   一个具名选项，`--name` 或 `-n`，其操作数被读取为某个类型
+
+% 1 1 0 0b7f20753220eabf1a3e23e2b511b5c4
+
+@ 0 7 0 093bed5a1ece6e860adc80c708e510b9
++       `Flag[Int](t"jobs", aliases = List('j'))` 声明一个标志；应用它就会从作用域中的 `Cli` 读取该标志。
++       声明携带帮助和补全所需的一切：`#name`（`--long` 用 `Text`，`-s` 用 `Char`）、两种形式皆可的 `#aliases`、是否 `#repeatable`、一个 `#description`，以及是否 `#secret`（会被读取但从不列出）。
++       类型参数是操作数的类型，可以是任何 `Interpretable` 的类型——任何 `Decodable in Text` 的类型通过 `Interpretable.decoder` 都是——默认为 `Text`。
+
+@ 0 10 0 0877e95f2a052bb81ab2daf043a3951a
++       读取如何解析取决于 `Effectful` 能力。
++       作用域中有它时（在 `executives.directExecutive` 下的任何位置；在补全执行器下的 `execute` 内部），`flag()` 是 `Optional` 值，`flag.require()` 是值或抛出的 `Flag.Error`，`flag.validate()` 是值或抛出的 `Flag.Error`，其原因为 `Missing` 或 `Invalid`。
++       没有它时——即补全执行器下的前导部分——同样的调用返回句柄，即 `Prospective` 或 `Requisite`，它们根据参数立即解析，其 `present` 和 `absent` 可以立即查询，但其值只在 `execute` 内部可用。
++       无论哪种情况，读取都会注册该标志，因此程序检查的标志就是补全提供的标志，而且提供的条件与代码检查它的条件完全一致。
+
+% 2 1 0 1468b6324649c8ed1be951f436150983
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 160ada309c109c5d1ed0fde7ba167229
++         label 一个标志
+
+% 1 1 0 0e8de5a12a27f4ae14d2d0101f0a9537
+
+% 2 1 0 096324914f13e7c80ab8421219fd87aa
+
+% 3 1 0 10d9a3f83229bc190c556ad6ea6050a3
+
+% 4 1 0 09f829ba8945a9900c26f46b5fd1aef5
+
+% 5 1 0 04597c6b718d1c82110ff8bbddf32ea7
+
+% 1 1 0 026c5d0273c13b6b1762edb172dc3bdd
+
+% 0 1 0 01181c4bacddffcd048c8962e1a01d55
+
+% 1 1 0 1fe0be08141cf46a00f52499dae419ae
+
+% 2 1 0 0fef1db4e7d8daf40fcca926b973c249
+
+@ 0 1 0 066310367ffebb06105df9bdb35c81c8
++         label 第二个标志，仅在第一个标志存在时读取
+
+% 1 1 0 0a072d64a182ee14003cf95b4eea19ae
+
+% 2 1 0 0fd5db5cf589317c092fe61a3fa85a68
+
+% 3 1 0 1507ac46ff9c36750dbeed37b5317fb2
+
+% 4 1 0 188a44504f9348f0064c3d20fc351e3b
+
+% 5 1 0 1f50fa87385f7d1f1ffaf8442b81c18f
+
+% 6 1 0 1b8ecc57e30437c00b95352786f7bca2
+
+% 1 1 0 08b7238a036fb98002224d8c3542b9f4
+
+% 0 1 0 0356cf93d0c0b16b0e1dab29fae8d607
+
+% 1 1 0 0c7d72b9cf7d2cf119d2c6eb53664237
+
+% 2 1 0 04afc75fde99b27c0ea55fddd1b002f7
+
+@ 0 1 0 0785bb239dd2cee11779185fa9fa0043
++         label 一个必需标志，在代码块运行之前检查
+
+% 1 1 0 155022da757e824d125173fb031ed3a6
+
+% 2 1 0 107e533c071b38d21cc4ae07cf4e3874
+
+% 3 1 0 0b5219b2aca3afc408025182fcf13444
+
+% 4 1 0 04a0580f70c8517e08af7a44f1e8e3ae
+
+% 5 1 0 1074f2173a5043ab112e4de244d82b26
+
+% 6 1 0 14607ba6fe782f3619795e13d7ce2056
+
+% 0 1 0 1ae0fc2b8756630d1b46f7efd236781d
+
+% 1 1 0 1b5e0b89e497a5611c46c10313955b94
+
+% 0 1 0 03d2e96b470b3c38097741d8585a2833
+
+% 1 1 0 1a91062b200ab53f17da3e189f87bb55
+
+% 1 1 0 14dd1fe754980fb107ff05b5de6876aa
+
+% 2 1 0 0f9dca495dcf9b2113a69e715e45d9a1
+
+@ 0 5 0 0cdd7a265d8bc1fe1874fc44a818f130
++       在第一帧之后，`tool -<TAB>` 会提供 `--verbose`；在第二帧之后，只有当 `-v` 已在命令行上时才提供 `--level`，并且不再提供 `-v`；在第三帧之后，`--home` 总是被提供，在帮助中被标记为必需，不带它运行会打印 _The following required options were not specified_，并在代码块运行之前以状态 2 退出。
+
+@ 0 7 0 00b96f89950a673901c6c8673282491e
++       有两个陷阱。
++       `Flag#apply`、`require`、`validate` 和 `select` 是 `transparent inline` 的，因此在另一个 `inline def` 内部，对该主体进行类型检查时它们不会展开，其结果保持声明的联合类型：此时对它调用 `present` 会解析到 vacuous 的 `Optional` 扩展方法，并对每个标志都回答 `true`。
++       内联代码应改用 `#present`（任何位置）或 `#value`（有 `Effectful` 时）读取标志。
++       另外，在 `execute` 内部首次读取的标志永远不会被补全看到，因为该代码块在补全时不会运行：请在前导部分中声明标志。
+
+% 0 1 0 1d6155f2eef499a50d998ff1a1643d55
+
+% 0 1 0 05c2115dfb5840b51cac5782213d6f11
+
+% 1 1 0 17ac4b810f1ef12009f046c78c547a54
+
+% 1 1 0 11c299ef5d81c1ba0cbe237d2bb968fc
+
+% 1 1 0 0287a177bb351aa61925a9fd19934cc1
+
+% 1 1 0 01f01458d51e42ec014a54b19f444ea6
+
+% 1 1 0 1fa5ba1ec18bec5813f49208f4625c83
+
+@ 0 6 0 0be8cea682f1d0970ccd6512c29f99d0
++   entry .apply   声明一个标志：`Flag[Int](t"jobs", repeatable, aliases, description, secret)`
++       类型参数是操作数类型，默认为 `Text`（`Defaulting` 证据会被擦除）。
++       `name` 对长标志是 `Text`，对短标志是 `Char`；`aliases` 可以混用两者；`repeatable = true` 允许标志出现不止一次，此时其操作数通过 `List` 主题一并读取；`secret = true` 读取标志，但从不列出或补全它。
+
+% 2 1 0 0f68fc04f51331b60b1d8d05ce11c118
+
+% 3 1 0 0c83520733357b1100563c0ddc4684bb
+
+% 0 1 0 021490ce49b17c0a182863cf8fc55c8d
+
+% 0 1 0 0493cdf194da08a314813c59d2c26a7d
+
+% 0 1 0 153382ef38cc87380e89ea584ef6651c
+
+% 1 1 0 1d1d344e0f70b1e60ef9dfa8dd77461e
+
+@ 0 50 0 103ab7e2451df59103288bb9a03be452
++       `List[Text]` 主题将 `--tag a --tag b` 读作 `List(t"a", t"b")`；`Optional[Int]` 主题将格式错误的操作数读作 `Unset` 而不是抛出错误，这正是纯前导部分中的读取所必须做的（`Interpretable.optionalInt`）；普通的 `Flag[Int]` 则通过 `validate()` 读取。
++   entry .serialize   标志名称的书写形式：`Text` 为 `--name`，`Char` 为 `-n`
++   entry .showable   以规范形式 `--name` 或 `-n` 显示标志，正如用法消息所需
++   entry .inspectable   包含别名、可重复性、保密性和描述的调试渲染
++   entry #name   规范名称：`--long` 用 `Text`，`-s` 用 `Char`
++   entry #repeatable   标志是否可以出现不止一次，其操作数一并读取
++   entry #aliases   标志响应的其他名称，长短皆可
++   entry #description   帮助文本，由帮助、手册页以及显示描述的 shell 展示
++   entry #secret   标志是否会被读取，但从不被列出、补全或写入文档
++   entry #apply   读取标志：作用域中有 `Effectful` 时为其 `Optional` 值，没有时为一个 `Prospective` 句柄
++       在 `Cli` 上注册该标志，连同作用域中其操作数类型的 `Discoverable`（默认为 `Discoverable.noSuggestions`）以及其 `Interpretable` 给出的操作数名称。
++       需要一个 `Cli`、一个 `Interpreter` 和主题的 `Interpretable`；解释在 `safely` 下运行，因此格式错误的操作数在这里为 `Unset`（用 `#validate` 报告它）。
++       这是一个 `transparent inline` 方法：参见 `Flag` 描述中的陷阱。
++   entry #require   将标志作为必需项读取：有 `Effectful` 时为值，没有时为一个 `Requisite` 句柄
++       在前导部分中，缺失的标志从不快速失败：它通过 `Cli#demand` 被记录，`execute` 一并报告所有缺失的必需项，以状态 2 退出，并且从不运行其代码块，这就是代码块内的 `Requisite#apply` 无需条件判断的原因。
++       作用域中有 `Effectful` 时，缺失的标志会立即抛出一个 `Missing` `Flag.Error`，交由兜底处理器报告。
++   entry #validate   将标志作为必需项读取，并检查其操作数能否解码，累积或抛出失败
++       与 `#require` 相同，另外还用主题的 `Interpretable` 解释操作数，该 `Interpretable` 在调用位置召唤，覆盖其解码可能借以抛出错误的任何 `Tactic`，因此调用处不需要任何战术。
++       在前导部分中，存在但格式错误的标志会通过 `Cli#fault` 记录，附带解码器自己的消息，若解码器没有给出消息，则为 _a value is required but none was given_ / _the value is not valid_；`execute` 在 _The following options were given invalid values_ 之下打印它们。
++       有 `Effectful` 时，缺失的标志抛出一个 `Missing` `Flag.Error`，格式错误的标志抛出一个 `Invalid` `Flag.Error`。
++       与 `#apply` 不同，解码器会抛出错误的 `Flag[Int]` 正是通过它来读取的。
++   entry #select   将标志限制为一列选项，将它们作为补全提供，并读取所选的那个
++       `flag.select(options)` 要求主题是 `Suggestible` 的；每个选项的建议都作为操作数值提供，读取操作数时将其文本与这些选项进行匹配。
++       解析方式与 `#apply` 相同。
++   entry #present   标志是否已给出，直接读取，不经内联分派
++       像 `#apply` 一样注册该标志。
++       在 `inline def` 内部应使用这个读取方法，因为在那里 `flag().present` 不可靠。
++   entry #value   标志的 `Optional` 值，直接读取；需要 `Effectful`
++       像 `#apply` 一样注册该标志。
++       在 `Effectful` 下运行的 `inline def` 内部应使用这个读取方法。
++   entry #suggest   用作用域中的 `Discoverable` 在 `Cli` 上注册该标志，但不读取它
++   entry #matches   参数应用后的文本是否以名称或别名指明了该标志
++       `--name` 匹配 `Text` 名称，`-n` 匹配 `Char` 名称；参数的格式决定比较单词的哪一部分。
++   entry .Error   在 `execute` 内部由 `#require` 或 `#validate` 抛出，此时标志的失败已无法再累积
+
+% 1 1 0 1a658105e4a048ee15e3a0824727f2ca
+
+@ 0 10 0 0d409e509ca6d51e06516ce8fbd0636d
++         只有在作用域中有 `Effectful` 时——在 `execute` 代码块内部，或在 `executives.directExecutive` 下的任何位置——才由 `Flag#require` 和 `Flag#validate` 抛出，此时必需项守卫已经运行过；它会传播到执行器的 `Backstop`。
++         在前导部分中，这两个调用都不会失败：它们各自在 `Cli` 上记录错误，`execute` 一并报告所有缺失或无效的标志，退出状态为 2。
++     entry #flag   缺失或无效的标志
++     entry #reason   `Missing`，或附带解码器所报告内容的 `Invalid(detail)`
++     entry .Reason   标志失败的原因
++       entry .Missing   标志是必需的但缺失：_the required flag `--name` was not specified_
++       entry .Invalid   标志的操作数无法解码：_the value of `--name` is not valid: `detail`_
+
+@ 0 1 0 068001a6204cc98f1f0f7057940aa5f2
++ entry .Switch   不带操作数的标志：像 `Flag` 一样声明，读取的是它是否出现
+
+% 1 1 0 00365a3221a64a4d14b9f5e85c764221
+
+@ 0 4 0 14c0956428e76b2e09d7322799758d84
++       `Switch(name, repeatable, aliases, description, secret)` 即 `Flag[Unit](…)`，其 `Interpretable.unit` 只读取是否出现，因此帮助和补全显示它时不带操作数。
++       应用它，即 `Switch(…)()`，在 `Effectful` 下得到 `Optional[Unit]`，否则得到 `Prospective[Unit]`，两者都能回答 `present`。
+
+% 2 1 0 07253557f706a4161e226b4a9cb0f962
+
+% 3 1 0 09f852b8dcabfb4300d2c5e49c6387f5
+
+% 0 1 0 1df4f95ebdab6524028867d104020c9d
+
+% 1 1 0 120fcd3a76c0d5ba1f63475fffddf582
+
+@ 0 1 0 0dcd8b033a820ee816e6b8e946f2cf0f
++   entry .apply   声明一个开关，与 `Flag.apply` 相同，但 `Unit` 主题是固定的
+
+@ 0 1 0 003b1c584f91282b13427e4fa896f678
++ entry .Setting   可从命令行、环境变量或 `Configurator` 级联读取的可配置选项
+
+% 1 1 0 150dba50e3959643017ad15b309a9608
+
+@ 0 8 0 0e8ecfc63084bf09141b66766a310b31
++       许多选项不仅应能在命令行上设置，还应能通过环境变量、系统属性或配置文件设置，并有固定的优先顺序。
++       `Setting` 以一个规范的 camelCase `#name` 一次性声明这样的选项，读取时依次查询：它的命令行 `#flag`，派生为 `--kebab-case`（因此 `logLevel` 即 `--log-level`）；显式命名的环境变量 `#variable`（如果有）；然后是作用域中的 `Configurator`，其标准级联——先是系统属性 `myapp.log.level`，再是环境变量 `MYAPP_LOG_LEVEL`——通过声明一个 `Configurator.Prefix` given 来启用。
+
+% 2 1 0 1210dddb4750fb1c0af04445d3ae6871
+
+% 3 1 0 0b9c9f3034e9d1c9127a21dcc97f0ed2
+
+% 4 1 0 15327355dc0874b21c17afd0a9591630
+
+% 5 1 0 182b68827fb3066210a5a351d112b968
+
+% 0 1 0 0e1f114160fc5f7808497dce6a1a0aed
+
+% 0 1 0 0c71eb75cf29bf8402e3e626b03a0f10
+
+% 0 1 0 1df20689c68e92000e1e0fe2525d0d10
+
+% 0 1 0 14f9dfb25c73f17e17c895b3535dba79
+
+% 1 1 0 13dd09f7aa6c7afd176351f26bb7355d
+
+@ 0 5 0 0ce565f422315385100243ada5982a48
++       设置是单值的，因此其操作数作为 `Text` 读取，并由与其他所有来源相同的 `Decodable in Text` 解码。
++       读取设置时会为补全注册其标志，与直接读取该标志完全一样，因此设置必须在前导部分中读取才能被发现。
++       用户定义的 `Configurator` given 会取代标准级联；命令行标志始终排在第一位。
+
+% 1 1 0 0a9b3684e744d17808fd627615d714c6
+
+@ 0 11 0 1712ab99cefb2f2809ecf0cf20f8e69e
++   entry .apply   声明一个设置：`Setting[Int](t"port", description, aliases, variable, secret)`
++       类型参数是值类型，默认为 `Text`。
++       `aliases` 是标志的额外名称；`variable` 命名一个环境变量，在标志与配置器级联之间按原样查询；`secret` 把标志从帮助和补全中隐藏。
++   entry #name   规范的 camelCase 名称，每个来源都由它派生出自己的名称
++   entry #flag   派生出的命令行标志，`--kebab-case`
++   entry #variable   在标志与级联之间查询的环境变量（如果已命名）
++   entry #apply   通过级联读取该设置，结果是其类型的 `Optional`
++       需要一个 `Cli`、一个 `Interpreter`、一个 `Configurator` 以及该类型的 `Decodable in Text`，另外还可选一个用于标志补全的 `Discoverable`。
++       解码在配置器的战术下进行；所有来源中都没有值时结果为 `Unset`。
+
+@ 0 1 0 039fda03c6b1ace713231ef64948d42b
++ entry .Subcommand   程序的一种命名模式：与参数进行匹配的提取器，也是一个补全候选项
+
+% 1 1 0 0d2d2cda26aa88420d9e6f47b2b868c1
+
+@ 0 8 0 03b74aced46e5e22024d7e39e8608a70
++       `Subcommand(name, description, hidden, group)` 声明一个子命令。
++       它是一个提取器，因此第一个参数在普通的模式中与它进行匹配，而匹配除了检验之外还有两个效果：它将该子命令作为该参数的建议提供出来（与同一位置上其他提取器提供的建议合在一起），并且在匹配成功时用 `Cli#matched` 记录该名称。
++       用 `e"…"` 写成的描述带有样式，供能显示样式的 shell 使用；`hidden = true` 让子命令不出现在帮助和所有 shell 的列表中（zsh 在输入时仍会补全它）；`group` 将其放在一个 `CommandGroup` 标题之下。
+
+% 2 1 0 078cf1991bcc7f110bdad3885a55a244
+
+% 3 1 0 1db15966e058f80d1cc06cfaf91bbaf2
+
+% 4 1 0 1688e1e3194a674f1b622f8875d5e1a8
+
+% 0 1 0 144d15c341af0f271cad346c267c9078
+
+% 1 1 0 16aabbc4f9ac330e1439f7052c886447
+
+% 2 1 0 1b55075536bef1a9006f534caaa59f91
+
+% 4 1 0 109ee83007287590170efe217648257b
+
+% 0 1 0 14a35671c370890f0af80324a12dd66e
+
+% 2 1 0 1f869121708281b90d39f4a9f2fddc8f
+
+% 1 1 0 16c1a5d315efb7e2049f830a4f7d0e3d
+
+% 0 1 0 0d2526008c2346af0009a93adad48eeb
+
+% 0 1 0 10ca5f34b078de520444d8e2e20cc287
+
+% 0 1 0 0be06c7f74ef30981206243cc7e462b2
+
+% 1 1 0 1160e7e17d0ea93410c4b5a30a453c7c
+
+@ 0 3 0 1ef324c3f04c444e18a44cdbb71d3623
++       子命令通过对剩余参数再次匹配来嵌套，帮助树也遵循同样的嵌套。
++       名称可以包含空格（`red hat`），shell 会为其加引号。
+
+% 0 1 0 10dd62cedaf8dde8061756ef2e3028dd
+
+% 1 1 0 1961c0f1ad6aba090d65be1b7a738c01
+
+% 1 1 0 1fdf7ff16f66d7c00eccc1733ba3ef13
+
+@ 0 7 0 0dfe59809cb711e8110df154df3b29fc
++   entry #name   选择该子命令的单词
++   entry #description   帮助文本，一个 `Text` 或带样式的 `Teletype`
++   entry #hidden   该子命令是否不出现在帮助和列表中
++   entry #group   列出它的 `CommandGroup`（如果有）
++   entry #unapply   按名称匹配一个参数，将子命令作为建议提供，并记录匹配
++       需要一个 `Cli`。
++       无论参数是否匹配，建议都会被提供，正因如此，`match` 的每个分支都是补全的候选项。
+
+@ 0 1 0 1bc4bc5d9e5c9bc00f55cff5264724b4
++ entry .Status   有意义的退出状态：带描述的代码，声明为对象并从 `execute` 返回
+
+% 1 1 0 096f5d6369fa3f3e1a17275217a2f0e6
+
+@ 0 2 0 03697957d9ea579b00fbb04e89debfc4
++       单独一个退出码说明不了多少，因此程序预料到的失败被声明为 `Status`，它是一个 `Termination`，可以在任何能返回 `Exit` 的地方返回：
+
+% 2 1 0 198a98c79d171cbc07b4be42136ad6b2
+
+% 3 1 0 090e9309741300e7031a4601d8996dc0
+
+% 0 1 0 0771787cf8722e630460e83a44edea36
+
+% 0 1 0 0dedbf84d3df47001897d813d131f7d6
+
+% 1 1 0 0056c9a8ae805fa60c90cdfe59b6df6a
+
+@ 0 5 0 030f164c59e63cd00c3d62aec5e2acf1
++       从 `execute` 代码块返回一个状态，既设置了进程的退出码，又使该状态可被发现：代码块的结果类型——由 `execute` 的 `Precise` 上界保持精确——是它可能返回的所有状态的单例类型的联合，`Status.Admissible` 将其具体化为这些状态值的列表，于是帮助和手册页在 _Exit statuses_ 下列出它们，而应用无需把它们命名两次。
+
+@ 0 4 0 12dc4845479e3b6111e95b7e546298ba
++       状态必须是顶层的 `object`，而不是 `val` 或局部对象：捕获检查会拒绝联合类型中 `val` 的单例类型，而 `Admissible` 宏会将非单例成员报告为错误，而不是让状态悄无声息地从文档中消失。
+
+% 1 1 0 03bee081cd22acb40a58e7bbd3fffc9a
+
+% 1 1 0 146fbf156ee71f6e0da11f05ada8cf3a
+
+@ 0 1 0 1e7622345275d02f10402d03618ea787
++   entry .Admissible   将 `execute` 代码块结果类型中的状态具体化的类型类
+
+% 1 1 0 15a05ecfa3381b8019c033d79e6545bf
+
+@ 0 11 0 1b9207941f35236e1182a9bc030276e4
++         `result is Status.Admissible` 由宏为任意 `result` 派生：类型被去别名，其联合类型被分解，每个属于单例 `Status` 的成员都被重新作为值引用；`Nothing` 以及其他任何 `Termination`（`Exit` 及其分支）不贡献任何内容。
++         不是单例的 `Status` 成员是一个指名它的编译错误，完全不是 `Termination` 的成员则是另一个编译错误。
++     entry .derived   为任意结果类型派生实例的 `transparent inline given`
++     entry #Self   结果类型
++     entry #statuses   该类型所容纳的状态，以值的形式
++   entry #code   退出码
++   entry #description   该状态的含义，显示在帮助和手册页中
++   entry #exit   作为 `Exit` 的状态：`Exit(code)`
+
+@ 0 1 0 0df022ae076e888a049d06f9d4d231f1
++ entry .Prospective   在前导部分读取的标志的句柄：它是否出现可以立即查询，它的值只能在 `execute` 内查询
+
+% 1 1 0 01961773a53f528510746f69d1834694
+
+@ 0 5 0 11b419b5274c88591a39b46bf659c1e3
++       当作用域中没有 `Effectful` 时，`Flag#apply` 返回一个 `Prospective[Topic]`。
++       解析是即时的——`#value` 在创建句柄时就已从参数中读出，因此它不捕获任何 `Cli`——`#present` 和 `#absent` 可以在前导部分中自由查询，以决定还要提供什么。
++       应用该句柄，即 `handle()`，需要只有 `execute` 代码块才能提供的 `Effectful`。
+
+% 2 1 0 10b8751caa45fac8162074604389765b
+
+% 3 1 0 1b88dfe568831977134a4c9eb62d9d08
+
+% 4 1 0 0425a3ff08ea240b12a456ddb15889d8
+
+% 5 1 0 0c859e9a98cc03111c63c240dd5c2683
+
+% 6 1 0 12f048e44d18432f1b567d9d1d66442d
+
+% 7 1 0 1b3dc97f5261a9bf095c8124ba135a57
+
+% 9 1 0 09e836fb6a3929560f4d66666c525a71
+
+% 0 1 0 074341edcaab98e1173683b985cd4a6c
+
+% 1 1 0 0a1ef35b59a7fa5c048f6031d3f237d7
+
+% 0 1 0 033f6be5f5d14d780eba49f1efb698aa
+
+% 1 1 0 1b15ca219b46893a1807768b138448b5
+
+% 2 1 0 1e1d15519558aaa81367e17cb9e260c3
+
+% 3 1 0 0f95bb76a8b27df415f53de36d65b709
+
+% 1 1 0 08fcb310d3306205030afa361e019439
+
+@ 0 5 0 1398992f942de66516c94d11a868efed
++   entry #flag   读出此句柄的标志
++   entry #value   读取到的值，一个 `Optional`；可在前导部分中查询
++   entry #present   是否给出了该标志
++   entry #absent   是否未给出该标志
++   entry #apply   `Optional` 值；需要 `Effectful`
+
+@ 0 1 0 11f318bb9e3f6edf01968dfbc16a5f52
++ entry .Requisite   在前导部分读取的必需标志的句柄：在 `execute` 内无条件地是一个值
+
+% 1 1 0 1c4e72e9347d3ab404f87bce6939ccc4
+
+@ 0 5 0 06ab11803e728144143b16e46e03a27e
++       当作用域中没有 `Effectful` 时，`Flag#require` 和 `Flag#validate` 返回一个 `Requisite[Topic]`。
++       创建它会在 `Cli` 上记录该要求；如果标志缺失或格式错误，`execute` 会在一条消息中报告所有这样的标志，并且从不运行其代码块，因此在代码块内应用该句柄得到的就是值本身。
++       与 `Prospective` 一样，`#value`、`#present` 和 `#absent` 可以在前导部分中查询。
+
+% 2 1 0 120fcf1190310c4406e007e558193e65
+
+% 3 1 0 053a0a512376d4731a2b3e80acdd4b0b
+
+% 4 1 0 0c628e1ab360f6430fded0490f2c9193
+
+% 5 1 0 031530761292836a0573d7c33dbd0ff0
+
+% 6 1 0 1eb3f83dd5afb0370dcf195abd851576
+
+% 7 1 0 1902908dcd965deb1b54e3345d6d935f
+
+% 9 1 0 05afdacdaf7b17c2116e8144b15a4b71
+
+% 0 1 0 16712aa4ca656de81beae7a7eab7ee65
+
+% 0 1 0 0954a72e01e8499e13501597278b0f83
+
+% 1 1 0 1ffe1f620a82685b16b24fe2e9ebb86d
+
+% 0 1 0 11d112bc7429f81e05381274a47dfd34
+
+% 1 1 0 12987469fcdf4d861559c09bf182f09f
+
+% 2 1 0 0c49f55dc09605d01405e3529cc7a538
+
+% 3 1 0 01a91d01983f35fe01ca41eec83cb5b1
+
+% 1 1 0 02247b8243b407a51e352e73d5c08ad8
+
+@ 0 8 0 025ed4ec970ec3ba19938b3b10e6c56b
++   entry #flag   读出此句柄的标志
++   entry #value   读取到的值，一个 `Optional`；可在前导部分中查询
++   entry #present   是否给出了该标志
++   entry #absent   是否未给出该标志
++   entry #apply   值本身；需要 `Effectful`
++       之所以不会失败，只是因为当标志缺失时 `execute` 的守卫已经中止；在伪造的 `Effectful`（`effectful` 逃生舱口）下，这一保证失效，缺失的标志会引发 panic。
+
+@ 0 1 0 1b7b2929c09d46b11358ea7b020f1a44
++ entry .Interpretable   如何将标志的操作数参数读取为某个类型
+
+% 1 1 0 152b9bc171771dd10fc536fda6108171
+
+@ 0 7 0 017e94495274d6f70698187bd657e549
++       一个基于操作数类型的类型类：`#interpret` 接收标志的操作数参数（对可重复的标志而言，是每次出现时的操作数），产生值或 `Unset`。
++       它还说明该类型是否需要操作数（`#operand`，只有 `Unit` 为 false），以及在帮助中如何称呼它（`#placeholder`，即 `--log <file>` 中的 `file`）。
++       任何 `Decodable in Text` 的类型都可以通过 `.decoder` 解释，它解码第一个操作数；对操作数有自己理解的类型则手写一个实例，一个从参数出发的 lambda 就足够了：
+
+% 2 1 0 1504b51b6980f8260c6268679689fe44
+
+% 3 1 0 0bb0d52a5c77fcfa08b32edfe2e0fa23
+
+% 5 1 0 037975e5cf1778fc1f67a3ba123267aa
+
+% 0 1 0 107ad961bc73f4480d1fca2bcf8910e2
+
+% 0 1 0 0097b540110c6d63138f91eba0c9d15d
+
+% 0 1 0 101d2eb0f6782f8017b0e672578a77e7
+
+% 1 1 0 110dfa6b1745a0af041f78ec005d224e
+
+@ 0 5 0 095c2c289ab3e0d8000d4ec343c29e64
++       在前导部分中，纯粹性很重要：`Flag#apply` 在 `safely` 下运行实例，因此可能抛出错误的实例（例如解码时会抛出 `Number.Error` 的 `Decodable`）在那里会把格式错误的操作数读作 `Unset`，只有通过 `Flag#validate` 才能被正确报告，后者在其战术之上召唤该实例。
++       `Optional[…]` 实例（`.optionalInt` 和 `.optional`）是这类类型的纯粹读法。
+
+% 1 1 0 0c7f8e78de84f8f91ab61e621b6a5bd7
+
+% 1 1 0 05234949465422e9013928ae26969146
+
+@ 0 25 0 0247a90ab28993d1052c3cfb319abc90
++   entry .unit   `Unit` 的实例：没有操作数，只看是否出现
++       `Switch` 就是通过它读取的；`operand` 为 false，因此帮助不显示占位符。
++   entry .decoder   任何 `Decodable in Text` 类型的实例：解码后的第一个操作数
++       位于隐式作用域中。
++       可重复的 `Flag[Text]` 仍然通过它读取第一个操作数；`List` 主题则读取全部操作数。
++   entry .optionalInt   `Optional[Int]` 的纯粹实例：格式错误的操作数为 `Unset`，不抛出任何错误
++       这是一个 `inline given`；解码器在展开处、在它可能借以抛出错误的战术之上被召唤，并在 `safely` 下运行。
++       `Optional[…]` 是一个联合类型，任何类型参数都无法透过它推断，因此每个这样的实例都要单独编写。
++   entry .optionalLong   `Optional[Long]` 的纯粹实例
++   entry .optionalDouble   `Optional[Double]` 的纯粹实例
++   entry .optional   为任意 `operand: Decodable in Text` 构造纯粹的 `Optional[operand]` 实例
++       `given Optional[Port] is Interpretable = Interpretable.optional[Port]` 为另一个类型声明一个这样的实例。
++   entry .list   `List[element]` 的实例：每个操作数都被解释为一个元素
++       `Flag[List[Text]](t"tag", repeatable = true)()` 将 `--tag a --tag b` 读作 `List(t"a", t"b")`；只要有一个操作数格式错误，整体就是 `Unset`。
++       其纯粹性与元素的实例相同，占位符也沿用元素的。
++   entry #operand   该类型是否需要操作数；默认为 `true`
++   entry #placeholder   在帮助中为操作数显示的名称，或为 `Unset` 以使用通用的 `value`
++   entry #operandName   占位符，或 `value`，当类型不需要操作数时为 `Unset`
++   entry #interpret   从操作数参数中读出的值，或 `Unset`
++   entry #map   通过映射解释出的值，得到另一个类型的实例
++       `Interpretable[Text].map(Mode(_))` 保留原实例的操作数标志和占位符。
+
+@ 0 1 0 06196d5f1eeafb9115fcb8c784667f03
++ entry .Interpreter   将扁平的参数列表转换为标志、操作数和位置参数的方针
+
+% 1 1 0 0921e7ae25db76830734578d136165de
+
+@ 0 6 0 158ff65c4b81df2c08efb6ece93a54da
++       作用域中的解释器负责把*参数*（shell 交来的文本）转换为*形参*（它们的含义）。
++       它通过按名称导入 `interpreters` 中的某个 given 来选择，因为 `-rA4` 在一种约定下是三个标志加一个操作数，在另一种约定下则是一个带操作数 `rA4` 的标志。
++       `Interpreter` 将参数一次性解释为它的 `#Topic`（对 POSIX 解释器而言是一个 `Commandline`），然后据此回答关于标志的查询。
+
+% 1 1 0 1652240c387f5e340b9ddc40cd7bdff8
+
+% 0 1 0 1a59e0cc902a1e350c4f129a8248351f
+
+@ 0 9 0 1719b1b0b1b727c216e98f96998865d5
++   entry #Topic   参数被解释后的形式
++   entry #interpret   将参数解释为主题
++   entry #focus   在补全请求中光标所属的标志（如果有）
++   entry #find   某个标志的操作数参数，或 `Nil`
++   entry #locate   某个标志的操作数参数，若未给出该标志则为 `Unset`
++       对于无法做出这种区分的解释器，默认为 `Unset`；POSIX 解释器重写了它，正是这一点让 `Flag#validate` 能够区分缺失的标志与格式错误的标志。
++   entry #read   将某个标志的操作数读取为某个类型，并在 `Cli` 上注册该标志
+
+@ 0 1 0 04ce931abfd2ac070c42e9c81cfdd396
++ entry .interpreters   标准解释器，每个都是按名称导入的 given
+
+% 1 1 0 1e330a286bdfbef414a9db96584219a9
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 3 1 0 0b52f4b203d0ad77169cccc6052461c3
+
+% 1 1 0 0e138597ebad2db90fc1cc2d37297ed6
+
+@ 0 4 0 0f2d239a5cfb01f21dc84953e2756bf9
++       两个 POSIX 解释器都读取 `--long`、`-s`、`--long=value` 和 `--long value`，把单独的 `--` 之后的一切视为后置参数，并把标志的操作数视为直到下一个标志之前的单词；它们的区别仅在于如何读取长于一个字母的短标志。
+
+% 2 1 0 0ee20a387d92d62107922b717f3f2232
+
+% 3 1 0 1e122abe8330a5f31f4342b32cf9b579
+
+% 0 1 0 0fd0081ac8fe40ad039b777631615126
+
+% 0 1 0 13f4f6aaa504cae41ee2f941fa56ce2d
+
+% 0 1 0 1862d2cdebc9dee914af926d83e5175f
+
+% 1 1 0 1247aa494a30e12608b7a87975f38e2e
+
+@ 0 9 0 09afdccfac9ca2b410912189357d3ec5
++   entry .posixInterpreter   `--long` 和 `-s` 标志；`-abc` 是带操作数 `bc` 的标志 `-a`
++       这是 `Application` 选择的解释器。
++       附带文本的短标志，如 `-j4`，会把该文本读作它的操作数。
++   entry .posixClusteringInterpreter   与 `posixInterpreter` 相同，但 `-abc` 即 `-a -b -c`，由最后一个字母接收操作数
++       两个字符的短标志保持不变；长标志从不被视为簇。
++       在簇内补全会扩展该簇，因此在 `-ab` 处选择 `-c` 得到 `-abc`。
++   entry .simpleInterpreter   每个参数都是操作数：不读取任何标志，每个标志都读作 `Unset`
++       用于自行处理其单词的程序；`focus` 和 `locate` 什么也不返回，因此没有标志会被补全。
+
+@ 0 1 0 1382b3e6ba2a83631c73562c468a480d
++ entry .Login   运行该命令的用户：用户名，以及（如果已知）平台的用户 id
+
+% 1 1 0 0f7ac3a0c62c781407c77f058c8da510
+
+@ 0 5 0 069494d2b0b0889e04298e81f4d3a28e
++       `application` 从 `ProcessHandle.current().info().user()` 填充它，不带 id；守护进程的启动器可以提供 id。
++       测试直接构造一个，`Login(t"tester", Unset)`。
++   entry #username   用户名
++   entry #id   `UserId`，当启动器未报告时为 `Unset`
+
+@ 0 1 0 061095bf14a53e4309d2f8c45fda22b0
++ entry .UserId   平台对用户的标识符：在 Unix 上是数字 uid，在 Windows 上是 SID，以文本形式承载
+
+% 1 1 0 04363530396f719509ae90058e250507
+
+@ 0 2 0 01658d6afde8ba1503cb9d61fe48f764
++       两种形式没有共同的数字表示，因此 `UserId` 是一个不透明的 `Text`，`#unix` 和 `#sid` 读取适用的那一种。
+
+% 2 1 0 1b2124b2e16f57591c76b4d55a34d84f
+
+% 3 1 0 1d7c45ed551518f31e1865f6fb9bf7d7
+
+% 0 1 0 02c72c9e3d5a18521fa8047598f56f5c
+
+% 0 1 0 04d4e72c53e91a9b131cb6bdf4a166c2
+
+% 1 1 0 122d72d9be896108059ac41226b4f00e
+
+@ 0 7 0 0a2d4184c327295405e4d33d8afd1649
++   entry .apply   包装用户 id 的文本
++   entry .showable   将 id 显示为其文本
++   entry .encodable   将 id 编码为其文本
++   entry .decodable   将任意文本解码为 id
++   entry .text   作为文本的 id
++   entry .unix   数字 uid，若文本不是数字则为 `Unset`
++   entry .sid   Windows 安全标识符，若文本不以 `S-` 开头则为 `Unset`
+
+@ 0 1 0 119dfaa23c1d148616406d5faea7f7cb
++ entry .Shell   生成补全所针对的 shell：`Zsh`、`Bash`、`Fish` 和 `Powershell`
+
+% 1 1 0 0c687a97940ec7b903c5c166580f1bee
+
+@ 0 7 0 1380615c9c1110e81e39da58f30358fa
++       一个枚举，其分支即补全目标：`Completions.script(shell, command)` 为每一种 shell 编写脚本，`Completion#serialize` 按每种 shell 期望的方式格式化建议，在测试装置中 `shell.pane()` 运行其中一种。
++       它从其小写名称解码，并编码为其小写名称。
++   entry .decoder   从名称读取 shell，不区分大小写
++   entry .encodable   将 shell 编码为其小写名称
++   entry .showable   将 shell 显示为其小写名称
+
+@ 0 1 0 0080a15744851d6a0a0c5f69cfe865d8
++ entry .Suggestible   值如何将自身作为补全候选项提供
+
+% 1 1 0 0cdfeb2c3e28338710b531c44e5c69ae
+
+@ 0 4 0 1754a6c23631c424179be85418110498
++       一个只有一个方法 `#suggest` 的类型类，从值得到一个 `Suggestion`。
++       `Argument#select` 和 `Flag#select` 接收一个 `Suggestible` 选项列表，提供每个选项的建议，并通过文本读回所选的那个。
++   entry #suggest   某个值的建议
+
+@ 0 1 0 0b47d3e5649527031aff3f75d4c8a0ba
++ entry .Suggestion   一个补全候选项：要插入的文本，附带描述以及 shell 应如何处理它
+
+% 1 1 0 18c66ddaea2b94fb18f1a0eb53bd32b3
+
+@ 0 9 0 1dd191fce68c291f1ffda02616eb5a29
++       `Suggestion` 是每个补全来源——`Subcommand`、`Discoverable`、`Pathname`、`Flag` 列表——产生的东西，也是 `Completion#serialize` 为 shell 渲染的东西。
++       `#core` 是插入的文本，位于 `#prefix` 与 `#suffix` 之间（因此 `#text` 是整个单词）；`#description` 由 zsh、fish 和 PowerShell 显示；`#hidden` 候选项会参与匹配但不被列出（并且只有 zsh 会匹配它们）；`#incomplete` 告诉 shell 不要结束该单词，用于逐段补全的路径；`#aliases` 列出显示在它旁边的其他名称；`#operand` 将其标记为提供给操作数而非子命令的值，因此帮助树不会深入其中；`#display` 是当菜单显示的内容与插入的内容不同时菜单所显示的内容。
+
+% 2 1 0 08fc5d1467c38b9807209a3db3128d0e
+
+% 3 1 0 0b048fc971d6194b0a86a45e6e9d097f
+
+% 0 1 0 0b0017fbc7f766041eeac7b5070c1f15
+
+% 0 1 0 1a95be4f7f16209b16b378652b3317fb
+
+% 1 1 0 16d52ce6c43b730d00f7ba6b7a5485b7
+
+% 1 1 0 091cdf2ca2c9baff000eb9552146514d
+
+% 1 1 0 1e4ab1c62133c83112775bc5f479ac00
+
+@ 0 19 0 149c78832381d0dc16ba9819236be80a
++   entry .apply   构造一个建议，除 `core` 外的每个字段都有默认值
++   entry #core   插入的文本
++   entry #description   显示在它旁边的描述，一个 `Text` 或带样式的 `Teletype`（如果有）
++   entry #hidden   该候选项是否参与匹配但不被列出
++   entry #incomplete   插入后 shell 是否应让该单词保持未结束
++   entry #aliases   在候选项旁列出的其他名称，就像标志别名那样
++   entry #prefix   位于核心之前的文本，会被插入，但不作为候选项的一部分显示
++   entry #suffix   位于核心之后的文本
++   entry #expanded   前缀和后缀是否已并入核心
++   entry #group   子命令候选项所属的 `CommandGroup`
++   entry #operand   这是否是操作数的值，而不是子命令
++       两者在光标处的提供方式完全相同，但只有子命令属于命令的接口：若没有这一区分，`--help` 就会把工作目录当作语法一样枚举出来。
++   entry #display   当菜单显示的内容与插入的内容不同时菜单所显示的内容
++       在簇状短标志内部补全时需要它：在 `-ab` 处选择 `-c` 只插入 `c`，但菜单仍然显示 `-c`。
++       只有 zsh 能显示一样东西而插入另一样。
++   entry #text   整个单词：前缀、核心和后缀
+
+@ 0 1 0 015b1420b1f31d321c3a7adf72855d63
++ entry .internal   `Status.Admissible` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 11dfc9fd70b71eda0b65c6b30c9fc997
++       不供直接使用：该对象的存在是为了让宏有一个稳定的归属。
++   entry .admissible   `Status.Admissible.derived` 背后的宏：把由状态单例组成的联合转为它们的值
+
+@ 0 1 0 0a3649eafde8a1bb018bd47bd9f83d7b
++ entry .Help   以树的形式呈现的命令接口：它的标志、子命令、状态和变量，渲染为帮助文本
+
+% 1 1 0 026a0aa3380579fa1d2eb8f8452c2e1f
+
+@ 0 9 0 1c68c5e3858b871b04ad63e3fc4f897e
++       一个 `Help` 节点即一个命令：它的 `#command` 名称、`#description`、`#parameters`（每个都是 `Help.Param`）、`#subcommands`（每个都是 `Help`）、它的 `#group`、它的 `execute` 代码块可能返回的退出状态 `#statuses`，以及它的前导部分读取的环境变量 `#variables`。
++       `helpTree` 通过在每个子命令前缀处以补全模式重新运行应用的前导部分，从应用构建出整棵树，因此其中没有任何内容是手写的；`Executive#help` 是执行器通往同一结果的入口。
++       `#teletype` 以对齐的、手册页风格的布局渲染一个节点，`.printable` 让 `Help` 可以直接传给 `Out.println`；`exoskeleton.manpage` 中的 `roff` 扩展将同一棵树渲染为手册页。
+
+% 2 1 0 1057281abb1682120136c5aac742e064
+
+% 3 1 0 0c12a8e547b737cd1a92ed49ee967aeb
+
+% 0 1 0 0fd28ea130965d641cc15be34c68d960
+
+% 0 1 0 091038492b1412a11f28e20201ddc148
+
+% 0 1 0 136c0fce63645b3919f3eb1b1ec51c57
+
+% 0 1 0 060e47bd778567441a3f564526e9da69
+
+% 0 1 0 14c762da1d71977b01a62164e807658b
+
+% 0 1 0 030421ca172bef611ff95886b6be4ec0
+
+% 0 1 0 0bd24601edbade6b1b30e819d53902f4
+
+% 0 1 0 0f6677f8b193694e0a88a4ec873db120
+
+% 1 1 0 128e838f4924c983104ff85a1a1464cf
+
+@ 0 7 0 0f2b3d9313a0e78e13f5d4424b99ebb5
++       渲染结果包含一行用法（全局选项在 `<command>` 之前，局部选项在其后，只有一个可能的标志时直接写出其名称），按宽度换行的描述，然后是 _Global options_、_Options_ 和 _Commands_ 各节——叶子命令显示普通的 _Options_，除非它是携带祖先标志的局部视图——每个 `CommandGroup` 一节，并提取出该组的共同标志，最后是从整棵树收集并按代码去重的 _Exit statuses_。
++       必需的标志标记为 `(required)`；可重复的标志标记为 `...`；操作数标记为 `<name>`。
+
+% 1 1 0 1140eb120f26e59d0008f41c63c38626
+
+% 1 1 0 0d035cc8521ad9ab0b21bed85e1217a0
+
+% 1 1 0 0f08ae55877ccdf514c7e8d341e2d80f
+
+% 1 1 0 0887ba8d36ee004815429683f8342297
+
+@ 0 1 0 0ad3707fa465795a0dbc4bc8efd89f36
++   entry .Param   命令的一个标志，按帮助中显示的样子
+
+% 1 1 0 19328deecc11a6c40e1edaca0ec079a0
+
+@ 0 33 0 041d4dbf05ef2ebb0400e223b5b3fa57
++         `Help.Param(name, aliases, description, repeatable, global, operand, required)`：按书写形式的名称（`--jobs`），同样按书写形式的别名，描述，是否可重复，是否全局（在子命令分派之前检查，因此在命令行上位于子命令之前），操作数的占位符（对开关而言为 `Unset`），以及是否必需。
++     entry #name   按书写形式的标志，`--name` 或 `-n`
++     entry #aliases   其他名称，按书写形式
++     entry #description   帮助文本
++     entry #repeatable   该标志是否可以给出多次
++     entry #global   该标志是否应位于子命令之前
++     entry #operand   操作数的占位符，对开关而言为 `Unset`
++     entry #required   是否必须给出该标志
++   entry .printable   让 `Help` 可以用 `Out.println` 打印，并按终端宽度换行
++       以 termcap 的宽度用 `#teletype` 渲染，并借用 escapade 的 `Teletype is Printable`。
++       需要一个 `Hyphenation`，`Hyphenation.fallback` 无需导入即可满足它，只在空格处换行；导入某种语言的模式（`hyphenations.english`）即可进行带连字符的换行。
++   entry #command   命令的名称；对于 `#local` 视图，是用空格连接的完整路径
++   entry #description   命令的描述（如果有）
++   entry #parameters   命令的标志
++   entry #subcommands   嵌套的命令
++   entry #group   列出该命令的 `CommandGroup`（如果有）
++   entry #statuses   该命令的 `execute` 代码块可能返回的退出状态；对手工构建的节点为空
++   entry #variables   该命令的前导部分读取的环境变量；对手工构建的节点为空
++   entry #local   从某个子命令路径内部看到的树视图，若该路径不存在则为 `Unset`
++       `help.local(List(t"distribution", t"ubuntu"))` 选中该节点，以完整路径为其命名，使用法行读作 `mytool distribution ubuntu`，并把每个祖先的标志作为全局选项带入，节点自身的标志作为局部选项；名称冲突时离根最近的一方胜出。
++       `Cli#matches` 是为迄今匹配到的子命令应传入的路径。
++   entry #teletype   将节点渲染为带样式的文本，按某个宽度换行
++       换行需要一个 `Hyphenation`。
++       宽度低于二十列时，文本会溢出而不换行。
+
+@ 0 1 0 10e599289d89b9b9019577b1abb1cf82
++ entry .Completion   Tab 补全请求的 `Cli`：记录前导部分请求的内容，并为 shell 渲染出来
+
+% 1 1 0 1646c0d4402d867c1efcbf844827088b
+
+@ 0 10 0 1c1371c490a065c613106048a037603e
++       `executives.completionsExecutive` 为 `{completions}` 请求构建一个 `Completion`，`helpTree` 则为每次探测构建一个。
++       它在 `Cli` 的基础上扩展了请求的具体信息——`#shell`、正在补全的是哪个参数（`#currentArgument`）、光标在其中的位置（`#focusPosition`）、`#tty` 以及 `#tab` 计数——并重写了记录方法，使得运行应用的前导部分会填充它的表：查询过的 `#flags`、它们的 `#operandNames`、在提供任何子命令之前查询过的 `#globalFlags`、行上已有的 `#seenFlags`、`#requiredFlags`、`execute` 代码块所容纳的 `#statuses`、`#explanation`，以及为获得焦点的参数提供的 `#cursorSuggestions`。
++       随后 `#serialize` 将结果渲染为 shell 脚本读取的行。
+
+@ 0 2 0 1427e28419575af91d577c7e2b87becd
++       `proceed` 始终为 true：前导部分会运行，而 `execute` 不运行其代码块就返回。
+
+% 1 1 0 141737638be8620b0fa341b40395eb1e
+
+% 0 1 0 14d167d33da7711900f2a19511e15aae
+
+% 1 1 0 139926e861697bfe06162b64e072df16
+
+@ 0 32 0 1582fe2695d946861de45bfbd32281a8
++   entry #fullArguments   原始的 `{completions}` 请求，包括 shell、光标和 tty 单词
++   entry #arguments   正在补全的命令行中命令名之后的单词
++   entry #environment   发出请求的 shell 的环境
++   entry #workingDirectory   发出请求的 shell 的目录
++   entry #shell   是哪个 shell 在请求，从而决定 `#serialize` 如何格式化其应答
++   entry #currentArgument   正在补全的参数的位置
++   entry #focusPosition   光标在该参数内的偏移，shell 未提供时为 `Unset`
++   entry #stdio   请求的标准流
++   entry #tty   shell 所运行的终端，作为 Tab 按键计数的键
++   entry #tab   在此位置按下 Tab 的次数
++   entry #login   运行该 shell 的用户
++   entry #flags   前导部分查询过的每个标志，以及其操作数的 `Discoverable`
++   entry #operandNames   每个需要操作数的标志的操作数占位符
++   entry #globalFlags   在提供任何子命令之前查询过的标志，无论子命令为何都适用
++   entry #seenFlags   命令行上已有的不可重复标志，不会再次提供
++   entry #requiredFlags   由 `require()` 或 `validate()` 要求的标志
++   entry #statuses   由 `execute` 代码块记录的退出状态，按顺序排列
++   entry #explanation   由 `explain` 设置的段落，显示为 zsh 的补全标题
++   entry #cursorSuggestions   为获得焦点的参数提供的候选项
++   entry #proceed   始终为 `true`
++   entry #parameter   通过解释器读取某个标志的操作数
++   entry #focused   某个参数是否就是正在补全的那个，会考虑其格式
++   entry #flagSuggestions   尚未出现在行上的标志，作为建议；当单词以 `--` 开头时只给出长名称
++   entry #focusText   正在补全的参数的完整文本，或为空
++   entry #serialize   将建议渲染为 shell 补全脚本读取的行
++       作为标志输入的单词只能由标志扩展，因此在那里会丢弃其他候选项；当所有候选项都被隐藏时，也会提供标志，否则没有任何 shell 会列出东西。
++       当焦点就是某个单词时，候选项会按该单词的格式包装。
++       zsh 收到以 NUL 分隔的 `compadd` 参数列表，描述已对齐，隐藏的候选项已标记；bash 收到按已输入前缀过滤的裸单词；fish 和 PowerShell 收到以制表符分隔的单词与描述行，对于 fish，唯一的未完成候选项还会附带一个以空格结尾的孪生项。
+
+@ 0 1 0 0518f8f6d4b4ef620d179c6d02c3f350
++ entry .Completions   shell 补全脚本、它们的安装，以及 Tab 按键计数器
+
+% 1 1 0 0a335e8ac5502ef5002c8dbdb9eee214
+
+@ 0 5 0 118f230319961a0708718d1285ecc5b2
++       每种 shell 的脚本只做一件事：将当前命令行、光标和 shell 名称作为 `{completions}` 请求转发给应用，因此新增子命令或标志时从不需要修改脚本。
++       `.script` 是某个脚本的文本；`.install` 找到每种 shell 加载补全的位置并将脚本写到那里，内置的 `{admin} install` 子命令运行的就是它：
+
+% 0 1 0 0ea4573b9a94b84305f895477a981119
+
+% 0 1 0 1e6e569fb5e7151210a236c425a2833e
+
+% 1 1 0 10777a0234ce3e91073e96c88b433091
+
+@ 0 5 0 106b45f1ea2b8f1407f7e84a130cf63e
++       `.ensure` 是发后即忘的形式，供由守护进程支持的工具在启动时调用。
++       两者都需要一个 `Entrypoint^`、一个 `Environment` 和一个 `System`——是*调用*的环境与系统，因为在守护进程下，常驻 JVM 的环境是启动它的那个客户端启动器的环境——以及一个 `WorkingDirectory`、`Diagnostics` 和一个 `CliEvent is Loggable`；作用域中的 `Cli` 提供环境和目录，`systems.javaBaseSystem` 提供系统。
+
+% 0 1 0 0d6ee5dd566f6e7d1cb26516619ebcda
+
+% 1 1 0 1cce9ff572cedf30028b815fc5b10edc
+
+% 0 1 0 1a3af81e8aad98690fbaebdd7d8f552e
+
+@ 0 1 0 05c99837ea4a348d111d498fa6e96e4e
++   entry .script   某种 shell 的补全脚本，将命令行转发给 `command '{completions}' …`
+
+% 1 1 0 0869cec4344d526905cdd8f6e75e0521
+
+% 2 1 0 19b652eed32535010f7c10def9eba2d3
+
+% 0 1 0 16170e95ccf7d0200697080740f410ae
+
+% 1 1 0 03e1a5656c5746e71346348b2491f843
+
+@ 0 4 0 0624584a3fc9bd381c4bb7689aaf5281
++       zsh 的脚本是一个读取 `compadd` 参数的 compdef 函数；bash 的使用 `_init_completion` 和 `COMPREPLY`；fish 的注册 `complete -f -c`；PowerShell 的注册一个原生参数补全器，并追加到配置文件中。
++   entry .install   为找到的每种 shell 将脚本写到位，或将一个脚本写入第一个可写目录
+
+% 1 1 0 1f3361573bac448f126328237ad30089
+
+@ 0 15 0 0594c9bf5f84fe831404d726dcf33593
++         `install(force)` 需要 `Effectful`，因此不能在补全所运行的前导部分中运行。
++         它检查入口点脚本所指名的命令是否就是正在运行的可执行文件（否则为 `Installation.CommandNotOnPath`，除非指定 `force`），然后同时询问每个已安装的 shell 从何处加载补全，总共限时五秒——标准输入被关闭，标准错误被丢弃，因此会提示或抱怨的启动文件既不会拖住它，也不会破坏应答，同时传递调用的 `HOME`、`ZDOTDIR`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_DATA_DIRS` 和 `BASH_COMPLETION_USER_DIR`。
++         zsh：主目录下第一个存在且可写的 `$fpath` 目录，否则为第一个可写的目录，否则创建 `$XDG_DATA_HOME/zsh/site-functions`，结果为 `Unconfirmed`。
++         bash：`${BASH_COMPLETION_USER_DIR:-$XDG_DATA_HOME/bash-completion}/completions`，除非交互式 bash 定义了 bash-completion 的加载器，否则为 `Unconfirmed`。
++         fish：其配置目录下的 `completions` 目录。
++         PowerShell：追加到配置文件中，仅一次。
++         查询环境或写入失败时抛出 `Install.Error`。
+
+@ 0 15 0 18921628b2c9f8831b721d874500450f
++         `install(shell, command, scriptName, dirs)` 将一种 shell 的脚本写入 `dirs` 中第一个存在且可写的目录，结果为 `Installed`、`AlreadyInstalled` 或 `NoWritableLocation`。
++   entry .ensure   每个 JVM 静默安装一次脚本，或在 `force` 下重新安装并报告路径
++       不带 `force` 时，安装在每个 JVM 生命周期内最多运行一次（shell 查询要花费数百毫秒，若重复进行，将主导由守护进程支持的工具的启动时间），且不返回任何内容；带 `force` 时，脚本会被重新安装，并返回写入的路径，这正是 `{admin} install` 所打印的。
++       错误会被吞掉。
++   entry .tab   在某一位置按下 Tab 的次数，按终端分别计数
++       `Completions.tab(tty, Tab(arguments, focus, cursor))` 对第一次按键返回 `Prim`，只要在同一 tty 上、同一位置补全同一行，就递增计数；不同的请求会将其重置。
++       该计数以 `tab` 的形式传到 `Discoverable#discover`，因此第二次按键可以显示隐藏文件。
++   entry .Tab   Tab 按键计数的键：参数、获得焦点的单词、光标以及迄今为止的计数
+
+% 1 1 0 03dbd68c0ec6937b05f76e9aeb92eb75
+
+@ 0 8 0 182142913486d1211815f881c8d58ca0
++         当两次按键的 `Tab` 在计数归零后相同时，它们就是同一个请求。
++     entry #arguments   请求的参数
++     entry #focus   获得焦点的参数的位置
++     entry #cursor   光标的偏移
++     entry #count   迄今为止的按键次数
++     entry #next   计数递增后的同一个键
++     entry #zero   计数归零后的同一个键，用于比较
++   entry .Installation   安装脚本的结果：不在路径上，或每种 shell 一个结果
+
+% 1 1 0 010a1aa96c0ac7291567d2b39a9662ac
+
+@ 0 6 0 1f449cb03a2b4ec3037795f960b6255e
++         一个枚举：当脚本要补全的命令不是正在运行的可执行文件时为 `CommandNotOnPath(script)`，否则为 `Shells(zsh, bash, fish, powershell)`，每种 shell 一个 `InstallResult`。
++         它的 `Communicable` 将两者之一渲染为消息；`#paths` 列出写入的文件。
++     entry .communicable   将结果渲染为消息，每种 shell 一段
++     entry .InstallResult   某一种 shell 上发生了什么
+
+% 1 1 0 00f56cf9298c3f0414b147ea3a0abfbd
+
+@ 0 8 0 126b71111d823d3014f1f4f68d4fa1dc
++           `Installed(shell, path)`、`AlreadyInstalled(shell, path)`、`NoWritableLocation(shell)`、`ShellNotInstalled(shell)` 或 `Unconfirmed(shell, path)`：脚本已写入，但无法证明该 shell 会从那里加载它——该目录不在它的搜索范围内，它缺少 bash-completion，或者它没有及时应答。
++           穷尽的匹配必须处理全部五种情况。
++       entry .communicable   将结果渲染为一个指出 shell 和路径的句子
++       entry #pathname   写入的路径，适用于 `Installed`、`AlreadyInstalled` 和 `Unconfirmed`；否则为 `Unset`
++     entry #paths   所有 shell 中写入的每个路径
+
+@ 0 1 0 14d3f7579b5e24ce1180bd27b2292689
++ entry .CliEvent   补全安装所记录的日志：子进程事件和写入的位置
+
+% 1 1 0 13afb02cb873c2fd1e4b65628be6d77a
+
+@ 0 5 0 17996d55dc1653d810e6b83b278c0eb5
++       一个枚举：`Exec(event)` 包装来自被查询 shell 的 guillotine `Exec.Event`，`Installing(location)` 指出写入的文件。
++       `Completions.install` 和 `ensure` 需要作用域中有一个 `CliEvent is Loggable`；`logging.silentLogging` 会丢弃这些事件。
++   entry .execEvent   将 guillotine 的 `Exec.Event` 转写为 `CliEvent.Exec`
++   entry .communicable   将每个事件渲染为消息
+
+@ 0 1 0 10639a5d2977558e1d9afcf4607beb3c
++ entry .execute   应用中完成实际工作的代码块，只在真正的调用时运行
+
+% 1 1 0 1300a5d431f41e6614d13ac17e04451d
+
+@ 0 6 0 0dbcb76a155e4b5a02ebe3541572a383
++       在 `executives.completionsExecutive` 下，主体必须返回一个 `Execution`，而构造它的唯一方式是 `execute` 代码块。
++       在它之前的代码——前导部分——无论是调用命令时还是请求补全或帮助时都会运行；代码块只在真正的调用时运行，此时作用域中有 `Effectful` 和 `Invocation`，因此 `Prospective` 和 `Requisite` 句柄在这里应用，输出也在这里写出。
+
+% 2 1 0 0318916e41fe9aeb0d4e1a24a7adca77
+
+% 3 1 0 0c1550dde5c6e5ad154a9c2cebb8345c
+
+% 4 1 0 09e6b05f61fe104110bbe22c438aaae8
+
+% 5 1 0 01ca9b3fa5398a5a18e98df5ca95ca13
+
+% 6 1 0 0933e0ec09c39e1a13a25563b0d24961
+
+% 7 1 0 13f68b0823ef3d2009fac5d43e57c4cd
+
+% 4 1 0 00644311813b3a5303c327b71fe1c909
+
+% 2 1 0 0b97426184623c340601a00e89bdc8a9
+
+% 1 1 0 1751e7d49e8cb1b60da9928150fca2d7
+
+% 2 1 0 083237d8aefbad0d06b9572130ff7e51
+
+% 0 1 0 13670c781a260ac3031c72d774f4efeb
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 01326c338581b58f033669e06e6cf7af
+
+% 1 1 0 15a58f6788e7010206bc6868764e93d4
+
+% 2 1 0 1205cd508cd6802414776cca6f0b5985
+
+% 3 1 0 12f1d7741135e3a81c4cec0ea8a51faa
+
+% 1 1 0 10743d8e0e5f8d621688c1d6c6fe68a6
+
+@ 0 6 0 1026efbe1799af6f102208eac6f349fd
++       在运行代码块之前，`execute` 会检查前导部分在 `Invocation` 上累积的内容：如果有任何 `require()` 的标志缺失，或任何 `validate()` 的操作数格式错误，它会把它们全部打印到标准错误——_The following required options were not specified_、_The following options were given invalid values_——并返回 `Exit.Fail(2)`，而不运行代码块，这就是 `Requisite` 在代码块内可以无条件解包的原因。
+
+@ 0 5 0 0dbbc1b691542cfb0de7da82294b6535
++       代码块返回任意 `Termination`——一个 `Exit`、一个 `Status` 对象，或它们的联合——且其结果类型保持精确，因此 `Status.Admissible` 能将它可能返回的状态具体化；即使在不运行代码块的补全模式下，这些状态也会记录在 `Cli` 上，帮助正是这样记录它们的。
++       结果是 `Execution to result`。
+
+% 0 1 0 0a27666517ca665c16eaf8ef9f0ce042
+
+% 1 1 0 14debcb23c25efc61f8b945ab73ccfdf
+
+% 0 1 0 1d588c7f0a3ed3c0165861d38c75f5bc
+
+% 1 1 0 10bf7572937696951457f06a461c19bc
+
+@ 0 1 0 067ee33f9dc7a75b0dd6a67ab9b64578
++ entry .Execution   补全执行器下应用主体的结果：一个退出状态以及可容纳的状态
+
+% 1 1 0 02eb95bab4180c7d1af88c8eb566ef1b
+
+@ 0 8 0 16ec862db52edc5712103d2a2f8df905
++       只有 `execute` 能构造它。
++       `#exitStatus` 是进程退出时使用的状态，`#statuses` 是代码块可能返回的 `Status` 值；`#Result` 将类型细化为代码块返回的终止值的联合，因此 `Execution to Nothing` 是一个从不正常返回的代码块。
++   entry .of   从一个退出状态和若干状态构造 `Execution to result`
++   entry #exitStatus   退出状态
++   entry #statuses   代码块可能返回的状态
++   entry #Result   代码块返回的终止值的联合
+
+@ 0 6 0 114baaffdf23d8be1ad6b9e2c1edac10
++ entry .explain   为当前子命令节附加一段帮助
++     `explain(t"…")` 在作用域中的 `Cli` 上记录一段说明，显示为 zsh 补全列表的标题；该函数以上下文值 `prior` 的形式接收先前的说明，因此可以扩展而非替换它。
++     写在深层子命令的前导部分中时，它就在定义该子命令的地方为其编写文档。
++     在 `Completion` 之外不起作用。
+
+@ 0 1 0 077e17d7bf5889541eb49656b245c6c7
++ entry .helpTree   通过在每个子命令前缀处重新运行应用的前导部分，为其构建 `Help` 树
+
+% 1 1 0 0fc2281b6b30ea2a1316e90fc5d39ee2
+
+@ 0 9 0 05efaada6d17425a0b7e26270ddff0fa
++       `helpTree(command, environment, workingDirectory, stdio, login)(block)` 将应用主体作为 zsh `Completion` 运行，光标位于一个空的末尾单词的末端，先在空前缀处运行，然后在每个被建议的子命令处运行，深入每个既不隐藏、也不是未完成项或操作数值的候选项。
++       每次运行产生一个 `Probe`——所见到的建议、标志、全局标志、必需标志、操作数名称、状态和变量——树就由它们组装而成：已归属于某个祖先的标志会从更深的节点中去掉，建议按核心去重，子节点按名称排序。
++       环境被包装在一个记录视图中，因此前导部分读取的每个变量都列在节点的 `variables` 中。
+
+% 2 1 0 0787904431a523ee0b3b84ab552a7312
+
+% 3 1 0 0f0dd72f74f66eb1013f0092536a690c
+
+% 4 1 0 1e4956a462f84f4e03ba9436f347c3d1
+
+% 1 1 0 0717f8feb2e224d014aeb6a8b4bb5736
+
+% 1 1 0 0e1a21cfce9773051206fe47663aac6c
+
+% 0 1 0 115c7874856d2f0d1888cbff4ac2b3b3
+
+% 2 1 0 1acbcb75fbc96d7d0bdbe1c65a4e8dc6
+
+% 0 1 0 00fd4e887726c32f1de07e982b022594
+
+% 0 1 0 14bb7e5d4f35a80e118b91b7d5dea994
+
+% 1 1 0 1e059e226e2f2a1907c30e7eed745491
+
+% 2 1 0 16ed413cc30d9c381aba9408948ab2f0
+
+% 0 1 0 0d62f3217bfe4ff71b7dfbda54467b3d
+
+% 0 1 0 07310c69e5abba8103b3401453d54b16
+
+% 2 1 0 1823517e9de073ba1694aa5417072416
+
+% 3 1 0 0437d8cf3eccd9140aa0851e972cb261
+
+% 0 1 0 0fb3270bf215687a0a6d696acb8ab8a5
+
+% 0 1 0 030d895b2b5fe7a01124d6dbe430eae1
+
+% 0 1 0 11078cecd8466d260502224831b37ef2
+
+% 0 1 0 0ce50520310e098600a74f2e3762bc80
+
+% 1 1 0 045534273d7da45710c647dc7b3e4c4e
+
+@ 0 2 0 10f561c6d39a46461f1e20c7ad66f401
++       需要一个 `Interpreter`。
++       `execute` 在补全模式下什么也不做，因此代码块的运行是无害的；但带有自身副作用的前导部分会在每次探测时执行一次这些副作用。
+
+% 1 1 0 00743e0d4ce203ac07b5af7000e54c67
+
+% 0 1 0 1dd8e4fb2190c5970b4e82b43f57db41
+
+% 1 1 0 0ea949d7a6f65c331cceab4725f388c9
+
+@ 0 1 0 09534c82aa71ca261c02266255741e97
++ entry .Probe   在某个参数前缀处运行一次应用的前导部分所揭示的接口信息
+
+% 1 1 0 010673b2681668b8044d0b17336f1225
+
+@ 0 11 0 1f52fbd2ec62e762174465b4f036bc51
++       `helpTree` 从它驱动的每个 `Completion` 中取得的记录：光标处的 `#suggestions`（要深入的子命令）、查询过的 `#flags`、其中哪些是 `#globals` 和 `#required`、它们的 `#operands` 的占位符、记录下的 `#statuses`，以及读取的环境 `#variables`。
++   entry #suggestions   为末尾的空单词提供的候选项
++   entry #flags   查询过的每个标志
++   entry #globals   在提供任何子命令之前查询过的标志
++   entry #required   被要求的标志
++   entry #operands   每个标志的操作数占位符
++   entry #statuses   到达的 `execute` 代码块记录的状态
++   entry #variables   读取的环境变量
+
+@ 0 1 0 0d07a6c1d1ff42791a80cabb6fbc9600
++ entry .Pathname   作为文件系统路径补全的位置参数，以及解析它的提取器
+
+% 1 1 0 0de3d63e7eb1c7d316e849b6bda43b95
+
+@ 0 8 0 01fb6c4253bafe4c07242971ea50df0e
++       `case Pathname(path) :: _ =>` 匹配任意参数，把以其文本开头的路径作为建议提供，并将相对于工作目录解析后的参数绑定为 `Path on Local`。
++       补全每次深入一层目录（目录候选项是 `incomplete`，因此 shell 让该单词保持未结束），在第二次按下 Tab 或输入的名称以 `.` 开头之前隐藏点文件，像 shell 那样展开开头的 `~`——带引号的参数以及每个不完整的单词到达程序时波浪号仍保持原样——并把结果重新缩写回波浪号之下。
++       每个候选项都是操作数值，因此帮助树从不枚举工作目录。
+
+% 2 1 0 0bf7a33c8d9af47b1c184d0865f75cd4
+
+% 3 1 0 12831b0e9592ea5a0ee3b619915d2137
+
+% 4 1 0 10928e259771e63c0cf3f5fc002d32ac
+
+% 5 1 0 0188306f53aeb9b8058c514801176f13
+
+% 2 1 0 0ff480de43b9a6c916d4e56772cebcaa
+
+% 0 1 0 184dc9fdda8611e70e927e40dc8f07e0
+
+% 0 1 0 029dbc7819dec47d12f33bcfcafd7208
+
+% 0 1 0 046d030074e2bc0d1324484424b32ec8
+
+% 1 1 0 0e8d661af2a383f40f39da07dc6c878e
+
+@ 0 2 0 11694489f8fad497025a6120450aa0bb
++       需要一个 `WorkingDirectory`、一个 `Cli` 和一个 `System`（用于主目录）。
++       对于标志的操作数，`pathnameDiscoverable` 起同样的作用。
+
+% 1 1 0 1e6f428f2bd8fe1219af04e381ef47a5
+
+% 1 1 0 0504cffc992eb438167ad30be508b58d
+
+@ 0 8 0 121e82368793415116dc3f2e365a1973
++   entry .complete   部分输入的操作数的路径候选项
++       `Pathname.complete(operand, tab)` 是提取器与 `pathnameDiscoverable` 共享的补全：展开 `~`，相对于工作目录解析，随着输入深入目录，再次按 Tab 时显示隐藏条目。
++       当操作数无法解析时为空。
++   entry .unapply   为参数提供路径补全并解析它，结果为 Scala 的 `Option`
++       将其候选项添加到针对同一参数求值的另一个提取器——通常是 `Subcommand`——已经提供的候选项中。
+
+@ 0 6 0 115c19dd0227f4700d4d0de04657417e
++ entry .pathnameDiscoverable   将 `Flag[Path on Local]` 的操作数作为文件系统路径补全
++     `Path on Local` 的 `Discoverable`，使 `--file <TAB>` 补全路径的方式与位置参数 `Pathname` 完全相同。
++     其主体类型属于 serpentine，而 `Discoverable` 的伴生对象看不到 galilei，因此该 given 在结构上无法锚定：它位于顶层，必须按名称导入。
++     需要一个 `WorkingDirectory` 和一个 `System`。
+
+% 2 1 0 06850d395642e82b14a92fbc379ce0e3
+
+% 3 1 0 13fac17b4a9b6b3307f4e902e2f4730f
+
+% 0 1 0 0c8684ed4c99575a0fd4c0c102eb1f62
+
+% 1 1 0 16303b114a05791b0e2464ccc2032c3d
+
+% 2 1 0 031f83c4acf779e10cea466066a7ccb5
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1c5a66d65e35ef3f0dd3456bfd789fd5
+
+% 1 1 0 1ddbb1d308f0b31f0c1a4c35464120b9
+
+@ 0 1 0 1a36a1737df5e0a30a0ba716c5037100
++ entry .Manual   手册页在 `Help` 树所发现的内容之外还需要的静态元数据
+
+% 1 1 0 0d6db34662ac95f21d5aa1ddcb27bb07
+
+@ 0 6 0 1cfd54c2d78438e917760b6191c2970c
++       只声明一次，作为 `given Manual` 或传给 `roff`；每个字段都是可选的，因此没有它的应用仍会渲染出一个完整的（虽然简朴的）页面。
++       每个命令和每个标志的描述不属于这里——它们保留在树已经携带的 `Subcommand`、`Flag` 和 `CommandGroup` 声明上。
++       `Manual` 补充的是发现过程无法提供的内容：环境变量的含义、调用示例、作者、文件、缺陷，以及页面的节、版本和日期。
+
+% 2 1 0 10c23e5590e9149e0effbac18f1b5b74
+
+% 3 1 0 0a1f1b1b364f690400cd53cc520a7a10
+
+% 0 1 0 12f4d44d0749d2230c222b8076ac421f
+
+% 0 1 0 1737e8d30e18726815bcac71e3e5bf36
+
+% 0 1 0 0e33da60317f0e251749ee278518b855
+
+% 0 1 0 17512b159824cc651bcccfc2e607dfe1
+
+% 0 1 0 0964e8ee08f43840188468131099c80e
+
+% 1 1 0 0e29862e65d96a740e27eaa2bc0898cb
+
+@ 0 3 0 050fa9f460d876f50ce0c1c438b3dc03
++       在 `exitStatuses` 中声明的状态与从 `execute` 代码块发现的状态可能共用一个代码；此时手写的描述胜出。
++       在这里描述的变量与发现的变量按名称合并。
+
+% 1 1 0 118beb37f9f587b816a7391ce4184e86
+
+% 1 1 0 12a63b777b01de8106ea0ba6d2a7aaf9
+
+@ 0 1 0 0bbcb3b81cef88b812cff9748ffdfde1
++   entry .Section   页面所属的手册节：用户命令、系统调用……
+
+% 1 1 0 0015fb2fe82def68058204d9914d28e4
+
+@ 0 32 0 114bf3712bb6b8760695d84d6cf1b92a
++         包含八个标准节的枚举，从 `UserCommands` 到 `SystemAdministration`，每个都知道自己的 `#number`（1 到 8）和 `#title`。
++     entry #number   该节的编号，`UserCommands` 为 1
++     entry #title   该节的标题，例如 `User Commands`
++   entry .Reference   一个 `SEE ALSO` 条目：页面名称及其节，默认为 1
++     entry #name   所引用的页面
++     entry #section   其节编号
++   entry .ExitStatus   手写的退出状态：一个代码及其描述
++     entry #code   退出码
++     entry #description   它的含义
++   entry .EnvironmentVariable   带描述的环境变量，用于 `ENVIRONMENT` 节
++     entry #name   变量名
++     entry #description   它控制什么
++   entry .ManFile   程序使用的文件，用于 `FILES` 节
++     entry #path   文件的路径，以斜体显示
++     entry #description   它存放什么
++   entry .Example   调用示例，带有可选的说明文字
++     entry #caption   引出该示例的句子（如果有）
++     entry #command   显示的命令行
++   entry #synopsisName   名称之后的一行摘要；默认为树的描述
++   entry #section   手册节；默认为 `UserCommands`
++   entry #version   程序的版本，在页脚中显示为 `command version`
++   entry #date   页面的日期，以 ISO-8601 格式显示
++   entry #prose   用于 `DESCRIPTION` 节的一段文字，位于树的描述之后
++   entry #authors   `AUTHORS` 中每位作者一段
++   entry #examples   `EXAMPLES` 节
++   entry #exitStatuses   手写的状态，按代码与发现的状态合并
++   entry #environment   带描述的变量，按名称与发现的变量合并
++   entry #files   `FILES` 节
++   entry #seeAlso   `SEE ALSO` 引用
++   entry #bugs   `BUGS` 节
++   entry #homepage   一个 URL，在引用之后显示为 `Homepage: …`
+
+@ 0 1 0 1560310a1964a6f608e26e85e15d1314
++ entry .roff   将 `Help` 树渲染为手册页，附带 `Manual` 的元数据
+
+% 1 1 0 0584c522201f7b4e093742667a1b94c6
+
+@ 0 8 0 102d98dc7c4430401d6cad010dd67ff1
++       `Help` 上的扩展方法：`help.roff`（或 `help.roff(using manual)`，默认使用空的 `Manual`）是一个 virility `Roff` 页面，其 `serialize` 是 troff 文本。
++       其结构——NAME、SYNOPSIS、DESCRIPTION、OPTIONS（带子命令的工具为 GLOBAL OPTIONS 和 OPTIONS）、为每个 `CommandGroup` 设一个小节的 COMMANDS、EXAMPLES、EXIT STATUS、ENVIRONMENT、FILES、AUTHORS、BUGS、SEE ALSO——来自该树和手册，每一节只在有内容时出现，因此 `--help` 和 `man` 不会不一致。
++       状态和变量从树中的每个命令收集而来。
++       描述中的样式会被去除。
+
+% 2 1 0 021efb2d79faca4c01fd4325cd7268c6
+
+% 3 1 0 1169075c715f955110231fe7bcaf8259
+
+% 0 1 0 0dc905959e1902f609cecf20e2a8a257
+
+% 0 1 0 01b11df638a160d60bdb5d7b6ad63c9a
+
+% 1 1 0 1c21087a967e26d81bd591bed396174d
+
+@ 0 1 0 06fce3899f8a36c91c6e846ab0603c72
++       `Manpages.install` 将页面写入 XDG man 目录层次结构。
+
+% 1 1 0 11d4d08a527395c0048d89d2dc405342
+
+% 0 1 0 10af4878b5b38820116f528ce4afa76c
+
+@ 0 1 0 0412197b2b2e603a14694cac52ae4e30
++ entry .Manpages   将渲染好的手册页安装到 XDG man 目录层次结构中
+
+% 1 1 0 0c295c228508f0921838da52e6edac64
+
+@ 0 6 0 1e0e81a63fec1519114fa584d6f7e6dc
++       `Manpages.install(page)` 将 `Roff` 页面写入 `$XDG_DATA_HOME/man/man<section>/<title>.<section>`，并创建所需目录；该目录位于现代 man-db 的默认 manpath 上，因此无需修改 `MANPATH`。
++       环境和系统取自*本次调用*（作用域中的 `Cli` 提供 `Environment`，`systems.javaBaseSystem` 提供 `System`），因为在守护进程下，JVM 自身的环境属于启动它的那个客户端的启动器。
+
+% 2 1 0 120ac73283f5a132042c809334dc9a3a
+
+% 3 1 0 0f4054be2c22b4a60bf503db4112d94a
+
+% 4 1 0 18c141a9142fa27c19f05cb4ba0b5b4d
+
+% 5 1 0 1e1136473abe1b3c05b6f4f15dd826ad
+
+% 1 1 0 1265e9d5bd0ed31c02fbea89eae8a75b
+
+% 1 1 0 1ce514bfe7d2cd5a14c57bb3099771c5
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 1 1 0 0a6d2e424164a829128c83a5c7a18d7c
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 003bd173824c4137035914da32fab2e0
+
+% 0 1 0 19eec22edef6e49c16ca52af02cbd2a1
+
+% 1 1 0 15abd03ead4ec7f10958f62d67050fbe
+
+% 1 1 0 11fea5ab2881fa7317a777185ff690ba
+
+% 1 1 0 1be063df3d262d3416b16cbb8048ca80
+
+@ 0 5 0 07a77c4a69f6ad591490d14663ffe526
++   entry .install   写入页面，或报告已经存在一个页面；`force` 会覆盖它
++       需要 `Effectful`、`Environment`、`System`、`Diagnostics` 以及 `Io.Event is Loggable`；写入失败时抛出带 `Reason.Io` 的 `Install.Error`，无法解析 XDG 目录时报告 `NoWritableLocation`。
++   entry .InstallResult   `Installed(path)`、`AlreadyInstalled(path)` 或 `NoWritableLocation`
+
+% 1 1 0 0c56987188478193046e14d1bde80b7e
+
+@ 0 3 0 0d18e3e9b8e3fa241141bd37ad541b79
++         一个枚举，带有一个将每个分支渲染为一句话的 `Communicable`。
++     entry .communicable   将结果渲染为一句话
++     entry #pathname   页面的路径，用于 `Installed` 和 `AlreadyInstalled`；否则为 `Unset`
+
+@ 0 1 0 036bcc38ddceeaac15bf719b218b2f73
++ entry .Enclave   测试装置：将应用程序打包为由守护进程支撑的可执行文件，并在沙箱中运行它
+
+% 1 1 0 1336e6e8e3b7217e07e0b1ab5f2cc86c
+
+@ 0 11 0 146beb15b914fb871c02ae98b259936f
++       `Enclave` 是用于命令行应用程序的 superlunary `Rig`。
++       `Enclave(name) .dispatch { '{ … } }` 针对作用域中的类加载器编译引用的应用程序主体，将其分阶段放入一个 JAR，用 `xek` 构建器（在 `$XEK` 中查找，否则使用工作目录下的 `dist/xek`）将该 JAR 打包为名为 `name` 的启动器可执行文件，并产出一个 `Enclave.Launcher`。
++       随后 `Launcher#sandbox` 在临时主目录下启动工具的守护进程，并将一个 `Tool` 交给一个代码块，在其中 `shell.pane()` 打开一个加载了该工具补全脚本的真实 shell，因此测试可以按下 Tab 键并读取所显示的内容。
++       引用的主体是一个 ethereal 守护进程主体，因此它将应用程序包装在 `cli:` 中，而它所构建的工具由一个常驻进程应答每次调用和补全请求。
++       每次退出代码块时，守护进程都会被终止，临时主目录也会被删除。
+
+% 2 1 0 04d1343d79687ec70d1d70ab75b45f20
+
+% 3 1 0 1cc1e27c3ca220f2075d486742fc29de
+
+% 4 1 0 08d38cac116f22c70ab77abd599c1e1e
+
+% 5 1 0 11d455b551f5fda31c88f1340c815c1a
+
+% 6 1 0 0473c370f476e085113e4c7de6887ee3
+
+% 7 1 0 0fde5b15959499fe03619cccd1cee53b
+
+% 8 1 0 0c4f56ea395be3b3160725b376d6e265
+
+% 9 1 0 06c658ab12db53821e2b177f26267184
+
+% 10 1 0 0f536459c4b2687e072ca731bd4748a2
+
+% 11 1 0 15e5ff57bd0ab8141b5017a0029b6135
+
+% 0 1 0 19c7afc726390f2d0595684f413a44d5
+
+% 2 1 0 12bd936e577353e3076854156cf8588f
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1e88a1614314a79213cdeac14967404b
+
+% 0 1 0 14ee6900f64162471ba1c71df9774fd0
+
+% 1 1 0 0ffb8464667d3f3801fc240a51088828
+
+% 0 1 0 0d4f8ed41d2e6dc80d5699379e8f9d2e
+
+% 0 1 0 0f21308931c1ae670c2aecf2706babc4
+
+% 0 1 0 19e0be82757337f80fc34855942e500b
+
+% 0 1 0 08502e3022ba8c2f1c4b37446e73ab08
+
+% 0 1 0 1f3e54515549af6f01735d98aebad9f9
+
+% 0 1 0 050c47311edb16b90e7d262b8e343207
+
+% 0 1 0 15f9908ba9d6814e1fc2f8134113ee83
+
+% 0 1 0 0d7d3e7417caeeb602896f416668d870
+
+% 0 1 0 073cc3ae0c4bda3918a311d8c9950129
+
+% 1 1 0 0ec2768a557ad9f714c6422a9c25d338
+
+@ 0 5 0 0db01df0f85b4d381396b2003f40d84b
++       可选的 `buildId`、`releaseKey`、`recoveryKey` 和 `appId` 被写入可执行文件的记录中，使其启动器接受已签名的升级；没有发布密钥和应用程序 ID 时，它会拒绝所有升级。
++       `Enclave.keygen` 生成一个密钥对，`Launcher#sign` 用它为构建签名（Java 24 或更高版本）。
++       构造时它需要一个 `Classloader` 和一个 `Environment`，`Enclave` 的类型为 `Enclave^{parasite.threads}`。
+
+@ 0 2 0 16f0cfddb34711f51c48f05d323a0179
++       这是 `exoskeleton.rig`，一个测试依赖：它需要宿主机上有 `xek` 构建器、被测试的 shell，以及可选的 tmux。
+
+% 1 1 0 02cb0053c29774f10f84749c436522af
+
+% 1 1 0 0c8312b831366e751ebaf5922972350e
+
+@ 0 1 0 168f8ef8aedeffb80a9210cbef1f679c
++   entry .Error   错误 `↯/s.109.2`：沙箱中工具的守护进程没有报告进程 ID
+
+% 1 1 0 000cc11183ba8f151920f9b886916bef
+
+@ 0 6 0 19eeb5db8407ed9b0ca75efa38ff1954
++         当 `tool '{admin}' pid` 没有打印任何内容时，由 `Launcher#sandbox` 抛出。
++         原因绝大多数是协议不匹配：打包工具时所用的启动器与它所启动的守护进程带有不同的启动器 schema 签名，因此守护进程拒绝第一个文档并关闭连接——实际上就是 `xek` 构建器过旧。
++     entry #tool   没有应答的工具的路径
++   entry .Tool   一个已构建并在运行的工具：它的路径、其守护进程的 pid 以及它运行时所在的临时主目录
+
+% 1 1 0 18d96f280c2c95ca18149ec3bbf3b871
+
+@ 0 10 0 093f772f35beecc5115a19ac1aa86eb6
++         一种共享的能力，因为一个套件的每个窗格都驱动这同一个工具；其生命周期是 `sandbox` 代码块。
++     entry #path   可执行文件的路径
++     entry #pid   守护进程的进程 ID
++     entry #home   其守护进程及其窗格的 shell 运行时所在的临时主目录
++     entry #command   工具的名称，即在提示符处键入的名称
++     entry #completions   在 `{admin} await` 监听期间运行一个代码块，并返回工具所记录的内容
++         需要 `Monitor` 和 `Environment`。
++         代码块执行期间产生的 `Cli.log` 消息会被连接后返回，或返回 `failed`。
++   entry .Launcher   打包好的可执行文件，用于签名或在沙箱中运行
+
+% 1 1 0 0f441c90b2b339ca1c9f7c13e8a3ff5e
+
+@ 0 28 0 1ed6816db9e72b4e16cb18fee1b62916
++         即 `Enclave#dispatch` 所产出的内容。
++     entry #path   可执行文件的路径
++     entry #sign   用一个密钥种子为可执行文件签名，将签名后的副本写入 `out`
++         运行 `xek sign`；`foreign = true` 允许使用可执行文件记录中未携带的密钥，此后启动器将拒绝它。
++         抛出 `Exec.Error`。
++     entry #sandbox   在临时主目录下启动工具的守护进程，以该 `Tool` 运行一个代码块，然后终止它
++         需要一个 `Environment`，以及针对 `Enclave.Error`、`Exec.Error`、`Number.Error` 和 `Path.Error` 的战术。
++         临时主目录替代 `HOME` 和 XDG 目录（`Enclave.scratch`），因此不会读写真实用户的任何配置；工具不会被安装——每个窗格自己把所需的补全脚本写入临时主目录。
++         守护进程在 `finally` 中被终止，主目录也在其中被删除，因为被遗弃的守护进程会在会话剩余时间内一直占用一个 JVM。
++   entry .scratch   将用户配置引导到临时主目录的变量
++       `HOME`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME` 和 `BASH_COMPLETION_USER_DIR`，全部位于给定的主目录下。
++   entry .environment   在基础环境上叠加临时变量的环境，或设置了 `XEK` 以指明构建器的 JVM 环境
++       `Enclave.environment(base, home)` 将 `scratch(home)` 叠加在 `base` 上。
++       `Enclave.environment(builder)` 是设置了 `XEK` 的 JVM 环境，供这样的套件使用：它知道其构建器在哪里，却在一个环境经过清理、工作目录为 `/` 的守护进程中运行。
++   entry .keygen   用 `xek keygen` 生成一个 ML-DSA-44 密钥对，即 `<prefix>.seed` 和 `<prefix>.pub`
++       返回种子路径（用于签名）和公钥路径（用作构建 `Enclave` 时的 `releaseKey`）。
++       抛出 `Exec.Error` 和 `Path.Error`；需要 Java 24 或更高版本。
++   entry #name   可执行文件的名称
++   entry #buildId   用于记录的构建标识符（如果有）
++   entry #releaseKey   已签名的升级必须携带的公钥（如果有）
++   entry #recoveryKey   恢复密钥（如果有）
++   entry #appId   用于记录的应用程序 ID（如果有）
+
+% 0 1 0 1dce398f464a15df08df99114842da9f
+
+% 0 1 0 116a7522c9d690800c5852bab7179e49
+
+% 0 1 0 072759ec210f64790648285ab7474195
+
+% 0 1 0 03abea79260745d101b6a1333f110184
+
+@ 0 3 0 1210cdf0df7abecf0780cf3357156dce
++   entry #stage   将 JAR 分阶段放入 `out/name`，并用 `xek build` 打包
++       命名、链接、异步或执行失败时，抛出带 `Reason.Staging` 的 `Rig.Error`；打包失败时以 xek 的退出状态 panic。
+
+@ 0 1 0 0d7f875cb540a4d61b77df66b331a260
++ entry .Pane   为测试运行 shell 的终端窗格：向其键入按键并读取其屏幕
+
+% 1 1 0 15681eea756a357b1b4d57ccf30b58c9
+
+@ 0 8 0 03c14c4b6ff29ab10542e92d13f37f78
++       `Pane` 是一种能力——独占的，因为同一时间只有一个测试驱动它——其生命周期是创建它的代码块：`shell.pane()` 在由 yossarian 渲染的伪终端上运行 shell，而 `shell.tmux()` 在 tmux 会话中运行它，tmux 是一个独立的仿真器，用来与 yossarian 的渲染结果作比较。
++       伴生对象包含测试词汇：`Pane.enter` 键入按键，`Pane.attend` 键入按键并等待屏幕稳定，`Pane.screenshot` 读取屏幕，`Pane.completions` 和 `Pane.progress` 让 shell 为被测工具补全一行。
+
+% 2 1 0 098ab70241cfce751623cb8d94ede762
+
+% 3 1 0 0eb202934262f3c9172e0f728e147457
+
+% 4 1 0 05ce7b71253067ee0105d518a06b3938
+
+% 5 1 0 12c47e0841e26b561f4d24c10e1bc8c0
+
+% 6 1 0 100b4c2aef01a78f1cc1f3fe70cfd2fc
+
+% 7 1 0 1b94c897329f9a3d0a0e8854136b1453
+
+% 8 1 0 045a6a10ec41de87025ea7bf2a2aaabb
+
+% 9 1 0 17fd0a124c937129028e730b5cd5fc59
+
+% 10 1 0 150ee44df4e48f340b1f07b8a72e4c9d
+
+% 11 1 0 0a5db5467188dd320ca4c50c2a5c1be2
+
+% 0 1 0 01cf9e5b2515caff1d727e6dca9f7d04
+
+% 0 1 0 197b6b4607eaa90d1f1df3049cccef1d
+
+% 1 1 0 0e875eadd78f2cff10aef6af484ac722
+
+% 1 1 0 1a331274a049f3c30a40d1b06ca1ccb9
+
+% 1 1 0 083aadb6ef974a8e131ff7cb6f2eb823
+
+% 0 1 0 0961be78eee868f907992174d7e94790
+
+% 0 1 0 13c167f2c233391713e997f16783dd5f
+
+@ 0 27 0 1128bfb84a4e01b20d9f755ee6081f01
++   entry .keys   测试可以键入的按键名称（采用 tmux 的命名），以及每个按键发送的字节
++       `Left`、`Right`、`Up`、`Down`、`BSpace`、`Enter`、`Tab`、`Escape`、`C-m`、`C-l` 和 `C-c`；其他任何文本都按字面键入。
++   entry .enter   向作用域中的窗格键入按键：来自 `.keys` 的按键名称、一个字符或字面文本
++   entry .resize   调整作用域中窗格的大小
++   entry .screenshot   作用域中窗格的屏幕
++   entry .waitFor   在超时时间（默认二十秒）内，屏幕上是否有某一行满足谓词
++       每十毫秒轮询一次。
++       需要 `Monitor`。
++   entry .attend   键入按键，然后等待屏幕发生变化，再等待其稳定
++       补全一行的 shell 会通过守护进程询问工具，并可能分几步绘制它得到的内容，因此要等屏幕以二十毫秒的间隔连续三次显示相同内容后才读取它；如果五秒内屏幕完全没有变化，就认为这些按键没有改变任何东西。
++   entry .settle   等到屏幕连续三次显示相同内容，或已过去五秒
++   entry .completions   键入工具名称和一行内容，按下 Tab 键，并返回 shell 列出的内容
++       对 bash 窗格和测试的工具调用 `Pane.completions(t"distribution ")`，会返回 bash 打印的候选项，例如 `gentoo   red hat  ubuntu`；zsh 和 fish 会按其显示方式包含描述。
++       在 PowerShell 下，转而调用测试装置的 `_completions` 函数，因为 PowerShell 的菜单无法从屏幕读取。
++       提示符所在行不包括在内。
++   entry .progress   键入工具名称和一行内容，按下 Tab 键，并返回 shell 留下的命令行
++       光标位置会被加以标示，默认用 `^`，因此 `distribution ubuntu --^` 表明 Tab 键插入了各标志的公共前缀 `--`，并将光标留在其后。
++   entry .boundary   某些字节中以 UTF-8 字符边界结尾的最长前缀的长度
++       `Display#render` 用它将一个被拆分在不同输出数据块之间的字符保留下来，直到其余部分到达。
++   entry .Display   伪终端所显示的内容，在其输出到达时由 yossarian 渲染
+
+% 1 1 0 13cab28bbbee8d51036906f3e729688a
+
+@ 0 13 0 064c41ed4dbf631f0a2d66e5362e98c3
++         一个持久的、线程安全的显示：读取 shell 输出、并将 yossarian 对其查询（光标位置、属性）的应答写回的任务会保留它。
++         yossarian 无法渲染的序列会被保留，并由下一次 `#screenshot` 报告，而不会丢失。
++     entry #width   列数
++     entry #height   行数
++     entry #send   向终端写入字节，同一时间只有一个写入者
++     entry #resize   将显示重置为新的尺寸
++     entry #screenshot   屏幕（已去除行尾空格）及光标；遇到未渲染的序列时抛出 `Pane.Error`
++     entry #render   渲染终端输出的一个数据块，保留末尾不完整的字符
++     entry #answer   将 yossarian 对 shell 查询的应答写回给它，直到 `#finish`
++     entry #finish   停止应答
++   entry .Emulated   伪终端上的窗格，显示 `Display` 为其渲染的内容
+
+% 1 1 0 002ebefe8e826dc203805d04e1d5ee57
+
+@ 0 9 0 0e61ecea219ca37814d82a7d9c3a2f66
++         即 `shell.pane()` 交给其代码块的东西：按键发送给伪终端的作业，屏幕来自显示。
++     entry #shell   在窗格中运行的 shell
++     entry #width   列数
++     entry #height   行数
++     entry #screenshot   显示的屏幕
++     entry #press   键入一个按键名称或字面文本
++     entry #resize   调整显示和伪终端的大小
++   entry .Error   错误 `↯/s.109.1`：无法驱动终端
+
+% 1 1 0 15212bdc78496b73165acabb8c42be05
+
+@ 0 1 0 19ef714ab40241b11fbf76718c81f6ed
++         _can't drive the terminal: `reason`_。
++         原因如下：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 09a1c90a94e42b9308c73487e823aa6c
+
+% 0 1 0 0118487ccec64908199082591221d498
+
+% 0 1 0 198cbfd7adc5c5010a584bffd8103a68
+
+@ 0 3 0 0aa80854c3ac3c001854f42f24dc03fc
++         row  `Unrendered(problem)`  4  _the terminal could not render its output: `problem`_  yossarian 无法渲染某个序列
++         row  `NotReady(shell)`  5  _the shell `shell` did not become ready_  shell 没有及时显示提示符并回显测试装置的标记
++         row  `Unconfigured(problem)`  6  _the shell could not be configured: `problem`_  无法将配置文件写入临时主目录
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 0d87843d46d7a465102ae034b3700d37
++     entry .Reason   无法驱动终端的原因
+
+% 1 1 0 01ba80257be859f91053c67d70dde6a1
+
+@ 0 10 0 1ba7f03474c8936c159f3c6e32c264c8
++           一个枚举，带有 `number`（1 到 6）和一个 `Communicable` given。
++       entry #number   子代码
++     entry .communicable   将原因渲染为其消息
++     entry #reason   原因
++   entry #shell   在窗格中运行的 shell
++   entry #width   列数
++   entry #height   行数
++   entry #press   键入 `Pane.keys` 中的按键名称或字面文本
++   entry #screenshot   当前的屏幕
++   entry #resize   调整窗格大小，向 shell 发送 `SIGWINCH`
+
+@ 0 1 0 06ab8ce2c41165d60d0bb2ac0eca2bbe
++ entry .Screenshot   窗格的屏幕：其各行、尺寸和光标
+
+% 1 1 0 06f3125562152fdd040855dad5169447
+
+@ 0 9 0 1ead8eb14f4b953713bd76befdb3ff0f
++       `#screen` 是每行一个 `Text`，已去除行尾空格；`#size` 是 `(columns, rows)`，`#cursor` 是作为序数的 `(column, row)`。
++       `apply()` 用换行符连接各行。
++   entry #screen   各行
++   entry #size   列数和行数
++   entry #cursor   光标所在的列和行
++   entry #apply   作为一段文本的屏幕，各行以换行符连接
++   entry #currentLine   光标所在的行，已修剪，光标下的字符加以标示
++       `Pane.progress` 读取的就是 `screenshot.currentLine(_ => t"^")`。
+
+@ 0 1 0 0ff4c9d20b2acf850623b7ef5c2c6a16
++ entry .Tmux   tmux 会话中的窗格，一个独立的终端仿真器
+
+% 1 1 0 16efc1cfcf5d3c7e0f3682efdc15e45e
+
+@ 0 4 0 1a4703847168e9ab09fb73dfc5f0e8a6
++       即 `shell.tmux()` 交给其代码块的东西。
++       按键用 `tmux send-keys` 发送，它解释 tmux 自己的按键名称；屏幕用 `tmux capture-pane` 读取；每次操作都是一个子进程，因此这个后端很慢，它的存在是为了将 yossarian 的渲染与另一个仿真器的渲染作比较。
++       它也是 `Findable`。
+
+% 1 1 0 011374015ef7a4d60e13bb04237368b8
+
+@ 0 9 0 0262af157e285866156b2815ab52c2ec
++   entry #id   会话的名称，一个 UUID
++   entry #workingDirectory   运行 tmux 的目录
++   entry #environment   tmux 命令运行时使用的环境
++   entry #width   列数
++   entry #height   行数
++   entry #shell   在会话中运行的 shell
++   entry #press   用 `tmux send-keys` 发送按键
++   entry #resize   用 `tmux resize-window` 调整窗口大小，发送 `SIGWINCH`
++   entry #screenshot   捕获窗格，并用 `tmux display-message` 读取光标
+
+@ 0 1 0 019573276ca51b1316e4a23ca8908fa5
++ entry .pane   在配置好被测工具的伪终端上运行 shell，并将窗格交给一个代码块
+
+% 1 1 0 1379d9e632ed2fe21364e1aa9bdbce40
+
+@ 0 8 0 172f3729e52a30740c358a0b89ca40de
++       `Shell` 上的扩展方法：`Shell.Zsh.pane(width = 80, height = 24)(action)` 按 `rig.launch` 的配置启动 shell——位于工具的临时主目录下，工具所在目录位于 `PATH` 的最前面，提示符为 `> `，并加载工具的补全脚本以取代用户的任何配置——运行在一个由 yossarian 将其输出渲染到 `Pane.Display` 中的伪终端上，等待提示符出现，清屏，然后以一个 `Pane.Emulated` 运行代码块。
++       需要 `WorkingDirectory`、`Environment`、`Enclave.Tool`、`Monitor`、`Tactic[Pane.Error]` 以及 guillotine 的 `Exec.Event is Loggable`。
+
+% 2 1 0 0ab1b2e5704de3db04c51537817100ab
+
+% 3 1 0 034994d07cb493c4119635ffdbe2e791
+
+% 4 1 0 0a8a20e791a903aa07e6fca8a15c471c
+
+% 5 1 0 061de998156888dc10a5de44710c590d
+
+% 6 1 0 0be0d7bd7988294116961e417c0bf9db
+
+% 7 1 0 09f87852628b726c096124bd728543fc
+
+% 8 1 0 11f6f0c945a0e0e00da0ed11c5647dd5
+
+% 9 1 0 11bdc6e8324a694c0892d42af6d38138
+
+% 10 1 0 1d7724f2cfc82c4511eb906f8fca7e21
+
+% 11 1 0 0823390c56a653ca0c7f621dfbf73065
+
+% 0 1 0 095a4b90bdace4e10dee4aef597f8e76
+
+% 0 1 0 13cded583e94b36e1745e0becfefaa11
+
+% 1 1 0 0613ff99f8cf58b9093f161bf0851848
+
+% 1 1 0 1c5fa972d8a13ea502eb45868b881442
+
+% 1 1 0 12789381b93369321a441a6bde52f0bc
+
+% 0 1 0 15aa73963dce26b2008baeb1527a5c2d
+
+@ 0 1 0 08c35ff1d6ea884a04e1ce671ba40398
++ entry .tmux   在 tmux 会话中运行 shell，配置与 `pane` 完全相同，并将窗格交给一个代码块
+
+% 1 1 0 10cd74ba6821648b115f6bf5aea016a7
+
+@ 0 4 0 1a5830b1b6ec50c2004dee303626a833
++       `Shell` 上的扩展方法，参数和上下文需求与 `pane` 相同。
++       会话以给定尺寸分离创建，以 UUID 命名，并在代码块结束时被终止。
++       需要宿主机上有 tmux；缺少该程序时表现为带 `ExecFailed` 的 `Pane.Error`。
+
+% 1 1 0 1f4f80d092b4d57317e86528e690651a
+
+% 0 1 0 082f304ee560261a02947a03b2372702
+
+@ 0 1 0 0d75a784e2176d0417f78f0418deff99
++ entry .rig   测试装置如何为测试启动 shell 并使其就绪
+
+% 1 1 0 039996e27172bf8508bb52910fd6b951
+
+@ 0 21 0 110778faafbf46e61ff8d755b1b8ada7
++       `pane` 和 `tmux` 共用的部分：`#launch` 构建在工具的临时主目录下以测试装置自己的配置启动 shell 的命令，`#ready` 等待其就绪，`#powershell` 是 PowerShell 配置文件。
++       公开它们是为了供以其他方式驱动 shell 的套件使用。
++   entry .launch   为测试启动 shell 的命令，已为被测工具配置
++       将测试装置自己的配置写入临时主目录——bash 的 rcfile、将补全函数放在 `fpath` 上的 zsh 启动文件、fish 的 `config.fish` 或 PowerShell 配置文件——每种都提供 `> ` 提示符，并加载 `Completions.script` 所写出的工具补全脚本；设置 `PATH` 使工具位于最前，关闭 `POWERSHELL_UPDATECHECK`，并在 `terminal` 为真时将 `TERM` 设为 `xterm-256color`（tmux 会设置自己的值）。
++       无法写入文件时，抛出带 `Unconfigured` 的 `Pane.Error`。
++   entry .directory   路径文本中的目录部分
++   entry .ready   等待 shell 启动并加载其配置，然后清屏
++       等待 `>` 提示符，然后（PowerShell 除外）让 shell 回显一个简短的随机标记并等待它出现，从而确知配置的每一行都已运行，再按下 `C-l`。
++       二十秒后抛出带 `NotReady` 的 `Pane.Error`。
++   entry .powershell   测试装置使用的 PowerShell 配置文件：`> ` 提示符、通过工具进行的 Tab 补全，以及 `_completions`
++       `_completions "line"` 将一行的每个补全打印为 `name@@description`，`Pane.completions` 正是借此读取 PowerShell 的候选项，因为它的菜单不会写到屏幕上。

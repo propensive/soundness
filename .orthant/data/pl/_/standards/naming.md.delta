@@ -1,0 +1,179 @@
+orthant 2 language
+
+@ 0 1 0 03e11e70016f3c9e06b420d724906b93
++ # Konwencje nazewnictwa metod
+
+@ 0 5 0 0adab9a619d1f8cc0fe657a8151b4bb3
++ Ten dokument definiuje kanoniczne znaczenia nazwanych metod fabrycznych i inicjalizujących,
++ używanych spójnie w całym kodzie. *Dlaczego* nazwy dobiera się tak, a nie inaczej – metody
++ tworzące frazy, parametry typów o długości słowa i unikalność w całej przestrzeni nazw –
++ wyjaśniają [nazewnictwo](../philosophy/naming.md) i
++ [elegancka proza](../philosophy/elegant-prose.md).
+
+@ 0 1 0 03d183e4e326b30919e360b515dd8617
++ ## Nazwy standardowe
+
+@ 0 1 0 15bdca24cb76d3bf12dff81f81950fea
++ Każda nazwa ma jedno znaczenie; poniższe sekcje podają każde w całości:
+
+% 2 1 0 05111a77653eae0513c69c39cf24d309
+
+@ 0 12 0 0e1142eed29bfea40ff65219120a1c2f
++ column  Nazwa
++ column  Status
++ column  Znaczenie
++ column  Przykłady
++ row  `apply`  standardowa  domyślna metoda fabryczna, używana wszędzie, gdzie to możliwe
++ row  `build`  standardowa  składanie sterowane wywołaniem zwrotnym podanym przez wywołującego  `Data.build`, `Text.build`, `Specification.build`
++ row  `create`  standardowa  powołuje zasób do istnienia w systemie zewnętrznym  katalogi, pliki, gniazda, FIFO
++ row  `make`  standardowa  konstrukcja z wejść o dynamicznych nazwach, obok istniejącego `apply`
++ row  `initialize`  standardowa  świeży kontekst dla jednego przebiegu powtarzalnej operacji  `Hash.initialize`, `Aes.initialize`
++ row  `init`  niestandardowa  tylko `Git.init`, od polecenia `git init`  `Git.init`
++ row  `construct`  niestandardowa  tylko `wisteria.ProductDerivation.construct`  `ProductDerivation.construct`
++ row  `of`  niestandardowa  prywatne rzutowanie zawężające typ do `X of Y`
+
+% 1 1 0 0f33c31fcdee626301644907633d969a
+
+% 0 1 0 17a0192866c35e6b00588126be21f3f3
+
+@ 0 3 0 194f1dfb395f601919e8db1318a5e76e
++ Standardowa metoda fabryczna Scali. Używana wszędzie, gdzie to możliwe. Wszystkie
++ pozostałe nazwy w tym dokumencie istnieją dlatego, że nie można użyć `apply` – zwykle
++ z powodu konfliktów rozstrzygania przeciążeń z istniejącym `apply`.
+
+% 0 1 0 1587cb14a269644a11f50580bfb3040b
+
+@ 0 2 0 1b4ef045e70539751d169607489ca6c5
++ Składa instancję za pomocą wywołania zwrotnego podanego przez wywołującego, które
++ steruje konstrukcją. Dwie konkretne postaci to:
+
+@ 0 6 0 0732f7cd3592b8bf1056d759a3a43a21
++ - **Alokacja → mutacja → zamrożenie**: alokuje się mutowalną strukturę pośrednią,
++   przekazuje ją do lambdy wywołującego w celu wypełnienia, a następnie zamraża w
++   niemutowalny wynik. Przykłady: `Data.build`, `Array.scribe`, `Text.build`.
++ - **Składanie z danych źródłowych sterowane wywołaniem zwrotnym**: wywołujący dostarcza
++   funkcję, która określa, jak wyodrębnić lub przekształcić pola z wartości źródłowej.
++   Przykłady: `Specification.build`, `Addressable.build`.
+
+@ 0 2 0 132ea1f351cdc8be119bc29194023d6d
++ W obu postaciach wywołujący steruje procesem składania przez argument funkcyjny, zamiast
++ podawać bezpośrednio gotową wartość.
+
+% 0 1 0 0f0f0e2fb7f320fa1cc5a63efc05fc2c
+
+@ 0 4 0 05087d5dcc2e87cd0df908e02785ea74
++ Powołuje zasób do istnienia w systemie zewnętrznym i zawsze ma skutki uboczne. Używana
++ dla zasobów systemu plików (katalogów, plików, gniazd, FIFO). Odpowiednik
++ `apply`/`build` dla operacji, które nie są czyste.
+
+% 0 1 0 1873a23489c3c36b0f199470c3d85b28
+
+@ 0 4 0 072c23fdde042b491ce667733c2a2e64
++ Konstruuje wartość z wejść o dynamicznych nazwach i odpowiada implementacji
++ `applyDynamicNamed`. Choć inne metody fabryczne mogą używać parametrów o dynamicznych
++ nazwach, `make` stosuje się tam, gdzie istnieje już inna, niedynamiczna metoda `apply`.
+
+% 0 1 0 09dadde8cb66d43d047503c45ea29022
+
+@ 0 7 0 0bac543749c63a2019f4c54eac969217
++ Zwraca świeży kontekst operacyjny dla powtarzalnej operacji. Przykłady to nowy przebieg
++ obliczania skrótu (`Hash.initialize`), instancja szyfru (`Aes.initialize`), otwarty
++ transport pliku (`Openable.initialize`) czy nowa sesja (`McpServer.initialize`).
++ Operacja może być czysta lub wiązać się z pozyskaniem zasobu; łączy te przypadki to, że
++ wynik reprezentuje początek pojedynczego użycia operacji, którą można rozpocząć od nowa.
+
+@ 0 1 0 1a58b0e6bb5f83d00fed5a36a97e4ad0
++ ## Nazwy niestandardowe
+
+% 0 1 0 15dad777cf39f0a4010ae37861b9fb27
+
+@ 0 2 0 1855054d6b9a80c70c3839961d6576b4
++ Używana tylko dla `Git.init`, która naśladuje nazwę polecenia CLI `git init`. Wszędzie
++ indziej preferuje się `initialize`.
+
+% 0 1 0 1e92a0c0e4f46ce8181792b70b39f4d0
+
+@ 0 3 0 18e5aff42653ad911f8af18a8862e953
++ Zarezerwowana wyłącznie dla `wisteria.ProductDerivation.construct`. To celowy przypadek
++ szczególny, używany w derywacji klas typów w czasie kompilacji, który nie
++ podlega ogólnemu schematowi nazewnictwa metod fabrycznych.
+
+% 0 1 0 14e2e0a3a949744e08288c970ed8c21a
+
+@ 0 4 0 0e5462cb1c2bad5a14d377b49f92ad18
++ Używana tylko jako metoda instancji, która zawęża typ do postaci `X of Y`
++ sparametryzowanej fantomowo. Ciało jest zawsze rzutowaniem (`asInstanceOf`), a typ
++ zwracany to dosłownie `this.type of topic`. Metody te są prywatne w swoich pakietach.
+
+@ 0 1 0 09851360f6913ae00e36d0bb49639d4a
++ ## Przedrostek `unsafe`
+
+@ 0 5 0 1c3e739d695f9de00fe56df7961f0db7
++ Metoda, która przyjmuje `vacuous.Unsafe` jako parametr `using`, jest bramkowana: jej
++ wywołujący musi posiadać token, co w praktyce oznacza napisanie `(using Unsafe)` albo
++ znajdowanie się wewnątrz bloku `unsafely`. Każda taka metoda ma nazwę z przedrostkiem
++ `unsafe`, po którym następuje wielka litera – `unsafeBuffer`, `unsafeAttested`,
++ `unsafeChild` – tak aby granica była widoczna w miejscu wywołania, a nie tylko w
++ sygnaturze.
+
+@ 0 4 0 0a3b769253dacf9919964dd01c8de7ea
++ Jest to sprawdzane. Reguła Consequent `S1.1` jest `strict` dla każdego komponentu, więc
++ bramkowana metoda o zwykłej nazwie przerywa kompilację. Tam, gdzie nazwa nie może
++ przyjąć przedrostka, metodę się przemianowuje, zamiast ją wyłączać z reguły:
++ `Regex.apply(parts)(using Unsafe)` stała się `Regex.unsafeFrom(parts)`.
+
+@ 0 3 0 036ec849c45cffc50eaa0c7faba0005c
++ Dwie definicje są poza regułą, ponieważ żadna nie ma nazwy, którą można by opatrzyć
++ przedrostkiem: konstruktor oraz `given`, który jest przywoływany po typie. Obie są nadal
++ bramkowane, a uzasadnienie, dlaczego bramka jest poprawna, należy umieścić w komentarzu
++ obok nich.
+
+@ 0 2 0 02fd982e0c8f66941ead3185c26de225
++ Odwrotność – metoda z przedrostkiem `unsafe` musi być bramkowana – to `S1.2` i na razie
++ jest doradcza, a nie ścisła. Łamie ją osiem definicji:
+
+% 2 1 0 0fe376c0e9ac1b3618138b344e57a631
+
+@ 0 2 0 04d97bbd107ea5781a8c8760265dea44
++ column  Komponent
++ column  Definicje
+
+% 0 1 0 01f22307b9002ced1028d7065ee284ee
+
+@ 0 1 0 0c8223e0db0ff23a17af6ed4966fec93
++ row  vacuous  `Optional.unsafeGet` (prywatna w grupie rozszerzeń)
+
+% 0 1 0 03baf2dc658d817f0cf9d236a3d8bd2c
+
+% 0 1 0 04a20e72f90900330a4a0c029413c786
+
+% 1 1 0 1c0e93a3adfa6c2814bd846956d56b4d
+
+@ 0 1 0 04d3eea5f681c6011b566c011fc7a9ac
++ (`archimedes.Ergo.unsafeInterpolate` jest bramkowana od czasu opróżnienia ambient-strategy.)
+
+@ 0 8 0 125d0e603d9b774006380070d124d5eb
++ Ich bramkowanie jest pożądane i śledzone jako dalsza praca, a nie odrzucone: próba
++ wykazała, że zmiana dotyka setek miejsc wywołania, z których znaczna część to wywołania
++ z blokiem po dwukropku (`Array.unsafeFrozen:` nad wciętym argumentem), które nie mogą
++ przyjąć kolejnej listy argumentów bez przebudowy. `Optional.unsafeGet` wymaga najpierw
++ własnej zmiany: znajduje się w grupie rozszerzeń z klauzulą `using
++ Optionality[optional.type]`, a jawne `(using Unsafe)` wiąże się zamiast tego z tą
++ początkową klauzulą, więc metoda musi opuścić grupę, zanim będzie mogła zostać
++ bramkowana.
+
+@ 0 3 0 0cd3d8201553f7c51ec5e69b9ac52c78
++ Do tego czasu spis liczy je jako `unsafe-ungated`, co jest wiarygodnym zapisem:
++ ostrzeżenie `S1.2` jest pomijane, ilekroć kompilator zgłosił już coś w obejmującej
++ pozycji w tym samym pliku.
+
+@ 0 2 0 00480bd6a9cd8336001ec06974cbccb7
++ Przedrostek jest znacznikiem, a nie licencją. Mówi, że w tym miejscu kończy się
++ gwarancja, co jest początkiem uzasadnienia, dlaczego jest to poprawne, a nie jego
++ końcem.
+
+@ 0 3 0 1e60644f1f450d7e0a0431151fd8460a
++ Samo `unsafely` nie jest objęte regułą: przedrostek musi być całym słowem – samo
++ `unsafe` albo `unsafe`, po którym następuje wielka litera – więc blok dostarczający
++ token jest wyłączony z konstrukcji, podczas gdy metoda nazwana po prostu `unsafe` nie
++ jest.

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 1287a5d9a239ffa41131b7e453fa0606
++ # `SN-750` — `BcodlError`（已退役）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ 此错误已不复存在。
++ 保留本页是为了不重复使用该代码，并使旧版本中对它的引用仍可解析。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## 后来如何
+
+@ 0 2 0 11d21b42fb6a4e05032be3756de116f7
++ 实现 CoDL 及其二进制形式 BCoDL 的 `cellulose` 模块已被移除。
++ 它的角色由 [TEL](../en/modules/tel.md) 承担，后者的二进制编码是 BinTEL。

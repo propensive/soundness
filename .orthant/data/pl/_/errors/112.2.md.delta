@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 1a81f3e3f59aced3026bcb5f80e98a13
++ # `↯/s.112.2` – `Framing.Error`
+
+@ 0 1 0 08111229421f98810e0e453ea6046f90
++ Zgłaszany, gdy Obligatory nie może rozramkować przychodzącej wiadomości.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 1e054c991ce78917187e563bf70ad309
++ Parsery ramkowania Obligatory (`ContentLength`, `LengthPrefix`, `CrLf`) odczytują strumień bajtów
++ jako odrębne ramki. Gdy bajty nie pasują do oczekiwanego ramkowania, zgłaszany jest ten błąd.
++ Konstruktor przyjmuje `reason: Reason`; przedstawiony komunikat to
+
+% 0 1 0 05faa89d015f41621d8709d549f1e372
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 0b0c7d4858e26aa41b097bb455560614
++ ### `↯/s.112.2.1` – `ShortRead`
+
+@ 0 1 0 19bc5ef0e23eadd61a7d2f241e848304
++ Wejście skończyło się przed odczytaniem kompletnej ramki.
+
+@ 0 1 0 0bd2030ca60c97ae0ecac2c8afd657ae
++ **Przykład.** `[↯/s.112.2.1] could not deframe the message because the input ended before a complete frame could be read`
+
+@ 0 2 0 0c2db92b1ed520f90f87d98caa8856d2
++ **Rozwiązanie.** Upewnić się, że producent zapisał kompletną ramkę; sprawdzić, czy połączenie nie
++ zostało zamknięte w trakcie wiadomości.
+
+@ 0 1 0 1fa83631eabbef6414bbff68cd70cc1a
++ ### `↯/s.112.2.2` – `MissingLineFeed`
+
+@ 0 2 0 165bb3b13a4df8100efad2800c6c73f8
++ Po powrocie karetki (`\r`) nie nastąpił znak nowego wiersza (`\n`) tam, gdzie ramkowanie
++ wymagało CR-LF.
+
+@ 0 1 0 1685d38f67cb281c120f8d57957870f5
++ **Przykład.** `[↯/s.112.2.2] could not deframe the message because a carriage return was not followed by a line feed`
+
+@ 0 2 0 1eda4b9838fe3be50483c82794cf5a0a
++ **Rozwiązanie.** Sprawdzić, czy producent używa końców wierszy CR-LF; wejścia z samym LF lub samym
++ CR nie przejdą przez ten parser.
+
+@ 0 1 0 09dd34b04086092900b3c264234e1584
++ ### `↯/s.112.2.3` – `MalformedLength`
+
+@ 0 2 0 04fd9f5c5e1e6e8d0acf6c6ea3d88b8b
++ Wartości nagłówka `Content-Length` nie dało się sparsować jako liczby całkowitej.
+
+@ 0 1 0 1383eb28e26587a300536838c5238cfe
++ **Przykład.** `[↯/s.112.2.3] could not deframe the message because the content-length header value could not be parsed`
+
+@ 0 2 0 196ecbfa17758fdb075e3fceb94db35d
++ **Rozwiązanie.** Przejrzeć bajty nagłówka; wartość musi być zwykłą dziesiętną liczbą całkowitą.
+
+@ 0 1 0 1d1d57245c2eba441d4c65fa7a9a954d
++ ### `↯/s.112.2.4` – `UnknownHeader`
+
+@ 0 3 0 121246c11f14a76601a5c262d340f0bc
++ Napotkano nagłówek, którego parser ramkowania nie rozpoznaje (dozwolone są tylko `Content-Type`
++ i `Content-Length`).
+
+@ 0 1 0 102c6e42affdf75c04abda25241bb6d9
++ **Przykład.** `[↯/s.112.2.4] could not deframe the message because an unrecognized header was encountered`
+
+@ 0 3 0 14609cb0551f929f1dabc7284aaff823
++ **Rozwiązanie.** Usunąć z wiadomości nagłówki niezwiązane z ramkowaniem przed przekazaniem jej do
++ parsera albo rozszerzyć parser tak, by przyjmował ten nagłówek.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0a77515cdedf6f190c821317fd832271
++ - Źródło: `lib/obligatory/src/core/obligatory.Framing.scala`

@@ -1,0 +1,45 @@
+orthant 2 language
+
+% 0 1 0 173c47bae2eabcc51ed9f53c62aff0de
+
+@ 0 1 0 18bca49ee94f1e0c0224951ae3282aec
++ 当 BinTEL 中的变长整数格式错误时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 162c15d95ec78ded1f7f888ab73b0478
++ BinTEL 把整数编码为 varint，每个字节七位，并带有一个后续标志。
++ 此错误涵盖三种情况：varint 越过了输入的末尾；varint 宽于格式所允许的 64 位；以及 varint 不是最小编码——即过长的编码，例如用 `80 00` 表示零，BinTEL 规范 §4 拒绝这种编码，以使每个整数恰好有一种编码。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 0ccd023f9a98df4d16b17217a6e7aa9f
+
+% 0 1 0 1116c36d6bb2987f002600d475ffebb0
+
+% 0 1 0 05d7a7f71396d4030d99b36743d3f2c9
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 3 0 02c0ae5a3593f800110501e38ccd5a6b
++ 数据流被截断或已损坏。
++ varint 长于目标类型所允许的长度，通常意味着读取方和写入方对字段的类型看法不一。
++ 过长的 varint 来自会进行填充的编码器，而符合规范的 BinTEL 编码器都不会这样做。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 07aa718866039f7e0ff5e503f72fcab5
++ - 源码：`lib/stratiform/src/core/stratiform.Varint.scala`

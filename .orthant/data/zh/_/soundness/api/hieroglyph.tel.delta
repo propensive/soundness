@@ -1,0 +1,1119 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1af590ad362c949901b19b302b7fba8e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0b5daf19d4611f791561355b2e5b1284
++ info   字符编码、清理器、显示宽度、Unicode 属性、字素断点与排序规则
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 09d788acd5e910e90d10de63c035357f
++     _Hieroglyph_ 是文本与字节相遇、`Char` 与 Unicode 相遇之处。
++     `Text` 与 `Data` 之间的边界是字符编码，而这个库让这一选择显式且有类型：`Codepage` 把文本转为字节，`Charset` 把字节转回文本，二者都是上下文值，通过按名导入 `codepages` 或 `charsets` 中的某个 given 来选择，因此任何转换都不会在假定的平台默认值下发生。
++     无法解码的字节如何处理，是另一个同样显式的选择：来自 `textSanitizers` 包的 `TextSanitizer`，它会跳过这些字节、替换为 `?`、在第一个错误处抛出 `Charset.Error`，或在解码其余部分的同时累积每一个错误。
+
+% 2 1 0 1befafe6bfc5f70c17d1f87fead6ea09
+
+% 3 1 0 0ea25722497d1e3e0f5c65975a1a96a8
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1c49562d26a4438704d93e4df605070e
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1634820f4aeb7d35175b99ef328b4399
+
+% 0 1 0 1bc8a4d31d44b14906b05aff0bd73626
+
+% 0 1 0 1bddbfcbdbfc04d419f89d1730ee725b
+
+% 1 1 0 0d6d8ad773ece2631b67c2c9cce5da72
+
+@ 0 6 0 05b5994b682921ac0695f2b350af962e
++     JVM 所知的任何编码都可以用 `enc"…"` 插值器命名，它在代码编译时检查该编码是否存在，以及它能否既解码又编码：`enc"ISO-2022-CN".decoder` 可以编译，`enc"ISO-2022-CN".encoder` 则不能。
++     编码和解码也可以作为流的阶段运行（作用于 `Chain` 的 `Codepage#encoded` 和 `Charset#decoded`），跨两个数据块分开的多字节字符或代理对会被带过边界，而不会损坏。
+
+@ 0 1 0 1258eeb711e13087115b5b62fa59583f
++     除了编码之外，还有程序有时需要的字符层面的信息：
+
+@ 0 16 0 19b5d68f45fb6ab7182f8110fe5b0652
++     - **显示宽度**：`metrics` 通过作用域中的 `Measurable` given 度量 `Char` 或 `Text`，该 given 从 `textMetrics` 中选择：`uniformMetric` 把每个字符都算作一列，`eastAsianScriptsMetric` 给宽表意字符两列，`wideCharacterWidthMetric` 还给组合标记和控制字符零列；
++     - **Unicode 属性**：`Char` 上的扩展方法 `letter`、`digit`、`whitespace`、`control`、`printable`、`majuscular`、`minuscular`、`description`、`superscript` 和 `subscript`，按 Unicode 名称取字符的 `ucs"…"` 插值器，以及 `Unicode` 中的名称表和东亚宽度表；
++     - **字素簇**：`GraphemeBreak.boundaries` 按 UAX #29 的规则找出一个用户感知字符在何处结束、下一个从何处开始；
++     - **规范化与排序**：`Normalization.decompose` 给出文本的规范分解（NFD），`CollationTable` 按 Unicode 排序算法（UTS #10）为文本排序，并用 `tailor` 提供常见的欧洲语言定制。gossamer 的 `collations.unicodeCollation` 和 `Writing` 正是建立在它们之上。排序相关的类型通过 `hieroglyph.CollationTable`、`hieroglyph.CollationRule` 和 `hieroglyph.CollationLevel` 访问，`soundness` 总括包不导出它们。
+
+@ 0 6 0 0295cd2bef933819128e115c36f0bf6e
++     这个库只有一个源码集 `hieroglyph.core`，可编译到 JVM 和 Scala Native。
++     它所需的 Unicode 数据（`UnicodeData.txt`、`EastAsianWidth.txt`、`GraphemeBreakProperty.txt`、`emoji-data.txt`、`IndicConjunctBreak.txt` 和 `allkeys.txt`，均为 16.0.0 版）在首次使用时从类路径的 `/hieroglyph/` 下读取；在 JVM 上，类路径中缺失的表会从 unicode.org 获取，而在 Scala Native 上，这些表必须嵌入二进制文件，缺失的表就是不存在。
+
+@ 0 8 0 02ce3a5018f088861d213994c109a6bb
++     除排序相关的类型外，一切都导出到 `soundness` 总括包，五个选择包（`charsets`、`codepages`、`textSanitizers`、`textMetrics` 和 `communication`）与总括包中同名的包合并。
++     由于 `import soundness.*` 不导入任何 given，程序要指明它想要的编码、清理器和度量：`import codepages.utf8Codepage`、`import textSanitizers.strictSanitizer`、`import textMetrics.uniformMetric`。
++     `iso88591Charset` 和 `iso88591Codepage` 这两个 given 只在 `hieroglyph.charsets` 和 `hieroglyph.codepages` 中声明，不在总括包的这些包中重新导出。
+
+% 0 1 0 0aa5c2fb17a30b1717399f0664ce7419
+
+% 0 1 0 14b7c1855ffb280e176be28498d517e5
+
+% 0 1 0 1b599fb08c7faa0a1512b6608c01d9b4
+
+% 0 1 0 0b538da6581adb5301664d359a5905f6
+
+% 0 1 0 1bddcf4305ecceb31153b061c2fe5d86
+
+% 0 1 0 1dcd781c406b805c023018f7915f5faf
+
+@ 0 1 0 097d4ec5a6aba40c12cd922cea8f786b
++ entry .Encoding   平台支持的一种具名字符编码，可由它得到 `Charset` 或 `Codepage`
+
+% 1 1 0 180b952948d2e98d01858bb42c711d1d
+
+@ 0 6 0 180928f9805093b609d26eb34abb7f3c
++       `Encoding` 是按名称表示的字符编码（`UTF-8`、`ISO-8859-1`、`ISO-2022-CN`），也是转换的两个方向的共同根：`#decoder` 生成把字节读作文本的 `Charset`，`.encoder` 生成把文本写为字节的 `Codepage`。
++       它的类型成员 `#CanEncode` 以 `true` 或 `false` 记录平台能否用它编码，而 `.encoder` 只存在于 `Encoding { type CanEncode = true }` 上，因此只能解码的编码无从被要求产出字节。
+
+@ 0 2 0 190d38985f93a61e1e7cb3afd0860a06
++       获取编码的方式是 `enc"…"` 插值器，它在代码编译时检查名称，并给出精确的 `CanEncode` 类型：
+
+% 2 1 0 061d9fcb001f061716b11337aa185e40
+
+% 3 1 0 0aab6044e53dfb6d02797879619ac042
+
+% 4 1 0 1d0e46acef4fa004193cfea8854eb5ef
+
+% 0 1 0 05816a6f89bd498f1469b83e45f7f05c
+
+% 0 1 0 088607951b78f4ff10cfea754e834c7e
+
+% 0 1 0 0a1c759a0ea8b1611df480faa395d406
+
+% 0 1 0 0dfdd003283e02c601ef1d9c950746c5
+
+% 1 1 0 1a2638594f7ae78f18b1d7db30fea3f2
+
+@ 0 4 0 1e4dc75f1e2e74e7073861ca6037466c
++       在运行时，`Encoding.unapply(name)` 在平台的表中查找名称（不区分大小写，按显示名或别名），结果是 `Option`，`CanEncode` 保持抽象。
++       `#name` 是平台的规范显示名，无论请求编码时用的是哪种拼写；`#charset` 是其背后的 `java.nio.charset.Charset`，只解析一次。
+
+@ 0 3 0 19bafcc48d5e91af12d97d1b1a4082b4
++       编码作为文本渲染时是它的名称（`.textualizable`），作为消息时也是如此（`.communicable`）；它的 `toString` 是能生成它的源代码 `enc"UTF-8"`。
+
+% 0 1 0 11bf9b5fd62b9c390174dffe10de773a
+
+% 1 1 0 03d46be6eb931a5209b86b608a2812ec
+
+% 1 1 0 12ab0af511c2b08f1f6e2e811bd4e9fb
+
+@ 0 32 0 09610bf5d19f7f1b038821c2ad22b1e7
++   entry .textualizable   把编码渲染为它的规范名称
++   entry .communicable   把编码渲染为包含其名称的消息
++       让 `Encoding` 可以插入 `m"…"` 消息的 given，`Charset.Error` 和 `Codepage.Error` 正是这样做的。
++   entry .unapply   在运行时按名称查找编码，结果为 `Option`
++       如果平台有该名称或别名的编码（不区分大小写比较），`Encoding.unapply(t"utf-8")` 为 `Some(encoding)`，否则为 `None`。
++       结果的 `CanEncode` 在静态时未知，因此不能在它上面调用 `encoder`；对于编写代码时已知的名称，`enc"…"` 给出精确的类型。
++       它是一个提取器，因此也可用于匹配：`case Encoding(encoding) =>`。
++   entry .apply   由名称和能否编码构建编码，不检查二者
++       `Encoding(name, canEncode)` 把名称包装为 `Encoding { type CanEncode = canEncode.type }`，并不验证平台是否支持它：`#charset` 惰性地解析名称，平台不支持的名称会在那里以 JDK 的 `UnsupportedCharsetException` 失败。
++       应优先使用会进行检查的 `enc"…"` 或 `.unapply`。
++   entry .encoder   以此编码把文本编码为字节的 `Codepage`
++       一个只在 `Encoding { type CanEncode = true }` 上可用的扩展方法，因此在 `enc"ISO-2022-CN"` 这样只能解码的编码上无法编译。
++       `enc"UTF-8".encoder` 与 `codepages.utf8Codepage` 提供的是同一个 codepage。
++   entry #name   编码的规范显示名，按平台的拼写
++   entry #CanEncode   平台能否用此编码编码：`true`、`false` 或未知
++       一个以 `Boolean` 为上界的类型成员。
++       `enc"…"` 根据平台的表把它固定为 `true` 或 `false`；`Encoding.unapply` 让它保持抽象。
++       只有 `CanEncode` 为 `true` 的编码才有 `encoder`。
++   entry #decoder   把此编码的字节解码为文本的 `Charset`
++       需要作用域中有一个 `TextSanitizer`，charset 会把它保留为自己的清理器，并在每个无法解码的字节序列处咨询它。
++       每种编码都能解码，因此无论 `CanEncode` 是什么，这个方法都可用。
++   entry #charset   此编码背后的 `java.nio.charset.Charset`，只解析一次
++       一个惰性值，因此平台按名称的查找只在首次使用时发生一次：`Codepage#encoded` 把它而不是名称传给 `getBytes`，因为在字节密集的管道中，每次调用都按名称查找的开销是可测量的。
+
+@ 0 1 0 1efc57a710cf97b515bf77627aecae68
++ entry .Charset   以一种编码把字节解码为文本，按其清理器的规定处理错误输入
+
+% 1 1 0 0bb106f8bdc731ba135ba4c032b8f94b
+
+@ 0 6 0 18eec14afb27c0851b5faf25b087e952
++       `Charset` 是 `Encoding` 的解码方向：`#decoded` 把 `Data` 转为 `Text`，可以一次完成，也可以作为数据块的流进行。
++       它由编码通过 `Encoding#decoder` 生成，或通过 `Charset.unapply` 按名称查找，最常见的则是从 `charsets` 包中按名导入的 given（`charsets.utf8Charset` 及其他），turbulence 的 `read[Text]`、`utf8` 以及字节之上文本的 `Readable`/`Aggregable` given 解析到的正是它。
+
+@ 0 6 0 1d6242311e64273712b805f7231f02e4
++       每个 charset 都带有一个 `TextSanitizer`，在创建时作为上下文值获取（`#sanitizer`），它决定遇到编码无法解码的字节序列时如何处理：`textSanitizers.skipSanitizer` 丢弃它，`substituteSanitizer` 写入 `?`，`strictSanitizer` 抛出指明其位置的 `Charset.Error`，`accrueSanitizer` 则写入 `?` 并在每个错误处记录一个 `Charset.Error`，从而恢复整个输入并报告每一个错误。
+
+% 2 1 0 1b97206822e7861901d5ed2f7c15c9ea
+
+% 3 1 0 10957ad0ba895d331110ce3ab61669bc
+
+% 4 1 0 05a3b077153f94561b8ce5830bcdfb18
+
+% 5 1 0 01dac9abcb0bb69f1ac63135eac7d57d
+
+% 0 1 0 07d6cbbe3deaeed4025e3d3da2062b02
+
+% 2 1 0 1a2643470c5efc1c1cb51e06e9b9ca6b
+
+% 0 1 0 1476853e6c25cc8517e7e0d3b3ce43ae
+
+% 0 1 0 03422ad13b12597c066757e638343e99
+
+% 2 1 0 0db19288091672f31bbb32d1c73b93fc
+
+% 0 1 0 0ddd898f980ae1f50c0c8d4db89cc208
+
+% 0 1 0 1982c02e3a17b145032094b9d8b8f5c1
+
+% 2 1 0 0adfee5ccfebcf8d1455665f04967f03
+
+% 0 1 0 1ea5ed73543eabfa10dfb4782d69613a
+
+% 0 1 0 163e45c268302f0b1504452ef0d12b03
+
+% 1 1 0 036667f7cda2c55f17b538621f1c88d6
+
+@ 0 4 0 139d4fc770c4bbb80ac6d360ff83d21b
++       解码数据块的流（`decoded(stream: Chain[Data])`）是增量的：跨两个数据块分开的多字节字符会被带过边界并整体解码，而输入结束时仍不完整的序列是位于最终位置的错误，因此在严格清理器下，截断的 `café` 得到 `Charset.Error(4, …)`。
+
+@ 0 2 0 1ab918a4082ff980082403900d2d9686
++       `Charset` 是 `Self = Text`、`Form = Data` 的 `Findable`，它正是以此在 turbulence 的流阶段中充当解码管道。
+
+% 1 1 0 1cdf7784fe30f9030ec25258c9fb2a97
+
+% 1 1 0 0c6b10f21132c8310fdeb1dedcefbb55
+
+% 0 1 0 0cb8bfc10a68eb0908e072ff49fd16be
+
+% 1 1 0 0a5922fa71b00b280ec6c6a315b7c45c
+
+@ 0 11 0 029a6e3e49aa75e707cad53fbe40d1cc
++   entry .system   平台的默认 charset，使用作用域中的清理器
++       包装为 `Charset` 的 `Charset.defaultCharset`，它取决于区域设置和 JVM 的 `file.encoding`，因此它不是 given，也永远不会被隐式解析：想要平台默认值的程序要按这个名称请求它。
++       需要一个 `TextSanitizer`。
++   entry .unapply   在运行时按编码名称查找 charset，结果为 `Option`
++       `Charset.unapply(t"ISO-8859-1")` 是用作用域中的 `TextSanitizer` 包装为 `Charset` 的 `Encoding.unapply(name)`：平台有该编码时（按显示名或别名，不区分大小写）为 `Some`，否则为 `None`。
++       可在匹配中用作提取器。
++       `charsets` 中的 given 就是这样构建的，`Content-Type` 头部中指名的 charset 也是这样解析的。
++   entry .Focus   正在解码的位置，供累积式清理器的 `validate` 块使用
+
+% 1 1 0 12016e5fd711412f091f5525ff5fc245
+
+@ 0 4 0 0e1cd1818b2224691e70ec607648ae23
++         `Charset.Focus(position)` 是 `textSanitizers.accrueSanitizer` 在它报告的每个错误周围置于焦点的值，这样累积错误的 `validate[Charset.Focus]` 块就能得知每个错误发生在何处：块中的 `prior` 就是这个焦点，类型为 `Optional[Charset.Focus]`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 17534543806f1be102a0a2171760f90b
+
+% 0 1 0 00c2b3acc2df2ede15e5393a4d15c814
+
+% 0 1 0 0267e0cc8b4d15151a0137a0d35ebbee
+
+% 0 1 0 0a7736415cc469ec1c92cbd51fd1d168
+
+% 0 1 0 0f225de615d864080331db06696562af
+
+% 0 1 0 13d6828654d421161f47e6ac045f0445
+
+% 0 1 0 0bd12e4056ca8d980d1d8050d593015f
+
+% 0 1 0 00ae9422f0c0d2931bd1fb859824c94f
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 16136d79e6b851b51d0c46eca43ccbe8
+
+% 0 1 0 0ec55f25930be4c009d9e568c8d55187
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 1a5778db811c5f990ab8cba347d0012b
++     entry #position   错误发生处的字节偏移量
++   entry .Error   在字节序列无法解码且清理器为严格时抛出
+
+% 1 1 0 1f44e84e3efef16a0047a673cf08648d
+
+@ 0 26 0 1c931b2326f0f2ef1230c81de4a9bf7b
++         _The byte sequence at position `position` could not be decoded with the encoding `encoding`_。
++         由 `textSanitizers.strictSanitizer` 在第一个无法解码的序列处，以及由 `textSanitizers.accrueSanitizer` 在每一个这样的序列处（它会继续解码），通过 `Tactic[Charset.Error]` 抛出。
++         位置是输入中的字节偏移量，解码流时跨数据块计数；在输入末尾仍不完整的序列在输入的长度处报告。
++         跳过式和替换式清理器从不抛出它。
++     entry #position   无法解码的序列的字节偏移量
++     entry #encoding   无法解码它的编码
++   entry #encoding   此 charset 解码所用的编码
++   entry #sanitizer   在每个无法解码的字节序列处咨询的清理器
++       创建 charset 时作用域中的 `TextSanitizer`。
++       `charsets` 中的 given 从使用处获取它，因此同一个 `charsets.utf8Charset` 可以在一个块中是严格的，在另一个块中是宽容的，取决于那里导入了哪个清理器；只有 `iso88591Charset` 固定使用 `skipSanitizer`，因为每个字节都是有效的 Latin-1，没有什么需要清理。
++   entry #Self   此 charset 产出的类型：`Text`
++   entry #Form   此 charset 消费的类型：`Data`
++   entry #decoded   一组字节的文本，或由字节流得到的文本流
++       `decoded(bytes)` 把整个 `Data` 解码为一个 `Text`。
++       `decoded(stream)` 接受 `Chain[Data]` 并给出 `Chain[Text]`，在每批缓冲数据到达时解码，并把不完整的多字节序列带到下一个数据块，因此输入如何分块永远不影响文本；空数据块会从输出中删去。
++       二者都在每个错误处咨询 `#sanitizer`，因此在 `strictSanitizer` 或 `accrueSanitizer` 下可能通过其战术抛出 `Charset.Error`。
++       双参数重载 `decoded(bytes, omit)` 与 `decoded(bytes)` 相同。
+
+% 2 1 0 0f529b60beaa7abb0aa89816926ccf3c
+
+% 3 1 0 025bc5fc243636f80ac3a4150aa92d12
+
+% 4 1 0 1293d48930c0c3f802ed40eda78bdfd8
+
+% 0 1 0 12ca2100bb28f86a073a351a022a8bba
+
+% 0 1 0 1bd6d6a18cdbfb3b1825536f78529117
+
+% 0 1 0 119d03496fe468211e5a2d75dac0822f
+
+% 0 1 0 1003bd1dcb7432230f245cd31d84e87f
+
+% 1 1 0 0f1cf8ad26160f9706a1733597f3a3aa
+
+@ 0 1 0 0e8316991433cc8f19e0255e8f959264
++ entry .Codepage   以一种编码把文本编码为字节，整体进行或作为数据块的流进行
+
+% 1 1 0 0f0873c797186f3d035ac76c70902683
+
+@ 0 6 0 1cf1a1bff4ddea0815d356f8d4c5e758
++       `Codepage` 是能编码的 `Encoding` 的编码方向：`#encoded` 把 `Text` 转为 `Data`，可以整体进行，也可以逐块进行。
++       它由编码通过 `Encoding.encoder` 生成，或通过 `Codepage.unapply` 按名称查找，最常见的则是从 `codepages` 包中按名导入的 given（`codepages.utf8Codepage` 及其他），`in[Data]`、`write`、`Postable` given 以及其他所有把文本变为字节的地方解析到的正是它。
+
+% 2 1 0 035343c73abb6378008623d857ffaebc
+
+% 0 1 0 030a3de70ea57a021886e947cc40fe6b
+
+% 1 1 0 0b78d2a156c85ed416fb0ab0ee471103
+
+% 2 1 0 04cae841bb5b40130a853e5b263147d9
+
+% 0 1 0 0a3bdbd673888d6c19c63534ff7228d0
+
+% 0 1 0 0a1e58af6c6c8687147b34e41df20faa
+
+% 0 1 0 017228777061631a018d18d9dbd003cc
+
+% 1 1 0 1ab793a080a16f240dee716814da5c2f
+
+% 2 1 0 060937287ec68f5303ef2fa62adb0462
+
+% 0 1 0 04a72867ebb753931eeb1ab8dfc9a2a6
+
+% 0 1 0 02a9b61aaba31aa819c8a79ddbe44d96
+
+% 0 1 0 16f09b404fc9392610db87c98d8857ce
+
+% 1 1 0 17b6b9946205e20e0e54ebccb1d13b77
+
+% 2 1 0 0781498f2a17bf58096fa29056e6669b
+
+% 0 1 0 1622e020dd21ce9218bd3bdcbe105b54
+
+% 0 1 0 0446a4756e54083a0ae754c0d45c6d71
+
+% 0 1 0 102859ded94d142e199fbf1f50dd2ef7
+
+% 1 1 0 16d5545b69d130c51afc283130ab1da9
+
+% 2 1 0 1067995ba330ec2a1874610c17f6b972
+
+% 0 1 0 018b097ce5316fad1bbfa8ecff18b04c
+
+% 0 1 0 1f3b3a50312b55b41d0d1d507a618cd9
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 0f183e30da6c0ccb0c98a8e2e1dbfc7e
+
+% 0 1 0 15bad5cab2daa60b1cbc85ea63693651
+
+% 1 1 0 09f2f8e5025c34a50184023aeba38e00
+
+% 2 1 0 1d9fdbee719de85f1ec1f75b04273d4c
+
+@ 0 5 0 002826a20de2f8b914e9045fbdbf6739
++       编码无法表示的字符会被替换（用编码的替代字符，ASCII 为 `?`），而不是抛出错误：`Codepage.Error` 为想要报告这种情况的调用者而存在，但 `#encoded` 本身不会抛出它。
++       编码流是增量的，并通过缓冲区暂存字符，因此跨两个数据块分开的代理对会被编码为一个星界字符，而逐块单独编码则会损坏它。
+
+@ 0 2 0 0f7bd600355021cd0668d849b33dc7f5
++       `Codepage` 是 `Self = Text`、`Form = Data` 的 `Encodable` 和 `Findable`，它正是以此在 turbulence 的流阶段中充当编码管道。
+
+% 1 1 0 0750358ed43aacbb1f10926eedf3e7cb
+
+% 1 1 0 1150fdab98df948b179d5247b4cb6382
+
+% 0 1 0 0b0342c5202ed2ae17228696f7cc2d52
+
+@ 0 10 0 169788b900b30d2d07beaf0ca2b64de5
++   entry .system   作为 codepage 的平台默认 charset
++       JVM 的 `Charset.defaultCharset` 所指名的编码，它取决于区域设置和 `file.encoding`，因此它不是 given：想要平台默认值的程序要按这个名称请求它。
++   entry .unapply   在运行时按编码名称查找 codepage，结果为 `Option`
++       如果平台有该名称或别名（不区分大小写）的可编码的编码，`Codepage.unapply(t"UTF-8")` 为 `Some(codepage)`，对于未知的名称或只能解码的名称则为 `None`。
++       可在匹配中用作提取器。
++       `codepages` 中的 given 就是这样构建的。
++   entry .Error   编码无法表示的字符
+
+% 1 1 0 09f1d854129c9acd1a75ce071122a4f5
+
+@ 0 17 0 0c822668cbc12bfc17728188f32ba61c
++         错误 `↯/s.35.1`：_character `char` cannot be encoded with the encoding `encoding`_。
++         超出编码字符集范围的字符的错误类型。
++         `Codepage#encoded` 不会抛出它（无法映射的字符会被替换，就像 `String#getBytes` 那样），因此它供自行检测这种情况的调用者使用。
++     entry #char   无法编码的字符
++     entry #encoding   无法编码它的编码
++   entry #encoding   此 codepage 编码所用的编码，已知能够编码
++       类型为 `Encoding { type CanEncode = true }`。
++   entry #Self   此 codepage 消费的类型：`Text`
++   entry #Form   此 codepage 产出的类型：`Data`
++   entry #encoded   一段文本的字节，或由文本流得到的字节流
++       `encoded(text)` 通过使用已解析 charset 的 `String#getBytes`，把整个 `Text` 编码为一个 `Data`。
++       `encoded(stream)` 接受 `Chain[Text]` 并给出 `Chain[Data]`，逐批缓冲数据地编码：两半落在不同数据块中的代理对会被带过去并整体编码，有状态的编码在末尾刷新一次，空数据块会从输出中删去。
++       格式错误或无法映射的输入会被替换，从不抛出错误。
+
+% 2 1 0 0c931caa8f2a559500148a0561c2d15c
+
+% 3 1 0 00ecf2c3666be69801af4a54ae2e6a04
+
+% 4 1 0 017521bdfe6d93151918d1a48cc27996
+
+% 0 1 0 17b60040c98a34c20901037747d4cbb7
+
+% 0 1 0 1fe78f9657892dce16bf756b5acf825f
+
+% 0 1 0 18ca4c07c551f90b0f7c0a119a54e15b
+
+% 1 1 0 005d191f98f7708d02de4dbe08c29709
+
+@ 0 1 0 14861a705cb27c6f14be61f759c38e8b
++ entry .TextSanitizer   解码器如何处理无法解码的字节序列
+
+% 1 1 0 0978900c892c07b810077c87d2c09900
+
+@ 0 6 0 1fc2392f9be7a13f186e6eafb31bffe1
++       `Charset` 在其编码无法解码的每个字节序列处，以错误的位置和编码为参数咨询 `TextSanitizer`，它回答要写在该处的字符，或回答 `Unset` 表示什么都不写。
++       它是一个上下文值，通过按名导入 `textSanitizers` 包中的某个 given 来选择，并在 `Charset` 创建时被其捕获，因此这一选择在解码代码的导入处可见。
+
+@ 0 6 0 026e1846761bb0141e40f56f76082c70
++       提供的四种方针：`skipSanitizer` 回答 `Unset`；`substituteSanitizer` 回答 `?`；`strictSanitizer` 在第一个错误处以 `Charset.Error` 中止；`accrueSanitizer` 在每个错误处于 `Charset.Focus` 中抛出一个 `Charset.Error`，供 `validate` 块收集，然后回答 `?` 并让解码继续。
++       自定义方针就是一个 lambda：`given TextSanitizer = (position, encoding) => '�'` 替换为 Unicode 替换字符。
+
+% 1 1 0 1940f59f2def9aa70a05560913634ff2
+
+% 1 1 0 06c9663b9ae07ca9061a5286332389a9
+
+@ 0 4 0 04bf8ab3abd64fd313e796e510ea86c5
++   entry #sanitize   在错误处要写入的字符，或 `Unset` 表示不写
++       以无法解码的序列的字节偏移量（解码流时跨数据块计数）和编码为参数调用。
++       解码器随后跳过错误的字节，从下一个字节继续。
+
+@ 0 1 0 1960d781d83854f510599769c2544dda
++ entry .Measurable   一个字符或一段文本在等宽显示中占多少列
+
+% 1 1 0 187d7e2bcb8af6b319bbbe4ef7f26420
+
+@ 0 5 0 1a2b586eb285c63b07562f67887556d8
++       `Measurable` 给它的 `Self` 一个以显示列计的宽度：`Char is Measurable` 说明一个字符占多少列，`Measurable.general` 通过求和把任何这样的度量提升为 `Text is Measurable`。
++       宽度用 `metrics` 扩展方法读取，gossamer 的 `pad`、`center` 和 `fit` 也用它来度量，因此一列日文文本能够对齐，而按字符计数则做不到。
+
+@ 0 4 0 08722e280d66c0f01e576085a59c08a4
++       默认情况下作用域中没有任何度量：要从 `textMetrics` 包中按名导入一个，因为这一选择也关乎开销。
++       在 `uniformMetric` 下，文本的宽度就是它的长度，耗时为常数；在 `eastAsianScriptsMetric` 或 `wideCharacterWidthMetric` 下，每个字符都要查表并求和。
+
+% 2 1 0 1905a369fedaf6200159117eb1d87b31
+
+% 3 1 0 0e975c72777a4835169d2dfa4bfe76f5
+
+% 0 1 0 1c9d4bf1c931e8530064e53ea3324c30
+
+% 0 1 0 1c5811ba64ed7b640c915152539224cb
+
+% 0 1 0 1c9ea29826553b89145740a42a794b35
+
+% 0 1 0 079cb67c30070fcc14837c6bc0be5fb3
+
+% 1 1 0 0cbebf3d61ed7dba1417afbbd868a239
+
+@ 0 2 0 05f0138ad4e05bf1035b3957dd386a10
++       gossamer 的 `Grapheme` 和 `Writing` 也是 `Measurable` 的，它们通过作用域中的 `Char` 度量把字素簇作为一个整体来度量。
+
+% 1 1 0 12a10a764f723d5d199e48ea518ce6ac
+
+% 0 1 0 042a9281ddab4afe07bb8cc76de26df5
+
+@ 0 5 0 08a8447c263e7d930479438d825d5d89
++   entry .general   `Text is Measurable`，即其各字符在作用域中的 `Char` 度量下的宽度之和
++       它在隐式作用域中，因此度量文本只需要导入一个 `Char is Measurable`。
++       求和以 UTF-16 代码单元为单位，因此代理对的每一半会分别询问度量。
++   entry #width   一个值所占的显示列数
+
+@ 0 5 0 11fc9419456fc5d41eb4e09b257807de
++ entry .metrics   通过作用域中的 `Measurable` 得到的字符或文本的宽度
++     `'身'.metrics` 和 `t"…".metrics`：任何有 `Measurable` 的类型上的扩展方法，返回 `width`。
++     需要从 `textMetrics` 中按名导入一个 `Char is Measurable`（`uniformMetric`、`eastAsianScriptsMetric` 或 `wideCharacterWidthMetric`）；`Text` 通过 `Measurable.general` 度量。
+
+@ 0 1 0 124edb3a8f8a68a305c7d9613b587f6e
++ entry .textMetrics   各种显示宽度度量，每个都是按名导入的 given
+
+% 1 1 0 031b4495a82411170b5433df9e3c5719
+
+@ 0 3 0 14089f937f33e10b05d1d6d9b0117d4f
++       用哪种度量来度量字符，由作用域中的 `Char is Measurable` given 决定，而 `import soundness.*` 不引入其中任何一个：要按名导入一个。
++       三者在计数内容和开销上各不相同。
+
+% 2 1 0 1d91ca6acc02ad2013526c806548ae24
+
+% 3 1 0 0d2a1e9c9bb9ab8f1405fcfb6e08dae8
+
+% 2 1 0 16be0b365b962e101ae2010fc1909fb8
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 0a0a3ec08a08e9de1266882a0a198d7a
+
+% 2 1 0 078be50b70e0863c0676017bbedcba9d
+
+% 0 1 0 06ee154b8609850c05ba8ec815110c7c
+
+% 0 1 0 0a0a3ec08a08e9e01266882a0a198d7c
+
+% 1 1 0 08a679d5a912de811594c99cf73edb20
+
+@ 0 17 0 18abad502a7b14f70606a003e8af15e0
++       在已知文本不含任何宽字符的地方，`uniformMetric` 是合适的，而且没有开销；`eastAsianScriptsMetric` 适合显示中日韩文本的终端；`wideCharacterWidthMetric` 最忠实于终端实际绘制的结果，把组合标记和控制字符计为零。
++   entry .uniformMetric   每个字符占一列
++       在这种度量下，文本的宽度就是它的长度，无需查表。
++   entry .eastAsianScriptsMetric   宽字符或全角字符占两列，其他字符占一列
++       在 Unicode 的 `EastAsianWidth.txt` 表（`Unicode.eastAsianWidth`）中查找每个字符：`Wide` 和 `FullWidth` 占两列；`Narrow`、`HalfWidth`、`Neutral`、`Ambiguous` 以及表中没有的字符占一列。
++       组合标记在这里仍然计为一列；要让它们计为零，请使用 `wideCharacterWidthMetric`。
++   entry .wideCharacterWidthMetric   Markus Kuhn 的 `wcwidth`：宽字符为二，组合字符和控制字符为零
++       对每个字符取 `WideCharacterWidth.width`：`NUL`、C0 和 C1 控制字符、非间距标记、封闭标记以及格式字符为零（因此组合重音或零宽连接符不增加宽度），东亚 `Wide` 和 `FullWidth` 为二，其余一切为一。
++       gossamer 的字素度量就是以这种度量为准撰写文档的，因为这样一来，带组合标记的基本字母度量为一。
+
+@ 0 1 0 06ae2e4c8d1a505b1456bd51575debb2
++ entry .Unicode   Unicode 的表：字符名称、东亚宽度以及几种渲染
+
+% 1 1 0 150b54759ffbe4da11d6cd6c2ab1a880
+
+@ 0 8 0 18c4746fddb8952712d0b0226de39947
++       `Unicode` 对象从类路径惰性地读取 Unicode 的数据文件，并提供其中的内容：`.name` 和 `.apply` 通过 `.unicodeData` 和 `.unicodeNames` 双向查找字符的名称；`.eastAsianWidth` 给出码点的 `EaWidth` 类别，`textMetrics` 和 `WideCharacterWidth` 都建立在它之上；`.visible` 和 `.smallCaps` 是两种小型渲染。
++       这些表是 Unicode 16.0.0 的 `UnicodeData.txt` 和 `EastAsianWidth.txt`，位于类路径的 `/hieroglyph/` 下；在 JVM 上，缺失的表会从 unicode.org 获取，在 Scala Native 上，缺失的表会导致 panic，因此这些资源必须嵌入二进制文件。
+
+% 2 1 0 05f209dcc6406dd80ef3110d750e654c
+
+% 3 1 0 1239de5537f83c490a422fc8e55688e2
+
+% 0 1 0 10c6c76f10563f97061734eea4ee6086
+
+% 0 1 0 1977943647f3a82b123951f11ba37c25
+
+% 0 1 0 030cdab55a4d7f5c19fcb1ad6cc61c1a
+
+% 0 1 0 136431672aff85961866bc6d76a8e506
+
+% 0 1 0 1b5d4e13efb8faeb0f2e17a2f8baf118
+
+% 1 1 0 0ed64a44e9fe43f6100bb92511ac7eda
+
+@ 0 2 0 07c11dd6fc84b4041175e81593bc570a
++       字符的名称也可以通过 `char.description` 或 `char.designation` 得到，按名称取字符则用 `ucs"…"`，它在代码编译时检查。
+
+% 0 1 0 0e5a3f69a24318e205eb801c6becaae7
+
+% 0 1 0 13b5c41c31c42bfb0ac81ec9c619cc0d
+
+% 0 1 0 00eb1167fab233d61259d476bcfee502
+
+@ 0 5 0 060e79ad88bedbeb1eb6e5b1e792cdbf
++   entry .smallCaps   把其中的小写 ASCII 字母替换为小型大写字母的文本
++       `a`–`z` 变为 `ᴀ`–`ᴢ`（`f` 用 `ꜰ`，`q` 用 `ǫ`，没有小型大写形式的 `s` 和 `x` 保持原样）；其他字符不变。
++       `communication.unicodeCharNamesCommunicable` 用它来排印字符的名称。
++   entry .EaWidth   码点的东亚宽度类别，来自 `EastAsianWidth.txt`
+
+% 1 1 0 1fd0158ba73693c10fbfaef7acb15519
+
+@ 0 38 0 11913ce855c680e500590525e87a45b2
++         Unicode 指定的六个类别：`Neutral`（`N`）、`Narrow`（`Na`）、`Wide`（`W`）、`Ambiguous`（`A`）、`FullWidth`（`F`）和 `HalfWidth`（`H`）。
++         `#width` 把它们归结为列数，`.unapply` 从表中的两字母代码读取类别。
++         `Ambiguous` 字符（希腊字母、西里尔字母、部分符号）在东亚的传统环境中是宽的，在其他地方是窄的；`#width` 把它们计为一列。
++     entry .unapply   表代码对应的类别：`N`、`Na`、`W`、`A`、`F` 或 `H`
++         作用于 `Text` 的提取器，对其他任何文本为 `None`。
++     entry #width   类别以列计的宽度：`Wide` 和 `FullWidth` 为二，其他为一
++   entry .eastAsianWidth   字符或码点的 `EaWidth`，表中没有时为 `Unset`
++       接受 `Char` 或 `Int` 码点。
++       查找是在表的各区间中搜索，因此每个字符的开销是表大小的对数；没有区间覆盖的码点为 `Unset`，`textMetrics` 把它视为一列。
++   entry .visible   把控制字符显示为其“控制图片”字形
++       `DEL` 变为 `␥`，空格变为 `␣`，其他小于等于空格的字符变为 `␀`–`␟` 区块中对应的图片（`'\t'` 为 `␉`，`'\n'` 为 `␊`）；其余字符保持原样。
++       用于显示其中控制字符原本不可见、或会作用于终端的文本。
++   entry .apply   具有某个 Unicode 名称的字符，或 `Unset`
++       `Unicode(t"GREEK SMALL LETTER ALPHA")` 为 `'α'`。
++       名称按 `UnicodeData.txt` 的拼写，全部大写。
++       基本多文种平面之外的字符是由其代理对组成的 `Text`，而不是 `Char`，因此结果为 `Optional[Char | Text]`。
++       查找使用 `.unicodeData`，因此第一次调用会加载该表。
++   entry .name   字符的 Unicode 名称，首字母大写，或 `Unset`
++       `Unicode.name('é')` 为 `t"Latin Small Letter E With Acute"`：表中的名称，每个单词首字母大写。
++       对表中未命名的字符（如控制字符或未分配的码点）为 `Unset`。
++       也可以通过 `char.description` 和 `char.designation` 得到。
++   entry .unicodeData   每个具名字符，按 `UnicodeData.txt` 拼写的名称索引
++       惰性构建的 `Map[Text, Char | Text]`，从大写名称映射到字符：一个 `Char`，或者对于基本多文种平面之外的字符，是由两个代理组成的 `Text`。
++       `<CJK Ideograph, First>` 之类的区间条目被省略。
++   entry .unicodeNames   每个具名字符的名称，首字母大写，按字符索引
++       `.unicodeData` 的逆，类型为 `Map[Char | Text, Text]`，名称的每个单词首字母大写：`Unicode.name` 读取的就是它。
++   entry .eastAsianWidths   东亚宽度表，从码点区间映射到 `EaWidth`
++       惰性加载的 `TreeMap`，从 `hieroglyph.internal.CharRange` 映射到 `EaWidth`，相邻的同类别区间已合并。
++       `.eastAsianWidth` 在其中搜索；它是公开的，以便工具可以枚举这张表。
+
+@ 0 1 0 1854f4a91cb8c306034874d1b2de7c54
++ entry .WideCharacterWidth   Markus Kuhn 的 `wcwidth` 算法：码点在终端中所占的列数
+
+% 1 1 0 115f5c4e4f2739a81266062f90125d62
+
+@ 0 5 0 1c7a6648a0c4faf003229efe9ee68a3b
++       终端按经典 `wcwidth` 的规则给码点的宽度：`NUL`、C0（低于 `0x20`）和 C1（`0x7f`–`0x9f`）控制字符，以及非间距标记、封闭标记和格式字符为零；`Unicode.eastAsianWidth` 为 `Wide` 或 `FullWidth` 的码点为二；其余一切为一。
++       它接受 `Int` 码点，因此基本多文种平面之外的 emoji（`0x1f468`）会作为整体度量，结果为二。
+
+% 2 1 0 1fba0bbd612685b016b9823cfcb8bd29
+
+% 3 1 0 12054999a87fd98513663204f06beb75
+
+% 0 1 0 1c1114599143044c1b69508a6f03caa2
+
+% 0 1 0 1691fc7999197ddc01410d29c46a1e9c
+
+% 0 1 0 0f6cfbf48b13a23e01c5d99f4f039e7b
+
+% 0 1 0 0a37944fdc67e63b1cd340f222eff113
+
+% 1 1 0 161bf04d94ce0d4807ee60151add7fa7
+
+@ 0 1 0 0e6d12d0f07b733600aa188265c0d6a4
++       `textMetrics.wideCharacterWidthMetric` 对每个 `Char` 应用它。
+
+% 1 1 0 023e80c693ff076e05c2169fdf6c2201
+
+@ 0 1 0 16b269f35fa54f3b08a751538fa27f41
++   entry .width   码点在终端中的宽度：零、一或两列
+
+@ 0 1 0 19a8c91d4c565b070d4b17d6ef794fdd
++ entry .Chars   数字和算术符号的上标和下标形式
+
+% 1 1 0 09524ca42022145f05bb6a0526a26e27
+
+@ 0 5 0 1a7e48fe8b321ebf0dbaacec0fa18733
++       两个从字符到其 Unicode 上标或下标形式的偏函数，对数字 `0`–`9` 以及 `(`、`)`、`+`、`-` 和 `=` 有定义。
++       它们通过 `char.superscript` 和 `char.subscript` 访问，在不存在对应形式时给出 `Unset`。
++   entry .superscript   `'2'` 变为 `'²'`，适用于数字、括号、`+`、`-` 和 `=`
++   entry .subscript   `'2'` 变为 `'₂'`，适用于数字、括号、`+`、`-` 和 `=`
+
+@ 0 4 0 0b8faa9fdb72a7ff0df661ba3749cf74
++ entry .superscript   字符的上标形式，或 `Unset`
++     `Char` 上的扩展方法：`'2'.superscript` 为 `'²'`，`'('.superscript` 为 `'⁽'`，而字母（Unicode 没有一致的上标字母表）为 `Unset`。
++     通过 `Chars.superscript`，对 `0`–`9`、`(`、`)`、`+`、`-` 和 `=` 有定义。
+
+@ 0 4 0 03f8321ae6aa1e9d1e66f1037256f4fc
++ entry .subscript   字符的下标形式，或 `Unset`
++     `Char` 上的扩展方法：`'2'.subscript` 为 `'₂'`，`'+'.subscript` 为 `'₊'`，`0`–`9`、`(`、`)`、`+`、`-` 和 `=` 以外的任何字符为 `Unset`。
++     通过 `Chars.subscript`。
+
+@ 0 4 0 1a3bf76bd612a2a90508d3eb7caddcb6
++ entry .description   字符的 Unicode 名称，首字母大写，或 `Unset`
++     `Char` 上的扩展方法：`'é'.description` 为 `t"Latin Small Letter E With Acute"`，Unicode 数据库中未命名的字符为 `Unset`。
++     与 `designation` 和 `Unicode.name` 相同；第一次调用会加载该表。
+
+@ 0 4 0 05a176970d89b12005f86b3667ced9b8
++ entry .designation   字符的 Unicode 名称，首字母大写，或 `Unset`
++     `Char` 上的扩展方法，与 `description` 完全相同：`'ß'.designation` 为 `t"Latin Small Letter Sharp S"`。
++     `communication.unicodeCharNamesCommunicable` 在消息中用它渲染字符。
+
+@ 0 4 0 18a12532d65a802619435f1d082ce2a3
++ entry .minuscule   字符的小写形式
++     `Char` 上的扩展方法：`Character.toLowerCase`。
++     对应的谓词是 `minuscular`。
++     这一对方法以字母形式命名，而不叫 `lower`/`upper`，因为后者是 gossamer 中 `Text` 的大小写转换，会在 `soundness` 总括包中与之冲突。
+
+@ 0 2 0 01da015293fd55c1100e4b9d42d7a856
++ entry .majuscule   字符的大写形式
++     `Char` 上的扩展方法：`Character.toUpperCase`。
++     对应的谓词是 `majuscular`。
+
+@ 0 3 0 0f8632d427b8c7eb1c02c42e78105bd4
++ entry .whitespace   字符是否为空白
++     `Char` 上的扩展方法：`Character.isWhitespace`，它把空格、制表符、换行符和 Unicode 空格分隔符计为空白，但不包括不换行空格。
+
+@ 0 3 0 0aad02e441ac4ec708274b21d171f456
++ entry .control   字符是否为 ISO 控制字符
++     `Char` 上的扩展方法：`Character.isISOControl`，即 `0x00`–`0x1f` 和 `0x7f`–`0x9f`。
+
+@ 0 2 0 1e0f2a00933951b51e81ebbb9bf3a0c5
++ entry .printable   字符是否既不是控制字符也不是空白
++     `Char` 上的扩展方法：`!control && !whitespace`。
++     即在页面上留下痕迹的字符。
+
+@ 0 3 0 1141eb0effaf4fbe11239fde1b653098
++ entry .letter   字符是否为任何文字中的字母
++     `Char` 上的扩展方法：`Character.isLetter`，因此 `'é'.letter` 和 `'身'.letter` 与 `'a'.letter` 一样成立，而 `'7'.letter` 和 `'.'.letter` 不成立。
+
+@ 0 3 0 1b3537ca7b1508391be8af755a77b55e
++ entry .digit   字符是否为任何文字中的数字
++     `Char` 上的扩展方法：`Character.isDigit`，除 `0`–`9` 外，它还包括其他文字的数字（阿拉伯-印度数字、天城文数字……）。
+
+@ 0 3 0 1ad0d09907d1c92114e6e92c88614a91
++ entry .alphanumeric   字符是否为字母或数字
++     `Char` 上的扩展方法：`Character.isLetterOrDigit`。
++     标点和空白都不是。
+
+@ 0 3 0 07d5af9c23ac3197070f452ab2ba7b1e
++ entry .majuscular   字符是否为大写
++     `Char` 上的扩展方法：`Character.isUpperCase`。
++     `'A'.majuscular` 成立；`'a'` 和不分大小写的 `'7'` 不成立。
++     对应的转换是 `majuscule`。
+
+@ 0 3 0 02233233bcf197101ddb8b2e7e3b328d
++ entry .minuscular   字符是否为小写
++     `Char` 上的扩展方法：`Character.isLowerCase`。
++     `'a'.minuscular` 成立；`'A'` 和不分大小写的 `'7'` 不成立。
++     对应的转换是 `minuscule`。
+
+@ 0 4 0 0c41921f454802da1eae42e50d6aa016
++ entry .unicode   把码点表示为文本，如 `0x1f600.unicode`
++     `Int` 上的扩展方法：具有该码点的字符的 `Text`，对于基本多文种平面之外的字符，它是两个 UTF-16 代码单元。
++     无效的码点会抛出 JDK 的 `IllegalArgumentException`。
+
+@ 0 8 0 0d89c9311872eff61643fc25de45f8fb
++ entry .enc   `enc"…"` 插值器：按名称表示的编码，在代码编译时检查
++     `enc"UTF-8"` 指名一种字符编码，并在代码编译时检查平台是否有该名称的编码（按显示名或别名，不区分大小写）。
++     没有该编码的名称会导致编译错误 _the encoding `ABCDEF` was not available_（↯/s.35.2），而未在 IANA 注册的名称可以编译，但会给出警告，提示它可能并非处处可用。
++     结果的 `CanEncode` 类型成员根据平台的表固定为 `true` 或 `false`，因此 `enc"ISO-2022-CN".decoder` 可以编译，而 `enc"ISO-2022-CN".encoder` 不能。
+
+% 2 1 0 064b6e34d95101ab0a4669e5ac53dbf9
+
+% 3 1 0 04d9784872c48089070165f100cddd59
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 16a050383c87afcd027c802c7607c6a8
+
+% 0 1 0 1fef97563638fa02196b681b46a8d837
+
+% 0 1 0 1ee7e2fc628087220fb892f27b1840c4
+
+% 1 1 0 1e4fb4207bbe807804ae04eec2fc47b2
+
+@ 0 4 0 182be5d0f00b9dc71a82ed9621f7fe4c
++     这个插值器不接受 `$` 替换：名称必须是字面量，因为它在编译时检查。
++     编译时检查咨询的是编译器的 JVM，因此在那里存在而在运行时不存在的编码，会在首次解析该编码的 `charset` 时失败。
+
+@ 0 7 0 03a3703e6a0ca44c1433318bc9415f36
++ entry .ucs   `ucs"…"` 插值器：按 Unicode 名称表示的字符，在代码编译时检查
++     `ucs"GREEK SMALL LETTER ALPHA"` 为 `'α'`，`ucs"Grinning Face"` 是 U+1F600 的代理对组成的文本：结果为 `Char | Text`，基本多文种平面中的字符为 `Char`，平面之外的为 `Text`。
++     名称以大写形式与 `UnicodeData.txt` 匹配，因此大小写无关紧要，数据库中没有的名称会导致编译错误 _the unicode character `…` does not exist_（↯/s.35.3）。
++     不接受 `$` 替换。
+
+% 2 1 0 168390099e11059c11bf7127c70a6f46
+
+% 3 1 0 1379912ec39811b9069a810a64970968
+
+% 0 1 0 1c8afe6669730ccf0499b09f3424f5a4
+
+% 1 1 0 0d48bbc628b865a61479f5fc2ce8170a
+
+@ 0 1 0 02bd53410cb980e71164215bff03cd44
++ entry .GraphemeBreak   按 UAX #29 确定一个用户感知字符在何处结束、下一个从何处开始
+
+% 1 1 0 0de7bebf9cecdd0612435e3430c1674a
+
+@ 0 7 0 0a90bafb52edc28c10416742d83f6b7d
++       读者看作一个字符的东西可能由多个码点组成：一面旗帜是两个区域指示符，家庭 emoji 是由零宽连接符连起的多个码点，带重音的字母可能是一个基本字母加一个组合标记；因此按码点截断、反转或度量文本的代码会把字符劈成两半。
++       `GraphemeBreak.boundaries` 按 Unicode 标准附件 #29（16.0.0 版，包括印度系文字连字规则 GB9c）的规则找出扩展字素簇之间的边界，其背后的属性查找也是公开的。
+
+% 2 1 0 01d5c97609ac33ab07168d0b675767a5
+
+% 3 1 0 066bba3380eaed4e09e970987f52396b
+
+% 0 1 0 1cbd2f4c787fd4510d695622034a7d78
+
+% 0 1 0 1733526339b92bb610a6c98ff4fcdd00
+
+% 0 1 0 058fce6c4846db7b1bfec092a2bc943d
+
+% 0 1 0 13d9ff6591de882c1ca35b7f71b2faa0
+
+% 1 1 0 00fc1c4441296b8c0f951d33d79977d7
+
+@ 0 3 0 03870ee7367d1d8e162f55e772958fb5
++       这些表是来自类路径的 `GraphemeBreakProperty.txt`、`emoji-data.txt` 和 `IndicConjunctBreak.txt`，在首次使用时加载。
++       gossamer 的 `Writing` 和 `Grapheme` 是更高层的视角：把文本看作它的各个字素簇。
+
+% 1 1 0 14c1703ef196158b0b84a28dc73ba24e
+
+@ 0 1 0 04e3b4aaf82992250f9342ebda1dffb1
++   entry .Property   Grapheme_Cluster_Break 属性的取值
+
+% 1 1 0 1aa4b09404bd48811f03059fae3da83c
+
+@ 0 14 0 0a6c5504f4db75030a4c92b376132dc2
++         UAX #29 赋予码点的取值：`Other`、`Cr`、`Lf`、`Control`、`Extend`、`Zwj`、`RegionalIndicator`、`Prepend`、`SpacingMark`，以及韩文字母和音节类别 `L`、`V`、`T`、`Lv` 和 `Lvt`。
++         `.property` 为码点读取其中之一。
++   entry .property   码点的 Grapheme_Cluster_Break 属性，表中没有时为 `Other`
++   entry .extendedPictographic   码点是否具有 Extended_Pictographic emoji 属性
++       来自 `emoji-data.txt`；正是这个属性让 emoji 序列能够跨零宽连接符延续。
++   entry .incb   码点的 Indic_Conjunct_Break 值：`0` 辅音，`1` 扩展，`2` 连接符，`-1` 无
++       来自 `DerivedCoreProperties.txt`，在类路径上以 `IndicConjunctBreak.txt` 的形式提供；它是规则 GB9c 背后的属性，该规则让辅音、virama 和辅音保持在一起。
++   entry .boundaries   字素簇开始和结束处的偏移量
++       文本中 UTF-16 偏移量的数组，以 `0` 开始，以文本的长度结束，因此包含 `n` 个字素簇的文本有 `n + 1` 个边界，空文本有一个。
++       两个相邻边界之间的切片就是一个字素簇。
+
+@ 0 1 0 04c8c9b166a5c80f194e1c7732fd6308
++ entry .Normalization   规范分解（NFD）与组合类，来自 `UnicodeData.txt`
+
+% 1 1 0 18ae6552194f797f1e4e97462df0a1bf
+
+@ 0 4 0 0f4cd85b270338cc1f38b899466014f4
++       `CollationTable` 所需的规范化：文本的规范分解，按 Unicode 规范化形式 D 的规定，把韩文音节以算术方式分解为字母，并按组合类重排组合标记。
++       不提供组合（NFC）。
+
+% 2 1 0 001e0ba04203338814557d70730f2615
+
+% 3 1 0 071e5b3bbf160ee8142f4df6662919dc
+
+% 0 1 0 084934dc2da0669e1182443d6619fc84
+
+% 0 1 0 13ef436b2bfffeee1edf81c34c98ace9
+
+% 0 1 0 08a801b1e2571374179c32ca0ff06bb5
+
+% 1 1 0 0fb0a5007f5950640997247c703d24a1
+
+% 1 1 0 17468a9a7e035696014cc42b245db346
+
+@ 0 8 0 098ddadd405960371179161c97931de6
++   entry .combiningClass   码点的规范组合类，起始字符为 `0`
++       从 `UnicodeData.txt` 的第 3 个字段读取；取值最高到 240。
++       在一串标记中，组合类较高的标记排在组合类较低的标记之后。
++   entry .decompose   文本或码点数组的规范分解，结果为码点
++       `decompose(text)` 读取文本的码点（代理对视为一个）并分解它们；`decompose(codepoints)` 接受码点数组。
++       映射在加载时递归地闭合，因此每个码点只需一次查表，每一段最长的组合标记串按组合类稳定排序。
+
+@ 0 1 0 020a6f4f1fc85203175295579e2ac454
++ entry .CollationTable   Unicode 排序算法（UTS #10）：基于 DUCET 的排序键与比较
+
+% 1 1 0 1c53c73623d6186117fca45bb7c6bbee
+
+@ 0 7 0 096a1567ee9c8bc20ca88fca10f74c08
++       `CollationTable` 像词典那样为文本排序：先按字母，再按重音，再按大小写，因此 `cafe < café < caff` 且 `abc < ABC`，`æ` 位于 `ae` 和 `af` 之间，未映射的中日韩表意字符按码点顺序排列。
++       `.root` 是由默认 Unicode 排序元素表（`allkeys.txt`，16.0.0 版）构建的表，`#tailor` 则根据一组 `CollationRule`，为排序方式不同的语言派生出一张表。
++       比较是不可忽略的（标点和空格保留其权重），排序键有三个级别。
+
+% 2 1 0 076685f3214609fd09a5088ceec5fe4b
+
+% 3 1 0 157836263fdeef8519d852e6d840e10a
+
+% 0 1 0 05494c98490fb5d0167961bcb318f612
+
+% 0 1 0 0509e8e4f33e84a0044ba62e407586b9
+
+% 0 1 0 07e9f5230f880f18027c9392a0e62573
+
+% 0 1 0 184a5d673e50e97b08f82d7120e25339
+
+% 0 1 0 1b13949064c7158400eb7d98c3b6e1a3
+
+% 0 1 0 011bce77c4dd1c3a15222d1a11d2b3b7
+
+% 0 1 0 198e86d5b1ba28e519907a9505f76b5e
+
+% 0 1 0 1f322fe225bbd551179c653b252e9169
+
+% 1 1 0 02f943453e8b63981113d36ec621d850
+
+@ 0 5 0 033970dd9cc51c2a05923843a21b5bec
++       这张表不导出到 `soundness` 总括包：通过 `hieroglyph.CollationTable` 访问，大多数程序是经由 gossamer 的 `collations.unicodeCollation` 接触到它的，后者用 `.root` 为 `Text` 排序。
++       加载 `.root` 会在首次使用时从类路径解析 `allkeys.txt`（`/hieroglyph/allkeys.txt`；若不存在，在 JVM 上从 unicode.org 获取），这需要一点时间；之后这张表被共享。
+
+% 0 1 0 09a66f102b70f46317ec5263fdc70eba
+
+% 1 1 0 19316f104a93588218c4f395a17326d9
+
+@ 0 21 0 1245d0511dbef04a0b0ccf143c4cfe34
++   entry .root   由默认 Unicode 排序元素表构建的表
++       一个惰性值：首次使用时由 `allkeys.txt` 构建，此后共享。
++       如果该文件既不在类路径上，在 JVM 上也无法从 unicode.org 获取，则会 panic。
++   entry #key   文本或码点数组的排序键
++       一个权重数组：所有非零的一级权重，然后是 `0`、二级权重、`0` 和三级权重，这样两个键就可以用 `#compareKeys` 按字典序比较。
++       输入首先被分解（`Normalization.decompose`），缩约按最长优先匹配，包括不连续的情形，没有映射的码点采用 UTS #10 由其码点推导出的隐式权重。
++       要为许多文本排序，应为每个文本计算一次键，然后比较键。
++   entry #compare   比较两段文本：负数、零或正数
++       `compareKeys(key(left), key(right))`：为两段文本求键并比较。
++       零表示两段文本在全部三个级别上相等（字母、重音和大小写都相同），这并不要求它们是相同的码点。
++   entry #compareKeys   按字典序比较两个排序键，相同时较短者在前
++   entry #tailor   一张表，其中每条规则的目标在该规则的级别上紧排在其基准之后
++       按顺序应用一组 `CollationRule`，因此一条规则可以用前面某条规则的目标作为自己的基准（波兰语中 `ż` 在 `ź` 之后，`ź` 在 `z` 之后）。
++       规则的基准必须在这张表中有映射，并且共享同一基准和级别的规则最多 255 条；违反任何一条都会 panic。
++       这涵盖了常见的欧洲语言定制形式，并不是 CLDR 完整规则语法的解释器。
+
+@ 0 1 0 1b4fe16ac5fca9d11888ab90f998d6f2
++ entry .CollationRule   一条定制：目标紧排在基准之后，在某个级别上有所不同
+
+% 1 1 0 13f9148bc9037a49054eb6ee0a77d3f6
+
+@ 0 5 0 053d7be99b50466d08741be2db98aad4
++       `CollationRule(base, target, level)`：在定制后的表中，`target` 紧排在 `base` 之后，差异计在 `level` 上：`Primary` 表示不同的字母，如波兰语的 `ó` 之于 `o`；`Secondary` 表示重音；`Tertiary` 表示大小写变体。
++       规则由 `CollationTable#tailor` 按顺序应用。
++       不导出到 `soundness` 总括包：`hieroglyph.CollationRule`。
+
+% 1 1 0 15dfc0cfb95b70771fb9188be2b9f29d
+
+% 0 1 0 094191225302a73f196b00ff4941adf7
+
+@ 0 3 0 0e95a7a9838864af1c2573d36383a454
++   entry #base   已在表中的文本，目标排在它之后
++   entry #target   要加入的文本
++   entry #level   目标与其基准相区别的级别
+
+@ 0 4 0 1327495e92016252017b428ba4a1f798
++ entry .CollationLevel   排序差异的级别：`Primary`、`Secondary` 或 `Tertiary`
++     `Primary` 差异存在于字母之间，`Secondary` 存在于相同字母上的重音之间，`Tertiary` 存在于大小写之间。
++     由 `CollationRule` 使用。
++     不导出到 `soundness` 总括包：`hieroglyph.CollationLevel`。
+
+@ 0 1 0 0fe83c2b606eabfb07e28de809d4de81
++ entry .charsets   标准解码器，每个都是按名导入的 `Charset` given
+
+% 1 1 0 1d251985357ae93313da05f2f8d9efef
+
+@ 0 6 0 0cc3f1d809f197cb1aff00859ceaf081
++       字节按哪种编码读取，由作用域中的 `Charset` given 决定，而这一选择从不是隐式的：`import soundness.*` 不引入其中任何一个，要按名导入一个。
++       每个 given 都在使用处解析作用域中的 `TextSanitizer`，因此同一个 `utf8Charset` 在导入了 `strictSanitizer` 的地方是严格的，在导入了 `skipSanitizer` 的地方是宽容的；只有 `iso88591Charset` 固定使用跳过式清理器，因为每个字节都是有效的 Latin-1。
+
+% 2 1 0 147e4ee0242278a60ff3523a209174ca
+
+% 3 1 0 09fe521e4d0e6a7e0474c4927a453062
+
+% 0 1 0 17ae010515f1d06d1ae4a0132df07de9
+
+% 0 1 0 0d4706ca5d21504f006fd04b6ce6c2b6
+
+% 1 1 0 0db42d138076ce5e1f282264495e44aa
+
+% 0 1 0 06777a9a597e84f714acccf74074a00b
+
+% 1 1 0 0f44bc6324f145021b524627020cdb07
+
+@ 0 3 0 0cd6b29e0e2b7b061cad9e46de72b30d
++       turbulence 的 `read[Text]`、`utf8` 以及从字节到文本的 `Readable` 和 `Aggregable` given 解析到的正是这些。
++       这里未列出的编码用 `enc"…".decoder`，绑定为局部的 `given Charset`。
+
+% 1 1 0 1655ccacade832cc068485753186508c
+
+% 1 1 0 118504bcaf8c0e1c1d85e48239f23d12
+
+@ 0 11 0 05cb0744face6b8f13392d9690c3f1c0
++   entry .utf8Charset   UTF-8，使用作用域中的清理器
++   entry .utf16Charset   UTF-16，读取字节顺序标记，默认为大端序，使用作用域中的清理器
++   entry .utf16LeCharset   UTF-16 小端序，使用作用域中的清理器
++   entry .utf16BeCharset   UTF-16 大端序，使用作用域中的清理器
++   entry .asciiCharset   US-ASCII，使用作用域中的清理器
++       任何高于 `0x7f` 的字节都是错误，按清理器的规定处理。
++   entry .iso88591Charset   ISO-8859-1（Latin-1），始终使用跳过式清理器
++       每个字节都是有效的 Latin-1 字符，因此没有什么需要清理，作用域中也不需要 `TextSanitizer`。
++       只在 `hieroglyph.charsets` 中声明；`soundness` 总括包的 `charsets` 包不重新导出它，因此要以 `hieroglyph.charsets.iso88591Charset` 导入。
+
+@ 0 1 0 1b5fdfda57a1862d0f324c684456a7bd
++ entry .codepages   标准编码器，每个都是按名导入的 `Codepage` given
+
+% 1 1 0 0da16f63d63415ee0921497381813036
+
+@ 0 4 0 1f1e5bcf901dad7c18e2e4702dcd131a
++       文本用哪种编码写出，由作用域中的 `Codepage` given 决定，而这一选择从不是隐式的：`import soundness.*` 不引入其中任何一个，要按名导入一个。
++       `in[Data]`、`write`、文本格式的 `Postable` 和 `Servable` given，以及其他所有把文本变为字节的地方解析到的正是这些。
+
+% 2 1 0 1d8e2a2db99d5f8a0bb705f70d3af32b
+
+% 3 1 0 1df80320ffa33d1104267d58d919f813
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 0 1 0 17019931c7397bc6134da706bb66900d
+
+% 1 1 0 1427c3406dc367c6057ea77645e4018c
+
+@ 0 1 0 07b12c718988e1281f302443c06272a4
++       这里未列出的编码用 `enc"…".encoder`，绑定为局部的 `given Codepage`。
+
+% 1 1 0 0aaa66f41160f55501152dfb46e87b79
+
+% 0 1 0 153d7fe24d37ca601836fa76cbbef655
+
+@ 0 7 0 1bb8866aadc322410eef53eb5cbbcf6b
++   entry .utf16Codepage   UTF-16，以大端序写出，带字节顺序标记
++   entry .utf16LeCodepage   UTF-16 小端序，不带字节顺序标记
++   entry .utf16BeCodepage   UTF-16 大端序，不带字节顺序标记
++   entry .asciiCodepage   US-ASCII；高于 `0x7f` 的字符写为 `?`
++   entry .iso88591Codepage   ISO-8859-1（Latin-1）；高于 `0xff` 的字符写为 `?`
++       只在 `hieroglyph.codepages` 中声明；`soundness` 总括包的 `codepages` 包不重新导出它，因此要以 `hieroglyph.codepages.iso88591Codepage` 导入。
+
+@ 0 1 0 0f4b3c8fe332f2750e6d85394810fdd5
++ entry .textSanitizers   处理无法解码的字节的方针，每个都是按名导入的 `TextSanitizer` given
+
+% 1 1 0 17b98e6d9be8f16f01be049664c10326
+
+@ 0 5 0 1943e7cb46d5cc4f10bf34a5d3f84ef1
++       `Charset` 在其编码无法解码的每个字节序列处咨询作用域中的 `TextSanitizer`，而 `import soundness.*` 不引入其中任何一个：解码的代码在其导入处说明它想要哪一个。
++       严格适合应当绝对可信的输入；宽容适合从有损来源恢复的文本；累积则既给出文本，又给出出错位置的列表。
+
+% 2 1 0 1e346b8d1ab1ff3706a6eb01ddd61ed5
+
+% 3 1 0 112f00a2a742967910c9b711e78ff9e3
+
+% 4 1 0 11f392ced6e57afb00ccec79779a4e6b
+
+% 5 1 0 0371974a22588f640c325935b3bc5cd1
+
+% 0 1 0 02d8d1e91e57144f03b154ae8d7d489e
+
+% 1 1 0 05461b278a41556612b38884eabc7724
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 0 1 0 13cd8c9452167bf1181f3f00b37db32e
+
+% 1 1 0 0694adb9b693377d1eae965ac359dccc
+
+% 2 1 0 1580632b3715bb900cf45c6438b35d80
+
+% 0 1 0 01c660d7b8d682c11bdc5f94ce661a6f
+
+% 0 1 0 0b49f7854eca70870905ca3f54333dfb
+
+% 0 1 0 1a86ea3f2ffb2ac3056095bd873d0b2f
+
+% 1 1 0 0fa0319641adefa810ea9f935021c0f9
+
+% 2 1 0 13d7536015ecde0a04108bd389b06e16
+
+% 0 1 0 18cf17dbb3c3a570004e6845472a0265
+
+% 0 1 0 0759faed3c4db0090a841b200577d02e
+
+% 0 1 0 0d33bb40a8191bf40f98339ab982dcfb
+
+% 1 1 0 19f934dc67149488009fcb6437a3f9de
+
+% 2 1 0 033a1607e82cd0160770802f90e53c80
+
+% 0 1 0 19cade938a6eee821cb058814332ac16
+
+% 0 1 0 023222d2ae5892de0e0e5e0799c85beb
+
+% 1 1 0 0f585998eae3f9c215a4e49bcdabfaab
+
+% 2 1 0 1f55c86d4a4c4ddc00bfe85505ce9c22
+
+% 1 1 0 06a09a1f6a1b42c60f87a9b4062d8faa
+
+% 1 1 0 08ac9f329abe1b96154f989ff9d1a88d
+
+@ 0 16 0 1fcb63f2f2d3e5fa0b3834693f19adeb
++   entry .skipSanitizer   丢弃无法解码的序列并继续
++       在每个错误处回答 `Unset`：文本就是能够解码的部分，丢失了什么没有任何迹象。
++   entry .substituteSanitizer   用 `?` 代替无法解码的序列并继续
++   entry .strictSanitizer   在第一个无法解码的序列处以 `Charset.Error` 中止
++       需要在解析它的地方的作用域中有一个 `Tactic[Charset.Error]`（`strategies.throwUnsafely`，或 `safely`、`capture`、`recover` 块），错误会指明出错处的字节偏移量和编码。
++       清理器保留该战术，因此它的生存期与解析它的作用域相同。
++   entry .accrueSanitizer   记录每个无法解码的序列，写入 `?` 并继续
++       在每个错误处于 `Charset.Focus(position)` 焦点下抛出一个 `Charset.Error`，然后替换为 `?` 并继续，因此解码得以完成，每个错误都会被报告。
++       需要一个 `Tactic[Charset.Error]` 和一个 `Foci[Charset.Focus]`，由 `validate[Charset.Focus](accumulator)` 块提供：它的第一个块说明每个错误如何并入累积器（`prior` 为焦点），它的 `protect` 块执行解码。
+
+% 2 1 0 112a38a3cf018a311d32d88140466bd6
+
+% 3 1 0 0b3dd35a7ccbb6ce173fdaa786c7b753
+
+% 1 1 0 168826c42c25a673171ebc5f7f82d9a0
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 132720d1b88987391532c42a94044c36
+
+% 0 1 0 1298b5d778c7614201a05ffed7767653
+
+% 0 1 0 04b41cb36bef4bbe0e24a19a23447c47
+
+% 0 1 0 03e5a4083b0d3c7b0c0e14311b4befe6
+
+% 0 1 0 0e9bef819ced982f178739b4c754ccc6
+
+% 0 1 0 08c966ea44c59bc911962a2ce5248e3e
+
+% 0 1 0 1089276d3d3e20bc02b1f75d7bc584ab
+
+% 0 1 0 0bc2a42029e0b4fd17b69d63325e0b9c
+
+% 0 1 0 0dfeff801bd056f40fd9334f35397713
+
+% 1 1 0 0048d43eed03905e16c5b10dd8fd47b6
+
+@ 0 1 0 036aeca28742a88f1d9f593c7f0df12c
++ entry .communication   以名称表示字符的 `Char is Communicable`，一个按名导入的 given
+
+% 1 1 0 015d0270cec7333619ddfc2f58e51e9b
+
+@ 0 9 0 01d5bf653e28f9ab1c95173df875f7b3
++       `Char` 插入 `m"…"` 消息时如何渲染是一种选择，这个包中的 given 让它渲染为字符的 Unicode 名称。
++       它与总括包的 `communication` 包合并，并按名导入：`import communication.unicodeCharNamesCommunicable`。
++   entry .unicodeCharNamesCommunicable   在消息中以小型大写字母的 Unicode 名称渲染字符
++       对于 `'é'`，`m"found $char"` 显示为 _found ʟᴀᴛɪɴ sᴍᴀʟʟ ʟᴇᴛᴛᴇʀ ᴇ ᴡɪᴛʜ ᴀᴄᴜᴛᴇ [é]_：取自 `designation` 的名称，转为小写并由 `Unicode.smallCaps` 排为小型大写字母，如果字符可打印，后面还在方括号中跟上字符本身。
++       没有名称的字符显示为 _unknown_。
+
+@ 0 4 0 1f6d34e70945909a16d30406df95ee52
++ entry .Nul   `NUL` 字符 `'\u0000'`，作为字面量类型的常量
++     `Nul`、`Bel`、`Bs`、`Ht`、`Lf`、`Ff`、`Cr`、`Esc`、`Sqt`、`Dqt` 和 `Bsl` 这十一个常量都是类型为该字符单例类型的 `final val`，因此可以用在需要字面量类型的地方，并且读起来是个名称，而 `'\u001b'` 则不是。
+
+@ 0 10 0 090b5ecb9307485a0b50b139f41dce5a
++ entry .Bel   响铃字符 `'\u0007'`
++ entry .Bs   退格字符 `'\u0008'`
++ entry .Ht   水平制表符 `'\u0009'`
++ entry .Lf   换行符 `'\u000a'`
++ entry .Ff   换页符 `'\u000c'`
++ entry .Cr   回车符 `'\u000d'`
++ entry .Esc   转义字符 `'\u001b'`，它开始一个终端控制序列
++ entry .Sqt   单引号 `'\''`
++ entry .Dqt   双引号 `'"'`
++ entry .Bsl   反斜杠 `'\\'`
+
+@ 0 1 0 0f8729a18c3572741b9b408e6993ac91
++ entry .internal   `enc"…"` 和 `ucs"…"` 背后的宏，以及宽度表的 `CharRange` 键
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 04044cc32610bcbb11df57d9fff9355a
++       不供直接使用：这个对象的存在是为了给宏一个稳定的归属，并让 `Unicode.eastAsianWidths` 有一个紧凑的键类型。
++   entry .CharRange   一个闭区间的码点范围，打包为一个 `Long`
+
+% 1 1 0 0eb611fca296a6f11a93f2d83358cb30
+
+@ 0 14 0 00105332c85e065b041b05327c33bc91
++         `CharRange(from, to)`，或者表示单个字符范围的 `CharRange(char)`，打包为 `(from << 32) + to`，从而范围按其第一个码点排序。
++         它是 `Unicode.eastAsianWidths` 的键。
++     entry .apply   由两个码点构成的范围，或由单个字符或码点构成的范围
++     entry .textualizable   把范围渲染为 `from..to`
++     entry .comparable   把范围按其本身的 `Long` 值排序：即按第一个码点
++   entry .from   `CharRange` 的第一个码点
++   entry .to   `CharRange` 的最后一个码点
++   entry .contains   `CharRange` 是否包含某个字符
++   entry .encoding   `enc"…"` 背后的宏：对照平台的编码检查名称
++       对平台没有的名称以 ↯/s.35.2 中止，对未在 IANA 注册的名称给出警告，并拼接一个 `CanEncode` 类型根据表固定的查找。
++   entry .char   `ucs"…"` 背后的宏：按 Unicode 名称取字符
++       对 `UnicodeData.txt` 中没有的名称以 ↯/s.35.3 中止。

@@ -1,0 +1,943 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1ca57b5058029eb4115e6b4867572abc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03671aae59460671072982dd0037258e
++ info   基于多播 DNS 的 DNS 服务发现：通告服务、浏览其他服务、解析实例
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0be0ccf166bc47200d535ca6ecb06ec2
++     _Syndesis_ 让在本地网络上提供某种服务的程序——构建守护进程、打印机、游戏——无需告知任何人其地址就能被找到。
++     它实现了 **DNS 服务发现**（RFC 6763），为服务*类型*（`_fury._tcp`）及其*实例*（`Elsinore._fury._tcp.local`）命名，并通过**多播 DNS**（RFC 6762）传送，其中每台主机为自己的名称作答，不涉及任何名称服务器。
+
+@ 0 7 0 167de9b91751db65152698aea9988470
++     词汇位于 `Discovery` 中：`Discovery.Service` 和 `Discovery.Instance` 在构造时经过校验计算出其 DNS-SD 名称；`Discovery.Txt` 是由 `key=value` 对组成的记录；`Discovery.Description` 描述实例所通告的内容；`Discovery.Resolution` 描述实例所在之处。
++     三个操作都是扩展方法——服务上的 `advertise` 和 `browse`，实例上的 `resolve`——各自委托给作用域中的 `Discovery.Backend`。
++     唯一提供的后端是 `Mdns.Responder`，即基于套接字的 mDNS 应答器，通过导入 `discoveryBackends.mdnsSockets` 来选择。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 191a0fd4f8a251131c9d7a016bb964e6
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0c44ace5259c806107272f7f90d26d9b
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 199c7c076a0f56c811ae30cb9a52e493
+
+% 0 1 0 1e152566832e284b017a7dfa27ba7f40
+
+% 0 1 0 15a5703c748dbbcc1d640d6df188c5a8
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 14f10650e0542084091105931798b636
+
+% 1 1 0 0dd6b273ca7e96c3010b223871a561fd
+
+% 2 1 0 026745aeddf3df9805dd3464f86cbcf6
+
+% 0 1 0 07f43037edf68c06122a2bf42259b28f
+
+% 1 1 0 0f05c1906928159906167dd3071cbab1
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 081da35ad6ef2e7303dc6d5802d4a886
++     通告和浏览都是**借出操作**：每一个都持续到其代码块结束为止——或者持续到它所运行于其下的 `Monitor` 结束，该监视器的取消会展开该代码块。
++     除了后端之外，两者都需要作用域中有 `Monitor^`、`Probate.Shared`、`Tactic[Discovery.Error]` 和 `Discovery.Activity is Loggable`。
++     后端是一个单独的显式 `using` 子句，因此可以指定 given 以外的应答器：`fury.browse(using other)`。
+
+@ 0 5 0 00ea69a8bd040193158ddfaf71b40f58
++     该库有一个源集 `syndesis.core`，面向 JVM。
++     `Mdns` 既是应答器，也包含其组成部分——它借以通信的 `Mdns.Transport` 接缝、记录它所听到内容的 `Mdns.Cache`，以及 `Mdns.Tiebreak`——其中 `Mdns.Transport.Bus` 是一条内存链路，正是测试中的程序所需要的：接入同一总线的应答器彼此能听到，且只能听到彼此，因此协议无需网络即可确定性地运行。
+
+@ 0 3 0 1b0b7d07d37795a21c4f9002e8ec7b1c
++     所有内容都导出到 `soundness` 总括包，`discoveryBackends` 选择包与总括包自身的同名包合并；`import soundness.*` 不会引入任何后端，因此 `mdnsSockets` 需按名称导入。
+
+% 0 1 0 19197508ee31d01117c7ae2afa3fa30f
+
+% 0 1 0 0163e0d24c4589860a38857537d8750c
+
+% 0 1 0 0a3b2e3662ca1ed61a59a9fa54aeac40
+
+% 0 1 0 1c16eaf5f82a59970951eea689cfaa50
+
+% 0 1 0 14007b20503df5d3126c244dbac87f8a
+
+@ 0 1 0 0d27c661087121f80140e14f5798e0c6
++ entry .Discovery   DNS-SD 的词汇：服务、实例、TXT 记录和后端接缝
+
+% 1 1 0 0d24929ed3173abe1cfb34558755adf4
+
+@ 0 6 0 162cca24e377ddcd1a8a2c3d04225dd4
++       `Discovery` 包含程序就服务所说和所听到的一切，与名称如何传送无关。
++       `Service` 是诸如 `_fury._tcp` 的类型；`Instance` 是它的一个具名提供者；`Txt` 记录是实例对自身的描述；`Description` 是实例所通告的内容；`Resolution` 是已找到的实例实际所在之处。
++       `Backend` 特质是传输层所实现的接缝，`Advertisement` 和 `Browser` 是 `advertise` 和 `browse` 借出操作所借出的句柄。
+
+% 2 1 0 1713dfbe26a1fd1c0aed20fa715a519e
+
+% 3 1 0 06eb56c5e6da31d60c288daa10e5b311
+
+% 4 1 0 11a2a5bf2defcc86085f5d35e67ed55a
+
+% 2 1 0 17d18dc9092a4a50084470788c07ef98
+
+% 3 1 0 1a06b74aac94ef7113b4e4c343657033
+
+% 0 1 0 1fc14f74f4b9dfe30816386636911428
+
+% 0 1 0 045a9c2f960ec40504315181aa532f30
+
+% 0 1 0 0eec8b59e65073660a1044cc30593faf
+
+% 1 1 0 0a1f1c252842294b1489525b8b15d230
+
+@ 0 3 0 0bc8964a736a0f0c000bab80270faf6d
++       每个名称都在其值构造时经过校验计算得出，因此超出 DNS 限制的名称会在构造时成为 `Discovery.Error`，而不是在线上失败，之后对该名称的每次使用都是全函数式的。
+
+% 0 1 0 0e5addb935c55aef00be7420ffe12a99
+
+% 1 1 0 103f2c1d0d69768a0a1e89cff3824947
+
+% 1 1 0 1181ae662deda2ee15de93f9faf39efb
+
+% 0 1 0 0938a317ff3cfafd18628c8306c545fd
+
+@ 0 2 0 1ec853e4201cbfa008596c1258bf3e6a
++   entry .local   `local` 域，即 `dns"local"`，每个 mDNS 名称都位于其下
++   entry .Service   服务类型，例如 `_fury._tcp`：一个注册名称和一种传输协议
+
+% 1 1 0 09d301483d0e28710159fdb00c2847b3
+
+@ 0 6 0 14ed164de95fbe8a10d9dfa41cf12e27
++         服务类型是一个最多十五个字符的注册名称（RFC 6763 §7），不含前导下划线，外加一个协议，即 `Tcp` 或 `Udp`。
++         它的 `#dnsName` 是 `_name._tcp.local`（或 `_udp`），在构造时计算并校验。
++         可选的 `#subtypes` 列表为该服务指定更窄的种类，每个子类型在 `_subtype._sub._name._tcp.local`（`#subtypeName`）下浏览，每个被通告的实例都会列在其服务的每个子类型之下。
+
+% 2 1 0 089b051e873dd8f411bbb1e206f2cc08
+
+% 3 1 0 1580148159fc49bc09588226e84bda67
+
+% 4 1 0 1e305c80a5f45df61fe24ec219c99a38
+
+% 6 1 0 032716694bc368600a9ff565d1442580
+
+% 0 1 0 11a7c244220cfdbf023518bb44dadc53
+
+% 0 1 0 1ded7585b872d7ef1daaeb8981d41531
+
+% 0 1 0 0e5d8eb01e7c4cfa19563d24d77e27e5
+
+% 0 1 0 07c15fc5030694570a426535ef8f2529
+
+% 1 1 0 06b9ee93b8d20e551fc6543c5364668e
+
+@ 0 25 0 043ecddd46e5191305cce1fe7d519aa1
++         为空、超过十五个字符或以 `_` 开头的名称会被拒绝，抛出原因为 `InvalidService` 的 `Discovery.Error`。
++         构造函数是私有的：服务通过 `Service.apply` 创建，或通过 `Service.parse` 从 DNS 名称读回。
++     entry .enumeration   链路上每个服务类型都列于其下的元查询名称
++         `dns"_services._dns-sd._udp.local"`（RFC 6763 §9）：应答器从该名称向它拥有实例的每个服务类型通告一条 PTR，因此浏览器可以在选择某个类型之前枚举链路上的所有类型。
++     entry .apply   根据名称、协议和可选子类型得到的经校验的服务类型
++         `Discovery.Service(name, Tcp | Udp, subtypes = Nil)`。
++         需要 `Tactic[Discovery.Error]`；名称为空、超过十五个字符或以 `_` 开头时抛出原因 `InvalidService`，若所得 DNS 名称违反 DNS 限制则抛出 `InvalidName`。
++     entry .parse   诸如 `_fury._tcp.local` 的 DNS 名称所表示的服务类型，或 `Unset`
++         `#dnsName` 的逆操作。
++         名称必须恰好有三个标签，最后一个为 `local`，第二个为 `_tcp` 或 `_udp`，第一个以 `_` 开头；其他情况都为 `Unset`。
++         解析得到的服务没有子类型。
++     entry .showable   以注册形式 `_fury._tcp` 呈现服务类型
++     entry #name   注册的服务名称，不含前导下划线
++     entry #protocol   传输协议，`Tcp` 或 `Udp`
++     entry #subtypes   该服务的实例还会列于其下的子类型
++     entry #dnsName   服务类型的 DNS-SD 名称：`_fury._tcp.local`
++     entry #subtypeName   浏览某个子类型的实例时所用的名称
++         对子类型 `printer` 而言为 `_printer._sub._fury._tcp.local`。
++         需要 `Tactic[Discovery.Error]`，若该标签违反 DNS 限制则抛出 `InvalidName`。
++   entry .Instance   服务的一个具名提供者：服务类型之下的一个 UTF-8 标签
+
+% 1 1 0 15c67ffb0f53938211afe626a3588815
+
+@ 0 5 0 1fd21780088d287016ce0982993bd4af
++         实例是单个 UTF-8 的 DNS 标签（RFC 6763 §4.1.1）——可以包含空格和点，不加转义，最多 63 字节——作为前缀加在其服务名称之前，因此 `Instance(t"Hamlet's Printer. Upstairs", fury)` 的标签为 `Hamlet's Printer. Upstairs`、`_fury`、`_tcp`、`local`。
++         它以 §4.3 的呈现形式显示，标签中的点会被转义：`Hamlet\.Printer._fury._tcp.local`。
+
+% 2 1 0 1e7294b3e162593e0834f75203ed6588
+
+% 3 1 0 1297a00ab6255fa200227cc18090123f
+
+% 4 1 0 04112c4857f4939a14aafd1b572fb608
+
+% 6 1 0 1cc5189876b38a1e1193f934c494c226
+
+% 7 1 0 166fc72b1e1f10570c2b9e5aea3ba258
+
+% 0 1 0 0ba70c1a2b05f2a4007899a78764b54b
+
+% 0 1 0 0b615cf8996f766e08427d162aab533a
+
+% 1 1 0 18f6d9b19fb6e4cf00f8bbc31b673e1b
+
+@ 0 20 0 142132a545e105bb1d84839cd4d2b87c
++         实例是浏览器报告为找到或丢失的值，也是调用 `resolve` 的对象。
++         构造函数是私有的：实例通过 `Instance.apply` 创建，或通过 `Instance.parse` 从 PTR 记录的目标读回。
++     entry .apply   根据标签和服务得到的经校验的实例
++         需要 `Tactic[Discovery.Error]`；标签为空或超过 63 字节时抛出原因 `InvalidName`，并指明该标签。
++     entry .parse   诸如 `Elsinore._fury._tcp.local` 的名称所表示的实例，或 `Unset`
++         第一个标签是实例的标签，完全按原样保留，其余部分必须能解析为 `Service`；没有标签的名称，或者其父级不是服务类型的名称（例如服务类型自身的名称），为 `Unset`。
++     entry .showable   将实例呈现为其 DNS 名称，标签中的点会被转义
++     entry #label   实例自身的名称，一个 UTF-8 标签
++     entry #service   实例所提供的服务类型
++     entry #dnsName   完整的 DNS-SD 名称：标签，后接服务的名称
++     entry #renamed   冲突后要尝试的下一个名称：`Elsinore` → `Elsinore (2)` → `Elsinore (3)`
++         RFC 6762 §9 的重命名方式：追加一个带括号的计数器，若标签已以计数器结尾则将其递增。
++         需要 `Tactic[Discovery.Error]`，因为新标签与其他标签一样要经过校验。
++         当另一台主机持有或赢得某个已通告实例的名称时，应答器就以这种方式为其重命名。
++   entry .Txt   实例的 TXT 记录：`key=value` 对，读取时不区分大小写，以首次出现者为准
+
+% 1 1 0 0ce4552a1fd51aa10f55d761934e48b0
+
+@ 0 5 0 04e1e76755f350e90c5d801db45b96aa
++         TXT 记录是条目的列表，每个条目是一个键及一个可选的值（RFC 6763 §6）。
++         键是不含 `=` 的可打印 ASCII 字符，每个 `key=value` 字符串必须能放入 255 个八位组的字符串中。
++         重复的键按原样保留，但 `#apply` 和 `#has` 读取某个键的首次出现，比较键时不区分 ASCII 大小写，正如 §6.4 所说接收方应做的那样。
+
+% 2 1 0 0dd1e7a7410548610b94c3c7d1090598
+
+% 3 1 0 187aa43e8d4316c60416210d5aab8558
+
+% 4 1 0 1cfd25d88d32d22b1dbf23483ba8c9de
+
+% 0 1 0 04a136fd734508f005063911c5635408
+
+% 0 1 0 0437b32e4656a5781afaf9688004f4e6
+
+% 0 1 0 0bfa778fecfda68704a183e28cfa60f1
+
+% 0 1 0 06581fc1fe1cc3081c1f07c18fd1ffa7
+
+% 0 1 0 0c2723a674d9ff79093a52f0c3daf316
+
+% 1 1 0 026b7257b67df70111d01e2f99fe7aed
+
+@ 0 19 0 0d4088d0db84412f12552cc3af13836f
++         `Txt` 在通告时随 `Description` 一起传送，并在 `Resolution` 中返回。
++     entry .empty   没有条目的 TXT 记录，线上以一个空字符串表示
++     entry .apply   根据 `key -> value` 对得到的经校验的 TXT 记录，值为 `Optional[Text]`
++         需要 `Tactic[Discovery.Error]`；若键为空、包含 `=` 或不可打印字符，或者其 `key=value` 字符串超过 255 字节的 UTF-8，则抛出原因 `InvalidTxt`，并指明该键。
++     entry .parse   根据收到的记录中的字符串得到的 TXT 记录
++         每个字符串是 `key=value`，或者对于没有值（`Unset`）的键只是 `key`；以第一个 `=` 分割，因此 `eq=a=b` 是键 `eq` 和值 `a=b`。
++         表示空记录的空字符串会被跳过。
++         不做任何校验。
++     entry .showable   将记录呈现为其各个字符串，每个都带双引号，以空格分隔
++     entry #entries   按顺序排列的条目，每个是一个键和一个可选的值，重复项保留
++     entry #apply   某个键的值，若该键不存在或没有值则为 `Unset`
++         `txt(key)` 查找键在不区分 ASCII 大小写的情况下匹配的第一个条目。
++         存在但没有值的键与不存在的键都给出 `Unset`；`#has` 可以区分二者。
++     entry #has   某个键是否存在，无论有无值
++     entry #strings   记录在线上的字符串：每个条目一个，没有条目时为单个空字符串
++   entry .Description   实例所通告的内容：名称、端口、TXT 记录、主机、优先级和权重
+
+% 1 1 0 111ab578ded024dd0e368177a003bee3
+
+@ 0 5 0 1c36d36719e1691c1c01da598868c97a
++         `advertise` 的输入：实例所请求的标签（冲突可能会将其重命名）、它提供服务的端口（一个 `Port`，因此为 `tcp"8443"` 或 `udp"5004"`）、它的 `Txt` 记录，以及可选的发布其地址记录所用的主机名——默认为本主机自身的名称——和 SRV 记录的 `priority` 与 `weight`，供具有多个实例的服务使用。
+
+% 2 1 0 08d8a6fe67740db918d30684140002d0
+
+% 3 1 0 0a374497d98da4e41b0967e2dd0214eb
+
+% 4 1 0 0bddc12102bc2c2606eaf1b03d478d87
+
+% 0 1 0 1be7db598c357721075cf13403b532d5
+
+% 0 1 0 1130917ffbf8d8830819f1256cb763bc
+
+% 1 1 0 1469d769c52f9bf4045fe95c89d3f22f
+
+@ 0 7 0 05831fce8716256d193529c7c80611dd
++     entry #instance   所请求的标签；冲突后认领的名称可能与之不同
++     entry #port   实例提供服务的端口
++     entry #txt   要发布的 TXT 记录；默认为 `Txt.empty`
++     entry #host   发布地址记录所用的主机名，`Unset` 表示使用本主机的名称
++     entry #priority   SRV 记录的优先级，默认为 `0`
++     entry #weight   SRV 记录的权重，默认为 `0`
++   entry .Resolution   已找到的实例所在之处及其所说内容：主机、端口、TXT 和地址
+
+% 1 1 0 0bd2ee3ddd9c6d6706a7fc1e5b6b2d7c
+
+@ 0 3 0 1a2f8dbe9b70a00a1a26de05245bd1a9
++         `resolve` 的结果：实例、为其提供服务的主机的 DNS 名称、端口（类型与服务的传输协议对应）、它的 `Txt` 记录，以及该主机的 IPv4 和 IPv6 地址。
++         `#endpoints` 将每个地址与端口配对，可依次用于连接。
+
+% 2 1 0 199d302188409f390262ec936cda6483
+
+% 3 1 0 0fd5459a52b691ae12303d1fdb132677
+
+% 4 1 0 076bdbeacd903529099fcadab0b49642
+
+% 6 1 0 1e581aeb71f0b5aa125d3b5abf23a520
+
+% 7 1 0 14dfa0a3662a6c7411f47b9a946d973d
+
+% 0 1 0 0a4750f323b6a1ec059800bf86ed10b4
+
+% 0 1 0 1f13ae40262843091df6f6543e6557e6
+
+% 0 1 0 15d79d79cef5ba360bb9aa95bfeb74d9
+
+% 0 1 0 0607d9d3c46b38c01d563e573acd0e19
+
+% 1 1 0 084b476bb6d6ef8010bf391c9d138e9e
+
+@ 0 7 0 026de4fa80766c6a1840dc35e74c59aa
++     entry #instance   被解析的实例
++     entry #host   为实例提供服务的主机的 DNS 名称，取自其 SRV 记录
++     entry #port   端口，取自 SRV 记录
++     entry #txt   实例的 TXT 记录
++     entry #addresses   主机的地址，先 IPv4 后 IPv6，作为 `Ipv4 | Ipv6` 值
++     entry #endpoints   每个地址与端口的配对，作为 `Endpoint[Port]`
++   entry .Event   浏览器所见的内容：在链路上找到的实例，或从链路上丢失的实例
+
+% 1 1 0 06f66dcaab83055a01f83a8bdeaffe61
+
+@ 0 6 0 04d34884cb0b774c18cbfcfa434d9d22
++         `Found(instance)` 表示一个实例出现——其 PTR 记录进入缓存——`Lost(instance)` 表示一个实例离开，原因可能是告别消息，也可能是其记录过期。
++         实例细节（端口或 TXT 记录）的变化不算事件：需要再次解析它。
++         `Browser` 通过 `#events` 传递这些事件。
++     entry .showable   将事件呈现为 `found Elsinore._fury._tcp.local` 或 `lost …`
++   entry .Activity   后端在工作时报告的内容，在每个借出操作中通过 `Loggable` 记录
+
+% 1 1 0 1ce770ac12dff8ba0c9ea0803750a96a
+
+@ 0 8 0 06ba678da7b9903d0e3c47c86ccf99f6
++         每个借出操作——通告、浏览、解析——都接收一个 `Discovery.Activity is Loggable`，后端向它报告自己为该借出操作所做的事：在认领名称期间，以 `fine` 级别报告 `Probing(name)` 和 `Yielded(name)`，以及 `Conflicted(name)`；在通告开始和结束时报告 `Claimed(instance)` 和 `Withdrawn(instance)`；还有 `Browsing(service)` 和 `Resolved(instance)`。
++         所有活动都带有 `Log.Network` 标签，与探测相关的还带有 `Log.Protocol`。
++         后端自身不持有日志记录器，因此它在借出操作之间的后台工作——捍卫某个名称、冲突后重新探测——不会被报告；不需要任何日志时，`logging.silentLogging` 可满足该要求。
+
+% 2 1 0 082a592e9d98c91b1e5d211ae46e38a5
+
+% 3 1 0 1c8b20065534736a0ef4fec0ff208c09
+
+% 0 1 0 166dd43e99dbd0c613b16d5d1073253f
+
+% 1 1 0 111bc3e6d1c8f92717b38d2f716067af
+
+@ 0 3 0 1dd189d6d1ca58c514c7501285a574d0
++     entry .silent   丢弃所有活动的 `Loggable`，用于后端的后台工作
++     entry .communicable   将每个活动呈现为消息：_probing for the name `…`_、_claimed and announced `…`_ 等
++   entry .Backend   传输层为服务发现所做的事：通告、撤回、浏览、取消、解析
+
+% 1 1 0 15647110ef5744480e0f40dbbe637a7c
+
+@ 0 7 0 02c6bed4f5d9c328172cbd450351a34d
++         `advertise`、`browse` 和 `resolve` 背后的接缝：每个借出操作调用一个启动方法，并在 `finally` 中调用相应的停止方法。
++         每个启动方法都接收后端在其下运行后台任务的 `Monitor^`（因此取消该监视器就会结束这些任务）、一个 `Probate.Shared`、一个 `Tactic[Discovery.Error]`，以及借出操作的 `Activity` 所发往的 `Loggable`。
++         后端自身不持有任何能力，正因如此借出操作才可以嵌套——在通告中进行浏览。
++         `Mdns.Responder` 是所提供的实现；given `discoveryBackends.mdnsSockets` 基于作用域中的 `Socket.Backend` 构建一个应答器。
+
+@ 0 14 0 07ca481fc8327b0e17d9875fe7eb0f16
++         设计意图是每个程序一个后端：将它作为 `given` 绑定一次，而不是每次使用时重新召唤，那样每次召唤都会打开一个套接字。
++     entry #advertise   为实例认领名称并通告，产生正在运行的 `Advertising`
++         探测名称，冲突时重命名，然后通告；返回的 `Advertising` 读取当前认领的实例，之后的冲突可能再次将其重命名。
++         若无法认领任何名称，抛出原因为 `Conflict` 的 `Discovery.Error`；若 TXT 记录无法编码，抛出 `InvalidTxt`；若传输层无法打开，抛出 `Unavailable`。
++     entry #withdraw   结束通告：发送其告别消息并释放后端的借出
++     entry #browse   开始浏览某个服务类型，产生由中继承载事件的 `Browsing`
++     entry #dismiss   结束浏览：停止其重新查询循环及其中继
++     entry #resolve   在超时时间内解析实例，否则抛出原因为 `Timeout` 的 `Discovery.Error`
++         超时时间可以是任何 `Abstractable across Durations to Long` 的时长，以毫秒计（导入 `abstractables.millisecondsAbstractable` 后可用普通的 `5000L`）。
++   entry .Browsing   后端交出的浏览：其事件中继和其实例的快照
+
+% 1 1 0 11a19dd6f0df1ded0340d5e20b32d8d4
+
+@ 0 5 0 0068b9447ef6c8fe0d1679b3fbebbc32
++         一个普通值，由后端的 `browse` 构建，`browse` 借出操作将其包装在所借出的 `Browser` 中。
++         程序使用 `Browser`；后端作者构造这个值。
++     entry #relay   后端放置找到和丢失事件的 `Relay[Event]`
++     entry #instances   后端当前已知的实例，作为 `Set`
++   entry .Advertising   后端交出的通告：当前认领的实例
+
+% 1 1 0 1fbaa128b8c42dd30956222f3a48a1e6
+
+@ 0 5 0 119d3e1b4470858c003f7b8ea8d2e049
++         后端的 `advertise` 返回、其 `withdraw` 收回的特质，由借出操作包装在所借出的 `Advertisement` 中。
++         `#instance` 是实时读取的：建立之后的冲突可能会将其重命名。
++     entry #instance   当前认领的实例，已经过任何重命名
++   entry .Advertisement   `advertise` 借出操作所借出的句柄：当前认领的实例
+
+% 1 1 0 18a7e5c395faade6071beab2831fa0b2
+
+@ 0 6 0 0130885abaa829631bbc13d3ba763bb0
++         在 `advertise` 代码块中可通过 `summon[Discovery.Advertisement]` 获得。
++         它的 `#instance` 是实时读取而非复制的，因为如果之后出现一台主机声称拥有同一名称，应答器就会重新探测，若探测得到应答则重命名：`Elsinore` 可能在代码块执行期间变为 `Elsinore (2)`。
++         该句柄是一个普通值，而不是能力——套接字和后台任务属于 `Monitor`——正因如此它才能穿过嵌套的借出操作。
+
+% 2 1 0 088f14aa09725fbe0b939a6d0042a5db
+
+% 3 1 0 032e5a78a709d805033430320e8e508b
+
+% 4 1 0 024fc963dc79f28f082af53cc6f66461
+
+% 5 1 0 1ce47980537e6976146cccfab022e3f5
+
+% 6 1 0 081b9cdba2341af2176c81ae92596cd1
+
+% 7 1 0 126f5595560cb8271af83513e63a0032
+
+% 8 1 0 0d2785852ba8023f1c06e5691e7c6af2
+
+% 9 1 0 180ff1c9590e983d065b116ec798850b
+
+% 10 1 0 1e902eb253e110ef1373eb746fe4aec0
+
+% 12 1 0 165de71088d3c2531ea9349ad259e4b1
+
+% 14 1 0 1b95c6e71cb839af1a94da5bda950de5
+
+% 0 1 0 0aeb6921226730d20c2c744293404c89
+
+% 0 1 0 0873a78dd310ad401978882d531366ba
+
+% 1 1 0 116e49197ff13eeb041e0d21c62a21aa
+
+@ 0 2 0 08daa3ad87af651b18d8f43242f4896c
++     entry #instance   当前认领的实例，冲突可能已将其重命名
++   entry .Browser   `browse` 借出操作所借出的句柄：发生时的事件，以及已知的实例
+
+% 1 1 0 102b73113f99d7e6072f21b0572ad41e
+
+@ 0 4 0 1b3844803db2925014505e7675270699
++         在 `browse` 代码块中可通过 `summon[Discovery.Browser]` 获得。
++         `#events` 是 `Event` 的 `Chain`，在实例出现和离开时传递——浏览开始时已知的实例最先以 `Found` 报告——而 `#instances` 是当前已知的集合。
++         借出操作结束时，该链也随之结束。
+
+% 2 1 0 02c8c20255a4dd550549278cc55f41bd
+
+% 3 1 0 1a06c415f95e66751081f4f590e1a569
+
+% 4 1 0 1c777051d3054c8e1b286d740f7cd4d7
+
+% 5 1 0 01cd52c40f57d1ff0832befde07b8683
+
+% 6 1 0 102dbff0e0db375701c18841faf85594
+
+% 7 1 0 00170a3beaf6799d19c35d0fa22bc6f8
+
+% 8 1 0 0c814bc77dd4f3d406840b79985dda30
+
+% 9 1 0 1346acb016c6a27d04e4a6adec328c5d
+
+% 10 1 0 0ed5564b64bcb31b0bfd3fb00905a1da
+
+% 12 1 0 1e7687c0edd72b0402ea4036766327d5
+
+% 14 1 0 0a661d7e3afabb770f9688de1feafd71
+
+% 0 1 0 13c82fd748ec195b0f4a90f9c8c74561
+
+% 0 1 0 076bec1faf60d6890a02239b66e32be1
+
+% 1 1 0 1643c7771151d34b0c1517302a58be68
+
+@ 0 3 0 1329e33fa33a63aa1be926653f2e2f4a
++     entry #events   找到和丢失的实例的 `Chain[Event]`，随发生而传递
++     entry #instances   当前已知的实例，作为 `Set[Instance]`
++   entry .Error   在名称无效、无法认领、无法解析或没有后端能启动时抛出
+
+% 1 1 0 182d7507bd8a9c4c1805ddcbd1176db2
+
+@ 0 2 0 0079108fd97b1d551f1642053e444bea
++         错误 `↯/s.102.1`：_service discovery failed because `reason`_。
++         `#reason` 是 `Discovery.Error.Reason` 的分支之一，编号为 1 到 6：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 5 0 0043a8e0488bb16016253b05f61e9fcb
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `Conflict(name)`  1  _the name `name` could not be claimed after repeated conflicts_  重命名一百次之后
+
+% 0 1 0 0c5439a6c2aa4831058e429216e1af07
+
+@ 0 4 0 00d3a1e84c2d491c01209a317080af3e
++         row  `InvalidName(text)`  3  _the name `text` is not a valid DNS-SD name_  标签或名称为空、超过 63 字节或超出某项 DNS 限制
++         row  `InvalidTxt(key)`  4  _the TXT entry `key` is not valid_  其键为空、包含 `=` 或不可打印字符，或者条目超过 255 字节
++         row  `InvalidService(name)`  5  _the service name `name` is not valid_  为空、超过十五个字符或以 `_` 开头
++         row  `Unavailable`  6  _no service discovery backend could be started_  传输层无法打开；应答器自身的 `Mdns.Error` 是其原因
+
+% 1 1 0 093b15ad157abe080ce73978c710093e
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 0 1 0 07e5d5fb6ffe0dde1f8297aa5027dc2b
+
+% 0 1 0 15716e7eed6188fc19f683a95a0c2e53
+
+% 1 1 0 19b82472033f5c2c001991eb6ced8d1c
+
+@ 0 1 0 1213a117fb7686e40e8105e4489eb00b
++     entry .Reason   服务发现失败的原因：`Conflict`、`Timeout`、`InvalidName`、`InvalidTxt`、`InvalidService` 或 `Unavailable`
+
+% 1 1 0 098b1f3b2b99e1da1db944d02524979b
+
+@ 0 6 0 190be47ecd5513cc0efb4238d49d1ddf
++           一个枚举，每个分支都有编号，并带有 `Communicable` 呈现，例如 _the name `Elsinore._fury._tcp.local` could not be claimed after repeated conflicts_ 或 _the instance `…` did not resolve before the timeout_。
++       entry .communicable   将每个原因呈现为消息
++       entry #number   原因的编号，`1` 到 `6`，即错误代码的第二部分
++     entry #reason   服务发现失败的原因
+
+@ 0 1 0 00829139f07683fb076f4a57452c7bc4
++ entry .advertise   `service.advertise(description) { … }`：在代码块期间通告一个实例
+
+% 1 1 0 1c48406a4718e5c80fc7f7da678b753c
+
+@ 0 5 0 11b0f1d67f54a6b4028a4cb9221cee65
++       `Discovery.Service` 上的扩展方法。
++       实例会被探测、认领——若另一台主机持有该名称，或本应答器已在通告它，则重命名为 `Elsinore (2)`——然后通告；它在代码块期间保持通告状态，当代码块正常结束或因异常结束，或者 `Monitor` 被取消时，会发送告别消息。
++       代码块接收一个 `Discovery.Advertisement`，从中可以读取实际认领的名称。
+
+% 2 1 0 15c18814b77c029e04aa26acf7c89fc7
+
+% 3 1 0 0fd358d3dea83dd90dd5de9d00909c89
+
+% 4 1 0 01aaea02d2234db60c43df856143c9ba
+
+% 5 1 0 163e2947a959a6cf06c1c68816479330
+
+% 6 1 0 1f2a81dbdba939a20c240d4f6c907ddf
+
+% 7 1 0 0198c4fc393b469e091d7b1ee7ec94cf
+
+% 8 1 0 1e2d5e69f4de091e1bd416cedc9ee57c
+
+% 1 1 0 1dda18d6a1a8619a1b2556c528e7a445
+
+% 2 1 0 0aa97d0ac3eeab2704d5ded625aca98f
+
+% 4 1 0 06ccd8ac5448e68304146a8d9f66c1d4
+
+% 0 1 0 1c459a0d87214e861294f3a169b040b9
+
+% 2 1 0 12021193c7279da11e531dbebe618862
+
+% 0 1 0 1cba6f6bfdc3ffcc16412cda869a71d7
+
+% 0 1 0 0a82915bd87a953c09a586b2891678fe
+
+% 1 1 0 1f1f4e4a07df095b1f9c1f398ca40ba2
+
+@ 0 7 0 129c7ee7218d34910c89e84a552a2c5d
++       后端是一个单独的 `using` 子句，位于代码块之前，因此可以指定 given 以外的后端：`fury.advertise(description)(using responder) { … }`。
++       代码块还需要 `Monitor^`（来自 `supervise`）、`Probate.Shared`、`Tactic[Discovery.Error]` 和 `Discovery.Activity is Loggable`。
++       当标签或 TXT 记录无效、名称在反复冲突后仍无法认领，或者传输层无法打开时，抛出 `Discovery.Error`。
++       借出操作可以嵌套：浏览可以在通告中运行。
+
+% 0 1 0 15ab2377aadf59f40f508ab3123c63cb
+
+% 0 1 0 01462bb1f584e9841fd71ffb51d50024
+
+% 0 1 0 08046b5b8cb936d61116b26479886c9d
+
+@ 0 1 0 0cf8effada2011ca1d32e0d8373030dd
++ entry .browse   `service.browse { … }`：在代码块期间监视某个服务类型的实例
+
+% 1 1 0 1d38f26406d495371c73db1a54fad1f9
+
+@ 0 6 0 106e8af90afdc0f906492c0945ca2b13
++       `Discovery.Service` 上的扩展方法。
++       代码块接收一个 `Discovery.Browser`，其 `events` 是在链路上出现和离开的实例，随发生而传递，其 `instances` 是当前已知的实例。
++       已在缓存中的实例会立即以 `Found` 报告；然后查询该服务类型，并以从一秒到一小时逐次加倍的间隔再次查询，每次查询都会告诉其他应答器哪些内容已知。
++       浏览随代码块或 `Monitor` 一起结束。
+
+% 2 1 0 17b89415ad59e9010eb0ec51c4808339
+
+% 3 1 0 056b3af6fb9701bc1e1fd93aaa0a800a
+
+% 4 1 0 13073d9fb9b070ef03bef96a3768baa5
+
+% 5 1 0 10713cd40d3e070c18f347efc3e47c63
+
+% 6 1 0 1e65b809836dc63c0194f2193e5ff396
+
+% 7 1 0 0d7abf50e4063f200e4790d1239d6bdc
+
+% 8 1 0 0c06aab7e0e307cd1c809696219e0476
+
+% 9 1 0 165ec75261d0283d1332ef7fe5dee015
+
+% 10 1 0 1c0c05ea0aeda7020e5f7b064a439ec6
+
+% 11 1 0 0f54fe6cde4b15ac160033eea3ef9f33
+
+% 13 1 0 1f3463fcd2ce94930e08a7d6da095cca
+
+% 2 1 0 07a503edd40098c805a5f5ca4dfec272
+
+% 1 1 0 0f02d31a7b0044430e4d2103d255ecb5
+
+% 2 1 0 0b20ffc7da84f6aa1584955623fa1842
+
+% 0 1 0 1d6fdaa64415c4ef19211b7eeb72653a
+
+% 1 1 0 00f103eb19858a06149e4f18a6620ad2
+
+% 1 1 0 18ee4439eb6352470601ed2487c6506e
+
+@ 0 3 0 17ded278962ea46203eb5bb303e7f66c
++       后端是一个单独的 `using` 子句（`fury.browse(using responder) { … }`），代码块需要 `Monitor^`、`Probate.Shared`、`Tactic[Discovery.Error]` 和 `Discovery.Activity is Loggable`。
++       浏览会记录 `Discovery.Activity.Browsing`。
+
+% 0 1 0 083179a3d6eb95f910d477713d3c1a6c
+
+% 0 1 0 157f3843925ad4b409df0ec656bf79a5
+
+% 0 1 0 1af8d3ad6472a35f049ef3e0ba5fe88c
+
+@ 0 1 0 018245cc2771de5c0c8cf8bccebcfffe
++ entry .resolve   `instance.resolve(timeout)`：实例的主机、端口、TXT 记录和地址
+
+% 1 1 0 09e9d47357d91a9b12a85aec28eda5f9
+
+@ 0 6 0 02eeab34b9b03f4f14c5f0a7a05c9061
++       `Discovery.Instance` 上的扩展方法，给出一个 `Discovery.Resolution`。
++       如果缓存中已有该实例的 SRV 和 TXT 记录及其主机的地址记录，解析会立即完成；否则会查询这些记录，调用最多等待到超时为止，直至它们到达。
++       超时时间可以是任何 `Abstractable across Durations to Long` 的值，以毫秒计——导入 `abstractables.millisecondsAbstractable` 后的 `5000L`，或者一个 aviation 时长。
+
+% 2 1 0 055767cb394a2dfb1c41b874e27796fe
+
+% 3 1 0 05a0cba11d2d00a815ef0c8dda6329f5
+
+% 4 1 0 044b7721c4540a1b07e9290f188233fc
+
+% 5 1 0 1646ea0a48ae227b11b2129556ded4ff
+
+% 6 1 0 04e50539bd21c8bd0878d169e9e27ace
+
+% 7 1 0 1ea77a98bbd357d30480c05f2d570321
+
+% 8 1 0 168070a0c03827f1073a28333e58cc99
+
+% 9 1 0 1a84e170eb408ea50d7d4170ffe84625
+
+% 10 1 0 147dc350c1ce1e210ed811187158b71e
+
+% 11 1 0 1616b7e774f26d1a19a2c1cd97dd5c8f
+
+% 13 1 0 0c9c5d6a8e74d274016723775659daec
+
+% 3 1 0 10a304c151fcbfee17bf12a9406da9dd
+
+% 2 1 0 13b1910f7ef090a700d53a4279da9551
+
+% 0 1 0 09276033d4ebbd111e80a75d4a28e4bd
+
+% 0 1 0 1f5501622c01ef021c12a18ee028756e
+
+% 1 1 0 1f0da1df10f097f916c5266c088fd9ed
+
+@ 0 5 0 1ccbe030931cf37e0c0198c898706b9a
++       若记录未及时到达，抛出原因为 `Timeout` 的 `Discovery.Error`，并指明该实例。
++       该调用与其他调用一样是对后端的借出操作——它以单独的 `using` 子句接收后端，并需要 `Monitor^`、`Probate.Shared`、`Tactic[Discovery.Error]` 和 `Discovery.Activity is Loggable`——成功时记录 `Discovery.Activity.Resolved`。
+
+% 0 1 0 1f7d2cbc370bcd04159d790fbbb6f46a
+
+% 1 1 0 0886fd31b88abe7a005d895dade16020
+
+@ 0 1 0 06c84a896bc065891b493989903e9928
++ entry .discoveryBackends   服务发现后端，每个都是需按名称导入的 given
+
+% 1 1 0 1072fa3d30cac5f80f5a7ff742acd524
+
+@ 0 3 0 16aba76c67a80fe31eaed763f817b21e
++       由哪个后端进行通告、浏览和解析，取决于作用域中的 `Discovery.Backend` given。
++       `import soundness.*` 不会引入任何后端：需按名称导入一个，设计意图是每个程序一个后端，只绑定一次。
+
+% 2 1 0 0d26d8addd8f5e361485de02f2d67f41
+
+% 3 1 0 0298360905a11c7302a5c880e9106430
+
+% 1 1 0 1b15c02f92fc99140d99b5a2333abf3e
+
+% 2 1 0 195092bc95929e3c10f6086f899346f3
+
+% 1 1 0 1ac07a60658e25a50ae10668aa518575
+
+@ 0 13 0 08033e811eb0f12d17fb13f117e241d5
++       对于测试中的程序，可以将基于 `Mdns.Transport.Bus` 的 `Mdns.Responder` 绑定为局部 given，或者以 `(using responder)` 显式传递，以取代基于套接字的应答器。
++   entry .mdnsSockets   基于作用域中 `Socket.Backend` 的多播套接字的 mDNS 应答器
++       一个 `Mdns.Responder`，其传输层是基于所给 `Socket.Backend`（例如 `socketBackends.javaBaseSockets`）的 `Mdns.Transport.sockets`，启用多播回环，多播跳数限制为 255，数据报大小为 9000 字节，并以 `Every` 的形式使用作用域中的所有 `Socket.Option.Udp`。
++       它在每个已启用、支持多播且具有该组所属地址族地址的接口上加入 `224.0.0.251:5353` 和 `[ff02::fb]:5353`，并启用地址和端口重用，因此可以与系统自身的应答器并行运行。
++       套接字在第一次借出操作时打开，在最后一次之后关闭；没有支持多播的接口的主机会使第一次借出操作失败，抛出原因为 `Unavailable` 的 `Discovery.Error`。
+
+@ 0 3 0 126bd394c7b068f202919d3767deb910
++       该 given 在每次被召唤时都会重新计算，因此应绑定一次——`given backend: Discovery.Backend = discoveryBackends.mdnsSockets`——而不是每次使用时召唤它，那样每次召唤都会打开一个套接字。
+
+@ 0 1 0 17e4cbf8d3f051bb054b8f9e7b991a6d
++ entry .Mdns   多播 DNS 应答器（RFC 6762）及其组成部分：传输层、缓存、平局裁决
+
+% 1 1 0 1236a7253467ae680702f8d485cbb983
+
+@ 0 6 0 168485f3cf6e68020727af157a351fcb
++       `Mdns` 是唯一提供的 `Discovery.Backend`：`Mdns.Responder` 是一个应答器，它通过 `Mdns.Transport`——套接字，或内存中的 `Mdns.Transport.Bus`——进行通信，将听到的内容保存在 `Mdns.Cache` 中，并用 `Mdns.Tiebreak` 裁决同时发生的探测。
++       传输层是一个单独的接缝，位于 `Discovery` 的接缝之下，因此协议在网络上和总线上的运行方式完全相同，这正是无需接触主机网络即可对其进行测试的方式。
+
+% 2 1 0 1badb445e2f7985a0879c8c13b8370aa
+
+% 3 1 0 1e246b4683b4334e18696d8e28ba92e1
+
+% 4 1 0 075c87320163d8b3167b2234a8d7c623
+
+% 3 1 0 1a09d937a9b6f9f91978a27fc59b5a5e
+
+% 4 1 0 11cdc3161958451905ad706a602377ba
+
+% 5 1 0 1abdc5962742a7011295abf0f9a52b21
+
+% 2 1 0 0b915b29474dc4571c5f719ee4300da7
+
+% 0 1 0 14d3b445a998c93d1a91d5ad7269a859
+
+% 2 1 0 08d50c74f88a2da914c14d7162af294c
+
+% 0 1 0 0a9ceb608930e5701ecb3aeee763137b
+
+% 0 1 0 15005cac27bb58b6131e827f5141f0c3
+
+% 0 1 0 139ee145b2743376045d83e20588b182
+
+% 0 1 0 1b5c1ea7ceb4954316ba2c27bea89e48
+
+% 0 1 0 0cf47d2ac413da4218e02c37db729f9d
+
+% 0 1 0 0cdc53169938c1e002379a0d10dec047
+
+% 1 1 0 0713538c70dc07410a73e6ade36a8bd6
+
+@ 0 3 0 1dc81acbd6da0b7f06289415803ec6e7
++       应答器自身启动失败——没有支持多播的接口，或者有无法加入的组——是一个 `Mdns.Error`，借出操作会将其报告为原因为 `Unavailable` 的 `Discovery.Error`。
+
+% 0 1 0 094c17ce3df891db04e9906bd4076027
+
+% 0 1 0 10ba5df1dbae124506cc24ebef680bfc
+
+% 1 1 0 05c92d486430816d1ba2c577be5d1e3e
+
+@ 0 4 0 12a31e18b4e1a2df1723743232654b6b
++   entry .group4   IPv4 mDNS 组，端口 5353 上的 `224.0.0.251`
++   entry .group6   IPv6 mDNS 组，端口 5353 上的 `ff02::fb`
++   entry .port   mDNS 端口，`udp"mdns"`（5353），每条消息的源端口和目标端口
++   entry .Transport   应答器对网络的需求：本主机的名称和地址、发送、回复、接收、关闭
+
+% 1 1 0 006839e115b4f0ed024ae3aaac16ff6a
+
+@ 0 7 0 1ca98e05cf50f7b4165b1f1e106fea3d
++         协议与链路之间的接缝。
++         传输层发布本主机的 `#host` 名称和 `#addresses`（即其自身地址记录所述内容），向组发送消息，发送单播回复，提供可从中接收的 `#inlets`，并可关闭。
++         有两种实现：基于 `Socket.Backend` 的 `Transport.sockets`，以及用于测试的内存链路 `Transport.Bus`。
++         `Mdns.Responder` 接收一个打开传输层的函数，因此传输层在第一次借出操作时打开，在最后一次之后关闭。
++     entry .Inlet   一个数据包来源，通过阻塞调用逐个接收
+
+% 1 1 0 084d8028fc729af91e939bba2cfcd952
+
+@ 0 14 0 009b0edbff42c99f1f257e9c7be09eb9
++           实际上就是一个已加入组的套接字：基于两个组的传输层有两个入口，应答器在各自的循环中读取每一个。
++           `Bus` 成员本身就是它唯一的入口，测试可以直接从中接收。
++       entry #receive   下一个数据包，阻塞直到有数据包到达；关闭后抛出 `Socket.Error`
++     entry .sockets   基于 `Socket.Backend` 的多播套接字的传输层
++         `Mdns.Transport.sockets(backend, options)` 在每个具有 IPv4 地址的合适接口上加入 IPv4 组，在每个具有 IPv6 地址的合适接口上加入 IPv6 组——在仅有 IPv4 的主机上不加入 IPv6 组——若没有已启用且支持多播的接口，则以原因为 `NoInterface` 的 `Mdns.Error` 失败，若两个组都无法加入，则以原因 `Join` 失败。
++         本主机的名称是其主机名的第一个标签，位于 `.local` 之下（若没有主机名则为 `soundness.local`），其地址是已加入组的接口的地址。
++         单播回复经由与目标地址族相同的套接字发出。
++         `discoveryBackends.mdnsSockets` 基于此构建应答器。
++     entry .Bus   内存链路：每个成员都会收到任何成员发送的内容，包括它自己
+
+% 1 1 0 08c7d77cb2418a01014851f91c32f84d
+
+@ 0 6 0 18e05d807a2926b511b84e4638a077a8
++           `Bus` 在测试中代替网络。
++           每次 `#join` 都会添加一个带有主机名和地址的成员；成员的 `send` 会被传递到每个成员的队列，包括发送者自己（正如多播回环那样），而 `reply` 会到达地址中包含目标地址的成员。
++           成员既是 `Transport`，也是它自己的 `Inlet`，因此测试可以直接从它 `receive()`，以观察应答器发出的数据包，而 `close()` 会使挂起的接收以 `Socket.Error` 失败。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 1 1 0 1a00ee9334a3648a0b4100b45ee876ee
+
+% 0 1 0 1c23597d24bad4f609970bd7e037b0f3
+
+% 0 1 0 1c3488c673c2b2ee0855be6fa6559e06
+
+% 0 1 0 1c5157dd475ce11115374def5f5c7687
+
+% 0 1 0 0e109647ea1ef6111ca1db55890043b4
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 1eb1707f875469f01a2368e921fea96b
++       entry #join   添加一个带有主机名和地址的成员，作为 `Transport & Transport.Inlet`
++     entry #host   本主机的名称，即其地址记录所发布的名称
++     entry #addresses   本主机的地址，由其 A 和 AAAA 记录承载
++     entry #send   向组多播一条消息；抛出 `Socket.Error`
++     entry #reply   向某个地址和端口发送单播回复；抛出 `Socket.Error`
++     entry #inlets   可从中接收的入口，每个已加入组的套接字一个
++     entry #close   关闭传输层，使任何挂起的接收失败
++   entry .Cache   在链路上听到的记录，按名称、类型和数据存储，遵守其 TTL
+
+% 1 1 0 0011b120d7abc0a10a5a1f20b221a9f3
+
+@ 0 6 0 1eb93ceb9323db5e0dfc33add956e6ab
++         应答器对其他主机所说内容的记忆，以记录的身份（名称、类型和数据）为键，并以 `System.nanoTime` 的单调纳秒计时。
++         它遵循 RFC 6762 §10：再次听到的记录会被刷新；告别消息（TTL 0）在一秒后失效；带有缓存刷新位的记录会使同名同类型且已存在超过一秒的其他记录退役。
++         吸收或清扫所带来的变化以 `Cache.Transition` 的形式返回，应答器将其转换为浏览事件。
+
+% 2 1 0 0934581dccc63c210bcd77491ed7d94d
+
+% 3 1 0 1c1cc256f7266c10136a13d9037e4853
+
+% 0 1 0 029730ee09d38dc104299156b671b2ab
+
+% 0 1 0 03400fe1a57b193a183a9c64e16687d2
+
+% 0 1 0 003c4707c37509a217a2814a0d6c2834
+
+% 0 1 0 1608c7f4f52371b113eb3795fcf3cae1
+
+% 0 1 0 0ada59d89aa4363e15cd9eaf39332920
+
+% 1 1 0 143354bf6f05911212f63666a36f3852
+
+@ 0 5 0 13af99e734d21489190557a3e30820df
++     entry .Entry   缓存为一条记录保存的内容：何时到达以及何时失效
++       entry #record   该记录
++       entry #received   最后一次听到它的时间，以 `System.nanoTime` 纳秒计
++       entry #expiry   它失效的时间，使用同一时钟
++     entry .Transition   吸收或清扫所带来的变化：`Added`、`Refreshed` 或 `Removed`，各自带有其记录
+
+% 1 1 0 1c94d047c100cf2012ece51bacf0cb53
+
+@ 0 13 0 1a40d6996980aef2153039ec984e2b1c
++           `Added(record)` 是之前未持有的记录，`Refreshed(record)` 是再次听到的记录，`Removed(record)` 是 `#sweep` 发现已失效的记录。
++           被浏览的服务类型的 PTR 记录被添加或移除，即表示找到或丢失了一个实例。
++       entry #record   该变化所涉及的记录
++     entry #absorb   在某个时间吸收收到的记录，报告哪些被添加或刷新
++     entry #sweep   丢弃在给定时间之前已失效的所有记录，将每条报告为 `Removed`
++     entry #lookup   在给定时间某个名称和类型的未过期记录
++     entry #knownAnswers   某个名称和类型中剩余 TTL 超过一半的记录，附带剩余 TTL
++         查询借此告诉其他应答器自己已经知道的内容（RFC 6762 §7.1），这样它们就无需再次作答。
++     entry #earliestExpiry   某个名称和类型的第一条记录失效的时间，若未持有任何记录则为 `Unset`
++     entry #size   缓存所持有的记录数
++   entry .Tiebreak   比较两台主机针对同一名称的同时探测时所用的顺序
+
+% 1 1 0 0de4d03b2ec2fcab1e7e87496c60d63e
+
+@ 0 6 0 020ef85569bb28041129d9bc78bf906b
++         RFC 6762 §8.2.1：当两台主机同时探测同一名称时，各自将自己提议的记录与对方的进行比较，记录在字典序上较小的一方让步。
++         记录先按类别排序，再按类型，然后按其未压缩数据作为无符号字节排序，前缀排在延伸它的内容之前。
++         两组记录会先排序，再逐对比较：第一个差异决定结果，先用完的一组落败，完全相同的两组为 `Comparison.Same`——根本没有冲突。
+
+% 2 1 0 06b1f9cb5f3150cd03c20bdbede877b0
+
+% 3 1 0 1ddcc9322836b8a407dffd5afa415a70
+
+% 0 1 0 15e3757d11b051c90374b49bede8165a
+
+% 0 1 0 1671297137e790f2138591ca35aff269
+
+% 0 1 0 0798a61b8c75ec181c92193f11864174
+
+% 0 1 0 04946f41298ec8ab0de7c309f3bf3ff1
+
+% 1 1 0 088bd0aee4a0da6008e68448a0a3baa9
+
+@ 0 2 0 07d5d9e1c46d59081aed34aee24b8af0
++     entry .compare   比较两条记录，或两个提议记录列表，结果为 `Comparison`
++   entry .Responder   mDNS 应答器：每个程序一个，通过一个传输层服务所有借出操作
+
+% 1 1 0 173b62490c855d9011f1a4d36bc25e84
+
+@ 0 6 0 03b8f8f6882a2b7e088104d15f694b51
++         `Mdns.Responder(open)` 接收一个打开 `Mdns.Transport` 的函数；传输层在第一次借出操作时打开，在最后一次结束时关闭，其接收循环和缓存清扫器作为任务在借出操作所提供的 `Monitor` 下运行，因此取消该监视器也会结束它们。
++         它是一个 `Discovery.Backend`，因此 `advertise`、`browse` 和 `resolve` 调用的正是它；`discoveryBackends.mdnsSockets` 是基于套接字的应答器，而基于 `Mdns.Transport.Bus` 的应答器则是测试程序的方式。
+
+@ 0 8 0 10f8bc0b4e2838a51e5a47d18c7342cc
++         它实现了 RFC 6762 中的以下内容：以 250 毫秒间隔探测三次，冲突时重命名，并在同时探测之间进行平局裁决；通告两次，间隔一秒；捍卫已建立的名称，并在之后的响应与之冲突时重新探测（若探测得到应答则重命名）；应答查询，包括已知答案抑制、对共享记录随机延迟 20–120 毫秒、将同时到期的答案聚合为一条消息，以及对不在端口 5353 上的查询方发送传统单播回复；告别消息；遵守 TTL 并以指数间隔重新查询的浏览；以及解析。
++         它通过消息 ID 识别自己的回声。
+
+% 2 1 0 112c2ac60957f9e61754339114156f85
+
+% 3 1 0 1ac7a6b5f674f8430c3b2d54fab1a835
+
+% 4 1 0 04ade9b37b637b4c0f951475bc035693
+
+% 3 1 0 0bb5655c6f72b2ce1bf01b1cb4a83f80
+
+% 4 1 0 083932b080b002cd164466eb8209989b
+
+% 2 1 0 0efc7319935b8f6e128b569b77bf09e9
+
+% 0 1 0 1c1be2e08acebb5f07c7cfcccc4543b2
+
+% 2 1 0 1d9b8b3a94bbbda500acb93456cd95ca
+
+% 1 1 0 1014a449ad0cb6d20e0751e8d96aa6eb
+
+% 0 1 0 07b463fe6d763d9003ff3af28043950f
+
+% 0 1 0 0cfc4a3e6770531b04e91d32a6df1639
+
+% 0 1 0 0b814da99c78e8931e8f3211bec67a90
+
+% 0 1 0 0226b4ecbc08cebc0c1dc28d3e48f5fd
+
+% 1 1 0 0e92e3ba2d3c172b118dfd6393a20a79
+
+% 0 1 0 02fdcbc882f3cc4c152423062e219790
+
+% 0 1 0 1d4a3c8ee72f530e08d47e189aa654a6
+
+@ 0 10 0 0fd4c9dcc9d781f90bb00a531ede3048
++     entry #advertise   探测、认领并通告一个实例，与 `Discovery.Backend#advertise` 相同
++         发布来自服务类型（以及来自枚举元类型和每个子类型）的 PTR、SRV 和 TXT 记录，以及主机的地址记录；后三者是实例独有的，因此带有缓存刷新位。
++         PTR 存活 75 分钟，其余存活两分钟。
++         本应答器已持有的名称会不经探测直接重命名。
++     entry #withdraw   发送通告的告别消息并释放借出
++     entry #browse   开始浏览，立即报告已知实例，并以逐次加倍的间隔重新查询
++     entry #dismiss   停止浏览的重新查询循环及其中继，并释放借出
++     entry #resolve   从缓存中解析实例，或查询其记录并最多等待到超时
++   entry .Error   在应答器无法启动时抛出：没有接口，或者有无法加入的组
+
+% 1 1 0 1a69fb935b1b9b430c1a092e3934d678
+
+@ 0 7 0 15dc2b63b70eb33902df34a357f4c7f6
++         错误 `↯/s.102.2`：_the mDNS responder could not start because `reason`_。
++         原因 `NoInterface`（2）为 _no interface is up and capable of multicast_；原因 `Join(group)`（1）为 _the multicast group `224.0.0.251:5353` could not be joined_，在两个组都无法加入时抛出。
++         由 `Mdns.Transport.sockets` 抛出；遇到它的借出操作会改为报告原因为 `Unavailable` 的 `Discovery.Error`，并以此错误作为其诊断信息。
++     entry .Reason   应答器无法启动的原因：`Join(group)` 或 `NoInterface`
+
+% 1 1 0 1aea84c24deba96e0210bbba453068bf
+
+@ 0 4 0 0528166500290a0e11f94347474c4346
++           一个包含两个编号分支的枚举，带有 `Communicable` 来呈现每个分支。
++       entry .communicable   将每个原因呈现为消息
++       entry #number   原因的编号，`1` 或 `2`，即错误代码的第二部分
++     entry #reason   应答器无法启动的原因

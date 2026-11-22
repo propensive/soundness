@@ -1,0 +1,70 @@
+orthant 2 language
+
+% 0 1 0 1e03424cfee6a5cf08bc0919fa79db82
+
+@ 0 1 0 0f55c16ef5a9281103adce6e91156496
++ 当 Aviation 无法确定一个民用日期时间值时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 1e4dae32af3d4f640260bed6fd9669a2
++ `Moment` 是日期、钟点时间和时区三者的组合，构建它的每一个操作都会抛出这个错误：按格式解析文本、在某种历法中构造日期、指定月份名称，以及把挂钟时间落实为瞬时。
++ 消息为 `the date was not valid because $reason`。
+
+@ 0 2 0 0c28884dd517f3511d3babbcff4b8dc5
++ 时长不是时刻，因此解析失败的时长抛出的是 `Timespan.Error`（`↯/s.73.4`），而不是本错误的某个变体。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 143decb5d8cc66890779b58410619d72
+
+@ 0 1 0 0b74023595698ef507d92bb3715b1235
++ 输入与所解析的日期格式不匹配。
+
+@ 0 1 0 098ec7ddd50b42b90e3c4e045d72cab1
++ **示例。** `[↯/s.73.3.1] the date was not valid because 2026-13-01 does not conform to format ISO-8601 (... at ...)`
+
+@ 0 2 0 04af7532ec28053f1e3bc157b88a5aba
++ **解决方法。** 传入与格式匹配的输入，或选择与输入匹配的格式。
+
+% 0 1 0 0b4e9a2038dc3da21a4524c6a7d9a879
+
+@ 0 2 0 1b6c61492ff8e2bb085d50387423eb84
++ 各数字组成部分构成的日期在所选历法中不存在（例如公历中的 2 月 30 日）。
+
+@ 0 1 0 1415c8f0c512f5921492ade0795defb8
++ **示例。** `[↯/s.73.3.2] the date was not valid because 2026-2-30 does not exist in the calendar Gregorian`
+
+@ 0 1 0 0acd84d63fc4d9f308f8f3d1a00cfb8f
++ **解决方法。** 将日、月或年调整为有效的组合。
+
+% 0 1 0 0bca2e34a8a39f8008f1425a53345f8e
+
+@ 0 2 0 0e379201f30fe08e1d1c370907ced669
++ 某个文本值没有指称一种可识别的日期类别（例如星期名称、月份名称）。
+
+@ 0 1 0 1a759dca434c61e1015f311f01c39e39
++ **示例。** `[↯/s.73.3.3] the date was not valid because Ides is not a recognized weekday`
+
+@ 0 1 0 1f607ab27ef2f8b80436f03c8ead87d6
++ **解决方法。** 使用该类别的文档中列出的名称之一。
+
+% 0 1 0 0f020800e09f0ad714b154d2f49a6dc4
+
+@ 0 1 0 1f9ed17356246401118f542cf66ecb80
++ 某个挂钟时间指称了一个不存在的瞬时，因为时钟向前拨动越过了它。
+
+@ 0 1 0 0110e99a46dce5bb13b995609521d77f
++ **示例。** `[↯/s.73.3.4] the date was not valid because the wall-clock time does not exist in its timezone (a spring-forward DST gap)`
+
+@ 0 1 0 13fa12e77d33d62a1395dc3b180aec80
++ **解决方法。** 选择一个 `GapPolicy`：默认方针把时间向前推过空缺，其他方针则把它向后推，或抛出本错误。导入适合应用程序的方针。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 12f3589d8cbf62051ed41b4b1420c332
++ - 源码：`lib/aviation/src/core/aviation.Moment.scala`
++ - 相关：`↯/s.73.4`（`Timespan.Error`）

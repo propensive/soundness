@@ -1,0 +1,24 @@
+orthant 2 language
+
+% 0 1 0 0e43190bab175e980c27f719e12f19cb
+
+@ 0 2 0 11dacab92aad8e891c53c037ffc151c0
++ 认证密码算法的认证码未通过验证：密文、关联数据或 nonce 与封装时的不同，或者密钥不是封装时所用的密钥。
+
+@ 0 1 0 19cdb20592782188093ffb6a7d9cb5a7
++ **示例。** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+@ 0 2 0 0675a479b730d28c0058667a1b24cf0f
++ **解决方法。** 把这些数据视为伪造或已损坏，不要使用其中任何部分。
++ 确认 nonce 和关联数据恰好就是传给 `seal` 的那些。
+
+% 0 1 0 153ed8c0c255acbb0cb6a1d1954d7c01
+
+@ 0 2 0 00ea0454ec6b67bd0fdfd23339a52e81
++ 被包装的密钥材料未通过密钥包装内建的完整性检查：它是用另一个密钥包装的，或已被篡改，或不是整数个 64 位分组。
+
+@ 0 1 0 17b17d9d86f73a5a064b0259a988d01f
++ **示例。** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+@ 0 2 0 03acd4f006818d770927f160ff7bac33
++ **解决方法。** 确认密钥加密密钥就是包装该材料时所用的密钥，并且被包装的材料完整到达。

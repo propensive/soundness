@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 1 0 08a75dd5f46ceef21888820fdb82c5ed
++ # Standardy układu modułów Soundness
+
+@ 0 1 0 168477d6c167de2a1bc6797dbe55c63f
++ _(Szkic – zakres do przeglądu; pełna treść wkrótce.)_
+
+@ 0 2 0 0c7e2be44269cbf71f98b7eb09b62714
++ Ten standard określi, jak moduł Soundness jest rozmieszczony na dysku i jak zbudowana jest jego
++ przestrzeń nazw. Obejmie następujące konwencje:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1d59784e3f5cd4b806cdeba1eac75758
++ column  Miejsce
++ column  Zawiera
++ row  `src/core`  bibliotekę
++ row  `src/test`  testy
++ row  `src/bench`  benchmarki
++ row  `src/<variant>`  opcjonalne integracje
++ row  `<module>.<Type>.scala`  jeden typ najwyższego poziomu, od którego bierze nazwę
++ row  `<module>_core.scala`  givens i rozszerzenia na poziomie pakietu, najpierw obiekty towarzyszące
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 08afcf11b77ae23d083b2a4f0e8e5f49
++ Opisze też reeksport `soundness_<module>_core.scala`, który przenosi publiczną powierzchnię
++ modułu do zbiorczego pakietu `soundness`, oraz zasady tego, co jest eksportowane, a co
++ pozostaje wewnętrzne. Część tego poruszają już reguły lokalizowalności stylu Consequent
++ (`L1`–`L5`, zob. [`syntax.md`](syntax.md)); ten standard zbierze konwencje strukturalne w
++ jednym miejscu.

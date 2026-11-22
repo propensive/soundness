@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 056a74de44515db50a2444c87b2ace96
+
+@ 0 1 0 1e236c8e352393a00f9d6bb179c9d681
++ 当以 Ergo 简写形式书写的数学表达式无法解析时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 094cf0b82ac93db81287e3857d422cf2
++ Ergo 是一种紧凑的数学记号语法，会展开为 MathML。
++ 此错误涵盖格式错误的表达式：分组不配对、未知的运算符或缺少操作数。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 06a3f22bea25f0eb04720fd40e78925f
+
+% 0 1 0 05118ade26fb1e0d15c51b1c1beed87e
+
+% 0 1 0 10f72fbb530cd542089f20a11839316c
+
+% 0 1 0 09c9a0badd30297119075f4e1d1d4205
+
+% 0 1 0 1d014dcc71942976192ae5de388a3259
+
+% 0 1 0 013a7136191fa47d18a1d0d00aa87724
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 110e48681d57e6550db7896ea7883086
++ 消息会指明出错的位置和结构。
++ 当表达式确实很复杂时，另一种做法是直接编写 MathML。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0ce766a35b53b0a7000c3806dcdfe72c
++ - 源码：`lib/archimedes/src/core/archimedes.Ergo.scala`

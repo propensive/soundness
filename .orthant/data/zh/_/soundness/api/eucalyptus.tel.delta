@@ -1,0 +1,475 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0ccec126e6ef834d0295d5459f8b67cc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e0b52da7b114da211aabf53557e99bb
++ info   为 `Log` 发出的类型化事件提供的日志记录器、日志格式和日志目的地
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0bf8906695a569ce188dd5267d985dc6
++     _Eucalyptus_ 是 Soundness 类型化日志的运行时部分。
++     记录日志的方法会在其类型中声明这一点（`Long logs Backup.Event`），并用 `Log.info`、`Log.warn` 等发出类型化事件；这些名称，连同 `Log.Level`、`Loggable` 和 `LogSink` 特质，都位于 `anticipation` 中，处在每个记录日志的库之下。
++     Eucalyptus 提供*应用程序*所添加的东西：`Logger`，即作为 given 放入作用域的 `LogSink`；渲染每个事件的日志格式（一个 `Inscribable`）；以及写入事件的目的地。
+
+@ 0 4 0 1c43ee1c5041321c0fac8a5df497f4e8
++     作用域中的每个 `Logger` 都会收到它接纳的每个事件，因此路由取决于哪些日志记录器在作用域中，每个记录器都有自己的阈值、类别、格式和目的地。
++     作用域中没有日志记录器时，日志记录是静默且无开销的：每个 `Log` 方法的参数都是传名参数，除非某个日志记录器接受其级别，否则永远不会被求值。
+
+% 2 1 0 1f3ac7ed2b2cb9660452ea5d8263cdce
+
+% 3 1 0 07d2d9cfa7fca7070e9d31d29e24ea5d
+
+% 4 1 0 15a80a1b8904630d0dbf3455ea7b68fe
+
+% 5 1 0 09dc85d9de11a52d068864afdcd17f0e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 1619ecc7ffe347c9086fae87aebae597
+
+% 0 1 0 0b178855fe8e97de19453fe2261f42bc
+
+% 0 1 0 11940fc83390cb92044b6066111370d3
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0b10b55d046ad30e04a673b2be4d5060
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 1d70a33a28591f950407d01673683cbe
+
+% 0 1 0 0b03cdf861f7f9ca13a3d49ccd6a5f62
+
+% 0 1 0 1341e110599cae041f2ca3b0349ef68b
+
+% 1 1 0 00c2720300089f161ce7b38ed2b97baf
+
+@ 0 6 0 17322d27e34bffd61ccf6b9033af3c57
++     `Logger` 在后台守护进程上写入，因此它需要 `supervise` 提供的 `Monitor`、一个决定该守护进程在监管结束时如何收尾的 `Probate`（来自 `probates`），以及其目的地的 `Writable`。
++     它的格式通过从 `logFormats` 中按名称导入一个 given 来选择，而 `logging.silentLogging` 让整个文件静默；两者都是选择包，需按名称导入，因为 `import logFormats.*` 不会导入 given。
+
+@ 0 5 0 035bcd0c5584de611ad49ac0623fea9f
++     写入终端需要一个可按格式的形式写入的目的地。
++     `Out` 只能按 `Teletype` 写入，通过 escapade 的 `writables.outTeletypeWritable` 实现，因此终端日志记录器使用 `Teletype` 格式 `ansiTimestampedLogFormat` 并配一个 `LogPalette`；不存在按 `Text` 写入 `Out` 的 `Writable`，因此搭配 `timestampedLogFormat` 的 `Logger(Out)` 无法编译。
+
+@ 0 1 0 023bbc681e3a961c01643d67e0d3bd59
++     该库有四个源集：
+
+@ 0 7 0 04b6b34380962c9414ec2331d8a9e70c
++     - `eucalyptus.core`——`Logger`、`Inscribable`、`mute`、`Taggable`、文本格式 `timestampedLogFormat` 和 `untimestampedLogFormat`，以及 `logging.silentLogging`。
++     - `eucalyptus.ansi`——`LogPalette` 和终端格式 `ansiTimestampedLogFormat`。
++     - `eucalyptus.gcp`——`googleCloudPlatformLogFormat`，每个事件一个 JSON 对象，采用 Google Cloud 日志代理读取的形状。
++     - `eucalyptus.syslog`——`Syslog`，一个通过 `logger` 命令把行交给系统日志的目的地。
+
+@ 0 2 0 1a2101a3b7e72fe312918ad7326971a5
++     所有内容都导出到 `soundness` 总括包，`logFormats` 和 `logging` 选择包与总括包自身的同名包合并。
+
+% 0 1 0 12c5b3d8a770eeea1c3861fe65e897f0
+
+% 0 1 0 0710479ed3336c9703adce0c5329d37e
+
+% 0 1 0 12fa5bf8a2f2106a07edb1105ccaa9c1
+
+% 0 1 0 0a73aa28a7e969cf0dc18b840c884f47
+
+% 0 1 0 082f0b3b90faa2840558f5665b7fbb1c
+
+% 0 1 0 17f53a2bc14be2941c6423732c5014dd
+
+% 0 1 0 0af2b1943a09bb1f1b6efba761c48d64
+
+@ 0 1 0 141937c5be689caf1cc03bcd284791d8
++ entry .Logger   一个日志数据汇，通过格式渲染每个事件并将其写入目的地
+
+% 1 1 0 11bc2533fc63b09505ef41e256fd12fe
+
+@ 0 5 0 1bd0ee0a8e91765b1a500b6fbb7f524a
++       `Logger[Event, Form]` 是一个 `LogSink`：作为 given 放入作用域后，它会收到在该作用域中记录的、级别达到或高于其阈值的每个 `Event` 类型（或其子类型）的事件。
++       第一个类型参数选择它接收哪些事件——`Any` 表示全部——第二个是事件在格式化之前被转写成的载体，通常是 `Message`，每个 `Communicable` 事件都会变成它。
+
+% 2 1 0 014307bf02819b671f8945a8e9c131ba
+
+% 3 1 0 13e8b49eeae9462c06cbcf01eb301408
+
+% 4 1 0 038e7eb99f6712c108bcb72c41be48a7
+
+% 5 1 0 02c1e41d838af427088ebe95fe536f43
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 1 1 0 15ef1512078e38f21ea84a9b721a8b69
+
+% 0 1 0 1f6b7d85434f8a0f0596cfc8c38449be
+
+% 1 1 0 0a9da5baa3d8112f0d7acd3e0cbe7b45
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 04056516d35cf1d601f7d1e0db07ca4d
+
+% 1 1 0 030b1f52d68ee63b1a9ec7e8e6008402
+
+% 0 1 0 05da92369f2ca9f70e4665b985045ad5
+
+% 0 1 0 04166a8e0922cdee113a4ee01d545d76
+
+% 2 1 0 00b71327dc7caf4808ff0d2ade4e9fac
+
+% 0 1 0 189d3013649b2fa812c81da8eb9d8e67
+
+% 0 1 0 0febba9b2b1b932906ca717ba2ecb624
+
+% 0 1 0 01cf1b354c3b44751ec38be8ed8ba099
+
+% 1 1 0 171e7bed863cbdc01b8bdbc83bd62e53
+
+@ 0 5 0 1e116f4a6736d28a197a14a5a3b24624
++       作用域中可以同时有多个日志记录器，`Loggable.fanOut` 把每个事件投递给所有接受它的记录器。
++       当事件的级别达到或高于日志记录器的阈值（`#accepts`），并且在日志记录器指定了类别时，事件的运行时类型混入了其中某个类别（`admits`），日志记录器就接受该事件；只有当某个日志记录器接受事件时，事件才会被构造和格式化。
+
+@ 0 5 0 10115d3b33ee82a51c7f8869b6285bfa
++       格式化在记录日志的线程上进行，写入在守护进程上进行：每个事件成为队列中的一条记录，由守护进程以流的形式写到目的地。
++       写入失败（`Truncation.Error`）会结束该流，守护进程从同一队列开始一个新的流，因此暂时性故障不会让日志记录器沉默；守护进程在虚拟机关闭时停止。
+
+% 1 1 0 04cdee506d3bd5d31f3aba033a6d4bea
+
+% 0 1 0 171744aece8ce670069cf50284aee4e1
+
+% 0 1 0 0f2763c8a52f5010178bc4f95b17241d
+
+@ 0 5 0 0afa8854f2ad843b1b7f10dc813008b9
++   entry .apply   创建一个写入目的地的日志记录器，带有阈值级别和可选的类别
++       `Logger(destination, level, name, categories)`。
++       `level` 默认为 `Log.Level.Info`，`categories` 默认为空集，空集接纳所有类别的事件；非空的 `Log.Category` 集合（`Log.Network`、`Log.Filesystem`……）只接纳运行时类型混入了其中某个标记特质的事件。
++       `name` 会被接受，但尚未使用。
+
+@ 0 5 0 13a0225eccb9c44a1fd866048d6091df
++       它需要作用域中有：一个格式，即针对日志记录器载体的 `Form is Inscribable in Format`（`logFormats` 中的某个 given）；一个可按该格式的数组写入目的地的 `Writable`（任何可按 `Text` 写入的目的地都满足，通过 `Writable.chunked`）；一个 `Buffering`；一个 `Monitor`（来自 `supervise`）；一个 `Probate`；以及由编译器提供的 `Codepoint`。
+
+@ 0 11 0 08b6410a2702dd6c1ce2d570cc897deb
++       队列和写入守护进程属于**调用点**：在同一源码位置构建的每个 `Logger` 共享同一套，因此每次召唤都会重新求值的 given 不会每次都启动新线程。
++       其后果是，目的地由该位置的第一次调用确定：一个在同一行为不同路径构建 `Logger(path)` 的辅助方法会把它们全部写到第一个路径。
++       请在不同的调用点为不同的目的地构建日志记录器。
++   entry #accepts   日志记录器是否记录某个级别的事件：达到或高于其阈值
++   entry #submit   将转写后的事件连同级别和时间戳排入队列，等待格式化和写入
++       在 `#accepts` 和 `admits` 通过后由 `Loggable.fanOut` 调用；事件在调用线程上格式化，其记录排入队列等待写入守护进程。
++       通常不直接调用。
+
+@ 0 1 0 01f23714e4f6b8050f5171fcca911262
++ entry .Inscribable   一种日志格式：值如何连同其级别和时间戳渲染为一条记录
+
+% 1 1 0 1ad5c70e545178790d2839c3a78848c8
+
+@ 0 4 0 17c52d5247cd3a6e17f40ebde12bd29a
++       一个类型类 `Message is Inscribable in Text`，其 `#formatter` 把一个值、它的 `Log.Level` 和它的时间戳（自纪元以来的毫秒数）变成一条 `Form` 类型的记录。
++       `Logger` 使用作用域中针对其载体类型的那个；标准格式从 `logFormats` 中按名称导入。
++       自定义格式是一个 lambda：
+
+% 2 1 0 18ffe2a7acfcf7fa0dd556a09ae778c8
+
+% 3 1 0 01cd5b82ed8163ce1656bd2531990aaa
+
+% 0 1 0 06f3c9423dcc0e0c0e2eb8bb09d5818c
+
+% 0 1 0 1bf89d00fe1712970beeeaff66de4823
+
+% 1 1 0 067724501d31efe80b3bd43774441596
+
+@ 0 2 0 068fdf478391e22100b18825bd57ab3f
++       文本格式应以换行符结束每条记录，因为目的地会一条接一条地写入记录。
+
+% 1 1 0 1774c6543172df4a01c0f1217070a709
+
+@ 0 6 0 10b982234ed493e0062731a4101ed4d0
++   entry #formatter   把一个值连同其级别和时间戳渲染为一条记录
++   entry #contramap   另一类型的格式，它先把该类型转换为本格式的类型
++       `format.contramap[Event](_.message)` 通过把 `Event` 映射为本格式处理的类型来格式化它；级别和时间戳原样传递。
++   entry #format   把值渲染为一条记录，作为值上的扩展方法
++       `message.format(level, timestamp)`，与 `#formatter` 相同。
+
+@ 0 1 0 13032050755a496e0343c60b71a62384
++ entry .Taggable   用于可添加 `Operand` 类型标签的值的类型类
+
+% 1 1 0 13369e02b063625b1c0ffb769af99f30
+
+@ 0 3 0 010f7b80afbe31f01be0933614c70536
++       `value.tag(operand)` 返回添加了标签的值。
++       Soundness 中目前还没有任何地方提供或使用它的实例。
++   entry #tag   添加了标签的值
+
+@ 0 5 0 17615a27363cfcae0a15e467065aee55
++ entry .mute   运行一个代码块，其中某一事件类型的日志被抑制，无论作用域中有哪些日志记录器
++     `mute[Event]:` 在求值其代码块时提供一个静默的 `Event is Loggable` given，它优先于作用域中的日志记录器原本会提供的 `Loggable.fanOut`，因此在该代码块中，恰好属于该类型的事件被丢弃，而其他所有事件照常记录。
++     在记录之前被转写成另一类型的事件不受影响。
+
+% 2 1 0 0227f722b0a7cf981a7a3f3af083aa3c
+
+% 3 1 0 067c3a1976d8433e10109c410ef7f32b
+
+% 4 1 0 07c79db7c2da4b541c5c0fa5234c1602
+
+% 5 1 0 0007de54ed699eaf1ed42a400b1ee2e6
+
+% 0 1 0 1ada92353fa6ddde1632d32f66e61a60
+
+% 0 1 0 16fb5d50566da01109298db539961a51
+
+% 0 1 0 11d4ff0576bcb9751615aba5345b8ecd
+
+% 0 1 0 1f1a7df1e3ce1ac20304bc881d29aaa9
+
+% 0 1 0 08c6e88c35954d9d170f0860fa9f5983
+
+% 0 1 0 1e44ae0c3334bc1f1ffa25564d7c0da2
+
+% 0 1 0 067500ae5726e0a9145ad21631985588
+
+% 0 1 0 18ab3e12f7fc3a4c0229c588c51c7db4
+
+% 0 1 0 038cb454ebe9ad4a083ac525354e8db2
+
+% 1 1 0 188f77a1884b666e16deba745dc5b23e
+
+@ 0 5 0 178377afbf899c3113d25ede5fa0be84
++ entry .dateFormat   带时间戳格式的日期和时间模式：`2026-Nov-04 09:30:00.250`
++     一个按 JVM 默认时区格式化 `yyyy-MMM-dd HH:mm:ss.SSS` 的 `java.text.SimpleDateFormat`，由 `timestampedLogFormat` 和 `ansiTimestampedLogFormat` 使用。
++     `SimpleDateFormat` 不能安全地并发使用，因此不应从多个线程直接调用它。
+
+@ 0 4 0 06ddaf65c8ade4070b6a153833d6af86
++ entry .LogPalette   `ansiTimestampedLogFormat` 用来给级别和日期着色的颜色
++     一个 `Srgb` 中的 `Palette`，另有四种颜色：`error` 用于 `Fail`，`warning` 用于 `Warn`，`informative` 用于 `Info`，`subdued` 用于 `Fine` 和日期。
++     没有提供现成的调色板，因此终端日志记录器要把一个调色板定义为 given。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 12cc132884ad92d21728ad250527aa86
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 1391c565c244eb0509de2ecaf3d88970
+
+% 0 1 0 006e2bc7f09e26c30f554b4235b3d8ee
+
+% 0 1 0 16e6a90a8f27bdec134d021182a42479
+
+% 0 1 0 1c191978229114421d99a1839c5328c2
+
+% 0 1 0 150a25c9b8ae2af903953681ebf47a06
+
+% 0 1 0 077a29b127cf27d009a2a48530b272ea
+
+% 1 1 0 1552d453f6a404551645440ad3b5bb5d
+
+@ 0 1 0 0e2b7f6658ec93651db583f5d8213d82
++ entry .Syslog   作为日志目的地的系统日志，每行可带一个标签
+
+% 1 1 0 1cf0579c0c6a04d305d2f37e0b0cc92d
+
+@ 0 5 0 1e6cf176540342f01503d53ca6af6ab7
++       `Syslog(tag)` 是用于 `Text` 格式 `Logger` 的目的地：它的记录通过管道送到 `logger` 命令的标准输入，给出标签时附带 `-t tag`，因此它们按 `logger` 写入的样子到达系统日志。
++       启动 `logger` 或向其写入的失败会被忽略而不是抛出，启动本身也不会被记录。
+
+% 2 1 0 1ca7d0300c2c35930c1c50db82b43d54
+
+% 3 1 0 124d1e4358d9326b02f853d880883418
+
+% 4 1 0 1fa6c135f625a4d20d314029ff1d4527
+
+% 5 1 0 0fb75a2c9a6130310fb8f6a36c75f1a1
+
+% 1 1 0 1ade5faef96ded430d0e7bedbbdbc536
+
+% 1 1 0 0b0ea79ca47b401a11e959474b75a85b
+
+% 1 1 0 1d378d75969569d41e4c7e06d8aa594d
+
+% 2 1 0 11cc57f4cc1f838d1d869aed412a7bf0
+
+% 0 1 0 1bb3badd16a9a4cf0b6ca904b78709dc
+
+% 0 1 0 10d9fd00ee4fc0a51db9fc044a867b0f
+
+% 1 1 0 01158e10044404d3060003b27f887709
+
+@ 0 6 0 08a1dab565d9c6fc105d26a10a4f0248
++       不带时间戳的格式适合它，因为系统日志会添加自己的时间戳。
++       `logger` 命令必须位于路径上：这是为类 Unix 系统准备的。
++   entry .writable   `Syslog` 可按 `Text` 写入（`Writable`）：每个流都通过管道送到一个 `logger` 进程
++       需要作用域中有 `Monitor`，由 `Logger` 的 `supervise` 代码块提供。
++       文本以系统默认代码页编码。
++   entry #tag   `logger -t` 加在每行上的标签，或者为 `Unset` 表示没有
+
+@ 0 1 0 0cff200417d9c57f1bfeebee5dd93ccc
++ entry .EucalyptusGcp   `eucalyptus.gcp` 源集的空标记对象
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 1 0 0e3157755fde47e31533ddaaa6718dd2
++       不供直接使用；Google Cloud 格式是 `logFormats.googleCloudPlatformLogFormat`。
+
+@ 0 1 0 1e5cc560acfeddd80f80b58465794cd9
++ entry .logFormats   标准日志格式，每个都是按名称导入的 given
+
+% 1 1 0 181c20a900bd90810978de4425d5b71c
+
+@ 0 3 0 1885f09e030bbcc01c69e6e2054e3739
++       `Logger` 通过作用域中针对其载体的 `Inscribable` given 渲染每个事件，而隐式作用域中没有任何这样的 given：需要按名称导入一个，因为 `import logFormats.*` 不会导入 given。
+
+% 2 1 0 1c28ca043dc89693045a459ef4938542
+
+% 0 1 0 0a312f54c8f327751435acd336ef783d
+
+% 1 1 0 1784426b20d96f5f0a049dc2000c28d3
+
+% 2 1 0 038d8551ce1f09300e42f8ec1e3303d3
+
+% 0 1 0 16d245f5c3f18951058f7d3cfb727b7e
+
+% 2 1 0 06c9e6d86c160b5701a1bcec7439f538
+
+% 3 1 0 1413923e701164c80ecbb510c92789a0
+
+% 0 1 0 1736c71cf7c37de608153f969048869d
+
+% 0 1 0 10ca40bf9a63c7b70d32a3c4b6b575f8
+
+% 1 1 0 0c45bb7b1ff1a3dd061852a0bd2b2152
+
+% 2 1 0 056bbd241b4725451e33a4a814742e98
+
+% 0 1 0 1414d599d9bd800d09340c970c877d7a
+
+% 2 1 0 19f2bdf0b30eef8e1b484b31e1495fac
+
+% 3 1 0 1533e3f9bf9015551d285bcdb1c67683
+
+% 0 1 0 11d5491b31fe67cd011d8190dc16ec7e
+
+% 0 1 0 09cb2ba5df3d22e505e062c187400130
+
+% 1 1 0 0c9281cfa6e2fb8c09557be0fbfb698e
+
+% 2 1 0 164c22bd7386834e00a27fcf8b6f605c
+
+% 0 1 0 0beb8705f7c8b44b1e920db1d2648e54
+
+% 2 1 0 0e53bc5e7bc8d44b0be644a062aae158
+
+% 3 1 0 1ff2917c5eedb685195ea4e0fcbb4447
+
+% 0 1 0 080eeea6a4cc35051d24baeb395db192
+
+% 1 1 0 17d079d1b971851912729ae2800b6fd1
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 20 0 0837d9fce7ce78ab11a555eb46de00ce
++       `timestampedLogFormat` 和 `untimestampedLogFormat` 可格式化任何 `Communicable` 值，`ansiTimestampedLogFormat` 和 `googleCloudPlatformLogFormat` 则只格式化 `Message`，`Logger[…, Message]` 会把每个事件转写成它。
++       渲染 `Log.Level` 的 `textLevelLogFormat` 和 `teletypeableLogFormat` 由其他格式使用，不导出到总括包的 `logFormats`。
++   entry .timestampedLogFormat   一行文本：日期和时间、方括号中的级别，以及消息
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`，以换行符结尾，适用于任何 `Communicable` 事件，时间戳由 `dateFormat` 格式化。
++   entry .untimestampedLogFormat   一行文本：方括号中的级别，以及消息
++       `[INFO] server listening on 8080`，以换行符结尾，适用于任何 `Communicable` 事件。
++       适合会自行添加时间戳的目的地，例如 `Syslog`。
++   entry .textLevelLogFormat   把 `Log.Level` 渲染为 `FINE`、`INFO`、`WARN` 或 `FAIL`
++       文本格式在插值中使用的 `Log.Level` 的 `Showable`。
++       它不导出到总括包的 `logFormats` 包；请以 `eucalyptus.logFormats.textLevelLogFormat` 导入。
++   entry .ansiTimestampedLogFormat   一种 teletype：暗淡的日期和时间、彩色底色上的级别、`>` 以及消息
++       一个 `Message is Inscribable in Teletype`，用于终端，位于 `eucalyptus.ansi` 中。
++       它需要作用域中有 `LogPalette` 来提供颜色。
++       消息被切分为最多 76 个字符的行，每个续行都缩进到与第一行的消息对齐。
++       以 `Out` 为目的地时，它还需要 `writables.outTeletypeWritable` 和一个 `Stdio`。
+
+% 2 1 0 121166e142bfa6631d6c74a0a2a1dec4
+
+% 3 1 0 1dfa9dec4d374c0500be1b42ce3f8ea2
+
+% 4 1 0 051ccd7f33271c9615b538d37ba76087
+
+% 5 1 0 032d5eaa16dccc620bdd4cc1b85c0fd9
+
+% 0 1 0 0db93c1f93e7563403069dce88e9043c
+
+% 1 1 0 0be73e12f3d9cc6914df752efc0e58ea
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 0 1 0 0735120d942630ba078c2e2d1d2d49c2
+
+% 1 1 0 12ebf5ace5b38af30f5a490e48a38fa3
+
+% 0 1 0 1f5b362253dbea8907db7b747d1958c1
+
+% 0 1 0 024e3953ffdde04b1a9c6da8602dede1
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 0360f05ad4ca9ed8023f066cefc0cf0c
+
+% 0 1 0 103d56bd0323da9507b622e4319c1e8a
+
+% 0 1 0 1613bb2420871d4518c43569f57fcbb1
+
+% 0 1 0 081f210512adfd2009f49ff275f843e7
+
+% 0 1 0 15934dced264e82e043010c35fd83d64
+
+% 0 1 0 13ed7dfeccf697c2055659443cb2a25c
+
+% 2 1 0 0ca8f8baeb079cb714ed3efff419ea28
+
+% 0 1 0 00abc36b07433beb075370c3c3a2a2c4
+
+% 0 1 0 0086a82005593420173e05557a6c4248
+
+% 1 1 0 06e97cbfb8c149fc180d1d378dacd50c
+
+@ 0 12 0 052cd92f50fb673602376e017a96b1f2
++       记录不带结尾换行符，因此写到 `Out` 的相邻事件之间没有换行分隔。
++   entry .teletypeableLogFormat   把 `Log.Level` 渲染为该级别对应的 `LogPalette` 颜色上的粗体标签
++       `ansiTimestampedLogFormat` 所用的 `Log.Level` 的 `Teletypeable`，位于 `eucalyptus.ansi` 中。
++       它需要一个 `LogPalette`，并且不导出到总括包的 `logFormats` 包。
++   entry .googleCloudPlatformLogFormat   每个事件一个紧凑的 JSON 对象，带有 `severity` 和 `message`
++       一个 `Message is Inscribable in Text`，位于 `eucalyptus.gcp` 中，它写出 `{"severity":"WARNING","message":"…"}`，即 Google Cloud 日志代理从容器标准输出读取的结构化形式。
++       各级别映射为 `DEBUG`、`INFO`、`WARNING` 和 `ERROR`；消息是其不带样式的纯文本。
++       不写出时间戳，因为代理会记录自己的时间戳，记录也不带结尾换行符。
+
+@ 0 1 0 04ae0a4fe0cfbfda1dd174a1b1b76f88
++ entry .logging   按名称导入的日志记录器，覆盖作用域中已有的日志记录器
+
+% 1 1 0 1236c58cde4a781c0a64b5e15a8e8268
+
+@ 0 7 0 1b3268d2e55da413045a26a123dcdda4
++       一个选择包，与总括包的 `logging` 合并。
++       按名称导入的 given 优先于作用域中的日志记录器所提供的、位于伴生对象作用域中的 `Loggable.fanOut`。
++   entry .silentLogging   丢弃每个事件，作用于导入它的整个作用域
++       `import logging.silentLogging` 为每种事件类型提供一个静默的 `Loggable`，因此文件中记录的任何内容都不会到达任何 `Logger`，也不会构造任何事件。
++       它适合调用会记录日志、但其输出并不需要的库的测试或脚本；若只针对一个代码块中的一种事件类型，`mute` 更精细。
+
+% 2 1 0 0a5244e24b8de8e805a0f411dc48cdb4
+
+% 3 1 0 11d03768b7dae62f18892c35da2b9479
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 0c5bb0523ba9d5151e79e1cc1e0b8d5c
+
+% 1 1 0 047a6a08833bb4ab186c8b2c7144c0b4

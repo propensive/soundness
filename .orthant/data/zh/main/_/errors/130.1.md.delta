@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 3 0 0e4ca06698293693048feb52cbda8aab
++ 检查该元素及其属性是否属于 Savagery 所建模的范围。
++ 由绘图程序生成的 SVG 可能包含这一子集之外的结构；回退做法是把它作为普通 [XML](/doc/soundness/modules/xml.md) 读取。
