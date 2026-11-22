@@ -62,6 +62,23 @@ object Tests extends Suite("units", m"Quantitative Tests"):
         Quantity(1)/(2*Metre/Second)
       . assert(_ == 0.5*Second/Metre)
 
+    suite(m"Formulae over abstract units"):
+      test(m"A generic formula computes a distance in metres"):
+        Probes.motion(3*Metre/Second, 2*Second, 8*Metre/(Second*Second))
+      . assert(_ == 22*Metre)
+
+      test(m"A generic formula keeps the units it is called with"):
+        val fallen: Quantity[Feet[1]] =
+          Probes.motion(3*Foot/Second, 2*Second, 8*Foot/(Second*Second))
+
+        fallen
+      . assert(_ == 22*Foot)
+
+      test(m"A generic formula rejects inconsistent units"):
+        demilitarize:
+          Probes.motion(3*Metre, 2*Second, 8*Metre/(Second*Second))
+      . assert(!_.nil)
+
     suite(m"Compile errors"):
       test(m"Cannot add quantities of different units"):
         demilitarize:
@@ -635,6 +652,22 @@ object Tests extends Suite("units", m"Quantitative Tests"):
 // same source file as `Tests` because the `demilitarize` macro is sensitive
 // to cross-file references in the same package's test source set.
 object Probes:
+  // The displacement `s = ut + ½at²` for any consistent units: each constraint names the result
+  // of the one before it, so the units are resolved at each call (#2466).
+  transparent inline def motion
+    [ velocity     <: Measure,
+      time         <: Measure,
+      acceleration <: Measure ]
+    ( initial: Quantity[velocity],
+      elapsed: Quantity[time],
+      rate:    Quantity[acceleration] )
+    ( using vt: Quantity[velocity] is Multiplicable by Quantity[time],
+            at: Quantity[acceleration] is Multiplicable by Quantity[time] )
+    ( using att: at.Result is Multiplicable by Quantity[time] )
+    ( using add: vt.Result is Addable by att.Result ) =
+
+    initial*elapsed + 0.5*rate*elapsed*elapsed
+
   def viaQuantity_negate(x: Quantity[Metres[1]]): Quantity[Metres[1]] = -x
   def viaDouble_negate(x: Double): Double = -x
 
