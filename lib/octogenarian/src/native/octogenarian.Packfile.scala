@@ -91,14 +91,24 @@ private[octogenarian] object Packfile:
 
       recur(count - 1, Nil)
 
-    // The offset of the entry following the one at `offset`, or the trailer's start.
-    def end(offset: Long, packSize: Long): Long =
-      def recur(index: Int, best: Long): Long =
-        if index == count then best else
-          val candidate = offsets.get(index)
-          recur(index + 1, if candidate > offset && candidate < best then candidate else best)
+    // Every offset in ascending order, sorted when an object is first read from the pack: the
+    // index lists offsets in the order of their hashes, and an entry's data ends where the next
+    // entry in the pack begins.
+    lazy val sorted: LongBuffer =
+      val array = new scala.Array[Long](count)
+      offsets.duplicate().nn.position(0).nn.get(array)
+      java.util.Arrays.sort(array)
+      LongBuffer.wrap(array).nn
 
-      recur(0, packSize - 20)
+    // The offset of the entry following the one at `offset`, or the trailer's start: the least
+    // offset above it, by binary search.
+    def end(offset: Long, packSize: Long): Long =
+      def search(low: Int, high: Int): Long =
+        if low == high then (if low < count then sorted.get(low) else packSize - 20) else
+          val mid = (low + high) >>> 1
+          if sorted.get(mid) > offset then search(low, mid) else search(mid + 1, high)
+
+      search(0, count)
 
   def loadIndex(data: Data)(using Tactic[Git.Error]): Index =
     val array = data.asInstanceOf[scala.Array[Byte]]

@@ -173,6 +173,33 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         dir.open[Git.Worktree]() { worktree ?=> Objects.text(worktree.blobAt(blob)) }
       .assert(_ == t"${List.range(0, 200).map { n => t"line $n" }.join(t"\n")}\nmore")
 
+      test(m"a pack entry ends where the next entry in the pack begins"):
+        val dir = gitRepo()
+        val big = List.range(0, 200).map { n => t"line $n" }.join(t"\n")
+        gitCommit(dir, t"a", big, t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        gitCommit(dir, t"a", t"$big\nmore", t"third")
+        sh"git -C $dir repack -adf -q".exec[Exit]()
+        val directory = dir / ".git" / "objects" / "pack"
+
+        // The least offset above each entry's own, found by looking at every one of them.
+        def least(remaining: List[Long], offset: Long, best: Long): Long = remaining match
+          case candidate :: rest =>
+            least(rest, offset, if candidate > offset && candidate < best then candidate else best)
+
+          case _ =>
+            best
+
+        directory.children.to[List].filter(_.name.ends(t".idx")).map: path =>
+          val index = Packfile.loadIndex(path.read[Data])
+          val pack = Refstore.descend(directory, List(t"${path.name.skip(4, Rtl)}.pack"))
+          val size = pack.read[Data].length.toLong
+          val offsets = index.entries.map(_(1))
+
+          index.count > 6
+          && offsets.map(index.end(_, size)) == offsets.map(least(offsets, _, size - 20))
+      .assert(_ == List(true))
+
       test(m"HEAD~1 resolves as git resolves it"):
         val dir = gitRepo()
         val first = gitCommit(dir, t"a", t"a\n", t"first")
